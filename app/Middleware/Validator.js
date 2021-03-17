@@ -12,13 +12,8 @@ const { wrapValidationError } = require('../Libs/utils.js')
 const schemaClasses = reduce(
   fs.readdirSync(path.join(__dirname, '../Validators/')),
   (n, file) => {
-    const isValid = /.*\.schema\.js$/.test(file)
-    if (isValid) {
-      const ClassName = require(path.join(__dirname, '../Validators/', file))
-      return { ...n, [ClassName.name]: ClassName }
-    }
-
-    return n
+    const ClassName = require(path.join(__dirname, '../Validators/', file))
+    return { ...n, [ClassName.name]: ClassName }
   },
   {}
 )

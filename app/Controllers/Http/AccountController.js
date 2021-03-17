@@ -1,11 +1,8 @@
 'use strict'
-
-const { get } = require('lodash')
 const fs = require('fs')
 const moment = require('moment')
 const uuid = require('uuid')
 
-const { sanitize } = use('Validator')
 const User = use('App/Models/User')
 const Hash = use('Hash')
 const Drive = use('Drive')
@@ -21,43 +18,9 @@ class AccountController {
    */
   async signup({ request, response }) {
     const userData = request.all()
-    const { sporting_id, platform, referer_username, code, ...data } = sanitize(
-      userData,
-      User.sanitizationRules
-    )
+    const { user } = await UserService.createUser(userData)
 
-    try {
-      let referer_id = null
-      if (referer_username) {
-        const referer = await User.query().select('id').where('username', referer_username).first()
-        referer_id = get(referer, 'id', null)
-      }
-
-      console.log({ referer_username, referer_id })
-
-      const { user } = await UserService.createUser(
-        {
-          ...userData,
-          referer_id,
-        },
-        { sporting_id, platform }
-      )
-
-      // Remove confirm code from storage
-      await SMSService.clearVerification(data.phone)
-
-      return response.json({ status: 'success', user, game })
-    } catch (e) {
-      console.log(e)
-      if (e.name === 'HttpException') {
-        return response.status(e.status).json({ status: 'error', message: e.message })
-      }
-
-      return response.status(400).json({
-        status: 'error',
-        message: 'There was a problem creating the user, please try again later.',
-      })
-    }
+    return response.json(user)
   }
 
   /**
@@ -111,7 +74,7 @@ class AccountController {
    */
   async updateProfile({ request, auth, response }) {
     const user = auth.user
-    const fields = ['birthday', 'sex', 'country_id', 'locale']
+    const fields = ['birthday', 'sex', 'country_id', 'lang']
     const { preferred_currencies, city_name, ...userData } = request.only(fields)
     user.merge(userData)
     await user.save()

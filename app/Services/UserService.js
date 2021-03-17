@@ -16,17 +16,10 @@ class UserService {
   /**
    * Create user flow
    */
-  static async createUser(userData, { platform, sporting_id }) {
-    const trx = await Database.beginTransaction()
-    try {
-      const user = await User.create(userData, trx)
-      await trx.commit()
+  static async createUser(userData) {
+    const user = await User.create(userData)
 
-      return { user }
-    } catch (e) {
-      await trx.rollback()
-      throw e
-    }
+    return { user }
   }
 
   /**

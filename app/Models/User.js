@@ -17,7 +17,6 @@ class User extends Model {
       'sex',
       'status',
       'device_token',
-      'locale',
       'avatar',
       'lang',
       'coord',
