@@ -27,11 +27,9 @@ class AccountController {
    *
    */
   async login({ request, auth, response }) {
-    const { username, password, device_token } = request.all()
-
-    // Check is user/password valid
+    const { email, password, device_token } = request.all()
     try {
-      await auth.attempt(username, password)
+      await auth.attempt(email, password)
     } catch (e) {
       let message = e.message.split(':')
       message.shift()
@@ -40,17 +38,10 @@ class AccountController {
         message: message.join(':').trim(),
       })
     }
+    const token = await auth.attempt(email, password)
+    await User.query().where('email', email).update({ device_token })
 
-    const token = await auth.attempt(username, password)
-
-    await User.query().where('username', username).update({ device_token })
-
-    return response.json({
-      status: 'success',
-      data: {
-        ...token,
-      },
-    })
+    return response.res(token)
   }
 
   /**
@@ -58,15 +49,11 @@ class AccountController {
    */
   async me({ auth, response }) {
     const user = await User.query()
-      .select('users.*', '_c.name AS city_name')
-      .leftJoin({ _c: 'cities' }, '_c.id', 'users.city_id')
+      .select('users.*')
       .where('users.id', auth.current.user.id)
       .firstOrFail()
 
-    return response.json({
-      status: 'success',
-      data: { ...user.toJSON() },
-    })
+    return response.json(user)
   }
 
   /**

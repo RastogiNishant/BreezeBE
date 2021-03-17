@@ -3,10 +3,10 @@
 const { LogicalException } = require('@adonisjs/generic-exceptions')
 
 class HttpException extends LogicalException {
-  /**
-   * Handle this exception by itself
-   */
-  // handle () {}
+  constructor(message, status, code, errShLink) {
+    super(message, status, code, errShLink)
+    this.code = code
+  }
 }
 
 module.exports = HttpException
