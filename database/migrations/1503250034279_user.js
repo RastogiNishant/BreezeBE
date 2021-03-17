@@ -16,6 +16,7 @@ class UserSchema extends Schema {
       table.integer('sex').defaultTo(GENDER_MALE)
       table.integer('status').defaultTo(STATUS_ACTIVE)
       table.string('device_token', 254)
+      table.string('lang', 2)
       table.timestamps()
     })
   }
