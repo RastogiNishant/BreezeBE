@@ -64,11 +64,12 @@ const extendsResponse = () => {
     return this.status(404).json({ error: 'Item not found' })
   })
 
-  Response.macro('res', function (data) {
-    return this.json({
-      status: 'success',
-      data,
-    })
+  Response.macro('res', function (data = null) {
+    const response = { status: 'success' }
+    if (data !== null) {
+      response.data = data
+    }
+    return this.json(response)
   })
 }
 

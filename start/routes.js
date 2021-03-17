@@ -30,6 +30,7 @@ Route.post('/api/v1/signup', 'AccountController.signup')
 
 Route.post('/api/v1/login', 'AccountController.login').middleware(['valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt'])
+Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwt'])
 
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware('guest')
 Route.group(() => {

@@ -20,7 +20,7 @@ class AccountController {
     const userData = request.all()
     const { user } = await UserService.createUser(userData)
 
-    return response.json(user)
+    return response.res(user)
   }
 
   /**
@@ -33,11 +33,9 @@ class AccountController {
     } catch (e) {
       let message = e.message.split(':')
       message.shift()
-      return response.status(403).json({
-        status: 'error',
-        message: message.join(':').trim(),
-      })
+      throw new HttpException(message.join(':').trim(), 403)
     }
+
     const token = await auth.attempt(email, password)
     await User.query().where('email', email).update({ device_token })
 
@@ -53,7 +51,15 @@ class AccountController {
       .where('users.id', auth.current.user.id)
       .firstOrFail()
 
-    return response.json(user)
+    return response.res(user)
+  }
+
+  /**
+   *
+   */
+  async logout({ auth, response }) {
+    await User.query().where('id', auth.user.id).update({ device_token: null })
+    return response.res()
   }
 
   /**
@@ -61,14 +67,12 @@ class AccountController {
    */
   async updateProfile({ request, auth, response }) {
     const user = auth.user
-    const fields = ['birthday', 'sex', 'country_id', 'lang']
+    const fields = ['birthday', 'sex', 'lang']
     const { preferred_currencies, city_name, ...userData } = request.only(fields)
     user.merge(userData)
     await user.save()
 
-    return response.json({
-      ...user.toJSON(),
-    })
+    return response.res(user)
   }
 
   /**
@@ -79,27 +83,13 @@ class AccountController {
     const verifyPassword = await Hash.verify(request.input('current_password'), user.password)
 
     if (!verifyPassword) {
-      return response.status(400).json({
-        status: 'error',
-        message: 'Current password could not be verified! Please try again.',
-      })
+      throw HttpException('Current password could not be verified! Please try again.', 400)
     }
 
     user.password = await request.input('password')
     await user.save()
 
-    return response.json({
-      status: 'success',
-      message: 'Password updated!',
-    })
-  }
-
-  /**
-   *
-   */
-  async logout({ auth, response }) {
-    await User.query().where('id', auth.user.id).update({ device_token: null })
-    return response.status(200).json({ success: true })
+    return response.res()
   }
 
   /**
@@ -109,7 +99,7 @@ class AccountController {
     const { token } = request.only(['token'])
     await User.query().update({ device_token: token }).where('id', auth.user.id)
 
-    return response.json({ success: true })
+    return response.res()
   }
 
   /**
@@ -135,7 +125,7 @@ class AccountController {
     }
     fs.unlink(tmpFile, () => {})
 
-    response.json({ user: auth.user })
+    response.res(auth.user)
   }
 
   /**
@@ -145,7 +135,7 @@ class AccountController {
     const { email } = request.only(['email'])
     await UserService.changeEmail(auth.user, email)
 
-    response.json({ success: true })
+    response.res()
   }
 
   /**
@@ -174,7 +164,7 @@ class AccountController {
     // Send email with reset password code
     await UserService.resetUserPassword(email)
 
-    response.json({ success: true })
+    response.res()
   }
 
   /**
@@ -202,7 +192,7 @@ class AccountController {
   async updatePhoneRequest({ request, auth, response }) {
     const { phone } = request.only(['phone'])
     await SMSService.sendPhoneConfirm(phone, auth.user.id)
-    response.json({ success: true })
+    response.res()
   }
 
   /**
@@ -212,7 +202,7 @@ class AccountController {
     const { code } = request.only(['code'])
     await SMSService.changeUserPhoneByCode(code, auth.user.id)
 
-    response.json({ success: true })
+    response.res()
   }
 
   /**
@@ -222,7 +212,7 @@ class AccountController {
     const phone = request.input('phone')
     await SMSService.sendPhoneVerify(phone)
 
-    response.json({ success: true })
+    response.res()
   }
 
   /**
@@ -235,7 +225,7 @@ class AccountController {
       throw new HttpException('Invalid verification code', 400)
     }
 
-    response.json({ success: true })
+    response.res()
   }
 }
 

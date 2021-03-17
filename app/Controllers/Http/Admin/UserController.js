@@ -23,7 +23,7 @@ class UserController {
       throw new HttpException('Forbidden', 403)
     }
 
-    return response.json({ token: token.token, user, roles })
+    return response.res({ token: token.token, user, roles })
   }
 
   /**
@@ -33,13 +33,7 @@ class UserController {
     const { page, size } = request.pagination
     const { filters, order } = request.only(['filters', 'order'])
 
-    const query = User.query()
-      .select('users.*', 'countries.name AS country', 'cities.name AS city')
-      .leftJoin('countries', 'countries.id', 'users.country_id')
-      .leftJoin('cities', 'cities.id', 'users.city_id')
-      .filter(filters)
-      .sort(order)
-
+    const query = User.query().select('users.*').filter(filters).sort(order)
     const users = (await query.paginate(page, size)).toJSON()
 
     const mixRoles = async (users) => {
@@ -57,15 +51,7 @@ class UserController {
     }
     const mixedUserRoles = await mixRoles(users.data)
 
-    response.json({ result: { ...users, data: mixedUserRoles } })
-  }
-
-  /**
-   * Get user details
-   */
-  async getUser({ request, auth, response }) {
-    const user_id = request.params.user_id
-    response.json({ user_id })
+    response.res({ ...users, data: mixedUserRoles })
   }
 
   /**
@@ -95,7 +81,7 @@ class UserController {
 
     EventService.fireAdminAction('updateUser', request, auth)
 
-    response.json({ user })
+    response.res(user)
   }
 }
 

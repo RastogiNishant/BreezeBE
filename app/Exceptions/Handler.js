@@ -19,6 +19,7 @@ class ExceptionHandler extends BaseExceptionHandler {
   async handle(error, { request, response }) {
     if (error.name === 'ValidationException') {
       return response.status(422).json({
+        status: 'error',
         data: error.messages.reduce((n, i) => ({ ...n, [i.field]: i.validation }), {}),
       })
     }
