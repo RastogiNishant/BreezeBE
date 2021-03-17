@@ -1,6 +1,6 @@
 'use strict'
 
-const { reduce, toString } = require('lodash')
+const { toString } = require('lodash')
 
 const Model = use('Model')
 const UserFilter = use('App/ModelFilters/UserFilter')
@@ -15,16 +15,12 @@ class User extends Model {
       'phone',
       'birthday',
       'sex',
-      'deleted',
+      'status',
       'device_token',
       'locale',
-      'country_id',
-      'city_id',
-      'referer_id',
       'avatar',
-      'block',
-      'confirm',
-      'created_at',
+      'lang',
+      'coord',
     ]
   }
 
@@ -50,6 +46,18 @@ class User extends Model {
 
   tokens() {
     return this.hasMany('App/Models/Token')
+  }
+
+  company() {
+    return this.hasOne('App/Models/Company', 'id', 'company_id')
+  }
+
+  term() {
+    return this.hasOne('App/Models/Term', 'id', 'term_id')
+  }
+
+  agreement() {
+    return this.hasOne('App/Models/Agreement', 'id', 'agreement_id')
   }
 
   isValidToken() {

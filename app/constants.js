@@ -5,6 +5,10 @@ const constants = {
   STATUS_ACTIVE: 1,
   STATUS_DELETE: 0,
 
+  ROLE_ADMIN: 2,
+  ROLE_LANDLORD: 1,
+  ROLE_USER: 0,
+
   GENDER_MALE: 1,
   GENDER_FEMALE: 0,
   GENDER_ANY: 2,
