@@ -61,5 +61,8 @@
   },
   "autoload": {
     "App": "./app"
+  },
+  "devDependencies": {
+    "concurrently": "^6.0.0"
   }
 }

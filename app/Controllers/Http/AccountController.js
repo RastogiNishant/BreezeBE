@@ -12,12 +12,18 @@ const ImageService = use('App/Services/ImageService')
 const HttpException = use('App/Exceptions/HttpException')
 /** @type {typeof import('/providers/Static')} */
 
+const { ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER } = require('../../constants')
+
 class AccountController {
   /**
    *
    */
   async signup({ request, response }) {
     const userData = request.all()
+    if ([ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
+      throw new HttpException('Invalid user role', 401)
+    }
+
     try {
       const { user } = await UserService.createUser(userData)
       return response.res(user)
@@ -35,8 +41,31 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     const { email, role, password, device_token } = request.all()
+
+    let authenticator
+    switch (role) {
+      case ROLE_USER:
+        authenticator = await auth.authenticator('jwt')
+        break
+      case ROLE_LANDLORD:
+        authenticator = await auth.authenticator('jwtLandlord')
+        break
+      case ROLE_ADMIN:
+        authenticator = await auth.authenticator('jwtAdmin')
+        break
+      default:
+        throw new HttpException('Invalid user role', 403)
+    }
+
     const uid = User.getHash(email, role)
-    let token = await auth.attempt(uid, password)
+    let token
+    try {
+      token = await authenticator.attempt(uid, password)
+    } catch (e) {
+      const [error, message] = e.message.split(':')
+      throw new HttpException(message, 401)
+    }
+
     await User.query().where('email', email).update({ device_token })
 
     return response.res(token)

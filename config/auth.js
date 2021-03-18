@@ -1,6 +1,4 @@
 'use strict'
-
-/** @type {import('@adonisjs/framework/src/Env')} */
 const Env = use('Env')
 
 module.exports = {
@@ -13,7 +11,19 @@ module.exports = {
     uid: 'uid',
     password: 'password',
     options: {
-      secret: Env.get('APP_KEY'),
+      secret: `${Env.get('APP_KEY')}-user`,
+      expiresIn: 2592000, // 30 days lifetime
+    },
+  },
+
+  jwtLandlord: {
+    serializer: 'lucid',
+    model: 'App/Models/User',
+    scheme: 'jwt',
+    uid: 'uid',
+    password: 'password',
+    options: {
+      secret: `${Env.get('APP_KEY')}-landlord`,
       expiresIn: 2592000, // 30 days lifetime
     },
   },
