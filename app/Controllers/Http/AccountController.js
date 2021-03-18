@@ -18,25 +18,25 @@ class AccountController {
    */
   async signup({ request, response }) {
     const userData = request.all()
-    const { user } = await UserService.createUser(userData)
+    try {
+      const { user } = await UserService.createUser(userData)
+      return response.res(user)
+    } catch (e) {
+      if (e.constraint === 'users_uid_unique') {
+        throw new HttpException('User already exists', 400)
+      }
 
-    return response.res(user)
+      throw e
+    }
   }
 
   /**
    *
    */
   async login({ request, auth, response }) {
-    const { email, password, device_token } = request.all()
-    try {
-      await auth.attempt(email, password)
-    } catch (e) {
-      let message = e.message.split(':')
-      message.shift()
-      throw new HttpException(message.join(':').trim(), 403)
-    }
-
-    const token = await auth.attempt(email, password)
+    const { email, role, password, device_token } = request.all()
+    const uid = User.getHash(email, role)
+    let token = await auth.attempt(uid, password)
     await User.query().where('email', email).update({ device_token })
 
     return response.res(token)

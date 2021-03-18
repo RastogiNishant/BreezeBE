@@ -3,18 +3,13 @@
 const yup = require('yup')
 
 const { phoneSchema } = require('../Libs/schemas.js')
-const { GENDER_MALE, GENDER_FEMALE } = require('../constants')
+const { GENDER_MALE, GENDER_FEMALE, ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN } = require('../constants')
 
 class SignUp {
-  get rules() {
-    return {
-      email: 'required|email|unique:users',
-    }
-  }
-
   static schema = () =>
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
+      role: yup.number().oneOf([ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN]).required(),
       password: yup.string().trim().min(6).max(36).required(),
       sex: yup.number().oneOf([GENDER_MALE, GENDER_FEMALE]).required(),
       phone: phoneSchema,

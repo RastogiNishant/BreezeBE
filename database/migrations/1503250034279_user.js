@@ -1,14 +1,14 @@
 'use strict'
 
-/** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
-const { STATUS_ACTIVE, GENDER_MALE, ROLE_USER } = require('../../app/constants')
+const { STATUS_ACTIVE, GENDER_MALE } = require('../../app/constants')
 
 class UserSchema extends Schema {
   up() {
     this.create('users', (table) => {
       table.increments()
-      table.string('email', 254).notNullable().unique()
+      table.string('uid', 32).notNullable().unique()
+      table.string('email', 254).notNullable()
       table.string('firstname', 254)
       table.string('secondname', 254)
       table.string('password', 60).notNullable()
@@ -20,8 +20,10 @@ class UserSchema extends Schema {
       table.string('avatar', 512)
       table.specificType('coord', 'geometry(point, 4326)')
       table.string('lang', 2)
-      table.integer('role').defaultTo(ROLE_USER)
+      table.integer('role').unsigned().notNullable()
       table.timestamps()
+
+      table.unique(['email', 'role'])
     })
   }
 

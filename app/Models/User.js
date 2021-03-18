@@ -1,6 +1,7 @@
 'use strict'
 
 const { toString } = require('lodash')
+const md5 = require('md5')
 
 const Model = use('Model')
 const UserFilter = use('App/ModelFilters/UserFilter')
@@ -36,7 +37,14 @@ class User extends Model {
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
       }
+      if (userInstance.dirty.email || userInstance.dirty.role) {
+        userInstance.uid = User.getHash(userInstance.email, userInstance.role)
+      }
     })
+  }
+
+  static getHash(email, role) {
+    return md5(`${email}---${role}`)
   }
 
   static get traits() {

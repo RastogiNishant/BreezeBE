@@ -10,7 +10,7 @@ module.exports = {
     serializer: 'lucid',
     model: 'App/Models/User',
     scheme: 'jwt',
-    uid: 'email',
+    uid: 'uid',
     password: 'password',
     options: {
       secret: Env.get('APP_KEY'),
@@ -22,12 +22,11 @@ module.exports = {
     serializer: 'lucid',
     model: 'App/Models/User',
     scheme: 'jwt',
-    uid: 'email',
+    uid: 'uid',
     password: 'password',
     options: {
       secret: Env.get('ADMIN_APP_KEY'),
       expiresIn: 7200, // 2 Hours lifetime
     },
   },
-
 }
