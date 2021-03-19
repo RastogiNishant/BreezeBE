@@ -27,7 +27,7 @@ Makefile: ;              # skip prerequisite discovery
 #		echo "READY!"
 
 update-development:
-		echo "RUN: update-development"
+		echo "RUN: update-development "
 		make npm-client-install-dev;
 		cp .env.dev .env
 		node ace migration:run --force
