@@ -20,7 +20,7 @@ class AccountController {
    */
   async signup({ request, response }) {
     const userData = request.all()
-    if ([ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
+    if (![ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
       throw new HttpException('Invalid user role', 401)
     }
 
