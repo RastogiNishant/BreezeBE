@@ -70,7 +70,7 @@ paths:
           required: true
       responses: [200]
 
-  /api/v1/account/me:
+  /api/v1/me:
     get:
       security: [bearerAuth: []]
       tags: [account]
