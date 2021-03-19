@@ -2,6 +2,7 @@
 const fs = require('fs')
 const moment = require('moment')
 const uuid = require('uuid')
+const { isEmpty } = require('lodash')
 
 const User = use('App/Models/User')
 const Hash = use('Hash')
@@ -40,7 +41,20 @@ class AccountController {
    *
    */
   async login({ request, auth, response }) {
-    const { email, role, password, device_token } = request.all()
+    let { email, role, password, device_token } = request.all()
+
+    // Select role if not set, (allows only for non-admin users)
+    if (isEmpty(role)) {
+      const user = await User.query()
+        .where('email', email)
+        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+        .orderBy('updated_at', 'desc')
+        .first()
+      if (!user) {
+        throw new HttpException('User not found', 404)
+      }
+      role = user.role
+    }
 
     let authenticator
     switch (role) {
@@ -66,7 +80,9 @@ class AccountController {
       throw new HttpException(message, 401)
     }
 
-    await User.query().where('email', email).update({ device_token })
+    if (device_token) {
+      await User.query().where('email', email).update({ device_token })
+    }
 
     return response.res(token)
   }

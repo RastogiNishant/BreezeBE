@@ -35,7 +35,39 @@ paths:
       tags: [account]
       description: Signup to the application
       produces: [application/json]
-      parameters: []
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+        - name: role
+          in: formData
+          type: string
+          enum: ['0', '1']
+          required: true
+        - name: sex
+          in: formData
+          type: string
+          enum: ['0', '1']
+          required: true
+        - name: phone
+          in: formData
+          type: string
+        - name: birthday
+          in: formData
+          type: string
+          default: '1970-01-01'
+          required: true
+        - name: lang
+          in: formData
+          type: string
+          enum: ['en', 'de']
+          default: 'en'
+          required: true
       responses: [200]
 
   /api/v1/account/me:
