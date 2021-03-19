@@ -30,7 +30,7 @@ update-development:
 		echo "RUN: update-development"
 		make npm-client-install-dev;
 		cp .env.dev .env
-		node ace migration:run --force
+		NODE_ENV=development node ace migration:run --force
 		make restart-pm2-development;
 		echo "READY!"
 
