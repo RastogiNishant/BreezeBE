@@ -38,6 +38,7 @@
     "adonis-cache": "^0.3.4",
     "adonis-lucid-filter": "^1.0.6",
     "adonis-sentry": "^2.0.2",
+    "adonis-swagger": "git+https://github.com/ProductCrafters/adonis-swagger.git",
     "aws-sdk": "^2.696.0",
     "bluebird": "^3.7.2",
     "bullmq": "^1.14.8",

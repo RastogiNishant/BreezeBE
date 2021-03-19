@@ -41,6 +41,10 @@ if (!Helpers.isAceCommand() || process.env.NODE_ENV === 'testing') {
   providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
 }
 
+if (process.env.NODE_ENV !== 'production') {
+  providers.push('adonis-swagger/providers/SwaggerProvider')
+}
+
 const aceProviders = [
   '@adonisjs/lucid/providers/MigrationsProvider',
   'adonis-acl/providers/CommandsProvider',

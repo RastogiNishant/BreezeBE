@@ -1,0 +1,229 @@
+paths:
+  /api/v1/login:
+    post:
+      tags: [account]
+      description: Login to the application
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          default: user@ra.ru
+        - name: password
+          in: formData
+          type: string
+          default: qwerty
+        - name: role
+          in: formData
+          type: number
+        - name: device_token
+          description: token for push notifications
+          in: formData
+          type: string
+      responses: [200]
+
+  /api/v1/logout:
+    post:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: logout user
+      produces: [application/json]
+      responses: [200]
+
+  /api/v1/signup:
+    post:
+      tags: [account]
+      description: Signup to the application
+      produces: [application/json]
+      parameters: []
+      responses: [200]
+
+  /api/v1/account/me:
+    get:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: Get self
+      produces: [application/json]
+      responses: [200]
+#  /api/v1/account/update_profile:
+#    put:
+#      security:
+#        - bearerAuth: []
+#      tags:
+#        - account
+#      description: update user
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: birthday
+#          in: formData
+#          type: string
+#          default: '1970-01-01'
+#        - name: phone
+#          in: formData
+#          type: string
+#          default: '0987654321'
+#        - name: sex
+#          in: formData
+#          type: string
+#          enum: [male, female]
+#          default: male
+#        - name: country_id
+#          in: formData
+#          type: interger
+#          default: 1
+#        - name: territory_id
+#          in: formData
+#          type: integer
+#          default: 1
+#        - name: locale
+#          in: formData
+#          type: string
+#          enum: [en, da]
+#          default: da
+#        - name: preferred_currencies
+#          description: Currencies ["USD", "EUR", "DKK", "STAR"]
+#          in: formData
+#          type: json
+#          default: '["USD", "EUR", "DKK", "STAR"]'
+#      responses: [200]
+#
+#  /account/change_game:
+#    put:
+#      security:
+#        - bearerAuth: []
+#      tags:
+#        - account
+#      description: change user game
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: type
+#          in: formData
+#          type: string
+#          enum: [fifa_20, fifa_19]
+#        - name: platform
+#          description: Game platform
+#          in: formData
+#          type: string
+#          enum: [ps4, xbox, pc]
+#          default: ps4
+#      responses: [200]
+#
+#  /account/update_token:
+#    put:
+#      security:
+#        - bearerAuth: []
+#      tags:
+#        - account
+#      description: Update device token
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: token
+#          in: formData
+#          type: string
+#      responses: [200]
+#
+#  /account/update_avatar:
+#    put:
+#      security:
+#        - bearerAuth: []
+#      tags:
+#        - account
+#        - avatar
+#      description: Update user avatar
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: file
+#          in: formData
+#          type: file
+#          required: true
+#      responses: [200]
+#
+#  /account/change_email:
+#    post:
+#      tags:
+#        - account
+#      security:
+#        - bearerAuth: []
+#      description: Change user email
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: email
+#          in: formData
+#          type: string
+#          required: true
+#      responses: [200]
+#
+#  /account/confirm_email:
+#    get:
+#      tags:
+#        - account
+#      description: Confirm email
+#      produces:
+#        - application/json
+#      parameters:
+#        - name: code
+#          in: query
+#          type: string
+#          required: true
+#      responses: [200]
+#
+#  /account/reset_password/request:
+#    post:
+#      tags: [account]
+#      description: Send email to reset password
+#      produces: [application/json]
+#      parameters:
+#        - name: email
+#          in: formData
+#          type: string
+#          required: true
+#      responses: [200]
+#
+#  /account/reset_password/confirm:
+#    post:
+#      tags: [account]
+#      description: Send code and confirm
+#      produces: [application/json]
+#      parameters:
+#        - name: code
+#          in: formData
+#          type: string
+#          required: true
+#        - name: password
+#          in: formData
+#          type: string
+#          required: true
+#      responses: [200]
+#
+#  /account/change_phone/request:
+#    post:
+#      tags: [account]
+#      description: Send sms code
+#      produces: [application/json]
+#      security:
+#        - bearerAuth: []
+#      parameters:
+#        - name: phone
+#          in: formData
+#          type: string
+#          required: true
+#      responses: [200]
+#
+#  /account/change_phone/confirm:
+#    post:
+#      tags: [account]
+#      description: Check code/change phone
+#      produces: [application/json]
+#      security:
+#        - bearerAuth: []
+#      parameters:
+#        - name: code
+#          in: formData
+#          type: string
+#          required: true
+#      responses: [200]
