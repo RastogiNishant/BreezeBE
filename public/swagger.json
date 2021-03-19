@@ -1,0 +1,61 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0",
+    "title": "API",
+    "contact": {}
+  },
+  "host": "example.com",
+  "basePath": "/",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "RootType": {
+      "title": "RootType",
+      "type": "object",
+      "properties": {
+        "title": {
+          "example": "API Name",
+          "type": "string"
+        },
+        "version": {
+          "example": "API version",
+          "type": "string"
+        },
+        "host": {
+          "example": "API URL",
+          "type": "string"
+        },
+        "bastPath": {
+          "example": "Base URL",
+          "type": "string"
+        },
+        "schemes": {
+          "example": "HTTP protocol",
+          "type": "string"
+        },
+        "description": {
+          "example": "API description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "version",
+        "host",
+        "bastPath",
+        "schemes",
+        "description"
+      ]
+    }
+  },
+  "tags": []
+}
