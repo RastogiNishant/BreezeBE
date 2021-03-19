@@ -21,3 +21,7 @@ adonis migration:run
 ### Notifications Doc
 
 ---
+
+Docs
+---
+```/docs```
