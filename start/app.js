@@ -18,6 +18,7 @@ let providers = []
 providers.push('@adonisjs/framework/providers/AppProvider')
 providers.push('adonis-sentry/providers/Sentry')
 providers.push('@adonisjs/auth/providers/AuthProvider')
+providers.push('@adonisjs/ally/providers/AllyProvider')
 providers.push('@adonisjs/bodyparser/providers/BodyParserProvider')
 providers.push('@adonisjs/cors/providers/CorsProvider')
 providers.push('@adonisjs/lucid/providers/LucidProvider')

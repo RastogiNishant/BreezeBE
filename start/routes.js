@@ -29,6 +29,10 @@ Route.post('/api/v1/login', 'AccountController.login').middleware(['valid:SignIn
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt'])
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
 
+// Auth google
+Route.get('/auth/google', 'OAuthController.googleAuth').middleware(['valid:SignInGoogle'])
+Route.get('/auth/google/authenticated', 'OAuthController.googleAuthConfirm')
+
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware('guest')
 Route.group(() => {
   Route.get('/', 'Admin/UserController.getUsers').middleware(['pagination'])
