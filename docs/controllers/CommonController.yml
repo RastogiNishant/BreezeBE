@@ -1,0 +1,7 @@
+paths:
+  /api/v1/references:
+    get:
+      tags: [references]
+      description: Get app references
+      produces: [application/json]
+      responses: [200]

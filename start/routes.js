@@ -29,6 +29,8 @@ Route.post('/api/v1/login', 'AccountController.login').middleware(['valid:SignIn
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt'])
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
 
+Route.get('/api/v1/references', 'CommonController.getReferences')
+
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
 Route.get('/auth/google/authenticated', 'OAuthController.googleAuthConfirm')

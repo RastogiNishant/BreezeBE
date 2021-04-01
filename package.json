@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "DEBUG=query DEV=true adonis serve --dev",
     "test": "node ace test",
+    "ace": "node ace",
     "clear": "node ace app:clear",
     "migrate": "node ace migration:run",
     "test-dev": "adonis test -f "
