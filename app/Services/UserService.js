@@ -20,6 +20,7 @@ class UserService {
    * Create user flow
    */
   static async createUser(userData) {
+    delete userData.id
     const user = await User.create(pick(userData, User.columns))
 
     return { user }
@@ -28,9 +29,9 @@ class UserService {
   /**
    *
    */
-  static async createUserFromOAuth({ email, name, role, id, ...data }) {
+  static async createUserFromOAuth({ email, name, role, google_id, ...data }) {
     const [firstname, secondname] = name.split(' ')
-    const password = `${id}#${Env.get('APP_NAME')}`
+    const password = `${google_id}#${Env.get('APP_NAME')}`
     const { user } = await UserService.createUser({
       ...data,
       email,
@@ -38,7 +39,7 @@ class UserService {
       secondname,
       password,
       role,
-      google_id: id,
+      google_id,
       status: STATUS_NEED_VERIFY,
     })
 

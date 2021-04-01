@@ -94,7 +94,7 @@ class OAuthController {
     if (!user && [ROLE_LANDLORD, ROLE_USER].includes(role)) {
       user = await UserService.createUserFromOAuth({
         ...ticket.getPayload(),
-        id: googleId,
+        google_id: googleId,
         device_token,
         role,
       })
