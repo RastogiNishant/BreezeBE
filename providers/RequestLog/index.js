@@ -98,12 +98,12 @@ class Logger {
      * Log normally when json is not set to true
      */
     if (!this.isJson) {
-      if (statusCode === 404) {
-        this.Logger.transport('notfound')[logLevel](
-          util.format('[%s] %s %s %s (%s) %s', dateStr, method, statusCode, url, ip, ms)
-        )
-        return
-      }
+      // if (statusCode === 404) {
+      //   this.Logger.transport('notfound')[logLevel](
+      //     util.format('[%s] %s %s %s (%s) %s', dateStr, method, statusCode, url, ip, ms)
+      //   )
+      //   return
+      // }
       this.Logger[logLevel]('[%s] %s %s %s (%s) %s', dateStr, method, statusCode, url, ip, ms)
       return
     }
