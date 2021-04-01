@@ -7,13 +7,15 @@ const { isEmpty } = require('lodash')
 const User = use('App/Models/User')
 const Hash = use('Hash')
 const Drive = use('Drive')
+const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
+const MailService = use('App/Services/MailService')
 const ImageService = use('App/Services/ImageService')
 const HttpException = use('App/Exceptions/HttpException')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER } = require('../../constants')
+const { ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../constants')
 
 class AccountController {
   /**
@@ -26,7 +28,8 @@ class AccountController {
     }
 
     try {
-      const { user } = await UserService.createUser(userData)
+      const { user } = await UserService.createUser({ ...userData, status: STATUS_EMAIL_VERIFY })
+      await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -35,6 +38,22 @@ class AccountController {
 
       throw e
     }
+  }
+
+  /**
+   *
+   */
+  async confirmEmail({ request, response }) {
+    const { code, user_id } = request.all()
+    const user = await User.findOrFail(user_id)
+    try {
+      await UserService.confirmEmail(user, code)
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
+    }
+
+    return response.res(true)
   }
 
   /**

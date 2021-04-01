@@ -28,6 +28,9 @@ Route.post('/api/v1/signup', 'AccountController.signup').middleware(['valid:Sign
 Route.post('/api/v1/login', 'AccountController.login').middleware(['valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt'])
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
+Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
+  'valid:ConfirmEmail',
+])
 
 Route.get('/api/v1/references', 'CommonController.getReferences')
 

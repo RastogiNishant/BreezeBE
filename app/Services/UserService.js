@@ -13,7 +13,7 @@ const AppException = use('App/Exceptions/AppException')
 
 const { getHash } = require('../Libs/utils.js')
 
-const { STATUS_NEED_VERIFY } = require('../constants')
+const { STATUS_NEED_VERIFY, STATUS_ACTIVE } = require('../constants')
 
 class UserService {
   /**
@@ -115,6 +115,34 @@ class UserService {
 
       await user.roles().attach(roleIds)
     }
+  }
+
+  /**
+   *
+   */
+  static async sendConfirmEmail(user) {
+    const date = String(new Date().getTime())
+    const code = date.slice(date.length - 4, date.length)
+    await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+    await MailService.sendUserConfirmation(user.email, {
+      code,
+      user_id: user.id,
+    })
+  }
+
+  /**
+   *
+   */
+  static async confirmEmail(user, userCode) {
+    const data = await DataStorage.getItem(user.id, 'confirm_email')
+    const { code } = data || {}
+    if (code !== userCode) {
+      throw new AppException('Invalid code')
+    }
+    // TODO: check user status active is allow
+    user.status = STATUS_ACTIVE
+    await DataStorage.remove(user.id, 'confirm_email')
+    return user.save()
   }
 }
 

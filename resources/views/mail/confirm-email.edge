@@ -1,0 +1,5 @@
+@layout('mail/mail-layout')
+
+@section('content')
+  <h3> Your email confirmation link <a href="{{ getUrl('/account/change_email', { code, user_id })}}">here</a></h3>
+@endsection

@@ -24,7 +24,7 @@ class ExceptionHandler extends BaseExceptionHandler {
       })
     }
 
-    if (error.name === 'HttpException') {
+    if (['ModelNotFoundException', 'HttpException'].includes(error.name)) {
       return response.status(error.status).json({
         status: 'error',
         data: error.message,
