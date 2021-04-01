@@ -1,9 +1,10 @@
 'use strict'
 
 const uuid = require('uuid')
-const { get, isArray, isEmpty } = require('lodash')
+const { get, isArray, isEmpty, pick } = require('lodash')
 
 const Role = use('Role')
+const Env = use('Env')
 const Database = use('Database')
 const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
@@ -12,14 +13,36 @@ const AppException = use('App/Exceptions/AppException')
 
 const { getHash } = require('../Libs/utils.js')
 
+const { STATUS_NEED_VERIFY } = require('../constants')
+
 class UserService {
   /**
    * Create user flow
    */
   static async createUser(userData) {
-    const user = await User.create(userData)
+    const user = await User.create(pick(userData, User.columns))
 
     return { user }
+  }
+
+  /**
+   *
+   */
+  static async createUserFromOAuth({ email, name, role, id, ...data }) {
+    const [firstname, secondname] = name.split(' ')
+    const password = `${id}#${Env.get('APP_NAME')}`
+    const { user } = await UserService.createUser({
+      ...data,
+      email,
+      firstname,
+      secondname,
+      password,
+      role,
+      google_id: id,
+      status: STATUS_NEED_VERIFY,
+    })
+
+    return user
   }
 
   /**

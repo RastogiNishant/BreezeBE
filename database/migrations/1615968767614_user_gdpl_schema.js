@@ -9,8 +9,7 @@ class UserGdplSchema extends Schema {
       table.integer('terms_id').unsigned().references('id').inTable('terms')
       table.integer('agreements_id').unsigned().references('id').inTable('agreements')
       table.integer('company_id').unsigned().references('id').inTable('companies')
-      table.string('ldin_id', 100)
-      table.string('ldin_token', 254)
+      table.string('google_id', 32)
     })
   }
 
@@ -19,8 +18,7 @@ class UserGdplSchema extends Schema {
       table.dropColumn('terms_id')
       table.dropColumn('agreements_id')
       table.dropColumn('company_id')
-      table.dropColumn('ldin_id')
-      table.dropColumn('ldin_token')
+      table.dropColumn('google_id')
     })
   }
 }

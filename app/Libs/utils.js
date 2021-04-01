@@ -1,5 +1,6 @@
 const url = require('url')
 const { isString, get, isEmpty } = require('lodash')
+const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
   const base = url.parse(use('Env').get('APP_URL'))
@@ -54,10 +55,24 @@ const getGeoRange = (x, y, dist = 50) => {
   return { lat1: x - xRate, long1: y - yRate, lat2: x + xRate, long2: y + yRate }
 }
 
+const getAuthByRole = (auth, role) => {
+  switch (+role) {
+    case ROLE_USER:
+      return auth.authenticator('jwt')
+    case ROLE_LANDLORD:
+      return auth.authenticator('jwtLandlord')
+    case ROLE_ADMIN:
+      return auth.authenticator('jwtAdmin')
+    default:
+      throw new Error('Invalid role')
+  }
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
   wrapValidationError,
   getHash,
   getGeoRange,
+  getAuthByRole,
 }

@@ -1,0 +1,38 @@
+#  /auth/google
+#  auth/google/authenticated
+#    auth/google/mobile
+
+paths:
+  /auth/google:
+    get:
+      tags: [auth]
+      description: Login via social from web
+      produces: [application/json]
+      responses: [200]
+
+  /auth/google/authenticated:
+    get:
+      tags: [auth]
+      description: Confirm web auth
+      produces: [application/json]
+      responses: [200]
+
+  /auth/google/mobile:
+    get:
+      tags: [auth]
+      description: Login via social from web
+      produces: [application/json]
+      parameters:
+        - name: token
+          in: query
+          description: social id token
+          type: string
+        - name: role
+          in: query
+          type: number
+          default: "1"
+        - name: device_token
+          description: token for push notifications
+          in: query
+          type: string
+      responses: [200]

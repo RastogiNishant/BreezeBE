@@ -11,7 +11,9 @@ class User extends Model {
   static get columns() {
     return [
       'id',
-      'username',
+      'firstname',
+      'secondname',
+      'password',
       'email',
       'phone',
       'birthday',
@@ -21,6 +23,8 @@ class User extends Model {
       'avatar',
       'lang',
       'coord',
+      'google_id',
+      'role',
     ]
   }
 

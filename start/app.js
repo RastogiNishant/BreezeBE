@@ -33,6 +33,7 @@ providers.push('adonis-cache/providers/CacheProvider')
 
 providers.push('adonis-acl/providers/AclProvider')
 providers.push(path.join(__dirname, '..', 'providers', 'RequestLog/Provider'))
+providers.push(path.join(__dirname, '..', 'providers', 'GoogleOAuthProvider'))
 
 providers.push(path.join(__dirname, '..', 'providers', 'Notifications/Provider'))
 providers.push(path.join(__dirname, '..', 'providers', 'Static/Provider'))
