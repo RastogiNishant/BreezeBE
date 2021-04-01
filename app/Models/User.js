@@ -1,6 +1,6 @@
 'use strict'
 
-const { toString } = require('lodash')
+const { toString, pick, omit } = require('lodash')
 const md5 = require('md5')
 
 const Model = use('Model')
@@ -26,6 +26,10 @@ class User extends Model {
       'google_id',
       'role',
     ]
+  }
+
+  static get readonly() {
+    return ['id', 'email', 'status', 'google_id', 'role']
   }
 
   static get hidden() {
@@ -73,6 +77,15 @@ class User extends Model {
 
   isValidToken() {
     return /^([^\.\$\[\]\#\/]){100,768}$/.test(toString(this.device_token))
+  }
+
+  /**
+   * Updated allowed user fields
+   */
+  async updateData(data) {
+    this.merge(omit(pick(data, User.columns), User.readonly))
+
+    return this.save()
   }
 }
 

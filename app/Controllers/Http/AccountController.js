@@ -130,11 +130,9 @@ class AccountController {
    *
    */
   async updateProfile({ request, auth, response }) {
+    const data = request.all()
     const user = auth.user
-    const fields = ['birthday', 'sex', 'lang']
-    const { preferred_currencies, city_name, ...userData } = request.only(fields)
-    user.merge(userData)
-    await user.save()
+    await user.updateData(data)
 
     return response.res(user)
   }

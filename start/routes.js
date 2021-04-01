@@ -31,6 +31,7 @@ Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jw
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
+Route.put('/api/v1/users', 'AccountController.updateProfile').middleware(['auth:jwt,jwtLandlord'])
 
 Route.get('/api/v1/references', 'CommonController.getReferences')
 

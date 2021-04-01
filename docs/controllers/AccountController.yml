@@ -94,6 +94,38 @@ paths:
       description: Get self
       produces: [application/json]
       responses: [200]
+
+  /api/v1/users:
+    put:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: Update user data
+      produces: [application/json]
+      parameters:
+        - name: firstname
+          in: formData
+          type: string
+        - name: secondname
+          in: formData
+          type: string
+        - name: password
+          in: formData
+          type: string
+        - name: sex
+          in: formData
+          type: string
+          enum: ['1', '2']
+        - name: phone
+          in: formData
+          type: string
+        - name: birthday
+          in: formData
+          type: string
+        - name: lang
+          in: formData
+          type: string
+          enum: ['en', 'de']
+      responses: [200]
 #  /api/v1/account/update_profile:
 #    put:
 #      security:
