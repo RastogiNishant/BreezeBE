@@ -27,10 +27,11 @@ paths:
           in: query
           description: social id token
           type: string
+          required: true
         - name: role
           in: query
           type: number
-          default: "1"
+          default: '1'
         - name: device_token
           description: token for push notifications
           in: query
