@@ -171,15 +171,17 @@ class AccountController {
     const fileSettings = { types: ['image'], size: '10mb' }
     const filename = `${uuid.v4()}.png`
     let avatarUrl, tmpFile
+
     request.multipart.file(`file`, fileSettings, async (file) => {
       tmpFile = await ImageService.resizeAvatar(file, filename)
       const sourceStream = fs.createReadStream(tmpFile)
-      avatarUrl = await Drive.disk('s3uploads').put(
+      avatarUrl = await Drive.disk('s3public').put(
         `${moment().format('YYYYMM')}/${filename}`,
         sourceStream,
         { ACL: 'public-read', ContentType: 'image/png' }
       )
     })
+
     await request.multipart.process()
     if (avatarUrl) {
       auth.user.avatar = avatarUrl

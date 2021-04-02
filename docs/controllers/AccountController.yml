@@ -132,22 +132,19 @@ paths:
           in: formData
           type: string
       responses: [200]
-#  /account/update_avatar:
-#    put:
-#      security:
-#        - bearerAuth: []
-#      tags:
-#        - account
-#        - avatar
-#      description: Update user avatar
-#      produces:
-#        - application/json
-#      parameters:
-#        - name: file
-#          in: formData
-#          type: file
-#          required: true
-#      responses: [200]
+
+  /api/v1/users/avatar:
+    put:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: Update user avatar
+      produces: [application/json]
+      parameters:
+        - name: file
+          in: formData
+          type: file
+          required: true
+      responses: [200]
 #
 #  /account/change_email:
 #    post:

@@ -22,11 +22,11 @@ module.exports = {
       region: Env.get('S3_REGION'),
     },
 
-    s3uploads: {
+    s3public: {
       driver: 's3',
       key: Env.get('S3_KEY'),
       secret: Env.get('S3_SECRET'),
-      bucket: Env.get('S3_UPLOAD_BUCKET'),
+      bucket: Env.get('S3_PUBLIC_BUCKET'),
       region: Env.get('S3_REGION'),
     },
   },

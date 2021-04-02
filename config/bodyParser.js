@@ -128,15 +128,7 @@ module.exports = {
     |
     */
 
-    processManually: [
-      '/games/report_score/:score_id',
-      '/games/confirm_settings/:score_id',
-      '/games/referee/:score_id',
-      '/upload',
-      '/jobs/test',
-      '/account/update_avatar',
-      '/referer/claim/:score_id',
-    ],
+    processManually: ['/api/v1/users/avatar'],
 
     /*
     |--------------------------------------------------------------------------
