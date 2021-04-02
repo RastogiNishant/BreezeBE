@@ -18,5 +18,17 @@
 */
 
 const { Ignitor } = require('@adonisjs/ignitor')
+const https = require('https')
+const fs = require('fs')
 
-new Ignitor(require('@adonisjs/fold')).appRoot(__dirname).fireHttpServer().catch(console.error)
+const options = {
+  key: fs.readFileSync('/home/ubuntu/cert/privkey.pem'),
+  cert: fs.readFileSync('/home/ubuntu/cert/fullchain.pem'),
+}
+
+new Ignitor(require('@adonisjs/fold'))
+  .appRoot(__dirname)
+  .fireHttpServer((handler) => {
+    return https.createServer(options, handler)
+  })
+  .catch(console.error)
