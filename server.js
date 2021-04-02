@@ -21,14 +21,25 @@ const { Ignitor } = require('@adonisjs/ignitor')
 const https = require('https')
 const fs = require('fs')
 
-const options = {
-  key: fs.readFileSync('/home/ubuntu/cert/privkey.pem'),
-  cert: fs.readFileSync('/home/ubuntu/cert/fullchain.pem'),
+// TODO: change hardcoded cert paths
+const key = '/home/ubuntu/cert/privkey.pem'
+const cert = '/home/ubuntu/cert/fullchain.pem'
+
+let handler = null
+
+if (fs.existsSync(key)) {
+  handler = (handler) => {
+    return https.createServer(
+      {
+        key: fs.readFileSync(key),
+        cert: fs.readFileSync(cert),
+      },
+      handler
+    )
+  }
 }
 
 new Ignitor(require('@adonisjs/fold'))
   .appRoot(__dirname)
-  .fireHttpServer((handler) => {
-    return https.createServer(options, handler)
-  })
+  .fireHttpServer(handler)
   .catch(console.error)
