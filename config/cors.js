@@ -16,7 +16,7 @@ module.exports = {
   | Function - Receives the current origin and should return one of the above values.
   |
   */
-  origin: '*',
+  origin: true,
 
   /*
   |--------------------------------------------------------------------------
@@ -73,7 +73,7 @@ module.exports = {
   | boolean.
   |
   */
-  credentials: true,
+  credentials: false,
 
   /*
   |--------------------------------------------------------------------------
