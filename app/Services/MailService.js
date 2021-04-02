@@ -20,6 +20,11 @@ class MailService {
    *
    */
   static async sendUserConfirmation(email, { code, user_id }) {
+    console.log({
+      to: email,
+      from: Config.get('mail.mailAccount'),
+    })
+
     return Mail.send('mail/confirm-email', { code, user_id }, (message) => {
       message.to(email).from(Config.get('mail.mailAccount')).subject('Confirm email')
     })

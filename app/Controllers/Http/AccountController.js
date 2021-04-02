@@ -155,16 +155,6 @@ class AccountController {
   }
 
   /**
-   * Update device token
-   */
-  async updateToken({ request, auth, response }) {
-    const { token } = request.only(['token'])
-    await User.query().update({ device_token: token }).where('id', auth.user.id)
-
-    return response.res()
-  }
-
-  /**
    *
    */
   async updateAvatar({ request, auth, response }) {
@@ -192,32 +182,32 @@ class AccountController {
     response.res(auth.user)
   }
 
-  /**
-   * Change user email and send confirm
-   */
-  async changeEmail({ request, auth, response }) {
-    const { email } = request.only(['email'])
-    await UserService.changeEmail(auth.user, email)
-
-    response.res()
-  }
-
-  /**
-   * Mark user as confirmed
-   */
-  async confirmChangeEmail({ request, response }) {
-    const { code } = request.only(['code'])
-    await UserService.confirmChangeEmail(code)
-
-    return response.redirect('/email-confirmed')
-  }
-
-  /**
-   * Email confirm success route
-   */
-  async emailConfirmed({ view }) {
-    return view.render('confirm-email-success')
-  }
+  // /**
+  //  * Change user email and send confirm
+  //  */
+  // async changeEmail({ request, auth, response }) {
+  //   const { email } = request.only(['email'])
+  //   await UserService.changeEmail(auth.user, email)
+  //
+  //   response.res()
+  // }
+  //
+  // /**
+  //  * Mark user as confirmed
+  //  */
+  // async confirmChangeEmail({ request, response }) {
+  //   const { code } = request.only(['code'])
+  //   await UserService.confirmChangeEmail(code)
+  //
+  //   return response.redirect('/email-confirmed')
+  // }
+  //
+  // /**
+  //  * Email confirm success route
+  //  */
+  // async emailConfirmed({ view }) {
+  //   return view.render('confirm-email-success')
+  // }
 
   /**
    * Password recover send email with code
@@ -256,39 +246,6 @@ class AccountController {
   async updatePhoneRequest({ request, auth, response }) {
     const { phone } = request.only(['phone'])
     await SMSService.sendPhoneConfirm(phone, auth.user.id)
-    response.res()
-  }
-
-  /**
-   * Check confirm code and change phone
-   */
-  async updatePhoneConfirm({ request, auth, response }) {
-    const { code } = request.only(['code'])
-    await SMSService.changeUserPhoneByCode(code, auth.user.id)
-
-    response.res()
-  }
-
-  /**
-   *
-   */
-  async verifyPhone({ request, response }) {
-    const phone = request.input('phone')
-    await SMSService.sendPhoneVerify(phone)
-
-    response.res()
-  }
-
-  /**
-   *
-   */
-  async verifyPhoneConfirm({ request, response }) {
-    const { phone, code } = request.all()
-    const isVerified = await SMSService.verifyConfirmationCode(phone, code)
-    if (!isVerified) {
-      throw new HttpException('Invalid verification code', 400)
-    }
-
     response.res()
   }
 }
