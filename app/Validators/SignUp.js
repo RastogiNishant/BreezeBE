@@ -15,6 +15,7 @@ class SignUp {
       phone: phoneSchema,
       birthday: yup.date().required(),
       lang: yup.string().oneOf(['en', 'de']).default('en').required(),
+      avatar: yup.string().max(512),
     })
 }
 

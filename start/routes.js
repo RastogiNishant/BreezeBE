@@ -16,6 +16,9 @@ const adminHandler = ({ response }) => {
 Route.any('*', adminHandler).prefix('admin')
 Route.any('/admin/:1?', adminHandler)
 
+// Live check method
+Route.get('/ping', 'CommonController.ping')
+
 Route.get('/', () => {
   return {
     app: process.env.APP_NAME,

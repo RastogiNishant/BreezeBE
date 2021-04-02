@@ -1,4 +1,11 @@
 paths:
+  /ping:
+    get:
+      tags: [references]
+      description: Check app live
+      produces: [application/json]
+      responses: [200]
+
   /api/v1/references:
     get:
       tags: [references]

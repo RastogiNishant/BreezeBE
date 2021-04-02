@@ -20,8 +20,7 @@ class UserService {
    * Create user flow
    */
   static async createUser(userData) {
-    delete userData.id
-    const user = await User.create(pick(userData, User.columns))
+    const user = await User.createItem(userData)
 
     return { user }
   }

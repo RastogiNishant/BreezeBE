@@ -1,9 +1,9 @@
 'use strict'
 
-const { toString, pick, omit } = require('lodash')
+const { toString } = require('lodash')
 const md5 = require('md5')
 
-const Model = use('Model')
+const Model = require('./BaseModel')
 const UserFilter = use('App/ModelFilters/UserFilter')
 const Hash = use('Hash')
 
@@ -11,20 +11,26 @@ class User extends Model {
   static get columns() {
     return [
       'id',
+      'uid',
+      'email',
       'firstname',
       'secondname',
       'password',
-      'email',
       'phone',
       'birthday',
       'sex',
       'status',
       'device_token',
       'avatar',
-      'lang',
       'coord',
-      'google_id',
+      'lang',
       'role',
+      'created_at',
+      'updated_at',
+      'terms_id',
+      'agreements_id',
+      'company_id',
+      'google_id',
     ]
   }
 
@@ -77,15 +83,6 @@ class User extends Model {
 
   isValidToken() {
     return /^([^\.\$\[\]\#\/]){100,768}$/.test(toString(this.device_token))
-  }
-
-  /**
-   * Updated allowed user fields
-   */
-  async updateData(data) {
-    this.merge(omit(pick(data, User.columns), User.readonly))
-
-    return this.save()
   }
 }
 

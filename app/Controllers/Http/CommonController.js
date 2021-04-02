@@ -2,7 +2,17 @@
 
 const constants = require('../../constants')
 
+const User = use('App/Models/User')
+const UserService = use('App/Services/UserService')
+
 class CommonController {
+  /**
+   * Just for test some api
+   */
+  async ping() {
+    return 'pong'
+  }
+
   /**
    *
    */

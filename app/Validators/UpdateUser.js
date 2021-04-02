@@ -15,6 +15,7 @@ class UpdateUser {
       firstname: yup.string().min(2).max(254),
       secondname: yup.string().min(2).max(254),
       lang: yup.string().oneOf(['en', 'de']),
+      avatar: yup.string().max(512),
     })
 }
 

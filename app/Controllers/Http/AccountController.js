@@ -132,7 +132,7 @@ class AccountController {
   async updateProfile({ request, auth, response }) {
     const data = request.all()
     const user = auth.user
-    await user.updateData(data)
+    await user.updateItem(data)
 
     return response.res(user)
   }
