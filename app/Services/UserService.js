@@ -1,7 +1,8 @@
 'use strict'
 
 const uuid = require('uuid')
-const { get, isArray, isEmpty, pick } = require('lodash')
+const { get, isArray, isEmpty } = require('lodash')
+const Promise = require('bluebird')
 
 const Role = use('Role')
 const Env = use('Env')
@@ -81,7 +82,7 @@ class UserService {
   /**
    *
    */
-  static async resetUserPassword(email) {
+  static async requestPasswordReset(email) {
     const code = getHash(3)
     const user = await User.findByOrFail({ email })
     await DataStorage.setItem(code, { userId: user.id }, 'reset_password', { ttl: 3600 })
@@ -89,7 +90,7 @@ class UserService {
   }
 
   /**
-   *
+   * Reset password to all users with same email
    */
   static async resetPassword(code, password) {
     const data = await DataStorage.getItem(code, 'reset_password')
@@ -97,9 +98,18 @@ class UserService {
     if (!userId) {
       throw new AppException('Invalid confirmation code')
     }
-    const user = await User.findByOrFail({ id: userId })
-    user.password = password
-    await user.save()
+
+    const usersToUpdate = await User.query()
+      .whereIn('email', function () {
+        this.select('email').where('id', userId)
+      })
+      .limit(3)
+      .fetch()
+
+    if (!isEmpty(usersToUpdate.rows)) {
+      await Promise.map(usersToUpdate.rows, (u) => u.updateItem({ password }, true))
+    }
+
     await DataStorage.remove(code, 'reset_password')
   }
 

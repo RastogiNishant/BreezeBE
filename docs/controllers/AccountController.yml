@@ -159,62 +159,31 @@ paths:
           type: string
           required: true
       responses: [200]
-#
-#  /account/change_email:
-#    post:
-#      tags:
-#        - account
-#      security:
-#        - bearerAuth: []
-#      description: Change user email
-#      produces:
-#        - application/json
-#      parameters:
-#        - name: email
-#          in: formData
-#          type: string
-#          required: true
-#      responses: [200]
-#
-#  /account/confirm_email:
-#    get:
-#      tags:
-#        - account
-#      description: Confirm email
-#      produces:
-#        - application/json
-#      parameters:
-#        - name: code
-#          in: query
-#          type: string
-#          required: true
-#      responses: [200]
-#
-#  /account/reset_password/request:
-#    post:
-#      tags: [account]
-#      description: Send email to reset password
-#      produces: [application/json]
-#      parameters:
-#        - name: email
-#          in: formData
-#          type: string
-#          required: true
-#      responses: [200]
-#
-#  /account/reset_password/confirm:
-#    post:
-#      tags: [account]
-#      description: Send code and confirm
-#      produces: [application/json]
-#      parameters:
-#        - name: code
-#          in: formData
-#          type: string
-#          required: true
-#        - name: password
-#          in: formData
-#          type: string
-#          required: true
-#      responses: [200]
-#
+
+  /api/v1/users/password/reset:
+    put:
+      tags: [account]
+      description: Send email to reset password
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+      responses: [200]
+
+  /api/v1/users/password/confirm:
+    put:
+      tags: [account]
+      description: Send code and confirm
+      produces: [application/json]
+      parameters:
+        - name: code
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+      responses: [200]

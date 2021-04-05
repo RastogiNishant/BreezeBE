@@ -184,32 +184,29 @@ class AccountController {
   /**
    * Password recover send email with code
    */
-  async passwordRecoveryRequest({ request, response }) {
+  async passwordReset({ request, response }) {
     const { email } = request.only(['email'])
-
     // Send email with reset password code
-    await UserService.resetUserPassword(email)
+    await UserService.requestPasswordReset(email)
 
-    response.res()
+    return response.res()
   }
 
   /**
    * Confirm user password change with secret code
    */
-  async passwordRecoveryConfirm({ request, view }) {
+  async passwordConfirm({ request, response }) {
     const { code, password } = request.only(['code', 'password'])
-    await UserService.resetPassword(code, password)
+    try {
+      await UserService.resetPassword(code, password)
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
 
-    return view.render('reset-pass-form-success')
-  }
-
-  /**
-   *
-   */
-  async passwordRecovery({ request, view }) {
-    const { code } = request.only(['code'])
-
-    return view.render('reset-pass-form', { code })
+    return response.res()
   }
 }
 
