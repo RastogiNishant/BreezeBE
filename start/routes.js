@@ -58,6 +58,15 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
   'valid:SignInGoogleMobile',
 ])
 
+// Estate management
+Route.group(() => {
+  Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
+  Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:CreateEstate'])
+})
+  .prefix('/api/v1/estates')
+  .middleware(['auth:jwtLandlord'])
+
+// Admin user edit part
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware('guest')
 Route.group(() => {
   Route.get('/', 'Admin/UserController.getUsers').middleware(['pagination'])

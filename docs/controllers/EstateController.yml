@@ -1,0 +1,22 @@
+paths:
+  /api/v1/estates:
+    get:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: Get own estates list
+      produces: [application/json]
+      responses: [200]
+    post:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: Create new estate
+      produces: [application/json]
+      responses: [200]
+
+  /api/v1/estates/{id}:
+    put:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: update existing estate
+      produces: [application/json]
+      responses: [200]

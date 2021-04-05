@@ -1,7 +1,7 @@
 paths:
   /ping:
     get:
-      tags: [references]
+      tags: [common]
       description: Check app live
       produces: [application/json]
       responses: [200]

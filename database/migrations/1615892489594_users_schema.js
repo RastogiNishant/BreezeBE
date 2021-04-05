@@ -46,6 +46,7 @@ class UsersSchema extends Schema {
       table.integer('type').unsigned().defaultTo(APARTMENT_TYPE_MAISONETTE)
       table.string('description', 500)
       table.string('category', 20)
+      table.json('rooms'),
       table.specificType('coord', 'geometry(point, 4326)')
       table.string('street')
       table.string('house_number')
@@ -89,7 +90,7 @@ class UsersSchema extends Schema {
       table.integer('min_lease_duration').unsigned().defaultTo(0)
       table.integer('max_lease_duration').unsigned().defaultTo(0)
 
-      table.boolean('non-smoker').defaultTo(false)
+      table.boolean('non_smoker').defaultTo(false)
       table.boolean('pets').defaultTo(false)
       table.integer('gender').unsigned().defaultTo(GENDER_ANY)
       table.boolean('monumental_protection').defaultTo(false)

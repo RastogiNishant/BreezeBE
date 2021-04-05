@@ -61,19 +61,21 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     let { email, role, password, device_token } = request.all()
-
     // Select role if not set, (allows only for non-admin users)
-    if (isEmpty(role)) {
-      const user = await User.query()
-        .where('email', email)
-        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
-        .orderBy('updated_at', 'desc')
-        .first()
-      if (!user) {
-        throw new HttpException('User not found', 404)
-      }
-      role = user.role
+    let roles = [ROLE_USER, ROLE_LANDLORD]
+    if (role) {
+      roles = [role]
     }
+    const user = await User.query()
+      .where('email', email)
+      .whereIn('role', roles)
+      .orderBy('updated_at', 'desc')
+      .first()
+
+    if (!user) {
+      throw new HttpException('User not found', 404)
+    }
+    role = user.role
 
     let authenticator
     switch (role) {
