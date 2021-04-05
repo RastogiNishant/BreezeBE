@@ -13,8 +13,9 @@ class BaseModel extends Model {
   /**
    *
    */
-  async updateItem(data) {
-    this.merge(omit(pick(data, this.constructor.columns || []), this.constructor.readonly || []))
+  async updateItem(data, force = false) {
+    const exclude = force ? [] : this.constructor.readonly || []
+    this.merge(omit(pick(data, this.constructor.columns || []), exclude))
 
     return this.save()
   }

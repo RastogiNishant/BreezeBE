@@ -35,7 +35,7 @@ class User extends Model {
   }
 
   static get readonly() {
-    return ['id', 'email', 'status', 'google_id', 'role']
+    return ['id', 'email', 'status', 'google_id', 'role', 'password']
   }
 
   static get hidden() {

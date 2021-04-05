@@ -148,8 +148,7 @@ class AccountController {
       throw HttpException('Current password could not be verified! Please try again.', 400)
     }
 
-    user.password = await request.input('password')
-    await user.save()
+    await user.updateItem({ password: request.input('new_password') }, true)
 
     return response.res()
   }
@@ -182,33 +181,6 @@ class AccountController {
     response.res(auth.user)
   }
 
-  // /**
-  //  * Change user email and send confirm
-  //  */
-  // async changeEmail({ request, auth, response }) {
-  //   const { email } = request.only(['email'])
-  //   await UserService.changeEmail(auth.user, email)
-  //
-  //   response.res()
-  // }
-  //
-  // /**
-  //  * Mark user as confirmed
-  //  */
-  // async confirmChangeEmail({ request, response }) {
-  //   const { code } = request.only(['code'])
-  //   await UserService.confirmChangeEmail(code)
-  //
-  //   return response.redirect('/email-confirmed')
-  // }
-  //
-  // /**
-  //  * Email confirm success route
-  //  */
-  // async emailConfirmed({ view }) {
-  //   return view.render('confirm-email-success')
-  // }
-
   /**
    * Password recover send email with code
    */
@@ -238,15 +210,6 @@ class AccountController {
     const { code } = request.only(['code'])
 
     return view.render('reset-pass-form', { code })
-  }
-
-  /**
-   * Send sms to phone for number confirm
-   */
-  async updatePhoneRequest({ request, auth, response }) {
-    const { phone } = request.only(['phone'])
-    await SMSService.sendPhoneConfirm(phone, auth.user.id)
-    response.res()
   }
 }
 

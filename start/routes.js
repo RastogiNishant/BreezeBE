@@ -38,6 +38,9 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware(['auth:
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
   'auth:jwt,jwtLandlord',
 ])
+Route.put('/api/v1/users/password', 'AccountController.changePassword').middleware([
+  'auth:jwt,jwtLandlord',
+])
 // Route.put('/api/v1/users/password_reset', 'AccountController.passwordReset')
 // Route.put('/api/v1/users/password_confirm', 'AccountController.passwordConfirm')
 

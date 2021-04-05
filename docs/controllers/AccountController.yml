@@ -111,9 +111,6 @@ paths:
         - name: secondname
           in: formData
           type: string
-        - name: password
-          in: formData
-          type: string
         - name: sex
           in: formData
           type: string
@@ -143,6 +140,23 @@ paths:
         - name: file
           in: formData
           type: file
+          required: true
+      responses: [200]
+
+  /api/v1/users/password:
+    put:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: Update user password
+      produces: [application/json]
+      parameters:
+        - name: current_password
+          in: formData
+          type: string
+          required: true
+        - name: new_password
+          in: formData
+          type: string
           required: true
       responses: [200]
 #
