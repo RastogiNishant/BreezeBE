@@ -145,7 +145,7 @@ class AccountController {
     const verifyPassword = await Hash.verify(request.input('current_password'), user.password)
 
     if (!verifyPassword) {
-      throw HttpException('Current password could not be verified! Please try again.', 400)
+      throw new HttpException('Current password could not be verified! Please try again.', 400)
     }
 
     await user.updateItem({ password: request.input('new_password') }, true)
