@@ -24,7 +24,75 @@ const {
 
 class Estate extends Model {
   static get columns() {
-    return ['id']
+    return [
+      'id',
+      'user_id',
+      'property_type',
+      'type',
+      'description',
+      'category',
+      'coord',
+      'street',
+      'house_number',
+      'country',
+      'floor',
+      'number_floors',
+      'prices',
+      'net_rent',
+      'cold_rent',
+      'rent_including_heating',
+      'additional_costs',
+      'heating_costs_included',
+      'heating_costs',
+      'rent_per_sqm',
+      'deposit',
+      'stp_garage',
+      'stp_parkhaus',
+      'stp_tiefgarage',
+      'currency',
+      'area',
+      'living_space',
+      'usable_area',
+      'rooms_number',
+      'bedrooms_number',
+      'bathrooms_number',
+      'kitchen_options',
+      'bath_options',
+      'wc_number',
+      'balconies_number',
+      'terraces_number',
+      'occupancy',
+      'use_type',
+      'ownership_type',
+      'marketing_type',
+      'energy_type',
+      'available_date',
+      'from_date',
+      'to_date',
+      'min_lease_duration',
+      'max_lease_duration',
+      'non_smoker',
+      'pets',
+      'gender',
+      'monumental_protection',
+      'parking_space_type',
+      'construction_year',
+      'last_modernization',
+      'building_status',
+      'building_age',
+      'firing',
+      'heating_type',
+      'equipment',
+      'equipment_standard',
+      'ground',
+      'energy_efficiency',
+      'energy_pass',
+      'status',
+    ]
+  }
+
+  static get readonly() {
+    return ['id', 'status', 'user_id']
   }
 
   static get options() {
@@ -42,6 +110,10 @@ class Estate extends Model {
         EQUIPMENT_WG_SUITABLE,
       ],
     }
+  }
+
+  static get Serializer() {
+    return 'App/Serializers/EstateSerializer'
   }
 
   user() {

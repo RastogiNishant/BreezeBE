@@ -1,6 +1,7 @@
 const { hooks } = require('@adonisjs/ignitor')
 const { ioc } = require('@adonisjs/fold')
 const debug = require('debug')('query')
+const KnexPostgis = require('knex-postgis')
 
 const { truncate, reduce, get, toString, isString } = require('lodash')
 
@@ -22,6 +23,7 @@ hooks.after.providersBooted(async () => {
   const Event = use('Event')
   const Logger = use('Logger')
   const Database = use('Database')
+  Database.gis = KnexPostgis(Database)
 
   if (!Helpers.isAceCommand() || process.env.NODE_ENV === 'testing') {
     const Static = use('Static')
