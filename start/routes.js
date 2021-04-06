@@ -60,6 +60,7 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
 
 // Estate management
 Route.group(() => {
+  Route.get('/', 'EstateController.getEstates')
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:CreateEstate'])
 })

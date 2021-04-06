@@ -22,6 +22,13 @@ class EstateService {
       status: STATUS_DRAFT,
     })
   }
+
+  /**
+   *
+   */
+  static async getEstates(filters) {
+    return Estate.query().select('*', Database.gis.asGeoJSON('coord')).fetch()
+  }
 }
 
 module.exports = EstateService
