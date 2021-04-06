@@ -159,11 +159,27 @@ const {
   GROUND_MARMOR,
   GROUND_TERRAKOTTA,
   GROUND_GRANITE,
+  //
+  CURRENCY_EUR,
+  CURRENCY_DEM,
+  CURRENCY_USD,
+  CURRENCY_UAH,
+  //
+  KITCHEN_OPEN,
+  KITCHEN_PANTRY,
+  KITCHEN_BUILTIN,
+  //
+  BATH_TUB,
+  BATH_WINDOW,
+  BATH_BIDET,
+  BATH_URINAL,
+  BATH_SHOWER,
 } = require('../constants')
 
 class CreateEstate {
   static schema = () =>
     yup.object().shape({
+      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       property_type: yup
         .number()
         .positive()
@@ -239,15 +255,19 @@ class CreateEstate {
       stp_garage: yup.number().min(0),
       stp_parkhaus: yup.number().min(0),
       stp_tiefgarage: yup.number().min(0),
-      currency: yup.string().min(1).max(3),
+      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_DEM, CURRENCY_USD, CURRENCY_UAH]),
       area: yup.number().min(0),
       living_space: yup.number().min(0),
       usable_area: yup.number().min(0),
       rooms_number: yup.number().min(0),
       bedrooms_number: yup.number().min(0),
       bathrooms_number: yup.number().min(0),
-      kitchen_options: yup.number().min(0),
-      bath_options: yup.number().min(0),
+      kitchen_options: yup
+        .array()
+        .of(yup.number().oneOf([KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN])),
+      bath_options: yup
+        .array()
+        .of(yup.number().oneOf([BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER])),
       wc_number: yup.number().min(0),
       balconies_number: yup.number().min(0),
       terraces_number: yup.number().min(0),
@@ -318,8 +338,8 @@ class CreateEstate {
           PARKING_SPACE_TYPE_DUPLEX,
           PARKING_SPACE_TYPE_GARAGE,
         ]),
-      construction_year: yup.boolean(),
-      last_modernization: yup.boolean(),
+      construction_year: yup.date(),
+      last_modernization: yup.date(),
       building_status: yup
         .number()
         .positive()
@@ -405,12 +425,17 @@ class CreateEstate {
           GROUND_GRANITE,
         ]),
       energy_efficiency: yup.number().positive(),
-      energy_pass: yup.object().shape({
-        officency_pass: yup.string(),
-        valid_until: yup.string(),
-        energy_consumption_value: yup.string(),
-        final_energy_consumption: yup.string(),
-      }),
+      energy_pass: yup
+        .mixed()
+        .oneOf([
+          yup.object().shape({
+            officency_pass: yup.string(),
+            valid_until: yup.string(),
+            energy_consumption_value: yup.string(),
+            final_energy_consumption: yup.string(),
+          }),
+        ])
+        .nullable(),
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
     })
 }

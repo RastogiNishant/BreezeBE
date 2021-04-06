@@ -48,6 +48,7 @@
     "debug": "^4.1.1",
     "firebase-admin": "^8.12.0",
     "google-auth-library": "^5.10.1",
+    "knex-postgis": "0.8.1",
     "lodash": "^4.17.15",
     "md5": "^2.3.0",
     "moment": "^2.24.0",

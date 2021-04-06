@@ -6,11 +6,324 @@ paths:
       description: Get own estates list
       produces: [application/json]
       responses: [200]
+
     post:
       tags: [estate]
       security: [bearerAuth: []]
       description: Create new estate
       produces: [application/json]
+      parameters:
+        - name: property_type
+          in: formData
+          type: string
+          enum: [1, 2, 3, 4]
+          default: '1'
+        - name: coord
+          in: formData
+          type: string
+          default: '52.5204748,13.4122866'
+        - name: type
+          in: formData
+          type: string
+          enum:
+            [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+            ]
+          default: '7'
+        - name: description
+          in: formData
+          type: string
+        - name: category
+          in: formData
+          type: string
+        - name: rooms
+          in: formData
+          type: json
+        - name: street
+          in: formData
+          type: string
+        - name: house_number
+          in: formData
+          type: string
+        - name: country
+          in: formData
+          type: string
+        - name: floor
+          in: formData
+          default: '1'
+          type: number
+        - name: number_floors
+          in: formData
+          default: '1'
+          type: number
+        - name: prices
+          in: formData
+          default: '1000'
+          type: number
+        - name: net_rent
+          in: formData
+          default: '1000'
+          type: number
+        - name: cold_rent
+          in: formData
+          default: '1000'
+          type: number
+        - name: rent_including_heating
+          in: formData
+          default: '1000'
+          type: number
+        - name: additional_costs
+          in: formData
+          default: '1000'
+          type: number
+        - name: heating_costs_included
+          in: formData
+          default: '1000'
+          type: number
+        - name: heating_costs
+          in: formData
+          default: '1000'
+          type: number
+        - name: rent_per_sqm
+          in: formData
+          default: '10'
+          type: number
+        - name: deposit
+          in: formData
+          default: '3000'
+          type: number
+        - name: stp_garage
+          in: formData
+          default: '0'
+          type: number
+        - name: stp_parkhaus
+          in: formData
+          default: '0'
+          type: number
+        - name: stp_tiefgarage
+          in: formData
+          default: '0'
+          type: number
+        - name: currency
+          in: formData
+          enum: ['EUR', 'DEM', 'USD', 'UAH']
+          type: string
+        - name: area
+          in: formData
+          default: '100'
+          type: number
+        - name: living_space
+          in: formData
+          default: '50'
+          type: number
+        - name: usable_area
+          in: formData
+          default: '30'
+          type: number
+        - name: rooms_number
+          in: formData
+          default: '3'
+          type: number
+        - name: bedrooms_number
+          in: formData
+          default: '2'
+          type: number
+        - name: bathrooms_number
+          in: formData
+          default: '2'
+          type: number
+        - name: kitchen_options
+          in: formData
+          default: '[1, 2]'
+          schema:
+            type: array
+            items:
+              type: number
+          explode: true
+        - name: bath_options
+          in: formData
+          schema:
+            type: array
+            items:
+              type: number
+          explode: true
+          default: '[1, 2]'
+        - name: wc_number
+          in: formData
+          default: '1'
+          type: number
+        - name: balconies_number
+          in: formData
+          default: '1'
+          type: number
+        - name: terraces_number
+          in: formData
+          default: '1'
+          type: number
+        - name: occupancy
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6]
+          default: '1'
+        - name: use_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4]
+          default: '1'
+        - name: ownership_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4]
+          default: '1'
+        - name: marketing_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4]
+          default: '1'
+        - name: energy_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+          default: '1'
+        - name: available_date
+          in: formData
+          type: date
+          default: '2020-04-04'
+        - name: from_date
+          in: formData
+          type: date
+          default: '2020-04-04'
+        - name: to_date
+          in: formData
+          type: date
+          default: '2020-04-04'
+        - name: min_lease_duration
+          in: formData
+          default: '1'
+          type: number
+        - name: max_lease_duration
+          in: formData
+          default: '12'
+          type: number
+        - name: non_smoker
+          in: formData
+          default: 'false'
+          type: boolean
+        - name: pets
+          in: formData
+          default: 'false'
+          type: boolean
+        - name: gender
+          in: formData
+          type: number
+          enum: [1, 2, 3]
+          default: '1'
+        - name: monumental_protection
+          in: formData
+          default: 'false'
+          type: boolean
+        - name: parking_space_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6]
+          default: '1'
+        - name: parking_space_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6]
+          default: '1'
+        - name: construction_year
+          in: formData
+          type: date
+          default: '2000-01-01'
+        - name: last_modernization
+          in: formData
+          type: date
+          default: '2000-01-01'
+        - name: building_status
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+          default: '1'
+        - name: building_age
+          in: formData
+          type: number
+          default: '20'
+        - name: firing
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+          default: '1'
+        - name: heating_type
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4]
+          default: '1'
+        - name: equipment
+          in: formData
+          schema:
+            type: array
+            items:
+              type: number
+          explode: true
+          default: '[1, 2]'
+        - name: equipment_standard
+          in: formData
+          type: number
+          enum: [1, 2, 3]
+          default: '1'
+        - name: ground
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+          default: '1'
+        - name: energy_efficiency
+          in: formData
+          type: number
+          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+          default: '1'
+        - name: energy_pass
+          type: json
+          default: '{"test": 1 }'
       responses: [200]
 
   /api/v1/estates/{id}:
