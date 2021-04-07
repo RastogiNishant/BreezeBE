@@ -1,0 +1,99 @@
+definitions:
+  estate_id:
+    name: estate_id
+    in: path
+    type: number
+    required: true
+  room_id:
+    name: room_id
+    in: path
+    type: number
+    required: true
+  image_id:
+    name: image_id
+    in: path
+    type: number
+    required: true
+  area:
+    name: area
+    in: formData
+    type: number
+  options:
+    name: options
+    in: formData
+    schema:
+      type: array
+      items:
+        type: string
+    explode: true
+    example: '["parket", "kamin"]'
+  type:
+    name: type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5]
+
+# Routes list
+/api/v1/estates/{estate_id}/rooms:
+  post:
+    tags: [room]
+    security: [bearerAuth: []]
+    description: update existing estate
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/area'
+      - $ref: '#/definitions/type'
+      - $ref: '#/definitions/options'
+    responses: [200]
+
+/api/v1/estates/{estate_id}/rooms/{room_id}:
+  put:
+    tags: [room]
+    security: [bearerAuth: []]
+    description: update existing estate
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/room_id'
+      - $ref: '#/definitions/area'
+      - $ref: '#/definitions/type'
+      - $ref: '#/definitions/options'
+    responses: [200]
+
+  delete:
+    tags: [room]
+    security: [bearerAuth: []]
+    description: update existing estate
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/room_id'
+    responses: [200]
+
+/api/v1/estates/{estate_id}/rooms/{room_id}/images:
+  post:
+    tags: [room]
+    security: [bearerAuth: []]
+    description: update existing estate
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/room_id'
+      - name: file
+        in: formData
+        type: file
+        required: true
+    responses: [200]
+
+/api/v1/estates/{estate_id}/rooms/{room_id}/images/{image_id}:
+  delete:
+    tags: [room]
+    security: [bearerAuth: []]
+    description: update existing estate
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/room_id'
+      - $ref: '#/definitions/image_id'
+    responses: [200]

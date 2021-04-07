@@ -8,6 +8,14 @@ class EstateSchema extends Schema {
       table.dropColumn('rooms')
       table.string('property_id', 20).index()
     })
+
+    this.alter('rooms', (table) => {
+      table.dropColumn('options')
+    })
+
+    this.alter('rooms', (table) => {
+      table.json('options')
+    })
   }
 
   down() {
