@@ -1,11 +1,12 @@
 'use strict'
 
 const yup = require('yup')
+const Base = require('./Base')
 
 const { phoneSchema } = require('../Libs/schemas.js')
 const { GENDER_MALE, GENDER_FEMALE, ROLE_USER, ROLE_LANDLORD } = require('../constants')
 
-class SignUp {
+class SignUp extends Base {
   static schema = () =>
     yup.object().shape({
       email: yup.string().email().lowercase().required(),

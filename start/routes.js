@@ -62,7 +62,8 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates')
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
-  Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:CreateEstate'])
+  Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
+  Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])

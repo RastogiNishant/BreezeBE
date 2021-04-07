@@ -1,3 +1,372 @@
+definitions:
+  property_type:
+    name: property_type
+    in: formData
+    type: string
+    enum: [1, 2, 3, 4]
+    default: '1'
+  coord:
+    name: coord
+    in: formData
+    type: string
+    default: '52.5204748,13.4122866'
+  type:
+    name: type
+    in: formData
+    type: string
+    enum:
+      [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+      ]
+    default: '7'
+  description:
+    name: description
+    in: formData
+    type: string
+  category:
+    name: category
+    in: formData
+    type: string
+  rooms:
+    name: rooms
+    in: formData
+    type: json
+  street:
+    name: street
+    in: formData
+    type: string
+  house_number:
+    name: house_number
+    in: formData
+    type: string
+  country:
+    name: country
+    in: formData
+    type: string
+  floor:
+    name: floor
+    in: formData
+    default: '1'
+    type: number
+  number_floors:
+    name: number_floors
+    in: formData
+    default: '1'
+    type: number
+  prices:
+    name: prices
+    in: formData
+    default: '1000'
+    type: number
+  net_rent:
+    name: net_rent
+    in: formData
+    default: '1000'
+    type: number
+  cold_rent:
+    name: cold_rent
+    in: formData
+    default: '1000'
+    type: number
+  rent_including_heating:
+    name: rent_including_heating
+    in: formData
+    default: '1000'
+    type: number
+  additional_costs:
+    name: additional_costs
+    in: formData
+    default: '1000'
+    type: number
+  heating_costs_included:
+    name: heating_costs_included
+    in: formData
+    default: '1000'
+    type: number
+  heating_costs:
+    name: heating_costs
+    in: formData
+    default: '1000'
+    type: number
+  rent_per_sqm:
+    name: rent_per_sqm
+    in: formData
+    default: '10'
+    type: number
+  deposit:
+    name: deposit
+    in: formData
+    default: '3000'
+    type: number
+  stp_garage:
+    name: stp_garage
+    in: formData
+    default: '0'
+    type: number
+  stp_parkhaus:
+    name: stp_parkhaus
+    in: formData
+    default: '0'
+    type: number
+  stp_tiefgarage:
+    name: stp_tiefgarage
+    in: formData
+    default: '0'
+    type: number
+  currency:
+    name: currency
+    in: formData
+    enum: ['EUR', 'DEM', 'USD', 'UAH']
+    type: string
+  area:
+    name: area
+    in: formData
+    default: '100'
+    type: number
+  living_space:
+    name: living_space
+    in: formData
+    default: '50'
+    type: number
+  usable_area:
+    name: usable_area
+    in: formData
+    default: '30'
+    type: number
+  rooms_number:
+    name: rooms_number
+    in: formData
+    default: '3'
+    type: number
+  bedrooms_number:
+    name: bedrooms_number
+    in: formData
+    default: '2'
+    type: number
+  bathrooms_number:
+    name: bathrooms_number
+    in: formData
+    default: '2'
+    type: number
+  kitchen_options:
+    name: kitchen_options
+    in: formData
+    default: '[1, 2]'
+    schema:
+      type: array
+      items:
+        type: number
+    explode: true
+  bath_options:
+    name: bath_options
+    in: formData
+    schema:
+      type: array
+      items:
+        type: number
+    explode: true
+    default: '[1, 2]'
+  wc_number:
+    name: wc_number
+    in: formData
+    default: '1'
+    type: number
+  balconies_number:
+    name: balconies_number
+    in: formData
+    default: '1'
+    type: number
+  terraces_number:
+    name: terraces_number
+    in: formData
+    default: '1'
+    type: number
+  occupancy:
+    name: occupancy
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6]
+    default: '1'
+  use_type:
+    name: use_type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4]
+    default: '1'
+  ownership_type:
+    name: ownership_type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4]
+    default: '1'
+  marketing_type:
+    name: marketing_type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4]
+    default: '1'
+  energy_type:
+    name: energy_type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    default: '1'
+  available_date:
+    name: available_date
+    in: formData
+    type: date
+    default: '2020-04-04'
+  from_date:
+    name: from_date
+    in: formData
+    type: date
+    default: '2020-04-04'
+  to_date:
+    name: to_date
+    in: formData
+    type: date
+    default: '2020-04-04'
+  min_lease_duration:
+    name: min_lease_duration
+    in: formData
+    default: '1'
+    type: number
+  max_lease_duration:
+    name: max_lease_duration
+    in: formData
+    default: '12'
+    type: number
+  non_smoker:
+    name: non_smoker
+    in: formData
+    default: 'false'
+    type: boolean
+  pets:
+    name: pets
+    in: formData
+    default: 'false'
+    type: boolean
+  gender:
+    name: gender
+    in: formData
+    type: number
+    enum: [1, 2, 3]
+    default: '1'
+  monumental_protection:
+    name: monumental_protection
+    in: formData
+    default: 'false'
+    type: boolean
+  parking_space_type:
+    name: parking_space_type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6]
+    default: '1'
+  construction_year:
+    name: construction_year
+    in: formData
+    type: date
+    default: '2000-01-01'
+  last_modernization:
+    name: last_modernization
+    in: formData
+    type: date
+    default: '2000-01-01'
+  building_status:
+    name: building_status
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    default: '1'
+  building_age:
+    name: building_age
+    in: formData
+    type: number
+    default: '20'
+  firing:
+    name: firing
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    default: '1'
+  heating_type:
+    name: heating_type
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4]
+    default: '1'
+  equipment:
+    name: equipment
+    in: formData
+    schema:
+      type: array
+      items:
+        type: number
+    explode: true
+    default: '[1, 2]'
+  equipment_standard:
+    name: equipment_standard
+    in: formData
+    type: number
+    enum: [1, 2, 3]
+    default: '1'
+  ground:
+    name: ground
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    default: '1'
+  energy_efficiency:
+    name: energy_efficiency
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    default: '1'
+  energy_pass:
+    name: energy_pass
+    type: json
+    default: '{"test": 1 }'
+
 paths:
   /api/v1/estates:
     get:
@@ -13,317 +382,67 @@ paths:
       description: Create new estate
       produces: [application/json]
       parameters:
-        - name: property_type
-          in: formData
-          type: string
-          enum: [1, 2, 3, 4]
-          default: '1'
-        - name: coord
-          in: formData
-          type: string
-          default: '52.5204748,13.4122866'
-        - name: type
-          in: formData
-          type: string
-          enum:
-            [
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14,
-              15,
-              16,
-              17,
-              18,
-              19,
-              20,
-              21,
-              22,
-              23,
-              24,
-              25,
-              26,
-              27,
-              28,
-              29,
-              30,
-              31,
-              32,
-              33,
-              34,
-              35,
-              36,
-              37,
-              38,
-              39,
-              40,
-            ]
-          default: '7'
-        - name: description
-          in: formData
-          type: string
-        - name: category
-          in: formData
-          type: string
-        - name: rooms
-          in: formData
-          type: json
-        - name: street
-          in: formData
-          type: string
-        - name: house_number
-          in: formData
-          type: string
-        - name: country
-          in: formData
-          type: string
-        - name: floor
-          in: formData
-          default: '1'
-          type: number
-        - name: number_floors
-          in: formData
-          default: '1'
-          type: number
-        - name: prices
-          in: formData
-          default: '1000'
-          type: number
-        - name: net_rent
-          in: formData
-          default: '1000'
-          type: number
-        - name: cold_rent
-          in: formData
-          default: '1000'
-          type: number
-        - name: rent_including_heating
-          in: formData
-          default: '1000'
-          type: number
-        - name: additional_costs
-          in: formData
-          default: '1000'
-          type: number
-        - name: heating_costs_included
-          in: formData
-          default: '1000'
-          type: number
-        - name: heating_costs
-          in: formData
-          default: '1000'
-          type: number
-        - name: rent_per_sqm
-          in: formData
-          default: '10'
-          type: number
-        - name: deposit
-          in: formData
-          default: '3000'
-          type: number
-        - name: stp_garage
-          in: formData
-          default: '0'
-          type: number
-        - name: stp_parkhaus
-          in: formData
-          default: '0'
-          type: number
-        - name: stp_tiefgarage
-          in: formData
-          default: '0'
-          type: number
-        - name: currency
-          in: formData
-          enum: ['EUR', 'DEM', 'USD', 'UAH']
-          type: string
-        - name: area
-          in: formData
-          default: '100'
-          type: number
-        - name: living_space
-          in: formData
-          default: '50'
-          type: number
-        - name: usable_area
-          in: formData
-          default: '30'
-          type: number
-        - name: rooms_number
-          in: formData
-          default: '3'
-          type: number
-        - name: bedrooms_number
-          in: formData
-          default: '2'
-          type: number
-        - name: bathrooms_number
-          in: formData
-          default: '2'
-          type: number
-        - name: kitchen_options
-          in: formData
-          default: '[1, 2]'
-          schema:
-            type: array
-            items:
-              type: number
-          explode: true
-        - name: bath_options
-          in: formData
-          schema:
-            type: array
-            items:
-              type: number
-          explode: true
-          default: '[1, 2]'
-        - name: wc_number
-          in: formData
-          default: '1'
-          type: number
-        - name: balconies_number
-          in: formData
-          default: '1'
-          type: number
-        - name: terraces_number
-          in: formData
-          default: '1'
-          type: number
-        - name: occupancy
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6]
-          default: '1'
-        - name: use_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4]
-          default: '1'
-        - name: ownership_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4]
-          default: '1'
-        - name: marketing_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4]
-          default: '1'
-        - name: energy_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9]
-          default: '1'
-        - name: available_date
-          in: formData
-          type: date
-          default: '2020-04-04'
-        - name: from_date
-          in: formData
-          type: date
-          default: '2020-04-04'
-        - name: to_date
-          in: formData
-          type: date
-          default: '2020-04-04'
-        - name: min_lease_duration
-          in: formData
-          default: '1'
-          type: number
-        - name: max_lease_duration
-          in: formData
-          default: '12'
-          type: number
-        - name: non_smoker
-          in: formData
-          default: 'false'
-          type: boolean
-        - name: pets
-          in: formData
-          default: 'false'
-          type: boolean
-        - name: gender
-          in: formData
-          type: number
-          enum: [1, 2, 3]
-          default: '1'
-        - name: monumental_protection
-          in: formData
-          default: 'false'
-          type: boolean
-        - name: parking_space_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6]
-          default: '1'
-        - name: parking_space_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6]
-          default: '1'
-        - name: construction_year
-          in: formData
-          type: date
-          default: '2000-01-01'
-        - name: last_modernization
-          in: formData
-          type: date
-          default: '2000-01-01'
-        - name: building_status
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-          default: '1'
-        - name: building_age
-          in: formData
-          type: number
-          default: '20'
-        - name: firing
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-          default: '1'
-        - name: heating_type
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4]
-          default: '1'
-        - name: equipment
-          in: formData
-          schema:
-            type: array
-            items:
-              type: number
-          explode: true
-          default: '[1, 2]'
-        - name: equipment_standard
-          in: formData
-          type: number
-          enum: [1, 2, 3]
-          default: '1'
-        - name: ground
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-          default: '1'
-        - name: energy_efficiency
-          in: formData
-          type: number
-          enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-          default: '1'
-        - name: energy_pass
-          type: json
-          default: '{"test": 1 }'
+        - $ref: '#/definitions/property_type'
+        - $ref: '#/definitions/coord'
+        - $ref: '#/definitions/type'
+        - $ref: '#/definitions/description'
+        - $ref: '#/definitions/category'
+        - $ref: '#/definitions/rooms'
+        - $ref: '#/definitions/street'
+        - $ref: '#/definitions/house_number'
+        - $ref: '#/definitions/country'
+        - $ref: '#/definitions/floor'
+        - $ref: '#/definitions/number_floors'
+        - $ref: '#/definitions/prices'
+        - $ref: '#/definitions/net_rent'
+        - $ref: '#/definitions/cold_rent'
+        - $ref: '#/definitions/rent_including_heating'
+        - $ref: '#/definitions/additional_costs'
+        - $ref: '#/definitions/heating_costs_included'
+        - $ref: '#/definitions/heating_costs'
+        - $ref: '#/definitions/rent_per_sqm'
+        - $ref: '#/definitions/deposit'
+        - $ref: '#/definitions/stp_garage'
+        - $ref: '#/definitions/stp_parkhaus'
+        - $ref: '#/definitions/stp_tiefgarage'
+        - $ref: '#/definitions/currency'
+        - $ref: '#/definitions/area'
+        - $ref: '#/definitions/living_space'
+        - $ref: '#/definitions/usable_area'
+        - $ref: '#/definitions/rooms_number'
+        - $ref: '#/definitions/bedrooms_number'
+        - $ref: '#/definitions/bathrooms_number'
+        - $ref: '#/definitions/kitchen_options'
+        - $ref: '#/definitions/bath_options'
+        - $ref: '#/definitions/wc_number'
+        - $ref: '#/definitions/balconies_number'
+        - $ref: '#/definitions/terraces_number'
+        - $ref: '#/definitions/occupancy'
+        - $ref: '#/definitions/use_type'
+        - $ref: '#/definitions/ownership_type'
+        - $ref: '#/definitions/marketing_type'
+        - $ref: '#/definitions/energy_type'
+        - $ref: '#/definitions/available_date'
+        - $ref: '#/definitions/from_date'
+        - $ref: '#/definitions/to_date'
+        - $ref: '#/definitions/min_lease_duration'
+        - $ref: '#/definitions/max_lease_duration'
+        - $ref: '#/definitions/non_smoker'
+        - $ref: '#/definitions/pets'
+        - $ref: '#/definitions/gender'
+        - $ref: '#/definitions/monumental_protection'
+        - $ref: '#/definitions/parking_space_type'
+        - $ref: '#/definitions/construction_year'
+        - $ref: '#/definitions/last_modernization'
+        - $ref: '#/definitions/building_status'
+        - $ref: '#/definitions/building_age'
+        - $ref: '#/definitions/firing'
+        - $ref: '#/definitions/heating_type'
+        - $ref: '#/definitions/equipment'
+        - $ref: '#/definitions/equipment_standard'
+        - $ref: '#/definitions/ground'
+        - $ref: '#/definitions/energy_efficiency'
+        - $ref: '#/definitions/energy_pass'
       responses: [200]
 
   /api/v1/estates/{id}:
@@ -332,4 +451,94 @@ paths:
       security: [bearerAuth: []]
       description: update existing estate
       produces: [application/json]
+      parameters:
+        - id:
+          name: id
+          in: path
+          type: number
+          default: '1'
+          required: true
+        - $ref: '#/definitions/property_type'
+        - $ref: '#/definitions/coord'
+        - $ref: '#/definitions/type'
+        - $ref: '#/definitions/description'
+        - $ref: '#/definitions/category'
+        - $ref: '#/definitions/rooms'
+        - $ref: '#/definitions/street'
+        - $ref: '#/definitions/house_number'
+        - $ref: '#/definitions/country'
+        - $ref: '#/definitions/floor'
+        - $ref: '#/definitions/number_floors'
+        - $ref: '#/definitions/prices'
+        - $ref: '#/definitions/net_rent'
+        - $ref: '#/definitions/cold_rent'
+        - $ref: '#/definitions/rent_including_heating'
+        - $ref: '#/definitions/additional_costs'
+        - $ref: '#/definitions/heating_costs_included'
+        - $ref: '#/definitions/heating_costs'
+        - $ref: '#/definitions/rent_per_sqm'
+        - $ref: '#/definitions/deposit'
+        - $ref: '#/definitions/stp_garage'
+        - $ref: '#/definitions/stp_parkhaus'
+        - $ref: '#/definitions/stp_tiefgarage'
+        - $ref: '#/definitions/currency'
+        - $ref: '#/definitions/area'
+        - $ref: '#/definitions/living_space'
+        - $ref: '#/definitions/usable_area'
+        - $ref: '#/definitions/rooms_number'
+        - $ref: '#/definitions/bedrooms_number'
+        - $ref: '#/definitions/bathrooms_number'
+        - $ref: '#/definitions/kitchen_options'
+        - $ref: '#/definitions/bath_options'
+        - $ref: '#/definitions/wc_number'
+        - $ref: '#/definitions/balconies_number'
+        - $ref: '#/definitions/terraces_number'
+        - $ref: '#/definitions/occupancy'
+        - $ref: '#/definitions/use_type'
+        - $ref: '#/definitions/ownership_type'
+        - $ref: '#/definitions/marketing_type'
+        - $ref: '#/definitions/energy_type'
+        - $ref: '#/definitions/available_date'
+        - $ref: '#/definitions/from_date'
+        - $ref: '#/definitions/to_date'
+        - $ref: '#/definitions/min_lease_duration'
+        - $ref: '#/definitions/max_lease_duration'
+        - $ref: '#/definitions/non_smoker'
+        - $ref: '#/definitions/pets'
+        - $ref: '#/definitions/gender'
+        - $ref: '#/definitions/monumental_protection'
+        - $ref: '#/definitions/parking_space_type'
+        - $ref: '#/definitions/construction_year'
+        - $ref: '#/definitions/last_modernization'
+        - $ref: '#/definitions/building_status'
+        - $ref: '#/definitions/building_age'
+        - $ref: '#/definitions/firing'
+        - $ref: '#/definitions/heating_type'
+        - $ref: '#/definitions/equipment'
+        - $ref: '#/definitions/equipment_standard'
+        - $ref: '#/definitions/ground'
+        - $ref: '#/definitions/energy_efficiency'
+        - $ref: '#/definitions/energy_pass'
       responses: [200]
+
+  /api/v1/estates/{id}/publish:
+    put:
+      tags: [estate]
+      security: [bearerAuth: []]
+      produces: [application/json]
+      parameters:
+        - id:
+          name: id
+          in: path
+          type: number
+          default: '1'
+          required: true
+        - action:
+          name: action
+          in: formData
+          type: string
+          enum: ['publish', 'unpublish']
+          default: 'publish'
+          required: true
+      responses: [200]
+

@@ -13,7 +13,7 @@ class BaseSerializer extends VanillaSerializer {
     return this._getRowJSON(item)
   }
 
-  optionsSerializer(item, options) {
+  applyOptionsSerializer(item, options) {
     each(options, (v, k) => {
       let result = []
       if (!item[k]) {

@@ -1,7 +1,9 @@
 'use strict'
 const EstateService = use('App/Services/EstateService')
+const Estate = use('App/Models/Estate')
+const HttpException = use('App/Exceptions/HttpException')
 
-const {} = require
+const { STATUS_ACTIVE, STATUS_DRAFT } = require('../../constants')
 
 class EstateController {
   /**
@@ -15,8 +17,15 @@ class EstateController {
   /**
    *
    */
-  async updateEstate({ request, response }) {
-    // TODO: estate
+  async updateEstate({ request, auth, response }) {
+    const { id, ...data } = request.all()
+    const estate = await Estate.findOrFail(id)
+    if (estate.user_id !== auth.user.id) {
+      throw new HttpException('Not allow', 403)
+    }
+    await estate.updateItem(data)
+
+    response.res(estate)
   }
 
   /**
@@ -27,6 +36,20 @@ class EstateController {
     const result = await EstateService.getEstates(filters)
 
     response.res(result)
+  }
+
+  /**
+   *
+   */
+  async publishEstate({ request, auth, response }) {
+    const { id, action } = request.all()
+    const estate = await Estate.findOrFail(id)
+    if (estate.user_id !== auth.user.id) {
+      throw new HttpException('Not allow', 403)
+    }
+    // TODO: validate publish ready
+    await estate.updateItem({ status: action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT }, true)
+    response.res(true)
   }
 }
 

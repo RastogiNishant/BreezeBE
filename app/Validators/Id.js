@@ -1,13 +1,14 @@
 'use strict'
 
 const yup = require('yup')
+const { id } = require('../Libs/schemas.js')
 const Base = require('./Base')
 
-class ResetEmailRequest extends Base {
+class Id extends Base {
   static schema = () =>
     yup.object().shape({
-      email: yup.string().email().lowercase().required(),
+      id: id.required(),
     })
 }
 
-module.exports = ResetEmailRequest
+module.exports = Id

@@ -1,6 +1,7 @@
 'use strict'
 
 const { reduce, get } = require('lodash')
+const Promise = require('bluebird')
 const fs = require('fs')
 const path = require('path')
 
@@ -22,7 +23,28 @@ const schemaClasses = reduce(
  * Validate and sanitize request data
  */
 class SanitizeYup {
-  async handle({ request }, next, [schemaName]) {
+  /**
+   *
+   */
+  async validateSingleSchema(schemaName, data) {
+    let result = {}
+    try {
+      const Schema = get(schemaClasses, schemaName)
+      if (Schema) {
+        result = await Schema.schema().validate(data, Schema.options)
+      } else {
+        throw new ValidationException([{ field: 'schema', message: 'Invalid Schema name' }])
+      }
+    } catch (e) {
+      throw wrapValidationError(e)
+    }
+    return result
+  }
+
+  /**
+   *
+   */
+  async handle({ request }, next, schemas) {
     const params = Object.keys(request.params)
     const setParams = (allResults) => {
       const { values, queryParams } = reduce(
@@ -40,20 +62,10 @@ class SanitizeYup {
       request._all = { ...queryParams, ...values }
     }
 
-    let result = {}
-    try {
-      const Schema = get(schemaClasses, schemaName)
-      if (Schema) {
-        result = await Schema.schema().validate(
-          { ...request.all(), ...request.params },
-          Schema.options
-        )
-      } else {
-        throw new ValidationException([{ field: 'schema', message: 'Invalid Schema name' }])
-      }
-    } catch (e) {
-      throw wrapValidationError(e)
-    }
+    const requestData = { ...request.all(), ...request.params }
+    const result = (
+      await Promise.map(schemas, (schemaName) => this.validateSingleSchema(schemaName, requestData))
+    ).reduce((n, v) => ({ ...n, ...v }))
 
     setParams(result)
 

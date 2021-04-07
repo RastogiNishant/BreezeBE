@@ -2,10 +2,12 @@
 
 const yup = require('yup')
 
+const Base = require('./Base')
+
 const { phoneSchema } = require('../Libs/schemas.js')
 const { GENDER_MALE, GENDER_FEMALE, GENDER_ANY } = require('../constants')
 
-class UpdateUser {
+class UpdateUser extends Base {
   static schema = () =>
     yup.object().shape({
       password: yup.string().trim().min(6).max(36),

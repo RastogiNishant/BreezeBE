@@ -1,9 +1,11 @@
 'use strict'
 
 const yup = require('yup')
+
+const Base = require('./Base')
 const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN } = require('../constants')
 
-class SignIn {
+class SignIn extends Base {
   static schema = () =>
     yup.object().shape({
       email: yup.string().email().lowercase().required(),

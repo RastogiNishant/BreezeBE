@@ -23,7 +23,7 @@ class EstateSerializer extends BaseSerializer {
     }
 
     // const options = item.constructor.options
-    this.optionsSerializer(item, item.constructor.options)
+    this.applyOptionsSerializer(item, item.constructor.options)
 
     return this._getRowJSON(item)
   }

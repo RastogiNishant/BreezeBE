@@ -1,8 +1,9 @@
 'use strict'
 
 const yup = require('yup')
+const Base = require('./Base')
 
-class ConfirmEmail {
+class ConfirmEmail extends Base {
   static schema = () =>
     yup.object().shape({
       user_id: yup.number().positive().required(),

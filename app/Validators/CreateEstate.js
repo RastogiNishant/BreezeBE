@@ -1,6 +1,7 @@
 'use strict'
 
 const yup = require('yup')
+const Base = require('./Base')
 
 const {
   STATUS_ACTIVE,
@@ -176,7 +177,7 @@ const {
   BATH_SHOWER,
 } = require('../constants')
 
-class CreateEstate {
+class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),

@@ -1,9 +1,10 @@
 'use strict'
 
 const yup = require('yup')
+const Base = require('./Base')
 const { ROLE_USER, ROLE_LANDLORD } = require('../constants')
 
-class SignInGoogleMobile {
+class SignInGoogleMobile extends Base {
   static schema = () =>
     yup.object().shape({
       role: yup.number().oneOf([ROLE_USER, ROLE_LANDLORD]),
