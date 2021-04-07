@@ -1,5 +1,7 @@
 'use strict'
 
+const { isString, isArray } = require('lodash')
+
 const Model = require('./BaseModel')
 
 class Room extends Model {
@@ -13,6 +15,20 @@ class Room extends Model {
 
   static get Serializer() {
     return 'App/Serializers/RoomSerializer'
+  }
+
+  static boot() {
+    super.boot()
+    // Processing options to one number
+    this.addHook('beforeSave', async (instance) => {
+      if (instance.dirty.options && !isString(instance.dirty.options)) {
+        try {
+          instance.options = isArray(instance.dirty.options)
+            ? JSON.stringify(instance.dirty.options)
+            : null
+        } catch (e) {}
+      }
+    })
   }
 
   estate() {

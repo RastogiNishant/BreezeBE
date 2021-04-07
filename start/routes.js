@@ -70,9 +70,11 @@ Route.group(() => {
     'valid:CreateRoom,EstateId',
   ])
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
-    'valid:CreateRoom,EstateId',
+    'valid:CreateRoom,EstateId,RoomId',
   ])
-  Route.delete('/:estate_id/rooms/:room_id', 'RoomController.removeRoom')
+  Route.delete('/:estate_id/rooms/:room_id', 'RoomController.removeRoom').middleware([
+    'valid:RoomId',
+  ])
   // Room photos add
   Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto')
   Route.delete('/:estate_id/rooms/:room_id/images/:image_id', 'RoomController.removeRoomPhoto')
