@@ -181,6 +181,7 @@ class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      property_id: yup.string().uppercase().max(20),
       property_type: yup
         .number()
         .positive()

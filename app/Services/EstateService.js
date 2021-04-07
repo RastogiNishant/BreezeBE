@@ -27,7 +27,20 @@ class EstateService {
    *
    */
   static async getEstates(filters) {
-    return Estate.query().select('*', Database.gis.asGeoJSON('coord')).fetch()
+    const { limit, page, ...params } = filters
+    const query = Estate.query().select('*', Database.gis.asGeoJSON('coord')).with('rooms')
+    if (params.query) {
+      query.where(function () {
+        this.orWhere('street', 'ilike', `%${params.query}%`)
+        this.orWhere('property_id', 'ilike', `${params.query}%`)
+      })
+    }
+
+    if (params.status) {
+      query.where('status', params.status)
+    }
+
+    return query.paginate(page, limit)
   }
 }
 

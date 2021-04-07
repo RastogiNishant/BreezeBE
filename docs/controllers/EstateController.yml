@@ -1,4 +1,9 @@
 definitions:
+  property_id:
+    name: property_id
+    in: formData
+    type: string
+    default: 'IDDQD'
   property_type:
     name: property_type
     in: formData
@@ -366,6 +371,16 @@ definitions:
     name: energy_pass
     type: json
     default: '{"test": 1 }'
+  limit:
+    name: limit
+    in: query
+    type: number
+    default: '20'
+  page:
+    name: page
+    in: query
+    type: number
+    default: '1'
 
 paths:
   /api/v1/estates:
@@ -374,6 +389,19 @@ paths:
       security: [bearerAuth: []]
       description: Get own estates list
       produces: [application/json]
+      parameters:
+        - filters:
+          name: query
+          in: query
+          type: string
+        - status:
+          name: status
+          type: number
+          in: query
+          description: 'Active: 1, Draft: 5'
+          enum: ['1', '5']
+        - $ref: '#/definitions/limit'
+        - $ref: '#/definitions/page'
       responses: [200]
 
     post:
@@ -382,6 +410,7 @@ paths:
       description: Create new estate
       produces: [application/json]
       parameters:
+        - $ref: '#/definitions/property_id'
         - $ref: '#/definitions/property_type'
         - $ref: '#/definitions/coord'
         - $ref: '#/definitions/type'
@@ -458,6 +487,7 @@ paths:
           type: number
           default: '1'
           required: true
+        - $ref: '#/definitions/property_id'
         - $ref: '#/definitions/property_type'
         - $ref: '#/definitions/coord'
         - $ref: '#/definitions/type'
@@ -541,4 +571,3 @@ paths:
           default: 'publish'
           required: true
       responses: [200]
-

@@ -32,8 +32,7 @@ class EstateController {
    *
    */
   async getEstates({ request, response }) {
-    const { filters } = request.all()
-    const result = await EstateService.getEstates(filters)
+    const result = await EstateService.getEstates(request.all())
 
     response.res(result)
   }

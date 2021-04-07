@@ -119,6 +119,10 @@ class Estate extends Model {
   user() {
     return this.belongsTo('App/Models/Users', 'user_id', 'id')
   }
+
+  rooms() {
+    return this.hasMany('App/Models/Room')
+  }
 }
 
 module.exports = Estate
