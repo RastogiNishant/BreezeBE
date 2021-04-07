@@ -14,6 +14,10 @@ definitions:
     in: path
     type: number
     required: true
+  name:
+    name: name
+    in: formData
+    type: string
   area:
     name: area
     in: formData
@@ -42,6 +46,7 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/name'
       - $ref: '#/definitions/area'
       - $ref: '#/definitions/type'
       - $ref: '#/definitions/options'
@@ -55,6 +60,7 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/estate_id'
+      - $ref: '#/definitions/name'
       - $ref: '#/definitions/room_id'
       - $ref: '#/definitions/area'
       - $ref: '#/definitions/type'
