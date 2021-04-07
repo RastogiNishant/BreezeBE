@@ -2,7 +2,7 @@
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 
-const { STATUS_DRAFT } = require('../constants')
+const { STATUS_DRAFT, STATUS_DELETE } = require('../constants')
 
 class EstateService {
   /**
@@ -41,6 +41,14 @@ class EstateService {
     }
 
     return query.paginate(page, limit)
+  }
+
+  /**
+   *
+   */
+  static async removeEstate(id) {
+    // TODO: remove indexes
+    return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
   }
 }
 

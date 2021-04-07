@@ -551,6 +551,19 @@ paths:
         - $ref: '#/definitions/energy_pass'
       responses: [200]
 
+    delete:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: update existing estate
+      produces: [application/json]
+      parameters:
+        - id:
+          name: id
+          in: path
+          type: number
+          required: true
+      responses: [200]
+
   /api/v1/estates/{id}/publish:
     put:
       tags: [estate]

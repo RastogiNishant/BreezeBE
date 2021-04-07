@@ -64,6 +64,7 @@ Route.group(() => {
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
+  Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])

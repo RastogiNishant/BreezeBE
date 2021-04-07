@@ -50,6 +50,17 @@ class EstateController {
     await estate.updateItem({ status: action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT }, true)
     response.res(true)
   }
+
+  /**
+   *
+   */
+  async removeEstate({ request, auth, response }) {
+    const { id } = request.all()
+    await Estate.findByOrFail({ id, user_id: auth.user.id })
+    await EstateService.removeEstate(id)
+
+    response.res(true)
+  }
 }
 
 module.exports = EstateController
