@@ -1,5 +1,6 @@
 'use strict'
 
+const { isString, isArray } = require('lodash')
 const Model = require('./BaseModel')
 const {
   BATH_TUB,
@@ -88,13 +89,22 @@ class Estate extends Model {
       'energy_efficiency',
       'energy_pass',
       'status',
+      'property_id',
+      'plan',
+      'cover',
     ]
   }
 
+  /**
+   *
+   */
   static get readonly() {
-    return ['id', 'status', 'user_id']
+    return ['id', 'status', 'user_id', 'plan']
   }
 
+  /**
+   *
+   */
   static get options() {
     return {
       bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
@@ -112,16 +122,46 @@ class Estate extends Model {
     }
   }
 
+  /**
+   *
+   */
   static get Serializer() {
     return 'App/Serializers/EstateSerializer'
   }
 
+  /**
+   *
+   */
+  static boot() {
+    super.boot()
+    this.addHook('beforeSave', async (instance) => {
+      if (instance.dirty.plan && !isString(instance.dirty.plan)) {
+        try {
+          instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
+        } catch (e) {}
+      }
+    })
+  }
+
+  /**
+   *
+   */
   user() {
     return this.belongsTo('App/Models/Users', 'user_id', 'id')
   }
 
+  /**
+   *
+   */
   rooms() {
     return this.hasMany('App/Models/Room')
+  }
+
+  /**
+   *
+   */
+  addPlan(path) {
+    this.plan = [...(isArray(this.plan) ? this.plan : []), path]
   }
 }
 

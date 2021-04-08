@@ -1,7 +1,8 @@
 'use strict'
 
-const { isString, get } = require('lodash')
+const { isString, get, isArray } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
+const Drive = use('Drive')
 
 /**
  *
@@ -20,6 +21,17 @@ class EstateSerializer extends BaseSerializer {
           item.coord = null
         }
       }
+    }
+    // Get plan urls
+    if (isString(item.plan)) {
+      try {
+        item.plan = JSON.parse(item.plan)
+      } catch (e) {}
+    }
+    item.plan = isArray(item.plan) ? item.plan.map((i) => Drive.disk('s3public').getUrl(i)) : null
+    // Get cover url
+    if (isString(item.cover)) {
+      item.cover = Drive.disk('s3public').getUrl(item.cover)
     }
 
     // const options = item.constructor.options

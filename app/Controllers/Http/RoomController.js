@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const fs = require('fs')
+const uuid = require('uuid')
 
 const Drive = use('Drive')
 const Estate = use('App/Models/Estate')
@@ -66,7 +66,7 @@ class RoomController {
     }
 
     const image = request.file('file')
-    const filename = `${room_id}_${new Date().getTime()}.${image.extname}`
+    const filename = `${uuid.v4()}.${image.extname}`
     const filePathName = `${moment().format('YYYYMM')}/${filename}`
     await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
       ACL: 'public-read',
@@ -92,6 +92,16 @@ class RoomController {
     room.save()
 
     response.res(true)
+  }
+
+  /**
+   *
+   */
+  async getEstateRooms({ request, auth, response }) {
+    const { estate_id } = request.all()
+    const rooms = await RoomService.getRoomsByEstate(estate_id)
+
+    response.res(rooms)
   }
 }
 

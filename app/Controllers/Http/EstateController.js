@@ -1,9 +1,20 @@
 'use strict'
+
+const uuid = require('uuid')
+const moment = require('moment')
+
 const EstateService = use('App/Services/EstateService')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
+const Drive = use('Drive')
 
-const { STATUS_ACTIVE, STATUS_DRAFT } = require('../../constants')
+const {
+  STATUS_ACTIVE,
+  STATUS_DRAFT,
+  FILE_TYPE_COVER,
+  FILE_TYPE_PLAN,
+  FILE_TYPE_DOC,
+} = require('../../constants')
 
 class EstateController {
   /**
@@ -60,6 +71,33 @@ class EstateController {
     await EstateService.removeEstate(id)
 
     response.res(true)
+  }
+
+  /**
+   *
+   */
+  async addFile({ request, auth, response }) {
+    const { estate_id, type } = request.all()
+    const estate = await Estate.findByOrFail({ id: estate_id, user_id: auth.user.id })
+
+    const file = request.file('file')
+    const filename = `${uuid.v4()}.${file.extname}`
+    const filePathName = `${moment().format('YYYYMM')}/${filename}`
+    await Drive.disk('s3public').put(filePathName, Drive.getStream(file.tmpPath), {
+      ACL: 'public-read',
+      ContentType: file.headers['content-type'],
+    })
+
+    if (type === FILE_TYPE_COVER) {
+      estate.cover = filePathName
+    } else if (type === FILE_TYPE_PLAN) {
+      estate.addPlan(filePathName)
+    } else if (type === FILE_TYPE_DOC) {
+      // TODO: implement
+    }
+    await estate.save()
+
+    response.res(Drive.disk('s3public').getUrl(filePathName))
   }
 }
 

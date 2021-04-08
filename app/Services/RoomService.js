@@ -23,6 +23,17 @@ class RoomService {
   static async removeRoom(roomId) {
     return Room.query().update({ status: STATUS_DELETE }).where('id', roomId)
   }
+
+  /**
+   *
+   */
+  static async getRoomsByEstate(estateId) {
+    return Room.query()
+      .where('estate_id', estateId)
+      .whereNot('status', STATUS_DELETE)
+      .orderBy('id', 'ask')
+      .fetch()
+  }
 }
 
 module.exports = RoomService

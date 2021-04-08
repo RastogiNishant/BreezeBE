@@ -1,4 +1,8 @@
 const constants = {
+  FILE_TYPE_COVER: 'cover',
+  FILE_TYPE_PLAN: 'plan',
+  FILE_TYPE_DOC: 'doc',
+
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
 

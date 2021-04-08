@@ -22,10 +22,10 @@ class RoomSerializer extends BaseSerializer {
       try {
         item.images = JSON.parse(item.images)
       } catch (e) {}
-      item.images = isArray(item.images)
-        ? item.images.map((i) => Drive.disk('s3public').getUrl(i))
-        : null
     }
+    item.images = isArray(item.images)
+      ? item.images.map((i) => Drive.disk('s3public').getUrl(i))
+      : null
 
     return this._getRowJSON(item)
   }

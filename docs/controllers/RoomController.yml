@@ -39,6 +39,15 @@ definitions:
 
 # Routes list
 /api/v1/estates/{estate_id}/rooms:
+  get:
+    tags: [room]
+    security: [bearerAuth: []]
+    description: Get estate rooms data
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estate_id'
+    responses: [200]
+
   post:
     tags: [room]
     security: [bearerAuth: []]

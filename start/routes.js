@@ -66,9 +66,11 @@ Route.group(() => {
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
   // Rooms manage
+  Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
   ])
+  Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
     'valid:CreateRoom,EstateId,RoomId',
   ])
@@ -79,9 +81,10 @@ Route.group(() => {
   Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
     'valid:RoomId',
   ])
-  Route.delete('/:estate_id/rooms/:room_id/images/:index', 'RoomController.removeRoomPhoto').middleware([
-    'valid:RoomId,RemoveImage',
-  ])
+  Route.delete(
+    '/:estate_id/rooms/:room_id/images/:index',
+    'RoomController.removeRoomPhoto'
+  ).middleware(['valid:RoomId,RemoveImage'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])

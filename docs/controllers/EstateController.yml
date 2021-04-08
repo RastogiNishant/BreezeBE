@@ -1,4 +1,9 @@
 definitions:
+  estate_id:
+    name: estate_id
+    in: path
+    type: number
+    required: true
   property_id:
     name: property_id
     in: formData
@@ -582,5 +587,24 @@ paths:
           type: string
           enum: ['publish', 'unpublish']
           default: 'publish'
+          required: true
+      responses: [200]
+
+  /api/v1/estates/{estate_id}/files:
+    post:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: update existing estate
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - name: type
+          in: formData
+          type: string
+          enum: ['cover', 'plan', 'doc']
+          required: true
+        - name: file
+          in: formData
+          type: file
           required: true
       responses: [200]
