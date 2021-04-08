@@ -76,8 +76,12 @@ Route.group(() => {
     'valid:RoomId',
   ])
   // Room photos add
-  Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto')
-  Route.delete('/:estate_id/rooms/:room_id/images/:image_id', 'RoomController.removeRoomPhoto')
+  Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
+    'valid:RoomId',
+  ])
+  Route.delete('/:estate_id/rooms/:room_id/images/:index', 'RoomController.removeRoomPhoto').middleware([
+    'valid:RoomId,RemoveImage',
+  ])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])

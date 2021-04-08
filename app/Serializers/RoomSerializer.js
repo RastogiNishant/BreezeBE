@@ -1,6 +1,8 @@
 'use strict'
 
-const { isString } = require('lodash')
+const { isString, isArray } = require('lodash')
+const Drive = use('Drive')
+
 const BaseSerializer = require('./BaseSerializer')
 
 /**
@@ -12,9 +14,17 @@ class RoomSerializer extends BaseSerializer {
       try {
         item.options = JSON.parse(item.options)
       } catch (e) {
-        console.log(e)
         item.options = null
       }
+    }
+
+    if (isString(item.images)) {
+      try {
+        item.images = JSON.parse(item.images)
+      } catch (e) {}
+      item.images = isArray(item.images)
+        ? item.images.map((i) => Drive.disk('s3public').getUrl(i))
+        : null
     }
 
     return this._getRowJSON(item)

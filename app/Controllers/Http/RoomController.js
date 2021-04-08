@@ -1,5 +1,9 @@
 'use strict'
 
+const moment = require('moment')
+const fs = require('fs')
+
+const Drive = use('Drive')
 const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const HttpException = use('App/Exceptions/HttpException')
@@ -55,13 +59,38 @@ class RoomController {
    *
    */
   async addRoomPhoto({ request, auth, response }) {
-    response.res(true)
+    const { room_id } = request.all()
+    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    if (!room) {
+      throw new HttpException('Invalid room', 404)
+    }
+
+    const image = request.file('file')
+    const filename = `${room_id}_${new Date().getTime()}.${image.extname}`
+    const filePathName = `${moment().format('YYYYMM')}/${filename}`
+    await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
+      ACL: 'public-read',
+      ContentType: image.headers['content-type'],
+    })
+
+    room.addImage(filePathName)
+    await room.save()
+
+    response.res(room)
   }
 
   /**
    *
    */
   async removeRoomPhoto({ request, auth, response }) {
+    const { room_id, index } = request.all()
+    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    if (!room) {
+      throw new HttpException('Invalid room', 404)
+    }
+    room.removeImage(index)
+    room.save()
+
     response.res(true)
   }
 }
