@@ -175,6 +175,20 @@ const {
   BATH_BIDET,
   BATH_URINAL,
   BATH_SHOWER,
+  //
+  PETS_NO,
+  PETS_SMALL,
+  PETS_ANY,
+  //
+  KIDS_NO_KIDS,
+  KIDS_TO_5,
+  KIDS_UP_5,
+  //
+  SOURCE_TYPE_BUDDY,
+  SOURCE_TYPE_MATCHED,
+  //
+  HOUSEHOLD_TYPE_SINGLE,
+  HOUSEHOLD_TYPE_COUPLE,
 } = require('../constants')
 
 class CreateEstate extends Base {
@@ -326,7 +340,7 @@ class CreateEstate extends Base {
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
-      pets: yup.boolean(),
+      pets: yup.number().integer().min(0).oneOf([PETS_NO, PETS_SMALL, PETS_ANY]),
       gender: yup.number().integer().oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY]),
       monumental_protection: yup.boolean(),
       parking_space_type: yup
@@ -439,6 +453,22 @@ class CreateEstate extends Base {
         ])
         .nullable(),
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
+      city: yup.string().max(40),
+      zip: yup.string().max(8),
+      budget: yup.number().integer().min(1).max(100),
+      credit_score: yup.number().integer().min(1).max(100),
+      rent_arrears: yup.boolean(),
+      full_address: yup.boolean(),
+      photo_require: yup.boolean(),
+      furnished: yup.boolean(),
+      adult_age_class: yup.number().integer().min(0).oneOf([]),
+      kids_type: yup.number().integer().min(0).oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5]),
+      source_person: yup.number().integer().min(0).oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED]),
+      household_type: yup
+        .number()
+        .integer()
+        .min(0)
+        .oneOf([HOUSEHOLD_TYPE_SINGLE, HOUSEHOLD_TYPE_COUPLE]),
     })
 }
 

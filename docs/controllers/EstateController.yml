@@ -293,8 +293,7 @@ definitions:
   pets:
     name: pets
     in: formData
-    default: 'false'
-    type: boolean
+    type: number
   gender:
     name: gender
     in: formData
@@ -384,6 +383,75 @@ definitions:
   page:
     name: page
     in: query
+    type: number
+    default: '1'
+  repair_need:
+    name: repair_need
+    in: formData
+    default: 'false'
+    type: boolean
+  cover:
+    name: cover
+    in: formData
+    type: string
+  city:
+    name: city
+    in: formData
+    type: string
+    default: 'berlin'
+  zip:
+    name: zip
+    in: formData
+    type: string
+    default: '29000'
+  budget:
+    name: budget
+    in: formData
+    type: number
+    default: 25
+  credit_score:
+    name: credit_score
+    in: formData
+    type: number
+    default: 96
+  rent_arrears:
+    name: rent_arrears
+    in: formData
+    default: 'false'
+    type: boolean
+  full_address:
+    name: full_address
+    in: formData
+    default: 'false'
+    type: boolean
+  adult_age_class:
+    name: adult_age_class
+    in: formData
+    type: number
+    default: '1'
+  kids_type:
+    name: kids_class
+    in: formData
+    type: number
+    default: '1'
+  photo_require:
+    name: photo_require
+    in: formData
+    default: 'false'
+    type: boolean
+  furnished:
+    name: furnished
+    in: formData
+    default: 'false'
+    type: boolean
+  source_person:
+    name: source_person
+    in: formData
+    type: number
+    default: '1'
+  household_type:
+    name: household_type
+    in: formData
     type: number
     default: '1'
 
@@ -476,7 +544,20 @@ paths:
         - $ref: '#/definitions/equipment_standard'
         - $ref: '#/definitions/ground'
         - $ref: '#/definitions/energy_efficiency'
-        - $ref: '#/definitions/energy_pass'
+        - $ref: '#/definitions/repair_need'
+        - $ref: '#/definitions/cover'
+        - $ref: '#/definitions/city'
+        - $ref: '#/definitions/zip'
+        - $ref: '#/definitions/budget'
+        - $ref: '#/definitions/credit_score'
+        - $ref: '#/definitions/rent_arrears'
+        - $ref: '#/definitions/full_address'
+        - $ref: '#/definitions/adult_age_class'
+        - $ref: '#/definitions/kids_type'
+        - $ref: '#/definitions/photo_require'
+        - $ref: '#/definitions/furnished'
+        - $ref: '#/definitions/source_person'
+        - $ref: '#/definitions/household_type'
       responses: [200]
 
   /api/v1/estates/{id}:
@@ -554,6 +635,20 @@ paths:
         - $ref: '#/definitions/ground'
         - $ref: '#/definitions/energy_efficiency'
         - $ref: '#/definitions/energy_pass'
+        - $ref: '#/definitions/repair_need'
+        - $ref: '#/definitions/cover'
+        - $ref: '#/definitions/city'
+        - $ref: '#/definitions/zip'
+        - $ref: '#/definitions/budget'
+        - $ref: '#/definitions/credit_score'
+        - $ref: '#/definitions/rent_arrears'
+        - $ref: '#/definitions/full_address'
+        - $ref: '#/definitions/adult_age_class'
+        - $ref: '#/definitions/kids_type'
+        - $ref: '#/definitions/photo_require'
+        - $ref: '#/definitions/furnished'
+        - $ref: '#/definitions/source_person'
+        - $ref: '#/definitions/household_type'
       responses: [200]
 
     delete:
