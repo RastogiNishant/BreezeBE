@@ -1,4 +1,5 @@
 const Promise = require('bluebird')
+const { get } = require('lodash')
 const Request = require('../Libs/Request')
 
 const ROUTING_DRIVE = 'drive'
@@ -49,13 +50,12 @@ class GeoPify {
   /**
    *
    */
-  async promisedAnswer(id, delay = 2000, ticks = 3) {
+  async promisedAnswer(id, delay = 2000, ticks = 10) {
     if (ticks < 1) {
       throw new Error('Request tries exceeded')
     }
 
     return Promise.delay(delay).then(() => {
-      console.log({ ticks })
       return this.getBatchedAnswer({ id }, delay, ticks - 1)
     })
   }
@@ -70,7 +70,6 @@ class GeoPify {
         data: { id, apiKey: this.settings.apiKey },
       })
       .then(async (response) => {
-        console.log({ status: response.status, ticks })
         if (response.status === 'pending') {
           return this.promisedAnswer(id, delay, ticks)
         }
@@ -89,7 +88,6 @@ class GeoPify {
         method: 'POST',
       })
       .then(({ id }) => {
-        console.log('iid', id)
         return this.promisedAnswer(id)
       })
       .catch((e) => {
@@ -100,16 +98,18 @@ class GeoPify {
   /**
    *
    */
-  getBatchedPlaces({ long, lat }) {
+  getBatchedPlaces({ lon, lat }) {
     const api = '/v2/places'
     const inputs = BATCHED_PLACE_INPUTS
     const params = {
       limit: '1',
-      filter: `circle:${long},${lat},5000`,
-      bias: `proximity:${long},${lat}`,
+      filter: `circle:${lon},${lat},5000`,
+      bias: `proximity:${lon},${lat}`,
     }
 
-    return this.makeBatchedCall({ api, params, inputs })
+    return this.makeBatchedCall({ api, params, inputs }).then((r) => {
+      return get(r, 'results')
+    })
   }
 
   /**
@@ -119,7 +119,7 @@ class GeoPify {
     const api = '/v1/routing'
     const inputs = BATCHED_ROUTING_INPUTS
     const params = {
-      waypoints: `${from.lat},${from.long}|${to.lat},${to.long}`,
+      waypoints: `${from.lat},${from.lon}|${to.lat},${to.lon}`,
     }
 
     return this.makeBatchedCall({ api, params, inputs })
@@ -128,12 +128,12 @@ class GeoPify {
   /**
    *
    */
-  getBatchedIsoline({ lat, long }) {
+  getBatchedIsoline({ lat, lon }) {
     const api = '/v1/isoline'
     const inputs = BATCHED_ISOLINE_INPUTS
     const params = {
       lat,
-      lon: long,
+      lon,
       type: 'time',
       range: '1800',
     }
