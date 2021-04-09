@@ -3,16 +3,6 @@
 const path = require('path')
 const Helpers = use('Helpers')
 
-/*
-|--------------------------------------------------------------------------
-| Providers
-|--------------------------------------------------------------------------
-|
-| Providers are building blocks for your Adonis app. Anytime you install
-| a new Adonis specific package, chances are you will register the
-| provider here.
-|
-*/
 let providers = []
 
 providers.push('@adonisjs/framework/providers/AppProvider')
@@ -42,6 +32,8 @@ providers.push(path.join(__dirname, '..', 'providers', 'Static/Provider'))
 if (!Helpers.isAceCommand() || process.env.NODE_ENV === 'testing') {
   providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
 }
+
+providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
 
 if (process.env.NODE_ENV !== 'production') {
   providers.push('adonis-swagger/providers/SwaggerProvider')

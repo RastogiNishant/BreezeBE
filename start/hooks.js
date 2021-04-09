@@ -31,7 +31,8 @@ hooks.after.providersBooted(async () => {
   }
 
   if (!Helpers.isAceCommand()) {
-    // const Queue = use('Queue')
+    const Queue = use('Queue')
+    await Queue.init()
   }
 
   // Log all internal events
