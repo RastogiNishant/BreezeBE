@@ -213,8 +213,8 @@ module.exports = {
     },
   },
 
-  ocr: {
-    serverRoot: Env.get('OCR_SERVER_ROOT'),
+  geo: {
+    apiKey: Env.get('GEO_API_KEY'),
   },
 
   product: {

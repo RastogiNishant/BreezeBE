@@ -33,6 +33,7 @@ if (!Helpers.isAceCommand() || process.env.NODE_ENV === 'testing') {
   providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
 }
 
+providers.push(path.join(__dirname, '..', 'providers', 'GeoAPIProvider'))
 providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
 
 if (process.env.NODE_ENV !== 'production') {
