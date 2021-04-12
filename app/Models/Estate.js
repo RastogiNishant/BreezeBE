@@ -1,6 +1,8 @@
 'use strict'
 
 const { isString, isArray } = require('lodash')
+const Database = use('Database')
+
 const Model = require('./BaseModel')
 const {
   BATH_TUB,
@@ -135,6 +137,11 @@ class Estate extends Model {
   static boot() {
     super.boot()
     this.addHook('beforeSave', async (instance) => {
+      if (instance.dirty.coord && isString(instance.dirty.coord)) {
+        const [lat, lon] = instance.dirty.coord.split(',')
+        instance.coord = Database.gis.makePoint(lon, lat)
+      }
+
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null

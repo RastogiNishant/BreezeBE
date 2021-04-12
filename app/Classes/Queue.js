@@ -24,6 +24,7 @@ class QueueEngine {
    */
   async init() {
     // TODO: add scheduled jobs here
+    console.log('Init queue')
   }
 
   /**

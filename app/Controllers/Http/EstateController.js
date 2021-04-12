@@ -4,6 +4,7 @@ const uuid = require('uuid')
 const moment = require('moment')
 
 const EstateService = use('App/Services/EstateService')
+const QueueService = use('App/Services/QueueService')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
@@ -35,6 +36,7 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
     await estate.updateItem(data)
+    QueueService.getEstatePoint(estate.id)
 
     response.res(estate)
   }

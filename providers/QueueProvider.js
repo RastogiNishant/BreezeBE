@@ -8,7 +8,7 @@ const Queue = require('../app/Classes/Queue')
 class QueueProvider extends ServiceProvider {
   register() {
     const Config = this.app.use('Adonis/Src/Config')
-    const Event = Config.get('Event')
+    const Event = this.app.use('Event')
     const settings = get(Config.get('redis'), Config.get('redis.connection'))
     this.app.singleton('Queue', () => {
       return new Queue(settings, Event)
