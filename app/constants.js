@@ -248,6 +248,10 @@ const constants = {
 
   HOUSEHOLD_TYPE_SINGLE: 1,
   HOUSEHOLD_TYPE_COUPLE: 2,
+
+  ADULT_AGE_25: 1,
+  ADULT_AGE_25_59: 2,
+  ADULT_AGE_60: 3,
 }
 
 module.exports = constants

@@ -189,6 +189,10 @@ const {
   //
   HOUSEHOLD_TYPE_SINGLE,
   HOUSEHOLD_TYPE_COUPLE,
+
+  ADULT_AGE_25,
+  ADULT_AGE_25_59,
+  ADULT_AGE_60,
 } = require('../constants')
 
 class CreateEstate extends Base {
@@ -461,7 +465,11 @@ class CreateEstate extends Base {
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
       furnished: yup.boolean(),
-      adult_age_class: yup.number().integer().min(0).oneOf([]),
+      adult_age_class: yup
+        .number()
+        .integer()
+        .min(0)
+        .oneOf([ADULT_AGE_25, ADULT_AGE_25_59, ADULT_AGE_60]),
       kids_type: yup.number().integer().min(0).oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5]),
       source_person: yup.number().integer().min(0).oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED]),
       household_type: yup
