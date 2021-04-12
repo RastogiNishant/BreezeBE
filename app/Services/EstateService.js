@@ -1,10 +1,19 @@
 'use strict'
 const Database = use('Database')
+const GeoService = use('App/Services/GeoService')
 const Estate = use('App/Models/Estate')
+const AppException = use('App/Exceptions/AppException')
 
 const { STATUS_DRAFT, STATUS_DELETE } = require('../constants')
 
 class EstateService {
+  /**
+   *
+   */
+  static getEstateQuery() {
+    return Estate.query().select('estates.*', Database.gis.asGeoJSON('coord').as('coord'))
+  }
+
   /**
    *
    */
@@ -49,6 +58,22 @@ class EstateService {
   static async removeEstate(id) {
     // TODO: remove indexes
     return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
+  }
+
+  /**
+   *
+   */
+  static async updateEstateCoords(estateId) {
+    const estate = await EstateService.getEstateQuery().where('id', estateId).first()
+    if (!estate) {
+      throw new AppException(`Invalid estate ${estateId}`)
+    }
+
+    const { lat, lon } = estate.getLatLon()
+    const point = await GeoService.getOrCreatePoint({ lat, lon })
+    estate.point_id = point.id
+
+    return estate.save()
   }
 }
 

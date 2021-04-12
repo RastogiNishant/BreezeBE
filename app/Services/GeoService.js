@@ -18,8 +18,9 @@ class GeoService {
       throw e
     }
     point.data = { data }
+    await point.save()
 
-    return point.save()
+    return point
   }
 
   /**

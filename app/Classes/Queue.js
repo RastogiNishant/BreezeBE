@@ -7,14 +7,8 @@ const defaultOptions = {
 const COMMON_QUEUE = 'common'
 
 class QueueEngine {
-  constructor(config, Event) {
-    this.commonWorker = new Worker(
-      COMMON_QUEUE,
-      async (job) => {
-        Event.emit('queue:job', job)
-      },
-      { connection: config, concurrency: 10 }
-    )
+  constructor(config) {
+    this.connection = config
     this.queueScheduler = new QueueScheduler(COMMON_QUEUE, { connection: config })
     this.commonQueue = new Queue(COMMON_QUEUE, { connection: config })
   }
@@ -25,6 +19,14 @@ class QueueEngine {
   async init() {
     // TODO: add scheduled jobs here
     console.log('Init queue')
+    const QueueService = use('App/Services/QueueService')
+    this.commonWorker = new Worker(
+      COMMON_QUEUE,
+      async (job) => {
+        return QueueService.processJob(job)
+      },
+      { connection: this.connection, concurrency: 10 }
+    )
   }
 
   /**

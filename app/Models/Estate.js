@@ -1,6 +1,6 @@
 'use strict'
 
-const { isString, isArray } = require('lodash')
+const { isString, isArray, get } = require('lodash')
 const Database = use('Database')
 
 const Model = require('./BaseModel')
@@ -94,6 +94,7 @@ class Estate extends Model {
       'property_id',
       'plan',
       'cover',
+      'point_id',
     ]
   }
 
@@ -101,7 +102,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan']
+    return ['id', 'status', 'user_id', 'plan', 'point_id']
   }
 
   /**
@@ -169,6 +170,23 @@ class Estate extends Model {
    */
   addPlan(path) {
     this.plan = [...(isArray(this.plan) ? this.plan : []), path]
+  }
+
+  /**
+   *
+   */
+  getLatLon() {
+    if (isString(this.coord)) {
+      try {
+        const [lon, lat] = String(get(JSON.parse(this.coord), 'coordinates', '')).split(',')
+
+        return { lat: parseFloat(lat), lon: parseFloat(lon) }
+      } catch (e) {
+        return { lat: null, lon: null }
+      }
+    }
+
+    return { lat: null, lon: null }
   }
 }
 

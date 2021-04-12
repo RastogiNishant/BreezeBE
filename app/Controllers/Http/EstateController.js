@@ -23,6 +23,8 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     const estate = await EstateService.createEstate(request.all(), auth.user.id)
+    // Run processing estate geo nearest
+    QueueService.getEstatePoint(estate.id)
     response.res(estate)
   }
 
@@ -36,6 +38,7 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
     await estate.updateItem(data)
+    // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
 
     response.res(estate)
