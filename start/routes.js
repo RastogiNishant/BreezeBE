@@ -60,8 +60,9 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
 
 // Estate management
 Route.group(() => {
-  Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  // Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
+  // Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
@@ -88,6 +89,14 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
+
+// Allowed for Landlord and user data
+Route.group(() => {
+  Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
+})
+  .prefix('/api/v1/estates')
+  .middleware(['auth:jwtLandlord,jwt'])
 
 // Admin user edit part
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware('guest')

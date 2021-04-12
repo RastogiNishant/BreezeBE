@@ -161,6 +161,13 @@ class Estate extends Model {
   /**
    *
    */
+  point() {
+    return this.hasOne('App/Models/Point', 'point_id', 'id')
+  }
+
+  /**
+   *
+   */
   rooms() {
     return this.hasMany('App/Models/Room')
   }

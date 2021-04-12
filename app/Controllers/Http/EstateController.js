@@ -54,6 +54,16 @@ class EstateController {
   }
 
   /**
+   * Get single estate with POI
+   */
+  async getEstate({ request, auth, response }) {
+    const { id } = request.all()
+    const estate = await EstateService.getEstateQuery().where('id', id).with('point').first()
+
+    response.res(estate)
+  }
+
+  /**
    *
    */
   async publishEstate({ request, auth, response }) {

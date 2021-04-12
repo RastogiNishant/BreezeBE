@@ -561,6 +561,20 @@ paths:
       responses: [200]
 
   /api/v1/estates/{id}:
+    get:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: Get single estate with POI
+      produces: [application/json]
+      parameters:
+        - id:
+          name: id
+          in: path
+          type: number
+          default: '1'
+          required: true
+      responses: [200]
+
     put:
       tags: [estate]
       security: [bearerAuth: []]
