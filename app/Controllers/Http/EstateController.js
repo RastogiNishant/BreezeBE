@@ -5,6 +5,7 @@ const moment = require('moment')
 
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
+const ImportService = use('App/Services/ImportService')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
@@ -61,6 +62,14 @@ class EstateController {
     const estate = await EstateService.getEstateQuery().where('id', id).with('point').first()
 
     response.res(estate)
+  }
+
+  /**
+   *
+   */
+  async importEstate({ request, auth, response }) {
+    const importFilePathName = request.file('file')
+    await ImportService.parse(importFilePathName.tmpPath)
   }
 
   /**

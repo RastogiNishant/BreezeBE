@@ -717,3 +717,16 @@ paths:
           type: file
           required: true
       responses: [200]
+
+  /api/v1/estates/import:
+    post:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: update existing estate
+      produces: [application/json]
+      parameters:
+        - name: file
+          in: formData
+          type: file
+          required: true
+      responses: [200]
