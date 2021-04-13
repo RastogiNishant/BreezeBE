@@ -12,3 +12,15 @@ paths:
       description: Get app references
       produces: [application/json]
       responses: [200]
+
+  /api/v1/search/street:
+    get:
+      tags: [common]
+      description: Get street autosuggest
+      produces: [application/json]
+      parameters:
+        - name: query
+          in: query
+          type: string
+          required: true
+      responses: [200]

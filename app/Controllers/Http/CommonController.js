@@ -25,6 +25,14 @@ class CommonController {
   async getReferences({ response }) {
     response.res({ constants })
   }
+
+  /**
+   * Get available street
+   */
+  async searchStreet({ request, response }) {
+    const { query } = request.all()
+    response.res(true)
+  }
 }
 
 module.exports = CommonController

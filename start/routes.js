@@ -18,6 +18,7 @@ Route.any('/admin/:1?', adminHandler)
 
 // Live check method
 Route.get('/ping', 'CommonController.ping')
+Route.get('/api/v1/search/street', 'CommonController.searchStreet').middleware(['valid:SearchStreet'])
 
 Route.get('/', () => {
   return {
