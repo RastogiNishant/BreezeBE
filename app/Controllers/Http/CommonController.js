@@ -4,7 +4,7 @@ const constants = require('../../constants')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
-// const UserService = use('App/Services/UserService')
+const GeoService = use('App/Services/GeoService')
 
 class CommonController {
   /**
@@ -31,7 +31,12 @@ class CommonController {
    */
   async searchStreet({ request, response }) {
     const { query } = request.all()
-    response.res(true)
+    const [all, street, buildNum, separator, zip] = query.match(
+      /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)]*)\s*(\d*)(,?)\s?(\d*)/i
+    )
+
+    const result = await GeoService.getBuildQualityAutosuggest({ street, buildNum, separator, zip })
+    response.res(result)
   }
 }
 

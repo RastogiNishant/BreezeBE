@@ -46,7 +46,8 @@ CREATE TEMPORARY TABLE tmp_res AS (
          _t2.name,
          _t2.quality,
          array_to_json(ARRAY_AGG(_z.code)) AS zip,
-         (array_agg(num))[1] as num
+         (array_agg(num))[1]               as num,
+         (array_agg(_z.id))[1]             as region_id
   FROM (
     SELECT region, name, quality, array_to_string(ARRAY_AGG(CONCAT(build_start, ',', build_end)), ';') AS num
     FROM street_tmp as _s1
@@ -61,10 +62,12 @@ CREATE TEMPORARY TABLE tmp_res AS (
 -- Fill general table
 INSERT INTO build_qualities
 (name,
+ region_id,
  quality,
  zip,
  build_num) (
   SELECT _t2.name,
+         _t2.region_id,
          _t2.quality,
          _t2.zip,
          (CASE
