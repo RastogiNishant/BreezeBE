@@ -85,7 +85,7 @@ class GeoService {
         return [
           { name: getAddr(items[0].name, buildNum, zip), last: false },
           ...items[0].zip
-            .map((i) => [{ name: getAddr(items[0].name, buildNum, i), last: true }])
+            .map((i) => ({ name: getAddr(items[0].name, buildNum, i), last: true }))
             .slice(0, size - 1),
         ]
       }
@@ -93,7 +93,7 @@ class GeoService {
 
     if (separator) {
       return items[0].zip
-        .map((i) => [{ name: getAddr(items[0].name, buildNum, i), last: true }])
+        .map((i) => ({ name: getAddr(items[0].name, buildNum, i), last: true }))
         .slice(0, size)
     }
 
@@ -101,7 +101,7 @@ class GeoService {
       const isLast = parseInt(items[0].count) === 1
       const result = [{ name: getAddr(items[0].name, buildNum, zip), last: isLast }]
       for (let i = 0; i < size - 1; i++) {
-        result.push([{ name: getAddr(items[0].name, `${buildNum}${i}`, zip), last: isLast }])
+        result.push({ name: getAddr(items[0].name, `${buildNum}${i}`, zip), last: isLast })
       }
       return result
     }
@@ -118,7 +118,7 @@ class GeoService {
         }),
         {}
       )
-    ).map((name) => [{ name: getAddr(name, buildNum, zip), last: false }])
+    ).map((name) => ({ name: getAddr(name, buildNum, zip), last: false }))
   }
 
   /**
