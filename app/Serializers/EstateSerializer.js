@@ -11,7 +11,7 @@ class EstateSerializer extends BaseSerializer {
   mergeData(item) {
     if (item.coord) {
       if (item.coord.bindings) {
-        const [lon, lat] = item.coord.bindings
+        const [lon, lat] = get(item, 'coord.bindings.0.bindings')
         item.coord = `${lat},${lon}`
       } else if (isString(item.coord)) {
         try {

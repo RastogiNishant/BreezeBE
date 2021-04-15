@@ -140,7 +140,7 @@ class Estate extends Model {
     this.addHook('beforeSave', async (instance) => {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
-        instance.coord = Database.gis.makePoint(lon, lat)
+        instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
       }
 
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
