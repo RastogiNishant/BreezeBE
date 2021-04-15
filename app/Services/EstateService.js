@@ -21,7 +21,7 @@ class EstateService {
     const [lat, lon] = String(coord).split(',')
     let point = null
     if (lat && lon) {
-      point = Database.gis.makePoint(lon, lat)
+      point =  Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
     }
 
     return Estate.createItem({
