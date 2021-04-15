@@ -86,3 +86,79 @@ INSERT INTO build_qualities
 DROP TABLE IF EXISTS zip_tmp;
 DROP TABLE IF EXISTS street_tmp;
 DROP TABLE IF EXISTS tmp_res;
+
+---------------------
+-- IMPORT SQR RATE --
+---------------------
+DROP TABLE IF EXISTS sqr_tmp;
+CREATE TABLE sqr_tmp
+(
+  id       SERIAL,
+  quality  VARCHAR(10),
+  min_rate VARCHAR(20),
+  max_rate VARCHAR(20),
+  min_year VARCHAR(10),
+  max_year VARCHAR(10),
+  min_sqr  VARCHAR(10),
+  max_sqr  VARCHAR(10),
+
+  PRIMARY KEY (id)
+);
+
+COPY sqr_tmp
+  (
+   quality,
+   min_rate,
+   max_rate,
+   min_year,
+   max_year,
+   min_sqr,
+   max_sqr
+    ) FROM '/sqr.csv' DELIMITER ',';
+
+ALTER TABLE sqr_tmp
+  ALTER COLUMN min_rate TYPE numeric(5, 2) USING (
+    CASE
+      WHEN min_rate = '' THEN NULL
+      ELSE trim(min_rate)::numeric(5, 2) END),
+  ALTER COLUMN max_rate TYPE numeric(5, 2) USING (
+    CASE
+      WHEN max_rate = '' THEN NULL
+      ELSE trim(max_rate)::numeric(5, 2) END),
+  ALTER COLUMN min_year TYPE INTEGER USING (
+    CASE
+      WHEN min_year = '' THEN NULL
+      ELSE trim(min_year)::INTEGER END),
+  ALTER COLUMN max_year TYPE INTEGER USING (
+    CASE
+      WHEN max_year = '' THEN NULL
+      ELSE trim(max_year)::INTEGER END),
+  ALTER COLUMN min_sqr TYPE INTEGER USING (
+    CASE
+      WHEN min_sqr = '' THEN NULL
+      ELSE trim(min_sqr)::INTEGER END),
+  ALTER COLUMN max_sqr TYPE INTEGER USING (
+    CASE
+      WHEN max_sqr = '' THEN NULL
+      ELSE trim(max_sqr)::INTEGER END);
+
+
+INSERT INTO sqr_rates (quality,
+                       min_rate,
+                       max_rate,
+                       min_year,
+                       max_year,
+                       min_sqr,
+                       max_sqr)
+  (
+    SELECT quality,
+           min_rate,
+           max_rate,
+           min_year,
+           max_year,
+           min_sqr,
+           max_sqr
+    FROM sqr_tmp
+  );
+
+DROP TABLE IF EXISTS sqr_tmp;

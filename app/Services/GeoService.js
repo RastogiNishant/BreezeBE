@@ -66,8 +66,6 @@ class GeoService {
       [q, q, size]
     )
 
-    //Adolfstraße
-
     const items = (await query).rows
     if (items.length === 0) {
       return false
@@ -103,17 +101,17 @@ class GeoService {
 
     if (items.length === 1) {
       return [{ name: getAddr(items[0].name, buildNum, zip), last: true }]
-    } else {
-      return Object.keys(
-        items.reduce(
-          (n, v) => ({
-            ...n,
-            [v.name]: true,
-          }),
-          {}
-        )
-      ).map((name) => [{ name: getAddr(name, buildNum, zip), last: false }])
     }
+
+    return Object.keys(
+      items.reduce(
+        (n, v) => ({
+          ...n,
+          [v.name]: true,
+        }),
+        {}
+      )
+    ).map((name) => [{ name: getAddr(name, buildNum, zip), last: false }])
   }
 }
 
