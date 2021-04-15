@@ -24,3 +24,24 @@ paths:
           type: string
           required: true
       responses: [200]
+
+  /api/v1/calc_price:
+    get:
+      tags: [common]
+      description: Calculate price by data
+      produces: [application/json]
+      parameters:
+        - name: year
+          in: query
+          type: number
+          required: true
+        - name: sqr
+          in: query
+          type: number
+          default: 55
+          required: true
+        - name: address
+          in: query
+          type: string
+          required: true
+      responses: [200]

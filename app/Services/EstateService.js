@@ -75,6 +75,18 @@ class EstateService {
 
     return estate.save()
   }
+
+  /**
+   *
+   */
+  static async getSqrRange({ year, sqr, quality }) {
+    return Database.from('sqr_rates')
+      .whereRaw(`COALESCE(min_year, 0) <= ?`, [year])
+      .whereRaw(`COALESCE(max_year, 2050) >= ?`, [year])
+      .whereRaw(`COALESCE(min_sqr, 0) <= ?`, [sqr])
+      .whereRaw(`COALESCE(max_sqr, 100000) >= ?`, [sqr])
+      .where('quality', quality)
+  }
 }
 
 module.exports = EstateService

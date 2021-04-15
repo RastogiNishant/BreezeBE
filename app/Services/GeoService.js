@@ -2,6 +2,9 @@ const GeoAPI = use('GeoAPI')
 const Logger = use('Logger')
 const Database = use('Database')
 const Point = use('App/Models/Point')
+const AppException = use('App/Exceptions/AppException')
+
+const { isString, toNumber } = require('lodash')
 
 class GeoService {
   /**
@@ -42,7 +45,11 @@ class GeoService {
   /**
    *
    */
-  static async getBuildQualityAutosuggest({ street, buildNum, separator, zip }, size = 5) {
+  static async getBuildQualityAutosuggest(address, size = 5) {
+    const [all, street, buildNum, separator, zip] = address.match(
+      /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)]*)\s*(\d*)(,?)\s?(\d*)/i
+    )
+
     const getAddr = (street, buildNum, zip) => {
       return street + ' ' + (buildNum ? `${buildNum},` : '') + (zip ? ` ${zip}` : '')
     }
@@ -112,6 +119,61 @@ class GeoService {
         {}
       )
     ).map((name) => [{ name: getAddr(name, buildNum, zip), last: false }])
+  }
+
+  /**
+   *
+   */
+  static async getQualityByAddress({ year, sqr, address }) {
+    const [all, street, buildNum, separator, zip] = address.match(
+      /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)]*)\s*(\d*)(,?)\s?(\d*)/i
+    )
+
+    const query = Database.select('*').from('build_qualities').where('name', street.trim())
+    if (zip) {
+      query.where(function () {
+        this.whereRaw(`( zip::jsonb \\? ? OR zip IS NULL)`, [zip])
+      })
+    }
+
+    const numInclude = (num, item) => {
+      item = toNumber(item)
+      if (!isString(num)) {
+        return false
+      }
+
+      return !!num
+        .split(';')
+        .map((i) => i.split(','))
+        .find(([a, b]) => {
+          return toNumber(a) <= item && toNumber(b) >= item
+        })
+    }
+
+    const result = await query
+    if (result.length === 1) {
+      return result[0].quality
+    } else if (result.length > 1) {
+      const item = result.find((i) => i.zip === null || numInclude(i.build_num, buildNum))
+      if (item) {
+        return item.quality
+      }
+
+      return result[0].quality
+    }
+
+    if (result.length === 0) {
+      if (!zip) {
+        throw new AppException('Invalid address')
+      } else {
+        const nonPreciseResult = await Database.select('*').from('build_qualities').limit(1)
+        if (nonPreciseResult) {
+          return nonPreciseResult.query()
+        }
+
+        throw new AppException('Invalid address')
+      }
+    }
   }
 }
 

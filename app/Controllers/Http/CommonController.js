@@ -5,6 +5,8 @@ const constants = require('../../constants')
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
 const GeoService = use('App/Services/GeoService')
+const EstateService = use('App/Services/EstateService')
+const HttpException = use('App/Exceptions/HttpException')
 
 class CommonController {
   /**
@@ -31,12 +33,29 @@ class CommonController {
    */
   async searchStreet({ request, response }) {
     const { query } = request.all()
-    const [all, street, buildNum, separator, zip] = query.match(
-      /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)]*)\s*(\d*)(,?)\s?(\d*)/i
-    )
-
-    const result = await GeoService.getBuildQualityAutosuggest({ street, buildNum, separator, zip })
+    const result = await GeoService.getBuildQualityAutosuggest(query)
     response.res(result)
+  }
+
+  /**
+   *
+   */
+  async calcRentPrice({ request, response }) {
+    const { year, sqr, address } = request.all()
+    let range
+    try {
+      const quality = await GeoService.getQualityByAddress({ year, sqr, address })
+      range = await EstateService.getSqrRange({ year, sqr, quality })
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+    if (!range.length) {
+      throw new HttpException('Not found', 404)
+    }
+    const { min_rate, max_rate } = range[0]
+    console.log(range)
+
+    response.res({ min_rate, max_rate, min_price: sqr * min_rate, max_price: max_rate * sqr })
   }
 }
 
