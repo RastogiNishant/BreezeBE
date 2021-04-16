@@ -13,8 +13,8 @@ const adminHandler = ({ response }) => {
   const content = fs.readFileSync(Helpers.publicPath('index.template'))
   response.send(content)
 }
-Route.any('*', adminHandler).prefix('admin')
-Route.any('/admin/:1?', adminHandler)
+// Route.any('*', adminHandler).prefix('admin')
+// Route.any('/admin/:1?', adminHandler)
 
 // Live check method
 Route.get('/ping', 'CommonController.ping')
@@ -53,6 +53,9 @@ Route.put('/api/v1/users/password/reset', 'AccountController.passwordReset').mid
 ])
 Route.put('/api/v1/users/password/confirm', 'AccountController.passwordConfirm').middleware([
   'valid:ResetEmailConfirm',
+])
+Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware([
+  'auth:jwtLandlord,jwt',
 ])
 
 Route.get('/api/v1/references', 'CommonController.getReferences')

@@ -153,6 +153,26 @@ class UserService {
     await DataStorage.remove(user.id, 'confirm_email')
     return user.save()
   }
+
+  /**
+   *
+   */
+  static async copyUser(user, role) {
+    const { id, ...data } = auth.user.toJSON()
+
+    const result = await UserService.createUser({
+      ...data,
+      password: String(new Date().getTime()),
+      role,
+    })
+    // Copy password from origin
+    await Database.raw(
+      'UPDATE users SET password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
+      [result.user.id, id]
+    )
+
+    return result.user
+  }
 }
 
 module.exports = UserService

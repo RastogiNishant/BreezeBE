@@ -2,7 +2,6 @@
 const fs = require('fs')
 const moment = require('moment')
 const uuid = require('uuid')
-const { isEmpty } = require('lodash')
 
 const User = use('App/Models/User')
 const Hash = use('Hash')
@@ -10,9 +9,10 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
-const MailService = use('App/Services/MailService')
 const ImageService = use('App/Services/ImageService')
 const HttpException = use('App/Exceptions/HttpException')
+
+const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
 const { ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../constants')
@@ -78,18 +78,10 @@ class AccountController {
     role = user.role
 
     let authenticator
-    switch (role) {
-      case ROLE_USER:
-        authenticator = await auth.authenticator('jwt')
-        break
-      case ROLE_LANDLORD:
-        authenticator = await auth.authenticator('jwtLandlord')
-        break
-      case ROLE_ADMIN:
-        authenticator = await auth.authenticator('jwtAdmin')
-        break
-      default:
-        throw new HttpException('Invalid user role', 403)
+    try {
+      authenticator = getAuthByRole(auth, role)
+    } catch (e) {
+      throw new HttpException(e.message, 403)
     }
 
     const uid = User.getHash(email, role)
@@ -209,6 +201,37 @@ class AccountController {
     }
 
     return response.res()
+  }
+
+  /**
+   *
+   */
+  async switchAccount({ auth, response }) {
+    const roleToSwitch = auth.user.role === ROLE_USER ? ROLE_LANDLORD : ROLE_USER
+    let userTarget = await User.query()
+      .where('email', auth.user.email)
+      .where('role', roleToSwitch)
+      .first()
+
+    const { id, ...data } = auth.user.toJSON()
+
+    if (!userTarget) {
+      const { user } = await UserService.createUser({
+        ...data,
+        password: String(new Date().getTime()),
+        role: roleToSwitch,
+      })
+      userTarget = user
+    }
+    let authenticator
+    try {
+      authenticator = getAuthByRole(auth, roleToSwitch)
+    } catch (e) {
+      throw new HttpException(e.message, 403)
+    }
+    const token = await authenticator.generate(userTarget)
+
+    response.res(token)
   }
 }
 

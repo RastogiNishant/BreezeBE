@@ -187,3 +187,11 @@ paths:
           type: string
           required: true
       responses: [200]
+
+  /api/v1/users/switch:
+    post:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: Switch user to another role
+      produces: [application/json]
+      responses: [200]
