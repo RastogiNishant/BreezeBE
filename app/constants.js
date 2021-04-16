@@ -1,4 +1,7 @@
 const constants = {
+  ERROR_AGREEMENT_CONFIRM: 10020,
+  ERROR_TERMS_CONFIRM: 10030,
+
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
   FILE_TYPE_DOC: 'doc',

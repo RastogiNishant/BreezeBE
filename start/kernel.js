@@ -42,6 +42,7 @@ const namedMiddleware = {
   can: 'Adonis/Acl/Can',
   pagination: 'App/Middleware/Pagination',
   valid: 'App/Middleware/Validator',
+  agreement: 'App/Middleware/Agreement',
 }
 
 /*

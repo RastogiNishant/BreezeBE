@@ -117,3 +117,12 @@ Route.group(() => {
 })
   .prefix('api/v1/admin/users')
   .middleware(['auth:jwtAdmin', 'is:admin'])
+
+// Force add named middleware to all requests
+Route.list().forEach((r) => {
+  if (Array.isArray(r.middlewareList)) {
+    if (r.middlewareList.length > 0) {
+      r.middlewareList = [...r.middlewareList, 'agreement']
+    }
+  }
+})
