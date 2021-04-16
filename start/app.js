@@ -27,11 +27,7 @@ providers.push(path.join(__dirname, '..', 'providers', 'GoogleOAuthProvider'))
 
 providers.push(path.join(__dirname, '..', 'providers', 'Notifications/Provider'))
 providers.push(path.join(__dirname, '..', 'providers', 'Static/Provider'))
-
-// add this only on non command execute
-if (!Helpers.isAceCommand() || process.env.NODE_ENV === 'testing') {
-  providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
-}
+providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
 
 providers.push(path.join(__dirname, '..', 'providers', 'GeoAPIProvider'))
 providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
@@ -65,15 +61,7 @@ const aliases = {
   Cache: 'Adonis/Addons/Cache',
 }
 
-/*
-|--------------------------------------------------------------------------
-| Commands
-|--------------------------------------------------------------------------
-|
-| Here you store ace commands for your package
-|
-*/
-const commands = []
+const commands = ['App/Commands/CreateAdmin']
 
 const http = {
   loggerEnv: ['development', 'production'],

@@ -2,22 +2,22 @@
 
 const User = use('App/Models/User')
 const Database = use('Database')
-const EventService = use('App/Services/EventService')
-const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 
 const { isEmpty, find, get } = require('lodash')
+const { ROLE_ADMIN } = require('../../../constants')
 
 class UserController {
   /**
    * admin login
    */
   async login({ request, auth, response }) {
-    const { username, password } = request.only(['username', 'password'])
+    const { email, password } = request.all()
     const authenticator = await auth.authenticator('jwtAdmin')
 
-    const token = await authenticator.attempt(username, password)
-    const user = await User.findByOrFail({ username })
+    const uid = User.getHash(email, ROLE_ADMIN)
+    const token = await authenticator.attempt(uid, password)
+    const user = await User.findByOrFail({ email, role: ROLE_ADMIN })
     const roles = await user.getRoles()
     if (isEmpty(roles)) {
       throw new HttpException('Forbidden', 403)
@@ -52,36 +52,6 @@ class UserController {
     const mixedUserRoles = await mixRoles(users.data)
 
     response.res({ ...users, data: mixedUserRoles })
-  }
-
-  /**
-   *
-   */
-  async updateUser({ request, auth, response }) {
-    const user_id = request.params.user_id
-    let { password, username, ...userData } = request.input('user')
-    let roles = request.input('roles')
-
-    const user = await User.findOrFail(user_id)
-    user.merge(userData)
-    // On delete user, remove password and clear roles
-    if (userData.deleted === true) {
-      user.merge({ password: 'deleted', deleted: true })
-      roles = []
-    }
-    // Update password if need
-    if (!isEmpty(password)) {
-      user.password = password
-    }
-    await user.save()
-
-    if (roles !== undefined) {
-      await UserService.updateUserRoles(user, roles)
-    }
-
-    EventService.fireAdminAction('updateUser', request, auth)
-
-    response.res(user)
   }
 }
 

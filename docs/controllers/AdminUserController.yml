@@ -1,0 +1,90 @@
+definitions:
+  UserFilters:
+    type: object
+    properties:
+      filters:
+        [
+          'id',
+          'username',
+          'email',
+          'phone',
+          'birthday',
+          'sex',
+          'deleted',
+          'device_token',
+          'locale',
+          'territory_id',
+          'country_id',
+          'referer_id',
+          'avatar',
+          'block',
+          'confirm',
+          'status',
+          'territory',
+          'country',
+          'region',
+        ]
+      order:
+        [
+          'id',
+          'username',
+          'email',
+          'phone',
+          'birthday',
+          'sex',
+          'deleted',
+          'device_token',
+          'locale',
+          'territory_id',
+          'country_id',
+          'referer_id',
+          'avatar',
+          'block',
+          'confirm',
+        ]
+      page: 'Number'
+      size: 'Number[1-100]'
+  UserExample:
+    user:
+      email: 'testuser@example.com'
+    roles: ['admin', 'referee']
+
+paths:
+  /api/v1/admin/login:
+    post:
+      tags: [admin]
+      description: Admin routes
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          default: admin@breeze.com
+        - name: password
+          in: formData
+          type: string
+          default: qwerty
+      responses: [200]
+
+  /api/v1/admin/users:
+    get:
+      security: [bearerAuth: []]
+      tags: [admin]
+      description: Admin routes
+      produces: [application/json]
+      parameters:
+        - name: filters
+          in: query
+          type: json
+        - name: order
+          in: query
+          type: json
+        - name: page
+          in: query
+          type: number
+          default: 1
+        - name: size
+          in: query
+          type: number
+          default: 10
+      responses: [200]
