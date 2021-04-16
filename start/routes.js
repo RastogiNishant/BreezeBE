@@ -118,6 +118,15 @@ Route.group(() => {
   .prefix('api/v1/admin/users')
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
+Route.group(() => {
+  Route.get('/', 'Admin/AgreementController.getAgreements')
+  Route.post('/', 'Admin/AgreementController.createAgreement')
+  Route.put('/:id', 'Admin/AgreementController.updateAgreement')
+  Route.delete('/:id', 'Admin/AgreementController.deleteAgreement')
+})
+  .prefix('api/v1/admin/agreements')
+  .middleware(['auth:jwtAdmin', 'is:admin'])
+
 // Force add named middleware to all requests
 Route.list().forEach((r) => {
   if (Array.isArray(r.middlewareList)) {

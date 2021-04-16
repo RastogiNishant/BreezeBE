@@ -1,0 +1,38 @@
+definitions:
+  id:
+    name: id
+    in: path
+    type: number
+    required: true
+
+paths:
+  /api/v1/admin/agreements:
+    get:
+      security: [bearerAuth: []]
+      tags: [admin]
+      description: Get list of agreement
+      produces: [application/json]
+      responses: [200]
+
+    post:
+      security: [bearerAuth: []]
+      tags: [admin]
+      produces: [application/json]
+      responses: [200]
+
+  /api/v1/admin/agreements/{id}:
+    put:
+      security: [bearerAuth: []]
+      tags: [admin]
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/id'
+      responses: [200]
+
+    delete:
+      security: [bearerAuth: []]
+      tags: [admin]
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/id'
+      responses: [200]
