@@ -49,8 +49,12 @@ class EstateController {
   /**
    *
    */
-  async getEstates({ request, response }) {
-    const result = await EstateService.getEstates(request.all())
+  async getEstates({ request, auth, response }) {
+    const { limit, page, ...params } = request.all()
+    const result = await EstateService.getEstates(params)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .paginate(page, limit)
 
     response.res(result)
   }

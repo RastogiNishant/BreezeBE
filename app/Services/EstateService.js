@@ -35,8 +35,7 @@ class EstateService {
   /**
    *
    */
-  static async getEstates(filters) {
-    const { limit, page, ...params } = filters
+  static getEstates(params) {
     const query = Estate.query().select('*', Database.gis.asGeoJSON('coord')).with('rooms')
     if (params.query) {
       query.where(function () {
@@ -49,7 +48,7 @@ class EstateService {
       query.where('status', params.status)
     }
 
-    return query.paginate(page, limit)
+    return query
   }
 
   /**
