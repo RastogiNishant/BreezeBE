@@ -6,9 +6,7 @@ class ImportService {
    */
   static async parse(filePath) {
     const reader = new ExcelReader()
-    const data = await reader.readFile(filePath)
-
-
+    await reader.readFile(filePath)
   }
 }
 

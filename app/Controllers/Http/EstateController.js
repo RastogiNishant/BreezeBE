@@ -59,7 +59,11 @@ class EstateController {
    */
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
-    const estate = await EstateService.getEstateQuery().where('id', id).with('point').first()
+    const estate = await EstateService.getEstateQuery()
+      .where('id', id)
+      .where('user_id', auth.user.id)
+      .with('point')
+      .first()
 
     response.res(estate)
   }
