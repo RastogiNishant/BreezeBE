@@ -50,21 +50,41 @@ class AgreementController {
   /**
    *
    */
-  createTerm({ request, response }) {
-    response.res(true)
+  async getTerms({ request, response }) {
+    const agreements = await Term.query().whereNot('status', STATUS_DELETE).fetch()
+    response.res(agreements)
   }
 
   /**
    *
    */
-  updateTerm({ request, response }) {
-    response.res(true)
+  async createTerm({ request, response }) {
+    const data = request.all()
+    const term = await Term.createItem({
+      ...data,
+      status: STATUS_DRAFT,
+    })
+    response.res(term)
   }
 
   /**
    *
    */
-  deleteTerm({ request, response }) {
+  async updateTerm({ request, response }) {
+    const { id, ...data } = request.all()
+    const term = await Term.findOrFail(id)
+    await term.updateItem(data)
+
+    response.res(term)
+  }
+
+  /**
+   *
+   */
+  async deleteTerm({ request, response }) {
+    const { id } = request.all()
+    await Term.query().update('status', STATUS_DELETE).where('id', id)
+
     response.res(true)
   }
 }
