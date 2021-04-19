@@ -1,12 +1,10 @@
 'use strict'
 
-const Model = use('Model')
+const Model = require('./BaseModel')
 
 class Term extends Model {
   static get columns() {
-    return [
-      'id',
-    ]
+    return ['id', 'status', 'title', 'body']
   }
 }
 

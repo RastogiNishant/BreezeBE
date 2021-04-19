@@ -4,6 +4,19 @@ definitions:
     in: path
     type: number
     required: true
+  status:
+    name: status
+    in: formData
+    type: number
+    enum: ['1', '2', '5']
+  title:
+    name: title
+    in: formData
+    type: string
+  body:
+    name: body
+    in: formData
+    type: string
 
 paths:
   /api/v1/admin/agreements:
@@ -18,6 +31,9 @@ paths:
       security: [bearerAuth: []]
       tags: [admin]
       produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/title'
+        - $ref: '#/definitions/body'
       responses: [200]
 
   /api/v1/admin/agreements/{id}:
@@ -27,6 +43,9 @@ paths:
       produces: [application/json]
       parameters:
         - $ref: '#/definitions/id'
+        - $ref: '#/definitions/title'
+        - $ref: '#/definitions/body'
+        - $ref: '#/definitions/status'
       responses: [200]
 
     delete:

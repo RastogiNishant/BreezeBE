@@ -120,9 +120,11 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
-  Route.post('/', 'Admin/AgreementController.createAgreement')
-  Route.put('/:id', 'Admin/AgreementController.updateAgreement')
-  Route.delete('/:id', 'Admin/AgreementController.deleteAgreement')
+  Route.post('/', 'Admin/AgreementController.createAgreement').middleware(['valid:CreateAgreement'])
+  Route.put('/:id', 'Admin/AgreementController.updateAgreement').middleware([
+    'valid:CreateAgreement,Id',
+  ])
+  Route.delete('/:id', 'Admin/AgreementController.deleteAgreement').middleware(['valid:Id'])
 })
   .prefix('api/v1/admin/agreements')
   .middleware(['auth:jwtAdmin', 'is:admin'])

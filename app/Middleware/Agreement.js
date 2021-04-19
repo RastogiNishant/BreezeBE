@@ -4,11 +4,12 @@ const Static = use('Static')
 const HttpException = use('App/Exceptions/HttpException')
 const { get } = require('lodash')
 
-const { ERROR_AGREEMENT_CONFIRM, ERROR_TERMS_CONFIRM } = require('../constants')
+const { ERROR_AGREEMENT_CONFIRM, ERROR_TERMS_CONFIRM, ROLE_ADMIN } = require('../constants')
 
 class Agreement {
   async handle({ auth }, next) {
-    if (!auth || !auth.user) {
+    // Skip anonymous routes and admin routes check
+    if (!auth || !auth.user || auth.user.role === ROLE_ADMIN) {
       return next()
     }
 
