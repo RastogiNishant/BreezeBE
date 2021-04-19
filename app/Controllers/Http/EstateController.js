@@ -13,6 +13,7 @@ const Drive = use('Drive')
 const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
+  STATUS_DELETE,
   FILE_TYPE_COVER,
   FILE_TYPE_PLAN,
   FILE_TYPE_DOC,
@@ -62,7 +63,9 @@ class EstateController {
     const estate = await EstateService.getEstateQuery()
       .where('id', id)
       .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
       .with('point')
+
       .first()
 
     response.res(estate)
