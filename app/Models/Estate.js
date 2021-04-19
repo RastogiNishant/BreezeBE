@@ -95,6 +95,18 @@ class Estate extends Model {
       'plan',
       'cover',
       'point_id',
+      'repair_need',
+      'city',
+      'zip',
+      'budget',
+      'credit_score',
+      'rent_arrears',
+      'full_address',
+      'adult_age_class',
+      'kids_type',
+      'photo_require',
+      'furnished',
+      'source_person',
     ]
   }
 

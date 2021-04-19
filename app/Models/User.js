@@ -31,6 +31,8 @@ class User extends Model {
       'agreements_id',
       'company_id',
       'google_id',
+      'lord_size',
+      'request_full_profile',
     ]
   }
 

@@ -4,7 +4,15 @@ const yup = require('yup')
 const Base = require('./Base')
 
 const { phoneSchema } = require('../Libs/schemas.js')
-const { GENDER_MALE, GENDER_FEMALE, ROLE_USER, ROLE_LANDLORD } = require('../constants')
+const {
+  GENDER_MALE,
+  GENDER_FEMALE,
+  ROLE_USER,
+  ROLE_LANDLORD,
+  LANDLORD_SIZE_LARGE,
+  LANDLORD_SIZE_MID,
+  LANDLORD_SIZE_SMALL,
+} = require('../constants')
 
 class SignUp extends Base {
   static schema = () =>
@@ -16,7 +24,8 @@ class SignUp extends Base {
       phone: phoneSchema,
       birthday: yup.date().required(),
       lang: yup.string().oneOf(['en', 'de']).default('en').required(),
-      avatar: yup.string().max(512),
+      lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
+      request_full_profile: yup.boolean(),
     })
 }
 

@@ -255,6 +255,10 @@ const constants = {
   ADULT_AGE_25: 1,
   ADULT_AGE_25_59: 2,
   ADULT_AGE_60: 3,
+
+  LANDLORD_SIZE_SMALL: 1,
+  LANDLORD_SIZE_MID: 2,
+  LANDLORD_SIZE_LARGE: 3,
 }
 
 module.exports = constants
