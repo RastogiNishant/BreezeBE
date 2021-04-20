@@ -417,6 +417,8 @@ class ExcelReader {
       furnished: toBool,
       credit_score: toPercent,
       budget: toPercent,
+      // deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
+      floor: (i) => (i === 'Ground floor' ? 0 : parseInt(i)),
     }
   }
 
@@ -435,7 +437,7 @@ class ExcelReader {
   /**
    *
    */
-  async mapDataToEntity(row) {
+  mapDataToEntity(row) {
     const [
       num, // 'No.',
       street, // 'Street',
@@ -559,7 +561,7 @@ class ExcelReader {
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
           if (isFunction(this.dataMapping[k])) {
-            return { ...n, [k]: this.dataMapping[k](v) }
+            return { ...n, [k]: this.dataMapping[k](v, result) }
           }
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `${k}.${v}`) }
@@ -574,15 +576,6 @@ class ExcelReader {
     )
   }
 
-  validateItem(item) {
-    try {
-      return schema.validate(item)
-    } catch (e) {
-      console.log(e)
-      throw e
-    }
-  }
-
   /**
    *
    */
@@ -593,13 +586,18 @@ class ExcelReader {
       throw new AppException('Invalid spreadsheet')
     }
     await this.validateHeader(sheet)
-    each(sheet.data, (v, k) => {
-      if (k <= this.headerCol || isEmpty(v)) {
-        return
+
+    for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+      if (k <= this.headerCol || isEmpty(sheet.data[k])) {
+        continue
       }
 
-      this.validateItem(this.mapDataToEntity(v))
-    })
+      try {
+        console.log(await schema.validate(this.mapDataToEntity(sheet.data[k])))
+      } catch (e) {
+        console.log('Error:', k, e.errors)
+      }
+    }
 
     // console.log(data[0].data[this.headerCol])
   }
