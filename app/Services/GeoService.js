@@ -31,10 +31,9 @@ class GeoService {
    *
    */
   static async getOrCreatePoint({ lat, lon }) {
-    const point = await Point.query()
-      .where('lat', Point.round(lat))
-      .where('lon', Point.round(lon))
-      .first()
+    lat = Point.round(lat)
+    lon = Point.round(lon)
+    const point = await Point.query().where('lat', lat).where('lon', lon).first()
     if (point) {
       return point
     }
@@ -174,6 +173,13 @@ class GeoService {
         throw new AppException('Invalid address')
       }
     }
+  }
+
+  /**
+   *
+   */
+  static async geeGeoCoordByAddress(address) {
+    return GeoAPI.getAddressSuggestions(address)
   }
 }
 

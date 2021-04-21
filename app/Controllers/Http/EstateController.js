@@ -80,7 +80,9 @@ class EstateController {
    */
   async importEstate({ request, auth, response }) {
     const importFilePathName = request.file('file')
-    await ImportService.parse(importFilePathName.tmpPath)
+    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+
+    response.res(result)
   }
 
   /**

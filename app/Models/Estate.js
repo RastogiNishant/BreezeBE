@@ -107,6 +107,7 @@ class Estate extends Model {
       'photo_require',
       'furnished',
       'source_person',
+      'address',
     ]
   }
 

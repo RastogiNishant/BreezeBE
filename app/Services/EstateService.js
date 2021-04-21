@@ -21,7 +21,7 @@ class EstateService {
     const [lat, lon] = String(coord).split(',')
     let point = null
     if (lat && lon) {
-      point =  Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
+      point = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
     }
 
     return Estate.createItem({
@@ -62,7 +62,7 @@ class EstateService {
   /**
    *
    */
-  static async updateEstateCoords(estateId) {
+  static async updateEstatePoint(estateId) {
     const estate = await EstateService.getEstateQuery().where('id', estateId).first()
     if (!estate) {
       throw new AppException(`Invalid estate ${estateId}`)
@@ -85,6 +85,22 @@ class EstateService {
       .whereRaw(`COALESCE(min_sqr, 0) <= ?`, [sqr])
       .whereRaw(`COALESCE(max_sqr, 100000) >= ?`, [sqr])
       .where('quality', quality)
+  }
+
+  /**
+   *
+   */
+  static async updateEstateCoord(estateId) {
+    const estate = await Estate.findOrFail(estateId)
+    if (!estate.address) {
+      throw AppException('Estate address invalid')
+    }
+
+    const result = await GeoService.geeGeoCoordByAddress(estate.address)
+    if (result) {
+      await estate.updateItem({ coord: `${result.lat},${result.lon}` })
+      await EstateService.updateEstatePoint(estateId)
+    }
   }
 }
 

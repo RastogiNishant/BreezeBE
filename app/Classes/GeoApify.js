@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { get } = require('lodash')
+const { get, isEmpty } = require('lodash')
 const Request = require('../Libs/Request')
 
 const ROUTING_DRIVE = 'drive'
@@ -139,6 +139,32 @@ class GeoPify {
     }
 
     return this.makeBatchedCall({ api, params, inputs })
+  }
+
+  /**
+   *
+   */
+  getAddressSuggestions = (text) => {
+    return this.request
+      .send({
+        url: '/v1/geocode/autocomplete',
+        data: { text, apiKey: this.settings.apiKey },
+        method: 'GET',
+      })
+      .then((response) => {
+        const data = response.features || []
+        if (isEmpty(data)) {
+          return null
+        }
+
+        const item = response.features.find((i) => get(i, 'properties.result_type') === 'building')
+        const [lon, lat] = get(item, 'geometry.coordinates') || []
+        return { lon, lat }
+      })
+      .catch((e) => {
+        console.log(e.message)
+        return null
+      })
   }
 }
 

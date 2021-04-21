@@ -1,5 +1,5 @@
 const xlsx = require('node-xlsx')
-const { get, each, isEmpty, reduce, isString, isFunction } = require('lodash')
+const { get, trim, isEmpty, reduce, isString, isFunction } = require('lodash')
 const AppException = use('App/Exceptions/AppException')
 const schema = require('../Validators/CreateEstate').schema()
 
@@ -417,8 +417,10 @@ class ExcelReader {
       furnished: toBool,
       credit_score: toPercent,
       budget: toPercent,
-      // deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
+      deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
       floor: (i) => (i === 'Ground floor' ? 0 : parseInt(i)),
+      address: (i, o) =>
+        trim(`${o.street} ${o.house_number} ${o.address}, ${o.zip} ${o.city}`, ', '),
     }
   }
 
@@ -587,19 +589,21 @@ class ExcelReader {
     }
     await this.validateHeader(sheet)
 
+    const errors = []
+    const toImport = []
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
       if (k <= this.headerCol || isEmpty(sheet.data[k])) {
         continue
       }
 
       try {
-        console.log(await schema.validate(this.mapDataToEntity(sheet.data[k])))
+        toImport.push({ line: k, data: await schema.validate(this.mapDataToEntity(sheet.data[k])) })
       } catch (e) {
-        console.log('Error:', k, e.errors)
+        errors.push({ line: k, error: e.errors })
       }
     }
 
-    // console.log(data[0].data[this.headerCol])
+    return { errors, data: toImport }
   }
 }
 
