@@ -36,7 +36,7 @@ class EstateService {
    *
    */
   static getEstates(params) {
-    const query = Estate.query().select('*', Database.gis.asGeoJSON('coord')).with('rooms')
+    const query = Estate.query().select('*', Database.gis.asGeoJSON('coord'))
     if (params.query) {
       query.where(function () {
         this.orWhere('street', 'ilike', `%${params.query}%`)

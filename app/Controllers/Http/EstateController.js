@@ -69,6 +69,9 @@ class EstateController {
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
+      .with('rooms', (b) => {
+        b.whereNot('rooms.status', STATUS_DELETE)
+      })
 
       .first()
 
