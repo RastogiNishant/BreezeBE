@@ -1,6 +1,6 @@
 'use strict'
 
-const { isString, isArray, get } = require('lodash')
+const { isString, isArray, get, pick, trim, isEmpty } = require('lodash')
 const Database = use('Database')
 
 const Model = require('./BaseModel')
@@ -155,6 +155,13 @@ class Estate extends Model {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
+      }
+
+      if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
+        instance.address = trim(
+          `${instance.street} ${instance.house_number}, ${instance.zip} ${instance.city}, ${instance.country}`,
+          ', '
+        ).toLowerCase()
       }
 
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
