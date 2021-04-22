@@ -5,7 +5,7 @@ const Schema = use('Schema')
 class EstatesSchema extends Schema {
   up() {
     this.table('estates', (table) => {
-      table.integer('household_type').unsigned().unsigned()
+      table.integer('household_type').unsigned()
     })
   }
 
