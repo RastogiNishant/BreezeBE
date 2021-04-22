@@ -1,6 +1,6 @@
 'use strict'
-
-const { isString, get, isArray } = require('lodash')
+const moment = require('moment')
+const { isString, get, isArray, isDate } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
 const Drive = use('Drive')
 
@@ -32,6 +32,13 @@ class EstateSerializer extends BaseSerializer {
     // Get cover url
     if (isString(item.cover)) {
       item.cover = Drive.disk('s3public').getUrl(item.cover)
+    }
+
+    if (isDate(item.construction_year)) {
+      item.construction_year = moment(item.construction_year).format('YYYY-MM-DD')
+    }
+    if (isDate(item.last_modernization)) {
+      item.last_modernization = moment(item.last_modernization).format('YYYY-MM-DD')
     }
 
     // const options = item.constructor.options
