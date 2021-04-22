@@ -72,6 +72,7 @@ class EstateController {
       .with('rooms', (b) => {
         b.whereNot('rooms.status', STATUS_DELETE)
       })
+      .with('rooms.images')
 
       .first()
 

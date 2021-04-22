@@ -9,8 +9,8 @@ definitions:
     in: path
     type: number
     required: true
-  index:
-    name: index
+  id:
+    name: id
     in: path
     type: number
     required: true
@@ -101,7 +101,7 @@ definitions:
         required: true
     responses: [200]
 
-/api/v1/estates/{estate_id}/rooms/{room_id}/images/{index}:
+/api/v1/estates/{estate_id}/rooms/{room_id}/images/{id}:
   delete:
     tags: [room]
     security: [bearerAuth: []]
@@ -110,5 +110,5 @@ definitions:
     parameters:
       - $ref: '#/definitions/estate_id'
       - $ref: '#/definitions/room_id'
-      - $ref: '#/definitions/index'
+      - $ref: '#/definitions/id'
     responses: [200]

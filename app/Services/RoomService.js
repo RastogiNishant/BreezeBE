@@ -1,5 +1,7 @@
-const Database = use('Database')
+const Drive = use('Drive')
+const Logger = use('Logger')
 const Room = use('App/Models/Room')
+const Image = use('App/Models/Image')
 
 const { STATUS_DELETE } = require('../constants')
 
@@ -33,6 +35,26 @@ class RoomService {
       .whereNot('status', STATUS_DELETE)
       .orderBy('id', 'ask')
       .fetch()
+  }
+
+  /**
+   *
+   */
+  static async addImage(url, room, disk) {
+    return Image.createItem({ url, disk, room_id: room.id })
+  }
+
+  /**
+   *
+   */
+  static async removeImage(id) {
+    const image = await Image.findOrFail(id)
+    try {
+      await Drive.disk(image.disk).delete(image.url)
+    } catch (e) {
+      Logger.error(e.message)
+    }
+    await image.delete()
   }
 }
 

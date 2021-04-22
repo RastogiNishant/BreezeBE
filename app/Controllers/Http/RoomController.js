@@ -72,24 +72,21 @@ class RoomController {
       ACL: 'public-read',
       ContentType: image.headers['content-type'],
     })
+    const imageObj = await RoomService.addImage(filePathName, room, 's3public')
 
-    room.addImage(filePathName)
-    await room.save()
-
-    response.res(room)
+    response.res(imageObj)
   }
 
   /**
    *
    */
   async removeRoomPhoto({ request, auth, response }) {
-    const { room_id, index } = request.all()
+    const { room_id, id } = request.all()
     const room = await RoomService.getRoomByUser(auth.user.id, room_id)
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-    room.removeImage(index)
-    room.save()
+    await RoomService.removeImage(id)
 
     response.res(true)
   }

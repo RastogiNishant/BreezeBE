@@ -6,11 +6,11 @@ const Model = require('./BaseModel')
 
 class Room extends Model {
   static get columns() {
-    return ['id', 'estate_id', 'type', 'area', 'status', 'options', 'name', 'images', 'cover']
+    return ['id', 'estate_id', 'type', 'area', 'status', 'options', 'name', 'cover']
   }
 
   static get readonly() {
-    return ['id', 'status', 'estate_id', 'images']
+    return ['id', 'status', 'estate_id']
   }
 
   static get Serializer() {
@@ -28,36 +28,7 @@ class Room extends Model {
             : null
         } catch (e) {}
       }
-
-      if (instance.dirty.images && !isString(instance.dirty.images)) {
-        try {
-          instance.images = isArray(instance.dirty.images)
-            ? JSON.stringify(instance.dirty.images)
-            : null
-        } catch (e) {}
-      }
     })
-  }
-
-  /**
-   *
-   */
-  addImage(path) {
-    this.images = [...(isArray(this.images) ? this.images : []), path]
-  }
-
-  /**
-   *
-   */
-  removeImage(index) {
-    if (!isArray(this.images) || this.images.length < index - 1) {
-      return false
-    }
-
-    this.images = [
-      ...this.images.slice(0, index),
-      ...this.images.slice(index + 1, this.images.length),
-    ]
   }
 
   /**
@@ -65,6 +36,10 @@ class Room extends Model {
    */
   estate() {
     return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
+  }
+
+  images() {
+    return this.hasMany('App/Models/Image')
   }
 }
 

@@ -93,9 +93,9 @@ Route.group(() => {
     'valid:RoomId',
   ])
   Route.delete(
-    '/:estate_id/rooms/:room_id/images/:index',
+    '/:estate_id/rooms/:room_id/images/:id',
     'RoomController.removeRoomPhoto'
-  ).middleware(['valid:RoomId,RemoveImage'])
+  ).middleware(['valid:RoomId,Id'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
