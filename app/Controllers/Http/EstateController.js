@@ -69,11 +69,9 @@ class EstateController {
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
-      .with('rooms', (b) => {
-        b.whereNot('rooms.status', STATUS_DELETE)
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
       })
-      .with('rooms.images')
-
       .first()
 
     response.res(estate)
