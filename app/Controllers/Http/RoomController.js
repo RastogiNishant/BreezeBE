@@ -66,7 +66,10 @@ class RoomController {
     }
 
     const image = request.file('file')
-    const filename = `${uuid.v4()}.${image.extname}`
+    const ext = image.extname
+      ? image.extname
+      : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
+    const filename = `${uuid.v4()}.${ext}`
     const filePathName = `${moment().format('YYYYMM')}/${filename}`
     await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
       ACL: 'public-read',
