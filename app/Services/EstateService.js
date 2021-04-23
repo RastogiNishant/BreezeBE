@@ -48,7 +48,7 @@ class EstateService {
       query.where('status', params.status)
     }
 
-    return query
+    return query.orderBy('id', 'desc')
   }
 
   /**
