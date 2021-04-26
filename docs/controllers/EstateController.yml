@@ -424,11 +424,6 @@ definitions:
     in: formData
     default: 'false'
     type: boolean
-  adult_age_class:
-    name: adult_age_class
-    in: formData
-    type: number
-    default: '1'
   kids_type:
     name: kids_class
     in: formData
@@ -454,8 +449,8 @@ definitions:
     in: formData
     type: number
     default: '1'
-  options:
-    name: household_type
+  apt_options:
+    name: options
     in: formData
     default: '[1, 2]'
     schema:
@@ -463,6 +458,15 @@ definitions:
       items:
         type: number
     explode: true
+    example: '[1, 2]'
+  min_age:
+    name: min_age
+    in: formData
+    type: number
+  max_age:
+    name: max_age
+    in: formData
+    type: number
 
 paths:
   /api/v1/estates:
@@ -567,7 +571,9 @@ paths:
         - $ref: '#/definitions/furnished'
         - $ref: '#/definitions/source_person'
         - $ref: '#/definitions/household_type'
-        - $ref: '#/definitions/options'
+        - $ref: '#/definitions/apt_options'
+        - $ref: '#/definitions/min_age'
+        - $ref: '#/definitions/max_age'
       responses: [200]
 
   /api/v1/estates/{id}:
@@ -673,7 +679,9 @@ paths:
         - $ref: '#/definitions/furnished'
         - $ref: '#/definitions/source_person'
         - $ref: '#/definitions/household_type'
-        - $ref: '#/definitions/options'
+        - $ref: '#/definitions/apt_options'
+        - $ref: '#/definitions/min_age'
+        - $ref: '#/definitions/max_age'
       responses: [200]
 
     delete:

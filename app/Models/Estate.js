@@ -102,13 +102,14 @@ class Estate extends Model {
       'credit_score',
       'rent_arrears',
       'full_address',
-      'adult_age_class',
       'kids_type',
       'photo_require',
       'furnished',
       'source_person',
       'address',
       'household_type',
+      'min_age',
+      'max_age',
     ]
   }
 
