@@ -14,6 +14,13 @@ class Point extends Model {
   /**
    *
    */
+  static get Serializer() {
+    return 'App/Serializers/PointSerializer'
+  }
+
+  /**
+   *
+   */
   set(name, value) {
     if (['lat', 'lon'].includes(name)) {
       value = this.constructor.round(value)

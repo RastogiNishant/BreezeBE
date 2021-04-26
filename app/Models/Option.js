@@ -7,12 +7,25 @@ class Option extends Model {
     return ['id', 'type', 'title']
   }
 
+  /**
+   *
+   */
   static get traits() {
     return ['NoTimestamp']
   }
 
+  /**
+   *
+   */
   static get readonly() {
     return ['id']
+  }
+
+  /**
+   *
+   */
+  static get Serializer() {
+    return 'App/Serializers/OptionSerializer'
   }
 
   estates() {
