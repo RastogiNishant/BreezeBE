@@ -7,7 +7,10 @@ const BaseSerializer = require('./BaseSerializer')
  */
 class OptionSerializer extends BaseSerializer {
   mergeData(item) {
-    return item.id
+    return {
+      id: item.id,
+      title: item.title,
+    }
   }
 }
 
