@@ -26,7 +26,8 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const estate = await EstateService.createEstate(request.all(), auth.user.id)
+    const { options, ...data } = request.all()
+    const estate = await EstateService.createEstate(data, auth.user.id)
     // Create options estate link
     if (isArray(options)) {
       await OptionService.updateEstateOptions(estate, options)
