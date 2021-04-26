@@ -29,7 +29,7 @@ class EstateController {
     const { options, ...data } = request.all()
     const estate = await EstateService.createEstate(data, auth.user.id)
     // Create options estate link
-    if (isArray(options)) {
+    if (Å(options)) {
       await OptionService.updateEstateOptions(estate, options)
     }
     // Run processing estate geo nearest
