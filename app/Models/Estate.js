@@ -189,6 +189,13 @@ class Estate extends Model {
   /**
    *
    */
+  estates() {
+    return this.belongsToMany('App/Models/Option').pivotTable('estate_option')
+  }
+
+  /**
+   *
+   */
   rooms() {
     return this.hasMany('App/Models/Room')
   }

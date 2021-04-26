@@ -31,7 +31,7 @@ const remember = (key, cb, ttl = null, tags = []) => {
   }
 
   if (!ttl) {
-    return cache.remember(key, Number.MAX_SAFE_INTEGER, cb)
+    return cache.remember(key, 2529000, cb)
   }
 
   return cache.remember(key, moment().add(ttl, 's').toDate(), cb)

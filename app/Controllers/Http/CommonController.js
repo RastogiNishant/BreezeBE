@@ -4,6 +4,7 @@ const constants = require('../../constants')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
+const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -25,7 +26,11 @@ class CommonController {
    *
    */
   async getReferences({ response }) {
-    response.res({ constants })
+    const result = {
+      constants,
+      options: await OptionService.getOptions(),
+    }
+    response.res(result)
   }
 
   /**
