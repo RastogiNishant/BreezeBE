@@ -10,6 +10,7 @@ class OptionSerializer extends BaseSerializer {
     return {
       id: item.id,
       title: item.title,
+      type: item.type,
     }
   }
 }
