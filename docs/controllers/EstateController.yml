@@ -454,6 +454,15 @@ definitions:
     in: formData
     type: number
     default: '1'
+  options:
+    name: household_type
+    in: formData
+    default: '[1, 2]'
+    schema:
+      type: array
+      items:
+        type: number
+    explode: true
 
 paths:
   /api/v1/estates:
@@ -558,6 +567,7 @@ paths:
         - $ref: '#/definitions/furnished'
         - $ref: '#/definitions/source_person'
         - $ref: '#/definitions/household_type'
+        - $ref: '#/definitions/options'
       responses: [200]
 
   /api/v1/estates/{id}:
@@ -663,6 +673,7 @@ paths:
         - $ref: '#/definitions/furnished'
         - $ref: '#/definitions/source_person'
         - $ref: '#/definitions/household_type'
+        - $ref: '#/definitions/options'
       responses: [200]
 
     delete:

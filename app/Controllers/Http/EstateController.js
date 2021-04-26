@@ -2,7 +2,9 @@
 
 const uuid = require('uuid')
 const moment = require('moment')
+const { isArray } = require('lodash')
 
+const OptionService = use('App/Services/OptionService')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
@@ -25,6 +27,10 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     const estate = await EstateService.createEstate(request.all(), auth.user.id)
+    // Create options estate link
+    if (isArray(options)) {
+      await OptionService.updateEstateOptions(estate, options)
+    }
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
     response.res(estate)
@@ -34,12 +40,17 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, ...data } = request.all()
+    const { id, options, ...data } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
     await estate.updateItem(data)
+    // Create/Update options estate link
+    if (isArray(options)) {
+      await OptionService.updateEstateOptions(estate, options)
+    }
+
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
 

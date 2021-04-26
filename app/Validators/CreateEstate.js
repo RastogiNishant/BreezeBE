@@ -477,6 +477,7 @@ class CreateEstate extends Base {
         .integer()
         .min(0)
         .oneOf([HOUSEHOLD_TYPE_SINGLE, HOUSEHOLD_TYPE_COUPLE]),
+      options: yup.array().of(yup.number().integer().positive()),
     })
 }
 
