@@ -11,10 +11,16 @@ class FilesSchema extends Schema {
       table.enum('type', ['cover', 'plan', 'doc', 'image'])
       table.string('disk', 10)
     })
+    this.table('estates', (table) => {
+      table.dropColumn('plan')
+    })
   }
 
   down() {
     this.drop('files')
+    this.table('estates', (table) => {
+      table.json('plan')
+    })
   }
 }
 
