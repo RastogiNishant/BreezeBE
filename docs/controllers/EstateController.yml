@@ -729,7 +729,7 @@ paths:
         - name: type
           in: formData
           type: string
-          enum: ['cover', 'plan', 'doc', 'image']
+          enum: ['plan', 'doc', 'image']
           required: true
         - name: file
           in: formData

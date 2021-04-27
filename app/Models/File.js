@@ -10,6 +10,10 @@ class File extends Model {
   static get traits() {
     return ['NoTimestamp']
   }
+
+  static get Serializer() {
+    return 'App/Serializers/FileSerializer'
+  }
 }
 
 module.exports = File

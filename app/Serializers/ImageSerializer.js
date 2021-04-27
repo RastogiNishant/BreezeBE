@@ -7,7 +7,7 @@ const BaseSerializer = require('./BaseSerializer')
 /**
  *
  */
-class RoomSerializer extends BaseSerializer {
+class ImageSerializer extends BaseSerializer {
   mergeData(item) {
     const { id, url, disk } = item
 
@@ -15,4 +15,4 @@ class RoomSerializer extends BaseSerializer {
   }
 }
 
-module.exports = RoomSerializer
+module.exports = ImageSerializer

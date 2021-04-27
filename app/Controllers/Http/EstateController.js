@@ -75,6 +75,7 @@ class EstateController {
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
+      .with('files')
       .with('options')
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE).with('images')

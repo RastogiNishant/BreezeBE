@@ -204,8 +204,8 @@ class Estate extends Model {
   /**
    *
    */
-  addPlan(path) {
-    this.plan = [...(isArray(this.plan) ? this.plan : []), path]
+  files() {
+    return this.hasMany('App/Models/File')
   }
 
   /**
