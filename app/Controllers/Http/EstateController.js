@@ -82,6 +82,10 @@ class EstateController {
       })
       .first()
 
+    if (!estate) {
+      throw new HttpException('Invalid estate', 404)
+    }
+
     response.res(estate)
   }
 
