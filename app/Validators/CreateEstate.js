@@ -162,7 +162,6 @@ const {
   GROUND_GRANITE,
   //
   CURRENCY_EUR,
-  CURRENCY_DEM,
   CURRENCY_USD,
   CURRENCY_UAH,
   //
@@ -189,10 +188,6 @@ const {
   //
   HOUSEHOLD_TYPE_SINGLE,
   HOUSEHOLD_TYPE_COUPLE,
-
-  ADULT_AGE_25,
-  ADULT_AGE_25_59,
-  ADULT_AGE_60,
 } = require('../constants')
 
 class CreateEstate extends Base {
@@ -275,7 +270,7 @@ class CreateEstate extends Base {
       stp_garage: yup.number().min(0),
       stp_parkhaus: yup.number().min(0),
       stp_tiefgarage: yup.number().min(0),
-      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_DEM, CURRENCY_USD, CURRENCY_UAH]),
+      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH]),
       area: yup.number().min(0),
       living_space: yup.number().min(0),
       usable_area: yup.number().min(0),

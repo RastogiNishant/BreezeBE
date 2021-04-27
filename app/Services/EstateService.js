@@ -1,7 +1,10 @@
 'use strict'
 const Database = use('Database')
+const Drive = use('Drive')
+const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const Estate = use('App/Models/Estate')
+const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
 
 const { STATUS_DRAFT, STATUS_DELETE } = require('../constants')
@@ -101,6 +104,26 @@ class EstateService {
       await estate.updateItem({ coord: `${result.lat},${result.lon}` })
       await EstateService.updateEstatePoint(estateId)
     }
+  }
+
+  /**
+   *
+   */
+  static async addFile({ url, disk, estate, type }) {
+    return File.createItem({ url, disk, estate_id: estate.id, type })
+  }
+
+  /**
+   *
+   */
+  static async removeFile(file) {
+    try {
+      await Drive.disk(file.disk).delete(file.url)
+    } catch (e) {
+      Logger.error(e.message)
+    }
+
+    await File.query().delete().where('id', file.id)
   }
 }
 

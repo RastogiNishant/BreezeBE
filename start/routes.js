@@ -82,6 +82,10 @@ Route.group(() => {
     'valid:CreateRoom,EstateId',
   ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
+  Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
+    'valid:EstateId,Id',
+  ])
+
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
     'valid:CreateRoom,EstateId,RoomId',
   ])

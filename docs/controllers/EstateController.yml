@@ -729,13 +729,23 @@ paths:
         - name: type
           in: formData
           type: string
-          enum: ['cover', 'plan', 'doc']
+          enum: ['cover', 'plan', 'doc', 'image']
           required: true
         - name: file
           in: formData
           type: file
           required: true
       responses: [200]
+
+  /api/v1/estates/{estate_id}/files/{id}:
+    delete:
+      tags: [estate]
+      security: [bearerAuth: []]
+      description: delete existing estate file
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - $ref: '#/definitions/id'
 
   /api/v1/estates/import:
     post:

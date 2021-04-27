@@ -5,12 +5,12 @@ const constants = {
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
   FILE_TYPE_DOC: 'doc',
+  FILE_TYPE_IMAGE: 'image',
 
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
 
   CURRENCY_EUR: 'EUR',
-  CURRENCY_DEM: 'DEM',
   CURRENCY_USD: 'USD',
   CURRENCY_UAH: 'UAH',
 
