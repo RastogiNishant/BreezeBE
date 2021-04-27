@@ -259,6 +259,13 @@ const constants = {
   LANDLORD_SIZE_SMALL: 1,
   LANDLORD_SIZE_MID: 2,
   LANDLORD_SIZE_LARGE: 3,
+
+  OPTIONS_TYPE_BUILD: 'build',
+  OPTIONS_TYPE_APT: 'apt',
+  OPTIONS_TYPE_OUT: 'out',
+  OPTIONS_TYPE_BAD: 'bad',
+  OPTIONS_TYPE_KITCHEN: 'kitchen',
+  OPTIONS_TYPE_ROOM: 'room',
 }
 
 module.exports = constants
