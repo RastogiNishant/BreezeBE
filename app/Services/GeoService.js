@@ -61,21 +61,20 @@ class GeoService {
 
     const q = `${street}`.trim() + '%'
     const query = Database.raw(
-      `SELECT * FROM (
-        SELECT *
-        FROM build_qualities AS _b
-          CROSS JOIN (
-            SELECT COUNT(*)
-            FROM (SELECT DISTINCT (region_id)
-                  FROM build_qualities
-                  WHERE name ILIKE ?
-                  GROUP BY region_id) AS _t1
-          ) AS _t
-        WHERE
-          _b.name ILIKE ?
-        ) as _g1 LIMIT ?
+      `SELECT *
+       FROM (
+         SELECT * FROM build_qualities as _b2
+         WHERE _b2.id IN (
+           SELECT MIN(id)
+           FROM build_qualities AS _b
+           WHERE
+             _b.name ILIKE ?
+           GROUP BY _b.name
+         )
+       ) as _g1
+       LIMIT ?
       `,
-      [q, q, size]
+      [q, size]
     )
 
     const items = (await query).rows
@@ -103,10 +102,9 @@ class GeoService {
     }
 
     if (buildNum) {
-      const isLast = parseInt(items[0].count) === 1
-      const result = [{ name: getAddr(items[0].name, buildNum, zip), last: isLast }]
+      const result = [{ name: getAddr(items[0].name, buildNum, zip), last: true }]
       for (let i = 0; i < size - 1; i++) {
-        result.push({ name: getAddr(items[0].name, `${buildNum}${i}`, zip), last: isLast })
+        result.push({ name: getAddr(items[0].name, `${buildNum}${i}`, zip), last: true })
       }
       return result
     }
