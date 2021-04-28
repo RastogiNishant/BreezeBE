@@ -14,7 +14,7 @@ const AppException = use('App/Exceptions/AppException')
 
 const { getHash } = require('../Libs/utils.js')
 
-const { STATUS_NEED_VERIFY, STATUS_ACTIVE } = require('../constants')
+const { STATUS_NEED_VERIFY, STATUS_ACTIVE, ROLE_USER, ROLE_LANDLORD } = require('../constants')
 
 class UserService {
   /**
@@ -32,6 +32,16 @@ class UserService {
   static async createUserFromOAuth({ email, name, role, google_id, ...data }) {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
+
+    // Check is user same email another role is exists
+    const existingUser = User.query()
+      .where('email', email)
+      .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+      .first()
+    if (existingUser) {
+      throw new AppException('User same email, another role exists')
+    }
+
     const { user } = await UserService.createUser({
       ...data,
       email,

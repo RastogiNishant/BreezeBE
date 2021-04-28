@@ -2,6 +2,7 @@
 const fs = require('fs')
 const moment = require('moment')
 const uuid = require('uuid')
+const Promise = require('bluebird')
 
 const User = use('App/Models/User')
 const Hash = use('Hash')
@@ -15,20 +16,30 @@ const HttpException = use('App/Exceptions/HttpException')
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../constants')
 
 class AccountController {
   /**
    *
    */
   async signup({ request, response }) {
-    const userData = request.all()
+    const { email, ...userData } = request.all()
     if (![ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
       throw new HttpException('Invalid user role', 401)
     }
 
+    // Check user not exists
+    const availableUser = await User.query().where('email', email).first()
+    if (availableUser) {
+      throw new HttpException('User already exists, can be switched', 400)
+    }
+
     try {
-      const { user } = await UserService.createUser({ ...userData, status: STATUS_EMAIL_VERIFY })
+      const { user } = await UserService.createUser({
+        ...userData,
+        email,
+        status: STATUS_EMAIL_VERIFY,
+      })
       await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
@@ -136,15 +147,24 @@ class AccountController {
    */
   async changePassword({ request, auth, response }) {
     const user = auth.current.user
-    const verifyPassword = await Hash.verify(request.input('current_password'), user.password)
+    const { current_password, new_password } = request.all()
+    const verifyPassword = await Hash.verify(current_password, user.password)
 
     if (!verifyPassword) {
       throw new HttpException('Current password could not be verified! Please try again.', 400)
     }
+    const users = (
+      await User.query()
+        .where('email', user.email)
+        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+        .limit(2)
+        .fetch()
+    ).rows
 
-    await user.updateItem({ password: request.input('new_password') }, true)
+    const updatePass = async (user) => user.updateItem({ password: new_password }, true)
+    await Promise.map(users, updatePass)
 
-    return response.res()
+    return response.res(true)
   }
 
   /**

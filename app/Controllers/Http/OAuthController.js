@@ -40,15 +40,19 @@ class OAuthController {
 
     // Create user if not exists
     if (!user) {
-      user = await UserService.createUserFromOAuth({
-        ...authUser.toJSON(),
-        role: ROLE_LANDLORD,
-        google_id: id,
-      })
+      try {
+        user = await UserService.createUserFromOAuth({
+          ...authUser.toJSON(),
+          role: ROLE_LANDLORD,
+          google_id: id,
+        })
+      } catch (e) {
+        throw new HttpException(e.message, 400)
+      }
     }
 
     // Auth user
-    if (user && user.google_id === id) {
+    if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
 
@@ -73,17 +77,17 @@ class OAuthController {
       throw new HttpException('Invalid token', 400)
     }
 
+    const email = get(ticket, 'payload.email')
     const googleId = get(ticket, 'payload.sub')
-    if (!googleId) {
-      throw new HttpException('Invalid auth data response', 400)
-    }
 
     const query = User.query()
-      .where('google_id', googleId)
+      .where('email', email)
       .whereNot('status', STATUS_DELETE)
       .orderBy('updated_at', 'desc')
     if ([ROLE_LANDLORD, ROLE_USER].includes(role)) {
       query.where('role', role)
+    } else {
+      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER])
     }
     let user = await query.first()
 
@@ -92,12 +96,16 @@ class OAuthController {
     }
 
     if (!user && [ROLE_LANDLORD, ROLE_USER].includes(role)) {
-      user = await UserService.createUserFromOAuth({
-        ...ticket.getPayload(),
-        google_id: googleId,
-        device_token,
-        role,
-      })
+      try {
+        user = await UserService.createUserFromOAuth({
+          ...ticket.getPayload(),
+          google_id: googleId,
+          device_token,
+          role,
+        })
+      } catch (e) {
+        throw new HttpException(e.message, 400)
+      }
     }
 
     if (user) {
