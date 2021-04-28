@@ -4,7 +4,7 @@ const Database = use('Database')
 const Point = use('App/Models/Point')
 const AppException = use('App/Exceptions/AppException')
 
-const { isString, toNumber } = require('lodash')
+const { isString, toNumber, range } = require('lodash')
 
 class GeoService {
   /**
@@ -49,8 +49,14 @@ class GeoService {
       /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)]*)\s*(\d*)(,?)\s?(\d*)/i
     )
 
-    const getAddr = (street, buildNum, zip) => {
-      return street + ' ' + (buildNum ? `${buildNum},` : '') + (zip ? ` ${zip}` : '')
+    const getAddr = (street, buildNum, zip, city = false) => {
+      return (
+        street +
+        ' ' +
+        (buildNum ? `${buildNum},` : '') +
+        (zip ? ` ${zip}` : '') +
+        (city ? ` ${city}` : '')
+      )
     }
 
     const q = `${street}`.trim() + '%'
@@ -79,12 +85,12 @@ class GeoService {
 
     if (zip) {
       if (zip.length === 5) {
-        return [{ name: getAddr(items[0].name, buildNum, zip), last: true }]
+        return [{ name: getAddr(items[0].name, buildNum, zip, 'Berlin'), last: true }]
       } else {
         return [
           { name: getAddr(items[0].name, buildNum, zip), last: false },
           ...items[0].zip
-            .map((i) => ({ name: getAddr(items[0].name, buildNum, i), last: true }))
+            .map((i) => ({ name: getAddr(items[0].name, buildNum, i, 'Berlin'), last: true }))
             .slice(0, size - 1),
         ]
       }
@@ -92,7 +98,7 @@ class GeoService {
 
     if (separator) {
       return items[0].zip
-        .map((i) => ({ name: getAddr(items[0].name, buildNum, i), last: true }))
+        .map((i) => ({ name: getAddr(items[0].name, buildNum, i, 'Berlin'), last: true }))
         .slice(0, size)
     }
 
@@ -106,7 +112,7 @@ class GeoService {
     }
 
     if (items.length === 1) {
-      return [{ name: getAddr(items[0].name, buildNum, zip), last: true }]
+      return range(1, size).map((i) => ({ name: getAddr(items[0].name, i, zip), last: false }))
     }
 
     return Object.keys(
