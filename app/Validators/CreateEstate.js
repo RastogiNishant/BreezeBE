@@ -266,7 +266,7 @@ class CreateEstate extends Base {
       heating_costs_included: yup.number().min(0).max(100000),
       heating_costs: yup.number().min(0).max(100000),
       rent_per_sqm: yup.number().min(0).max(100000),
-      deposit: yup.number().min(0).max(100000),
+      deposit: yup.number().min(0).max(400000),
       stp_garage: yup.number().min(0),
       stp_parkhaus: yup.number().min(0),
       stp_tiefgarage: yup.number().min(0),
