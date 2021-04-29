@@ -339,8 +339,8 @@ class CreateEstate extends Base {
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
-      pets: yup.number().integer().min(0).oneOf([PETS_NO, PETS_SMALL, PETS_ANY]),
-      gender: yup.number().integer().oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY]),
+      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
+      gender: yup.number().integer().oneOf([GENDER_MALE, GENDER_FEMALE, null]).nullable(),
       monumental_protection: yup.boolean(),
       parking_space_type: yup
         .number()
@@ -438,7 +438,9 @@ class CreateEstate extends Base {
           GROUND_MARMOR,
           GROUND_TERRAKOTTA,
           GROUND_GRANITE,
-        ]),
+          null,
+        ])
+        .nullable(),
       energy_efficiency: yup.number().positive(),
       energy_pass: yup
         .mixed()
@@ -460,13 +462,21 @@ class CreateEstate extends Base {
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
       furnished: yup.boolean(),
-      kids_type: yup.number().integer().min(0).oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5]),
-      source_person: yup.number().integer().min(0).oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED]),
+      kids_type: yup
+        .number()
+        .integer()
+        .oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5, null])
+        .nullable(),
+      source_person: yup
+        .number()
+        .integer()
+        .oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED])
+        .nullable(),
       household_type: yup
         .number()
         .integer()
-        .min(0)
-        .oneOf([HOUSEHOLD_TYPE_SINGLE, HOUSEHOLD_TYPE_COUPLE]),
+        .oneOf([HOUSEHOLD_TYPE_SINGLE, HOUSEHOLD_TYPE_COUPLE, null])
+        .nullable(),
       options: yup.array().of(yup.number().integer().positive()),
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),

@@ -240,7 +240,6 @@ const constants = {
 
   PETS_NO: 1,
   PETS_SMALL: 2,
-  PETS_ANY: 3,
 
   KIDS_NO_KIDS: 1,
   KIDS_TO_5: 2,
