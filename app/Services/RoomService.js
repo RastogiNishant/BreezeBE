@@ -11,7 +11,7 @@ class RoomService {
    */
   static async getRoomByUser(userId, roomId) {
     return Room.query()
-      .select('rooms.*')
+      .select('rooms.*', '_e.cover')
       .where('rooms.id', roomId)
       .innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)

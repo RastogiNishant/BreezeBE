@@ -125,6 +125,13 @@ class EstateService {
 
     await File.query().delete().where('id', file.id)
   }
+
+  /**
+   *
+   */
+  static async setCover(estateId, filePathName) {
+    return Estate.query().update({ cover: filePathName }).where('id', estateId)
+  }
 }
 
 module.exports = EstateService

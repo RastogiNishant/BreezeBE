@@ -8,6 +8,7 @@ const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
+const EstateService = use('App/Services/EstateService')
 
 class RoomController {
   /**
@@ -76,6 +77,9 @@ class RoomController {
       ContentType: image.headers['content-type'],
     })
     const imageObj = await RoomService.addImage(filePathName, room, 's3public')
+    if (!room.cover) {
+      await EstateService.setCover(room.estate_id, filePathName)
+    }
 
     response.res(imageObj)
   }
