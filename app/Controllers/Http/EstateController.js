@@ -86,7 +86,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    response.res(estate)
+    response.res(estate.toJSON({ isOwner: true }))
   }
 
   /**
@@ -207,7 +207,13 @@ class EstateController {
    *
    */
   async acceptEstateInvite({ request, response }) {
-    const data = request.all()
+    const { code } = request.all()
+    const estate = await EstateService.getEstateByHash(code)
+    if (!estate) {
+      throw HttpException('Estate not exists', 404)
+    }
+
+    // TODO: Apply buddy invite
 
     response.res(true)
   }

@@ -37,6 +37,7 @@
     "@adonisjs/validator": "^5.0.6",
     "@adonisjs/vow": "^1.0.17",
     "adonis-acl": "^1.1.1",
+    "adonis-advanced-serializer": "^0.1.4",
     "adonis-cache": "^0.3.4",
     "adonis-lucid-filter": "^1.0.6",
     "adonis-sentry": "^2.0.2",

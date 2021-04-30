@@ -7,7 +7,7 @@ const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
 
-const { STATUS_DRAFT, STATUS_DELETE } = require('../constants')
+const { STATUS_DRAFT, STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 
 class EstateService {
   /**
@@ -131,6 +131,13 @@ class EstateService {
    */
   static async setCover(estateId, filePathName) {
     return Estate.query().update({ cover: filePathName }).where('id', estateId)
+  }
+
+  /**
+   *
+   */
+  static async getEstateByHash(hash) {
+    return Estate.query().where('hash', hash).where('status', STATUS_ACTIVE).first()
   }
 }
 

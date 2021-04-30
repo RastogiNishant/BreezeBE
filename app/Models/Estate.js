@@ -145,13 +145,6 @@ class Estate extends Model {
   /**
    *
    */
-  static get hidden() {
-    return ['hash']
-  }
-
-  /**
-   *
-   */
   static get Serializer() {
     return 'App/Serializers/EstateSerializer'
   }
@@ -161,6 +154,7 @@ class Estate extends Model {
    */
   static boot() {
     super.boot()
+    this.addTrait('@provider:SerializerExtender')
     this.addHook('beforeSave', async (instance) => {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')

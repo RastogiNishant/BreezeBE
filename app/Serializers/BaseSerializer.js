@@ -30,13 +30,17 @@ class BaseSerializer extends VanillaSerializer {
     })
   }
 
-  toJSON() {
+  toJSON(dataStr, ...args) {
+    if (dataStr !== 'data') {
+      args = [dataStr, ...args]
+    }
+
     if (this.isOne) {
-      return this.mergeData(this.rows)
+      return this.mergeData(this.rows, ...args)
     }
 
     const data = this.rows.map((i) => {
-      return this.mergeData(i)
+      return this.mergeData(i, ...args)
     })
     if (this.pages) {
       return merge({}, this.pages, { data })

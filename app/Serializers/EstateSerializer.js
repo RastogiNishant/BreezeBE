@@ -8,7 +8,12 @@ const Drive = use('Drive')
  *
  */
 class EstateSerializer extends BaseSerializer {
-  mergeData(item) {
+  mergeData(item, options = {}) {
+    const { isOwner = false } = options
+    if (!isOwner) {
+      item.hash = undefined
+    }
+
     if (item.coord) {
       if (item.coord.bindings) {
         const [lon, lat] = get(item, 'coord.bindings.0.bindings')
