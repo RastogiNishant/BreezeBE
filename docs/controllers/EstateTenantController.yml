@@ -19,3 +19,16 @@ paths:
       parameters:
         - $ref: '#/definitions/id'
       responses: [200]
+
+  /api/v1/tenant/estates/invite/{code}:
+    post:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Accept buddy invite
+      produces: [application/json]
+      parameters:
+        name: code
+        in: path
+        type: string
+        required: true
+      responses: [200]

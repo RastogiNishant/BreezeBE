@@ -138,6 +138,7 @@ Route.group(() => {
 // TENANT
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
+  Route.get('/invite/:hash', 'EstateController.acceptEstateInvite')
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/estates')

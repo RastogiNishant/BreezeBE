@@ -202,6 +202,15 @@ class EstateController {
 
     response.res(estate)
   }
+
+  /**
+   *
+   */
+  async acceptEstateInvite({ request, response }) {
+    const data = request.all()
+
+    response.res(true)
+  }
 }
 
 module.exports = EstateController

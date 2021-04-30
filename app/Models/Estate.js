@@ -1,6 +1,7 @@
 'use strict'
 
 const { isString, isArray, get, pick, trim, isEmpty } = require('lodash')
+const hash = require('../Libs/hash')
 const Database = use('Database')
 
 const Model = require('./BaseModel')
@@ -110,6 +111,7 @@ class Estate extends Model {
       'household_type',
       'min_age',
       'max_age',
+      'hash',
     ]
   }
 
@@ -117,7 +119,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id']
+    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash']
   }
 
   /**
@@ -138,6 +140,13 @@ class Estate extends Model {
         EQUIPMENT_WG_SUITABLE,
       ],
     }
+  }
+
+  /**
+   *
+   */
+  static get hidden() {
+    return ['hash']
   }
 
   /**
@@ -170,6 +179,12 @@ class Estate extends Model {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
         } catch (e) {}
       }
+    })
+
+    this.addHook('afterCreate', async (instance) => {
+      await Database.table('estates')
+        .update({ hash: Estate.getHash(instance.id) })
+        .where('id', instance.id)
     })
   }
 
@@ -223,6 +238,13 @@ class Estate extends Model {
     }
 
     return { lat: null, lon: null }
+  }
+
+  /**
+   *
+   */
+  static getHash(id) {
+    return hash.crc32(`estate_${id}`, true)
   }
 }
 
