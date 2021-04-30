@@ -38,7 +38,7 @@ class EstateService {
   /**
    *
    */
-  static getEstates(params) {
+  static getEstates(params = {}) {
     const query = Estate.query().select('*', Database.gis.asGeoJSON('coord'))
     if (params.query) {
       query.where(function () {

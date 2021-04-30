@@ -1,0 +1,21 @@
+paths:
+  /api/v1/tenant/estates:
+    get:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Get own estates list
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/limit'
+        - $ref: '#/definitions/page'
+      responses: [200]
+
+  /api/v1/tenant/estates/{id}:
+    get:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Get single estate with POI
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/id'
+      responses: [200]

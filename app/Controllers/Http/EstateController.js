@@ -166,6 +166,42 @@ class EstateController {
     await EstateService.removeFile(file)
     response.res(true)
   }
+
+  /**
+   *
+   */
+  async getTenantEstates({ request, response }) {
+    const { limit, page } = request.all()
+    const result = await EstateService.getEstates({})
+      .where('status', STATUS_ACTIVE)
+      .paginate(page, limit)
+
+    response.res(result)
+  }
+
+  /**
+   *
+   */
+  async getTenantEstate({ request, response }) {
+    const { id } = request.all()
+
+    const estate = await EstateService.getEstateQuery()
+      .with('point')
+      .with('files')
+      .with('options')
+      .with('rooms', function (b) {
+        b.where('status', STATUS_ACTIVE).with('images')
+      })
+      .where('id', id)
+      .where('status', STATUS_ACTIVE)
+      .first()
+
+    if (!estate) {
+      throw new HttpException('Invalid estate', 404)
+    }
+
+    response.res(estate)
+  }
 }
 
 module.exports = EstateController

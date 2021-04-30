@@ -69,10 +69,10 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
 
 // Estate management
 Route.group(() => {
-  // Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
-  // Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
+  Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
@@ -104,14 +104,6 @@ Route.group(() => {
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
 
-// Allowed for Landlord and user data
-Route.group(() => {
-  Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
-  Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
-})
-  .prefix('/api/v1/estates')
-  .middleware(['auth:jwtLandlord,jwt'])
-
 // Admin user edit part
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware(['guest', 'valid:SignIn'])
 Route.group(() => {
@@ -142,6 +134,14 @@ Route.group(() => {
 })
   .prefix('api/v1/admin/terms')
   .middleware(['auth:jwtAdmin', 'is:admin'])
+
+// TENANT
+Route.group(() => {
+  Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
+  Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
+})
+  .prefix('api/v1/tenant/estates')
+  .middleware(['auth:jwt'])
 
 // Force add named middleware to all requests
 Route.list().forEach((r) => {
