@@ -34,7 +34,7 @@ class UserService {
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
     // Check is user same email another role is exists
-    const existingUser = User.query()
+    const existingUser = await User.query()
       .where('email', email)
       .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
       .first()
