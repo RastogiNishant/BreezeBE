@@ -155,7 +155,7 @@ Route.group(() => {
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
-  if (Array.isArray(r.middlewareList) && excludeRoutes.includes(r._route)) {
+  if (Array.isArray(r.middlewareList) && !excludeRoutes.includes(r._route)) {
     if (r.middlewareList.length > 0) {
       r.middlewareList = [...r.middlewareList, 'agreement']
     }
