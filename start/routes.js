@@ -144,6 +144,18 @@ Route.group(() => {
 }).prefix('api/v1/terms')
 
 // TENANT
+// Tenant members
+Route.group(() => {
+  Route.get('/', 'MemberController.getMembers')
+  Route.post('/', 'MemberController.addMember')
+  Route.put('/:id', 'MemberController.updateMember')
+  Route.delete('/:id', 'MemberController.removeMember')
+  Route.post('/income', 'MemberController.addMemberIncome')
+  Route.delete('/income/:id', 'MemberController.removeMemberIncome')
+})
+  .prefix('api/v1/tenant/members')
+  .middleware(['auth:jwt'])
+
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])

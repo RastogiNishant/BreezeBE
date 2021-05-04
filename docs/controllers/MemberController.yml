@@ -1,0 +1,155 @@
+definitions:
+  id:
+    name: id
+    in: path
+    type: number
+    required: true
+  income_id:
+    name: income_id
+    in: path
+    type: number
+    required: true
+  child:
+    name: child
+    in: formData
+    type: boolean
+    default: 'false'
+  firstname:
+    name: firstname
+    in: formData
+    type: string
+  secondname:
+    name: secondname
+    in: formData
+    type: string
+  phone:
+    name: phone
+    in: formData
+    type: string
+  birthday:
+    name: birthday
+    in: formData
+    type: date
+    example: '2020-04-04'
+  avatar:
+    name: avatar
+    in: formData
+    type: file
+  company_logo:
+    name: company_logo
+    in: formData
+    type: file
+  sex:
+    name: sex
+    in: formData
+    type: number
+    enum: ['1', '2']
+  profession:
+    name: profession
+    in: formData
+    type: string
+  hiring_date:
+    name: birthday
+    in: formData
+    type: date
+    example: '2020-04-04'
+  employment_type:
+    name: employment_type
+    in: formData
+    type: number
+    enum: ['1', '2']
+  major_income:
+    name: major_income
+    in: formData
+    type: number
+  extra_income:
+    name: extra_income
+    in: formData
+    type: number
+  income:
+    name: income
+    in: formData
+    required: true
+    type: file
+
+# Routes list
+/api/v1/tenant/members:
+  get:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Get user family members
+    produces: [application/json]
+    responses: [200]
+
+  post:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Get user family members
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/child'
+      - $ref: '#/definitions/firstname'
+      - $ref: '#/definitions/secondname'
+      - $ref: '#/definitions/phone'
+      - $ref: '#/definitions/birthday'
+      - $ref: '#/definitions/avatar'
+      - $ref: '#/definitions/company_logo'
+      - $ref: '#/definitions/sex'
+      - $ref: '#/definitions/profession'
+      - $ref: '#/definitions/hiring_date'
+      - $ref: '#/definitions/employment_type'
+      - $ref: '#/definitions/major_income'
+      - $ref: '#/definitions/extra_income'
+    responses: [200]
+
+/api/v1/tenant/members/{id}:
+  put:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Update member
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+      - $ref: '#/definitions/child'
+      - $ref: '#/definitions/firstname'
+      - $ref: '#/definitions/secondname'
+      - $ref: '#/definitions/phone'
+      - $ref: '#/definitions/birthday'
+      - $ref: '#/definitions/avatar'
+      - $ref: '#/definitions/company_logo'
+      - $ref: '#/definitions/sex'
+      - $ref: '#/definitions/profession'
+      - $ref: '#/definitions/hiring_date'
+      - $ref: '#/definitions/employment_type'
+      - $ref: '#/definitions/major_income'
+      - $ref: '#/definitions/extra_income'
+    responses: [200]
+
+  delete:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Remove member
+    produces: [application/json]
+    responses: [200]
+
+/api/v1/tenant/members/{id}/income:
+  post:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Get user family members
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+      - $ref: '#/definitions/income'
+    responses: [200]
+
+/api/v1/tenant/members/{id}/income/{income_id}:
+  delete:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Remove member
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+      - $ref: '#/definitions/income_id'
+    responses: [200]
