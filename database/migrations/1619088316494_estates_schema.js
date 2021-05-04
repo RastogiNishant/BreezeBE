@@ -4,16 +4,12 @@ const Schema = use('Schema')
 
 class EstatesSchema extends Schema {
   up() {
-    this.table('estates', (table) => {
-      table.integer('household_type').unsigned()
+    this.alter('estates', (table) => {
+      table.integer('household_type').unsigned().alter()
     })
   }
 
-  down() {
-    this.table('estates', (table) => {
-      table.dropColumn('household_type')
-    })
-  }
+  down() {}
 }
 
 module.exports = EstatesSchema
