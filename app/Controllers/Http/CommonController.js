@@ -87,6 +87,7 @@ class CommonController {
       }
     } else if (type === 'agreement') {
       if (get(agreement, 'id') === id) {
+        auth.user.agreements_id = id
         await auth.user.save()
       }
     }
