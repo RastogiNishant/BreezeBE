@@ -23,10 +23,10 @@ update-staging:
 		make npm-client-install-stage;
 		cp .env.staging .env
 		# run migration
-		NODE_ENV=development node ace migration:run --force
+		NODE_ENV=staging node ace migration:run --force
 		# run clear
 		node ace app:clear
-		make restart-pm2-development;
+		make restart-pm2-staging;
 		echo "READY!"
 
 update-development:
