@@ -13,6 +13,30 @@ paths:
       produces: [application/json]
       responses: [200]
 
+  /api/v1/terms:
+    get:
+      tags: [terms]
+      description: Get terms and conditons
+      produces: [application/json]
+      responses: [200]
+
+    post:
+      tags: [terms]
+      description: Accept terms and conditons
+      security: [bearerAuth: []]
+      parameters:
+        - name: id
+          in: formData
+          type: string
+          required: true
+        - name: type
+          in: formData
+          type: string
+          enum: ['terms', 'agreement']
+          required: true
+      produces: [application/json]
+      responses: [200]
+
   /api/v1/search/street:
     get:
       tags: [common]

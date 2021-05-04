@@ -135,6 +135,14 @@ Route.group(() => {
   .prefix('api/v1/admin/terms')
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
+Route.group(() => {
+  Route.get('/', 'CommonController.getTermsAndConditions')
+  Route.post('/', 'CommonController.acceptTermsAndConditions').middleware([
+    'auth:jwtLandlord,jwt',
+    'valid:AcceptTerms',
+  ])
+}).prefix('api/v1/terms')
+
 // TENANT
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
@@ -146,7 +154,7 @@ Route.group(() => {
 
 // Force add named middleware to all requests
 Route.list().forEach((r) => {
-  if (Array.isArray(r.middlewareList)) {
+  if (Array.isArray(r.middlewareList) && r._route !== '/api/v1/terms') {
     if (r.middlewareList.length > 0) {
       r.middlewareList = [...r.middlewareList, 'agreement']
     }

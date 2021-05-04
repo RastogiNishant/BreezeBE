@@ -1,6 +1,7 @@
 'use strict'
 
 const constants = require('../../constants')
+const { get } = require('lodash')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
@@ -8,6 +9,8 @@ const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
+
+const Static = use('Static')
 
 class CommonController {
   /**
@@ -61,6 +64,34 @@ class CommonController {
     console.log(range)
 
     response.res({ min_rate, max_rate, min_price: sqr * min_rate, max_price: max_rate * sqr })
+  }
+
+  /**
+   *
+   */
+  async getTermsAndConditions({ request, response }) {
+    const { terms, agreement } = await Static.getData()
+    response.res({ terms, agreement })
+  }
+
+  /**
+   *
+   */
+  async acceptTermsAndConditions({ request, auth, response }) {
+    const { type, id } = request.all()
+    const { terms, agreement } = await Static.getData()
+    if (type === 'terms') {
+      if (get(terms, 'id') === id) {
+        auth.user.terms_id = id
+        await auth.user.save()
+      }
+    } else if (type === 'agreement') {
+      if (get(agreement, 'id') === id) {
+        await auth.user.save()
+      }
+    }
+
+    response.res(true)
   }
 }
 
