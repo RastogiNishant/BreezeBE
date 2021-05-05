@@ -1,7 +1,7 @@
 'use strict'
 
 const constants = require('../../constants')
-const { get } = require('lodash')
+const { get, map } = require('lodash')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
@@ -102,7 +102,7 @@ class CommonController {
   async searchProfession({ request, response }) {
     const { query } = request.all()
     const result = await CommonService.searchProfession(query)
-    response.res(result)
+    response.res(map(result, (i) => i.value))
   }
 }
 
