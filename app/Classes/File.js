@@ -3,18 +3,21 @@ const uuid = require('uuid')
 const moment = require('moment')
 const { nth, isEmpty } = require('lodash')
 
+const Logger = use('Logger')
 const Drive = use('Drive')
 const AppException = use('App/Exceptions/AppException')
 
 class File {
   static IMAGE_JPG = 'image/jpeg'
   static IMAGE_PNG = 'image/png'
+  static IMAGE_PDF = 'application/pdf'
 
   /**
    *
    */
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
+    Logger.info('File type', { mime })
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }

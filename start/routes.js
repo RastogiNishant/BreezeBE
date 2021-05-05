@@ -150,8 +150,10 @@ Route.group(() => {
   Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.put('/:id', 'MemberController.updateMember').middleware(['valid:CreateMember,Id'])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
-  Route.post('/income', 'MemberController.addMemberIncome')
-  Route.delete('/income/:id', 'MemberController.removeMemberIncome')
+  Route.post('/:id/income', 'MemberController.addMemberIncome').middleware(['valid:Id'])
+  Route.delete('/:id/income/:income_id', 'MemberController.removeMemberIncome').middleware([
+    'valid:DeleteIncome',
+  ])
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt'])

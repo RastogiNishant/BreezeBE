@@ -130,6 +130,8 @@ definitions:
     security: [bearerAuth: []]
     description: Remove member
     produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
     responses: [200]
 
 /api/v1/tenant/members/{id}/income:

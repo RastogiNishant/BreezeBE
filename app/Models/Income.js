@@ -1,6 +1,6 @@
 'use strict'
 
-const Model = use('Model')
+const Model = require('./BaseModel')
 
 class Income extends Model {
   static get columns() {
