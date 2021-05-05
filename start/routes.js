@@ -147,9 +147,9 @@ Route.group(() => {
 // Tenant members
 Route.group(() => {
   Route.get('/', 'MemberController.getMembers')
-  Route.post('/', 'MemberController.addMember')
-  Route.put('/:id', 'MemberController.updateMember')
-  Route.delete('/:id', 'MemberController.removeMember')
+  Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
+  Route.put('/:id', 'MemberController.updateMember').middleware(['valid:CreateMember,Id'])
+  Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
   Route.post('/income', 'MemberController.addMemberIncome')
   Route.delete('/income/:id', 'MemberController.removeMemberIncome')
 })

@@ -265,6 +265,9 @@ const constants = {
   OPTIONS_TYPE_BAD: 'bad',
   OPTIONS_TYPE_KITCHEN: 'kitchen',
   OPTIONS_TYPE_ROOM: 'room',
+
+  HIRING_TYPE_FULL_TIME: 'full',
+  HIRING_TYPE_PART_TIME: 'part',
 }
 
 module.exports = constants

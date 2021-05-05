@@ -1,7 +1,7 @@
 'use strict'
 
 const Schema = use('Schema')
-const { GENDER_MALE } = require('../../app/constants')
+const { GENDER_MALE, HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME } = require('../../app/constants')
 
 class MembersSchema extends Schema {
   up() {
@@ -24,7 +24,7 @@ class MembersSchema extends Schema {
       table.string('profession', 60)
       table.string('company_logo', 512)
       table.date('hiring_date', { useTz: false })
-      table.integer('employment_type').unsigned()
+      table.enum('employment_type', [HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME])
       table.decimal('major_income', 10, 2)
       table.decimal('extra_income', 10, 2)
       table.timestamps()
