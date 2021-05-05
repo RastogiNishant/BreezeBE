@@ -21,6 +21,9 @@ Route.get('/ping', 'CommonController.ping')
 Route.get('/api/v1/search/street', 'CommonController.searchStreet').middleware([
   'valid:SearchStreet',
 ])
+Route.get('/api/v1/search/profession', 'CommonController.searchProfession').middleware([
+  'valid:ProfessionQuery',
+])
 Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
   'valid:CalcRentPrice',
 ])

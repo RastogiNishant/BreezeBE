@@ -7,6 +7,7 @@ const { get } = require('lodash')
 // const User = use('App/Models/User')
 const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
+const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -93,6 +94,15 @@ class CommonController {
     }
 
     response.res(true)
+  }
+
+  /**
+   *
+   */
+  async searchProfession({ request, response }) {
+    const { query } = request.all()
+    const result = await CommonService.searchProfession(query)
+    response.res(result)
   }
 }
 

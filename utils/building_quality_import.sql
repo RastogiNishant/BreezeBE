@@ -162,3 +162,25 @@ INSERT INTO sqr_rates (quality,
   );
 
 DROP TABLE IF EXISTS sqr_tmp;
+
+
+-- Import profession
+
+DROP TABLE IF EXISTS profession_tmp;
+CREATE TABLE profession_tmp
+(
+  id       SERIAL,
+  value  VARCHAR(120),
+  title_en VARCHAR(120),
+  title_de VARCHAR(120),
+  type INTEGER,
+  PRIMARY KEY (id)
+);
+
+COPY profession_tmp
+  (
+   value,
+   title_en,
+   type,
+   title_de
+) FROM '/professions.csv' DELIMITER ',' CSV HEADER;

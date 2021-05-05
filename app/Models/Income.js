@@ -11,6 +11,10 @@ class Income extends Model {
     return ['id', 'member_id']
   }
 
+  static get hidden() {
+    return ['url']
+  }
+
   static get traits() {
     return ['NoTimestamp']
   }

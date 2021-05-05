@@ -49,6 +49,18 @@ paths:
           required: true
       responses: [200]
 
+  /api/v1/search/profession:
+    get:
+      tags: [common]
+      description: Get profession autosuggest
+      produces: [application/json]
+      parameters:
+        - name: query
+          in: query
+          type: string
+          required: true
+      responses: [200]
+
   /api/v1/calc_price:
     get:
       tags: [common]
