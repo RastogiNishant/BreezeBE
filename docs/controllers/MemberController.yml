@@ -48,16 +48,20 @@ definitions:
     name: profession
     in: formData
     type: string
+  position:
+    name: position
+    in: formData
+    type: string
   hiring_date:
-    name: birthday
+    name: hiring_date
     in: formData
     type: date
     example: '2020-04-04'
   employment_type:
     name: employment_type
     in: formData
-    type: number
-    enum: ['1', '2']
+    type: string
+    enum: ['full', 'part']
   major_income:
     name: major_income
     in: formData
@@ -66,10 +70,9 @@ definitions:
     name: extra_income
     in: formData
     type: number
-  income:
-    name: income
+  file:
+    name: file
     in: formData
-    required: true
     type: file
 
 # Routes list
@@ -93,13 +96,7 @@ definitions:
       - $ref: '#/definitions/phone'
       - $ref: '#/definitions/birthday'
       - $ref: '#/definitions/avatar'
-      - $ref: '#/definitions/company_logo'
       - $ref: '#/definitions/sex'
-      - $ref: '#/definitions/profession'
-      - $ref: '#/definitions/hiring_date'
-      - $ref: '#/definitions/employment_type'
-      - $ref: '#/definitions/major_income'
-      - $ref: '#/definitions/extra_income'
     responses: [200]
 
 /api/v1/tenant/members/{id}:
@@ -116,13 +113,7 @@ definitions:
       - $ref: '#/definitions/phone'
       - $ref: '#/definitions/birthday'
       - $ref: '#/definitions/avatar'
-      - $ref: '#/definitions/company_logo'
       - $ref: '#/definitions/sex'
-      - $ref: '#/definitions/profession'
-      - $ref: '#/definitions/hiring_date'
-      - $ref: '#/definitions/employment_type'
-      - $ref: '#/definitions/major_income'
-      - $ref: '#/definitions/extra_income'
     responses: [200]
 
   delete:
@@ -142,10 +133,34 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/id'
-      - $ref: '#/definitions/income'
+      - $ref: '#/definitions/file'
+      - $ref: '#/definitions/company_logo'
+      - $ref: '#/definitions/profession'
+      - $ref: '#/definitions/position'
+      - $ref: '#/definitions/hiring_date'
+      - $ref: '#/definitions/employment_type'
+      - $ref: '#/definitions/major_income'
+      - $ref: '#/definitions/extra_income'
     responses: [200]
 
 /api/v1/tenant/members/{id}/income/{income_id}:
+  put:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Get user family members
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+      - $ref: '#/definitions/income_id'
+      - $ref: '#/definitions/file'
+      - $ref: '#/definitions/company_logo'
+      - $ref: '#/definitions/profession'
+      - $ref: '#/definitions/position'
+      - $ref: '#/definitions/hiring_date'
+      - $ref: '#/definitions/employment_type'
+      - $ref: '#/definitions/major_income'
+      - $ref: '#/definitions/extra_income'
+    responses: [200]
   delete:
     tags: [members]
     security: [bearerAuth: []]

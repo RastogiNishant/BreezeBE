@@ -26,10 +26,9 @@ class MemberService {
   /**
    *
    */
-  static async addIncome(filePath, member) {
+  static async addIncome(data, member) {
     return Income.createItem({
-      url: filePath,
-      disc: 's3',
+      ...data,
       member_id: member.id,
     })
   }

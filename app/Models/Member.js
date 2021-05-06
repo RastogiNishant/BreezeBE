@@ -7,19 +7,13 @@ class Member extends Model {
     return [
       'id',
       'user_id',
-      'child',
+      'avatar',
       'firstname',
       'secondname',
+      'child',
+      'sex',
       'phone',
       'birthday',
-      'sex',
-      'avatar',
-      'profession',
-      'company_logo',
-      'hiring_date',
-      'employment_type',
-      'major_income',
-      'extra_income',
     ]
   }
 

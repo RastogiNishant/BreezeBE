@@ -8,23 +8,40 @@ const HttpException = use('App/Exceptions/HttpException')
 /**
  * Apply files from request if exists
  */
-const mixinFiles = async (request, member) => {
-  const avatar = request.file('avatar')
-  const companyLogo = request.file('company_logo')
+const mixinFiles = async (request, item) => {
+  const logo = request.file('company_logo')
+  const file = request.file('file')
 
-  const { avatarPath, companyLogoPath } = await Promise.props({
+  const { logoPath, incomePath } = await Promise.props({
+    logoPath: logo
+      ? File.saveToDisk(logo, [File.IMAGE_PNG, File.IMAGE_JPG])
+      : Promise.resolve(undefined),
+    incomePath: file
+      ? File.saveToDisk(file, [File.IMAGE_PDF, File.IMAGE_PNG, File.IMAGE_JPG], false)
+      : Promise.resolve(undefined),
+  })
+  if (logoPath) {
+    item.company_logo = logoPath
+  }
+  if (incomePath) {
+    item.document = incomePath
+  }
+
+  return item
+}
+
+/**
+ *
+ */
+const mixinAvatar = async (request, member) => {
+  const avatar = request.file('avatar')
+  const { avatarPath } = await Promise.props({
     avatarPath: avatar
       ? File.saveToDisk(avatar, [File.IMAGE_PNG, File.IMAGE_JPG])
-      : Promise.resolve(undefined),
-    companyLogoPath: companyLogo
-      ? File.saveToDisk(companyLogo, [File.IMAGE_PNG, File.IMAGE_JPG])
       : Promise.resolve(undefined),
   })
   if (avatarPath) {
     member.avatar = avatarPath
-  }
-  if (companyLogoPath) {
-    member.company_logo = companyLogoPath
   }
 
   return member
@@ -47,7 +64,7 @@ class MemberController {
    *
    */
   async addMember({ request, auth, response }) {
-    const member = await mixinFiles(request, request.all())
+    const member = await mixinAvatar(request, request.all())
     const result = await MemberService.createMember(member, auth.user.id)
 
     response.res(result)
@@ -67,7 +84,7 @@ class MemberController {
       throw HttpException('Member not exists', 404)
     }
 
-    const updateData = await mixinFiles(request, data)
+    const updateData = await mixinAvatar(request, data)
     await member.updateItem(updateData)
 
     response.res(member)
@@ -87,9 +104,8 @@ class MemberController {
    *
    */
   async addMemberIncome({ request, auth, response }) {
-    const income = request.file('income')
-    const { id } = request.all()
-    const member = await MemberService.getMemberQuery()
+    const { id, ...data } = request.all()
+    let member = await MemberService.getMemberQuery()
       .where('id', id)
       .where('user_id', auth.user.id)
       .first()
@@ -98,10 +114,32 @@ class MemberController {
       throw new HttpException('Member not exists', 404)
     }
 
-    const incomePath = await File.saveToDisk(income, [File.IMAGE_PDF], false)
-    await MemberService.addIncome(incomePath, member)
+    const incomeData = await mixinFiles(request, data)
+    const income = await MemberService.addIncome(incomeData, member)
 
-    response.res(true)
+    response.res(income)
+  }
+
+  /**
+   *
+   */
+  async editIncome({ request, auth, response }) {
+    const { income_id, id, ...rest } = request.all()
+    const income = await Income.query()
+      .where('id', income_id)
+      .whereIn('member_id', function () {
+        this.select('id').from('members').where('user_id', auth.user.id)
+      })
+      .first()
+
+    if (!income) {
+      throw new HttpException('Income not exists', 404)
+    }
+
+    const data = await mixinFiles(request, rest)
+    await income.updateItem(data)
+
+    response.res(income)
   }
 
   /**
