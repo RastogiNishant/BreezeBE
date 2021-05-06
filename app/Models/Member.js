@@ -17,10 +17,23 @@ class Member extends Model {
     ]
   }
 
+  /**
+   *
+   */
   static get readonly() {
     return ['id', 'user_id']
   }
 
+  /**
+   *
+   */
+  static get Serializer() {
+    return 'App/Serializers/MemberSerializer'
+  }
+
+  /**
+   *
+   */
   incomes() {
     return this.hasMany('App/Models/Income')
   }

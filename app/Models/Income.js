@@ -22,6 +22,13 @@ class Income extends Model {
     return ['id', 'member_id']
   }
 
+  /**
+   *
+   */
+  static get Serializer() {
+    return 'App/Serializers/IncomeSerializer'
+  }
+
   static get hidden() {
     return ['document']
   }
