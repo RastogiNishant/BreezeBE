@@ -151,6 +151,9 @@ Route.group(() => {
 }).prefix('api/v1/terms')
 
 // TENANT
+Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
+  'auth:jwt,jwtLandlord',
+])
 // Tenant members
 Route.group(() => {
   Route.get('/', 'MemberController.getMembers')

@@ -1,0 +1,35 @@
+definitions:
+  user_id:
+    name: user_id
+    in: query
+    type: number
+    required: true
+  member_id:
+    name: member_id
+    in: query
+    type: number
+    required: true
+  file_type:
+    name: file_type
+    in: query
+    type: string
+    enum: ['rent_proof', 'debt_proof', 'income_proof']
+    required: true
+  file_id:
+    name: file_id
+    in: query
+    type: number
+
+# Routes list
+/api/v1/tenant/file:
+  get:
+    tags: [docs]
+    security: [bearerAuth: []]
+    description: Get tenant proof docs
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/user_id'
+      - $ref: '#/definitions/member_id'
+      - $ref: '#/definitions/file_type'
+      - $ref: '#/definitions/file_id'
+    responses: [200]

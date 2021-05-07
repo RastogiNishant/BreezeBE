@@ -7,6 +7,10 @@ const constants = {
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
 
+  MEMBER_FILE_TYPE_RENT: 'rent_proof',
+  MEMBER_FILE_TYPE_DEBT: 'debt_proof',
+  MEMBER_FILE_TYPE_INCOME: 'income_proof',
+
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
 
