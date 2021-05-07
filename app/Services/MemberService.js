@@ -7,7 +7,11 @@ class MemberService {
    *
    */
   static async getMembers(userId) {
-    const query = Member.query().where('user_id', userId).with('incomes')
+    const query = Member.query()
+      .where('user_id', userId)
+      .with('incomes', function (b) {
+        b.with('proofs')
+      })
 
     return (await query.fetch()).rows
   }
