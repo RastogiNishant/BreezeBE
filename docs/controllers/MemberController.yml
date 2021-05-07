@@ -136,10 +136,12 @@ definitions:
     name: file
     in: formData
     type: file
+    required: true
   expire_date:
     name: expire_date
     in: formData
     type: date
+    required: true
     description: 'Date like: 2020-04-XX'
 
 # Routes list
