@@ -13,8 +13,7 @@ class Income extends Model {
       'position',
       'hiring_date',
       'employment_type',
-      'major_income',
-      'extra_income',
+      'income',
     ]
   }
 

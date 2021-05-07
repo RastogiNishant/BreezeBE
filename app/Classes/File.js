@@ -1,6 +1,7 @@
 const FileType = require('file-type')
 const uuid = require('uuid')
 const moment = require('moment')
+const Promise = require('bluebird')
 const { nth, isEmpty } = require('lodash')
 
 const Logger = use('Logger')
@@ -53,6 +54,28 @@ class File {
    */
   static async getProtectedUrl(filePathName, expiry = 900, params) {
     return Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
+  }
+
+  /**
+   *
+   */
+  static async saveRequestFiles(request, fields = []) {
+    if (isEmpty(fields)) {
+      return {}
+    }
+
+    const saveFile = async ({ field, mime = null, isPublic = true }) => {
+      const file = request.file(field)
+      if (!file) {
+        return null
+      }
+      const path = await File.saveToDisk(file, mime, isPublic)
+
+      return { field, path }
+    }
+    const files = await Promise.map(fields, saveFile)
+
+    return files.reduce((n, v) => (v ? { ...n, [v.field]: v.path } : n), {})
   }
 }
 

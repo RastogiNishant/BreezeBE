@@ -62,18 +62,81 @@ definitions:
     in: formData
     type: string
     enum: ['full', 'part']
-  major_income:
-    name: major_income
-    in: formData
-    type: number
-  extra_income:
-    name: extra_income
+  income:
+    name: income
     in: formData
     type: number
   file:
     name: file
     in: formData
     type: file
+
+  rent_arrears_doc:
+    name: rent_arrears_doc
+    in: formData
+    type: file
+  debt_proof:
+    name: debt_proof
+    in: formData
+    type: file
+  landlord_name:
+    name: landlord_name
+    in: formData
+    type: string
+  landlord_email:
+    name: landlord_email
+    in: formData
+    type: string
+  email:
+    name: email
+    in: formData
+    type: string
+  landlord_phone:
+    name: landlord_phone
+    in: formData
+    type: string
+  last_address:
+    name: last_address
+    in: formData
+    type: string
+  credit_score:
+    name: credit_score
+    in: formData
+    type: number
+    default: null
+  unpaid_rental:
+    name: unpaid_rental
+    in: formData
+    type: boolean
+  insolvency_proceed:
+    name: insolvency_proceed
+    in: formData
+    type: boolean
+  arrest_warranty:
+    name: arrest_warranty
+    in: formData
+    type: boolean
+  clean_procedure:
+    name: clean_procedure
+    in: formData
+    type: boolean
+  income_seizure:
+    name: income_seizure
+    in: formData
+    type: boolean
+  duties_amount:
+    name: duties_amount
+    in: formData
+    type: number
+  external_duties:
+    name: external_duties
+    in: formData
+    schema:
+      type: array
+      items:
+        type: number
+    explode: true
+    default: '[1, 2]'
 
 # Routes list
 /api/v1/tenant/members:
@@ -94,9 +157,26 @@ definitions:
       - $ref: '#/definitions/firstname'
       - $ref: '#/definitions/secondname'
       - $ref: '#/definitions/phone'
+      - $ref: '#/definitions/email'
       - $ref: '#/definitions/birthday'
       - $ref: '#/definitions/avatar'
       - $ref: '#/definitions/sex'
+      - $ref: '#/definitions/rent_arrears_doc'
+      - $ref: '#/definitions/debt_proof'
+      - $ref: '#/definitions/landlord_name'
+      - $ref: '#/definitions/landlord_email'
+      - $ref: '#/definitions/landlord_phone'
+      - $ref: '#/definitions/last_address'
+      - $ref: '#/definitions/credit_score'
+      - $ref: '#/definitions/unpaid_rental'
+      - $ref: '#/definitions/insolvency_proceed'
+      - $ref: '#/definitions/arrest_warranty'
+      - $ref: '#/definitions/clean_procedure'
+      - $ref: '#/definitions/income_seizure'
+      - $ref: '#/definitions/duties_amount'
+      - $ref: '#/definitions/rent_arrears_doc'
+      - $ref: '#/definitions/debt_proof'
+      - $ref: '#/definitions/external_duties'
     responses: [200]
 
 /api/v1/tenant/members/{id}:
@@ -111,9 +191,24 @@ definitions:
       - $ref: '#/definitions/firstname'
       - $ref: '#/definitions/secondname'
       - $ref: '#/definitions/phone'
+      - $ref: '#/definitions/email'
       - $ref: '#/definitions/birthday'
       - $ref: '#/definitions/avatar'
       - $ref: '#/definitions/sex'
+      - $ref: '#/definitions/rent_arrears_doc'
+      - $ref: '#/definitions/debt_proof'
+      - $ref: '#/definitions/landlord_name'
+      - $ref: '#/definitions/landlord_email'
+      - $ref: '#/definitions/landlord_phone'
+      - $ref: '#/definitions/last_address'
+      - $ref: '#/definitions/credit_score'
+      - $ref: '#/definitions/unpaid_rental'
+      - $ref: '#/definitions/insolvency_proceed'
+      - $ref: '#/definitions/arrest_warranty'
+      - $ref: '#/definitions/clean_procedure'
+      - $ref: '#/definitions/income_seizure'
+      - $ref: '#/definitions/duties_amount'
+      - $ref: '#/definitions/external_duties'
     responses: [200]
 
   delete:
@@ -133,14 +228,12 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/id'
-      - $ref: '#/definitions/file'
       - $ref: '#/definitions/company_logo'
       - $ref: '#/definitions/profession'
       - $ref: '#/definitions/position'
       - $ref: '#/definitions/hiring_date'
       - $ref: '#/definitions/employment_type'
-      - $ref: '#/definitions/major_income'
-      - $ref: '#/definitions/extra_income'
+      - $ref: '#/definitions/income'
     responses: [200]
 
 /api/v1/tenant/members/{id}/income/{income_id}:
@@ -152,14 +245,12 @@ definitions:
     parameters:
       - $ref: '#/definitions/id'
       - $ref: '#/definitions/income_id'
-      - $ref: '#/definitions/file'
       - $ref: '#/definitions/company_logo'
       - $ref: '#/definitions/profession'
       - $ref: '#/definitions/position'
       - $ref: '#/definitions/hiring_date'
       - $ref: '#/definitions/employment_type'
-      - $ref: '#/definitions/major_income'
-      - $ref: '#/definitions/extra_income'
+      - $ref: '#/definitions/income'
     responses: [200]
   delete:
     tags: [members]

@@ -9,6 +9,7 @@ const Env = use('Env')
 const Database = use('Database')
 const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
+const Tenant = use('App/Models/Tenant')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 
@@ -22,6 +23,12 @@ class UserService {
    */
   static async createUser(userData) {
     const user = await User.createItem(userData)
+    if (user.role === ROLE_USER) {
+      // Create empty tenant and link to user
+      await Tenant.createItem({
+        user_id: user.id,
+      })
+    }
 
     return { user }
   }
@@ -182,6 +189,21 @@ class UserService {
     )
 
     return result.user
+  }
+
+  /**
+   * Get tenant for user or create if not exists
+   */
+  static async getOrCreateTenant(user) {
+    if (user.role !== ROLE_USER) {
+      throw new AppException('Invalid tenant user role')
+    }
+    const tenant = await Tenant.query().where('user_id', user.id).first()
+    if (tenant) {
+      return tenant
+    }
+
+    return Tenant.createItem({ user_id: user.id })
   }
 }
 

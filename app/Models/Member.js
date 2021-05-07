@@ -14,6 +14,21 @@ class Member extends Model {
       'sex',
       'phone',
       'birthday',
+      'email',
+      'landlord_name',
+      'landlord_phone',
+      'landlord_email',
+      'last_address',
+      'rent_arrears_doc',
+      'credit_score',
+      'debt_proof',
+      'unpaid_rental',
+      'insolvency_proceed',
+      'arrest_warranty',
+      'clean_procedure',
+      'income_seizure',
+      'external_duties',
+      'duties_amount',
     ]
   }
 

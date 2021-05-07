@@ -60,6 +60,10 @@ Route.put('/api/v1/users/password/confirm', 'AccountController.passwordConfirm')
 Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware([
   'auth:jwtLandlord,jwt',
 ])
+Route.put('/api/v1/users/tenant', 'AccountController.updateTenant').middleware([
+  'auth:jwt',
+  'valid:UpdateTenant',
+])
 
 Route.get('/api/v1/references', 'CommonController.getReferences')
 

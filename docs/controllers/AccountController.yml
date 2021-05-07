@@ -213,3 +213,11 @@ paths:
       description: Switch user to another role
       produces: [application/json]
       responses: [200]
+
+  /api/v1/users/tenant:
+    put:
+      security: [bearerAuth: []]
+      tags: [account]
+      description: Update tenant user data
+      produces: [application/json]
+      responses: [200]

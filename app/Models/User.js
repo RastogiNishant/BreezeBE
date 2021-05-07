@@ -83,6 +83,10 @@ class User extends Model {
     return this.hasOne('App/Models/Agreement', 'id', 'agreement_id')
   }
 
+  tenant() {
+    return this.hasOne('App/Models/Tenant', 'id', 'user_id')
+  }
+
   isValidToken() {
     return /^([^\.\$\[\]\#\/]){100,768}$/.test(toString(this.device_token))
   }

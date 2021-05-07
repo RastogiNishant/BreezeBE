@@ -5,6 +5,7 @@ const uuid = require('uuid')
 const Promise = require('bluebird')
 
 const User = use('App/Models/User')
+const File = use('App/Classes/File')
 const Hash = use('Hash')
 const Drive = use('Drive')
 const Logger = use('Logger')
@@ -116,8 +117,8 @@ class AccountController {
    */
   async me({ auth, response }) {
     const user = await User.query()
-      .select('users.*')
       .where('users.id', auth.current.user.id)
+      .with('tenant')
       .firstOrFail()
 
     return response.res(user)
@@ -252,6 +253,18 @@ class AccountController {
     const token = await authenticator.generate(userTarget)
 
     response.res(token)
+  }
+
+  /**
+   *
+   */
+  async updateTenant({ request, auth, response }) {
+    const data = request.all()
+
+    // const tenant = await UserService.getOrCreateTenant(auth.user)
+    // await tenant.updateItem(data)
+    //
+    // response.res(tenant)
   }
 }
 

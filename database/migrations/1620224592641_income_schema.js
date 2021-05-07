@@ -21,15 +21,34 @@ class IncomeSchema extends Schema {
       table.string('secondname', 254)
       table.boolean('child')
       table.string('phone', 30)
+      table.string('email', 255)
       table.date('birthday', { useTz: false })
       table.integer('sex').unsigned().defaultTo(GENDER_MALE)
       table.string('avatar', 512)
+      // Last rental data
+      table.string('landlord_name', 255)
+      table.string('landlord_phone', 30)
+      table.string('landlord_email', 255)
+      table.string('last_address', 255)
+      table.string('rent_arrears_doc', 255)
+      // Member credit data
+      table.integer('credit_score').unsigned()
+      table.string('debt_proof', 255)
+      // Member arrests
+      table.boolean('unpaid_rental')
+      table.boolean('insolvency_proceed')
+      table.boolean('arrest_warranty')
+      table.boolean('clean_procedure')
+      table.boolean('income_seizure')
+      // External duties
+      table.specificType('external_duties', 'INT[]')
+      table.decimal('duties_amount', 10, 2)
       table.timestamps()
     })
 
     this.create('incomes', (table) => {
       table.increments()
-      table.string('document', 254)
+      table.enum('employment_type', [HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME])
       table
         .integer('member_id')
         .unsigned()
@@ -41,9 +60,7 @@ class IncomeSchema extends Schema {
       table.string('position', 120)
       table.string('company_logo', 512)
       table.date('hiring_date', { useTz: false })
-      table.enum('employment_type', [HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME])
-      table.decimal('major_income', 10, 2)
-      table.decimal('extra_income', 10, 2)
+      table.decimal('income', 10, 2)
     })
   }
 
