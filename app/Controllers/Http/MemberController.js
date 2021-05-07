@@ -1,7 +1,6 @@
-const Promise = require('bluebird')
-
 const File = use('App/Classes/File')
 const Income = use('App/Models/Income')
+const IncomeProof = use('App/Models/IncomeProof')
 const MemberService = use('App/Services/MemberService')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -126,6 +125,48 @@ class MemberController {
         this.select('id').from('members').where('user_id', auth.user.id)
       })
       .delete()
+
+    response.res(true)
+  }
+
+  /**
+   *
+   */
+  async addMemberIncomeProof({ request, auth, response }) {
+    const { income_id, ...rest } = request.all()
+
+    const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
+    if (!income) {
+      throw new HttpException('Invalid income', 404)
+    }
+
+    const files = await File.saveRequestFiles(request, [
+      { field: 'file', mime: docMimes, isPublic: false },
+    ])
+    const incomeProof = await MemberService.addMemberIncomeProof({ ...rest, ...files }, income)
+
+    response.res(incomeProof)
+  }
+
+  /**
+   *
+   */
+  async removeMemberIncomeProof({ request, auth, response }) {
+    const { id } = request.all()
+
+    // get proof
+    const proof = await IncomeProof.query()
+      .select('income_proofs.*')
+      .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+      .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+      .where('income_proofs.id', id)
+      .where('_m.user_id', auth.user.id)
+      .first()
+
+    if (!proof) {
+      throw new HttpException('Invalid income proof', 404)
+    }
+    await IncomeProof.query().where('id', proof.id).delete()
 
     response.res(true)
   }

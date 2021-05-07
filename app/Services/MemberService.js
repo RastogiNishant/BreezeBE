@@ -1,5 +1,6 @@
 const Member = use('App/Models/Member')
 const Income = use('App/Models/Income')
+const IncomeProof = use('App/Models/IncomeProof')
 
 class MemberService {
   /**
@@ -32,6 +33,28 @@ class MemberService {
     return Income.createItem({
       ...data,
       member_id: member.id,
+    })
+  }
+
+  /**
+   *
+   */
+  static async getIncomeByIdAndUser(id, user) {
+    return Income.query()
+      .where('id', id)
+      .whereIn('member_id', function () {
+        this.select('id').from('members').where('user_id', user.id)
+      })
+      .first()
+  }
+
+  /**
+   *
+   */
+  static async addMemberIncomeProof(data, income) {
+    return IncomeProof.createItem({
+      ...data,
+      income_id: income.id,
     })
   }
 }

@@ -35,6 +35,10 @@ class Income extends Model {
   static get traits() {
     return ['NoTimestamp']
   }
+
+  proofs() {
+    return this.hasMany('App/Models/IncomeProof')
+  }
 }
 
 module.exports = Income

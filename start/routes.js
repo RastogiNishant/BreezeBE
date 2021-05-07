@@ -170,6 +170,18 @@ Route.group(() => {
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt'])
 
+// Add income files
+Route.group(() => {
+  Route.post('/:income_id/proof', 'MemberController.addMemberIncomeProof').middleware([
+    'valid:IncomeId,AddIncomeProof',
+  ])
+  Route.delete('/:income_id/proof/:id', 'MemberController.removeMemberIncomeProof').middleware([
+    'valid:Id,IncomeId',
+  ])
+})
+  .prefix('api/v1/tenant/income')
+  .middleware(['auth:jwt'])
+
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])

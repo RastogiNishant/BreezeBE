@@ -66,11 +66,6 @@ definitions:
     name: income
     in: formData
     type: number
-  file:
-    name: file
-    in: formData
-    type: file
-
   rent_arrears_doc:
     name: rent_arrears_doc
     in: formData
@@ -137,6 +132,15 @@ definitions:
         type: number
     explode: true
     default: '[1, 2]'
+  file:
+    name: file
+    in: formData
+    type: file
+  expire_date:
+    name: expire_date
+    in: formData
+    type: date
+    description: 'Date like: 2020-04-XX'
 
 # Routes list
 /api/v1/tenant/members:
@@ -252,6 +256,30 @@ definitions:
       - $ref: '#/definitions/employment_type'
       - $ref: '#/definitions/income'
     responses: [200]
+  delete:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Remove member
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+      - $ref: '#/definitions/income_id'
+    responses: [200]
+
+/api/v1/tenant/income/{income_id}/proof:
+  post:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Add income proof file
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/income_id'
+      - $ref: '#/definitions/file'
+      - $ref: '#/definitions/expire_date'
+
+    responses: [200]
+
+/api/v1/tenant/income/{income_id}/proof/{id}:
   delete:
     tags: [members]
     security: [bearerAuth: []]
