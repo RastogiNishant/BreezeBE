@@ -282,7 +282,14 @@ class EstateController {
    *
    */
   async removeSlot({ request, auth, response }) {
-    response.res('Should implement')
+    const { slot_id } = request.all()
+    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
+    if (!slot) {
+      throw new HttpException('Time slot not found', 404)
+    }
+    await slot.delete()
+
+    response.res(true)
   }
 }
 
