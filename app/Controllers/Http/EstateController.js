@@ -229,7 +229,7 @@ class EstateController {
       .where('id', estate_id)
       .first()
     if (!estate) {
-      throw HttpException('Estate not exists', 404)
+      throw new HttpException('Estate not exists', 404)
     }
 
     const slots = await EstateService.getTimeSlotsByEstate(estate)
