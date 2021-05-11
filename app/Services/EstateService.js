@@ -1,9 +1,12 @@
 'use strict'
+const moment = require('moment')
+
 const Database = use('Database')
 const Drive = use('Drive')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const Estate = use('App/Models/Estate')
+const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
 
@@ -15,6 +18,12 @@ class EstateService {
    */
   static getEstateQuery() {
     return Estate.query().select('estates.*', Database.gis.asGeoJSON('coord').as('coord'))
+  }
+
+  static getActiveEstateQuery() {
+    return Estate.query()
+      .select('estates.*', Database.gis.asGeoJSON('coord').as('coord'))
+      .whereNot('status', STATUS_DELETE)
   }
 
   /**
@@ -138,6 +147,52 @@ class EstateService {
    */
   static async getEstateByHash(hash) {
     return Estate.query().where('hash', hash).where('status', STATUS_ACTIVE).first()
+  }
+
+  /**
+   *
+   */
+  static async getTimeSlotsByEstate(estate) {
+    return TimeSlot.query()
+      .where('estate_id', estate.id)
+      .orderBy([
+        { column: 'week_day', order: 'ask' },
+        { column: 'start_at', order: 'ask' },
+      ])
+      .limit(100)
+      .fetch()
+  }
+
+  /**
+   *
+   */
+  static async createSlot({ end_at, start_at, slot_length, week_day }, estate) {
+    const minDiff = moment
+      .utc(`2012-10-10 ${end_at}`)
+      .diff(moment.utc(`2012-10-10 ${start_at}`), 'minutes')
+
+    if (minDiff % slot_length !== 0) {
+      throw new AppException('Invalid time range')
+    }
+
+    // Checks is time slot crossing existing
+    const existing = await TimeSlot.query()
+      .where('estate_id', estate.id)
+      .where('week_day', week_day)
+      .where(function () {
+        this.whereBetween('start_at', [start_at, end_at])
+          .orWhereBetween('end_at', [start_at, end_at])
+          .orWhere(function () {
+            this.where('start_at', '<=', start_at).where('end_at', '>=', start_at)
+          })
+      })
+      .first()
+
+    if (existing) {
+      throw new AppException('Time slot crossing existing')
+    }
+
+    return TimeSlot.createItem({ week_day, end_at, start_at, slot_length, estate_id: estate.id })
   }
 }
 

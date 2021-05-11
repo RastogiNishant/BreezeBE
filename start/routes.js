@@ -79,6 +79,18 @@ Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  // add slots
+  Route.get('/:estate_id/slots', 'EstateController.getSlots').middleware(['valid:EstateId'])
+  Route.post('/:estate_id/slots', 'EstateController.createSlot').middleware([
+    'valid:EstateId,CreateSlot',
+  ])
+  Route.put('/:estate_id/slots/:slot_id', 'EstateController.updateSlot').middleware([
+    'valid:EstateId,CreateSlot',
+  ])
+  Route.delete('/:estate_id/slots/:slot_id', 'EstateController.removeSlot').middleware([
+    'valid:EstateId,CreateSlot',
+  ])
+
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])

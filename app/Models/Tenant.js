@@ -4,22 +4,7 @@ const Model = require('./BaseModel')
 
 class Tenant extends Model {
   static get columns() {
-    return [
-      'id',
-      'user_id',
-      'landlord_name',
-      'address',
-      'rent_arrears_doc',
-      'credit_score',
-      'debt_doc',
-      'unpaid_rental',
-      'insolvency_proceed',
-      'arrest_warranty',
-      'clean_procedure',
-      'income_seizure',
-      'external_duties',
-      'duties_amount',
-    ]
+    return ['id', 'user_id', 'private_use', 'pets', 'pets_species', 'parking_space']
   }
 
   /**
@@ -33,7 +18,7 @@ class Tenant extends Model {
    *
    */
   static get readonly() {
-    return ['id']
+    return ['id', 'user_id']
   }
 
   user() {

@@ -467,6 +467,33 @@ definitions:
     name: max_age
     in: formData
     type: number
+  week_day:
+    name: week_day
+    in: formData
+    type: number
+    enum: [1, 2, 3, 4, 5, 6, 7]
+  slot_length:
+    name: slot_length
+    in: formData
+    type: number
+    enum: [5, 10, 15]
+  start_at:
+    name: start_at
+    in: formData
+    type: string
+    pattern: '^\d{1,2}:\d{2}$'
+    example: '02:00'
+  end_at:
+    name: end_at
+    in: formData
+    type: string
+    pattern: '^\d{1,2}:\d{2}$'
+    example: '23:00'
+  slot_id:
+    name: slot_id
+    in: path
+    type: number
+    required: true
 
 paths:
   /api/v1/estates:
@@ -756,4 +783,56 @@ paths:
           in: formData
           type: file
           required: true
+      responses: [200]
+
+  /api/v1/estates/{estate_id}/slots:
+    get:
+      tags: [estate, timeslot]
+      security: [bearerAuth: []]
+      description: Get etstate timeslots
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+      responses: [200]
+
+    post:
+      tags: [estate, timeslot]
+      security: [bearerAuth: []]
+      description: Create new estate
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - name: week_day
+          allOf: [$ref: '#/definitions/week_day', required: true]
+        - name: slot_length
+          allOf: [$ref: '#/definitions/slot_length', required: true]
+        - name: start_at
+          allOf: [$ref: '#/definitions/start_at', required: true]
+        - name: end_at
+          allOf: [$ref: '#/definitions/end_at', required: true]
+      responses: [200]
+
+  /api/v1/estates/{estate_id}/slots/{slot_id}:
+    put:
+      tags: [estate, timeslot]
+      security: [bearerAuth: []]
+      description: Create new estate
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - $ref: '#/definitions/slot_id'
+        - $ref: '#/definitions/week_day'
+        - $ref: '#/definitions/slot_length'
+        - $ref: '#/definitions/start_at'
+        - $ref: '#/definitions/end_at'
+      responses: [200]
+
+    delete:
+      tags: [estate, timeslot]
+      security: [bearerAuth: []]
+      description: Delete existing slot
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - $ref: '#/definitions/slot_id'
       responses: [200]

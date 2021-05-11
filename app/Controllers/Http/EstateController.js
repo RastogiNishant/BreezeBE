@@ -12,6 +12,7 @@ const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
+const Logger = use('Logger')
 
 const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_DELETE } = require('../../constants')
 
@@ -216,6 +217,60 @@ class EstateController {
     // TODO: Apply buddy invite
 
     response.res(true)
+  }
+
+  /**
+   *
+   */
+  async getSlots({ request, auth, response }) {
+    const { estate_id } = request.all()
+    const estate = await EstateService.getActiveEstateQuery()
+      .where('user_id', auth.user.id)
+      .where('id', estate_id)
+      .first()
+    if (!estate) {
+      throw HttpException('Estate not exists', 404)
+    }
+
+    const slots = await EstateService.getTimeSlotsByEstate(estate)
+    response.res(slots.rows)
+  }
+
+  /**
+   *
+   */
+  async createSlot({ request, auth, response }) {
+    const { estate_id, ...data } = request.all()
+    const estate = await EstateService.getActiveEstateQuery()
+      .where('user_id', auth.user.id)
+      .where('id', estate_id)
+      .first()
+    if (!estate) {
+      throw HttpException('Estate not exists', 404)
+    }
+
+    try {
+      const slot = await EstateService.createSlot(data, estate)
+
+      return response.res(slot)
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  /**
+   *
+   */
+  async updateSlot({ request, auth, response }) {
+    response.res('Should implement')
+  }
+
+  /**
+   *
+   */
+  async removeSlot({ request, auth, response }) {
+    response.res('Should implement')
   }
 }
 
