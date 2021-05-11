@@ -85,10 +85,10 @@ Route.group(() => {
     'valid:EstateId,CreateSlot',
   ])
   Route.put('/:estate_id/slots/:slot_id', 'EstateController.updateSlot').middleware([
-    'valid:EstateId,CreateSlot',
+    'valid:EstateId,SlotId,UpdateSlot',
   ])
   Route.delete('/:estate_id/slots/:slot_id', 'EstateController.removeSlot').middleware([
-    'valid:EstateId,CreateSlot',
+    'valid:EstateId,SlotId',
   ])
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])

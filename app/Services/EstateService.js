@@ -183,7 +183,7 @@ class EstateService {
         this.whereBetween('start_at', [start_at, end_at])
           .orWhereBetween('end_at', [start_at, end_at])
           .orWhere(function () {
-            this.where('start_at', '<=', start_at).where('end_at', '>=', start_at)
+            this.where('start_at', '<=', start_at).where('end_at', '>=', end_at)
           })
       })
       .first()
@@ -193,6 +193,52 @@ class EstateService {
     }
 
     return TimeSlot.createItem({ week_day, end_at, start_at, slot_length, estate_id: estate.id })
+  }
+
+  /**
+   *
+   */
+  static async getTimeSlotByOwner(userId, slotId) {
+    return TimeSlot.query()
+      .select('time_slots.*')
+      .innerJoin({ _e: 'estates' }, '_e.id', 'time_slots.estate_id')
+      .where('_e.user_id', userId)
+      .where('time_slots.id', slotId)
+      .first()
+  }
+
+  /**
+   * Check if existing slot after update will not cross another existing slots
+   */
+  static async updateSlot(slot, data) {
+    slot.merge(data)
+    const minDiff = moment
+      .utc(`2012-10-10 ${slot.end_at}`)
+      .diff(moment.utc(`2012-10-10 ${slot.start_at}`), 'minutes')
+
+    if (minDiff % slot.slot_length !== 0) {
+      throw new AppException('Invalid time range')
+    }
+
+    const crossingSlot = await TimeSlot.query()
+      .where('estate_id', slot.estate_id)
+      .whereNot('id', slot.id)
+      .where('week_day', slot.week_day)
+      .where(function () {
+        this.whereBetween('start_at', [slot.start_at, slot.end_at])
+          .orWhereBetween('end_at', [slot.start_at, slot.end_at])
+          .orWhere(function () {
+            this.where('start_at', '<=', slot.start_at).where('end_at', '>=', slot.end_at)
+          })
+      })
+      .first()
+
+    if (crossingSlot) {
+      throw new AppException('Time slot crossing existing')
+    }
+    await slot.save()
+
+    return slot
   }
 }
 

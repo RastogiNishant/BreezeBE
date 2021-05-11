@@ -263,7 +263,19 @@ class EstateController {
    *
    */
   async updateSlot({ request, auth, response }) {
-    response.res('Should implement')
+    const { estate_id, slot_id, week_day, ...rest } = request.all()
+    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
+    if (!slot) {
+      throw new HttpException('Time slot not found', 404)
+    }
+
+    try {
+      const updatedSlot = await EstateService.updateSlot(slot, rest)
+      return response.res(updatedSlot)
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
