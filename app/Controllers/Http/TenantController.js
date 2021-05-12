@@ -2,12 +2,9 @@
 
 const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
+const UserService = use('App/Services/UserService')
 
-const {
-  ROLE_USER,
-  ROLE_LANDLORD,
-  MEMBER_FILE_TYPE_INCOME,
-} = require('../../constants')
+const { ROLE_USER, ROLE_LANDLORD, MEMBER_FILE_TYPE_INCOME } = require('../../constants')
 
 class TenantController {
   /**
@@ -42,10 +39,10 @@ class TenantController {
   async updateTenant({ request, auth, response }) {
     const data = request.all()
 
-    // const tenant = await UserService.getOrCreateTenant(auth.user)
-    // await tenant.updateItem(data)
-    //
-    // response.res(tenant)
+    const tenant = await UserService.getOrCreateTenant(auth.user)
+    await tenant.updateItem(data)
+
+    response.res(false)
   }
 }
 

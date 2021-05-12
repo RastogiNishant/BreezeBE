@@ -5,6 +5,7 @@ const Point = use('App/Models/Point')
 const AppException = use('App/Exceptions/AppException')
 
 const { isString, toNumber, range } = require('lodash')
+const { POINT_TYPE_POI } = require('../constants')
 
 class GeoService {
   /**
@@ -30,10 +31,14 @@ class GeoService {
   /**
    *
    */
-  static async getOrCreatePoint({ lat, lon }) {
+  static async getOrCreatePoint({ lat, lon }, type = POINT_TYPE_POI) {
     lat = Point.round(lat)
     lon = Point.round(lon)
-    const point = await Point.query().where('lat', lat).where('lon', lon).first()
+    const point = await Point.query()
+      .where('lat', lat)
+      .where('lon', lon)
+      .where('type', type)
+      .first()
     if (point) {
       return point
     }

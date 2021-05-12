@@ -74,7 +74,7 @@ class UpdateTenant extends Base {
       floor_max: yup.number().min(0).max(21),
       space_min: yup.number().min(5).max(300),
       space_max: yup.number().min(5).max(300),
-      apt_type: yup.array
+      apt_type: yup.array()
         .of(
           yup
             .number()
@@ -97,7 +97,7 @@ class UpdateTenant extends Base {
             ])
         )
         .nullable(),
-      house_type: yup.array
+      house_type: yup.array()
         .of(
           yup
             .number()
