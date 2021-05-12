@@ -5,9 +5,9 @@ const uuid = require('uuid')
 const Promise = require('bluebird')
 
 const User = use('App/Models/User')
-const File = use('App/Classes/File')
 const Hash = use('Hash')
 const Drive = use('Drive')
+const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
@@ -242,6 +242,12 @@ class AccountController {
         password: String(new Date().getTime()),
         role: roleToSwitch,
       })
+      // Direct copy user password
+      await Database.raw(
+        'UPDATE users set password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
+        [id, user.id]
+      )
+
       userTarget = user
     }
     let authenticator
@@ -253,18 +259,6 @@ class AccountController {
     const token = await authenticator.generate(userTarget)
 
     response.res(token)
-  }
-
-  /**
-   *
-   */
-  async updateTenant({ request, auth, response }) {
-    const data = request.all()
-
-    // const tenant = await UserService.getOrCreateTenant(auth.user)
-    // await tenant.updateItem(data)
-    //
-    // response.res(tenant)
   }
 }
 

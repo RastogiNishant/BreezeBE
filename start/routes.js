@@ -60,11 +60,14 @@ Route.put('/api/v1/users/password/confirm', 'AccountController.passwordConfirm')
 Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware([
   'auth:jwtLandlord,jwt',
 ])
-Route.put('/api/v1/users/tenant', 'AccountController.updateTenant').middleware([
+
+// Tenant params and preferences
+Route.put('/api/v1/users/tenant', 'TenantController.updateTenant').middleware([
   'auth:jwt',
   'valid:UpdateTenant',
 ])
 
+// Common app references
 Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google

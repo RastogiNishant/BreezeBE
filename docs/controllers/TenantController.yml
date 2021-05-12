@@ -19,6 +19,132 @@ definitions:
     name: file_id
     in: query
     type: number
+  private_use:
+    name: private_use
+    in: formData
+    type: boolean
+  pets_species:
+    name: pets_species
+    in: formData
+    type: string
+  parking_space:
+    name: parking_space
+    in: formData
+    type: integer
+  dist_type:
+    name: dist_type
+    in: formData
+    type: string
+    enum: ['car', 'walk', 'soc']
+  dist_min:
+    name: dist_min
+    in: formData
+    type: integer
+    enum: [0, 15, 30, 45, 60]
+  budget_min:
+    name: budget_min
+    in: formData
+    type: integer
+    minimum: 0
+    maximum: 100
+  budget_max:
+    name: budget_max
+    in: formData
+    type: integer
+    minimum: 0
+    maximum: 100
+  include_utility:
+    name: include_utility
+    in: formData
+    type: boolean
+  rooms_min:
+    name: rooms_min
+    in: formData
+    type: integer
+    minimum: 1
+    maximum: 6
+  rooms_max:
+    name: rooms_max
+    in: formData
+    type: integer
+    minimum: 1
+    maximum: 6
+  floor_min:
+    name: floor_min
+    in: formData
+    type: integer
+    minimum: 0
+    maximum: 21
+  floor_max:
+    name: floor_max
+    in: formData
+    type: integer
+    minimum: 0
+    maximum: 21
+  space_min:
+    name: space_min
+    in: formData
+    type: integer
+    minimum: 5
+    maximum: 300
+  space_max:
+    name: space_max
+    in: formData
+    type: integer
+    minimum: 5
+    maximum: 300
+  apt_type:
+    name: apt_type
+    in: formData
+    schema:
+      type: array
+      items:
+        type: number
+        enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 39, 40]
+    explode: true
+    example: '[1, 2]'
+  house_type:
+    name: house_type
+    in: formData
+    schema:
+      type: array
+      items:
+        type: number
+        enum:
+          [
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+          ]
+    explode: true
+    example: '[13, 14]'
+  garden:
+    name: garden
+    in: formData
+    type: boolean
 
 # Routes list
 /api/v1/tenant/file:
@@ -32,4 +158,32 @@ definitions:
       - $ref: '#/definitions/member_id'
       - $ref: '#/definitions/file_type'
       - $ref: '#/definitions/file_id'
+    responses: [200]
+
+/api/v1/users/tenant:
+  put:
+    tags: [tenant]
+    security: [bearerAuth: []]
+    description: Update tenant  params
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/private_use'
+      - $ref: '#/definitions/pets'
+      - $ref: '#/definitions/pets_species'
+      - $ref: '#/definitions/parking_space'
+      - $ref: '#/definitions/coord'
+      - $ref: '#/definitions/dist_type'
+      - $ref: '#/definitions/dist_min'
+      - $ref: '#/definitions/budget_min'
+      - $ref: '#/definitions/budget_max'
+      - $ref: '#/definitions/include_utility'
+      - $ref: '#/definitions/rooms_min'
+      - $ref: '#/definitions/rooms_max'
+      - $ref: '#/definitions/floor_min'
+      - $ref: '#/definitions/floor_max'
+      - $ref: '#/definitions/space_min'
+      - $ref: '#/definitions/space_max'
+      - $ref: '#/definitions/apt_type'
+      - $ref: '#/definitions/house_type'
+      - $ref: '#/definitions/garden'
     responses: [200]

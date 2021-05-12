@@ -4,7 +4,14 @@ const Model = require('./BaseModel')
 
 class Point extends Model {
   static get columns() {
-    return ['id', 'lat', 'lon', 'data']
+    return ['id', 'lat', 'lon', 'data', 'type']
+  }
+
+  /**
+   *
+   */
+  static get readonly() {
+    return ['id', 'type']
   }
 
   static get traits() {

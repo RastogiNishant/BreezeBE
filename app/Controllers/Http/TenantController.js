@@ -35,6 +35,18 @@ class TenantController {
 
     response.res(link)
   }
+
+  /**
+   *
+   */
+  async updateTenant({ request, auth, response }) {
+    const data = request.all()
+
+    // const tenant = await UserService.getOrCreateTenant(auth.user)
+    // await tenant.updateItem(data)
+    //
+    // response.res(tenant)
+  }
 }
 
 module.exports = TenantController
