@@ -64,7 +64,7 @@ class UpdateTenant extends Base {
       dist_type: yup
         .string()
         .oneOf([TRANSPORT_TYPE_CAR, TRANSPORT_TYPE_WALK, TRANSPORT_TYPE_SOCIAL]),
-      dist_min: yup.number().integer().oneOf([0, 15, 30, 45, 60]),
+      dist_min: yup.number().integer().oneOf([15, 30, 45, 60]),
       budget_min: yup.number().positive().max(100),
       budget_max: yup.number().positive().max(100),
       include_utility: yup.boolean(),
@@ -74,7 +74,8 @@ class UpdateTenant extends Base {
       floor_max: yup.number().min(0).max(21),
       space_min: yup.number().min(5).max(300),
       space_max: yup.number().min(5).max(300),
-      apt_type: yup.array()
+      apt_type: yup
+        .array()
         .of(
           yup
             .number()
@@ -97,7 +98,8 @@ class UpdateTenant extends Base {
             ])
         )
         .nullable(),
-      house_type: yup.array()
+      house_type: yup
+        .array()
         .of(
           yup
             .number()

@@ -2,6 +2,7 @@
 
 const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
+const QueueService = use('App/Services/QueueService')
 const UserService = use('App/Services/UserService')
 
 const { ROLE_USER, ROLE_LANDLORD, MEMBER_FILE_TYPE_INCOME } = require('../../constants')
@@ -38,9 +39,13 @@ class TenantController {
    */
   async updateTenant({ request, auth, response }) {
     const data = request.all()
-
     const tenant = await UserService.getOrCreateTenant(auth.user)
     await tenant.updateItem(data)
+    const { lat, lon } = tenant.getLatLon()
+    // Add tenant anchor zone processing
+    if (lat && lon && tenant.dist_type && tenant.dist_min) {
+      QueueService.getAnchorIsoline(tenant.id)
+    }
 
     response.res(false)
   }

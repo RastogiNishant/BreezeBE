@@ -57,22 +57,28 @@ class GeoService {
       default:
         throw new Error('Invalid mode')
     }
-    // Time distance in sec
-    const range = Math.max(Math.min(+distMin * 60 || 0, MAX_TIME_DIST), MAX_TIME_DIST)
+    // Simplify polygon to ~300 points
+    const filterPoints = (points) => {
+      const getTolerance = (c) => 0.00000000004 * c * c - 0.000000009 * c
+      const pointsCount = points.length
+      const zone = points.map(([x, y]) => ({ x, y }))
+      let poly = simplify(zone, getTolerance(pointsCount), false)
+      if (poly.length > 400) {
+        poly = simplify(zone, getTolerance(pointsCount * 2), false)
+      }
+
+      return [[poly.map(({ x, y }) => [x, y])]]
+    }
 
     try {
-      // const data = await GeoAPI.getIsoline(lat, lon, mode, range)
-      // const geo = get(data, 'features.0.geometry.coordinates') || []
+      // Time distance in sec
+      const range = Math.max(Math.min(+distMin * 60 || 0, MAX_TIME_DIST), MAX_TIME_DIST)
+      const data = await GeoAPI.getIsoline(lat, lon, mode, range)
+      const geo = get(data, 'features.0.geometry.coordinates') || []
       // await File.logFile({ geo })
-      const data = await File.readLog()
-      const { geo } = JSON.parse(data)
-      const origin = geo[0][0]
-      console.log('Origin:', origin.length)
-      const poly = geo[0][0].map(([x, y]) => ({ x, y }))
-      const result = simplify(poly, 0.001, false)
-      console.log(result, result.length)
-
-      console.log(geo[0][0])
+      // const data = await File.readLog()
+      // const { geo } = JSON.parse(data)
+      return filterPoints(get(geo, '0.0', []))
     } catch (e) {
       Logger.error(e)
       throw e
@@ -114,7 +120,19 @@ class GeoService {
       return point
     }
 
-    return this.createIsoline({ lat, lon }, distType, distMin)
+    const polygon = await this.createIsoline({ lat, lon }, distType, distMin)
+    const newPoint = new Point()
+    newPoint.fill({
+      lat,
+      lon,
+      dist_type: distType,
+      dist_min: distMin,
+      type: POINT_TYPE_ZONE,
+      data: { data: polygon },
+    })
+    await newPoint.save()
+
+    return newPoint
   }
 
   /**

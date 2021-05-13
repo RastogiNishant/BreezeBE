@@ -41,6 +41,13 @@ class Tenant extends Model {
   /**
    *
    */
+  static get Serializer() {
+    return 'App/Serializers/TenantSerializer'
+  }
+
+  /**
+   *
+   */
   static get readonly() {
     return ['id', 'user_id']
   }
@@ -82,18 +89,7 @@ class Tenant extends Model {
       return { lat: lat || 0, lon: lon || 0 }
     }
 
-    if (!this.coord) {
-      return toCoord(this.coord_raw, false)
-    } else if (isString(this.coord)) {
-      try {
-        const data = JSON.parse(this.coord)
-        return toCoord(String(get(data, 'coordinates') || ''))
-      } catch (e) {
-        return toCoord(this.coord_raw, false)
-      }
-    } else {
-      return toCoord(String(get(this.coord, 'coordinates') || ''))
-    }
+    return toCoord(this.coord_raw, false)
   }
 }
 

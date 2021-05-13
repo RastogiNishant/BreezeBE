@@ -62,14 +62,18 @@ class TenantService {
     const tenant = await TenantService.getTenantQuery().where({ id: tenantId }).first()
     const { lat, lon } = tenant.getLatLon()
 
-    if (+lat === 0 && +lon === 0) {
+    if (+lat === 0 || +lon === 0 || !tenant.dist_type || tenant.dist_min) {
       // Invalid coordinates, nothing to parse
       return false
     }
+    const point = await GeoService.getOrCreateIsoline(
+      { lat, lon },
+      tenant.dist_type,
+      tenant.dist_min
+    )
+    tenant.point_id = point.id
 
-    const point = await GeoService.getOrCreateIsoline({ lat, lon }, TRANSPORT_TYPE_CAR, 30)
-
-    console.log(point)
+    return tenant.save()
   }
 }
 
