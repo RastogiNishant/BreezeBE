@@ -166,6 +166,26 @@ class GeoPify {
         return null
       })
   }
+
+  /**
+   *
+   */
+  async getIsoline(lat, lon, mode, range) {
+    const data = {
+      apiKey: this.settings.apiKey,
+      type: 'time',
+      lat,
+      lon,
+      mode,
+      range,
+    }
+
+    return this.request.send({
+      url: '/v1/isoline',
+      data,
+      method: 'GET',
+    })
+  }
 }
 
 module.exports = GeoPify

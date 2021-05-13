@@ -1,11 +1,22 @@
+const simplify = require('simplify-js')
+
 const GeoAPI = use('GeoAPI')
 const Logger = use('Logger')
 const Database = use('Database')
 const Point = use('App/Models/Point')
 const AppException = use('App/Exceptions/AppException')
+const File = use('App/Classes/File')
 
-const { isString, toNumber, range } = require('lodash')
-const { POINT_TYPE_POI } = require('../constants')
+const { isString, toNumber, range, get } = require('lodash')
+const {
+  POINT_TYPE_POI,
+  POINT_TYPE_ZONE,
+  TRANSPORT_TYPE_CAR,
+  TRANSPORT_TYPE_WALK,
+  TRANSPORT_TYPE_SOCIAL,
+} = require('../constants')
+
+const MAX_TIME_DIST = 3600
 
 class GeoService {
   /**
@@ -29,21 +40,81 @@ class GeoService {
   }
 
   /**
+   * Get Isoline data from GeoAPI service
+   */
+  static async createIsoline({ lat, lon }, distType, distMin) {
+    let mode
+    switch (distType) {
+      case TRANSPORT_TYPE_SOCIAL:
+        mode = 'approximated_transit'
+        break
+      case TRANSPORT_TYPE_CAR:
+        mode = 'drive'
+        break
+      case TRANSPORT_TYPE_WALK:
+        mode = 'walk'
+        break
+      default:
+        throw new Error('Invalid mode')
+    }
+    // Time distance in sec
+    const range = Math.max(Math.min(+distMin * 60 || 0, MAX_TIME_DIST), MAX_TIME_DIST)
+
+    try {
+      // const data = await GeoAPI.getIsoline(lat, lon, mode, range)
+      // const geo = get(data, 'features.0.geometry.coordinates') || []
+      // await File.logFile({ geo })
+      const data = await File.readLog()
+      const { geo } = JSON.parse(data)
+      const origin = geo[0][0]
+      console.log('Origin:', origin.length)
+      const poly = geo[0][0].map(([x, y]) => ({ x, y }))
+      const result = simplify(poly, 0.001, false)
+      console.log(result, result.length)
+
+      console.log(geo[0][0])
+    } catch (e) {
+      Logger.error(e)
+      throw e
+    }
+  }
+
+  /**
    *
    */
-  static async getOrCreatePoint({ lat, lon }, type = POINT_TYPE_POI) {
+  static async getOrCreatePoint({ lat, lon }) {
     lat = Point.round(lat)
     lon = Point.round(lon)
     const point = await Point.query()
       .where('lat', lat)
       .where('lon', lon)
-      .where('type', type)
+      .where('type', POINT_TYPE_POI)
       .first()
     if (point) {
       return point
     }
 
     return this.createPoint({ lat, lon })
+  }
+
+  static async getOrCreateIsoline({ lat, lon }, distType, distMin) {
+    lat = Point.round(lat)
+    lon = Point.round(lon)
+    const point = await Point.query()
+      .where({
+        lat,
+        lon,
+        type: POINT_TYPE_ZONE,
+        dist_type: distType,
+        dist_min: distMin,
+      })
+      .first()
+
+    if (point) {
+      return point
+    }
+
+    return this.createIsoline({ lat, lon }, distType, distMin)
   }
 
   /**

@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class Point extends Model {
   static get columns() {
-    return ['id', 'lat', 'lon', 'data', 'type']
+    return ['id', 'lat', 'lon', 'data', 'type', 'dist_type', 'dist_min']
   }
 
   /**

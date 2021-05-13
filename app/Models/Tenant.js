@@ -2,7 +2,7 @@
 
 const Database = use('Database')
 const Model = require('./BaseModel')
-const { isString } = require('lodash')
+const { isString, get } = require('lodash')
 
 class Tenant extends Model {
   static get columns() {
@@ -52,6 +52,7 @@ class Tenant extends Model {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
+        instance.coord_raw = `${lat},${lon}`
         // TODO: hook for update zone
       }
     })
@@ -59,6 +60,40 @@ class Tenant extends Model {
 
   user() {
     return this.belongsTo('App/Models/User', 'user_id', 'id')
+  }
+
+  /**
+   *
+   */
+  point() {
+    return this.hasOne('App/Models/Point', 'point_id', 'id')
+  }
+
+  /**
+   *
+   */
+  getLatLon() {
+    const toCoord = (str, reverse = true) => {
+      let [lat, lon] = String(str || '').split(',')
+      ;[lat, lon] = reverse
+        ? [parseFloat(lon), parseFloat(lat)]
+        : [parseFloat(lat), parseFloat(lon)]
+
+      return { lat: lat || 0, lon: lon || 0 }
+    }
+
+    if (!this.coord) {
+      return toCoord(this.coord_raw, false)
+    } else if (isString(this.coord)) {
+      try {
+        const data = JSON.parse(this.coord)
+        return toCoord(String(get(data, 'coordinates') || ''))
+      } catch (e) {
+        return toCoord(this.coord_raw, false)
+      }
+    } else {
+      return toCoord(String(get(this.coord, 'coordinates') || ''))
+    }
   }
 }
 

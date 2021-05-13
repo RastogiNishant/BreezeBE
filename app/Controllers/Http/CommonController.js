@@ -9,6 +9,7 @@ const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
+const TenantService = use('App/Services/TenantService')
 const HttpException = use('App/Exceptions/HttpException')
 
 const Static = use('Static')
@@ -22,6 +23,8 @@ class CommonController {
     // const result = await GeoAPI.getBatchedPlaces({ lat, long })
     //
     // console.log({ result })
+
+    await TenantService.updateTenantIsoline(5)
 
     return 'pong'
   }

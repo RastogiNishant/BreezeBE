@@ -1,17 +1,29 @@
 'use strict'
 
+const Database = use('Database')
 const Member = use('App/Models/Member')
+const Tenant = use('App/Models/Tenant')
 const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
+const GeoService = use('App/Services/GeoService')
 
 const {
   MEMBER_FILE_TYPE_RENT,
   MEMBER_FILE_TYPE_DEBT,
   MEMBER_FILE_TYPE_INCOME,
+  POINT_TYPE_ZONE,
+  TRANSPORT_TYPE_CAR,
 } = require('../constants')
 
 class TenantService {
+  /**
+   *
+   */
+  static getTenantQuery() {
+    return Tenant.query().select('tenants.*', Database.gis.asGeoJSON('coord').as('coord'))
+  }
+
   /**
    *
    */
@@ -41,6 +53,23 @@ class TenantService {
         return member.rent_arrears_doc && File.getProtectedUrl(member.rent_arrears_doc)
       }
     }
+  }
+
+  /**
+   *
+   */
+  static async updateTenantIsoline(tenantId) {
+    const tenant = await TenantService.getTenantQuery().where({ id: tenantId }).first()
+    const { lat, lon } = tenant.getLatLon()
+
+    if (+lat === 0 && +lon === 0) {
+      // Invalid coordinates, nothing to parse
+      return false
+    }
+
+    const point = await GeoService.getOrCreateIsoline({ lat, lon }, TRANSPORT_TYPE_CAR, 30)
+
+    console.log(point)
   }
 }
 

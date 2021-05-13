@@ -1,8 +1,10 @@
 const FileType = require('file-type')
+const fs = require('fs')
+const path = require('path')
 const uuid = require('uuid')
 const moment = require('moment')
 const Promise = require('bluebird')
-const { nth, isEmpty } = require('lodash')
+const { nth, isEmpty, isString } = require('lodash')
 
 const Logger = use('Logger')
 const Drive = use('Drive')
@@ -76,6 +78,26 @@ class File {
     const files = await Promise.map(fields, saveFile)
 
     return files.reduce((n, v) => (v ? { ...n, [v.field]: v.path } : n), {})
+  }
+
+  /**
+   *
+   */
+  static async logFile(data, filename = 'stream.log') {
+    const filePath = path.join(process.cwd(), 'tmp/', filename)
+
+    return new Promise((resolve) => {
+      fs.writeFile(filePath, isString(data) ? data : JSON.stringify(data, null, 2), 'utf8', resolve)
+    })
+  }
+
+  /**
+   *
+   */
+  static async readLog(filename = 'stream.log') {
+    const filePath = path.join(process.cwd(), 'tmp/', filename)
+
+    return fs.readFileSync(filePath, 'utf8')
   }
 }
 
