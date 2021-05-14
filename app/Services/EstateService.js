@@ -17,13 +17,11 @@ class EstateService {
    *
    */
   static getEstateQuery() {
-    return Estate.query().select('estates.*', Database.gis.asGeoJSON('coord').as('coord'))
+    return Estate.query()
   }
 
   static getActiveEstateQuery() {
-    return Estate.query()
-      .select('estates.*', Database.gis.asGeoJSON('coord').as('coord'))
-      .whereNot('status', STATUS_DELETE)
+    return Estate.query().whereNot('status', STATUS_DELETE)
   }
 
   /**

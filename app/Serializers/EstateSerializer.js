@@ -14,26 +14,11 @@ class EstateSerializer extends BaseSerializer {
       item.hash = undefined
     }
 
-    if (item.coord) {
-      if (item.coord.bindings) {
-        const [lon, lat] = get(item, 'coord.bindings.0.bindings')
-        item.coord = `${lat},${lon}`
-      } else if (isString(item.coord)) {
-        try {
-          const [lon, lat] = get(JSON.parse(item.coord), 'coordinates')
-          item.coord = `${lat},${lon}`
-        } catch (e) {
-          item.coord = null
-        }
-      }
+    if (item.coord_raw) {
+      item.coord = item.coord_raw
+      item.coord_raw = undefined
     }
-    // Get plan urls
-    if (isString(item.plan)) {
-      try {
-        item.plan = JSON.parse(item.plan)
-      } catch (e) {}
-    }
-    item.plan = isArray(item.plan) ? item.plan.map((i) => Drive.disk('s3public').getUrl(i)) : null
+
     // Get cover url
     if (isString(item.cover)) {
       item.cover = Drive.disk('s3public').getUrl(item.cover)
