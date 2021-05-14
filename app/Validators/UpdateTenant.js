@@ -1,5 +1,6 @@
 'use strict'
 
+const { isEmpty } = require('lodash')
 const yup = require('yup')
 const Base = require('./Base')
 const {
@@ -61,6 +62,12 @@ class UpdateTenant extends Base {
       pets_species: yup.string().max(255),
       parking_space: yup.number().min(0),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      address: yup
+        .string()
+        .max(255)
+        .when('coord', (coord, schema) => {
+          return coord ? yup.string().required() : schema
+        }),
       dist_type: yup
         .string()
         .oneOf([TRANSPORT_TYPE_CAR, TRANSPORT_TYPE_WALK, TRANSPORT_TYPE_SOCIAL]),

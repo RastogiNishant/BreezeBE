@@ -55,7 +55,9 @@ definitions:
   hiring_date:
     name: hiring_date
     in: formData
-    type: date
+    #    type: date
+    type: string
+    pattern: '^\d{4}-\d{2}-\d{2}(\s\d{2}:\d{2}:\d{2})?$'
     example: '2020-04-04'
   employment_type:
     name: employment_type
@@ -235,11 +237,16 @@ definitions:
     parameters:
       - $ref: '#/definitions/id'
       - $ref: '#/definitions/company_logo'
-      - $ref: '#/definitions/profession'
-      - $ref: '#/definitions/position'
-      - $ref: '#/definitions/hiring_date'
-      - $ref: '#/definitions/employment_type'
-      - $ref: '#/definitions/income'
+      - name: profession
+        allOf: [$ref: '#/definitions/profession', required: true]
+      - name: position
+        allOf: [$ref: '#/definitions/position', required: true]
+      - name: hiring_date
+        allOf: [$ref: '#/definitions/hiring_date', required: true]
+      - name: employment_type
+        allOf: [$ref: '#/definitions/employment_type', required: true]
+      - name: income
+        allOf: [$ref: '#/definitions/income', required: true]
     responses: [200]
 
 /api/v1/tenant/members/{id}/income/{income_id}:

@@ -145,6 +145,10 @@ definitions:
     name: garden
     in: formData
     type: boolean
+  address:
+    name: address
+    in: formData
+    type: string
 
 # Routes list
 /api/v1/tenant/file:
@@ -172,6 +176,7 @@ definitions:
       - $ref: '#/definitions/pets_species'
       - $ref: '#/definitions/parking_space'
       - $ref: '#/definitions/coord'
+      - $ref: '#/definitions/address'
       - $ref: '#/definitions/dist_type'
       - $ref: '#/definitions/dist_min'
       - $ref: '#/definitions/budget_min'

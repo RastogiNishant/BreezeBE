@@ -4,6 +4,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
 const QueueService = use('App/Services/QueueService')
 const UserService = use('App/Services/UserService')
+const Tenant = use('App/Models/Tenant')
 
 const { ROLE_USER, ROLE_LANDLORD, MEMBER_FILE_TYPE_INCOME } = require('../../constants')
 
@@ -46,8 +47,9 @@ class TenantController {
     if (lat && lon && tenant.dist_type && tenant.dist_min) {
       QueueService.getAnchorIsoline(tenant.id)
     }
+    const updatedTenant = await Tenant.find(tenant.id)
 
-    response.res(false)
+    response.res(updatedTenant)
   }
 }
 

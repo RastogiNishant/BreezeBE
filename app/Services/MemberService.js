@@ -1,4 +1,6 @@
+const Database = use('Database')
 const Member = use('App/Models/Member')
+const Tenant = use('App/Models/Tenant')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 
@@ -60,6 +62,23 @@ class MemberService {
       ...data,
       income_id: income.id,
     })
+  }
+
+  /**
+   *
+   */
+  static async updateUserIncome(userId) {
+    await Database.raw(
+      `
+      UPDATE tenants SET income = (
+        SELECT COALESCE(SUM(coalesce(income, 0)), 0)
+          FROM members as _m
+            INNER JOIN incomes as _i ON _i.member_id = _m.id
+          WHERE user_id = ?
+      ) WHERE user_id = ?
+    `,
+      [userId, userId]
+    )
   }
 }
 

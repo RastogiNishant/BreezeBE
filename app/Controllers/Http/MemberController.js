@@ -86,6 +86,7 @@ class MemberController {
     ])
 
     const income = await MemberService.addIncome({ ...data, ...files }, member)
+    await MemberService.updateUserIncome(auth.user.id)
 
     response.res(income)
   }
@@ -110,6 +111,7 @@ class MemberController {
     ])
 
     await income.updateItem({ ...rest, ...files })
+    await MemberService.updateUserIncome(auth.user.id)
 
     response.res(income)
   }

@@ -28,6 +28,8 @@ class Tenant extends Model {
       'apt_type',
       'house_type',
       'garden',
+      'address',
+      'income',
     ]
   }
 
@@ -49,7 +51,7 @@ class Tenant extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'user_id']
+    return ['id', 'user_id', 'income']
   }
 
   static boot() {
