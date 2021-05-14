@@ -204,7 +204,7 @@ class CreateEstate extends Base {
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
         ]),
-      type: yup
+      apt_type: yup
         .number()
         .positive()
         .oneOf([
@@ -220,6 +220,13 @@ class CreateEstate extends Base {
           APARTMENT_TYPE_ROOF_FLOOR,
           APARTMENT_TYPE_ATTIKA_APARTMENT,
           APARTMENT_TYPE_NO_ADDRESS,
+          APARTMENT_TYPE_MAISONETTE,
+          APARTMENT_TYPE_SOCIAL,
+        ]),
+      house_type: yup
+        .number()
+        .positive()
+        .oneOf([
           HOUSE_TYPE_REIHENHAUS,
           HOUSE_TYPE_REIHEND,
           HOUSE_TYPE_REIHENMITTEL,
@@ -246,8 +253,6 @@ class CreateEstate extends Base {
           HOUSE_TYPE_RUSTICO,
           HOUSE_TYPE_FINISHED_HOUSE,
           HOUSE_TYPE_NO_ADDRESS,
-          APARTMENT_TYPE_MAISONETTE,
-          APARTMENT_TYPE_SOCIAL,
         ]),
       description: yup.string().min(2).max(500),
       category: yup.string().min(2).max(20),

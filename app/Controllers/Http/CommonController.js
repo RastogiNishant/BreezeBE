@@ -24,7 +24,6 @@ class CommonController {
     //
     // console.log({ result })
 
-    await TenantService.updateTenantIsoline(5)
 
     return 'pong'
   }

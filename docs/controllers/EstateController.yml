@@ -20,24 +20,19 @@ definitions:
     in: formData
     type: string
     default: '52.5204748,13.4122866'
-  type:
-    name: type
+  apt_type_2:
+    name: apt_type
     in: formData
-    type: string
+    type: number
+    exapmle: "1"
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 39, 40]
+  house_type_2:
+    name: house_type
+    in: formData
+    type: number
+    exapmle: "1"
     enum:
       [
-        1,
-        2,
-        3,
-        4,
-        5,
-        6,
-        7,
-        8,
-        9,
-        10,
-        11,
-        12,
         13,
         14,
         15,
@@ -64,10 +59,7 @@ definitions:
         36,
         37,
         38,
-        39,
-        40,
       ]
-    default: '7'
   description:
     name: description
     in: formData
@@ -526,7 +518,8 @@ paths:
         - $ref: '#/definitions/property_id'
         - $ref: '#/definitions/property_type'
         - $ref: '#/definitions/coord'
-        - $ref: '#/definitions/type'
+        - $ref: '#/definitions/apt_type_2'
+        - $ref: '#/definitions/house_type_2'
         - $ref: '#/definitions/description'
         - $ref: '#/definitions/category'
         - $ref: '#/definitions/rooms'
@@ -632,7 +625,8 @@ paths:
         - $ref: '#/definitions/property_id'
         - $ref: '#/definitions/property_type'
         - $ref: '#/definitions/coord'
-        - $ref: '#/definitions/type'
+        - $ref: '#/definitions/apt_type_2'
+        - $ref: '#/definitions/house_type_2'
         - $ref: '#/definitions/description'
         - $ref: '#/definitions/category'
         - $ref: '#/definitions/rooms'

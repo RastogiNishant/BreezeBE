@@ -27,16 +27,9 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ coord, ...data }, userId) {
-    const [lat, lon] = String(coord).split(',')
-    let point = null
-    if (lat && lon) {
-      point = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
-    }
-
+  static async createEstate(data, userId) {
     return Estate.createItem({
       ...data,
-      coord: point,
       user_id: userId,
       status: STATUS_DRAFT,
     })
@@ -79,6 +72,9 @@ class EstateService {
     }
 
     const { lat, lon } = estate.getLatLon()
+    if (+lat === 0 && +lon === 0) {
+      return false
+    }
     const point = await GeoService.getOrCreatePoint({ lat, lon })
     estate.point_id = point.id
 

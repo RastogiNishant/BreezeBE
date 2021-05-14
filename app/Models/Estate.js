@@ -1,6 +1,6 @@
 'use strict'
 
-const { isString, isArray, get, pick, trim, isEmpty } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 
@@ -33,6 +33,8 @@ class Estate extends Model {
       'user_id',
       'property_type',
       'type',
+      'apt_type',
+      'house_type',
       'description',
       'category',
       'coord',
@@ -164,7 +166,9 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = trim(
-          `${instance.street} ${instance.house_number}, ${instance.zip} ${instance.city}, ${instance.country}`,
+          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
+            instance.city || ''
+          }, ${instance.country || ''}`,
           ', '
         ).toLowerCase()
       }
@@ -222,17 +226,16 @@ class Estate extends Model {
    *
    */
   getLatLon() {
-    if (isString(this.coord)) {
-      try {
-        const [lon, lat] = String(get(JSON.parse(this.coord), 'coordinates', '')).split(',')
+    const toCoord = (str, reverse = true) => {
+      let [lat, lon] = String(str || '').split(',')
+      ;[lat, lon] = reverse
+        ? [parseFloat(lon), parseFloat(lat)]
+        : [parseFloat(lat), parseFloat(lon)]
 
-        return { lat: parseFloat(lat), lon: parseFloat(lon) }
-      } catch (e) {
-        return { lat: null, lon: null }
-      }
+      return { lat: lat || 0, lon: lon || 0 }
     }
 
-    return { lat: null, lon: null }
+    return toCoord(this.coord_raw, false)
   }
 
   /**

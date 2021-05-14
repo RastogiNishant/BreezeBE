@@ -14,10 +14,8 @@ class EstateSerializer extends BaseSerializer {
       item.hash = undefined
     }
 
-    if (item.coord_raw) {
-      item.coord = item.coord_raw
-      item.coord_raw = undefined
-    }
+    item.coord = item.coord_raw
+    item.coord_raw = undefined
 
     // Get cover url
     if (isString(item.cover)) {
