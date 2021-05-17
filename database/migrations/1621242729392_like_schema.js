@@ -34,6 +34,10 @@ class LikeSchema extends Schema {
 
   down() {
     this.drop('likes')
+    this.table('incomes', (table) => {
+      table.dropColumn('income_type')
+      table.dropColumn('company')
+    })
   }
 }
 
