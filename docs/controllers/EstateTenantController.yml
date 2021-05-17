@@ -1,3 +1,14 @@
+definitions:
+  estates_filter:
+    name: filters
+    in: query
+    schema:
+      type: object
+      properties:
+        likes:
+          type: boolean
+    example: '{"likes": true }'
+
 paths:
   /api/v1/tenant/estates:
     get:
@@ -6,6 +17,7 @@ paths:
       description: Get own estates list
       produces: [application/json]
       parameters:
+        - $ref: '#/definitions/estates_filter'
         - $ref: '#/definitions/limit'
         - $ref: '#/definitions/page'
       responses: [200]

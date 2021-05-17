@@ -40,19 +40,19 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query().select('*', Database.gis.asGeoJSON('coord'))
+    const query = Estate.query()
     if (params.query) {
       query.where(function () {
-        this.orWhere('street', 'ilike', `%${params.query}%`)
-        this.orWhere('property_id', 'ilike', `${params.query}%`)
+        this.orWhere('estates.street', 'ilike', `%${params.query}%`)
+        this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
       })
     }
 
     if (params.status) {
-      query.where('status', params.status)
+      query.where('estates.status', params.status)
     }
 
-    return query.orderBy('id', 'desc')
+    return query.orderBy('estates.id', 'desc')
   }
 
   /**

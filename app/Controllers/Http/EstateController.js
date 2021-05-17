@@ -171,11 +171,18 @@ class EstateController {
   /**
    *
    */
-  async getTenantEstates({ request, response }) {
-    const { limit, page } = request.all()
-    const result = await EstateService.getEstates({})
-      .where('status', STATUS_ACTIVE)
-      .paginate(page, limit)
+  async getTenantEstates({ request, auth, response }) {
+    const { limit, page, filters = {} } = request.all()
+
+    const query = EstateService.getEstates({}).where('estates.status', STATUS_ACTIVE)
+
+    if (filters.likes) {
+      query.innerJoin({ _l: 'likes' }, function () {
+        this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', [auth.user.id])
+      })
+    }
+
+    const result = await query.paginate(page, limit)
 
     response.res(result)
   }
