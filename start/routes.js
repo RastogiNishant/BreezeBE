@@ -203,6 +203,8 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
+  Route.post('/:id/like', 'EstateController.likeEstate').middleware(['valid:Id'])
+  Route.delete('/:id/like', 'EstateController.unlikeEstate').middleware(['valid:Id'])
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/estates')

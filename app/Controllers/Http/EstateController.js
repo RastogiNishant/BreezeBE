@@ -291,6 +291,29 @@ class EstateController {
 
     response.res(true)
   }
+
+  /**
+   *
+   */
+  async likeEstate({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      await EstateService.addLike(auth.user.id, id)
+    } catch (e) {
+      throw new HttpException(e.message)
+    }
+
+    response.res(true)
+  }
+
+  /**
+   *
+   */
+  async unlikeEstate({ request, auth, response }) {
+    const { id } = request.all()
+    await EstateService.removeLike(auth.user.id, id)
+    response.res(true)
+  }
 }
 
 module.exports = EstateController

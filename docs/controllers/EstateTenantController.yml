@@ -32,3 +32,22 @@ paths:
           type: string
           required: true
       responses: [200]
+
+  /api/v1/tenant/estates/{id}/like:
+    post:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Like estate to add to own list
+      parameters:
+        - $ref: '#/definitions/id'
+      produces: [application/json]
+      responses: [200]
+
+    delete:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Unlike estate
+      parameters:
+        - $ref: '#/definitions/id'
+      produces: [application/json]
+      responses: [200]

@@ -6,6 +6,7 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const Estate = use('App/Models/Estate')
+const Like = use('App/Models/Like')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
@@ -233,6 +234,31 @@ class EstateService {
     await slot.save()
 
     return slot
+  }
+
+  /**
+   *
+   */
+  static async addLike(userId, estateId) {
+    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    if (!estate) {
+      throw new AppException('Invalid estate')
+    }
+
+    try {
+      await Like.createItem({ user_id: userId, estate_id: estateId })
+    } catch (e) {
+      console.log(e)
+      Logger.error(e)
+      throw new AppException('Cant create like')
+    }
+  }
+
+  /**
+   *
+   */
+  static async removeLike(userId, estateId) {
+    return Like.query().where({ user_id: userId, estate_id: estateId }).delete()
   }
 }
 

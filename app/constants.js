@@ -283,6 +283,13 @@ const constants = {
 
   POINT_TYPE_ZONE: 'zone',
   POINT_TYPE_POI: 'poi',
+
+  INCOME_TYPE_EMPLOYEE: 'employee',
+  INCOME_TYPE_UNEMPLOYED: 'unemployed',
+  INCOME_TYPE_PENSION: 'pension',
+  INCOME_TYPE_SELF_EMPLOYED: 'self',
+  INCOME_TYPE_STUDENT_TRAINEE: 'student',
+  INCOME_TYPE_PRIVATE: 'private',
 }
 
 module.exports = constants

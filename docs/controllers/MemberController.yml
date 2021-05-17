@@ -39,6 +39,10 @@ definitions:
     name: company_logo
     in: formData
     type: file
+  company:
+    name: company
+    in: formData
+    type: string
   sex:
     name: sex
     in: formData
@@ -64,6 +68,11 @@ definitions:
     in: formData
     type: string
     enum: ['full', 'part']
+  income_type:
+    name: income_type
+    in: formData
+    type: string
+    enum: ['employee', 'unemployed', 'pension', 'self', 'student', 'private']
   income:
     name: income
     in: formData
@@ -237,14 +246,14 @@ definitions:
     parameters:
       - $ref: '#/definitions/id'
       - $ref: '#/definitions/company_logo'
-      - name: profession
-        allOf: [$ref: '#/definitions/profession', required: true]
-      - name: position
-        allOf: [$ref: '#/definitions/position', required: true]
+      - $ref: '#/definitions/company'
+      - $ref: '#/definitions/profession'
+      - $ref: '#/definitions/position'
+      - $ref: '#/definitions/employment_type'
+      - name: income_type
+        allOf: [$ref: '#/definitions/income_type', required: true]
       - name: hiring_date
         allOf: [$ref: '#/definitions/hiring_date', required: true]
-      - name: employment_type
-        allOf: [$ref: '#/definitions/employment_type', required: true]
       - name: income
         allOf: [$ref: '#/definitions/income', required: true]
     responses: [200]
@@ -259,10 +268,12 @@ definitions:
       - $ref: '#/definitions/id'
       - $ref: '#/definitions/income_id'
       - $ref: '#/definitions/company_logo'
+      - $ref: '#/definitions/company'
       - $ref: '#/definitions/profession'
       - $ref: '#/definitions/position'
-      - $ref: '#/definitions/hiring_date'
       - $ref: '#/definitions/employment_type'
+      - $ref: '#/definitions/income_type'
+      - $ref: '#/definitions/hiring_date'
       - $ref: '#/definitions/income'
     responses: [200]
   delete:
