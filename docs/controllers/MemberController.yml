@@ -154,6 +154,10 @@ definitions:
     type: date
     required: true
     description: 'Date like: 2020-04-XX'
+  work_exp:
+    name: work_exp
+    in: formData
+    type: number
 
 # Routes list
 /api/v1/tenant/members:
@@ -250,6 +254,7 @@ definitions:
       - $ref: '#/definitions/profession'
       - $ref: '#/definitions/position'
       - $ref: '#/definitions/employment_type'
+      - $ref: '#/definitions/work_exp'
       - name: income_type
         allOf: [$ref: '#/definitions/income_type', required: true]
       - name: hiring_date
@@ -274,6 +279,7 @@ definitions:
       - $ref: '#/definitions/employment_type'
       - $ref: '#/definitions/income_type'
       - $ref: '#/definitions/hiring_date'
+      - $ref: '#/definitions/work_exp'
       - $ref: '#/definitions/income'
     responses: [200]
   delete:

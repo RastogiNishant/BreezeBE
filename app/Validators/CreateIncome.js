@@ -21,6 +21,7 @@ class CreateIncome extends Base {
       profession: yup.string().max(120),
       position: yup.string().max(120),
       hiring_date: yup.date(),
+      work_exp: yup.number().integer().min(0).max(100),
       employment_type: yup.string().oneOf([HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME]),
       income_type: yup
         .string()

@@ -14,11 +14,14 @@ class Income extends Model {
       'hiring_date',
       'employment_type',
       'income',
+      'company',
+      'work_exp',
+      'income_type',
     ]
   }
 
   static get readonly() {
-    return ['id', 'member_id']
+    return ['id', 'member_id', 'income_type']
   }
 
   /**
