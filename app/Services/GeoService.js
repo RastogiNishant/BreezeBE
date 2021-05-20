@@ -5,9 +5,8 @@ const Logger = use('Logger')
 const Database = use('Database')
 const Point = use('App/Models/Point')
 const AppException = use('App/Exceptions/AppException')
-const File = use('App/Classes/File')
 
-const { isString, toNumber, range, get } = require('lodash')
+const { isString, isArray, toNumber, range, get } = require('lodash')
 const {
   POINT_TYPE_POI,
   POINT_TYPE_ZONE,
@@ -72,7 +71,7 @@ class GeoService {
 
     try {
       // Time distance in sec
-      const range = Math.max(Math.min(+distMin * 60 || 0, MAX_TIME_DIST), MAX_TIME_DIST)
+      const range = Math.min(+distMin * 60 || MAX_TIME_DIST, MAX_TIME_DIST)
       const data = await GeoAPI.getIsoline(lat, lon, mode, range)
       const geo = get(data, 'features.0.geometry.coordinates') || []
       // await File.logFile({ geo })
@@ -103,6 +102,22 @@ class GeoService {
     return this.createPoint({ lat, lon })
   }
 
+  /**
+   *
+   */
+  static getPointsQuery(rawIsoline) {
+    const points = get(rawIsoline, '0.0')
+    if (isArray(points) && points.length) {
+      const polyStr = [...points, points[0]].map(([lon, lat]) => `${lon} ${lat}`).join(',')
+      return Database.raw(`(SELECT 'SRID=4326;POLYGON((${polyStr}))'::geometry)`)
+    }
+
+    return null
+  }
+
+  /**
+   *
+   */
   static async getOrCreateIsoline({ lat, lon }, distType, distMin) {
     lat = Point.round(lat)
     lon = Point.round(lon)
@@ -129,6 +144,7 @@ class GeoService {
       dist_min: distMin,
       type: POINT_TYPE_ZONE,
       data: { data: polygon },
+      zone: GeoService.getPointsQuery(polygon),
     })
     await newPoint.save()
 

@@ -212,6 +212,24 @@ class MatchService {
 
     console.log(matched)
   }
+
+  /**
+   *
+   */
+  matchByEstate(estateId) {
+    /*
+      SELECT
+        _e.coord,
+        _t.coord,
+        CASE WHEN _p.zone IS NULL THEN FALSE ELSE _ST_Intersects(_e.coord::geometry, _p.zone::geometry) END AS cross
+      FROM estates AS _e
+      LEFT JOIN points AS _p
+        ON _p.id = _e.point_id
+      INNER JOIN tenants AS _t
+        ON ST_DWithin(_e.coord::geography, _t.coord::geography, 20000)
+      WHERE _e.id = 3
+     */
+  }
 }
 
 module.exports = MatchService
