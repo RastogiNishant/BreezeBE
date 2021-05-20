@@ -290,7 +290,9 @@ const constants = {
 
   FAMILY_STATUS_SINGLE: 1,
   FAMILY_STATUS_WITH_CHILD: 2,
-  FAMILY_STATUS_NO_CHILD: 3
+  FAMILY_STATUS_NO_CHILD: 3,
+
+  MATCH_STATUS_NEW: 1
 }
 
 module.exports = constants
