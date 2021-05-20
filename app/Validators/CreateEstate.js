@@ -186,8 +186,9 @@ const {
   SOURCE_TYPE_BUDDY,
   SOURCE_TYPE_MATCHED,
   //
-  HOUSEHOLD_TYPE_SINGLE,
-  HOUSEHOLD_TYPE_COUPLE,
+  FAMILY_STATUS_SINGLE,
+  FAMILY_STATUS_NO_CHILD,
+  FAMILY_STATUS_WITH_CHILD,
 } = require('../constants')
 
 class CreateEstate extends Base {
@@ -477,10 +478,10 @@ class CreateEstate extends Base {
         .integer()
         .oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED])
         .nullable(),
-      household_type: yup
+      family_status: yup
         .number()
         .integer()
-        .oneOf([HOUSEHOLD_TYPE_SINGLE, HOUSEHOLD_TYPE_COUPLE, null])
+        .oneOf([FAMILY_STATUS_WITH_CHILD, FAMILY_STATUS_SINGLE, FAMILY_STATUS_NO_CHILD, null])
         .nullable(),
       options: yup.array().of(yup.number().integer().positive()),
       min_age: yup.number().integer().min(0).max(120),

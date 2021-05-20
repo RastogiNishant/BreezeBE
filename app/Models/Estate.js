@@ -110,7 +110,7 @@ class Estate extends Model {
       'furnished',
       'source_person',
       'address',
-      'household_type',
+      'family_status',
       'min_age',
       'max_age',
       'hash',

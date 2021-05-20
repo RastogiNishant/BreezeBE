@@ -31,6 +31,7 @@ class MemberController {
       { field: 'debt_proof', mime: docMimes, isPublic: false },
     ])
     const result = await MemberService.createMember({ ...data, ...files }, auth.user.id)
+    await MemberService.calcTenantMemberData(auth.user.id)
 
     response.res(result)
   }
@@ -54,6 +55,7 @@ class MemberController {
       { field: 'debt_proof', mime: docMimes, isPublic: false },
     ])
     await member.updateItem({ ...data, ...files })
+    await MemberService.calcTenantMemberData(auth.user.id)
 
     response.res(member)
   }
@@ -64,6 +66,7 @@ class MemberController {
   async removeMember({ request, auth, response }) {
     const { id } = request.all()
     await MemberService.getMemberQuery().where('id', id).where('user_id', auth.user.id).delete()
+    await MemberService.calcTenantMemberData(auth.user.id)
 
     response.res(true)
   }

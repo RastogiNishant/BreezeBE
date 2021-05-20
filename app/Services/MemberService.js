@@ -4,6 +4,12 @@ const Tenant = use('App/Models/Tenant')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 
+const {
+  FAMILY_STATUS_NO_CHILD,
+  FAMILY_STATUS_SINGLE,
+  FAMILY_STATUS_WITH_CHILD,
+} = require('../constants')
+
 class MemberService {
   /**
    *
@@ -16,6 +22,47 @@ class MemberService {
       })
 
     return (await query.fetch()).rows
+  }
+
+  /**
+   * Get all tenant members and calculate general tenant params
+   */
+  static async calcTenantMemberData(userId) {
+    const tenantData = await Database.query()
+      .from('members')
+      .select(
+        Database.raw(`SUM(CASE WHEN child IS TRUE THEN 1 ELSE 0 END) AS minors_count`),
+        Database.raw(`SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) AS members_count`),
+        Database.raw(`bool_and(COALESCE(unpaid_rental, FALSE)) as unpaid_rental`),
+        Database.raw(`bool_and(COALESCE(insolvency_proceed, FALSE)) as insolvency_proceed`),
+        Database.raw(`bool_and(COALESCE(arrest_warranty, FALSE)) as arrest_warranty`),
+        Database.raw(`bool_and(COALESCE(clean_procedure, FALSE)) as clean_procedure`),
+        Database.raw(`bool_and(COALESCE(income_seizure, FALSE)) as income_seizure`),
+        Database.raw(
+          `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
+        ),
+        Database.raw(
+          `SUM(CASE WHEN child IS TRUE THEN 0 ELSE COALESCE(credit_score, 0) END) /
+            SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) AS credit_score`
+        ),
+        Database.raw(
+          `
+          CASE WHEN SUM(CASE WHEN child IS TRUE THEN 1 ELSE 0 END) > 0 THEN ?
+            WHEN SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) < 2 THEN ?
+            ELSE ? END AS family_status
+        `,
+          [FAMILY_STATUS_WITH_CHILD, FAMILY_STATUS_SINGLE, FAMILY_STATUS_NO_CHILD]
+        )
+      )
+      .where({ user_id: userId })
+      .groupBy('user_id')
+
+    await Tenant.query()
+      .update({
+        ...tenantData[0],
+        credit_score: parseInt(tenantData[0].credit_score),
+      })
+      .where({ user_id: userId })
   }
 
   /**

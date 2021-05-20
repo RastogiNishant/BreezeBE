@@ -151,8 +151,9 @@ const {
   ROOM_TYPE_STAIRS,
   ROOM_TYPE_PROPERTY_ENTRANCE,
 
-  HOUSEHOLD_TYPE_SINGLE,
-  HOUSEHOLD_TYPE_COUPLE,
+  FAMILY_STATUS_NO_CHILD,
+  FAMILY_STATUS_WITH_CHILD,
+  FAMILY_STATUS_SINGLE,
 
   KIDS_NO_KIDS,
   KIDS_TO_5,
@@ -404,8 +405,9 @@ class ExcelReader {
         property_entrance: ROOM_TYPE_PROPERTY_ENTRANCE,
       },
       household_type: {
-        single: HOUSEHOLD_TYPE_SINGLE,
-        couple: HOUSEHOLD_TYPE_COUPLE,
+        family_no_kids: FAMILY_STATUS_NO_CHILD,
+        family_with_kids: FAMILY_STATUS_WITH_CHILD,
+        single: FAMILY_STATUS_SINGLE
       },
       kids_type: {
         no_kids: KIDS_NO_KIDS,
