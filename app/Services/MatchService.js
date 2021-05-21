@@ -1,4 +1,5 @@
 const Database = use('Database')
+const Estate = use('App/Models/Estate')
 const Tenant = use('App/Models/Tenant')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
@@ -9,6 +10,8 @@ const { get, isNumber } = require('lodash')
 const { MATCH_STATUS_NEW } = require('../constants')
 
 const MATCH_PERCENT_PASS = 0
+const MAX_DIST = 10000
+const MAX_SEARCH_ITEMS = 500
 
 /**
  * Check is item in data range
@@ -61,7 +64,7 @@ class MatchService {
 
     let score = 0
     // Geo position
-    if (estate.inside) {
+    if (estate.inside || tenant.inside) {
       results.geo = geoInsideWeight
       score += geoInsideWeight
     } else {
@@ -184,7 +187,7 @@ class MatchService {
 
     // Max radius
     const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-    const estates = await EstateService.searchEstatesQuery(tenant, dist).limit(500)
+    const estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
 
     const matched = estates
       .reduce((n, v) => {
@@ -216,19 +219,48 @@ class MatchService {
   /**
    *
    */
-  matchByEstate(estateId) {
-    /*
-      SELECT
-        _e.coord,
-        _t.coord,
-        CASE WHEN _p.zone IS NULL THEN FALSE ELSE _ST_Intersects(_e.coord::geometry, _p.zone::geometry) END AS cross
-      FROM estates AS _e
-      LEFT JOIN points AS _p
-        ON _p.id = _e.point_id
-      INNER JOIN tenants AS _t
-        ON ST_DWithin(_e.coord::geography, _t.coord::geography, 20000)
-      WHERE _e.id = 3
-     */
+  static async matchByEstate(estateId) {
+    // Get current estate
+    const estate = await Estate.query().where({ id: estateId }).first()
+    // Get tenant in zone and check crossing with every tenant search zone
+    const tenants = await Database.from({ _e: 'estates' })
+      .select(
+        '_t.*',
+        Database.raw(
+          `CASE WHEN _p.zone IS NULL THEN FALSE ELSE _ST_Intersects(_e.coord::geometry, _p.zone::geometry) END AS inside`
+        )
+      )
+      .leftJoin({ _p: 'points' }, '_p.id', '_e.point_id')
+      .innerJoin({ _t: 'tenants' }, function () {
+        this.on(Database.raw(`ST_DWithin(_e.coord::geography, _t.coord::geography, ?)`, [MAX_DIST]))
+      })
+      .where('_e.id', estateId)
+      .limit(MAX_SEARCH_ITEMS)
+
+    // Calculate matches for tenants to current estate
+    const matched = tenants
+      .reduce((n, v) => {
+        const percent = MatchService.calculateMatchPercent(v, estate)
+        if (percent >= MATCH_PERCENT_PASS) {
+          return [...n, { user_id: v.user_id, percent }]
+        }
+        return n
+      }, [])
+      .map((i) => ({
+        user_id: i.user_id,
+        estate_id: estate.id,
+        percent: i.percent,
+      }))
+
+    // Delete old matches without any activity
+    await Database.query()
+      .from('matches')
+      .where({ estate_id: estate.id, status: MATCH_STATUS_NEW })
+      .delete()
+
+    // Create new matches
+    const insertQuery = Database.query().into('matches').insert(matched).toString()
+    await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
   }
 }
 
