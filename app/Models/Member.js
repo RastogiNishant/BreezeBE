@@ -29,6 +29,7 @@ class Member extends Model {
       'income_seizure',
       'external_duties',
       'duties_amount',
+      'execution',
     ]
   }
 

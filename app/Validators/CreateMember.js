@@ -25,6 +25,7 @@ class CreateMember extends Base {
       arrest_warranty: yup.boolean(),
       clean_procedure: yup.boolean(),
       income_seizure: yup.boolean(),
+      execution: yup.boolean(),
       external_duties: yup.array().of(yup.number().oneOf([1, 2, 3])),
       duties_amount: yup.number().min(0).max(1000000),
     })
