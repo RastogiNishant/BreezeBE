@@ -8,7 +8,7 @@ const { get, isNumber } = require('lodash')
 
 const { MATCH_STATUS_NEW } = require('../constants')
 
-const MATCH_PERCENT_PASS = 50
+const MATCH_PERCENT_PASS = 0
 
 /**
  * Check is item in data range
