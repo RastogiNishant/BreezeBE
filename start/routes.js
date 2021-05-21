@@ -212,6 +212,8 @@ Route.group(() => {
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
 
+Route.get('/map', 'MapController.getMap')
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
