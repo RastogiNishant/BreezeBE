@@ -114,6 +114,10 @@ definitions:
     name: unpaid_rental
     in: formData
     type: boolean
+  execution:
+    name: execution
+    in: formData
+    type: boolean
   insolvency_proceed:
     name: insolvency_proceed
     in: formData
@@ -190,6 +194,7 @@ definitions:
       - $ref: '#/definitions/last_address'
       - $ref: '#/definitions/credit_score'
       - $ref: '#/definitions/unpaid_rental'
+      - $ref: '#/definitions/execution'
       - $ref: '#/definitions/insolvency_proceed'
       - $ref: '#/definitions/arrest_warranty'
       - $ref: '#/definitions/clean_procedure'
@@ -224,6 +229,7 @@ definitions:
       - $ref: '#/definitions/last_address'
       - $ref: '#/definitions/credit_score'
       - $ref: '#/definitions/unpaid_rental'
+      - $ref: '#/definitions/execution'
       - $ref: '#/definitions/insolvency_proceed'
       - $ref: '#/definitions/arrest_warranty'
       - $ref: '#/definitions/clean_procedure'
