@@ -161,7 +161,7 @@ const {
 } = require('../constants')
 
 escapeStr = (v) => {
-  return v
+  return (v || '')
     .toLowerCase()
     .trim()
     .replace(/[^a-zà-ž\u0370-\u03FF\u0400-\u04FF]/g, '_')
@@ -251,7 +251,7 @@ class ExcelReader {
         House: PROPERTY_TYPE_HOUSE,
         Site: PROPERTY_TYPE_SITE,
       },
-      type: {
+      apartment_type: {
         loft_studio_atelier: APARTMENT_TYPE_LOFT_STUDIO_ATELIER,
         penthouse: APARTMENT_TYPE_PENTHOUSE,
         terraces: APARTMENT_TYPE_TERRACES,
@@ -265,6 +265,7 @@ class ExcelReader {
         attika_apartment: APARTMENT_TYPE_ATTIKA_APARTMENT,
         maisonette: APARTMENT_TYPE_MAISONETTE,
         social: APARTMENT_TYPE_SOCIAL,
+        // Building type
         reihenhaus: HOUSE_TYPE_REIHENHAUS,
         reihend: HOUSE_TYPE_REIHEND,
         reihenmittel: HOUSE_TYPE_REIHENMITTEL,
@@ -407,7 +408,7 @@ class ExcelReader {
       household_type: {
         family_no_kids: FAMILY_STATUS_NO_CHILD,
         family_with_kids: FAMILY_STATUS_WITH_CHILD,
-        single: FAMILY_STATUS_SINGLE
+        single: FAMILY_STATUS_SINGLE,
       },
       kids_type: {
         no_kids: KIDS_NO_KIDS,
@@ -420,9 +421,19 @@ class ExcelReader {
       credit_score: toPercent,
       budget: toPercent,
       deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
-      floor: (i) => (i === 'Ground floor' ? 0 : parseInt(i)),
-      address: (i, o) =>
-        trim(`${o.street} ${o.house_number} ${o.address}, ${o.zip} ${o.city}`, ', '),
+      floor: (i) => {
+        switch (i) {
+          case 'Ground floor':
+            return 0
+          case 'Roof':
+            return 21
+          default:
+            return parseInt(i)
+        }
+      },
+      address: (i, o) => {
+        return trim(`${o.street} ${o.house_number} ${o.address}, ${o.zip} ${o.city}`, ', ')
+      },
     }
   }
 
@@ -504,13 +515,13 @@ class ExcelReader {
     const result = {
       street,
       house_number,
-      address,
       zip,
       city,
       country,
+      address,
       property_id,
       property_type,
-      type: property_type === PROPERTY_TYPE_HOUSE ? house_type : apartment_type,
+      apartment_type,
       use_type,
       occupancy,
       ownership_type,
@@ -558,17 +569,27 @@ class ExcelReader {
       kids_type,
     }
 
+    const mapValue = (k, v, result) => {
+      if (isFunction(this.dataMapping[k])) {
+        return this.dataMapping[k](v, result)
+      } else if (isString(v)) {
+        return escapeStr(v)
+      }
+
+      return v
+    }
+
     return reduce(
       result,
       (n, v, k) => {
         if (v === undefined) {
+          // Address should process separately
+          if (k === 'address') {
+            return { ...n, [k]: mapValue(k, '', result) }
+          }
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
-          if (isFunction(this.dataMapping[k])) {
-            return { ...n, [k]: this.dataMapping[k](v, result) }
-          }
-          v = isString(v) ? escapeStr(v) : v
-          return { ...n, [k]: get(this.dataMapping, `${k}.${v}`) }
+          return { ...n, [k]: mapValue(v) }
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
