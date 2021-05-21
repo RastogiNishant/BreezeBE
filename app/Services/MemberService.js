@@ -4,6 +4,8 @@ const Tenant = use('App/Models/Tenant')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 
+const { isEmpty } = require('lodash')
+
 const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
@@ -42,8 +44,11 @@ class MemberService {
           `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
         ),
         Database.raw(
-          `SUM(CASE WHEN child IS TRUE THEN 0 ELSE COALESCE(credit_score, 0) END) /
-            SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) AS credit_score`
+          `(CASE WHEN (SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END)) = 0 THEN NULL
+             ELSE
+               SUM(CASE WHEN child IS TRUE THEN 0 ELSE COALESCE(credit_score, 0) END) /
+               SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END)
+             END) AS credit_score`
         ),
         Database.raw(
           `
@@ -57,10 +62,25 @@ class MemberService {
       .where({ user_id: userId })
       .groupBy('user_id')
 
+    const toUpdate = isEmpty(tenantData)
+      ? {
+          family_status: FAMILY_STATUS_SINGLE,
+          minors_count: 0,
+          members_count: 0,
+          unpaid_rental: null,
+          insolvency_proceed: null,
+          arrest_warranty: null,
+          clean_procedure: null,
+          income_seizure: null,
+          members_age: null,
+          credit_score: 0,
+        }
+      : tenantData[0]
+
     await Tenant.query()
       .update({
-        ...tenantData[0],
-        credit_score: parseInt(tenantData[0].credit_score),
+        ...toUpdate,
+        credit_score: parseInt(toUpdate.credit_score) || null,
       })
       .where({ user_id: userId })
   }
