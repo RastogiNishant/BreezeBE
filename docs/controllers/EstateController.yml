@@ -297,6 +297,10 @@ definitions:
     in: formData
     default: 'false'
     type: boolean
+  parking_space:
+    name: parking_space
+    in: formData
+    type: number
   parking_space_type:
     name: parking_space_type
     in: formData
@@ -567,6 +571,7 @@ paths:
         - $ref: '#/definitions/gender'
         - $ref: '#/definitions/monumental_protection'
         - $ref: '#/definitions/parking_space_type'
+        - $ref: '#/definitions/parking_space'
         - $ref: '#/definitions/construction_year'
         - $ref: '#/definitions/last_modernization'
         - $ref: '#/definitions/building_status'
@@ -674,6 +679,7 @@ paths:
         - $ref: '#/definitions/gender'
         - $ref: '#/definitions/monumental_protection'
         - $ref: '#/definitions/parking_space_type'
+        - $ref: '#/definitions/parking_space'
         - $ref: '#/definitions/construction_year'
         - $ref: '#/definitions/last_modernization'
         - $ref: '#/definitions/building_status'

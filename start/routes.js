@@ -214,6 +214,25 @@ Route.group(() => {
 
 Route.get('/map', 'MapController.getMap')
 
+// MATCH FLOW
+Route.group(() => {
+  Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt'])
+  // invite
+  Route.post('/invite', 'MatchController.matchToInvite').middleware(['auth:jwtLandlord'])
+  Route.delete('/invite', 'MatchController.removeInvite').middleware(['auth:jwtLandlord'])
+  // Choose timeslot
+  Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware(['auth:jwt'])
+  // Share tenant profile to landlord
+  Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
+  // Move/remove top tenant
+  Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])
+  Route.delete('/top', 'MatchController.discardUserToTop').middleware(['auth:jwtLandlord'])
+  // Request confirmation
+  Route.post('/request', 'MatchController.requestUserCommit').middleware(['auth:jwtLandlord'])
+  // Final confirm
+  Route.post('/confirm', 'MatchController.commitEstateRent').middleware(['auth:jwt'])
+}).prefix('api/v1/match')
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {

@@ -348,6 +348,7 @@ class CreateEstate extends Base {
       pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
       gender: yup.number().integer().oneOf([GENDER_MALE, GENDER_FEMALE, null]).nullable(),
       monumental_protection: yup.boolean(),
+      parking_space: yup.number().min(0).max(10),
       parking_space_type: yup
         .number()
         .positive()

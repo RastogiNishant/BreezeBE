@@ -81,6 +81,7 @@ class Estate extends Model {
       'pets',
       'gender',
       'monumental_protection',
+      'parking_space',
       'parking_space_type',
       'construction_year',
       'last_modernization',
