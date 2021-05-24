@@ -27,7 +27,7 @@ class File {
 
     if (!isEmpty(allowedTypes)) {
       if (!allowedTypes.includes(mime)) {
-        throw AppException('Invalid file mime type')
+        throw new AppException('Invalid file mime type')
       }
     }
 
