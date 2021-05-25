@@ -1,5 +1,7 @@
 'use strict'
 
+const moment = require('moment')
+
 const Logger = use('Logger')
 const MatchService = use('App/Services/MatchService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -67,9 +69,18 @@ class MatchController {
    * Select available timeslot and
    */
   async chooseVisitTimeslot({ request, auth, response }) {
+    const userId = auth.user.id
     const { estate_id, date } = request.all()
-    // TODO: Check is timeslot still free, to book timeslot and move to visits status
-    response.res(false)
+    try {
+      await MatchService.bookTimeslot(estate_id, userId, date)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message)
+      }
+      throw e
+    }
   }
 
   /**

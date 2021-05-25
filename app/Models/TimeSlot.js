@@ -1,5 +1,9 @@
 'use strict'
 
+const moment = require('moment')
+const { range } = require('lodash')
+
+const AppException = use('App/Exceptions/AppException')
 const Model = require('./BaseModel')
 
 class TimeSlot extends Model {
@@ -26,6 +30,34 @@ class TimeSlot extends Model {
    */
   user() {
     return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
+  }
+
+  /**
+   * Check is date pass to slot
+   */
+  isMatch(date) {
+    // Invalid week day
+    if (date.weekday() !== this.week_day) {
+      return false
+    }
+
+    const startAtTimestamp = moment.utc(`1970-01-01 ${this.start_at}`).toDate().getTime()
+    const endAtTimestamp = moment.utc(`1970-01-01 ${this.end_at}`).toDate().getTime()
+    const slotTimestamp = moment.utc(date.format(`1970-01-01 HH:mm`)).toDate().getTime()
+
+    // Slot is not range
+    if (slotTimestamp < startAtTimestamp || slotTimestamp > endAtTimestamp) {
+      return false
+    }
+
+    // Get all available slots
+    const slots = range(
+      Math.min(startAtTimestamp, endAtTimestamp),
+      Math.max(startAtTimestamp, endAtTimestamp),
+      this.slot_length * 60 * 1000
+    )
+
+    return slots.includes(slotTimestamp)
   }
 }
 

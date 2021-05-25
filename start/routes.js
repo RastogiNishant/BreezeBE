@@ -227,7 +227,10 @@ Route.group(() => {
     'valid:MatchInvite',
   ])
   // Choose timeslot
-  Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware(['auth:jwt'])
+  Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware([
+    'auth:jwt',
+    'valid:ChooseTimeslot',
+  ])
   // Share tenant profile to landlord
   Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
   // Move/remove top tenant

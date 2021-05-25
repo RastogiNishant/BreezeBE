@@ -301,6 +301,7 @@ const constants = {
   MATCH_STATUS_COMMIT: 7,
   MATCH_STATUS_FINISH: 8,
 
+  DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss'
 }
 
 module.exports = constants

@@ -1,11 +1,13 @@
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const Tenant = use('App/Models/Tenant')
+const TimeSlot = use('App/Models/TimeSlot')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
+const moment = require('moment')
 
-const { get, isNumber } = require('lodash')
+const { get, isNumber, isEmpty } = require('lodash')
 const { props } = require('bluebird')
 
 const {
@@ -18,6 +20,7 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
   STATUS_ACTIVE,
+  DATE_FORMAT,
 } = require('../constants')
 
 const MATCH_PERCENT_PASS = 0
@@ -375,6 +378,59 @@ class MatchService {
       user_id: userId,
       estate_id: estateId,
     })
+  }
+
+  /**
+   *
+   */
+  static async bookTimeslot(estateId, userId, date) {
+    const getMatch = async () => {
+      return Database.query()
+        .table('matches')
+        .where({ user_id: userId, status: MATCH_STATUS_INVITE })
+        .first()
+    }
+    const { estate, match } = await props({
+      estate: Estate.query().where({ id: estateId, status: STATUS_ACTIVE }).first(),
+      match: getMatch(),
+    })
+
+    if (!estate || !match) {
+      throw new AppException('Invalid match stage')
+    }
+
+    const { from_date, to_date } = estate
+    if (!from_date || !to_date) {
+      throw new AppException('Invalid estate dates')
+    }
+
+    const slotDate = moment.utc(date, DATE_FORMAT)
+    const fromDate = moment.utc(from_date, DATE_FORMAT)
+    const toDate = moment.utc(to_date, DATE_FORMAT)
+    if (!slotDate.isBetween(fromDate, toDate)) {
+      throw new AppException('Invalid date slot')
+    }
+
+    const weekDay = slotDate.weekday()
+    const slots = (
+      await TimeSlot.query().where({ estate_id: estate.id, week_day: weekDay }).fetch()
+    ).rows
+    if (isEmpty(slots)) {
+      throw new AppException('Timeslot day unavailable')
+    }
+
+    let isAvailable = false
+    slots.forEach((slot) => {
+      if (slot.isMatch(slotDate)) {
+        isAvailable = true
+      }
+    })
+
+    if (!isAvailable) {
+      throw new AppException('Invalid timeslot')
+    }
+    // TODO: check is available
+
   }
 }
 
