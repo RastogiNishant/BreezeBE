@@ -64,7 +64,6 @@ class CommonController {
       throw new HttpException('Not found', 404)
     }
     const { min_rate, max_rate } = range[0]
-    console.log(range)
 
     response.res({ min_rate, max_rate, min_price: sqr * min_rate, max_price: max_rate * sqr })
   }

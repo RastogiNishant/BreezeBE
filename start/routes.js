@@ -216,10 +216,16 @@ Route.get('/map', 'MapController.getMap')
 
 // MATCH FLOW
 Route.group(() => {
-  Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt'])
+  Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])
   // invite
-  Route.post('/invite', 'MatchController.matchToInvite').middleware(['auth:jwtLandlord'])
-  Route.delete('/invite', 'MatchController.removeInvite').middleware(['auth:jwtLandlord'])
+  Route.post('/invite', 'MatchController.matchToInvite').middleware([
+    'auth:jwtLandlord',
+    'valid:MatchInvite',
+  ])
+  Route.delete('/invite', 'MatchController.removeInvite').middleware([
+    'auth:jwtLandlord',
+    'valid:MatchInvite',
+  ])
   // Choose timeslot
   Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware(['auth:jwt'])
   // Share tenant profile to landlord

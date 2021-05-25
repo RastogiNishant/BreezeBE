@@ -1,5 +1,11 @@
 'use strict'
 
+const Logger = use('Logger')
+const MatchService = use('App/Services/MatchService')
+const HttpException = use('App/Exceptions/HttpException')
+
+const { STATUS_ACTIVE, MATCH_STATUS_NEW } = require('../../constants')
+
 class MatchController {
   /**
    * Tenant
@@ -7,8 +13,17 @@ class MatchController {
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id } = request.all()
-    // TODO: check is match in status new
-    response.res(false)
+
+    try {
+      const result = await MatchService.knockEstate(estate_id, auth.user.id)
+      return response.res(result)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message)
+      }
+      throw e
+    }
   }
 
   /**
@@ -16,9 +31,17 @@ class MatchController {
    * If use knock (or just buddy) move to invite
    */
   async matchToInvite({ request, auth, response }) {
-    const { estate_id, tenant_id } = request.all()
-    // TODO: If match with status "knock" move it to invite
-    response.res(false)
+    const { estate_id, user_id } = request.all()
+    try {
+      await MatchService.inviteKnockedUser(estate_id, user_id)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message)
+      }
+      throw e
+    }
   }
 
   /**
@@ -26,9 +49,17 @@ class MatchController {
    * If user invited but need to rollback
    */
   async removeInvite({ request, auth, response }) {
-    const { estate_id, tenant_id } = request.all()
-    // TODO: if in invite status move back to knock status
-    response.res(false)
+    const { estate_id, user_id } = request.all()
+    try {
+      await MatchService.cancelInvite(estate_id, user_id)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message)
+      }
+      throw e
+    }
   }
 
   /**

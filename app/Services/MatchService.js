@@ -6,8 +6,19 @@ const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 
 const { get, isNumber } = require('lodash')
+const { props } = require('bluebird')
 
-const { MATCH_STATUS_NEW } = require('../constants')
+const {
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_FINISH,
+  STATUS_ACTIVE,
+} = require('../constants')
 
 const MATCH_PERCENT_PASS = 0
 const MAX_DIST = 10000
@@ -261,6 +272,109 @@ class MatchService {
     // Create new matches
     const insertQuery = Database.query().into('matches').insert(matched).toString()
     await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+  }
+
+  /**
+   * Try to knock to estate
+   */
+  static async knockEstate(estateId, userId) {
+    const tenant = await Tenant.query().where({ user_id: userId, status: STATUS_ACTIVE }).first()
+    if (!tenant) {
+      throw new AppException('Invalid user status')
+    }
+
+    // Get match with allowed status
+    const getMatches = async () => {
+      return Database.query()
+        .from('matches')
+        .where({ user_id: userId, estate_id: estateId })
+        .first()
+    }
+
+    // Get like and check is match not exists or new
+    const getLikes = () => {
+      return Database.query()
+        .from('likes')
+        .select('likes.id', 'matches.status')
+        .where({ 'likes.user_id': userId, 'likes.estate_id': estateId })
+        .leftJoin('matches', function () {
+          this.on('matches.estate_id', 'likes.estate_id').on('matches.user_id', 'likes.user_id')
+        })
+        .first()
+    }
+
+    const { like, match } = await props({
+      match: getMatches(),
+      like: getLikes(),
+    })
+
+    if (match) {
+      if (match.status === MATCH_STATUS_NEW) {
+        // Update match to knock
+        // TODO: send landlord knock notification
+        await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+
+        return true
+      }
+
+      throw new AppException('Invalid match stage')
+    }
+
+    if (like) {
+      // TODO: send landlord knock notification
+      await Database.into('matches').insert({
+        status: MATCH_STATUS_KNOCK,
+        user_id: userId,
+        estate_id: estateId,
+        percent: 0,
+      })
+
+      return true
+    }
+
+    throw new AppException('Not allowed')
+  }
+
+  /**
+   * Invite knocked user
+   */
+  static async inviteKnockedUser(estateId, userId) {
+    const match = await Database.query()
+      .table('matches')
+      .where({ user_id: userId, status: MATCH_STATUS_KNOCK })
+      .first()
+
+    if (!match) {
+      throw new AppException('Invalid match stage')
+    }
+
+    await Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
+      user_id: userId,
+      estate_id: estateId,
+    })
+    // TODO: notification to tenant, got invite
+  }
+
+  /**
+   * Cancel invite if already invited
+   */
+  static async cancelInvite(estateId, userId) {
+    const match = await Database.query()
+      .table('matches')
+      .where({ user_id: userId, status: MATCH_STATUS_INVITE })
+      .first()
+
+    if (!match) {
+      throw new AppException('Invalid match stage')
+    }
+
+    await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
+      user_id: userId,
+      estate_id: estateId,
+    })
   }
 }
 
