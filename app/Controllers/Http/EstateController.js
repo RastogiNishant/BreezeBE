@@ -8,6 +8,7 @@ const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
 const OptionService = use('App/Services/OptionService')
 const EstateService = use('App/Services/EstateService')
+const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -214,14 +215,13 @@ class EstateController {
   /**
    *
    */
-  async acceptEstateInvite({ request, response }) {
+  async acceptEstateInvite({ request, auth, response }) {
     const { code } = request.all()
     const estate = await EstateService.getEstateByHash(code)
     if (!estate) {
       throw HttpException('Estate not exists', 404)
     }
-
-    // TODO: Apply buddy invite
+    await MatchService.addBuddy(estate.id, auth.user.id)
 
     response.res(true)
   }

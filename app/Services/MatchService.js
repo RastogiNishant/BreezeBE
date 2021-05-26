@@ -532,7 +532,7 @@ class MatchService {
   }
 
   /**
-   *
+   * Tenant confirmed final request
    */
   static async finalConfirm(estateId, tenantId) {
     await Database.table('matches').update({ status: MATCH_STATUS_FINISH }).where({
@@ -541,6 +541,42 @@ class MatchService {
       status: MATCH_STATUS_COMMIT,
     })
     // TODO: remove rest matches, estates rent confirmed
+  }
+
+  /**
+   * If buddy accept invite
+   */
+  static async addBuddy(estateId, tenantId) {
+    const match = await Database.table('matches')
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+      .first()
+
+    if (!match) {
+      return Database.table('matches').insert({
+        user_id: tenantId,
+        estate_id: estateId,
+        percent: 0,
+        buddy: true,
+        status: MATCH_STATUS_NEW,
+      })
+    }
+
+    if (match.status !== MATCH_STATUS_NEW) {
+      throw new AppException('Dont allow, match already exists')
+    }
+
+    if (match.buddy) {
+      throw new AppException('Already applied')
+    }
+
+    // Match exists but without buddy
+    return Database.table('matches').update({ buddy: true }).where({
+      user_id: tenantId,
+      estate_id: estateId,
+    })
   }
 }
 
