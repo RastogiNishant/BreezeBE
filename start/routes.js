@@ -175,6 +175,9 @@ Route.group(() => {
   Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.put('/:id', 'MemberController.updateMember').middleware(['valid:CreateMember,Id'])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
+  Route.delete('/:id/:field', 'MemberController.removeMemberDocs').middleware([
+    'valid:RemoveMemberDocs',
+  ])
   Route.post('/:id/income', 'MemberController.addMemberIncome').middleware([
     'valid:Id,CreateIncome',
   ])

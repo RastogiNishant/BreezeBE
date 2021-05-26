@@ -162,6 +162,12 @@ definitions:
     name: work_exp
     in: formData
     type: number
+  field:
+    name: field
+    in: path
+    enum: ['rent_arrears_doc', 'debt_proof']
+    type: string
+    require: true
 
 # Routes list
 /api/v1/tenant/members:
@@ -245,6 +251,17 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/id'
+    responses: [200]
+
+/api/v1/tenant/members/{id}/{field}:
+  delete:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Remove member docs
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+      - $ref: '#/definitions/field'
     responses: [200]
 
 /api/v1/tenant/members/{id}/income:

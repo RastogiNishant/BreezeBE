@@ -99,6 +99,14 @@ class File {
 
     return fs.readFileSync(filePath, 'utf8')
   }
+
+  /**
+   *
+   */
+  static async remove(file, isPublic = true) {
+    const disk = isPublic ? 's3public' : 's3'
+    return Drive.disk(disk).delete(file)
+  }
 }
 
 module.exports = File

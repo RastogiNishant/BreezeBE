@@ -74,6 +74,28 @@ class MemberController {
   /**
    *
    */
+  async removeMemberDocs({ request, auth, response }) {
+    const { id, field } = request.all()
+    const member = await MemberService.getMemberQuery()
+      .where('id', id)
+      .where('user_id', auth.user.id)
+      .first()
+    if (!member) {
+      throw new HttpException('Invalid member', 400)
+    }
+
+    if (!member[field]) {
+      return response.res(false)
+    }
+
+    await File.remove(member[field], false)
+    member[field] = null
+    await member.save()
+  }
+
+  /**
+   *
+   */
   async addMemberIncome({ request, auth, response }) {
     const { id, ...data } = request.all()
     let member = await MemberService.getMemberQuery()
