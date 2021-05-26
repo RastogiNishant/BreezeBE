@@ -23,6 +23,11 @@ definitions:
     name: private_use
     in: formData
     type: boolean
+  pets_tenant:
+    name: pets
+    in: formData
+    type: number
+    enum: [1, 2, 3]
   pets_species:
     name: pets_species
     in: formData
@@ -172,7 +177,7 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/private_use'
-      - $ref: '#/definitions/pets'
+      - $ref: '#/definitions/pets_tenant'
       - $ref: '#/definitions/non_smoker'
       - $ref: '#/definitions/pets_species'
       - $ref: '#/definitions/parking_space'

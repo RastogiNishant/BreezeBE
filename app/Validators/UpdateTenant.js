@@ -1,12 +1,12 @@
 'use strict'
 
-const { isEmpty } = require('lodash')
 const yup = require('yup')
 const Base = require('./Base')
 const {
   PETS_NO,
   PETS_SMALL,
-  PEST_ANY,
+  PETS_ANY,
+  PETS_BIG,
   TRANSPORT_TYPE_CAR,
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
@@ -58,8 +58,9 @@ class UpdateTenant extends Base {
   static schema = () =>
     yup.object().shape({
       private_use: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PEST_ANY]).nullable(),
+      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PETS_ANY, PETS_BIG]).nullable(),
       pets_species: yup.string().max(255),
+      non_smoker: yup.boolean(),
       parking_space: yup.number().min(0),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       address: yup

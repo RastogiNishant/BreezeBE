@@ -247,7 +247,8 @@ const constants = {
 
   PETS_NO: 1,
   PETS_SMALL: 2,
-  PEST_ANY: null,
+  PETS_ANY: null,
+  PETS_BIG: 3,
 
   KIDS_NO_KIDS: 1,
   KIDS_TO_5: 2,
