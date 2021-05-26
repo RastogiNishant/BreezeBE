@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isArray } = require('lodash')
+const { get, isArray, isEmpty } = require('lodash')
 
 const Database = use('Database')
 const Drive = use('Drive')
@@ -15,7 +15,6 @@ const AppException = use('App/Exceptions/AppException')
 
 const { STATUS_DRAFT, STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 
-
 /**
  *
  */
@@ -23,12 +22,31 @@ class EstateService {
   /**
    *
    */
-  static getEstateQuery() {
-    return Estate.query()
+  static getQuery(condition = {}) {
+    if (isEmpty(condition)) {
+      return Estate.query()
+    }
+
+    return Estate.query().where(condition)
   }
 
+  /**
+   *
+   */
   static getActiveEstateQuery() {
     return Estate.query().whereNot('status', STATUS_DELETE)
+  }
+
+  /**
+   *
+   */
+  static async getActiveById(id, conditions = {}) {
+    const query = Estate.query().where({ id, status: STATUS_ACTIVE })
+    if (!isEmpty(conditions)) {
+      query.where(conditions)
+    }
+
+    return query.first()
   }
 
   /**
@@ -73,7 +91,7 @@ class EstateService {
    *
    */
   static async updateEstatePoint(estateId) {
-    const estate = await EstateService.getEstateQuery().where('id', estateId).first()
+    const estate = await EstateService.getQuery().where('id', estateId).first()
     if (!estate) {
       throw new AppException(`Invalid estate ${estateId}`)
     }
@@ -288,9 +306,9 @@ class EstateService {
         .from({ _e: 'estates' })
         .crossJoin('meta')
         .whereRaw(`ST_DWithin(_e.coord, ST_MakePoint(?, ?)::geography, ?)`, [lon, lat, radius])
-        // .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
-        // .whereIn('_e.apt_type', tenant.apt_type)
-        // .whereIn('_e.id', [8])
+      // .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
+      // .whereIn('_e.apt_type', tenant.apt_type)
+      // .whereIn('_e.id', [8])
     }
 
     // No poly / get all points in gray zone circle
@@ -300,7 +318,6 @@ class EstateService {
       .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
       .whereIn('_e.apt_type', tenant.apt_type)
   }
-
 }
 
 module.exports = EstateService

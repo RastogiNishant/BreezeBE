@@ -1,5 +1,6 @@
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
+const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const EstateService = use('App/Services/EstateService')
@@ -21,6 +22,7 @@ const {
   MATCH_STATUS_FINISH,
   STATUS_ACTIVE,
   DATE_FORMAT,
+  ROLE_USER,
 } = require('../constants')
 
 const MATCH_PERCENT_PASS = 0
@@ -381,7 +383,7 @@ class MatchService {
   }
 
   /**
-   *
+   * Chose available visit timeslot and move to next status
    */
   static async bookTimeslot(estateId, userId, date) {
     const getMatch = async () => {
@@ -425,12 +427,120 @@ class MatchService {
         isAvailable = true
       }
     })
-
     if (!isAvailable) {
       throw new AppException('Invalid timeslot')
     }
-    // TODO: check is available
+    // Check is timeslot already booked
+    const visit = await Database.table('visits')
+      .where({
+        estate_id: estate.id,
+        user_id: userId,
+        date: slotDate.toDate().toISOString(),
+      })
+      .first()
+    if (visit) {
+      throw new AppException('Timeslot is booked already')
+    }
 
+    // Book new visit to calendar
+    await Database.into('visits').insert({
+      estate_id: estate.id,
+      user_id: userId,
+      date: slotDate.toDate().toISOString(),
+    })
+    // Move match status to next
+    await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
+      user_id: userId,
+      estate_id: estateId,
+    })
+  }
+
+  /**
+   * Share tenant personal data to landlord
+   */
+  static async share(landlordId, estateId, tenantCode) {
+    const userTenant = await User.findByOrFail({ uid: tenantCode, role: ROLE_USER })
+    const match = await Database.table('matches')
+      .where({
+        estate_id: estateId,
+        status: MATCH_STATUS_VISIT,
+        user_id: userTenant.id,
+      })
+      .first()
+    if (!match) {
+      throw new AppException('Invalid code or match status')
+    }
+
+    await Database.table('matches')
+      .update({
+        status: MATCH_STATUS_SHARE,
+        share: true,
+      })
+      .where({
+        user_id: userTenant.id,
+        estate_id: estateId,
+      })
+  }
+
+  /**
+   *
+   */
+  static async toTop(estateId, tenantId) {
+    return Database.table('matches')
+      .update({ status: MATCH_STATUS_TOP })
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+      .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+  }
+
+  /**
+   *
+   */
+  static async removeFromTop(estateId, tenantId) {
+    const match = await Database.table('matches')
+      .where({
+        status: MATCH_STATUS_TOP,
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+      .first()
+
+    if (!match) {
+      throw new AppException('Invalid match status')
+    }
+
+    await Database.table('matches')
+      .update({ status: match.share ? MATCH_STATUS_SHARE : MATCH_STATUS_VISIT })
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+  }
+
+  /**
+   *
+   */
+  static async requestFinalConfirm(estateId, tenantId) {
+    await Database.table('matches').update({ status: MATCH_STATUS_COMMIT }).where({
+      user_id: tenantId,
+      estate_id: estateId,
+      status: MATCH_STATUS_TOP,
+    })
+    // TODO: notification final commit request
+  }
+
+  /**
+   *
+   */
+  static async finalConfirm(estateId, tenantId) {
+    await Database.table('matches').update({ status: MATCH_STATUS_FINISH }).where({
+      user_id: tenantId,
+      estate_id: estateId,
+      status: MATCH_STATUS_COMMIT,
+    })
+    // TODO: remove rest matches, estates rent confirmed
   }
 }
 

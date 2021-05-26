@@ -40,6 +40,9 @@ class TimeSlot extends Model {
     if (date.weekday() !== this.week_day) {
       return false
     }
+    if (!this.start_at || !this.end_at || !this.slot_length) {
+      throw new AppException('Slot data is not completely filled')
+    }
 
     const startAtTimestamp = moment.utc(`1970-01-01 ${this.start_at}`).toDate().getTime()
     const endAtTimestamp = moment.utc(`1970-01-01 ${this.end_at}`).toDate().getTime()

@@ -71,7 +71,7 @@ class EstateController {
    */
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
-    const estate = await EstateService.getEstateQuery()
+    const estate = await EstateService.getQuery()
       .where('id', id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
@@ -193,7 +193,7 @@ class EstateController {
   async getTenantEstate({ request, response }) {
     const { id } = request.all()
 
-    const estate = await EstateService.getEstateQuery()
+    const estate = await EstateService.getQuery()
       .with('point')
       .with('files')
       .with('options')

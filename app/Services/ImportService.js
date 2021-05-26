@@ -26,7 +26,7 @@ class ImportService {
       if (!data.address) {
         throw new AppException('Invalid address')
       }
-      const existingEstate = await EstateService.getEstateQuery()
+      const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
         .where('address', data.address)
         .first()

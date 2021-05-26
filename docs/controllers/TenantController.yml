@@ -173,6 +173,7 @@ definitions:
     parameters:
       - $ref: '#/definitions/private_use'
       - $ref: '#/definitions/pets'
+      - $ref: '#/definitions/non_smoker'
       - $ref: '#/definitions/pets_species'
       - $ref: '#/definitions/parking_space'
       - $ref: '#/definitions/coord'

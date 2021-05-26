@@ -16,6 +16,13 @@ definitions:
     pattern: '^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}$'
     example: '2021-21-21 23:00'
     required: true
+  tenantCode:
+    name: code
+    in: formData
+    type: string
+    pattern: '^[a-f\d]{32}$'
+    example: '1234567890abcdef1234567890abcdef'
+    required: true
 
 # Routes list
 /api/v1/match/knock:
@@ -61,8 +68,8 @@ definitions:
     security: [bearerAuth: []]
     produces: [application/json]
     parameters:
-      - $ref: '#/definitions/userId'
       - $ref: '#/definitions/estateId'
+      - $ref: '#/definitions/tenantCode'
     responses: [200]
 
 /api/v1/match/top:

@@ -1,20 +1,42 @@
 'use strict'
 
-const moment = require('moment')
-
 const Logger = use('Logger')
 const MatchService = use('App/Services/MatchService')
+const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 
-const { STATUS_ACTIVE, MATCH_STATUS_NEW } = require('../../constants')
-
 class MatchController {
+  /**
+   *
+   */
+  async getOwnEstate(estateId, userId) {
+    const estate = await EstateService.getActiveById(estateId, { user_id: userId })
+    if (!estate) {
+      throw new HttpException('Estate not found', 404)
+    }
+
+    return estate
+  }
+
+  /**
+   *
+   */
+  async getActiveEstate(estateId) {
+    const estate = await EstateService.getActiveById(estateId)
+    if (!estate) {
+      throw new HttpException('Estate not found', 404)
+    }
+
+    return estate
+  }
+
   /**
    * Tenant
    * Knock to estate
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id } = request.all()
+    await this.getActiveEstate(estate_id)
 
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id)
@@ -22,7 +44,7 @@ class MatchController {
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
-        throw new HttpException(e.message)
+        throw new HttpException(e.message, 400)
       }
       throw e
     }
@@ -33,14 +55,18 @@ class MatchController {
    * If use knock (or just buddy) move to invite
    */
   async matchToInvite({ request, auth, response }) {
+    const landlordId = auth.user.id
     const { estate_id, user_id } = request.all()
+    // Check is estate owner
+    await this.getOwnEstate(estate_id, landlordId)
+
     try {
       await MatchService.inviteKnockedUser(estate_id, user_id)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
-        throw new HttpException(e.message)
+        throw new HttpException(e.message, 400)
       }
       throw e
     }
@@ -52,13 +78,15 @@ class MatchController {
    */
   async removeInvite({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
+    await this.getOwnEstate(estate_id, auth.user.id)
+
     try {
       await MatchService.cancelInvite(estate_id, user_id)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
-        throw new HttpException(e.message)
+        throw new HttpException(e.message, 400)
       }
       throw e
     }
@@ -71,13 +99,15 @@ class MatchController {
   async chooseVisitTimeslot({ request, auth, response }) {
     const userId = auth.user.id
     const { estate_id, date } = request.all()
+    await this.getActiveEstate(estate_id)
+
     try {
       await MatchService.bookTimeslot(estate_id, userId, date)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
-        throw new HttpException(e.message)
+        throw new HttpException(e.message, 400)
       }
       throw e
     }
@@ -88,9 +118,20 @@ class MatchController {
    * Get access to user share data
    */
   async shareTenantData({ request, auth, response }) {
-    const { estate_id } = request.all()
-    // TODO: Mark user protected data as allowed
-    response.res(false)
+    const { estate_id, code } = request.all()
+    const userId = auth.user.id
+    await this.getOwnEstate(estate_id, userId)
+
+    try {
+      await MatchService.share(userId, estate_id, code)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
   }
 
   /**
@@ -98,7 +139,14 @@ class MatchController {
    * Move user to Top list
    */
   async moveUserToTop({ request, auth, response }) {
-    // TODO: if user on visits status, move it to Top
+    const { user_id, estate_id } = request.all()
+    await this.getOwnEstate(estate_id, auth.user.id)
+    const success = await MatchService.toTop(estate_id, user_id)
+    if (!success) {
+      throw new HttpException('Cant move to top', 400)
+    }
+
+    response.res(true)
   }
 
   /**
@@ -106,7 +154,19 @@ class MatchController {
    * Discard user move to Top list
    */
   async discardUserToTop({ request, auth, response }) {
-    // TODO: Move user from Top list to Visits
+    const { user_id, estate_id } = request.all()
+    await this.getOwnEstate(estate_id, auth.user.id)
+    try {
+      await MatchService.removeFromTop(estate_id, user_id)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+
+    response.res(true)
   }
 
   /**
@@ -114,7 +174,11 @@ class MatchController {
    * Request tenant commitment to final rent stage
    */
   async requestUserCommit({ request, auth, response }) {
-    // TODO: Commit user to final match
+    const { user_id, estate_id } = request.all()
+    await this.getOwnEstate(estate_id, auth.user.id)
+    await MatchService.requestFinalConfirm(estate_id, user_id)
+
+    response.res(true)
   }
 
   /**
@@ -122,7 +186,12 @@ class MatchController {
    * Accept rent
    */
   async commitEstateRent({ request, auth, response }) {
-    // TODO: check valid status and move match to final stage
+    const userId = auth.user.id
+    const { estate_id } = request.all()
+    await this.getActiveEstate(estate_id)
+    await MatchService.finalConfirm(estate_id, userId)
+
+    response.res(true)
   }
 }
 
