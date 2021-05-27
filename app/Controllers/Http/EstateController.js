@@ -68,7 +68,6 @@ class EstateController {
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
-      .with('options')
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE).with('images')
       })
@@ -187,7 +186,6 @@ class EstateController {
     const estate = await EstateService.getQuery()
       .with('point')
       .with('files')
-      .with('options')
       .with('rooms', function (b) {
         b.where('status', STATUS_ACTIVE).with('images')
       })
