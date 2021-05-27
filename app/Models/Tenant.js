@@ -31,6 +31,7 @@ class Tenant extends Model {
       'address',
       'income',
       'non_smoker',
+      'options',
     ]
   }
 

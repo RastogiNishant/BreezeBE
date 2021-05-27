@@ -105,7 +105,7 @@ definitions:
       type: array
       items:
         type: number
-        enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 39, 40]
+        enum: [1, 2, 3, 4, 5, 6, 7, 8]
     explode: true
     example: '[1, 2]'
   house_type:
@@ -115,37 +115,9 @@ definitions:
       type: array
       items:
         type: number
-        enum:
-          [
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
-            21,
-            22,
-            23,
-            24,
-            25,
-            26,
-            27,
-            28,
-            29,
-            30,
-            31,
-            32,
-            33,
-            34,
-            35,
-            36,
-            37,
-            38,
-          ]
+        enum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     explode: true
-    example: '[13, 14]'
+    example: '[1, 2'
   garden:
     name: garden
     in: formData
@@ -197,4 +169,5 @@ definitions:
       - $ref: '#/definitions/apt_type'
       - $ref: '#/definitions/house_type'
       - $ref: '#/definitions/garden'
+      - $ref: '#/definitions/apt_options'
     responses: [200]

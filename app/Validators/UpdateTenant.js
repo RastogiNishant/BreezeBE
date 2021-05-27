@@ -99,6 +99,7 @@ class UpdateTenant extends Base {
         .nullable(),
 
       garden: yup.boolean(),
+      options: yup.array().of(yup.number().integer().positive().max(999)),
     })
 }
 
