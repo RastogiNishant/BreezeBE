@@ -28,7 +28,7 @@ class ImportService {
       }
       const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
-        .where('address', data.address)
+        .where('address', data.address.toLowerCase())
         .first()
       if (!existingEstate) {
         const estate = await EstateService.createEstate(data, userId)
@@ -47,6 +47,7 @@ class ImportService {
    */
   static async process(filePath, userId, type) {
     const { errors, data } = await ImportService.readFile(filePath)
+
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
     const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))

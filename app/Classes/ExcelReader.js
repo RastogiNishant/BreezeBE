@@ -1,5 +1,5 @@
 const xlsx = require('node-xlsx')
-const { get, trim, isEmpty, reduce, isString, isFunction } = require('lodash')
+const { get, has, trim, isEmpty, reduce, isString, isFunction } = require('lodash')
 const AppException = use('App/Exceptions/AppException')
 const schema = require('../Validators/CreateEstate').schema()
 
@@ -243,7 +243,7 @@ class ExcelReader {
         penthouse: APARTMENT_TYPE_PENTHOUSE,
       },
       // Building type
-      house_typ: {
+      house_type: {
         multi_family_house: HOUSE_TYPE_MULTIFAMILY_HOUSE,
         high_rise: HOUSE_TYPE_HIGH_RISE,
         series: HOUSE_TYPE_SERIES,
@@ -395,7 +395,12 @@ class ExcelReader {
         }
       },
       address: (i, o) => {
-        return trim(`${o.street} ${o.house_number} ${o.address}, ${o.zip} ${o.city}`, ', ')
+        return trim(
+          `${o.street || ''} ${o.house_number || ''} ${o.address || ''}, ${o.zip || ''} ${
+            o.city || ''
+          }`,
+          ', '
+        ).replace(/\s,/g, ',')
       },
     }
   }
@@ -537,6 +542,9 @@ class ExcelReader {
       if (isFunction(this.dataMapping[k])) {
         return this.dataMapping[k](v, result)
       } else if (isString(v)) {
+        if (has(this.dataMapping, k)) {
+          return get(this.dataMapping, `${k}.${escapeStr(v)}`)
+        }
         return escapeStr(v)
       }
 
@@ -553,7 +561,7 @@ class ExcelReader {
           }
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
-          return { ...n, [k]: mapValue(v) }
+          return { ...n, [k]: mapValue(k, v, result) }
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
@@ -583,8 +591,9 @@ class ExcelReader {
         continue
       }
 
+      const itemData = this.mapDataToEntity(sheet.data[k])
       try {
-        toImport.push({ line: k, data: await schema.validate(this.mapDataToEntity(sheet.data[k])) })
+        toImport.push({ line: k, data: await schema.validate(itemData) })
       } catch (e) {
         errors.push({ line: k, error: e.errors })
       }
