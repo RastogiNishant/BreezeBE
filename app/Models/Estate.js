@@ -115,6 +115,7 @@ class Estate extends Model {
       'min_age',
       'max_age',
       'hash',
+      'options',
     ]
   }
 
@@ -200,13 +201,6 @@ class Estate extends Model {
    */
   point() {
     return this.hasOne('App/Models/Point', 'point_id', 'id')
-  }
-
-  /**
-   *
-   */
-  options() {
-    return this.belongsToMany('App/Models/Option').pivotTable('estate_option')
   }
 
   /**

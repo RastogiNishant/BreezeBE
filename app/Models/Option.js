@@ -27,10 +27,6 @@ class Option extends Model {
   static get Serializer() {
     return 'App/Serializers/OptionSerializer'
   }
-
-  estates() {
-    return this.belongsToMany('App/Models/Estate').pivotTable('estate_option')
-  }
 }
 
 module.exports = Option

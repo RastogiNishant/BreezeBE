@@ -2,11 +2,9 @@
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { isArray } = require('lodash')
 
 const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
-const OptionService = use('App/Services/OptionService')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
@@ -22,12 +20,8 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const { options, ...data } = request.all()
+    const data = request.all()
     const estate = await EstateService.createEstate(data, auth.user.id)
-    // Create options estate link
-    if (isArray(options)) {
-      await OptionService.updateEstateOptions(estate, options)
-    }
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
     response.res(estate)
@@ -37,16 +31,12 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, options, ...data } = request.all()
+    const { id, ...data } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
     await estate.updateItem(data)
-    // Create/Update options estate link
-    if (isArray(options)) {
-      await OptionService.updateEstateOptions(estate, options)
-    }
 
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
