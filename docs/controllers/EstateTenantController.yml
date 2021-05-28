@@ -63,3 +63,22 @@ paths:
         - $ref: '#/definitions/id'
       produces: [application/json]
       responses: [200]
+
+  /api/v1/tenant/estates/{id}/dislike:
+    post:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Add estate to dislike list
+      parameters:
+        - $ref: '#/definitions/id'
+      produces: [application/json]
+      responses: [200]
+
+    delete:
+      tags: [estate-tenant]
+      security: [bearerAuth: []]
+      description: Remove estate from dislike list
+      parameters:
+        - $ref: '#/definitions/id'
+      produces: [application/json]
+      responses: [200]

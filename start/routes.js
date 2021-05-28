@@ -210,6 +210,8 @@ Route.group(() => {
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
   Route.post('/:id/like', 'EstateController.likeEstate').middleware(['valid:Id'])
   Route.delete('/:id/like', 'EstateController.unlikeEstate').middleware(['valid:Id'])
+  Route.post('/:id/dislike', 'EstateController.dislikeEstate').middleware(['valid:Id'])
+  Route.delete('/:id/dislike', 'EstateController.removeEstateDislike').middleware(['valid:Id'])
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/estates')

@@ -7,8 +7,6 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const Estate = use('App/Models/Estate')
-const Tenant = use('App/Models/Tenant')
-const Like = use('App/Models/Like')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
@@ -270,9 +268,9 @@ class EstateService {
     }
 
     try {
-      await Like.createItem({ user_id: userId, estate_id: estateId })
+      await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
+      await EstateService.removeDislike(userId, estateId)
     } catch (e) {
-      console.log(e)
       Logger.error(e)
       throw new AppException('Cant create like')
     }
@@ -282,7 +280,32 @@ class EstateService {
    *
    */
   static async removeLike(userId, estateId) {
-    return Like.query().where({ user_id: userId, estate_id: estateId }).delete()
+    return Database.table('likes').where({ user_id: userId, estate_id: estateId }).delete()
+  }
+
+  /**
+   *
+   */
+  static async addDislike(userId, estateId) {
+    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    if (!estate) {
+      throw new AppException('Invalid estate')
+    }
+
+    try {
+      await Database.into('dislikes').insert({ user_id: userId, estate_id: estateId })
+      await EstateService.removeLike(userId, estateId)
+    } catch (e) {
+      Logger.error(e)
+      throw new AppException('Cant create like')
+    }
+  }
+
+  /**
+   *
+   */
+  static async removeDislike(userId, estateId) {
+    return Database.table('dislikes').where({ user_id: userId, estate_id: estateId }).delete()
   }
 
   /**

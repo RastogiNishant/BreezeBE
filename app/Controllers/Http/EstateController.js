@@ -163,8 +163,15 @@ class EstateController {
    */
   async getTenantEstates({ request, auth, response }) {
     const { limit, page, filters = {} } = request.all()
+    const user = auth.user
+    const tenant = await user.tenant().fetch()
+    if (tenant.isActive()) {
+      // TODO: get matches list
+    } else {
+      // TODO: get all active estates list
+    }
 
-    const query = EstateService.getEstates({}).where('estates.status', STATUS_ACTIVE)
+    const query = EstateService.getActiveEstateQuery()
 
     if (filters.likes) {
       query.innerJoin({ _l: 'likes' }, function () {
@@ -307,6 +314,29 @@ class EstateController {
   async unlikeEstate({ request, auth, response }) {
     const { id } = request.all()
     await EstateService.removeLike(auth.user.id, id)
+    response.res(true)
+  }
+
+  /**
+   *
+   */
+  async dislikeEstate({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      await EstateService.addDislike(auth.user.id, id)
+    } catch (e) {
+      throw new HttpException(e.message)
+    }
+
+    response.res(true)
+  }
+
+  /**
+   *
+   */
+  async removeEstateDislike({ request, auth, response }) {
+    const { id } = request.all()
+    await EstateService.removeDislike(auth.user.id, id)
     response.res(true)
   }
 }

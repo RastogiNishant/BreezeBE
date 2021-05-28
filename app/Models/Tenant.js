@@ -4,6 +4,8 @@ const Database = use('Database')
 const Model = require('./BaseModel')
 const { isString, get } = require('lodash')
 
+const { STATUS_ACTIVE } = require('../constants')
+
 class Tenant extends Model {
   static get columns() {
     return [
@@ -94,6 +96,13 @@ class Tenant extends Model {
     }
 
     return toCoord(this.coord_raw, false)
+  }
+
+  /**
+   *
+   */
+  isActive() {
+    return this.status === STATUS_ACTIVE
   }
 }
 
