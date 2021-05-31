@@ -204,9 +204,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.get('/', 'EstateController.getTenantEstates').middleware([
-    'valid:Pagination,TenantEstateFilter',
-  ])
+  Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
   Route.post('/:id/like', 'EstateController.likeEstate').middleware(['valid:Id'])
   Route.delete('/:id/like', 'EstateController.unlikeEstate').middleware(['valid:Id'])

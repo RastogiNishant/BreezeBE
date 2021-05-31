@@ -6,6 +6,7 @@ const moment = require('moment')
 const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
+const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
@@ -162,26 +163,16 @@ class EstateController {
    *
    */
   async getTenantEstates({ request, auth, response }) {
-    const { limit, page, filters = {} } = request.all()
+    const { exclude_from, exclude_to, exclude, limit = 20 } = request.all()
+
     const user = auth.user
-    const tenant = await user.tenant().fetch()
-    if (tenant.isActive()) {
-      // TODO: get matches list
-    } else {
-      // TODO: get all active estates list
-    }
+    const estates = await EstateService.getTenantAllEstates(
+      user.id,
+      { exclude_from, exclude_to, exclude },
+      limit
+    )
 
-    const query = EstateService.getActiveEstateQuery()
-
-    if (filters.likes) {
-      query.innerJoin({ _l: 'likes' }, function () {
-        this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', [auth.user.id])
-      })
-    }
-
-    const result = await query.paginate(page, limit)
-
-    response.res(result)
+    response.res(estates.toJSON({ isShort: true }))
   }
 
   /**

@@ -73,6 +73,17 @@ class TenantService {
 
     return tenant.save()
   }
+
+  /**
+   * Get Tenant with linked point
+   */
+  static async getTenantWithGeo(userId) {
+    return Tenant.query()
+      .select('tenants.*', '_p.zone as point_zone', '_p.lat AS point_lat', '_p.lon as point_lon')
+      .leftJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .where({ 'tenants.id': userId })
+      .first()
+  }
 }
 
 module.exports = TenantService

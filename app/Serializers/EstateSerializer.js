@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { isString, get, isArray, isDate } = require('lodash')
+const { isString, each, get, isDate } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
 const Drive = use('Drive')
 
@@ -9,7 +9,7 @@ const Drive = use('Drive')
  */
 class EstateSerializer extends BaseSerializer {
   mergeData(item, options = {}) {
-    const { isOwner = false } = options
+    const { isOwner = false, isShort = false } = options
     if (!isOwner) {
       item.hash = undefined
     }
@@ -31,6 +31,14 @@ class EstateSerializer extends BaseSerializer {
 
     // const options = item.constructor.options
     this.applyOptionsSerializer(item, item.constructor.options)
+
+    if (isShort) {
+      each(get(item, '$attributes', {}), (v, k) => {
+        if (!item.constructor.shortFieldsList.includes(k)) {
+          item.$attributes[k] = undefined
+        }
+      })
+    }
 
     return this._getRowJSON(item)
   }

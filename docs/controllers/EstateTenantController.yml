@@ -1,13 +1,20 @@
 definitions:
-  estates_filter:
-    name: filters
+  exclude_from:
+    name: exclude_from
     in: query
+    type: number
+  exclude_to:
+    name: exclude_to
+    in: query
+    type: number
+  exclude:
+    name: exclude
+    in: query
+    explode: true
     schema:
-      type: object
-      properties:
-        likes:
-          type: boolean
-    example: '{"likes": true }'
+      type: array
+      items:
+        type: number
 
 paths:
   /api/v1/tenant/estates:
@@ -17,9 +24,10 @@ paths:
       description: Get own estates list
       produces: [application/json]
       parameters:
-        - $ref: '#/definitions/estates_filter'
+        - $ref: '#/definitions/exclude_from'
+        - $ref: '#/definitions/exclude_to'
+        - $ref: '#/definitions/exclude'
         - $ref: '#/definitions/limit'
-        - $ref: '#/definitions/page'
       responses: [200]
 
   /api/v1/tenant/estates/{id}:

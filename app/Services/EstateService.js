@@ -6,12 +6,14 @@ const Database = use('Database')
 const Drive = use('Drive')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
+const TenantService = use('App/Services/TenantService')
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
 
-const { STATUS_DRAFT, STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
+const { STATUS_DRAFT, STATUS_DELETE, STATUS_ACTIVE, MATCH_STATUS_NEW } = require('../constants')
+const MAX_DIST = 10000
 
 /**
  *
@@ -340,6 +342,170 @@ class EstateService {
       .whereRaw(`ST_DWithin(_e.coord, ST_MakePoint(?, ?)::geography, ?)`, [lon, lat, radius])
       .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
       .whereIn('_e.apt_type', tenant.apt_type)
+  }
+
+  /**
+   *
+   */
+  static getEstatesByPointZoneQuery(pointId) {
+    /*
+      select estates.*
+      from "estates"
+        LEFT JOIN dislikes AS _d
+          on estates.id = _d.estate_id AND _d.user_id = 1
+      where
+          _ST_Intersects(
+              estates.coord::geometry,
+              (select "_p"."zone" from "points" as "_p" where "_p"."id" = 1 limit 1)::geometry)
+      and "status" = 1
+      and "estates"."id" not in (select "estate_id" from "likes" where "user_id" = 1)
+      ORDER BY COALESCE(_d.created_at, '2000-01-01') ASC, estates.id DESC
+      limit 10
+     */
+    const zoneQuery = Database.from({ _p: 'points' })
+      .select('_p.zone')
+      .where({ '_p.id': pointId })
+      .limit(1)
+
+    return Estate.query().where(
+      Database.raw(`_ST_Intersects(estates.coord::geometry, (${zoneQuery.toString()})::geometry)`)
+    )
+  }
+
+  /**
+   *
+   */
+  static getEstatesByPointCoordQuery(lat, lon) {
+    /*
+      SELECT _e.*
+      FROM estates AS _e
+      WHERE
+        _ST_Intersects(
+            _e.coord::geometry, (SELECT ST_Buffer(ST_MakePoint(13.3987, 52.5013)::geography, 200000)::geometry)
+          );
+     */
+
+    const pointsQuery = Database.raw(
+      `SELECT ST_Buffer(ST_MakePoint(?, ?)::geography, ?)::geometry`,
+      [lon, lat, MAX_DIST]
+    )
+
+    return Estate.query().where(pointsQuery)
+  }
+
+  /**
+   * If tenant zone exists, make estate requests by tenant zone
+   */
+  static getEstatesByTenantZoneQuery(tenantId) {
+    // const zoneQuery = Database.from({ _t: 'tenants' })
+    //   .select('_t.zone')
+    //   .where({ '_t.id': tenantId })
+    //   .limit(1)
+    //
+    // return Estate.query().where(
+    //   Database.raw(`_ST_Intersects(estates.coord::geometry, (${zoneQuery.toString()})::geometry)`)
+    // )
+  }
+
+  /**
+   * Get estates according to matches
+   */
+  static getActiveMatchesQuery(userId, exclude = []) {
+    /*
+      SELECT
+        _e.*,
+        CASE WHEN _d.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS dislike,
+        _m.percent AS match
+      FROM estates AS _e
+      INNER JOIN matches AS _m on _e.id = _m.estate_id AND _m.user_id = 1 --AND _m.status = 1
+      LEFT JOIN dislikes AS _d on _e.id = _d.estate_id AND _d.user_id = 1
+      WHERE _e.id NOT IN (1,2)
+      order by COALESCE(_d.created_at, '2000-01-01') ASC, _m.percent DESC
+     */
+
+    return Estate.query()
+      .select('estates.*')
+      .select(
+        Database.raw(`CASE WHEN _d.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS dislike`)
+      )
+      .select(Database.raw(`_m.percent AS match`))
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id')
+          .onIn('_m.user_id', [userId])
+          // .onIn('_m.status', [MATCH_STATUS_NEW])
+      })
+      .leftJoin({ _d: 'dislikes' }, function () {
+        this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', [userId])
+      })
+      .whereNotIn('estates.id', exclude)
+      .whereNotIn('estates.id', function () {
+        // Remove already liked
+        this.select('estate_id').from('likes').where('user_id', userId)
+      })
+  }
+
+  /**
+   * If tenant not active get points by zone/point+dist/range zone
+   */
+  static getNotActiveMatchesQuery(tenant, userId, excludeMin = 0, excludeMax = 0) {
+    let query = null
+    if (!tenant.point_lat || !tenant.point_lon) {
+      throw new AppException('Invalid user anchor')
+    }
+
+    if (tenant.zones && !isEmpty[tenant.zones]) {
+      // TODO: Get apartments by user selected zones
+    } else if (tenant.point_zone) {
+      // Get apartments by zone
+      query = EstateService.getEstatesByPointZoneQuery(tenant.point_id)
+    } else {
+      // Get apartments by anchor coords
+      query = EstateService.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
+    }
+
+    if (!query) {
+      throw new AppException('Invalid match query')
+    }
+
+    query.where({ status: STATUS_ACTIVE }).whereNotIn('estates.id', function () {
+      this.select('estate_id').from('likes').where('user_id', userId)
+    })
+
+    if (excludeMin && excludeMax) {
+      query.whereNotBetween('estates.id', [excludeMin, excludeMax])
+    }
+
+    return query
+      .select('estates.*')
+      .select(
+        Database.raw(`CASE WHEN _d.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS dislike`)
+      )
+      .select(Database.raw(`'0' AS match`))
+      .leftJoin({ _d: 'dislikes' }, function () {
+        this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', [userId])
+      })
+      .orderByRaw("COALESCE(_d.created_at, '2000-01-01') ASC")
+      .orderBy('estates.id', 'DESC')
+  }
+
+  /**
+   *
+   */
+  static async getTenantAllEstates(
+    userId,
+    { exclude_from = 0, exclude_to = 0, exclude = [] },
+    limit = 20
+  ) {
+    const tenant = await TenantService.getTenantWithGeo(userId)
+    let query = null
+
+    if (tenant.isActive()) {
+      query = EstateService.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
+    } else {
+      query = EstateService.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
+    }
+
+    return query.limit(limit).fetch()
   }
 }
 
