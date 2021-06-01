@@ -414,33 +414,35 @@ class EstateService {
     /*
       SELECT
         _e.*,
-        CASE WHEN _d.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS dislike,
         _m.percent AS match
       FROM estates AS _e
-      INNER JOIN matches AS _m on _e.id = _m.estate_id AND _m.user_id = 1 --AND _m.status = 1
-      LEFT JOIN dislikes AS _d on _e.id = _d.estate_id AND _d.user_id = 1
-      WHERE _e.id NOT IN (1,2)
-      order by COALESCE(_d.created_at, '2000-01-01') ASC, _m.percent DESC
+        INNER JOIN matches AS _m on _e.id = _m.estate_id AND _m.user_id = 1 --AND _m.status = 1
+      WHERE
+        _e.id NOT IN (1,2)
+        AND _e.id NOT IN (
+          SELECT _d.estate_id FROM dislikes AS _d WHERE _d.user_id = 1
+          UNION SELECT _l.estate_id FROM likes AS _l WHERE _l.user_id = 1
+        )
+      order by _m.percent DESC
      */
 
     return Estate.query()
       .select('estates.*')
-      .select(
-        Database.raw(`CASE WHEN _d.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS dislike`)
-      )
       .select(Database.raw(`_m.percent AS match`))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
           .onIn('_m.user_id', [userId])
-          // .onIn('_m.status', [MATCH_STATUS_NEW])
-      })
-      .leftJoin({ _d: 'dislikes' }, function () {
-        this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', [userId])
+          .onIn('_m.status', MATCH_STATUS_NEW)
       })
       .whereNotIn('estates.id', exclude)
       .whereNotIn('estates.id', function () {
-        // Remove already liked
-        this.select('estate_id').from('likes').where('user_id', userId)
+        // Remove already liked/disliked
+        this.select('estate_id')
+          .from('likes')
+          .where('user_id', userId)
+          .union(function () {
+            this.select('estate_id').from('dislikes').where('user_id', userId)
+          })
       })
   }
 
@@ -468,7 +470,13 @@ class EstateService {
     }
 
     query.where({ status: STATUS_ACTIVE }).whereNotIn('estates.id', function () {
-      this.select('estate_id').from('likes').where('user_id', userId)
+      // Remove already liked/disliked
+      this.select('estate_id')
+        .from('likes')
+        .where('user_id', userId)
+        .union(function () {
+          this.select('estate_id').from('dislikes').where('user_id', userId)
+        })
     })
 
     if (excludeMin && excludeMax) {

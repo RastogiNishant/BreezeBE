@@ -33,11 +33,7 @@ class EstateSerializer extends BaseSerializer {
     this.applyOptionsSerializer(item, item.constructor.options)
 
     if (isShort) {
-      each(get(item, '$attributes', {}), (v, k) => {
-        if (!item.constructor.shortFieldsList.includes(k)) {
-          item.$attributes[k] = undefined
-        }
-      })
+      this.filterFields(item)
     }
 
     return this._getRowJSON(item)

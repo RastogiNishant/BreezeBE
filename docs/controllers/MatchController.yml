@@ -4,6 +4,11 @@ definitions:
     in: formData
     type: number
     required: true
+  estateIdQuery:
+    name: estate_id
+    in: query
+    type: number
+    required: true
   userId:
     name: user_id
     in: formData
@@ -23,8 +28,73 @@ definitions:
     pattern: '^[a-f\d]{32}$'
     example: '1234567890abcdef1234567890abcdef'
     required: true
+  landlord_match_filters:
+    name: filters
+    in: query
+    schema:
+      type: json
+      items:
+        - name: knock
+          type: boolean
+        - name: buddy
+          type: boolean
+        - name: invite
+          type: boolean
+        - name: visit
+          type: boolean
+        - name: top
+          type: boolean
+        - name: commit
+          type: boolean
+    example: '{ "knock": true, "buddy": false, "invite": false, "visit": false, "top": false, "commit": false }'
+  tenant_match_filters:
+    name: filters
+    in: query
+    schema:
+      type: json
+      items:
+        - name: buddy
+          type: boolean
+        - name: dislike
+          type: boolean
+        - name: like
+          type: boolean
+        - name: knock
+          type: boolean
+        - name: invite
+          type: boolean
+        - name: share
+          type: boolean
+        - name: top
+          type: boolean
+        - name: commit
+          type: boolean
+    example: '{ "buddy": true, "like": false, "dislike": false, "knock": false, "invite": false, "share": false, "top": false, "commit": false }'
 
 # Routes list
+/api/v1/match/tenant:
+  get:
+    tags: [match]
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/tenant_match_filters'
+      - $ref: '#/definitions/limit'
+      - $ref: '#/definitions/page'
+    responses: [200]
+
+/api/v1/match/landlord:
+  get:
+    tags: [match]
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/landlord_match_filters'
+      - $ref: '#/definitions/estateIdQuery'
+      - $ref: '#/definitions/limit'
+      - $ref: '#/definitions/page'
+    responses: [200]
+
 /api/v1/match/knock:
   post:
     tags: [match]

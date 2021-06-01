@@ -3,12 +3,21 @@
 const MAX_OPTIONS_COUNT = 12
 
 const VanillaSerializer = require('@adonisjs/lucid/src/Lucid/Serializers/Vanilla')
-const { merge, each } = require('lodash')
+const { merge, each, get } = require('lodash')
 
 /**
  * Merge data
  */
 class BaseSerializer extends VanillaSerializer {
+  filterFields(item) {
+    const fields = item.constructor.shortFieldsList || []
+    each(get(item, '$attributes', {}), (v, k) => {
+      if (!fields.includes(k)) {
+        item.$attributes[k] = undefined
+      }
+    })
+  }
+
   mergeData(item) {
     return this._getRowJSON(item)
   }

@@ -193,6 +193,60 @@ class MatchController {
 
     response.res(true)
   }
+
+  /**
+   *
+   */
+  async getMatchesListTenant({ request, auth, response }) {
+    const user = auth.user
+    const {
+      filters: { buddy, like, dislike, knock, invite, share, top, commit },
+      page,
+      limit,
+    } = request.all()
+
+    const estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, {
+      buddy,
+      dislike,
+      like,
+      knock,
+      invite,
+      share,
+      top,
+      commit,
+    }).paginate(page, limit)
+
+    response.res(estates.toJSON({ isShort: true }))
+  }
+
+  /**
+   * Get matches user for landlord
+   */
+  async getMatchesListLandlord({ request, auth, response }) {
+    const user = auth.user
+    const {
+      estate_id,
+      filters: { knock, buddy, invite, visit, top, commit },
+      page,
+      limit,
+    } = request.all()
+
+    const estate = await EstateService.getQuery({ id: estate_id, user_id: user.id }).first()
+    if (!estate) {
+      throw new HttpException('Not found', 404)
+    }
+
+    const tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, {
+      knock,
+      buddy,
+      invite,
+      visit,
+      top,
+      commit,
+    }).paginate(page, limit)
+
+    response.res(tenants.toJSON({ isShort: true }))
+  }
 }
 
 module.exports = MatchController

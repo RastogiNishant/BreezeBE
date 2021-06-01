@@ -40,6 +40,13 @@ class Tenant extends Model {
   /**
    *
    */
+  static get shortFieldsList() {
+    return ['id', 'user_id', 'status', 'firstname', 'secondname', 'birthday']
+  }
+
+  /**
+   *
+   */
   static get traits() {
     return ['NoTimestamp']
   }

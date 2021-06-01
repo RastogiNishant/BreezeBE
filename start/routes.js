@@ -217,6 +217,15 @@ Route.group(() => {
 
 Route.get('/map', 'MapController.getMap')
 
+Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middleware([
+  'auth:jwt',
+  'valid:MatchListTenant,Pagination',
+])
+Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').middleware([
+  'auth:jwtLandlord',
+  'valid:MatchListLandlord,Pagination',
+])
+
 // MATCH FLOW
 Route.group(() => {
   Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])

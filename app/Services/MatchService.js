@@ -560,12 +560,8 @@ class MatchService {
         estate_id: estateId,
         percent: 0,
         buddy: true,
-        status: MATCH_STATUS_NEW,
+        status: MATCH_STATUS_KNOCK,
       })
-    }
-
-    if (match.status !== MATCH_STATUS_NEW) {
-      throw new AppException('Dont allow, match already exists')
     }
 
     if (match.buddy) {
@@ -573,10 +569,114 @@ class MatchService {
     }
 
     // Match exists but without buddy
-    return Database.table('matches').update({ buddy: true }).where({
-      user_id: tenantId,
-      estate_id: estateId,
-    })
+    return Database.table('matches')
+      .update({
+        buddy: true,
+        status: match.status === MATCH_STATUS_NEW ? MATCH_STATUS_KNOCK : match.status,
+      })
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+  }
+
+  /**
+   *
+   */
+  static getTenantMatchesWithFilterQuery(
+    userId,
+    { buddy, like, dislike, knock, invite, share, top, commit }
+  ) {
+    const query = Estate.query().select('estates.*').select('_m.percent as match')
+
+    if (!like && !dislike) {
+      query.innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      })
+    }
+
+    if (buddy) {
+      // Buddy show knocked matches with buddy only for active estate
+      query
+        .where({ 'estates.status': STATUS_ACTIVE })
+        .where({ '_m.status': MATCH_STATUS_KNOCK, '_m.buddy': true })
+    } else if (like) {
+      // All liked estates
+      query
+        .clearSelect()
+        .select('estates.*')
+        .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+        .innerJoin({ _l: 'likes' }, function () {
+          this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+        })
+        .leftJoin({ _m: 'matches' }, function () {
+          this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+        })
+        .where(function () {
+          this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+        })
+    } else if (dislike) {
+      // All disliked estates
+      query
+        .clearSelect()
+        .select('estates.*')
+        .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+        .innerJoin({ _d: 'dislikes' }, function () {
+          this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', userId)
+        })
+        .leftJoin({ _m: 'matches' }, function () {
+          this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+        })
+        .where(function () {
+          this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+        })
+    } else if (knock) {
+      query.where({ '_m.status': MATCH_STATUS_KNOCK }).whereNot('_m.buddy', true)
+    } else if (invite) {
+      query
+        .where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': false })
+        .whereNot('_m.share', true)
+    } else if (share) {
+      query.where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': true })
+    } else if (top) {
+      query.where({ '_m.status': MATCH_STATUS_TOP })
+    } else if (commit) {
+      query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
+    } else {
+      throw new AppException('Invalid filter params')
+    }
+
+    return query
+  }
+
+  /**
+   * Get tenants matched to current estate
+   */
+  static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
+    const query = Tenant.query()
+      .select('tenants.*')
+      .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
+      .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
+      .where({ '_u.role': ROLE_USER })
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate.id])
+      })
+
+    if (knock) {
+      query.where({ '_m.status': MATCH_STATUS_KNOCK }).whereNot('_m.buddy', true)
+    } else if (buddy) {
+      query.where({ '_m.status': MATCH_STATUS_KNOCK, '_m.buddy': true })
+    } else if (invite) {
+      query.whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_SHARE])
+    } else if (visit) {
+      query.where('_m.status', MATCH_STATUS_VISIT)
+    } else if (top) {
+      query.where('_m.status', MATCH_STATUS_TOP)
+    } else if (commit) {
+      query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
+    }
+
+    return query
   }
 }
 
