@@ -81,7 +81,7 @@ class TenantService {
     return Tenant.query()
       .select('tenants.*', '_p.zone as point_zone', '_p.lat AS point_lat', '_p.lon as point_lon')
       .leftJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
-      .where({ 'tenants.id': userId })
+      .where({ 'tenants.user_id': userId })
       .first()
   }
 }

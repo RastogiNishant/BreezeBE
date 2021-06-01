@@ -72,6 +72,12 @@ paths:
         - name: phone
           in: formData
           type: string
+        - name: firstname
+          in: formData
+          type: string
+        - name: secondname
+          in: formData
+          type: string
         - name: birthday
           in: formData
           type: string
@@ -131,6 +137,12 @@ paths:
           type: string
           enum: ['1', '2']
         - name: phone
+          in: formData
+          type: string
+        - name: firstname
+          in: formData
+          type: string
+        - name: secondname
           in: formData
           type: string
         - name: birthday

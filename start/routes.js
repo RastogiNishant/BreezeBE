@@ -43,7 +43,10 @@ Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jw
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
-Route.put('/api/v1/users', 'AccountController.updateProfile').middleware(['auth:jwt,jwtLandlord'])
+Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
+  'auth:jwt,jwtLandlord',
+  'valid:UpdateUser',
+])
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
   'auth:jwt,jwtLandlord',
 ])

@@ -22,6 +22,8 @@ class SignUp extends Base {
       password: yup.string().trim().min(6).max(36).required(),
       sex: yup.number().oneOf([GENDER_MALE, GENDER_FEMALE]).required(),
       phone: phoneSchema,
+      firstname: yup.string().min(2).max(254),
+      secondname: yup.string().min(2).max(254),
       birthday: yup.date().required(),
       lang: yup.string().oneOf(['en', 'de']).default('en').required(),
       lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
