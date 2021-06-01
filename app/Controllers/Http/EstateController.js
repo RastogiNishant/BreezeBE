@@ -166,11 +166,19 @@ class EstateController {
     const { exclude_from, exclude_to, exclude, limit = 20 } = request.all()
 
     const user = auth.user
-    const estates = await EstateService.getTenantAllEstates(
-      user.id,
-      { exclude_from, exclude_to, exclude },
-      limit
-    )
+    let estates
+    try {
+      estates = await EstateService.getTenantAllEstates(
+        user.id,
+        { exclude_from, exclude_to, exclude },
+        limit
+      )
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 406)
+      }
+      throw e
+    }
 
     response.res(estates.toJSON({ isShort: true }))
   }

@@ -505,6 +505,9 @@ class EstateService {
     limit = 20
   ) {
     const tenant = await TenantService.getTenantWithGeo(userId)
+    if (!tenant) {
+      throw new AppException('Tenant geo invalid')
+    }
     let query = null
 
     if (tenant.isActive()) {
