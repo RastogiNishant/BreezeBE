@@ -4,6 +4,11 @@ definitions:
     in: formData
     type: number
     required: true
+  positions:
+    name: positions
+    in: formData
+    type: number
+    required: true
   estateIdQuery:
     name: estate_id
     in: query
@@ -177,4 +182,14 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/estateId'
+    responses: [200]
+
+/api/v1/match/order:
+  put:
+    tags: [match]
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estateId'
+      - $ref: '#/definitions/position'
     responses: [200]

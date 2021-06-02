@@ -101,7 +101,7 @@ class MatchService {
     }
 
     // Apartment type is equal
-    if (tenant.apt_type.includes(estate.apt_type)) {
+    if ((tenant.apt_type || []).includes(estate.apt_type)) {
       score += aptTypeWeight
       results.apt_type = aptTypeWeight
     }
@@ -113,7 +113,7 @@ class MatchService {
     }
 
     // House type is equal
-    if (tenant.house_type.includes(estate.house_type)) {
+    if ((tenant.house_type || []).includes(estate.house_type)) {
       score += houseTypeWeight
       results.house_type = houseTypeWeight
     }
@@ -223,6 +223,7 @@ class MatchService {
     await Database.query()
       .from('matches')
       .where({ user_id: userId, status: MATCH_STATUS_NEW })
+      .whereNot({ buddy: true })
       .delete()
 
     // Create new matches

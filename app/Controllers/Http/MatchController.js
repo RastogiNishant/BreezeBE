@@ -1,6 +1,7 @@
 'use strict'
 
 const Logger = use('Logger')
+const Database = use('Database')
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -246,6 +247,13 @@ class MatchController {
     }).paginate(page, limit)
 
     response.res(tenants.toJSON({ isShort: true }))
+  }
+
+  /**
+   *
+   */
+  async changeOrder({ request, auth, response }) {
+    // const match = await Database.table('matches').update({'percent': 3 }).where('estate_id', 970);
   }
 }
 

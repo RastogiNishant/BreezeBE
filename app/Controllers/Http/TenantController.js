@@ -4,6 +4,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
 const QueueService = use('App/Services/QueueService')
 const UserService = use('App/Services/UserService')
+const MatchService = use('App/Services/MatchService')
 const Tenant = use('App/Models/Tenant')
 
 const { ROLE_USER, ROLE_LANDLORD, MEMBER_FILE_TYPE_INCOME } = require('../../constants')
@@ -48,6 +49,7 @@ class TenantController {
       QueueService.getAnchorIsoline(tenant.id)
     }
     const updatedTenant = await Tenant.find(tenant.id)
+    await MatchService.matchByUser(auth.user.id)
 
     response.res(updatedTenant)
   }
