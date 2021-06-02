@@ -300,7 +300,7 @@ class MatchService {
     const getLikes = () => {
       return Database.query()
         .from('likes')
-        .select('likes.id', 'matches.status')
+        .select('matches.status')
         .where({ 'likes.user_id': userId, 'likes.estate_id': estateId })
         .leftJoin('matches', function () {
           this.on('matches.estate_id', 'likes.estate_id').on('matches.user_id', 'likes.user_id')
