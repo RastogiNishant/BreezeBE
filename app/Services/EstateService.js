@@ -331,6 +331,7 @@ class EstateService {
         .from({ _e: 'estates' })
         .crossJoin('meta')
         .whereRaw(`ST_DWithin(_e.coord, ST_MakePoint(?, ?)::geography, ?)`, [lon, lat, radius])
+        .where('_e.status', STATUS_ACTIVE)
       // .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
       // .whereIn('_e.apt_type', tenant.apt_type)
       // .whereIn('_e.id', [8])
