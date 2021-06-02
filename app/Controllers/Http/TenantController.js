@@ -49,7 +49,9 @@ class TenantController {
       QueueService.getAnchorIsoline(tenant.id)
     }
     const updatedTenant = await Tenant.find(tenant.id)
-    await MatchService.matchByUser(auth.user.id)
+    if (updatedTenant.isActive()) {
+      await MatchService.matchByUser(auth.user.id)
+    }
 
     response.res(updatedTenant)
   }
