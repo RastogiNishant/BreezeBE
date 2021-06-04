@@ -449,6 +449,7 @@ class EstateService {
             this.select('estate_id').from('dislikes').where('user_id', userId)
           })
       })
+      .orderBy('_m.percent', 'DESC')
   }
 
   /**
@@ -462,7 +463,6 @@ class EstateService {
 
     if (!tenant.point_id) {
       const { lat, lon } = tenant.getLatLon()
-      console.log({ lat, lon }, '+++')
       query = EstateService.getEstatesByPointCoordQuery(lat, lon)
     } else if (tenant.zones && !isEmpty[tenant.zones]) {
       // TODO: Get apartments by user selected zones
@@ -495,7 +495,7 @@ class EstateService {
     return query
       .select('estates.*')
       .select(Database.raw(`'0' AS match`))
-      .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
+      // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
       .orderBy('estates.id', 'DESC')
   }
 
