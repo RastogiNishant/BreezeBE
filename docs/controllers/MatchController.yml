@@ -4,8 +4,16 @@ definitions:
     in: formData
     type: number
     required: true
-  positions:
-    name: positions
+  estateIdOrder:
+    name: estate_id
+    in: formData
+    type: number
+  userIdOrder:
+    name: user_id
+    in: formData
+    type: number
+  position:
+    name: position
     in: formData
     type: number
     required: true
@@ -191,5 +199,6 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/estateId'
+      - $ref: '#/definitions/userIdOrder'
       - $ref: '#/definitions/position'
     responses: [200]

@@ -1,10 +1,12 @@
 'use strict'
 
 const Logger = use('Logger')
-const Database = use('Database')
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
+const { ValidationException } = use('Validator')
+
+const { ROLE_USER, ROLE_LANDLORD } = require('../../constants')
 
 class MatchController {
   /**
@@ -253,7 +255,12 @@ class MatchController {
    *
    */
   async changeOrder({ request, auth, response }) {
-    // const match = await Database.table('matches').update({'percent': 3 }).where('estate_id', 970);
+    const { estate_id, user_id, position } = request.all()
+    if (auth.user.role === ROLE_LANDLORD && !user_id) {
+      throw ValidationException.validationFailed([{ field: 'user_id', validation: 'required' }])
+    }
+
+    await MatchService.reorderMatches(auth.user, estate_id, user_id, position)
   }
 }
 

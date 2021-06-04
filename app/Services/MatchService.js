@@ -1,3 +1,8 @@
+const uuid = require('uuid')
+const moment = require('moment')
+const { get, isNumber, isEmpty } = require('lodash')
+const { props, map } = require('bluebird')
+
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const User = use('App/Models/User')
@@ -6,10 +11,6 @@ const TimeSlot = use('App/Models/TimeSlot')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
-const moment = require('moment')
-
-const { get, isNumber, isEmpty } = require('lodash')
-const { props } = require('bluebird')
 
 const {
   MATCH_STATUS_NEW,
@@ -23,6 +24,7 @@ const {
   STATUS_ACTIVE,
   DATE_FORMAT,
   ROLE_USER,
+  ROLE_LANDLORD,
 } = require('../constants')
 
 const MATCH_PERCENT_PASS = 0
@@ -678,6 +680,115 @@ class MatchService {
     }
 
     return query
+  }
+
+  /**
+   *
+   */
+  static async reorderMatches(user, estateId, userId, position) {
+    const sequence = 'seq_' + uuid.v4('tmp_seq_1').replace(/-/g, '')
+    const dropSequence = async (seq) => Database.raw(`DROP SEQUENCE IF EXISTS ${seq}`)
+    const createSequence = async (seq) => Database.raw(`CREATE SEQUENCE ${seq}`)
+    const isTenant = user.role === ROLE_USER
+
+    // Create new sequence
+    await createSequence(sequence)
+    // Disable TRIGGER
+    await Database.raw(`SET session_replication_role = replica`)
+    // Change conditions to tenant
+    let field = isTenant ? 'order_tenant' : 'order_lord'
+
+    // Create new items order
+    const subQuery = Database.table({ _m: 'matches' })
+      .select(
+        '_m.user_id',
+        '_m.estate_id',
+        Database.raw(`nextval('${sequence}')::INT AS item_order`)
+      )
+      .orderBy([
+        { column: `_m.${field}`, order: 'ASC' },
+        { column: '_m.updated_at', order: 'DESC' },
+      ])
+    // Add custom conditions
+    if (isTenant) {
+      subQuery.where('_m.user_id', user.id).whereIn('_m.status', function () {
+        this.select('status')
+          .from('matches')
+          .where({ user_id: user.id, estate_id: estateId })
+          .limit(1)
+      })
+    } else {
+      subQuery.where('_m.estate_id', estateId).whereIn('_m.status', function () {
+        this.select('status')
+          .from('matches')
+          .where({ user_id: userId, estate_id: estateId })
+          .limit(1)
+      })
+    }
+
+    // Refresh current items order
+    // noinspection SqlResolve
+    const updateQuery = `
+      UPDATE matches as _m
+        SET ${field} = _t2.item_order
+        FROM
+        (${subQuery.toString()})  AS _t2
+        WHERE
+          _t2.estate_id = _m.estate_id
+          AND _t2.user_id = _m.user_id`
+
+    const getCurrentOrderItems = () =>
+      Database.table('matches')
+        .select(`${field} AS current_position`)
+        .select(`status`)
+        .where({ estate_id: estateId, user_id: isTenant ? user.id : userId })
+        .first()
+
+    // Move items positions in range
+    const updatePositions = async (start, end, offset, status) => {
+      const startOf = Math.min(+start, +end)
+      const endOf = Math.max(+start, +end)
+      return Database.raw(
+        `UPDATE matches SET ${field} = ${field} - ? 
+          WHERE ${isTenant ? 'user_id' : 'estate_id'} = ? 
+            AND ( ${field} BETWEEN ? AND ? )
+            AND status = ?
+            `,
+        [offset, isTenant ? user.id : estateId, startOf, endOf, status]
+      )
+    }
+
+    // Update current tenant position
+    const updateTarget = () => {
+      return Database.raw(`UPDATE matches SET ${field} = ? WHERE estate_id = ? AND user_id = ?`, [
+        position,
+        estateId,
+        isTenant ? user.id : userId,
+      ])
+    }
+
+    try {
+      await Database.raw(updateQuery)
+      const item = await getCurrentOrderItems()
+      if (!item) {
+        throw new AppException('Invalid item')
+      }
+
+      let offset = 0
+      if (item.current_position < position) {
+        // Move down
+        offset = 1
+      } else if (item.current_position > position) {
+        // Move up
+        offset = -1
+      }
+
+      await updatePositions(item.current_position, position, offset, item.status)
+      await updateTarget()
+    } finally {
+      await dropSequence(sequence)
+      await Database.raw(`SET session_replication_role = DEFAULT`)
+    }
   }
 }
 
