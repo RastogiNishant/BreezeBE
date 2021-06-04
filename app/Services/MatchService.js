@@ -590,7 +590,12 @@ class MatchService {
     userId,
     { buddy, like, dislike, knock, invite, share, top, commit }
   ) {
-    const query = Estate.query().select('estates.*').select('_m.percent as match')
+    const query = Estate.query()
+      .select('estates.*')
+      .select('_m.percent as match')
+      .select('_m.percent as match')
+      .select('_m.updated_at')
+      .orderBy('_m.updated_at', 'DESC')
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
@@ -608,6 +613,7 @@ class MatchService {
       query
         .clearSelect()
         .select('estates.*')
+        .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
           this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
@@ -623,6 +629,7 @@ class MatchService {
       query
         .clearSelect()
         .select('estates.*')
+        .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
           this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', userId)
@@ -640,9 +647,21 @@ class MatchService {
         .where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': false })
         .whereNot('_m.share', true)
     } else if (share) {
-      query.where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': true })
+      query
+        .where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': true })
+        .clearOrder()
+        .orderBy([
+          { column: '_m.order_tenant', order: 'ASK' },
+          { column: '_m.updated_at', order: 'DESC' },
+        ])
     } else if (top) {
-      query.where({ '_m.status': MATCH_STATUS_TOP })
+      query
+        .where({ '_m.status': MATCH_STATUS_TOP })
+        .clearOrder()
+        .orderBy([
+          { column: '_m.order_tenant', order: 'ASK' },
+          { column: '_m.updated_at', order: 'DESC' },
+        ])
     } else if (commit) {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     } else {
@@ -658,12 +677,14 @@ class MatchService {
   static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
     const query = Tenant.query()
       .select('tenants.*')
+      .select('_m.updated_at')
       .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate.id])
       })
+      .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
       query.where({ '_m.status': MATCH_STATUS_KNOCK }).whereNot('_m.buddy', true)
@@ -674,7 +695,13 @@ class MatchService {
     } else if (visit) {
       query.where('_m.status', MATCH_STATUS_VISIT)
     } else if (top) {
-      query.where('_m.status', MATCH_STATUS_TOP)
+      query
+        .where('_m.status', MATCH_STATUS_TOP)
+        .clearOrder()
+        .orderBy([
+          { column: '_m.order_lord', order: 'ASK' },
+          { column: '_m.updated_at', order: 'DESC' },
+        ])
     } else if (commit) {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     }

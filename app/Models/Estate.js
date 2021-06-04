@@ -147,7 +147,17 @@ class Estate extends Model {
   }
 
   static get shortFieldsList() {
-    return ['id', 'coord', 'net_rent', 'area', 'cover', 'rooms_number', 'status', 'match']
+    return [
+      'id',
+      'coord',
+      'net_rent',
+      'area',
+      'cover',
+      'rooms_number',
+      'status',
+      'match',
+      'updated_at',
+    ]
   }
 
   /**
