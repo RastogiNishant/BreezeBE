@@ -391,7 +391,11 @@ class EstateService {
       [lon, lat, MAX_DIST]
     )
 
-    return Estate.query().where(pointsQuery)
+    const intersectQuery = Database.raw(
+      `_ST_Intersects(estates.coord::geometry, (${pointsQuery.toString()})::geometry)`
+    )
+
+    return Estate.query().where(intersectQuery)
   }
 
   /**
@@ -452,11 +456,15 @@ class EstateService {
    */
   static getNotActiveMatchesQuery(tenant, userId, excludeMin = 0, excludeMax = 0) {
     let query = null
-    if (!tenant.point_lat || !tenant.point_lon) {
+    if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
     }
 
-    if (tenant.zones && !isEmpty[tenant.zones]) {
+    if (!tenant.point_id) {
+      const { lat, lon } = tenant.getLatLon()
+      console.log({ lat, lon }, '+++')
+      query = EstateService.getEstatesByPointCoordQuery(lat, lon)
+    } else if (tenant.zones && !isEmpty[tenant.zones]) {
       // TODO: Get apartments by user selected zones
     } else if (tenant.point_zone) {
       // Get apartments by zone
@@ -486,14 +494,8 @@ class EstateService {
 
     return query
       .select('estates.*')
-      .select(
-        Database.raw(`CASE WHEN _d.created_at IS NOT NULL THEN TRUE ELSE FALSE END AS dislike`)
-      )
       .select(Database.raw(`'0' AS match`))
-      .leftJoin({ _d: 'dislikes' }, function () {
-        this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', [userId])
-      })
-      .orderByRaw("COALESCE(_d.created_at, '2000-01-01') ASC")
+      .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
       .orderBy('estates.id', 'DESC')
   }
 
