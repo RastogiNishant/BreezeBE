@@ -101,7 +101,20 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
     // TODO: validate publish ready
-    await estate.updateItem({ status: action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT }, true)
+    if (!estate.avail_duration) {
+      throw new HttpException('Estates is not completely filled', 400)
+    }
+
+    if (action === 'publish') {
+      if (estate.status === STATUS_ACTIVE) {
+        throw new HttpException('Cant update status', 400)
+      }
+      await estate.publishEstate()
+      // TODO: run scheduled task to deactivate estates
+    } else {
+      await estate.updateItem({ status: STATUS_DRAFT }, true)
+    }
+
     response.res(true)
   }
 

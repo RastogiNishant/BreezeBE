@@ -185,33 +185,44 @@ class EstateService {
   /**
    *
    */
-  static async createSlot({ end_at, start_at, slot_length, week_day }, estate) {
-    const minDiff = moment
-      .utc(`2012-10-10 ${end_at}`)
-      .diff(moment.utc(`2012-10-10 ${start_at}`), 'minutes')
+  static getCrossTimeslotQuery({ end_at, start_at }, userId) {
+    return TimeSlot.query()
+      .whereIn('estate_id', function () {
+        this.select('id').from('estates').where('user_id', userId)
+      })
+      .where(function () {
+        this.orWhere(function () {
+          this.where('start_at', '>', start_at).where('start_at', '<', end_at)
+        })
+          .orWhere(function () {
+            this.where('end_at', '>', start_at).where('end_at', '<', end_at)
+          })
+          .orWhere(function () {
+            this.where('start_at', '<=', start_at).where('end_at', '>=', end_at)
+          })
+      })
+  }
 
+  /**
+   *
+   */
+  static async createSlot({ end_at, start_at, slot_length }, estate) {
+    const minDiff = moment.utc(end_at).diff(moment.utc(start_at), 'minutes')
     if (minDiff % slot_length !== 0) {
       throw new AppException('Invalid time range')
     }
 
     // Checks is time slot crossing existing
-    const existing = await TimeSlot.query()
-      .where('estate_id', estate.id)
-      .where('week_day', week_day)
-      .where(function () {
-        this.whereBetween('start_at', [start_at, end_at])
-          .orWhereBetween('end_at', [start_at, end_at])
-          .orWhere(function () {
-            this.where('start_at', '<=', start_at).where('end_at', '>=', end_at)
-          })
-      })
-      .first()
+    const existing = await EstateService.getCrossTimeslotQuery(
+      { end_at, start_at },
+      estate.user_id
+    ).first()
 
     if (existing) {
       throw new AppException('Time slot crossing existing')
     }
 
-    return TimeSlot.createItem({ week_day, end_at, start_at, slot_length, estate_id: estate.id })
+    return TimeSlot.createItem({ end_at, start_at, slot_length, estate_id: estate.id })
   }
 
   /**
@@ -231,25 +242,16 @@ class EstateService {
    */
   static async updateSlot(slot, data) {
     slot.merge(data)
-    const minDiff = moment
-      .utc(`2012-10-10 ${slot.end_at}`)
-      .diff(moment.utc(`2012-10-10 ${slot.start_at}`), 'minutes')
-
+    const minDiff = moment.utc(slot.end_at).diff(moment.utc(slot.start_at), 'minutes')
     if (minDiff % slot.slot_length !== 0) {
       throw new AppException('Invalid time range')
     }
-
-    const crossingSlot = await TimeSlot.query()
-      .where('estate_id', slot.estate_id)
+    const estate = await Estate.find(slot.estate_id)
+    const crossingSlot = await EstateService.getCrossTimeslotQuery(
+      { end_at: slot.end_at, start_at: slot.start_at },
+      estate.user_id
+    )
       .whereNot('id', slot.id)
-      .where('week_day', slot.week_day)
-      .where(function () {
-        this.whereBetween('start_at', [slot.start_at, slot.end_at])
-          .orWhereBetween('end_at', [slot.start_at, slot.end_at])
-          .orWhere(function () {
-            this.where('start_at', '<=', slot.start_at).where('end_at', '>=', slot.end_at)
-          })
-      })
       .first()
 
     if (crossingSlot) {
@@ -492,11 +494,13 @@ class EstateService {
       query.whereNotBetween('estates.id', [excludeMin, excludeMax])
     }
 
-    return query
-      .select('estates.*')
-      .select(Database.raw(`'0' AS match`))
-      // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
-      .orderBy('estates.id', 'DESC')
+    return (
+      query
+        .select('estates.*')
+        .select(Database.raw(`'0' AS match`))
+        // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
+        .orderBy('estates.id', 'DESC')
+    )
   }
 
   /**

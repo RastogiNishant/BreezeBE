@@ -3,27 +3,28 @@
 const moment = require('moment')
 const yup = require('yup')
 const Base = require('./Base')
+const { DATE_FORMAT } = require('../constants')
 
 const transformTime = (value) => {
-  const date = moment.utc(value, 'HH:mm')
+  const date = moment.utc(value, DATE_FORMAT)
   if (!date.isValid()) {
     return null
   }
 
-  return date.format('HH:mm')
+  return date.format(DATE_FORMAT)
 }
 
 class UpdateSlot extends Base {
   static schema = () =>
     yup.object().shape({
-      week_day: yup.number().integer().min(1).max(7), // week day by moment [1...7] monday first
       start_at: yup.string().transform(transformTime),
       end_at: yup
         .string()
         .transform(transformTime)
         .when('start_at', (startAt, schema, { value }) => {
-          const begin = moment.utc(startAt, 'HH:mm')
-          const end = moment.utc(value, 'HH:mm')
+          const begin = moment.utc(startAt, DATE_FORMAT)
+          const end = moment.utc(value, DATE_FORMAT)
+
           if (value === undefined) {
             return begin.isValid()
               ? schema.oneOf(['XX:XX'], 'should be after start_at').required()

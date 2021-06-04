@@ -1,5 +1,6 @@
 'use strict'
 
+const moment = require('moment')
 const { isString, isArray, pick, trim, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
@@ -24,6 +25,9 @@ const {
   EQUIPMENT_BIKE_ROOM,
   EQUIPMENT_GUEST_WC,
   EQUIPMENT_WG_SUITABLE,
+
+  STATUS_DRAFT,
+  STATUS_ACTIVE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -116,6 +120,8 @@ class Estate extends Model {
       'max_age',
       'hash',
       'options',
+      'avail_duration',
+      'vacant_date',
     ]
   }
 
@@ -252,6 +258,19 @@ class Estate extends Model {
    */
   static getHash(id) {
     return hash.crc32(`estate_${id}`, true)
+  }
+
+  /**
+   *
+   */
+  async publishEstate() {
+    await this.updateItem(
+      {
+        status: STATUS_ACTIVE,
+        available_date: moment().add('hours', this.avail_duration).toDate(),
+      },
+      true
+    )
   }
 }
 
