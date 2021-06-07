@@ -390,66 +390,58 @@ class MatchService {
    */
   static async bookTimeslot(estateId, userId, date) {
     const getMatch = async () => {
-      return Database.query()
-        .table('matches')
+      return Database.table('matches')
         .where({ user_id: userId, status: MATCH_STATUS_INVITE })
         .first()
     }
-    const { estate, match } = await props({
+
+    const getUserBookAnother = () =>
+      Database.table('visits').where({ user_id: userId, estate_id: estateId }).first()
+
+    const { estate, match, existingUserBook } = await props({
       estate: Estate.query().where({ id: estateId, status: STATUS_ACTIVE }).first(),
       match: getMatch(),
+      existingUserBook: getUserBookAnother(),
     })
 
-    if (!estate || !match) {
-      throw new AppException('Invalid match stage')
+    if (!estate) {
+      throw new AppException('Estate is on invalid status')
     }
-
-    const { from_date, to_date } = estate
-    if (!from_date || !to_date) {
-      throw new AppException('Invalid estate dates')
+    if (!match) {
+      throw new AppException('Match stage is invalid')
+    }
+    if (existingUserBook) {
+      throw new AppException('User already booked another timeslot')
     }
 
     const slotDate = moment.utc(date, DATE_FORMAT)
-    const fromDate = moment.utc(from_date, DATE_FORMAT)
-    const toDate = moment.utc(to_date, DATE_FORMAT)
-    if (!slotDate.isBetween(fromDate, toDate)) {
-      throw new AppException('Invalid date slot')
-    }
+    const getTimeslot = async () =>
+      Database.table('time_slots')
+        .where({ estate_id: estateId })
+        .where('start_at', '<=', slotDate.format(DATE_FORMAT))
+        .where('end_at', '>', slotDate.format(DATE_FORMAT))
+        .first()
 
-    const weekDay = slotDate.weekday()
-    const slots = (
-      await TimeSlot.query().where({ estate_id: estate.id, week_day: weekDay }).fetch()
-    ).rows
-    if (isEmpty(slots)) {
-      throw new AppException('Timeslot day unavailable')
-    }
+    const getAnotherVisit = async () =>
+      Database.table('visits')
+        .where({ estate_id: estateId })
+        .where({ date: slotDate.format(DATE_FORMAT) })
+        .first()
 
-    let isAvailable = false
-    slots.forEach((slot) => {
-      if (slot.isMatch(slotDate)) {
-        isAvailable = true
-      }
+    const { currentTimeslot, anotherVisit } = await props({
+      currentTimeslot: getTimeslot(),
+      anotherVisit: getAnotherVisit(),
     })
-    if (!isAvailable) {
-      throw new AppException('Invalid timeslot')
-    }
-    // Check is timeslot already booked
-    const visit = await Database.table('visits')
-      .where({
-        estate_id: estate.id,
-        user_id: userId,
-        date: slotDate.toDate().toISOString(),
-      })
-      .first()
-    if (visit) {
-      throw new AppException('Timeslot is booked already')
+
+    if (!currentTimeslot || anotherVisit) {
+      throw new AppException('Cant book this slot')
     }
 
     // Book new visit to calendar
     await Database.into('visits').insert({
       estate_id: estate.id,
       user_id: userId,
-      date: slotDate.toDate().toISOString(),
+      date: slotDate.format(DATE_FORMAT),
     })
     // Move match status to next
     await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
