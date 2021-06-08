@@ -175,7 +175,6 @@ class EstateService {
     return TimeSlot.query()
       .where('estate_id', estate.id)
       .orderBy([
-        { column: 'week_day', order: 'ask' },
         { column: 'start_at', order: 'ask' },
       ])
       .limit(100)
