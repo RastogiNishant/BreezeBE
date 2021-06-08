@@ -226,7 +226,7 @@ class EstateController {
     const { code } = request.all()
     const estate = await EstateService.getEstateByHash(code)
     if (!estate) {
-      throw HttpException('Estate not exists', 404)
+      throw new HttpException('Estate not exists', 404)
     }
     await MatchService.addBuddy(estate.id, auth.user.id)
 
