@@ -14,7 +14,12 @@ const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 const Logger = use('Logger')
 
-const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_DELETE } = require('../../constants')
+const {
+  STATUS_ACTIVE,
+  STATUS_DRAFT,
+  STATUS_DELETE,
+  ERROR_BUDDY_EXISTS,
+} = require('../../constants')
 
 class EstateController {
   /**
@@ -228,7 +233,15 @@ class EstateController {
     if (!estate) {
       throw new HttpException('Estate not exists', 404)
     }
-    await MatchService.addBuddy(estate.id, auth.user.id)
+
+    try {
+      await MatchService.addBuddy(estate.id, auth.user.id)
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400, ERROR_BUDDY_EXISTS)
+      }
+      throw e
+    }
 
     response.res(true)
   }
