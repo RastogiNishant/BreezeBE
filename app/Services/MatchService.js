@@ -230,10 +230,10 @@ class MatchService {
       .delete()
 
     // Create new matches
-    const insertQuery = Database.query().into('matches').insert(matched).toString()
-    await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
-
-    console.log(matched)
+    if (!isEmpty(matched)) {
+      const insertQuery = Database.query().into('matches').insert(matched).toString()
+      await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+    }
   }
 
   /**
@@ -279,8 +279,10 @@ class MatchService {
       .delete()
 
     // Create new matches
-    const insertQuery = Database.query().into('matches').insert(matched).toString()
-    await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+    if (!isEmpty(matched)) {
+      const insertQuery = Database.query().into('matches').insert(matched).toString()
+      await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+    }
   }
 
   /**
