@@ -448,6 +448,7 @@ class EstateService {
           .onIn('_m.status', MATCH_STATUS_NEW)
       })
       .whereNot('_m.buddy', true)
+      .where('estates.status', STATUS_ACTIVE)
       .whereNotIn('estates.id', exclude)
       .whereNotIn('estates.id', function () {
         // Remove already liked/disliked
