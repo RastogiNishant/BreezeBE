@@ -7,6 +7,8 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 
+const { MOVE_EXPIRE_JOB } = require('../constants')
+
 class QueueService {
   /**
    * Get estate nearest POI
@@ -38,6 +40,8 @@ class QueueService {
           return EstateService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case MOVE_EXPIRE_JOB:
+          return EstateService.moveJobsToExpire()
         default:
           console.log(`No job processor for: ${job.name}`)
       }

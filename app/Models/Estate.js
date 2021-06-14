@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty, omit } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 
@@ -271,6 +271,19 @@ class Estate extends Model {
       },
       true
     )
+  }
+
+  /**
+   *
+   */
+  async updateItem(data, force = true) {
+    const exclude = force ? [] : this.constructor.readonly || []
+    data = omit(pick(data, this.constructor.columns || []), exclude)
+    // Force update status to draft on any update anyway
+    data.status = STATUS_DRAFT
+    this.merge(data)
+
+    return this.save()
   }
 }
 

@@ -1,18 +1,26 @@
 'use strict'
 const moment = require('moment')
 const { get, isArray, isEmpty } = require('lodash')
+const { props } = require('bluebird')
 
 const Database = use('Database')
 const Drive = use('Drive')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
+const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
 
-const { STATUS_DRAFT, STATUS_DELETE, STATUS_ACTIVE, MATCH_STATUS_NEW } = require('../constants')
+const {
+  STATUS_DRAFT,
+  STATUS_DELETE,
+  STATUS_ACTIVE,
+  MATCH_STATUS_NEW,
+  STATUS_EXPIRE,
+} = require('../constants')
 const MAX_DIST = 10000
 
 /**
@@ -174,9 +182,7 @@ class EstateService {
   static async getTimeSlotsByEstate(estate) {
     return TimeSlot.query()
       .where('estate_id', estate.id)
-      .orderBy([
-        { column: 'start_at', order: 'ask' },
-      ])
+      .orderBy([{ column: 'start_at', order: 'ask' }])
       .limit(100)
       .fetch()
   }
@@ -523,6 +529,63 @@ class EstateService {
     }
 
     return query.limit(limit).fetch()
+  }
+
+  /**
+   *
+   */
+  static async moveJobsToExpire() {
+    // Find jobs with expired date and status active
+    const estateIds = (
+      await Estate.query()
+        .select('id')
+        .where('status', STATUS_ACTIVE)
+        .where('available_date', '<', moment().toDate())
+        .limit(100)
+        .fetch()
+    ).rows.map((i) => i.id)
+
+    if (isEmpty(estateIds)) {
+      return false
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      // Update job status
+      await Estate.query()
+        .update({ status: STATUS_EXPIRE })
+        .whereIn('id', estateIds)
+        .transacting(trx)
+
+      // Remove estates from - matches / likes / dislikes
+      await Database.table('matches')
+        .where('status', MATCH_STATUS_NEW)
+        .whereIn('estate_id', estateIds)
+        .delete()
+        .transacting(trx)
+      await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
+      await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(e)
+      return false
+    }
+
+    await trx.commit()
+  }
+
+  /**
+   *
+   */
+  static async publishEstate(estate) {
+    await props({
+      delMatches: () => Database.table('matches').where({ estate_id: estate.id }).delete(),
+      delLikes: () => Database.table('likes').where({ estate_id: estate.id }).delete(),
+      delDislikes: () => Database.table('dislikes').where({ estate_id: estate.id }).delete(),
+    })
+    await estate.publishEstate()
+    // Run match estate
+    await MatchService.matchByEstate(estate.id)
   }
 }
 

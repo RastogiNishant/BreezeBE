@@ -24,6 +24,7 @@ const constants = {
   STATUS_NEED_VERIFY: 3,
   STATUS_EMAIL_VERIFY: 4,
   STATUS_DRAFT: 5,
+  STATUS_EXPIRE: 6,
 
   ROLE_ADMIN: 2,
   ROLE_LANDLORD: 1,
@@ -281,7 +282,9 @@ const constants = {
   MATCH_STATUS_COMMIT: 7,
   MATCH_STATUS_FINISH: 8,
 
-  DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss'
+  DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+
+  MOVE_EXPIRE_JOB: 'moveToExpired',
 }
 
 module.exports = constants

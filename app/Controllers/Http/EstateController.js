@@ -18,6 +18,7 @@ const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
   STATUS_DELETE,
+  STATUS_EXPIRE,
   ERROR_BUDDY_EXISTS,
 } = require('../../constants')
 
@@ -41,6 +42,11 @@ class EstateController {
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
+    }
+
+    // If try to change active or expired estate, move it to draft
+    if ([STATUS_ACTIVE, STATUS_EXPIRE].includes(estate.status)) {
+      data.status = STATUS_DRAFT
     }
     await estate.updateItem(data)
 
@@ -114,8 +120,12 @@ class EstateController {
       if (estate.status === STATUS_ACTIVE) {
         throw new HttpException('Cant update status', 400)
       }
-      await estate.publishEstate()
-      // TODO: run scheduled task to deactivate estates
+
+      if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+        await EstateService.publishEstate(estate)
+      } else {
+        throw new HttpException('Invalid estate type', 400)
+      }
     } else {
       await estate.updateItem({ status: STATUS_DRAFT }, true)
     }

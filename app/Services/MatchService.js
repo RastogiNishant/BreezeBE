@@ -22,6 +22,7 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
   STATUS_ACTIVE,
+  STATUS_EXPIRE,
   DATE_FORMAT,
   ROLE_USER,
   ROLE_LANDLORD,
@@ -588,6 +589,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
@@ -598,6 +600,7 @@ class MatchService {
     if (buddy) {
       // Buddy show knocked matches with buddy only for active estate
       query
+        .clearWhere()
         .where({ 'estates.status': STATUS_ACTIVE })
         .where({ '_m.status': MATCH_STATUS_KNOCK, '_m.buddy': true })
     } else if (like) {

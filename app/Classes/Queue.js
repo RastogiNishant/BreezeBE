@@ -4,6 +4,7 @@ const defaultOptions = {
   removeOnComplete: true,
 }
 
+const { MOVE_EXPIRE_JOB } = require('../constants')
 const COMMON_QUEUE = 'common'
 
 class QueueEngine {
@@ -27,6 +28,11 @@ class QueueEngine {
       },
       { connection: this.connection, concurrency: 10 }
     )
+
+    // Run every 5 min check for moving expire job
+    this.commonQueue
+      .add(MOVE_EXPIRE_JOB, {}, { repeat: { cron: '*/1 * * * *' }, removeOnComplete: true })
+      .catch(console.log)
   }
 
   /**
