@@ -20,6 +20,7 @@ const {
   STATUS_ACTIVE,
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
+  DATE_FORMAT,
 } = require('../constants')
 const MAX_DIST = 10000
 
@@ -540,7 +541,7 @@ class EstateService {
       await Estate.query()
         .select('id')
         .where('status', STATUS_ACTIVE)
-        .where('available_date', '<', moment().toDate())
+        .where('available_date', '<=', moment().format(DATE_FORMAT))
         .limit(100)
         .fetch()
     ).rows.map((i) => i.id)

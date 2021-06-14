@@ -3,10 +3,10 @@
 const uuid = require('uuid')
 const moment = require('moment')
 
+const Event = use('Event')
 const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
-const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
@@ -44,11 +44,8 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    // If try to change active or expired estate, move it to draft
-    if ([STATUS_ACTIVE, STATUS_EXPIRE].includes(estate.status)) {
-      data.status = STATUS_DRAFT
-    }
     await estate.updateItem(data)
+    Event.fire('estate::update', estate.id)
 
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
@@ -163,6 +160,7 @@ class EstateController {
       ContentType: file.headers['content-type'],
     })
     const fileObj = await EstateService.addFile({ disk, url: filePathName, type, estate })
+    Event.fire('estate::update', estate_id)
 
     response.res(fileObj)
   }

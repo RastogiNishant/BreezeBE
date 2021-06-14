@@ -272,19 +272,6 @@ class Estate extends Model {
       true
     )
   }
-
-  /**
-   *
-   */
-  async updateItem(data, force = true) {
-    const exclude = force ? [] : this.constructor.readonly || []
-    data = omit(pick(data, this.constructor.columns || []), exclude)
-    // Force update status to draft on any update anyway
-    data.status = STATUS_DRAFT
-    this.merge(data)
-
-    return this.save()
-  }
 }
 
 module.exports = Estate

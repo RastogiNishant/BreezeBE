@@ -4,6 +4,7 @@ const moment = require('moment')
 const uuid = require('uuid')
 
 const Drive = use('Drive')
+const Event = use('Event')
 const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const HttpException = use('App/Exceptions/HttpException')
@@ -21,6 +22,7 @@ class RoomController {
       ...roomData,
       estate_id,
     })
+    Event.fire('estate::update', estate_id)
 
     response.res(room)
   }
@@ -38,6 +40,7 @@ class RoomController {
 
     room.merge(data)
     await room.save()
+    Event.fire('estate::update', estate_id)
 
     response.res(room)
   }
@@ -52,6 +55,7 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
     await RoomService.removeRoom(room_id)
+    Event.fire('estate::update', room.estate_id)
 
     response.res(true)
   }
@@ -80,6 +84,7 @@ class RoomController {
     if (!room.cover) {
       await EstateService.setCover(room.estate_id, filePathName)
     }
+    Event.fire('estate::update', room.estate_id)
 
     response.res(imageObj)
   }
@@ -94,6 +99,7 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
     await RoomService.removeImage(id)
+    Event.fire('estate::update', room.estate_id)
 
     response.res(true)
   }
