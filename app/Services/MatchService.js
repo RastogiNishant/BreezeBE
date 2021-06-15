@@ -591,7 +591,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
