@@ -641,11 +641,13 @@ class MatchService {
       query.where({ '_m.status': MATCH_STATUS_KNOCK }).whereNot('_m.buddy', true)
     } else if (invite) {
       query
-        .where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': false })
+        .whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
+        .where({ '_m.share': false })
         .whereNot('_m.share', true)
     } else if (share) {
       query
-        .where({ '_m.status': MATCH_STATUS_INVITE, '_m.share': true })
+        .whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
+        .where({ '_m.share': true })
         .clearOrder()
         .orderBy([
           { column: '_m.order_tenant', order: 'ASK' },
