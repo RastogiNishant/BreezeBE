@@ -66,7 +66,11 @@ class TenantController {
    */
   async activateTenant({ auth, response }) {
     const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
-    await TenantService.activateTenant(tenant)
+    try {
+      await TenantService.activateTenant(tenant)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
 
     response.res(true)
   }
