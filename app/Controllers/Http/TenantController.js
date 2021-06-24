@@ -1,10 +1,10 @@
 'use strict'
 
+const Event = use('Event')
 const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
 const QueueService = use('App/Services/QueueService')
 const UserService = use('App/Services/UserService')
-const MatchService = use('App/Services/MatchService')
 const Tenant = use('App/Models/Tenant')
 
 const {
@@ -54,9 +54,7 @@ class TenantController {
       QueueService.getAnchorIsoline(tenant.id)
     }
     const updatedTenant = await Tenant.find(tenant.id)
-    if (updatedTenant.isActive()) {
-      await MatchService.matchByUser(auth.user.id)
-    }
+    Event.fire('tenant::update', auth.user.id)
 
     response.res(updatedTenant)
   }
@@ -71,6 +69,7 @@ class TenantController {
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
+    Event.fire('match::user', auth.user.id)
 
     response.res(true)
   }

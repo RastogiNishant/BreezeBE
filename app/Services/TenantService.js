@@ -29,6 +29,8 @@ const {
   INCOME_TYPE_UNEMPLOYED,
 
   STATUS_ACTIVE,
+  STATUS_DRAFT,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 
 class TenantService {
@@ -110,7 +112,7 @@ class TenantService {
       startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
     }
 
-    const query = Database.table({ _m: 'members' })
+    return Database.table({ _m: 'members' })
       .select(Database.raw(`COUNT(_ip.id) as income_proofs_count`))
       .leftJoin({ _i: 'incomes' }, '_i.member_id', '_m.id')
       .leftJoin({ _ip: 'income_proofs' }, '_ip.income_id', '_i.id')
@@ -118,8 +120,6 @@ class TenantService {
       .whereNot('_m.child', true)
       .where('_ip.expire_date', '>=', startOf)
       .groupBy(['_m.id', '_ip.income_id'])
-
-    return query
   }
 
   /**
@@ -220,6 +220,18 @@ class TenantService {
 
     tenant.status = STATUS_ACTIVE
     await tenant.save()
+  }
+
+  /**
+   *
+   */
+  static async deactivateTenant(userId) {
+    await Tenant.query().update({ status: STATUS_DRAFT }).where({ user_id: userId })
+    // Remove New matches
+    await Database.table({ _m: 'matches' })
+      .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
+      .whereNot('_m.buddy', true)
+      .delete()
   }
 }
 

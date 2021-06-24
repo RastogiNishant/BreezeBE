@@ -1,3 +1,4 @@
+const Event = use('Event')
 const File = use('App/Classes/File')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
@@ -33,6 +34,8 @@ class MemberController {
     const result = await MemberService.createMember({ ...data, ...files }, auth.user.id)
     await MemberService.calcTenantMemberData(auth.user.id)
 
+    Event.fire('tenant::update', auth.user.id)
+
     response.res(result)
   }
 
@@ -57,6 +60,8 @@ class MemberController {
     await member.updateItem({ ...data, ...files })
     await MemberService.calcTenantMemberData(auth.user.id)
 
+    Event.fire('tenant::update', auth.user.id)
+
     response.res(member)
   }
 
@@ -67,6 +72,8 @@ class MemberController {
     const { id } = request.all()
     await MemberService.getMemberQuery().where('id', id).where('user_id', auth.user.id).delete()
     await MemberService.calcTenantMemberData(auth.user.id)
+
+    Event.fire('tenant::update', auth.user.id)
 
     response.res(true)
   }
@@ -91,6 +98,9 @@ class MemberController {
     await File.remove(member[field], false)
     member[field] = null
     await member.save()
+
+    Event.fire('tenant::update', auth.user.id)
+    response.res(true)
   }
 
   /**
@@ -113,6 +123,7 @@ class MemberController {
     const income = await MemberService.addIncome({ ...data, ...files }, member)
     await MemberService.updateUserIncome(auth.user.id)
 
+    Event.fire('tenant::update', auth.user.id)
     response.res(income)
   }
 
@@ -138,6 +149,7 @@ class MemberController {
     await income.updateItem({ ...rest, ...files })
     await MemberService.updateUserIncome(auth.user.id)
 
+    Event.fire('tenant::update', auth.user.id)
     response.res(income)
   }
 
@@ -153,6 +165,7 @@ class MemberController {
       })
       .delete()
 
+    Event.fire('tenant::update', auth.user.id)
     response.res(true)
   }
 
