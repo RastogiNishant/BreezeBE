@@ -5,10 +5,11 @@ const { props } = require('bluebird')
 
 const Database = use('Database')
 const Drive = use('Drive')
+const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
-const MatchService = use('App/Services/MatchService')
+// const MatchService = use('App/Services/MatchService') # DO NOT INCLUDE, cycling dependencies
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
@@ -133,7 +134,7 @@ class EstateService {
   static async updateEstateCoord(estateId) {
     const estate = await Estate.findOrFail(estateId)
     if (!estate.address) {
-      throw AppException('Estate address invalid')
+      throw new AppException('Estate address invalid')
     }
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
@@ -588,7 +589,7 @@ class EstateService {
     })
     await estate.publishEstate()
     // Run match estate
-    await MatchService.matchByEstate(estate.id)
+    Event.fire('match::estate', estate.id)
   }
 }
 

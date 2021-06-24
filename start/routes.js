@@ -69,6 +69,9 @@ Route.put('/api/v1/users/tenant', 'TenantController.updateTenant').middleware([
   'auth:jwt',
   'valid:UpdateTenant',
 ])
+Route.post('/api/v1/users/tenant/activate', 'TenantController.activateTenant').middleware([
+  'auth:jwt',
+])
 
 // Common app references
 Route.get('/api/v1/references', 'CommonController.getReferences')

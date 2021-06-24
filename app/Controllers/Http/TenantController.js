@@ -7,7 +7,12 @@ const UserService = use('App/Services/UserService')
 const MatchService = use('App/Services/MatchService')
 const Tenant = use('App/Models/Tenant')
 
-const { ROLE_USER, ROLE_LANDLORD, MEMBER_FILE_TYPE_INCOME } = require('../../constants')
+const {
+  ROLE_USER,
+  ROLE_LANDLORD,
+  MEMBER_FILE_TYPE_INCOME,
+  STATUS_DRAFT,
+} = require('../../constants')
 
 class TenantController {
   /**
@@ -42,7 +47,7 @@ class TenantController {
   async updateTenant({ request, auth, response }) {
     const data = request.all()
     const tenant = await UserService.getOrCreateTenant(auth.user)
-    await tenant.updateItem(data)
+    await tenant.updateItem({ ...data, status: STATUS_DRAFT }, true)
     const { lat, lon } = tenant.getLatLon()
     // Add tenant anchor zone processing
     if (lat && lon && tenant.dist_type && tenant.dist_min) {
@@ -54,6 +59,16 @@ class TenantController {
     }
 
     response.res(updatedTenant)
+  }
+
+  /**
+   * Check is all required fields exist and change user status
+   */
+  async activateTenant({ auth, response }) {
+    const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
+    await TenantService.activateTenant(tenant)
+
+    response.res(true)
   }
 }
 

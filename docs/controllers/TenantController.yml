@@ -171,3 +171,11 @@ definitions:
       - $ref: '#/definitions/garden'
       - $ref: '#/definitions/apt_options'
     responses: [200]
+
+/api/v1/users/tenant/activate:
+  post:
+    tags: [tenant]
+    security: [bearerAuth: []]
+    description: Activate tenant if fullfiled
+    produces: [application/json]
+    responses: [200]
