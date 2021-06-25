@@ -19,6 +19,7 @@ class LandlordService {
         '_v.user_id'
       )
       .select(Database.raw("'50'::int AS percent"))
+      .select(Database.raw("'10'::int AS slot_length"))
       .innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', '_v.estate_id').onIn('_e.user_id', [userId])
       })
