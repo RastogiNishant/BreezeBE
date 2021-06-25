@@ -216,6 +216,7 @@ class TenantService {
     try {
       await yup.array().of(schema).validate(data)
     } catch (e) {
+      console.log(e.message)
       throw new AppException('Invalid tenant data')
     }
 
