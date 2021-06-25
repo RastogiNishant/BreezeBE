@@ -67,6 +67,7 @@ class TenantController {
     try {
       await TenantService.activateTenant(tenant)
     } catch (e) {
+      console.log(e.message)
       throw new HttpException(e.message, 400)
     }
     Event.fire('match::user', auth.user.id)
