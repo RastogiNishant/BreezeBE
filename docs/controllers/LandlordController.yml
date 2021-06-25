@@ -1,0 +1,8 @@
+# Routes list
+/api/v1/landlord/visit:
+  get:
+    tags: [visits]
+    security: [bearerAuth: []]
+    description: Get landlord feature visits
+    produces: [application/json]
+    responses: [200]

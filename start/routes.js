@@ -233,6 +233,13 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'valid:MatchListLandlord,Pagination',
 ])
 
+// Landlord specific routes
+Route.group(() => {
+  Route.get('/visit', 'LandlordController.getLordVisits')
+})
+  .prefix('/api/v1/landlord')
+  .middleware(['auth:jwtLandlord'])
+
 // MATCH FLOW
 Route.group(() => {
   Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])
