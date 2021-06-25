@@ -73,6 +73,14 @@ class TenantController {
 
     response.res(true)
   }
+
+  /**
+   *
+   */
+  async getTenantMap({ auth, response }) {
+    const zone = await TenantService.getTenantZone(auth.user.id)
+    response.res(zone)
+  }
 }
 
 module.exports = TenantController

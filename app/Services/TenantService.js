@@ -7,6 +7,7 @@ const { isEmpty } = require('lodash')
 const Database = use('Database')
 const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
+const Point = use('App/Models/Point')
 const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
@@ -232,6 +233,17 @@ class TenantService {
       .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
       .whereNot('_m.buddy', true)
       .delete()
+  }
+
+  /**
+   * Get user saved zone
+   */
+  static async getTenantZone(userId) {
+    return Point.query()
+      .whereIn('id', function () {
+        this.select('point_id').from('tenants').where({ user_id: userId })
+      })
+      .first()
   }
 }
 

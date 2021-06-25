@@ -65,13 +65,14 @@ Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware
 ])
 
 // Tenant params and preferences
-Route.put('/api/v1/users/tenant', 'TenantController.updateTenant').middleware([
-  'auth:jwt',
-  'valid:UpdateTenant',
-])
-Route.post('/api/v1/users/tenant/activate', 'TenantController.activateTenant').middleware([
-  'auth:jwt',
-])
+
+Route.group(() => {
+  Route.put('/', 'TenantController.updateTenant').middleware(['valid:UpdateTenant'])
+  Route.post('/activate', 'TenantController.activateTenant')
+  Route.get('/map', 'TenantController.getTenantMap')
+})
+  .prefix('/api/v1/users/tenant')
+  .middleware(['auth:jwt'])
 
 // Common app references
 Route.get('/api/v1/references', 'CommonController.getReferences')

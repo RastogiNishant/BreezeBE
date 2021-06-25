@@ -9,12 +9,12 @@ const { POINT_TYPE_POI } = require('../constants')
  */
 class PointSerializer extends BaseSerializer {
   mergeData(item) {
-    item.zome = undefined
+    item.zone = undefined
     if (item.type === POINT_TYPE_POI) {
       item.data = (get(item, 'data.data') || []).map((i) => ({
         id: i.id,
         coord: get(i, 'result.features.0.geometry.coordinates'),
-        dist: get(i, 'result.features.0.properties.distance')
+        dist: get(i, 'result.features.0.properties.distance'),
       }))
 
       return this._getRowJSON(item)
