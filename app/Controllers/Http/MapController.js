@@ -7,20 +7,19 @@ class MapController {
    *
    */
   async getMap({ request, view, response }) {
-    const userId = 1
+    const { userId = 6 } = request.all()
     const tenant = await Tenant.query()
       .select('tenants.*', '_p.data')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
-      .where({ 'tenants.user_id': userId })
+      .where({ 'tenants.user_id': +userId })
       .first()
-
-    const zone = get(tenant.data, 'data.0.0')
+    const zone = get(tenant, 'data.data.0.0', null)
 
     const estates = await Database.query()
       .from('estates')
       .select('estates.coord_raw', '_m.estate_id as id')
       .leftJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', +userId)
       })
 
     const data = estates.reduce((n, v) => {

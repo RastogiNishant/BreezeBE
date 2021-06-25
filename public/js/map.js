@@ -43,13 +43,15 @@ function initMap() {
   }
 
   // Construct the polygon.
-  const zone = new google.maps.Polygon({
-    paths: window.zone.map(([lng, lat]) => ({ lng, lat })),
-    strokeWeight: 0,
-    fillColor: '#FF0000',
-    fillOpacity: 0.35,
-  })
-  zone.setMap(map)
+  if (window.zone) {
+    const zone = new google.maps.Polygon({
+      paths: window.zone.map(([lng, lat]) => ({ lng, lat })),
+      strokeWeight: 0,
+      fillColor: '#FF0000',
+      fillOpacity: 0.35,
+    })
+    zone.setMap(map)
+  }
 
   new google.maps.Circle({
     strokeWeight: 0,
@@ -60,14 +62,16 @@ function initMap() {
     radius: 5000,
   })
 
-  window.points.forEach(({ lat, lng, isIn }) => {
-    new google.maps.Marker({
-      position: { lat: parseFloat(lat), lng: parseFloat(lng) },
-      map,
-      title: '',
-      icon: customIcon(isIn ? { fillColor: '#2ecc71' } : { fillColor: '#cc3f43' }),
+  if (window.points && window.points.length) {
+    window.points.forEach(({ lat, lng, isIn }) => {
+      new google.maps.Marker({
+        position: { lat: parseFloat(lat), lng: parseFloat(lng) },
+        map,
+        title: '',
+        icon: customIcon(isIn ? { fillColor: '#2ecc71' } : { fillColor: '#cc3f43' }),
+      })
     })
-  })
+  }
 
   let points = []
   map.addListener('click', (mapsMouseEvent) => {
