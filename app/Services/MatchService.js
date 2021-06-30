@@ -1,13 +1,12 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty } = require('lodash')
+const { get, isNumber, isEmpty, intersection } = require('lodash')
 const { props, map } = require('bluebird')
 
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
-const TimeSlot = use('App/Models/TimeSlot')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
@@ -26,6 +25,10 @@ const {
   DATE_FORMAT,
   ROLE_USER,
   ROLE_LANDLORD,
+  PETS_NO,
+  PETS_BIG,
+  PETS_SMALL,
+  PETS_ANY,
 } = require('../constants')
 
 const MATCH_PERCENT_PASS = 40
@@ -54,7 +57,6 @@ class MatchService {
     const aptTypeWeight = 1
     const floorWeight = 1
     const houseTypeWeight = 1
-    const gardenWeight = 1
     const budgetWeight = 1
     const geoInsideWeight = 1
     const geoOutsideWeight = 0.5
@@ -63,7 +65,7 @@ class MatchService {
     const familyStatusWeight = 1
     const petsWeight = 1
     const smokeWeight = 1
-    const maxScore = 13
+    const amenitiesWeight = 1
 
     let results = {
       geo: 0,
@@ -72,7 +74,6 @@ class MatchService {
       apt_type: 0,
       floor: 0,
       house_type: 0,
-      garden: 0,
       budget: 0,
       age: 0,
       smoke: 0,
@@ -81,51 +82,48 @@ class MatchService {
       pets: 0,
     }
 
-    let score = 0
+    let scoreL = 0
+    let scoreT = 0
+    const amenitiesCount = 7
+    const maxScoreT = 6
+    const maxScoreL = 6 + amenitiesCount
     // Geo position
     if (estate.inside || tenant.inside) {
       results.geo = geoInsideWeight
-      score += geoInsideWeight
+      scoreL += geoInsideWeight
     } else {
       results.geo = geoOutsideWeight
-      score += geoOutsideWeight
+      scoreL += geoOutsideWeight
     }
 
     // Is area in range
     if (inRange(estate.area, tenant.space_min, tenant.space_max)) {
       results.area = areaWeight
-      score += areaWeight
+      scoreL += areaWeight
     }
 
     // Rooms number in range
     if (inRange(estate.rooms_number, tenant.rooms_min, tenant.rooms_max)) {
       results.rooms = roomsNumberWeight
-      score += roomsNumberWeight
+      scoreL += roomsNumberWeight
     }
 
     // Apartment type is equal
     if ((tenant.apt_type || []).includes(estate.apt_type)) {
-      score += aptTypeWeight
+      scoreL += aptTypeWeight
       results.apt_type = aptTypeWeight
     }
 
     // Apt floor in range
     if (inRange(estate.floor, tenant.floor_min, tenant.floor_max)) {
-      score += floorWeight
+      scoreL += floorWeight
       results.floor = floorWeight
     }
 
     // House type is equal
     if ((tenant.house_type || []).includes(estate.house_type)) {
-      score += houseTypeWeight
+      scoreL += houseTypeWeight
       results.house_type = houseTypeWeight
-    }
-
-    // Garden exists
-    // TODO: add condition
-    if (false) {
-      score += gardenWeight
-      results.garden = gardenWeight
     }
 
     // Rent amount weight
@@ -135,7 +133,7 @@ class MatchService {
     const budgetPass =
       (tenant.income / rentAmount) * 100 >= Math.min(estate.budget, tenant.budget_max)
     if (budgetPass) {
-      score += budgetWeight
+      scoreT += budgetWeight
       results.budget = budgetWeight
     }
 
@@ -145,37 +143,61 @@ class MatchService {
         return n ? true : inRange(v, estate.min_age, estate.max_age)
       }, false)
       if (isInRange) {
-        score += ageWeight
+        scoreT += ageWeight
         results.age = ageWeight
       }
     }
 
     // Tenant has rent arrears
     if (!estate.rent_arrears || !tenant.unpaid_rental) {
-      score += rentArrearsWeight
+      scoreT += rentArrearsWeight
       results.rent_arrears = rentArrearsWeight
     }
 
     // Check family status
     if (!estate.family_status || +tenant.family_status === +estate.family_status) {
-      score += familyStatusWeight
+      scoreT += familyStatusWeight
       results.family = familyStatusWeight
     }
 
     // Pets
-    // TODO: add pets calc
-    if (false) {
-      score += petsWeight
+    if (tenant.pets === PETS_NO || estate.pets === PETS_ANY) {
+      scoreT += petsWeight
+      results.pets = petsWeight
+    } else if (tenant.pets === PETS_SMALL && estate.pets === PETS_SMALL) {
+      scoreT += petsWeight
       results.pets = petsWeight
     }
 
     // Smoke
     if (tenant.non_smoker || !estate.non_smoker) {
-      score += smokeWeight
+      scoreT += smokeWeight
       results.smoke = smokeWeight
     }
 
-    return (score / maxScore) * 100
+    const passAmenities = intersection(estate.options, tenant.options)
+    const amenitiesScore = passAmenities * amenitiesWeight
+    scoreL += amenitiesScore
+    results.amenities = amenitiesScore
+
+    // RESULT
+    console.log({
+      area: [estate.area, tenant.space_min, tenant.space_max],
+      rooms: [estate.rooms_number, tenant.rooms_min, tenant.rooms_max],
+      apt_type: [estate.apt_type, tenant.apt_type],
+      floor: [estate.floor, tenant.floor_min, tenant.floor_max],
+      house_type: [estate.house_type, tenant.house_type],
+      budget: [estate.budget, tenant.income],
+      age: [estate.min_age, estate.max_age, tenant.members_age],
+      smoke: [tenant.non_smoker, !estate.non_smoker],
+      rent_arrears: [estate.rent_arrears, tenant.unpaid_rental],
+      family: [estate.family_status, tenant.family_status],
+      pets: [estate.pets, tenant.pets],
+      amenities: [estate.options, tenant.options],
+    })
+
+    // prettier-ignore
+    return (((scoreL / maxScoreL) + (scoreT / maxScoreT)) / 2) * 100
   }
 
   /**
