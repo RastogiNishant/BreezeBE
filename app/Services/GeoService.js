@@ -297,6 +297,16 @@ class GeoService {
   }
 
   /**
+   *
+   */
+  static async getGeoByAddress(address) {
+    const result = await GeoAPI.getGeoByAddress(address)
+    const [lon1, lat1, lon2, lat2] = get(result, '0.bbox') || [null, null, null, null]
+
+    return { lon1, lat1, lon2, lat2 }
+  }
+
+  /**
    * Distance between 2 points in meter units
    */
   static getPointsDistance(lat1, lon1, lat2, lon2) {

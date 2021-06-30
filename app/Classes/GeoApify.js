@@ -170,6 +170,19 @@ class GeoPify {
   /**
    *
    */
+  async getGeoByAddress(address) {
+    return this.request
+      .send({
+        url: '/v1/geocode/autocomplete',
+        data: { text: address, apiKey: this.settings.apiKey },
+        method: 'GET',
+      })
+      .then((response) => response.features)
+  }
+
+  /**
+   *
+   */
   async getIsoline(lat, lon, mode, range) {
     const data = {
       apiKey: this.settings.apiKey,
