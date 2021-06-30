@@ -22,7 +22,7 @@ const uploadFile = async () => {
     headers: { 'content-type': 'image/jpeg' },
   }
 
-  return File.saveToDisk(file)
+  return File.saveToDisk(file, [], false)
 }
 
 class DatabaseSeeder {
