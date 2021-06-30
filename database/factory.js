@@ -7,7 +7,6 @@ const Point = use('App/Models/Point')
 const {
   GENDER_MALE,
   STATUS_ACTIVE,
-  ROLE_LANDLORD,
   TRANSPORT_TYPE_CAR,
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
@@ -28,6 +27,9 @@ const {
   INCOME_TYPE_EMPLOYEE,
   HIRING_TYPE_FULL_TIME,
   HIRING_TYPE_PART_TIME,
+  FAMILY_STATUS_SINGLE,
+  FAMILY_STATUS_WITH_CHILD,
+  FAMILY_STATUS_NO_CHILD,
 } = require('../app/constants')
 
 const houseTypes = [
@@ -43,11 +45,11 @@ const houseTypes = [
   HOUSE_TYPE_GARDENHOUSE,
 ]
 
-Factory.blueprint('App/Models/User', async (faker, i, { role, terms_id, agreements_id }) => {
+Factory.blueprint('App/Models/User', async (faker, i, { role, terms_id, agreements_id, email }) => {
   const [firstname, secondname] = faker.name().split(' ')
 
   return {
-    email: faker.email(),
+    email: email || faker.email(),
     firstname,
     secondname,
     password: 'qwerty',
@@ -89,7 +91,7 @@ Factory.blueprint(
   async (
     faker,
     i,
-    { user_id, pets, bbox: { lat1, lon1, lat2, lon2 }, rooms, floor, space, options }
+    { user_id, pets, bbox: { lat1, lon1, lat2, lon2 }, rooms, floor, space, options, hhType }
   ) => {
     // Return floor min/max
     const [floor_min, floor_max] = ((f) => {
@@ -136,13 +138,22 @@ Factory.blueprint(
       space_min,
       space_max,
       apt_type: [APARTMENT_TYPE_FLAT],
-      house_type: [faker.pickone(houseTypes)],
+      house_type: houseTypes,
       garden: faker.pickone([false, true]),
       address: faker.address(),
       income: 0,
       non_smoker: faker.pickone([false, false, false, true]),
       options,
       status: STATUS_ACTIVE,
+      credit_score: faker.integer({ min: 60, max: 98 }),
+      members_count: parseInt(hhType) === 1 ? 1 : 2,
+      minors_count: parseInt(hhType) === 3 ? 1 : 0,
+      family_status:
+        parseInt(hhType) === 1
+          ? FAMILY_STATUS_SINGLE
+          : parseInt(hhType) === 2
+          ? FAMILY_STATUS_NO_CHILD
+          : FAMILY_STATUS_WITH_CHILD,
     }
   }
 )

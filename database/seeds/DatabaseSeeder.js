@@ -1,6 +1,5 @@
 'use strict'
 
-const moment = require('moment')
 const { get, range } = require('lodash')
 const { props, map } = require('bluebird')
 const fs = require('fs')
@@ -11,9 +10,9 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const GeoService = use('App/Services/GeoService')
 
-const geoData = require('./geo.json')
-
 const { ROLE_USER, ROLE_LANDLORD } = require('../../app/constants')
+
+const geoData = require('./geo.json')
 
 const uploadFile = async () => {
   const file = {
@@ -30,7 +29,7 @@ class DatabaseSeeder {
   /**
    * Get DB data
    */
-  preloadData() {
+  async preloadData() {
     const getId = (table) => {
       return Database.table(table)
         .max('id')
@@ -46,7 +45,7 @@ class DatabaseSeeder {
         .then((i) => i.id)
     }
 
-    return props({
+    const options = await props({
       terms_id: getId('terms'),
       agreements_id: getId('agreements'),
       bath: getOption('bathtub'),
@@ -57,6 +56,9 @@ class DatabaseSeeder {
       elevator: getOption('elevator'),
       doc: uploadFile(),
     })
+
+    this.options = options
+    this.doc = options.doc
   }
 
   /**
@@ -181,7 +183,7 @@ class DatabaseSeeder {
   /**
    *
    */
-  async createUser(data, ids) {
+  async createUser(data) {
     const [
       zip,
       area,
@@ -203,7 +205,9 @@ class DatabaseSeeder {
       kitchen,
       elevator,
     ] = data
+    console.log('|')
     const { lon1, lat1, lon2, lat2 } = get(geoData, zip)
+    const ids = this.options
     let options = []
     !!parseInt(bath) && options.push(ids.bath)
     !!parseInt(furnished) && options.push(ids.furnished)
@@ -226,6 +230,7 @@ class DatabaseSeeder {
       floor,
       space: area,
       options,
+      hhType,
     })
     await tenant.save()
     await this.createMembers(user.id, budget, hhType)
@@ -234,12 +239,27 @@ class DatabaseSeeder {
   /**
    *
    */
+  async createLandlords() {
+    const ids = this.options
+    const user = await Factory.model('App/Models/User').make({
+      role: ROLE_LANDLORD,
+      email: 'landlord1@breeze.com',
+      terms_id: ids.terms_id,
+      agreements_id: ids.agreements_id,
+    })
+
+    await user.save()
+  }
+
+  /**
+   *
+   */
   async run() {
-    const { doc, ...options } = await this.preloadData()
-    this.doc = doc
+    await this.preloadData()
+    await this.createLandlords()
     const users = await this.importUsers()
-    // // Create bunch users
-    await map(users, (r) => this.createUser(r, options), { concurrency: 1 })
+    // Create bunch users
+    await map(users, (r) => this.createUser(r), { concurrency: 1 })
   }
 }
 
