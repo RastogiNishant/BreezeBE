@@ -19,8 +19,8 @@ function initMap() {
   const map = new google.maps.Map(document.getElementById('map'), {
     zoom: 14,
     center: {
-      lat: 52.50528218248411,
-      lng: 13.37717506347658,
+      lat: 52.4543251,
+      lng: 13.577765,
 
       __proto__: Object,
     },
@@ -58,8 +58,8 @@ function initMap() {
     fillColor: '#FF0000',
     fillOpacity: 0.35,
     map,
-    center: { lng: 13.3986249, lat: 52.5013088 },
-    radius: 5000,
+    center: { lng: 13.577765, lat: 52.4543251 },
+    radius: 1000,
   })
 
   if (window.points && window.points.length) {
@@ -69,6 +69,18 @@ function initMap() {
         map,
         title: '',
         icon: customIcon(isIn ? { fillColor: '#2ecc71' } : { fillColor: '#cc3f43' }),
+      })
+    })
+  }
+
+  if (window.tenants && window.tenants.length) {
+    window.tenants.forEach(({ lat, lon, id }) => {
+      console.log(lat, lon, id )
+      new google.maps.Marker({
+        position: { lat: parseFloat(lat), lng: parseFloat(lon) },
+        map,
+        title: '',
+        icon: customIcon({ fillColor: '#2ecc71' }),
       })
     })
   }

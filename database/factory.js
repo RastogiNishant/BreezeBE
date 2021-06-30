@@ -125,7 +125,7 @@ Factory.blueprint(
       pets: petsData,
       pets_species: !!parseInt(pets) ? 'noname' : '',
       parking_space: faker.natural({ min: 0, max: 3 }),
-      coord: `${lon},${lat}`,
+      coord: `${lat},${lon}`,
       dist_type: faker.pickone([TRANSPORT_TYPE_CAR, TRANSPORT_TYPE_WALK, TRANSPORT_TYPE_SOCIAL]),
       dist_min: faker.pickone([15, 30, 45, 60]),
       budget_min: 0,

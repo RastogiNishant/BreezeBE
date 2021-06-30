@@ -28,7 +28,7 @@ const {
   ROLE_LANDLORD,
 } = require('../constants')
 
-const MATCH_PERCENT_PASS = 0
+const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
 const MAX_SEARCH_ITEMS = 500
 

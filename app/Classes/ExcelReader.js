@@ -381,8 +381,8 @@ class ExcelReader {
       non_smoker: toBool,
       rent_arrears: toBool,
       furnished: toBool,
-      credit_score: toPercent,
-      budget: toPercent,
+      credit_score: (i) => parseInt(i),
+      budget: (i) => parseInt(i),
       deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
       floor: (i) => {
         switch (i) {

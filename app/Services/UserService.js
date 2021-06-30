@@ -6,11 +6,13 @@ const Promise = require('bluebird')
 
 const Role = use('Role')
 const Env = use('Env')
+const Event = use('Event')
 const Database = use('Database')
 const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const MailService = use('App/Services/MailService')
+const QueueService = use('App/Services/QueueService')
 const AppException = use('App/Exceptions/AppException')
 
 const { getHash } = require('../Libs/utils.js')
@@ -204,6 +206,25 @@ class UserService {
     }
 
     return Tenant.createItem({ user_id: user.id })
+  }
+
+  /**
+   *
+   */
+  static async calcUserZones(minId = 0) {
+    const tenants = await Tenant.query()
+      .whereNotNull('coord_raw')
+      .whereNull('point_id')
+      .where('id', '>', minId)
+      .limit(100)
+      .fetch()
+
+    tenants.rows.forEach((t) => {
+      const { lat, lon } = t.getLatLon()
+      if (lat && lon && t.dist_type && t.dist_min) {
+        QueueService.getAnchorIsoline(t.id)
+      }
+    })
   }
 }
 

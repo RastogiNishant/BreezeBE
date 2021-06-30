@@ -8,12 +8,12 @@ class MapController {
    */
   async getMap({ request, view, response }) {
     const { userId = 6 } = request.all()
-    const tenant = await Tenant.query()
-      .select('tenants.*', '_p.data')
+    const tenants = await Database.table('tenants')
+      .select('tenants.id', '_p.lat', '_p.lon')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
-      .where({ 'tenants.user_id': +userId })
-      .first()
-    const zone = get(tenant, 'data.data.0.0', null)
+      .limit(100)
+    const zone = null
+    // const zone = get(tenant, 'data.data.0.0', null)
 
     const estates = await Database.query()
       .from('estates')
@@ -21,16 +21,21 @@ class MapController {
       .leftJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id').on('_m.user_id', +userId)
       })
+    //
+    // const data = estates.reduce((n, v) => {
+    //   if (!v.coord_raw) {
+    //     return n
+    //   }
+    //   const [lat, lng] = v.coord_raw.split(',')
+    //   return [...n, { lat, lng, isIn: !!v.id }]
+    // }, [])
+    const data = []
 
-    const data = estates.reduce((n, v) => {
-      if (!v.coord_raw) {
-        return n
-      }
-      const [lat, lng] = v.coord_raw.split(',')
-      return [...n, { lat, lng, isIn: !!v.id }]
-    }, [])
-
-    return view.render('map', { points: JSON.stringify(data), zone: JSON.stringify(zone) })
+    return view.render('map', {
+      points: JSON.stringify(data),
+      zone: JSON.stringify(zone),
+      tenants: JSON.stringify(tenants),
+    })
   }
 }
 

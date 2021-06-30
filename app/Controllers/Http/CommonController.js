@@ -9,8 +9,11 @@ const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
+const UserService = use('App/Services/UserService')
 const TenantService = use('App/Services/TenantService')
 const HttpException = use('App/Exceptions/HttpException')
+
+const Estate = use('App/Models/Estate')
 
 const Static = use('Static')
 
@@ -24,6 +27,10 @@ class CommonController {
     //
     // console.log({ result })
 
+    // const estate = await Estate.query().where({ id: 1 }).first()
+    // await EstateService.publishEstate(estate)
+
+    // await UserService.calcUserZones()
 
     return 'pong'
   }
