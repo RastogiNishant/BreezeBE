@@ -451,7 +451,7 @@ class ExcelReader {
       energy_efficiency, // 'Energy Consumption Value',
       firing, // 'Energy Carrier',
       heating_type, // 'Heating Type',
-      living_space, // 'Living Space',
+      area, // 'Living Space',
       rooms_number, // 'Number_of_Rooms',
       floor, // 'Floor',
       apartment_status, // 'Apartment Status', ----
@@ -509,7 +509,7 @@ class ExcelReader {
       energy_efficiency,
       firing,
       heating_type,
-      living_space,
+      area,
       rooms_number,
       floor,
       apartment_status,
