@@ -133,6 +133,15 @@ Route.group(() => {
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
 
+// Timeslots for tenant
+Route.group(() => {
+  Route.get('/:estate_id/slots/free', 'EstateController.getEstateFreeTimeslots').middleware([
+    'valid:EstateId',
+  ])
+})
+  .prefix('/api/v1/estates')
+  .middleware(['auth:jwt'])
+
 // Admin user edit part
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware(['guest', 'valid:SignIn'])
 Route.group(() => {

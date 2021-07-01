@@ -812,3 +812,13 @@ paths:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/slot_id'
       responses: [200]
+
+  /api/v1/estates/{estate_id}/slots/free:
+    get:
+      tags: [estate, timeslot]
+      security: [bearerAuth: []]
+      description: Get free for booking timeslots
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/estate_id'
+      responses: [200]

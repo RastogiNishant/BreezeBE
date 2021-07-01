@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isArray, isEmpty } = require('lodash')
+const { get, isArray, isEmpty, findIndex, range } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -590,6 +590,72 @@ class EstateService {
     await estate.publishEstate()
     // Run match estate
     Event.fire('match::estate', estate.id)
+  }
+
+  /**
+   *
+   */
+  static async getFreeTimeslots(estateId) {
+    const dateFrom = moment().format(DATE_FORMAT)
+    // Get estate available slots
+    const getSlots = async () => {
+      return Database.table('time_slots')
+        .select('slot_length as sl')
+        .select(Database.raw('extract(epoch from start_at) as b'))
+        .select(Database.raw('extract(epoch from end_at) as e'))
+        .where({ estate_id: estateId })
+        .where('start_at', '>=', dateFrom)
+        .orderBy('start_at')
+        .limit(500)
+    }
+
+    // Get estate visits (booked time units)
+    const getVisits = async () => {
+      return Database.table('visits')
+        .select(Database.raw('extract(epoch from date) as d'))
+        .where({ estate_id: estateId })
+        .where('date', '>=', dateFrom)
+        .orderBy('date')
+        .limit(500)
+    }
+
+    let { slots, visits } = await props({
+      slots: getSlots(),
+      visits: getVisits(),
+    })
+
+    // Split existing time ranges by booked time units
+    visits.forEach(({ d }) => {
+      let index = findIndex(slots, ({ b, e }) => d >= b && d < e)
+      // If found time range, split in
+      if (index !== -1) {
+        const slot = slots[index]
+        slots.splice(index, 1)
+        if (slot.b < d) {
+          const newItem = { b: slot.b, e: d, sl: slot.sl }
+          slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
+          index += 1
+        }
+        if (d + slot.sl * 60 < slot.e) {
+          const newItem = { b: d + slot.sl * 60, e: slot.e, sl: slot.sl }
+          slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
+        }
+      }
+    })
+
+    // Split slot ranges by slot units
+    let result = {}
+    slots.forEach((s) => {
+      const day = moment.utc(s.b, 'X').startOf('day').format('X')
+      const step = s.sl * 60
+      const items = range(s.b, s.e, step)
+      items.forEach((i) => {
+        const items = [...get(result, day, []), { from: i, to: i + step }]
+        result = { ...result, [day]: items }
+      })
+    })
+
+    return result
   }
 }
 

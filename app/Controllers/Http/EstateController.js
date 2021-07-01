@@ -372,6 +372,16 @@ class EstateController {
     await EstateService.removeDislike(auth.user.id, id)
     response.res(true)
   }
+
+  /**
+   *
+   */
+  async getEstateFreeTimeslots({ request, auth, response }) {
+    const { estate_id } = request.all()
+    const slots = await EstateService.getFreeTimeslots(estate_id)
+
+    return response.res(slots)
+  }
 }
 
 module.exports = EstateController
