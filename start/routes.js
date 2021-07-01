@@ -261,6 +261,10 @@ Route.group(() => {
     'auth:jwtLandlord',
     'valid:MatchInvite',
   ])
+  Route.delete('/invite/:estate_id', 'MatchController.removeInviteByTenant').middleware([
+    'auth:jwt',
+    'valid:EstateId',
+  ])
   // Choose timeslot
   Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware([
     'auth:jwt',

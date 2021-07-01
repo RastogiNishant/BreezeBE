@@ -96,6 +96,23 @@ class MatchController {
   }
 
   /**
+   *
+   */
+  async removeInviteByTenant({ request, auth, response }) {
+    const { estate_id } = request.all()
+    try {
+      await MatchService.cancelInvite(estate_id, auth.user.id)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  /**
    * Tenant
    * Select available timeslot and
    */
