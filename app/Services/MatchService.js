@@ -65,7 +65,7 @@ class MatchService {
     const familyStatusWeight = 1
     const petsWeight = 1
     const smokeWeight = 1
-    const amenitiesWeight = 1
+    const amenitiesWeight = 0.5
 
     let results = {
       geo: 0,
@@ -86,7 +86,7 @@ class MatchService {
     let scoreT = 0
     const amenitiesCount = 7
     const maxScoreT = 6
-    const maxScoreL = 6 + amenitiesCount
+    const maxScoreL = 6 + (amenitiesCount * amenitiesWeight)
     // Geo position
     if (estate.inside || tenant.inside) {
       results.geo = geoInsideWeight
@@ -101,6 +101,11 @@ class MatchService {
       results.area = areaWeight
       scoreL += areaWeight
     }
+
+    const passAmenities = intersection(estate.options, tenant.options).length
+    const amenitiesScore = passAmenities * amenitiesWeight
+    scoreL += amenitiesScore
+    results.amenities = amenitiesScore
 
     // Rooms number in range
     if (inRange(estate.rooms_number, tenant.rooms_min, tenant.rooms_max)) {
@@ -175,26 +180,23 @@ class MatchService {
       results.smoke = smokeWeight
     }
 
-    const passAmenities = intersection(estate.options, tenant.options)
-    const amenitiesScore = passAmenities * amenitiesWeight
-    scoreL += amenitiesScore
-    results.amenities = amenitiesScore
-
-    // RESULT
-    console.log({
-      area: [estate.area, tenant.space_min, tenant.space_max],
-      rooms: [estate.rooms_number, tenant.rooms_min, tenant.rooms_max],
-      apt_type: [estate.apt_type, tenant.apt_type],
-      floor: [estate.floor, tenant.floor_min, tenant.floor_max],
-      house_type: [estate.house_type, tenant.house_type],
-      budget: [estate.budget, tenant.income],
-      age: [estate.min_age, estate.max_age, tenant.members_age],
-      smoke: [tenant.non_smoker, !estate.non_smoker],
-      rent_arrears: [estate.rent_arrears, tenant.unpaid_rental],
-      family: [estate.family_status, tenant.family_status],
-      pets: [estate.pets, tenant.pets],
-      amenities: [estate.options, tenant.options],
-    })
+    // // RESULT
+    // console.log({
+    //   area: [estate.area, tenant.space_min, tenant.space_max],
+    //   rooms: [estate.rooms_number, tenant.rooms_min, tenant.rooms_max],
+    //   apt_type: [estate.apt_type, tenant.apt_type],
+    //   floor: [estate.floor, tenant.floor_min, tenant.floor_max],
+    //   house_type: [estate.house_type, tenant.house_type],
+    //   budget: [estate.budget, tenant.income],
+    //   age: [estate.min_age, estate.max_age, tenant.members_age],
+    //   smoke: [tenant.non_smoker, !estate.non_smoker],
+    //   rent_arrears: [estate.rent_arrears, tenant.unpaid_rental],
+    //   family: [estate.family_status, tenant.family_status],
+    //   pets: [estate.pets, tenant.pets],
+    //   amenities: [estate.options, tenant.options],
+    // })
+    // console.log(results)
+    // console.log((scoreL / maxScoreL), (scoreT / maxScoreT))
 
     // prettier-ignore
     return (((scoreL / maxScoreL) + (scoreT / maxScoreT)) / 2) * 100
