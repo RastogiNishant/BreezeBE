@@ -9,6 +9,7 @@ const Factory = use('Factory')
 const Database = use('Database')
 const File = use('App/Classes/File')
 const GeoService = use('App/Services/GeoService')
+const MemberService = use('App/Services/MemberService')
 
 const { ROLE_USER, ROLE_LANDLORD } = require('../../app/constants')
 
@@ -234,6 +235,8 @@ class DatabaseSeeder {
     })
     await tenant.save()
     await this.createMembers(user.id, budget, hhType)
+    await MemberService.calcTenantMemberData(user.id)
+    await MemberService.updateUserIncome(user.id)
   }
 
   /**

@@ -190,16 +190,17 @@ Factory.blueprint('App/Models/Member', async (faker, i, { user_id, child, doc })
 })
 
 Factory.blueprint('App/Models/Income', async (faker, i, { member_id, income }) => {
+  const hiringYear = faker.integer({ min: 1990, max: 2010 })
   return {
     employment_type: faker.pickone([HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME]),
     member_id,
     profession: 'employee',
     position: 'employee',
-    hiring_date: faker.date(),
+    hiring_date: faker.date({ year: hiringYear }),
     income,
     income_type: INCOME_TYPE_EMPLOYEE,
     company: faker.company(),
-    work_exp: 10,
+    work_exp: 2021 - hiringYear,
   }
 })
 
