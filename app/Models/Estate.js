@@ -162,6 +162,8 @@ class Estate extends Model {
       'rooms_number',
       'status',
       'match',
+      'net_rent',
+      'budget',
       'updated_at',
     ]
   }

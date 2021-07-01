@@ -612,7 +612,6 @@ class MatchService {
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
-      .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
