@@ -42,7 +42,19 @@ class Tenant extends Model {
    *
    */
   static get shortFieldsList() {
-    return ['id', 'user_id', 'status', 'firstname', 'secondname', 'birthday']
+    return [
+      'id',
+      'user_id',
+      'status',
+      'firstname',
+      'secondname',
+      'birthday',
+      'avatar',
+      'income',
+      'members_count',
+      'minors_count',
+      'percent',
+    ]
   }
 
   /**

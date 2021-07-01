@@ -86,7 +86,7 @@ class MatchService {
     let scoreT = 0
     const amenitiesCount = 7
     const maxScoreT = 6
-    const maxScoreL = 6 + (amenitiesCount * amenitiesWeight)
+    const maxScoreL = 6 + amenitiesCount * amenitiesWeight
     // Geo position
     if (estate.inside || tenant.inside) {
       results.geo = geoInsideWeight
@@ -700,7 +700,7 @@ class MatchService {
   static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
     const query = Tenant.query()
       .select('tenants.*')
-      .select('_m.updated_at')
+      .select('_m.updated_at', '_m.percent as percent')
       .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
