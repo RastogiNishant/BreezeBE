@@ -2,6 +2,7 @@
 
 const constants = require('../../constants')
 const { get, map } = require('lodash')
+const P = require('bluebird')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
@@ -22,15 +23,11 @@ class CommonController {
    * Just for test some api
    */
   async ping() {
-    // const [lat, long] = [52.509269, 13.3141764]
-    // const result = await GeoAPI.getBatchedPlaces({ lat, long })
-    //
-    // console.log({ result })
-
-    // const estate = await Estate.query().where({ id: 1 }).first()
-    // await EstateService.publishEstate(estate)
-
+    // FETCH USER ZONE POINTS
     // await UserService.calcUserZones()
+    // PUBLISH ESTATES
+    // const estates = await Estate.all()
+    // await P.map(estates.rows, (e) => EstateService.publishEstate(e), { concurrency: 1 })
 
     return 'pong'
   }

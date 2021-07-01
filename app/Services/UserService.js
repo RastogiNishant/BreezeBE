@@ -216,15 +216,21 @@ class UserService {
       .whereNotNull('coord_raw')
       .whereNull('point_id')
       .where('id', '>', minId)
-      .limit(100)
+      .limit(1000)
       .fetch()
 
-    tenants.rows.forEach((t) => {
-      const { lat, lon } = t.getLatLon()
-      if (lat && lon && t.dist_type && t.dist_min) {
-        QueueService.getAnchorIsoline(t.id)
-      }
-    })
+    return Promise.map(
+      tenants.rows,
+      (t) => {
+        const { lat, lon } = t.getLatLon()
+        if (lat && lon && t.dist_type && t.dist_min) {
+          return QueueService.getAnchorIsoline(t.id)
+        }
+
+        return Promise.resolve()
+      },
+      { concurrency: 1 }
+    )
   }
 }
 
