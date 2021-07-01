@@ -12,7 +12,6 @@ const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const MailService = use('App/Services/MailService')
-const QueueService = use('App/Services/QueueService')
 const AppException = use('App/Exceptions/AppException')
 
 const { getHash } = require('../Libs/utils.js')
@@ -212,6 +211,7 @@ class UserService {
    *
    */
   static async calcUserZones(minId = 0) {
+    const QueueService = use('App/Services/QueueService')
     const tenants = await Tenant.query()
       .whereNotNull('coord_raw')
       .whereNull('point_id')
