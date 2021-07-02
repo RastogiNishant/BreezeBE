@@ -184,7 +184,6 @@ class TenantService {
       pets: yup.number().oneOf([PETS_BIG, PETS_SMALL, PETS_NO]).required(),
       credit_score: yup.number().min(0).max(100).required(),
       last_address: yup.string().required(),
-      landlord_name: yup.string().required(),
       firstname: yup.string().required(),
       secondname: yup.string().required(),
       debt_proof: yup.string().required(),

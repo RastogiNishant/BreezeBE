@@ -15,7 +15,7 @@ class CreateMember extends Base {
       phone: yup.string().max(30),
       birthday: yup.date(),
       email: yup.string().email().max('255'),
-      landlord_name: yup.string().max('255'),
+      landlord_name: yup.string().max('255').nullable(),
       landlord_phone: yup.string().max('60'),
       landlord_email: yup.string().email().max('255'),
       last_address: yup.string().max('255'),
