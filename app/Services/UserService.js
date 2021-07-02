@@ -242,7 +242,7 @@ class UserService {
   /**
    *
    */
-  static async getTenantTenantInfo(userTenantIs, landlordId) {
+  static async getTenantInfo(userTenantIs, landlordId) {
     const user = await User.query()
       .select('users.*')
       .select(Database.raw('? = ANY(ARRAY_AGG("_m"."share")) as share', [true]))
@@ -251,13 +251,17 @@ class UserService {
         this.on('_m.user_id', 'users.id').onIn('_m.estate_id', function () {
           this.select('id').from('estates').where({ user_id: landlordId })
         })
+        this.on(
+          Database.raw('("_m"."share" = ? or "_m"."status" = ?)', [true, MATCH_STATUS_FINISH])
+        )
       })
       .where({ 'users.id': userTenantIs, 'users.role': ROLE_USER })
-      .where(function () {
-        this.orWhere('_m.share', true).orWhere('_m.status', MATCH_STATUS_FINISH)
-      })
       .groupBy('users.id')
       .first()
+
+    if (!user) {
+      throw new AppException('User not exists')
+    }
 
     const userData = user.toJSON({ publicOnly: !user.finish })
     userData.tenant = null
@@ -272,6 +276,31 @@ class UserService {
     }
 
     return userData
+  }
+
+  /**
+   *
+   */
+  static async getLandlordInfo(landlordId, userTenantIs) {
+    const user = await User.query()
+      .select('users.*')
+      .select(Database.raw('? = ANY(ARRAY_AGG("_m"."status")) as finish', [MATCH_STATUS_FINISH]))
+      .leftJoin({ _m: 'matches' }, function () {
+        this.onIn('_m.user_id', [userTenantIs])
+          .onIn('_m.estate_id', function () {
+            this.select('id').from('estates').where({ user_id: landlordId })
+          })
+          .on('_m.status', MATCH_STATUS_FINISH)
+      })
+      .where({ 'users.id': landlordId, 'users.role': ROLE_LANDLORD })
+      .groupBy('users.id')
+      .first()
+
+    if (!user) {
+      throw new AppException('User not exists')
+    }
+
+    return user.toJSON({ publicOnly: !user.finish })
   }
 }
 

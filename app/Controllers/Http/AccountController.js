@@ -266,9 +266,13 @@ class AccountController {
    */
   async getTenantProfile({ request, auth, response }) {
     const { id } = request.all()
-    const user = await UserService.getTenantTenantInfo(id, auth.user.id)
-
-    response.res(user)
+    try {
+      const user = await UserService.getTenantInfo(id, auth.user.id)
+      return response.res(user)
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
@@ -276,8 +280,13 @@ class AccountController {
    */
   async getLandlordProfile({ request, auth, response }) {
     const { id } = request.all()
-    // TODO: it
-    response.res(id)
+    try {
+      const user = await UserService.getLandlordInfo(id, auth.user.id)
+      return response.res(user)
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
+    }
   }
 }
 
