@@ -40,12 +40,26 @@ class User extends Model {
     return ['id', 'email', 'status', 'google_id', 'role', 'password']
   }
 
+  /**
+   *
+   */
   static get hidden() {
     return ['password']
   }
 
+  /**
+   *
+   */
+  static get Serializer() {
+    return 'App/Serializers/UserSerializer'
+  }
+
+  /**
+   *
+   */
   static boot() {
     super.boot()
+    this.addTrait('@provider:SerializerExtender')
     this.addTrait('@provider:Filterable', UserFilter)
     this.addTrait('Sort', this.columns)
 
@@ -59,34 +73,58 @@ class User extends Model {
     })
   }
 
+  /**
+   *
+   */
   static getHash(email, role) {
     return md5(`${email}---${role}`)
   }
 
+  /**
+   *
+   */
   static get traits() {
     return ['@provider:Adonis/Acl/HasRole', '@provider:Adonis/Acl/HasPermission']
   }
 
+  /**
+   *
+   */
   tokens() {
     return this.hasMany('App/Models/Token')
   }
 
+  /**
+   *
+   */
   company() {
     return this.hasOne('App/Models/Company', 'id', 'company_id')
   }
 
+  /**
+   *
+   */
   term() {
     return this.hasOne('App/Models/Term', 'id', 'term_id')
   }
 
+  /**
+   *
+   */
   agreement() {
     return this.hasOne('App/Models/Agreement', 'id', 'agreement_id')
   }
 
+  /**
+   *
+   */
   tenant() {
     return this.hasOne('App/Models/Tenant', 'id', 'user_id')
   }
 
+  /**
+   *
+   */
   isValidToken() {
     return /^([^\.\$\[\]\#\/]){100,768}$/.test(toString(this.device_token))
   }

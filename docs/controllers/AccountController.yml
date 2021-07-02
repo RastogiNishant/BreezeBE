@@ -12,6 +12,11 @@ definitions:
     name: avatar
     in: formData
     type: string
+  pathUserId:
+    name: user_id
+    in: path
+    type: number
+    required: true
 
 paths:
   /api/v1/login:
@@ -232,4 +237,24 @@ paths:
       tags: [account]
       description: Update tenant user data
       produces: [application/json]
+      responses: [200]
+
+  /api/v1/profile/tenant/{user_id}:
+    get:
+      security: [bearerAuth: []]
+      tags: [profile]
+      description: Get tenant profile
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/pathUserId'
+      responses: [200]
+
+  /api/v1/profile/landlord/{user_id}:
+    get:
+      security: [bearerAuth: []]
+      tags: [profile]
+      description: Get landlord profile
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/pathUserId'
       responses: [200]

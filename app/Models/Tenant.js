@@ -121,6 +121,13 @@ class Tenant extends Model {
   /**
    *
    */
+  members() {
+    return this.hasMany('App/Models/Member', 'user_id', 'user_id')
+  }
+
+  /**
+   *
+   */
   isActive() {
     return this.status === STATUS_ACTIVE
   }

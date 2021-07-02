@@ -64,6 +64,17 @@ Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware
   'auth:jwtLandlord,jwt',
 ])
 
+Route.group(() => {
+  Route.get('/tenant/:id', 'AccountController.getTenantProfile').middleware([
+    'auth:jwtLandlord',
+    'valid:Id',
+  ])
+  Route.get('/landlord/:id', 'AccountController.getLandlordProfile').middleware([
+    'auth:jwt',
+    'valid:Id',
+  ])
+}).prefix('/api/v1/profile')
+
 // Tenant params and preferences
 
 Route.group(() => {

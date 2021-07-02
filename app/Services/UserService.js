@@ -16,7 +16,13 @@ const AppException = use('App/Exceptions/AppException')
 
 const { getHash } = require('../Libs/utils.js')
 
-const { STATUS_NEED_VERIFY, STATUS_ACTIVE, ROLE_USER, ROLE_LANDLORD } = require('../constants')
+const {
+  STATUS_NEED_VERIFY,
+  STATUS_ACTIVE,
+  ROLE_USER,
+  ROLE_LANDLORD,
+  MATCH_STATUS_FINISH,
+} = require('../constants')
 
 class UserService {
   /**
@@ -231,6 +237,41 @@ class UserService {
       },
       { concurrency: 1 }
     )
+  }
+
+  /**
+   *
+   */
+  static async getTenantTenantInfo(userTenantIs, landlordId) {
+    const user = await User.query()
+      .select('users.*')
+      .select(Database.raw('? = ANY(ARRAY_AGG("_m"."share")) as share', [true]))
+      .select(Database.raw('? = ANY(ARRAY_AGG("_m"."status")) as finish', [MATCH_STATUS_FINISH]))
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.user_id', 'users.id').onIn('_m.estate_id', function () {
+          this.select('id').from('estates').where({ user_id: landlordId })
+        })
+      })
+      .where({ 'users.id': userTenantIs, 'users.role': ROLE_USER })
+      .where(function () {
+        this.orWhere('_m.share', true).orWhere('_m.status', MATCH_STATUS_FINISH)
+      })
+      .groupBy('users.id')
+      .first()
+
+    const userData = user.toJSON({ publicOnly: !user.finish })
+    userData.tenant = null
+    // Get tenant extend data
+    if (user.share) {
+      userData.tenant = await Tenant.query()
+        .where('user_id', user.id)
+        .with('members')
+        .with('members.incomes')
+        .with('members.incomes.proofs')
+        .first()
+    }
+
+    return userData
   }
 }
 

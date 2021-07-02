@@ -121,7 +121,7 @@ class AccountController {
       .with('tenant')
       .firstOrFail()
 
-    return response.res(user)
+    return response.res(user.toJSON({ isOwner: true }))
   }
 
   /**
@@ -259,6 +259,25 @@ class AccountController {
     const token = await authenticator.generate(userTarget)
 
     response.res(token)
+  }
+
+  /**
+   *
+   */
+  async getTenantProfile({ request, auth, response }) {
+    const { id } = request.all()
+    const user = await UserService.getTenantTenantInfo(id, auth.user.id)
+
+    response.res(user)
+  }
+
+  /**
+   *
+   */
+  async getLandlordProfile({ request, auth, response }) {
+    const { id } = request.all()
+    // TODO: it
+    response.res(id)
   }
 }
 
