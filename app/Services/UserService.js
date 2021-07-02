@@ -242,7 +242,7 @@ class UserService {
   /**
    *
    */
-  static async getTenantInfo(userTenantIs, landlordId) {
+  static async getTenantInfo(userTenantId, landlordId) {
     const user = await User.query()
       .select('users.*')
       .select(Database.raw('? = ANY(ARRAY_AGG("_m"."share")) as share', [true]))
@@ -255,7 +255,7 @@ class UserService {
           Database.raw('("_m"."share" = ? or "_m"."status" = ?)', [true, MATCH_STATUS_FINISH])
         )
       })
-      .where({ 'users.id': userTenantIs, 'users.role': ROLE_USER })
+      .where({ 'users.id': userTenantId, 'users.role': ROLE_USER })
       .groupBy('users.id')
       .first()
 
@@ -281,12 +281,12 @@ class UserService {
   /**
    *
    */
-  static async getLandlordInfo(landlordId, userTenantIs) {
+  static async getLandlordInfo(landlordId, userTenantId) {
     const user = await User.query()
       .select('users.*')
       .select(Database.raw('? = ANY(ARRAY_AGG("_m"."status")) as finish', [MATCH_STATUS_FINISH]))
       .leftJoin({ _m: 'matches' }, function () {
-        this.onIn('_m.user_id', [userTenantIs])
+        this.onIn('_m.user_id', [userTenantId])
           .onIn('_m.estate_id', function () {
             this.select('id').from('estates').where({ user_id: landlordId })
           })
@@ -301,6 +301,22 @@ class UserService {
     }
 
     return user.toJSON({ publicOnly: !user.finish })
+  }
+
+  /**
+   *
+   */
+  static async landlordHasAccessTenant(landlordId, userTenantId) {
+    const result = await Database.table({ _m: 'matches' })
+      .select('_m.estate_id')
+      .where({ '_m.user_id': userTenantId })
+      .whereIn('_m.estate_id', function () {
+        this.select('id').from('estates').where({ user_id: landlordId })
+      })
+      .where('_m.share', true)
+      .first()
+
+    return !!result
   }
 }
 

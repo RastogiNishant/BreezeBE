@@ -25,7 +25,10 @@ class TenantController {
         throw new HttpException('No access', 403)
       }
     } else if (auth.user.role === ROLE_LANDLORD) {
-      // TODO: check is landlord has access to tenant docs
+      const hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
+      if (!hasAccess) {
+        throw new HttpException('No access', 403)
+      }
     } else {
       throw new HttpException('No access', 403)
     }
