@@ -669,7 +669,7 @@ class MatchService {
         .whereNot('_m.share', true)
     } else if (share) {
       query
-        .whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
+        .whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
         .where({ '_m.share': true })
         .clearOrder()
         .orderBy([
@@ -713,9 +713,9 @@ class MatchService {
     } else if (buddy) {
       query.where({ '_m.status': MATCH_STATUS_KNOCK, '_m.buddy': true })
     } else if (invite) {
-      query.whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_SHARE])
+      query.whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
-      query.where('_m.status', MATCH_STATUS_VISIT)
+      query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
       query
         .where('_m.status', MATCH_STATUS_TOP)
