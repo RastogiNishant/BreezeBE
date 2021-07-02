@@ -251,7 +251,7 @@ class EstateController {
       throw e
     }
 
-    response.res(true)
+    response.res(estate)
   }
 
   /**
