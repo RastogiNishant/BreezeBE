@@ -2,7 +2,7 @@
 
 const Database = use('Database')
 const Model = require('./BaseModel')
-const { isString, get } = require('lodash')
+const { isString } = require('lodash')
 
 const { STATUS_ACTIVE } = require('../constants')
 
@@ -130,6 +130,20 @@ class Tenant extends Model {
    */
   isActive() {
     return this.status === STATUS_ACTIVE
+  }
+
+  /**
+   *
+   */
+  getBudget() {
+    return parseFloat(this.budget_max) || 0
+  }
+
+  /**
+   *
+   */
+  getIncome() {
+    return parseFloat(this.income) || 0
   }
 }
 

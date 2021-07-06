@@ -274,6 +274,20 @@ class Estate extends Model {
       true
     )
   }
+
+  /**
+   *
+   */
+  getFinalPrice() {
+    return (parseFloat(this.net_rent) || 0) + (parseFloat(this.additional_costs) || 0)
+  }
+
+  /**
+   *
+   */
+  getBudget() {
+    return parseFloat(this.budget) || 0
+  }
 }
 
 module.exports = Estate

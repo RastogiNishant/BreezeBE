@@ -38,6 +38,10 @@ class BaseModel extends Model {
 
     return this.save()
   }
+
+  getNumber(field) {
+    return parseFloat(this[field]) || 0
+  }
 }
 
 module.exports = BaseModel
