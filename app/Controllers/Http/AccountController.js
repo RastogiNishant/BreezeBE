@@ -234,8 +234,7 @@ class AccountController {
       .where('role', roleToSwitch)
       .first()
 
-    const { id, ...data } = auth.user.toJSON()
-
+    const { id, ...data } = auth.user.toJSON({ isOwner: true })
     if (!userTarget) {
       const { user } = await UserService.createUser({
         ...data,

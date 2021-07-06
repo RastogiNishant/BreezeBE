@@ -182,8 +182,7 @@ class UserService {
    *
    */
   static async copyUser(user, role) {
-    const { id, ...data } = auth.user.toJSON()
-
+    const { id, ...data } = auth.user.toJSON({ isOwner: true })
     const result = await UserService.createUser({
       ...data,
       password: String(new Date().getTime()),

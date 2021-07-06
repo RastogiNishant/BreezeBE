@@ -31,7 +31,7 @@ class OAuthController {
       throw new HttpException('Invalid user', 400)
     }
 
-    const { id, email } = authUser.toJSON()
+    const { id, email } = authUser.toJSON({ isOwner: true })
     let user = await User.query()
       .where('email', email)
       .where('role', ROLE_LANDLORD)
@@ -42,7 +42,7 @@ class OAuthController {
     if (!user) {
       try {
         user = await UserService.createUserFromOAuth({
-          ...authUser.toJSON(),
+          ...authUser.toJSON({ isOwner: true }),
           role: ROLE_LANDLORD,
           google_id: id,
         })
