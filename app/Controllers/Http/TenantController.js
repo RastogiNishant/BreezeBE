@@ -7,6 +7,8 @@ const QueueService = use('App/Services/QueueService')
 const UserService = use('App/Services/UserService')
 const Tenant = use('App/Models/Tenant')
 
+const { without } = require('lodash')
+
 const {
   ROLE_USER,
   ROLE_LANDLORD,
@@ -63,7 +65,27 @@ class TenantController {
       QueueService.getAnchorIsoline(tenant.id)
     }
     const updatedTenant = await Tenant.find(tenant.id)
-    Event.fire('tenant::update', auth.user.id)
+    const filterFields = [
+      'dist_type',
+      'dist_min',
+      'include_utility',
+      'budget_min',
+      'budget_max',
+      'rooms_min',
+      'rooms_max',
+      'floor_min',
+      'floor_max',
+      'space_min',
+      'space_max',
+      'apt_type',
+      'house_type',
+      'garden',
+      'options',
+    ]
+    if (without(Object.keys(data), ...filterFields).length) {
+      // Change tenant status if update non filter params
+      Event.fire('tenant::update', auth.user.id)
+    }
 
     response.res(updatedTenant)
   }
