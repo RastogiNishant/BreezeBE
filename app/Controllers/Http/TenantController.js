@@ -39,9 +39,15 @@ class TenantController {
       }
     }
 
-    const link = await TenantService.getProtectedFileLink(user_id, file_id, file_type, member_id)
-
-    response.res(link)
+    try {
+      const link = await TenantService.getProtectedFileLink(user_id, file_id, file_type, member_id)
+      return response.res(link)
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
   }
 
   /**
