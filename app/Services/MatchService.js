@@ -45,7 +45,10 @@ const inRange = (value, start, end) => {
   return +start <= +value && +value <= +end
 }
 
-const log = (data) => Logger.info('LOG', data)
+const log = (data) => {
+  return false
+  Logger.info('LOG', data)
+}
 
 class MatchService {
   /**
@@ -63,27 +66,14 @@ class MatchService {
     const smokeWeight = 0.1
     const amenitiesWeight = 0.5 / amenitiesCount
 
-    let results = {
-      geo: 0,
-      area: 0,
-      rooms: 0,
-      apt_type: 0,
-      floor: 0,
-      house_type: 0,
-      budget: 0,
-      age: 0,
-      smoke: 0,
-      rent_arrears: 0,
-      family: 0,
-      pets: 0,
-    }
-
-    const userIncome = tenant.getIncome()
-    const estatePrice = estate.getFinalPrice()
+    const userIncome = tenant.income || 0
+    const estatePrice = Estate.getFinalPrice(estate)
     let scoreL = 0
     let scoreT = 0
     const maxScoreT = 5.3
     const maxScoreL = 4.1
+    const estateBudget = estate.budget || 0
+    const tenantBudget = tenant.budget || 0
 
     const getCorr = (a, b, min = 0) => {
       if (Math.max(a, b) - min === 0) {
@@ -97,19 +87,19 @@ class MatchService {
     log({
       estatePrice,
       userIncome,
-      estateBudget: estate.getBudget(),
-      tenantBudget: tenant.getBudget(),
+      estateBudget,
+      tenantBudget,
     })
     const realBudget = estatePrice / userIncome
-    if (realBudget <= estate.getBudget() / 100) {
-      const landlordBudgetPoints = 1 + (1 - getCorr(estate.getBudget(), realBudget * 100)) * 0.1
+    if (realBudget <= estateBudget / 100) {
+      const landlordBudgetPoints = 1 + (1 - getCorr(estateBudget, realBudget * 100)) * 0.1
       log({ landlordBudgetPoints })
       scoreL += landlordBudgetPoints
     }
 
     // Get credit score income
-    const userCurrentCredit = tenant.getNumber('credit_score')
-    const userRequireCredit = estate.getNumber('credit_score')
+    const userCurrentCredit = tenant.credit_score || 0
+    const userRequireCredit = estate.credit_score || 0
     log({ userCurrentCredit, userRequireCredit })
     if (userCurrentCredit >= userRequireCredit) {
       const creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit) * 0.1
@@ -174,8 +164,8 @@ class MatchService {
     // -----------------------
     // TENANT calculation part
     // -----------------------
-    if (estatePrice / userIncome > tenant.getBudget() / 100) {
-      const tenantBudgetPoints = 1 + (1 - getCorr(estate.getBudget(), realBudget * 100)) * 0.1
+    if (estatePrice / userIncome > tenantBudget / 100) {
+      const tenantBudgetPoints = 1 + (1 - getCorr(tenantBudget, realBudget * 100)) * 0.1
       log({ tenantBudgetPoints })
       scoreT += tenantBudgetPoints
     }
