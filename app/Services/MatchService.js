@@ -737,7 +737,7 @@ class MatchService {
   static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
     const query = Tenant.query()
       .select('tenants.*')
-      .select('_m.updated_at', '_m.percent as percent')
+      .select('_m.updated_at', '_m.percent as percent', '_m.share')
       .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
