@@ -47,14 +47,14 @@ const inRange = (value, start, end) => {
 
 const log = (data) => {
   return false
-  Logger.info('LOG', data)
+  // Logger.info('LOG', data)
 }
 
 class MatchService {
   /**
-   * Get matches percent between estate/tenant
+   * Get matches percent between estate/prospect
    */
-  static calculateMatchPercent(tenant, estate) {
+  static calculateMatchPercent(prospect, estate) {
     // Props weight
     const amenitiesCount = 7
     const aptTypeWeight = 0.1
@@ -66,14 +66,14 @@ class MatchService {
     const smokeWeight = 0.1
     const amenitiesWeight = 0.5 / amenitiesCount
 
-    const userIncome = tenant.income || 0
+    const userIncome = prospect.income || 0
     const estatePrice = Estate.getFinalPrice(estate)
     let scoreL = 0
     let scoreT = 0
     const maxScoreT = 5.3
     const maxScoreL = 4.1
     const estateBudget = estate.budget || 0
-    const tenantBudget = tenant.budget || 0
+    const prospectBudget = prospect.budget_max || 0
 
     const getCorr = (a, b, min = 0) => {
       if (Math.max(a, b) - min === 0) {
@@ -88,43 +88,44 @@ class MatchService {
       estatePrice,
       userIncome,
       estateBudget,
-      tenantBudget,
+      prospectBudget,
     })
     const realBudget = estatePrice / userIncome
+    log({ realBudget })
     if (realBudget <= estateBudget / 100) {
-      const landlordBudgetPoints = 1 + (1 - getCorr(estateBudget, realBudget * 100)) * 0.1
+      const landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
       log({ landlordBudgetPoints })
       scoreL += landlordBudgetPoints
     }
 
     // Get credit score income
-    const userCurrentCredit = tenant.credit_score || 0
+    const userCurrentCredit = prospect.credit_score || 0
     const userRequireCredit = estate.credit_score || 0
     log({ userCurrentCredit, userRequireCredit })
     if (userCurrentCredit >= userRequireCredit) {
-      const creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit) * 0.1
+      const creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit, 0) * 0.1
       log({ creditScorePoints })
       scoreL += creditScorePoints
     }
 
     // Get rent arrears score
     const rentArrearsWeight = 1
-    log({ estateRentArrears: estate.rent_arrears, tenantUnpaidRental: tenant.unpaid_rental })
-    if (!estate.rent_arrears || !tenant.unpaid_rental) {
+    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
+    if (!estate.rent_arrears || !prospect.unpaid_rental) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
     }
 
     // Check family status
-    log({ estateFamilyStatus: estate.family_status, tenantFamilyStatus: tenant.family_status })
-    if (!estate.family_status || +tenant.family_status === +estate.family_status) {
+    log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
+    if (!estate.family_status || +prospect.family_status === +estate.family_status) {
       log({ familyStatusPoints: familyStatusWeight })
       scoreL += familyStatusWeight
     }
 
-    // Tenant smoke ask
-    log({ tenantNonSmoker: tenant.non_smoker, estateNonSmoker: estate.non_smoker })
-    if (tenant.non_smoker || !estate.non_smoker) {
+    // prospect smoke ask
+    log({ prospectNonSmoker: prospect.non_smoker, estateNonSmoker: estate.non_smoker })
+    if (prospect.non_smoker || !estate.non_smoker) {
       log({ smokePoints: smokeWeight })
       scoreL += smokeWeight
     }
@@ -133,10 +134,10 @@ class MatchService {
     log({
       estateMinAge: estate.min_age,
       estateMaxAge: estate.max_age,
-      tenantMembersAge: tenant.members_age,
+      prospectMembersAge: prospect.members_age,
     })
-    if (estate.min_age && estate.max_age && tenant.members_age) {
-      const isInRange = (tenant.members_age || []).reduce((n, v) => {
+    if (estate.min_age && estate.max_age && prospect.members_age) {
+      const isInRange = (prospect.members_age || []).reduce((n, v) => {
         return n ? true : inRange(v, estate.min_age, estate.max_age)
       }, false)
 
@@ -145,11 +146,11 @@ class MatchService {
     }
 
     // Pets
-    log({ tenantPets: tenant.pets, estatePets: estate.pets })
-    if (tenant.pets === PETS_NO || estate.pets === PETS_ANY) {
+    log({ prospectPets: prospect.pets, estatePets: estate.pets })
+    if (prospect.pets === PETS_NO || estate.pets === PETS_ANY) {
       scoreL += petsWeight
       log({ petsWeight })
-    } else if (tenant.pets === PETS_SMALL && estate.pets === PETS_SMALL) {
+    } else if (prospect.pets === PETS_SMALL && estate.pets === PETS_SMALL) {
       scoreL += petsWeight
       log({ petsWeight })
     }
@@ -162,76 +163,77 @@ class MatchService {
     }
 
     // -----------------------
-    // TENANT calculation part
+    // prospect calculation part
     // -----------------------
-    if (estatePrice / userIncome > tenantBudget / 100) {
-      const tenantBudgetPoints = 1 + (1 - getCorr(tenantBudget, realBudget * 100)) * 0.1
-      log({ tenantBudgetPoints })
-      scoreT += tenantBudgetPoints
+    if (estatePrice / userIncome < prospectBudget) {
+      const prospectBudgetPoints = 1 + getCorr(prospectBudget, realBudget * 100, 0) * 0.1
+      log({ prospectBudgetPoints })
+      scoreT += prospectBudgetPoints
     }
 
     log({
       estateArea: estate.area,
-      tenantSpaceMin: tenant.space_min,
-      tenantSpaceMax: tenant.space_max,
+      prospectSpaceMin: prospect.space_min,
+      prospectSpaceMax: prospect.space_max,
     })
-    if (inRange(estate.area, tenant.space_min, tenant.space_max)) {
-      const spacePoints = 1 + (1 - getCorr(tenant.space_max, estate.area, tenant.space_min)) * 0.1
+    if (inRange(estate.area, prospect.space_min, prospect.space_max)) {
+      const spacePoints = 1 + (1 - getCorr(prospect.space_max, estate.area, prospect.space_min)) * 0.1
       log({ spacePoints })
       scoreT += spacePoints
     }
 
     // Apt floor in range
-    log({ floor: estate.floor, floorMin: tenant.floor_min, floorMax: tenant.floor_max })
-    if (inRange(estate.floor, tenant.floor_min, tenant.floor_max)) {
+    log({ floor: estate.floor, floorMin: prospect.floor_min, floorMax: prospect.floor_max })
+    if (inRange(estate.floor, prospect.floor_min, prospect.floor_max)) {
       log({ floorWeight })
       scoreT += floorWeight
     }
 
     log({
       roomsNumber: estate.rooms_number,
-      roomsMin: tenant.rooms_min,
-      roomsMax: tenant.rooms_max,
+      roomsMin: prospect.rooms_min,
+      roomsMax: prospect.rooms_max,
     })
-    if (inRange(estate.rooms_number, tenant.rooms_min, tenant.rooms_max)) {
+    if (inRange(estate.rooms_number, prospect.rooms_min, prospect.rooms_max)) {
       const roomsPoints =
-        1 + (1 - getCorr(tenant.rooms_max, estate.rooms_number, tenant.rooms_min)) * 0.1
+        1 + (1 - getCorr(prospect.rooms_max, estate.rooms_number, prospect.rooms_min) || 1) * 0.1
       log({ roomsPoints })
       scoreT += roomsPoints
     }
 
     // Apartment type is equal
-    log({ tenantAptType: tenant.apt_type, estateAptType: estate.apt_type })
-    if ((tenant.apt_type || []).includes(estate.apt_type)) {
+    log({ prospectAptType: prospect.apt_type, estateAptType: estate.apt_type })
+    if ((prospect.apt_type || []).includes(estate.apt_type)) {
       log({ aptTypeWeight })
       scoreT += aptTypeWeight
     }
 
     // House type is equal
-    log({ tenantHouseType: tenant.house_type, estateHouseType: estate.house_type })
-    if ((tenant.house_type || []).includes(estate.house_type)) {
+    log({ prospectHouseType: prospect.house_type, estateHouseType: estate.house_type })
+    if ((prospect.house_type || []).includes(estate.house_type)) {
       log({ houseTypeWeight })
       scoreT += houseTypeWeight
     }
 
-    log({ estateAmenities: estate.options, tenantAmenities: tenant.options })
-    const passAmenities = intersection(estate.options, tenant.options).length
+    log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
+    const passAmenities = intersection(estate.options, prospect.options).length
     const amenitiesScore = passAmenities * amenitiesWeight
     log({ amenitiesScore })
     scoreT += amenitiesScore
 
-    const rentStart = parseInt(moment(tenant.rent_start).startOf('day').format('X'))
+    const rentStart = parseInt(moment(prospect.rent_start).startOf('day').format('X'))
     const vacantFrom = parseInt(moment(estate.vacant_date).startOf('day').format('X'))
     log({ rentStart, vacantFrom })
     if (rentStart <= vacantFrom) {
       const daysDiff = (vacantFrom - rentStart) / 86400
-      const rentStartPoints = 1 + (1 - Math.min(daysDiff, 720) / 720) * 0.1
+      const MAX_DAYS = 730
+      const rentStartPoints = 1 + (1 - Math.min(daysDiff, MAX_DAYS) / MAX_DAYS) * 0.1
       scoreT += rentStartPoints
       log({ rentStartPoints })
     }
 
     const scoreTPer = scoreT / maxScoreT
-    log({ scoreTenantPercent: scoreTPer })
+    log({ scoreProspectPercent: scoreTPer })
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
       return 0
@@ -723,7 +725,10 @@ class MatchService {
           { column: '_m.updated_at', order: 'DESC' },
         ])
     } else if (commit) {
-      query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
+      query
+        .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
+        .select('_u.email', '_u.phone', '_u.avatar')
+        .whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')
     }
