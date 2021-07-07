@@ -100,6 +100,7 @@ class UpdateTenant extends Base {
 
       garden: yup.boolean(),
       options: yup.array().of(yup.number().integer().positive().max(999)),
+      rent_start: yup.date(),
     })
 }
 

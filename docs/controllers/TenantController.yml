@@ -126,6 +126,10 @@ definitions:
     name: address
     in: formData
     type: string
+  rent_start:
+    name: rent_start
+    in: formData
+    type: date
 
 # Routes list
 /api/v1/tenant/file:
@@ -170,6 +174,7 @@ definitions:
       - $ref: '#/definitions/house_type'
       - $ref: '#/definitions/garden'
       - $ref: '#/definitions/apt_options'
+      - $ref: '#/definitions/rent_start'
     responses: [200]
 
 /api/v1/users/tenant/activate:
