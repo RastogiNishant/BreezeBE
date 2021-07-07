@@ -9,8 +9,11 @@ const { merge, each, get } = require('lodash')
  * Merge data
  */
 class BaseSerializer extends VanillaSerializer {
-  filterFields(item) {
-    const fields = item.constructor.shortFieldsList || []
+  /**
+   *
+   */
+  filterFields(item, extraFields = []) {
+    const fields = [...(item.constructor.shortFieldsList || []), ...extraFields]
     each(get(item, '$attributes', {}), (v, k) => {
       if (!fields.includes(k)) {
         item.$attributes[k] = undefined

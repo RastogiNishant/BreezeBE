@@ -236,7 +236,9 @@ class MatchController {
       commit,
     }).paginate(page, limit)
 
-    response.res(estates.toJSON({ isShort: true }))
+    response.res(
+      estates.toJSON({ isShort: true, extraFields: commit ? ['email', 'avatar', 'phone'] : [] })
+    )
   }
 
   /**

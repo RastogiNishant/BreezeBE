@@ -7,13 +7,12 @@ class MapController {
    *
    */
   async getMap({ request, view, response }) {
-    const { userId = 6 } = request.all()
+    const { userId = 10 } = request.all()
     const tenants = await Database.table('tenants')
-      .select('tenants.id', '_p.lat', '_p.lon')
+      .select('tenants.id', '_p.lat', '_p.lon', '_p.data')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
       .limit(100)
-    const zone = null
-    // const zone = get(tenant, 'data.data.0.0', null)
+    const zone = get(tenants, '0.data.data.0.0', null)
 
     const estates = await Database.query()
       .from('estates')
