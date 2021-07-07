@@ -323,35 +323,15 @@ class EstateService {
    *
    */
   static searchEstatesQuery(tenant, radius) {
-    const { lat, lon } = tenant.getLatLon()
-    const polygon = get(tenant, 'polygon.data.0.0')
-    const polyStr = [...polygon, polygon[0]].map(([lon, lat]) => `${lon} ${lat}`).join(',')
-
-    // Has poly, calculate intersection
-    if (isArray(polygon) && polygon.length) {
-      return Database.with(
-        'meta',
-        Database.raw(`SELECT 'SRID=4326;POLYGON((${polyStr}))'::geometry`)
-      )
-        .select('_e.*')
-        .select(
-          Database.raw(`_ST_Intersects(_e.coord::geometry, meta.geometry::geometry) as inside`)
-        )
-        .from({ _e: 'estates' })
-        .crossJoin('meta')
-        .whereRaw(`ST_DWithin(_e.coord, ST_MakePoint(?, ?)::geography, ?)`, [lon, lat, radius])
-        .where('_e.status', STATUS_ACTIVE)
-      // .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
-      // .whereIn('_e.apt_type', tenant.apt_type)
-      // .whereIn('_e.id', [8])
-    }
-
-    // No poly / get all points in gray zone circle
-    return Database.from({ _e: 'estates' })
-      .select('_e.*', Database.raw(`FALSE as inside`))
-      .whereRaw(`ST_DWithin(_e.coord, ST_MakePoint(?, ?)::geography, ?)`, [lon, lat, radius])
-      .whereBetween('_e.floor', [tenant.floor_min, tenant.floor_max])
-      .whereIn('_e.apt_type', tenant.apt_type)
+    return Database.select(Database.raw(`TRUE as inside`))
+      .select('_e.*')
+      .from({ _t: 'tenants' })
+      .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
+      .crossJoin({ _e: 'estates' })
+      .where('_t.user_id', tenant.user_id)
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+      .limit(1000)
   }
 
   /**

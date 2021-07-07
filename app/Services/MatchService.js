@@ -32,7 +32,7 @@ const {
 
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
-const MAX_SEARCH_ITEMS = 500
+const MAX_SEARCH_ITEMS = 1000
 
 /**
  * Check is item in data range
@@ -177,7 +177,8 @@ class MatchService {
       prospectSpaceMax: prospect.space_max,
     })
     if (inRange(estate.area, prospect.space_min, prospect.space_max)) {
-      const spacePoints = 1 + (1 - getCorr(prospect.space_max, estate.area, prospect.space_min)) * 0.1
+      const spacePoints =
+        1 + (1 - getCorr(prospect.space_max, estate.area, prospect.space_min)) * 0.1
       log({ spacePoints })
       scoreT += spacePoints
     }
@@ -308,17 +309,12 @@ class MatchService {
     const estate = await Estate.query().where({ id: estateId }).first()
     // Get tenant in zone and check crossing with every tenant search zone
     const tenants = await Database.from({ _e: 'estates' })
-      .select(
-        '_t.*',
-        Database.raw(
-          `CASE WHEN _p.zone IS NULL THEN FALSE ELSE _ST_Intersects(_e.coord::geometry, _p.zone::geometry) END AS inside`
-        )
-      )
-      .leftJoin({ _p: 'points' }, '_p.id', '_e.point_id')
-      .innerJoin({ _t: 'tenants' }, function () {
-        this.on(Database.raw(`ST_DWithin(_e.coord::geography, _t.coord::geography, ?)`, [MAX_DIST]))
-      })
+      .select('_t.*', Database.raw(`TRUE AS inside`))
+      .crossJoin({ _t: 'tenants' })
+      .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .where('_e.id', estateId)
+      .where('_t.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
       .limit(MAX_SEARCH_ITEMS)
 
     // Calculate matches for tenants to current estate
