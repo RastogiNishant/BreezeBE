@@ -58,7 +58,7 @@ class TenantController {
   async updateTenant({ request, auth, response }) {
     const data = request.all()
     const tenant = await UserService.getOrCreateTenant(auth.user)
-    await tenant.updateItem({ ...data, status: STATUS_DRAFT }, true)
+    await tenant.updateItem(data)
     const { lat, lon } = tenant.getLatLon()
     // Add tenant anchor zone processing
     if (lat && lon && tenant.dist_type && tenant.dist_min) {

@@ -61,24 +61,22 @@ class Tenant extends Model {
 
   static get updateIgnoreFields() {
     return [
-      [
-        'dist_type',
-        'dist_min',
-        'include_utility',
-        'budget_min',
-        'budget_max',
-        'rooms_min',
-        'rooms_max',
-        'floor_min',
-        'floor_max',
-        'space_min',
-        'space_max',
-        'apt_type',
-        'house_type',
-        'garden',
-        'options',
-        'rent_start',
-      ],
+      'dist_type',
+      'dist_min',
+      'include_utility',
+      'budget_min',
+      'budget_max',
+      'rooms_min',
+      'rooms_max',
+      'floor_min',
+      'floor_max',
+      'space_min',
+      'space_max',
+      'apt_type',
+      'house_type',
+      'garden',
+      'options',
+      'rent_start',
     ]
   }
 
