@@ -5,6 +5,7 @@ const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
+const { reduce } = require('lodash')
 
 const { ROLE_USER, ROLE_LANDLORD } = require('../../constants')
 
@@ -219,26 +220,19 @@ class MatchController {
    */
   async getMatchesListTenant({ request, auth, response }) {
     const user = auth.user
-    const {
-      filters: { buddy, like, dislike, knock, invite, share, top, commit },
+    // filters: { buddy, like, dislike, knock, invite, share, top, commit },
+    const { filters, page, limit } = request.all()
+    const estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).paginate(
       page,
-      limit,
-    } = request.all()
-
-    const estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, {
-      buddy,
-      dislike,
-      like,
-      knock,
-      invite,
-      share,
-      top,
-      commit,
-    }).paginate(page, limit)
-
-    response.res(
-      estates.toJSON({ isShort: true, extraFields: commit ? ['email', 'avatar', 'phone'] : [] })
+      limit
     )
+    const activeStatuses = reduce(filters, (n, v, k) => (v ? n.concat(k) : n), [])
+    const extraFields =
+      activeStatuses.includes('commit') && activeStatuses.length === 1
+        ? ['email', 'avatar', 'phone']
+        : []
+
+    return response.res(estates.toJSON({ isShort: true, extraFields }))
   }
 
   /**

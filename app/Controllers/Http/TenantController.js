@@ -3,7 +3,7 @@
 const Event = use('Event')
 const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
-const QueueService = use('App/Services/QueueService')
+const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
 const Tenant = use('App/Models/Tenant')
 
@@ -62,12 +62,15 @@ class TenantController {
     const { lat, lon } = tenant.getLatLon()
     // Add tenant anchor zone processing
     if (lat && lon && tenant.dist_type && tenant.dist_min) {
-      QueueService.getAnchorIsoline(tenant.id)
+      await TenantService.updateTenantIsoline(tenant.id)
     }
     const updatedTenant = await Tenant.find(tenant.id)
+    // Deactivate tenant on personal data change
     if (without(Object.keys(data), ...Tenant.updateIgnoreFields).length) {
-      // Change tenant status if update non filter params
       Event.fire('tenant::update', auth.user.id)
+      updatedTenant.status = STATUS_DRAFT
+    } else {
+      await MatchService.matchByUser(auth.user.id)
     }
 
     response.res(updatedTenant)
@@ -84,7 +87,7 @@ class TenantController {
       console.log(e.message)
       throw new HttpException(e.message, 400)
     }
-    Event.fire('match::user', auth.user.id)
+    await MatchService.matchByUser(auth.user.id)
 
     response.res(true)
   }
