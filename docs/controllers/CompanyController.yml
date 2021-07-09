@@ -1,0 +1,149 @@
+definitions:
+  companyPathId:
+    name: id
+    in: path
+    type: number
+    required: true
+  contactPathId:
+    name: id
+    in: path
+    type: number
+    required: true
+  companyName:
+    name: name
+    in: formData
+    type: string
+  address:
+    name: address
+    in: formData
+    type: string
+  tax_number:
+    name: tax_number
+    in: formData
+    type: string
+  trade_register_nr:
+    name: trade_register_nr
+    in: formData
+    type: string
+  umsst:
+    name: umsst
+    in: formData
+    type: string
+  companyType:
+    name: type
+    in: formData
+    type: string
+    enum: ['private', 'propMan', 'prHost', 'numHost', 'hostCoop', 'listHost']
+  contactFullName:
+    name: full_name
+    in: formData
+    type: string
+  contactEmail:
+    name: email
+    in: formData
+    type: string
+  contactPhone:
+    name: phone
+    in: formData
+    type: string
+  contactRegion:
+    name: region
+    in: formData
+    type: string
+
+paths:
+  /api/v1/companies:
+    get:
+      tags: [company]
+      security: [bearerAuth: []]
+      description: Get user company
+      produces: [application/json]
+      responses: [200]
+
+    post:
+      tags: [company]
+      security: [bearerAuth: []]
+      description: Create user company
+      produces: [application/json]
+      parameters:
+        - name: name
+          allOf: [$ref: '#/definitions/companyName', required: true]
+        - name: address
+          allOf: [$ref: '#/definitions/address', required: true]
+        - name: type
+          allOf: [$ref: '#/definitions/companyType', required: true]
+        - $ref: '#/definitions/tax_number'
+        - $ref: '#/definitions/trade_register_nr'
+        - $ref: '#/definitions/umsst'
+      responses: [200]
+
+  /api/v1/companies/{id}:
+    put:
+      tags: [company]
+      security: [bearerAuth: []]
+      description: Update user company
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/companyPathId'
+        - $ref: '#/definitions/companyName'
+        - $ref: '#/definitions/address'
+        - $ref: '#/definitions/companyType'
+        - $ref: '#/definitions/tax_number'
+        - $ref: '#/definitions/trade_register_nr'
+        - $ref: '#/definitions/umsst'
+      responses: [200]
+
+    delete:
+      tags: [company]
+      security: [bearerAuth: []]
+      description: Remove user company
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/companyPathId'
+      responses: [200]
+
+  /api/v1/contacts:
+    get:
+      tags: [contact]
+      security: [bearerAuth: []]
+      description: Get contacts
+      produces: [application/json]
+      responses: [200]
+
+    post:
+      tags: [contact]
+      security: [bearerAuth: []]
+      description: Create new contacts
+      produces: [application/json]
+      parameters:
+        - name: full_name
+          allOf: [$ref: '#/definitions/contactFullName', required: true]
+        - name: email
+          allOf: [$ref: '#/definitions/contactEmail', required: true]
+        - name: phone
+          allOf: [$ref: '#/definitions/contactPhone', required: true]
+        - $ref: '#/definitions/contactRegion'
+      responses: [200]
+
+  /api/v1/contacts/{id}:
+    put:
+      tags: [contact]
+      security: [bearerAuth: []]
+      description: Update contacts
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/contactPathId'
+        - $ref: '#/definitions/contactFullName'
+        - $ref: '#/definitions/contactEmail'
+        - $ref: '#/definitions/contactPhone'
+        - $ref: '#/definitions/contactRegion'
+      responses: [200]
+
+    delete:
+      tags: [contact]
+      security: [bearerAuth: []]
+      description: Remove contacts
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/contactPathId'
+      responses: [200]

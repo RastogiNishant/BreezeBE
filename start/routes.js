@@ -296,6 +296,30 @@ Route.group(() => {
   ])
 }).prefix('api/v1/match')
 
+/**
+ * Landlord company manage
+ */
+Route.group(() => {
+  Route.get('/', 'CompanyController.getCompany')
+  Route.post('/', 'CompanyController.createCompany').middleware(['valid:CreateCompany'])
+  Route.put('/:id', 'CompanyController.updateCompany').middleware(['valid:Id,UpdateCompany'])
+  Route.delete('/:id', 'CompanyController.removeCompany').middleware(['valid:Id'])
+})
+  .middleware(['auth:jwtLandlord'])
+  .prefix('api/v1/companies')
+
+/**
+ * Landlord company contacts manage
+ */
+Route.group(() => {
+  Route.get('/', 'CompanyController.getContacts')
+  Route.post('/', 'CompanyController.createContact').middleware(['valid:CreateContact'])
+  Route.put('/:id', 'CompanyController.updateContact').middleware(['valid:Id,UpdateContact'])
+  Route.delete('/:id', 'CompanyController.removeContact').middleware(['valid:Id'])
+})
+  .middleware(['auth:jwtLandlord'])
+  .prefix('api/v1/contacts')
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
