@@ -226,9 +226,11 @@ class MatchController {
       page,
       limit
     )
+
+    const fields = ['buddy']
     const extraFields = filters.commit
-      ? ['email', 'avatar', 'phone', 'firstname', 'secondname']
-      : []
+      ? ['email', 'avatar', 'phone', 'firstname', 'secondname', ...fields]
+      : fields
 
     return response.res(estates.toJSON({ isShort: true, extraFields }))
   }
@@ -245,11 +247,12 @@ class MatchController {
       throw new HttpException('Not found', 404)
     }
 
+    const fields = ['buddy']
     const tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters).paginate(
       page,
       limit
     )
-    const extraFields = filters.commit ? ['email', 'avatar', 'phone'] : []
+    const extraFields = filters.commit ? ['email', 'phone', ...fields] : fields
 
     response.res(tenants.toJSON({ isShort: true, extraFields }))
   }

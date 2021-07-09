@@ -728,6 +728,7 @@ class MatchService {
     } else {
       throw new AppException('Invalid filter params')
     }
+    query.select('_m.buddy')
 
     return query
   }
@@ -766,6 +767,7 @@ class MatchService {
     } else if (commit) {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     }
+    query.select('_m.buddy')
 
     return query
   }
