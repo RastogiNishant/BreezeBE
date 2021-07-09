@@ -723,7 +723,7 @@ class MatchService {
     } else if (commit) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
-        .select('_u.email', '_u.phone', '_u.avatar')
+        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
         .whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')
@@ -739,7 +739,7 @@ class MatchService {
     const query = Tenant.query()
       .select('tenants.*')
       .select('_m.updated_at', '_m.percent as percent', '_m.share')
-      .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
+      .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar', '_u.email', '_u.phone')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
