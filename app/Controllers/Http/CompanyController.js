@@ -6,7 +6,9 @@ class CompanyController {
    *
    */
   async getCompany({ auth, response }) {
-    // TODO
+    const company = await CompanyService.getUserCompany(auth.user.id)
+
+    return response.res(company)
   }
 
   /**
@@ -29,42 +31,65 @@ class CompanyController {
    *
    */
   async updateCompany({ request, auth, response }) {
-    return response.res(request.all())
+    const { id, ...data } = request.all()
+    try {
+      const company = await CompanyService.updateCompany(id, auth.user.id, data)
+      return response.res(company)
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, e.code || 400)
+      }
+      throw e
+    }
   }
 
   /**
    *
    */
   async removeCompany({ request, auth, response }) {
-    return response.res(request.all())
+    const { id } = request.all()
+    await CompanyService.removeCompany(id, auth.user.id)
+
+    return response.res(true)
   }
 
   /**
    *
    */
   async getContacts({ auth, response }) {
-    // TODO
+    const contacts = (await CompanyService.getContacts(auth.user.id)).rows
+
+    response.res(contacts)
   }
 
   /**
    *
    */
   async createContact({ request, auth, response }) {
-    return response.res(request.all())
+    const data = request.all()
+    const contacts = await CompanyService.createContact(data, auth.user.id)
+
+    return response.res(contacts)
   }
 
   /**
    *
    */
   async updateContact({ request, auth, response }) {
-    return response.res(request.all())
+    const { id, ...data } = request.all()
+    const contact = await CompanyService.updateContact(id, auth.user.id, data)
+
+    return response.res(contact)
   }
 
   /**
    *
    */
   async removeContact({ request, auth, response }) {
-    return response.res(request.all())
+    const { id } = request.all()
+    await CompanyService.removeContact(id, auth.user.id)
+
+    return response.res(true)
   }
 }
 
