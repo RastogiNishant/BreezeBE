@@ -1,5 +1,5 @@
-const Company = use('App/models/Company')
-const Contact = use('App/models/Contact')
+const Company = use('App/Models/Company')
+const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 
 class CompanyService {
