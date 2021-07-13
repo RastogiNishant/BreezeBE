@@ -768,9 +768,27 @@ class MatchService {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     }
 
-    query.leftJoin({ _v: 'visits' }, function () {
-      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
-    })
+    query
+      .leftJoin({ _v: 'visits' }, function () {
+        this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+      })
+      .leftJoin({ _mb: 'members' }, function () {
+        this.on('_mb.user_id', '_m.user_id').onIn('_mb.id', function () {
+          this.min('id')
+            .from('members')
+            .where('user_id', Database.raw('_m.user_id'))
+            .whereNot('child', true)
+            .limit(1)
+        })
+      })
+    query.select(
+      '_mb.firstname',
+      '_mb.secondname',
+      '_mb.email',
+      '_mb.phone',
+      '_mb.birthday',
+      '_mb.avatar'
+    )
     query.select('_v.date')
     query.select('_m.buddy')
     query.select('_m.status as status')
