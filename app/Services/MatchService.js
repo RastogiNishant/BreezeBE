@@ -692,11 +692,10 @@ class MatchService {
           this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
         })
     } else if (knock) {
-      query.where({ '_m.status': MATCH_STATUS_KNOCK }).whereNot('_m.buddy', true)
+      query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (invite) {
       query
         .whereIn('_m.status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
-        .where({ '_m.share': false })
         .whereNot('_m.share', true)
     } else if (share) {
       query
@@ -750,9 +749,9 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query.where({ '_m.status': MATCH_STATUS_KNOCK }).whereNot('_m.buddy', true)
+      query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query.where({ '_m.status': MATCH_STATUS_KNOCK, '_m.buddy': true })
+      query.where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
       query.whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
@@ -768,6 +767,7 @@ class MatchService {
     } else if (commit) {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     }
+
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
     })
