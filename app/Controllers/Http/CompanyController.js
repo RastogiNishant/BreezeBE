@@ -1,3 +1,4 @@
+const File = use('App/Classes/File')
 const CompanyService = use('App/Services/CompanyService')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -16,6 +17,14 @@ class CompanyController {
    */
   async createCompany({ request, auth, response }) {
     const data = request.all()
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
+    const files = await File.saveRequestFiles(request, [
+      { field: 'avatar', mime: imageMimes, isPublic: true },
+    ])
+    if (files.avatar) {
+      data.avatar = files.avatar
+    }
+
     try {
       const company = await CompanyService.createCompany(data, auth.user.id)
       return response.res(company)
@@ -32,6 +41,14 @@ class CompanyController {
    */
   async updateCompany({ request, auth, response }) {
     const { id, ...data } = request.all()
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
+    const files = await File.saveRequestFiles(request, [
+      { field: 'avatar', mime: imageMimes, isPublic: true },
+    ])
+    if (files.avatar) {
+      data.avatar = files.avatar
+    }
+
     try {
       const company = await CompanyService.updateCompany(id, auth.user.id, data)
       return response.res(company)
@@ -90,6 +107,16 @@ class CompanyController {
     await CompanyService.removeContact(id, auth.user.id)
 
     return response.res(true)
+  }
+
+  /**
+   *
+   */
+  async getCompanyByLandlord({ request, auth, response }) {
+    const { id } = request.all()
+
+    const company = await CompanyService.getLandlordContacts(id, auth.user.id)
+    return response.res(company)
   }
 }
 

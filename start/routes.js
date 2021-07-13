@@ -308,6 +308,11 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/companies')
 
+Route.get('/api/v1/landlord/:id/company', 'CompanyController.getCompanyByLandlord').middleware([
+  'auth:jwt',
+  'valid:Id',
+])
+
 /**
  * Landlord company contacts manage
  */

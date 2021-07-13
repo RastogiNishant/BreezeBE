@@ -2,6 +2,8 @@ const Company = use('App/Models/Company')
 const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 
+const { MATCH_STATUS_FINISH } = require('../constants')
+
 class CompanyService {
   /**
    *
@@ -95,6 +97,24 @@ class CompanyService {
    */
   static async removeContact(id, userId) {
     return Contact.query().where({ 'contacts.id': id, 'contacts.user_id': userId }).delete()
+  }
+
+  /**
+   *
+   */
+  static async getLandlordContacts(userId, tenantUserId) {
+    return Company.query()
+      .select('companies.*')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.onIn('_m.estate_id', function () {
+          this.select('id').from('estates').where('user_id', userId)
+        })
+          .onIn('_m.user_id', [tenantUserId])
+          .onIn('_m.status', [MATCH_STATUS_FINISH])
+      })
+      .where({ 'companies.user_id': userId })
+      .with('contacts')
+      .first()
   }
 }
 

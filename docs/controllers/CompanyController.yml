@@ -4,6 +4,11 @@ definitions:
     in: path
     type: number
     required: true
+  userPathId:
+    name: id
+    in: path
+    type: number
+    required: true
   contactPathId:
     name: id
     in: path
@@ -50,8 +55,22 @@ definitions:
     name: region
     in: formData
     type: string
+  avatar:
+    name: file
+    in: formData
+    type: file
 
 paths:
+  /api/v1/landlord/{id}/company:
+    get:
+      tags: [company]
+      security: [bearerAuth: []]
+      description: User get landlord contacts
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/userPathId'
+      responses: [200]
+
   /api/v1/companies:
     get:
       tags: [company]
@@ -75,6 +94,7 @@ paths:
         - $ref: '#/definitions/tax_number'
         - $ref: '#/definitions/trade_register_nr'
         - $ref: '#/definitions/umsst'
+        - $ref: '#/definitions/avatar'
       responses: [200]
 
   /api/v1/companies/{id}:
@@ -91,6 +111,7 @@ paths:
         - $ref: '#/definitions/tax_number'
         - $ref: '#/definitions/trade_register_nr'
         - $ref: '#/definitions/umsst'
+        - $ref: '#/definitions/avatar'
       responses: [200]
 
     delete:
