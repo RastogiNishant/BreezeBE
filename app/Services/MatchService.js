@@ -618,7 +618,7 @@ class MatchService {
         estate_id: estateId,
         percent: 0,
         buddy: true,
-        status: MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_NEW,
       })
     }
 
@@ -627,15 +627,10 @@ class MatchService {
     }
 
     // Match exists but without buddy
-    return Database.table('matches')
-      .update({
-        buddy: true,
-        status: match.status === MATCH_STATUS_NEW ? MATCH_STATUS_KNOCK : match.status,
-      })
-      .where({
-        user_id: tenantId,
-        estate_id: estateId,
-      })
+    return Database.table('matches').update({ buddy: true }).where({
+      user_id: tenantId,
+      estate_id: estateId,
+    })
   }
 
   /**
@@ -663,7 +658,7 @@ class MatchService {
       query
         .clearWhere()
         .where({ 'estates.status': STATUS_ACTIVE })
-        .where({ '_m.status': MATCH_STATUS_KNOCK, '_m.buddy': true })
+        .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (like) {
       // All liked estates
       query
@@ -728,6 +723,11 @@ class MatchService {
     } else {
       throw new AppException('Invalid filter params')
     }
+
+    query.leftJoin({ _v: 'visits' }, function () {
+      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+    })
+    query.select('_v.date')
     query.select('_m.buddy')
     query.select('_m.status as status')
 
@@ -768,6 +768,10 @@ class MatchService {
     } else if (commit) {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     }
+    query.leftJoin({ _v: 'visits' }, function () {
+      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+    })
+    query.select('_v.date')
     query.select('_m.buddy')
     query.select('_m.status as status')
 
