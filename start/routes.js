@@ -289,7 +289,10 @@ Route.group(() => {
   // Request confirmation
   Route.post('/request', 'MatchController.requestUserCommit').middleware(['auth:jwtLandlord'])
   // Final confirm
-  Route.post('/confirm', 'MatchController.commitEstateRent').middleware(['auth:jwt'])
+  Route.post('/confirm', 'MatchController.commitEstateRent').middleware([
+    'auth:jwt',
+    'valid:ConfirmRequest',
+  ])
   Route.put('/order', 'MatchController.changeOrder').middleware([
     'auth:jwt,jwtLandlord',
     'valid:ChangeOrder',
