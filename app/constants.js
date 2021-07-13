@@ -289,6 +289,10 @@ const constants = {
   COMPANY_TYPE_HOUSING_COOPERATIVE: 'hostCoop',
   COMPANY_TYPE_LISTED_HOUSING: 'listHost',
 
+  COMPANY_SIZE_SMALL: 'sm',
+  COMPANY_SIZE_MID: 'md',
+  COMPANY_SIZE_LARGE: 'lg',
+
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
 
   MOVE_EXPIRE_JOB: 'moveToExpired',

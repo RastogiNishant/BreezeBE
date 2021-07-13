@@ -59,6 +59,11 @@ definitions:
     name: file
     in: formData
     type: file
+  companySize:
+    name: size
+    in: formData
+    type: string
+    enum: ['sm', 'md', 'lg']
 
 paths:
   /api/v1/landlord/{id}/company:
@@ -95,6 +100,7 @@ paths:
         - $ref: '#/definitions/trade_register_nr'
         - $ref: '#/definitions/umsst'
         - $ref: '#/definitions/avatar'
+        - $ref: '#/definitions/companySize'
       responses: [200]
 
   /api/v1/companies/{id}:
@@ -112,6 +118,7 @@ paths:
         - $ref: '#/definitions/trade_register_nr'
         - $ref: '#/definitions/umsst'
         - $ref: '#/definitions/avatar'
+        - $ref: '#/definitions/companySize'
       responses: [200]
 
     delete:

@@ -14,6 +14,7 @@ class Company extends Model {
       'trade_register_nr',
       'umsst',
       'status',
+      'size',
       'type',
     ]
   }

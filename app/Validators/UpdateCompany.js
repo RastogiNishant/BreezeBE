@@ -10,6 +10,9 @@ const {
   COMPANY_TYPE_MUNICIPAL_HOUSING,
   COMPANY_TYPE_HOUSING_COOPERATIVE,
   COMPANY_TYPE_LISTED_HOUSING,
+  COMPANY_SIZE_SMALL,
+  COMPANY_SIZE_MID,
+  COMPANY_SIZE_LARGE,
 } = require('../constants')
 
 class UpdateCompany extends Base {
@@ -22,6 +25,7 @@ class UpdateCompany extends Base {
       tax_number: yup.string().max(255),
       trade_register_nr: yup.string().max(255),
       umsst: yup.string().max(255),
+      size: yup.string().oneOf([COMPANY_SIZE_SMALL, COMPANY_SIZE_MID, COMPANY_SIZE_LARGE]),
       type: yup
         .string()
         .oneOf([
