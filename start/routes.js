@@ -256,6 +256,7 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
 // Landlord specific routes
 Route.group(() => {
   Route.get('/visit', 'LandlordController.getLordVisits')
+  Route.post('/activate', 'LandlordController.activate')
 })
   .prefix('/api/v1/landlord')
   .middleware(['auth:jwtLandlord'])

@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isArray, isEmpty, findIndex, range } = require('lodash')
+const { get, isEmpty, findIndex, range } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -9,6 +9,7 @@ const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
+const CompanyService = use('App/Services/CompanyService')
 // const MatchService = use('App/Services/MatchService') # DO NOT INCLUDE, cycling dependencies
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
@@ -562,6 +563,7 @@ class EstateService {
    *
    */
   static async publishEstate(estate) {
+    await CompanyService.validateUserContacts(estate.user_id)
     await props({
       delMatches: () => Database.table('matches').where({ estate_id: estate.id }).delete(),
       delLikes: () => Database.table('likes').where({ estate_id: estate.id }).delete(),

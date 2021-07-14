@@ -6,3 +6,11 @@
     description: Get landlord feature visits
     produces: [application/json]
     responses: [200]
+
+/api/v1/landlord/activate:
+  post:
+    tags: [landlord]
+    security: [bearerAuth: []]
+    description: Check is user fill his contacts
+    produces: [application/json]
+    responses: [200]

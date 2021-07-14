@@ -1,7 +1,15 @@
+const { isEmpty } = require('lodash')
+const { map } = require('bluebird')
+
+const { ValidationException } = use('Validator')
 const Company = use('App/Models/Company')
 const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 
+const CreateCompany = require('../Validators/CreateCompany')
+const CreateContact = require('../Validators/CreateContact')
+
+const { wrapValidationError } = require('../Libs/utils.js')
 const { MATCH_STATUS_FINISH } = require('../constants')
 
 class CompanyService {
@@ -115,6 +123,32 @@ class CompanyService {
       .where({ 'companies.user_id': userId })
       .with('contacts')
       .first()
+  }
+
+  /**
+   *
+   */
+  static async validateUserContacts(userId) {
+    const contacts = await Company.query()
+      .where({ 'companies.user_id': userId })
+      .innerJoin({ _ct: 'contacts' }, '_ct.company_id', 'companies.id')
+      .limit(10)
+      .fetch()
+
+    if (isEmpty(contacts.rows)) {
+      const error = new ValidationException()
+      error.messages = [{ field: null, validation: 'Contacts not exists' }]
+      throw error
+    }
+
+    const schema = CreateCompany.schema().concat(CreateContact.schema())
+    try {
+      await map(contacts.rows, (i) => {
+        return schema.validate(i)
+      })
+    } catch (e) {
+      throw wrapValidationError(e)
+    }
   }
 }
 

@@ -4,6 +4,7 @@ const uuid = require('uuid')
 const moment = require('moment')
 
 const Event = use('Event')
+const Logger = use('Logger')
 const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
@@ -12,7 +13,6 @@ const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
-const Logger = use('Logger')
 
 const {
   STATUS_ACTIVE,
@@ -108,7 +108,6 @@ class EstateController {
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
-    // TODO: validate publish ready
     if (!estate.avail_duration) {
       throw new HttpException('Estates is not completely filled', 400)
     }
@@ -119,7 +118,16 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
-        await EstateService.publishEstate(estate)
+        // Validate is Landlord fulfilled contacts
+        try {
+          await EstateService.publishEstate(estate)
+        } catch (e) {
+          if (e.name === 'ValidationException') {
+            Logger.error(e)
+            throw new HttpException('User not activated', 409)
+          }
+          throw e
+        }
       } else {
         throw new HttpException('Invalid estate type', 400)
       }
