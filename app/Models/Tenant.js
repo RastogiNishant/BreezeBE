@@ -4,7 +4,7 @@ const Database = use('Database')
 const Model = require('./BaseModel')
 const { isString } = require('lodash')
 
-const { STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE, AMENITIES_OPTIONS } = require('../constants')
 
 class Tenant extends Model {
   static get columns() {
@@ -167,6 +167,21 @@ class Tenant extends Model {
    */
   getIncome() {
     return parseFloat(this.income) || 0
+  }
+
+  /**
+   *
+   */
+  static async createItem(data) {
+    const options = await Database.table('options')
+      .select('id')
+      .whereIn('title', AMENITIES_OPTIONS)
+      .limit(AMENITIES_OPTIONS.length)
+
+    return super.createItem({
+      ...data,
+      options: (options || []).map((i) => i.id),
+    })
   }
 }
 

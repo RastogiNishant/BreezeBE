@@ -303,14 +303,24 @@ const constants = {
   TENANT_TABS_TOP: 'top',
   TENANT_TABS_COMMIT: 'commit',
 
-  LANDLORD_TABS_KNOCK : 'knock',
-  LANDLORD_TABS_BUDDY : 'buddy',
-  LANDLORD_TABS_INVITE : 'invite',
-  LANDLORD_TABS_VISIT : 'visit',
-  LANDLORD_TABS_TOP : 'top',
-  LANDLORD_TABS_COMMIT : 'commit',
+  LANDLORD_TABS_KNOCK: 'knock',
+  LANDLORD_TABS_BUDDY: 'buddy',
+  LANDLORD_TABS_INVITE: 'invite',
+  LANDLORD_TABS_VISIT: 'visit',
+  LANDLORD_TABS_TOP: 'top',
+  LANDLORD_TABS_COMMIT: 'commit',
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+
+  AMENITIES_OPTIONS: [
+    'elevator',
+    'cellar',
+    'parking_space',
+    'apt_balcony',
+    'furnished',
+    'bathtub',
+    'fitted_kitchen',
+  ],
 
   MOVE_EXPIRE_JOB: 'moveToExpired',
 }
