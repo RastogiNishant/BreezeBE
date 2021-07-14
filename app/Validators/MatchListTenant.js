@@ -10,7 +10,7 @@ class MatchListTenant extends Base {
     yup.object().shape({
       filters: yup.lazy((value) => {
         const itemsCount = reduce(value, (n, v, k) => (v ? n.concat(k) : n), []).length
-        if (itemsCount !== 1) {
+        if (itemsCount > 1) {
           return yup.number().typeError('Should be selected ony one filter item')
         }
 

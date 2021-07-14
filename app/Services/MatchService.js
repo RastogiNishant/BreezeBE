@@ -28,6 +28,19 @@ const {
   PETS_NO,
   PETS_SMALL,
   PETS_ANY,
+  TENANT_TABS_BUDDY,
+  TENANT_TABS_LIKE,
+  TENANT_TABS_KNOCK,
+  TENANT_TABS_INVITE,
+  TENANT_TABS_SHARE,
+  TENANT_TABS_TOP,
+  TENANT_TABS_COMMIT,
+  LANDLORD_TABS_KNOCK,
+  LANDLORD_TABS_BUDDY,
+  LANDLORD_TABS_INVITE,
+  LANDLORD_TABS_VISIT,
+  LANDLORD_TABS_TOP,
+  LANDLORD_TABS_COMMIT,
 } = require('../constants')
 
 const MATCH_PERCENT_PASS = 40
@@ -903,6 +916,78 @@ class MatchService {
       await dropSequence(sequence)
       await Database.raw(`SET session_replication_role = DEFAULT`)
     }
+  }
+
+  /**
+   *
+   */
+  static async getTenantLastTab(userId) {
+    // buddy, like, dislike, knock, invite, share, top, commit
+    const data = await Database.table('matches')
+      .select('status')
+      .select(Database.raw(`bool_or(buddy) as buddy`))
+      .select(Database.raw(`bool_or("share") as share`))
+      .where({ user_id: userId })
+      .groupBy('status')
+      .orderBy('status', 'desc')
+      .first()
+    if (!data) {
+      return TENANT_TABS_KNOCK
+    }
+
+    if (data.status === MATCH_STATUS_NEW) {
+      if (data.buddy) {
+        return TENANT_TABS_BUDDY
+      } else {
+        return TENANT_TABS_KNOCK
+      }
+    } else if ([MATCH_STATUS_INVITE, MATCH_STATUS_VISIT].includes(data.status)) {
+      return TENANT_TABS_INVITE
+    } else if (data.status === MATCH_STATUS_SHARE) {
+      return TENANT_TABS_SHARE
+    } else if (data.status === MATCH_STATUS_TOP) {
+      return TENANT_TABS_TOP
+    } else if ([MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH].includes(data.status)) {
+      return TENANT_TABS_COMMIT
+    } else {
+      return TENANT_TABS_LIKE
+    }
+  }
+
+  /**
+   *
+   */
+  static async getLandlordLastTab(estate_id) {
+    // filters = { knock, buddy, invite, visit, top, commit }
+    const data = await Database.table('matches')
+      .select('status')
+      .select(Database.raw(`bool_or(buddy) as buddy`))
+      .select(Database.raw(`bool_or("share") as share`))
+      .where({ estate_id: estate_id })
+      .groupBy('status')
+      .orderBy('status', 'desc')
+      .first()
+    if (!data) {
+      return LANDLORD_TABS_KNOCK
+    }
+
+    if (data.status === MATCH_STATUS_NEW) {
+      if (data.buddy) {
+        return LANDLORD_TABS_BUDDY
+      } else {
+        return LANDLORD_TABS_KNOCK
+      }
+    } else if (data.status === MATCH_STATUS_INVITE) {
+      return LANDLORD_TABS_INVITE
+    } else if ([MATCH_STATUS_SHARE, MATCH_STATUS_VISIT].includes(data.status)) {
+      return LANDLORD_TABS_VISIT
+    } else if (data.status === MATCH_STATUS_TOP) {
+      return LANDLORD_TABS_TOP
+    } else if ([MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH].includes(data.status)) {
+      return LANDLORD_TABS_COMMIT
+    }
+
+    return LANDLORD_TABS_KNOCK
   }
 }
 

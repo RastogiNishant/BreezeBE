@@ -293,6 +293,23 @@ const constants = {
   COMPANY_SIZE_MID: 'md',
   COMPANY_SIZE_LARGE: 'lg',
 
+  // Tabs matches list
+  TENANT_TABS_BUDDY: 'buddy',
+  TENANT_TABS_LIKE: 'like',
+  TENANT_TABS_DISLIKE: 'dislike',
+  TENANT_TABS_KNOCK: 'knock',
+  TENANT_TABS_INVITE: 'invite',
+  TENANT_TABS_SHARE: 'share',
+  TENANT_TABS_TOP: 'top',
+  TENANT_TABS_COMMIT: 'commit',
+
+  LANDLORD_TABS_KNOCK : 'knock',
+  LANDLORD_TABS_BUDDY : 'buddy',
+  LANDLORD_TABS_INVITE : 'invite',
+  LANDLORD_TABS_VISIT : 'visit',
+  LANDLORD_TABS_TOP : 'top',
+  LANDLORD_TABS_COMMIT : 'commit',
+
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
 
   MOVE_EXPIRE_JOB: 'moveToExpired',

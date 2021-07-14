@@ -5,7 +5,7 @@ const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
-const { reduce } = require('lodash')
+const { reduce, filter, isEmpty } = require('lodash')
 
 const { ROLE_USER, ROLE_LANDLORD } = require('../../constants')
 
@@ -222,6 +222,17 @@ class MatchController {
     const user = auth.user
     // filters: { buddy, like, dislike, knock, invite, share, top, commit },
     const { filters, page, limit } = request.all()
+    // If no tabs, select latest active tab
+    const activeFilters = reduce(filters, (n, v, k) => (v ? n.concat(k) : n), [])
+    let currentTab
+    if (isEmpty(activeFilters)) {
+      const tab = await MatchService.getTenantLastTab(auth.user.id)
+      filters[tab] = true
+      currentTab = tab
+    } else {
+      currentTab = activeFilters[0]
+    }
+
     const estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).paginate(
       page,
       limit
@@ -232,7 +243,10 @@ class MatchController {
       ? ['email', 'avatar', 'phone', 'firstname', 'secondname', ...fields]
       : fields
 
-    return response.res(estates.toJSON({ isShort: true, extraFields }))
+    return response.res({
+      ...estates.toJSON({ isShort: true, extraFields }),
+      tab: currentTab,
+    })
   }
 
   /**
@@ -246,15 +260,26 @@ class MatchController {
     if (!estate) {
       throw new HttpException('Not found', 404)
     }
-
-    const fields = ['buddy', 'date', 'user_id']
+    const activeFilters = reduce(filters, (n, v, k) => (v ? n.concat(k) : n), [])
+    let currentTab
+    if (isEmpty(activeFilters)) {
+      const tab = await MatchService.getLandlordLastTab(estate_id)
+      filters[tab] = true
+      currentTab = tab
+    } else {
+      currentTab = activeFilters[0]
+    }
     const tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters).paginate(
       page,
       limit
     )
+    const fields = ['buddy', 'date', 'user_id']
     const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
-    response.res(tenants.toJSON({ isShort: true, extraFields }))
+    return response.res({
+      ...tenants.toJSON({ isShort: true, extraFields }),
+      tab: currentTab,
+    })
   }
 
   /**
