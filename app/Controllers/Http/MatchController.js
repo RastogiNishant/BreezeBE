@@ -227,7 +227,7 @@ class MatchController {
       limit
     )
 
-    const fields = ['buddy', 'date']
+    const fields = ['buddy', 'date', 'user_id']
     const extraFields = filters.commit
       ? ['email', 'avatar', 'phone', 'firstname', 'secondname', ...fields]
       : fields
@@ -247,7 +247,7 @@ class MatchController {
       throw new HttpException('Not found', 404)
     }
 
-    const fields = ['buddy', 'date']
+    const fields = ['buddy', 'date', 'user_id']
     const tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters).paginate(
       page,
       limit

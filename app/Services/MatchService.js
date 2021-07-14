@@ -726,9 +726,7 @@ class MatchService {
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
     })
-    query.select('_v.date')
-    query.select('_m.buddy')
-    query.select('_m.status as status')
+    query.select('estates.user_id', '_m.status as status', '_m.buddy', '_v.date')
 
     return query
   }
@@ -787,11 +785,12 @@ class MatchService {
       '_mb.email',
       '_mb.phone',
       '_mb.birthday',
-      '_mb.avatar'
+      '_mb.avatar',
+      '_v.date',
+      '_m.buddy',
+      '_m.status as status',
+      '_m.user_id'
     )
-    query.select('_v.date')
-    query.select('_m.buddy')
-    query.select('_m.status as status')
 
     return query
   }
