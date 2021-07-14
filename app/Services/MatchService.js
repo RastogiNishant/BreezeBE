@@ -751,7 +751,7 @@ class MatchService {
     const query = Tenant.query()
       .select('tenants.*')
       .select('_m.updated_at', '_m.percent as percent', '_m.share')
-      .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar', '_u.email', '_u.phone')
+      .select('_u.email', '_u.phone')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -795,8 +795,6 @@ class MatchService {
     query.select(
       '_mb.firstname',
       '_mb.secondname',
-      '_mb.email',
-      '_mb.phone',
       '_mb.birthday',
       '_mb.avatar',
       '_mb.last_address',
