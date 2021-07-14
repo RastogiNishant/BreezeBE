@@ -252,7 +252,7 @@ class MatchController {
       page,
       limit
     )
-    const extraFields = filters.commit ? ['email', 'phone', ...fields] : fields
+    const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
     response.res(tenants.toJSON({ isShort: true, extraFields }))
   }

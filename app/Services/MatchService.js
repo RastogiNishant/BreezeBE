@@ -786,6 +786,7 @@ class MatchService {
       '_mb.phone',
       '_mb.birthday',
       '_mb.avatar',
+      '_mb.last_address',
       '_v.date',
       '_m.buddy',
       '_m.status as status',
