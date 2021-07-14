@@ -1,3 +1,4 @@
+const yup = require('yup')
 const { isEmpty } = require('lodash')
 const { map } = require('bluebird')
 
@@ -6,11 +7,22 @@ const Company = use('App/Models/Company')
 const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 
-const CreateCompany = require('../Validators/CreateCompany')
-const CreateContact = require('../Validators/CreateContact')
+// const CreateCompany = require('../Validators/CreateCompany')
+// const CreateContact = require('../Validators/CreateContact')
 
 const { wrapValidationError } = require('../Libs/utils.js')
-const { MATCH_STATUS_FINISH } = require('../constants')
+const {
+  MATCH_STATUS_FINISH,
+  COMPANY_TYPE_PRIVATE,
+  COMPANY_TYPE_PROPERTY_MANAGER,
+  COMPANY_TYPE_PRIVATE_HOUSING,
+  COMPANY_TYPE_MUNICIPAL_HOUSING,
+  COMPANY_TYPE_HOUSING_COOPERATIVE,
+  COMPANY_TYPE_LISTED_HOUSING,
+  COMPANY_SIZE_SMALL,
+  COMPANY_SIZE_MID,
+  COMPANY_SIZE_LARGE,
+} = require('../constants')
 
 class CompanyService {
   /**
@@ -141,7 +153,32 @@ class CompanyService {
       throw error
     }
 
-    const schema = CreateCompany.schema().concat(CreateContact.schema())
+    const schema = yup.object().shape({
+      name: yup.string().max(255).required(),
+      address: yup.string().max(255).required(),
+      size: yup.string().oneOf([COMPANY_SIZE_SMALL, COMPANY_SIZE_MID, COMPANY_SIZE_LARGE]),
+      type: yup
+        .string()
+        .oneOf([
+          COMPANY_TYPE_PRIVATE,
+          COMPANY_TYPE_PROPERTY_MANAGER,
+          COMPANY_TYPE_PRIVATE_HOUSING,
+          COMPANY_TYPE_MUNICIPAL_HOUSING,
+          COMPANY_TYPE_HOUSING_COOPERATIVE,
+          COMPANY_TYPE_LISTED_HOUSING,
+        ])
+        .required(),
+      email: yup.string().email().lowercase().max(255).required(),
+      full_name: yup.string().min(2).max(255).required(),
+      phone: yup
+        .string()
+        .transform((v) => {
+          return String(v).replace(/[^\d]/gi, '')
+        })
+        .min(7)
+        .max(255)
+        .required(),
+    })
     try {
       await map(contacts.rows, (i) => {
         return schema.validate(i)
