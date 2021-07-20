@@ -1,6 +1,6 @@
 const { URL, format } = require('url')
 const bent = require('bent')
-const { each } = require('lodash')
+const { each, isEmpty } = require('lodash')
 
 class Request {
   constructor(rootUrl) {
@@ -27,19 +27,12 @@ class Request {
     // console.log({ url, data, headers, method, type, status })
     if (method === 'GET') {
       url = this.constructor.getUri(`${this.rootUrl}/${url}`, data)
-      data = {}
+      data = isEmpty(data) ? null : data
     } else {
       url = this.constructor.getUri(`${this.rootUrl}/${url}`, {})
     }
 
-    return bent(
-      method,
-      type,
-      status
-    )(url, data).catch((e) => {
-      console.log(e)
-      throw e
-    })
+    return bent(method, type, status, headers)(url, data, headers)
   }
 }
 

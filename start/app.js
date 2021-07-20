@@ -29,6 +29,7 @@ providers.push(path.join(__dirname, '..', 'providers', 'GoogleOAuthProvider'))
 providers.push(path.join(__dirname, '..', 'providers', 'Notifications/Provider'))
 providers.push(path.join(__dirname, '..', 'providers', 'Static/Provider'))
 providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
+providers.push(path.join(__dirname, '..', 'providers', 'Localize/Provider'))
 
 providers.push(path.join(__dirname, '..', 'providers', 'GeoAPIProvider'))
 providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))

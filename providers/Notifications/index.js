@@ -14,17 +14,22 @@ class Notifications {
     })
   }
 
+  /**
+   *
+   */
   static isValidToken(token) {
     return isString(token) && token.length > 64
   }
 
+  /**
+   *
+   */
   async send(tokens, data) {
     tokens = isArray(tokens) ? tokens : [tokens]
     tokens.filter((i) => {
       const isValid = Notifications.isValidToken(i)
-      if (!isValid) {
-        console.log(`Invalid token: ${i}`)
-      }
+      !isValid && console.log(`Invalid token: ${i}`)
+
       return isValid
     })
 
@@ -39,11 +44,9 @@ class Notifications {
         (n, v, k) => {
           if (isDate(v)) {
             return { ...n, [k]: v.toISOString() }
-          }
-          if (isArray(v)) {
+          } else if (isArray(v)) {
             return { ...n, [k]: v.map((i) => dataToString(i)) }
-          }
-          if (isObject(v)) {
+          } else if (isObject(v)) {
             return { ...n, [k]: dataToString(v) }
           }
 

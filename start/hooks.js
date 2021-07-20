@@ -30,6 +30,10 @@ hooks.after.providersBooted(async () => {
     await Static.init()
   }
 
+  // Load i18n dictionaries
+  const Localize = use('Localize')
+  await Localize.init()
+
   if (!Helpers.isAceCommand()) {
     const Queue = use('Queue')
     await Queue.init()
