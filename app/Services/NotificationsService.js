@@ -4,6 +4,7 @@ const { uniqueId } = require('lodash')
 
 /** @type {typeof import('/providers/Notifications')} */
 const Notifications = use('Notifications')
+const l = use('Localize')
 const uTime = require('moment')().format('X')
 
 class NotificationsService {
@@ -49,14 +50,14 @@ class NotificationsService {
   }
 
   /**
-   * notification_prospect_fill_profile
+   * notification_landlord_new_property
    */
-  static async sendProspectFillProfile() {
+  static async sendLandlordNewProperty() {
     const tokens = []
-    const TYPE = 'notification_prospect_fill_profile'
+    const TYPE = 'notification_landlord_new_property'
     return NotificationsService.sendNotification(tokens, TYPE, {
-      title: "Let's start knocking",
-      body: 'Complete your profile & preferences\nYou will be notified about matches',
+      title: l.get('landlord.notification.event.no_prop_profile'),
+      body: l.get('landlord.notification.tip.no_prop_profile'),
       data: {},
     })
   }

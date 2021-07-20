@@ -317,6 +317,20 @@ class UserService {
 
     return !!result
   }
+
+  /**
+   *
+   */
+  static async switchDeviceToken(id, email) {
+    await Database.raw(
+      'UPDATE users SET device_token = (SELECT device_token FROM users WHERE email = ? AND id != ? LIMIT 1) WHERE id = ?',
+      [email, id, id]
+    )
+    await Database.raw('UPDATE users SET device_token = NULL WHERE email = ? AND id != ?', [
+      email,
+      id,
+    ])
+  }
 }
 
 module.exports = UserService

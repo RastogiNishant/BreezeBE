@@ -105,8 +105,9 @@ class AccountController {
       throw new HttpException(message, 401)
     }
 
+    await User.query().where({ email }).update({ device_token: null })
     if (device_token) {
-      await User.query().where('email', email).update({ device_token })
+      await User.query().where({ id: user.id }).update({ device_token })
     }
 
     return response.res(token)
@@ -256,6 +257,8 @@ class AccountController {
       throw new HttpException(e.message, 403)
     }
     const token = await authenticator.generate(userTarget)
+    // Switch device_token
+    await UserService.switchDeviceToken(userTarget.id, userTarget.email)
 
     response.res(token)
   }
