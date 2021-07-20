@@ -38,7 +38,7 @@ Route.get('/', () => {
 
 Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'valid:SignUp'])
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
-Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt'])
+Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
