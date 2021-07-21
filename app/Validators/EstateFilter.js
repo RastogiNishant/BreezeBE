@@ -11,7 +11,6 @@ class EstateFilter extends Base {
     yup.object().shape({
       query: yup.string().min(2),
       status: yup.lazy((value) => {
-        console.log('validate', value)
         if (isArray(value)) {
           return yup
             .array()
