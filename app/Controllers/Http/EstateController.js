@@ -230,7 +230,6 @@ class EstateController {
         b.where('status', STATUS_ACTIVE).with('images')
       })
       .where('id', id)
-      .where('status', STATUS_ACTIVE)
       .first()
 
     if (!estate) {
