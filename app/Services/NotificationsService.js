@@ -1,6 +1,6 @@
 'use strict'
 
-const { uniqueId } = require('lodash')
+const { uniqueId, isEmpty } = require('lodash')
 
 /** @type {typeof import('/providers/Notifications')} */
 const Notifications = use('Notifications')
@@ -27,9 +27,7 @@ class NotificationsService {
         messageId: uniqueId(`m_${uTime}_`),
         body,
         title,
-        payload: {
-          ...data,
-        },
+        payload: isEmpty(data) ? '' : data,
       },
     }
 
@@ -53,7 +51,9 @@ class NotificationsService {
    * notification_landlord_new_property
    */
   static async sendLandlordNewProperty() {
-    const tokens = []
+    // const tokens = [
+    //   'ctT0VRPoSw2KuCaX2MOfT-:APA91bHyL-1maKPlngJ87BPje9HGSgHkSND2JR8Ynn10Hc4kkdGTkfCJssmqQv-o2up_v4lWcrlIPwJRH7RLmJgH3RnXCxpwTUTdHse3bBkSDSwTtYIXHLs0xSNPBsJ4SOI5NU2hmaZJ',
+    // ]
     const TYPE = 'notification_landlord_new_property'
     return NotificationsService.sendNotification(tokens, TYPE, {
       title: l.get('landlord.notification.event.no_prop_profile'),

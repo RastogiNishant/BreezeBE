@@ -55,7 +55,7 @@ class Localization {
    *
    */
   get(key, locale = this.locales[0]) {
-    return get(this._data, `${locale}.${key}`)
+    return get(this._data, [locale, key, 'message'], key)
   }
 }
 
