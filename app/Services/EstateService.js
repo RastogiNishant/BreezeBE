@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range } = require('lodash')
+const { get, isEmpty, findIndex, range, isArray } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -84,7 +84,7 @@ class EstateService {
     }
 
     if (params.status) {
-      query.where('estates.status', params.status)
+      query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
 
     return query.orderBy('estates.id', 'desc')
