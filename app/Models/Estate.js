@@ -269,7 +269,7 @@ class Estate extends Model {
     await this.updateItem(
       {
         status: STATUS_ACTIVE,
-        available_date: moment().add('hours', this.avail_duration).toDate(),
+        available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
       true
     )

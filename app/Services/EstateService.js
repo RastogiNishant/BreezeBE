@@ -10,6 +10,7 @@ const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
+const NoticeService = use('App/Services/NoticeService')
 // const MatchService = use('App/Services/MatchService') # DO NOT INCLUDE, cycling dependencies
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
@@ -550,6 +551,8 @@ class EstateService {
         .transacting(trx)
       await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
       await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
+
+      await NoticeService.landLandlordEstateExpired(estateIds)
     } catch (e) {
       await trx.rollback()
       Logger.error(e)

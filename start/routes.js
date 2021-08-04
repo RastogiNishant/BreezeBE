@@ -144,6 +144,18 @@ Route.group(() => {
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
 
+// Change visits statuses
+Route.group(() => {
+  Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([
+    'auth:jwtLandlord',
+    'valid:UpdateVisitStatusLord',
+  ])
+  Route.put('/tenant', 'MatchController.updateVisitTimeslotTenant').middleware([
+    'auth:jwt',
+    'valid:UpdateVisitStatusTenant',
+  ])
+}).prefix('/api/v1/visit')
+
 // Timeslots for tenant
 Route.group(() => {
   Route.get('/:estate_id/slots/free', 'EstateController.getEstateFreeTimeslots').middleware([

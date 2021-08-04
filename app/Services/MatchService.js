@@ -3,12 +3,12 @@ const moment = require('moment')
 const { get, isNumber, isEmpty, intersection } = require('lodash')
 const { props } = require('bluebird')
 
-const Logger = use('Logger')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const EstateService = use('App/Services/EstateService')
+const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 
@@ -439,7 +439,7 @@ class MatchService {
       user_id: userId,
       estate_id: estateId,
     })
-    // TODO: notification to tenant, got invite
+    await NoticeService.userInvite(estateId, userId)
   }
 
   /**
@@ -524,6 +524,12 @@ class MatchService {
       user_id: userId,
       estate_id: estateId,
     })
+
+    // Calc booked timeslots and send notification if all booked
+    const { total, booked } = await MatchService.getEstateSlotsStat(estateId)
+    if (booked === total) {
+      await NoticeService.landlordTimeslotsBooked(estateId, total, booked)
+    }
   }
 
   /**
@@ -594,24 +600,29 @@ class MatchService {
    *
    */
   static async requestFinalConfirm(estateId, tenantId) {
-    await Database.table('matches').update({ status: MATCH_STATUS_COMMIT }).where({
+    const result = await Database.table('matches').update({ status: MATCH_STATUS_COMMIT }).where({
       user_id: tenantId,
       estate_id: estateId,
       status: MATCH_STATUS_TOP,
     })
-    // TODO: notification final commit request
+
+    await NoticeService.prospectRequestConfirm(estateId, tenantId)
   }
 
   /**
    * Tenant confirmed final request
    */
   static async finalConfirm(estateId, tenantId) {
-    await Database.table('matches').update({ status: MATCH_STATUS_FINISH }).where({
-      user_id: tenantId,
-      estate_id: estateId,
-      status: MATCH_STATUS_COMMIT,
-    })
-    // TODO: remove rest matches, estates rent confirmed
+    await Database.table('matches')
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+        status: MATCH_STATUS_COMMIT,
+      })
+      .update({ status: MATCH_STATUS_FINISH })
+
+    // remove another users matches for this estate
+    await NoticeService.estateFinalConfirm(estateId, tenantId)
   }
 
   /**
@@ -986,6 +997,59 @@ class MatchService {
     }
 
     return LANDLORD_TABS_KNOCK
+  }
+
+  /**
+   *
+   */
+  static async getEstateSlotsStat(estateId) {
+    // All available slots for estate
+    const getAvailableSlots = () => {
+      return Database.select('slot_length', 'start_at', 'end_at')
+        .table('time_slots')
+        .where('estate_id', estateId)
+    }
+
+    // Booked slots for estate
+    const getBookedSlots = async () => {
+      const data = await Database.table('visits').count('*').where('estate_id', estateId).first()
+      return parseInt(data.count)
+    }
+
+    // Get data
+    const { slots, bookedSlotsCount } = await props({
+      slots: getAvailableSlots(),
+      bookedSlotsCount: getBookedSlots(),
+    })
+
+    // Calculate sum of all available slots
+    const totalSlotsCount = slots.reduce((n, { slot_length, start_at, end_at }) => {
+      return n + Math.floor(moment.utc(end_at).diff(moment.utc(start_at), 'minutes') / slot_length)
+    }, 0)
+
+    return { total: totalSlotsCount, booked: bookedSlotsCount }
+  }
+
+  /**
+   *
+   */
+  static async updateVisitStatus(estateId, userId, data) {
+    await Database.table('visits')
+      .where({ estate_id: estateId, user_id: userId })
+      .where('date', '<=', moment().format(DATE_FORMAT))
+      .update(data)
+  }
+
+  /**
+   *
+   */
+  static async updateVisitStatusLandlord(estateId, data) {
+    const currentDay = moment().startOf('day')
+    await Database.table('visits')
+      .where({ estate_id: estateId })
+      .where('date', '<=', currentDay.format(DATE_FORMAT))
+      .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+      .update(data)
   }
 }
 

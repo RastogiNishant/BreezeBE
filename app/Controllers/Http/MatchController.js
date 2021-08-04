@@ -2,19 +2,23 @@
 
 const Logger = use('Logger')
 const MatchService = use('App/Services/MatchService')
+const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
-const { reduce, filter, isEmpty } = require('lodash')
+const { reduce, isEmpty } = require('lodash')
 
-const { ROLE_USER, ROLE_LANDLORD } = require('../../constants')
+const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE } = require('../../constants')
 
 class MatchController {
   /**
    *
    */
   async getOwnEstate(estateId, userId) {
-    const estate = await EstateService.getActiveById(estateId, { user_id: userId })
+    const estate = await Estate.query()
+      .where({ id: estateId, user_id: userId })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .first()
     if (!estate) {
       throw new HttpException('Estate not found', 404)
     }
@@ -132,6 +136,38 @@ class MatchController {
       }
       throw e
     }
+  }
+
+  /**
+   *
+   */
+  async updateVisitTimeslotLandlord({ request, auth, response }) {
+    const { estate_id, status, delay = null } = request.all()
+    const estate = await this.getOwnEstate(estate_id, auth.user.id)
+    if (!estate) {
+      throw HttpException('Invalid estate', 404)
+    }
+
+    await MatchService.updateVisitStatusLandlord(estate_id, {
+      lord_status: status,
+      lord_delay: delay,
+    })
+
+    return response.res(true)
+  }
+
+  /**
+   *
+   */
+  async updateVisitTimeslotTenant({ request, auth, response }) {
+    const { estate_id, status, delay = null } = request.all()
+
+    await MatchService.updateVisitStatus(estate_id, auth.user.id, {
+      tenant_status: status,
+      tenant_delay: delay,
+    })
+
+    return response.res(true)
   }
 
   /**

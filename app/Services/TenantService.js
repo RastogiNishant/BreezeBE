@@ -32,6 +32,7 @@ const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
   MATCH_STATUS_NEW,
+  ERROR_USER_INCOME_EXPIRE,
 } = require('../constants')
 
 class TenantService {
@@ -134,7 +135,7 @@ class TenantService {
     // Check is user has income proofs for last 3 month
     const hasUnconfirmedProofs = !!counts.find((i) => parseInt(i.income_proofs_count) < 3)
     if (hasUnconfirmedProofs) {
-      throw new AppException('Member has unconfirmed proofs')
+      throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
 
     const getRequiredTenantData = (tenantId) => {

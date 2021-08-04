@@ -17,6 +17,26 @@ definitions:
     in: path
     type: number
     required: true
+  visitEstateId:
+    name: estate_id
+    in: formData
+    type: number
+    required: true
+  visitUserId:
+    name: user_id
+    in: formData
+    type: number
+    required: true
+  visitStatus:
+    name: status
+    in: formData
+    type: string
+    enum: ['pre', 'confirm', 'reject', 'delay']
+    required: true
+  delay:
+    name: delay
+    in: formData
+    type: number
 
 paths:
   /api/v1/login:
@@ -257,4 +277,28 @@ paths:
       produces: [application/json]
       parameters:
         - $ref: '#/definitions/pathUserId'
+      responses: [200]
+
+  /api/v1/visit/tenant:
+    put:
+      security: [bearerAuth: []]
+      tags: [visit]
+      description: Update Tenant/Landlord visit status
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/visitEstateId'
+        - $ref: '#/definitions/visitStatus'
+        - $ref: '#/definitions/delay'
+      responses: [200]
+
+  /api/v1/visit/landlord:
+    put:
+      security: [bearerAuth: []]
+      tags: [visit]
+      description: Update Tenant/Landlord visit status
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/visitEstateId'
+        - $ref: '#/definitions/visitStatus'
+        - $ref: '#/definitions/delay'
       responses: [200]

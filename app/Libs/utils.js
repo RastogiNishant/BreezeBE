@@ -1,5 +1,5 @@
 const url = require('url')
-const { isString, get, isEmpty } = require('lodash')
+const { isString, get, isEmpty, capitalize } = require('lodash')
 const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
@@ -68,6 +68,10 @@ const getAuthByRole = (auth, role) => {
   }
 }
 
+const capt = (str) => {
+  return String(str).split(' ').map(capitalize).join(' ')
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -75,4 +79,5 @@ module.exports = {
   getHash,
   getGeoRange,
   getAuthByRole,
+  capitalize: capt,
 }

@@ -1,12 +1,12 @@
 'use strict'
 
 const uuid = require('uuid')
-const { get, isArray, isEmpty } = require('lodash')
+const moment = require('moment')
+const { get, isArray, isEmpty, uniq } = require('lodash')
 const Promise = require('bluebird')
 
 const Role = use('Role')
 const Env = use('Env')
-const Event = use('Event')
 const Database = use('Database')
 const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
@@ -19,9 +19,13 @@ const { getHash } = require('../Libs/utils.js')
 const {
   STATUS_NEED_VERIFY,
   STATUS_ACTIVE,
+  STATUS_DRAFT,
+  STATUS_EXPIRE,
   ROLE_USER,
   ROLE_LANDLORD,
   MATCH_STATUS_FINISH,
+  DATE_FORMAT,
+  DEFAULT_LANG,
 } = require('../constants')
 
 class UserService {
@@ -330,6 +334,77 @@ class UserService {
       email,
       id,
     ])
+  }
+
+  /**
+   *
+   */
+  static async getDeviceTokens(userIds) {
+    if (isEmpty(userIds)) {
+      return []
+    }
+
+    const data = await Database.table('users')
+      .select('device_token')
+      .whereIn('id', userIds)
+      .whereNot('device_token', '')
+      .whereNot('device_token', null)
+
+    return data.map((i) => i.device_token)
+  }
+
+  /**
+   *
+   */
+  static async getTokenWithLocale(userIds, limit = 500) {
+    if (isEmpty(userIds)) {
+      return []
+    }
+    userIds = uniq(userIds)
+
+    const data = await Database.table('users')
+      .select('device_token', Database.raw(`COALESCE(lang, ?) AS lang`, DEFAULT_LANG), 'id')
+      .whereIn('id', userIds)
+      .whereNot('device_token', '')
+      .whereNot('device_token', null)
+      .limit(Math.min(userIds.length, limit))
+
+    return data
+  }
+
+  /**
+   *
+   */
+  static async getNewestInactiveLandlordsIds() {
+    return Database.select('_u.id', '_u.lang')
+      .table({ _u: 'users' })
+      .leftJoin({ _e: 'estates' }, function () {
+        this.on('_e.user_id', '_u.id').onIn('_e.status', [STATUS_ACTIVE])
+      })
+      .where({ '_u.role': ROLE_LANDLORD, '_u.status': STATUS_ACTIVE })
+      .whereNull('_e.id')
+      .where('_u.created_at', '>=', moment().add(-1, 'days').format(DATE_FORMAT))
+      .limit(500)
+  }
+
+  /**
+   *
+   */
+  static async get7DaysInactiveLandlord() {
+    return Database.select('_u.id', '_u.lang')
+      .table({ _u: 'users' })
+      .leftJoin({ _e: 'estates' }, function () {
+        this.on('_e.user_id', '_u.id').onIn('_e.status', [
+          STATUS_ACTIVE,
+          STATUS_DRAFT,
+          STATUS_EXPIRE,
+        ])
+      })
+      .where({ '_u.role': ROLE_LANDLORD, '_u.status': STATUS_ACTIVE })
+      .whereNull('_e.id')
+      .where('_u.created_at', '<=', moment().add(-7, 'days').format(DATE_FORMAT))
+      .where('_u.created_at', '>=', moment().add(-8, 'days').format(DATE_FORMAT))
+      .limit(500)
   }
 }
 

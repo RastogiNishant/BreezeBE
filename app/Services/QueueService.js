@@ -1,5 +1,6 @@
 const Queue = use('Queue')
 const Logger = use('Logger')
+const NoticeService = use('App/Services/NoticeService')
 const EstateService = use('App/Services/EstateService')
 const TenantService = use('App/Services/TenantService')
 
@@ -7,8 +8,27 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 
-const { MOVE_EXPIRE_JOB } = require('../constants')
+const {
+  SCHEDULED_EVERY_5M_JOB,
+  SCHEDULED_13H_DAY_JOB,
+  SCHEDULED_FRIDAY_JOB,
+  SCHEDULED_9H_DAY_JOB,
+} = require('../constants')
 
+/**
+ * Do not stop rest notifications on some error
+ */
+const wrapException = async (func, params = []) => {
+  try {
+    return func(...params)
+  } catch (e) {
+    Logger.error(e)
+  }
+}
+
+/**
+ *
+ */
 class QueueService {
   /**
    * Get estate nearest POI
@@ -31,6 +51,45 @@ class QueueService {
   /**
    *
    */
+  static async sendEvery5Min() {
+    return Promise.all([
+      wrapException(EstateService.moveJobsToExpire),
+      wrapException(NoticeService.landlordVisitIn90m),
+      wrapException(NoticeService.prospectVisitIn90m),
+      wrapException(NoticeService.getNewWeekMatches),
+      wrapException(NoticeService.landlordVisitIn30m),
+      wrapException(NoticeService.prospectVisitIn30m),
+    ])
+  }
+
+  /**
+   *
+   */
+  static async sendEveryDayMidday() {
+    return Promise.all([
+      wrapException(NoticeService.sendLandlordNewProperty),
+      wrapException(NoticeService.sandLandlord7DaysInactive),
+      wrapException(NoticeService.sandProspectNoActivity),
+    ])
+  }
+
+  /**
+   *
+   */
+  static async sendFriday14H() {
+    return Promise.all([wrapException(NoticeService.sendProspectNewMatches)])
+  }
+
+  /**
+   *
+   */
+  static async sendEveryDay9AM() {
+    return Promise.all([wrapException(NoticeService.prospectProfileExpiring())])
+  }
+
+  /**
+   *
+   */
   static async processJob(job) {
     try {
       switch (job.name) {
@@ -40,8 +99,14 @@ class QueueService {
           return EstateService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
-        case MOVE_EXPIRE_JOB:
-          return EstateService.moveJobsToExpire()
+        case SCHEDULED_EVERY_5M_JOB:
+          return QueueService.sendEvery5Min()
+        case SCHEDULED_13H_DAY_JOB:
+          return QueueService.sendEveryDayMidday()
+        case SCHEDULED_FRIDAY_JOB:
+          return QueueService.sendFriday14H()
+        case SCHEDULED_9H_DAY_JOB:
+          return QueueService.sendEveryDay9AM()
         default:
           console.log(`No job processor for: ${job.name}`)
       }

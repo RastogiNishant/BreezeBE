@@ -4,7 +4,12 @@ const defaultOptions = {
   removeOnComplete: true,
 }
 
-const { MOVE_EXPIRE_JOB } = require('../constants')
+const {
+  SCHEDULED_EVERY_5M_JOB,
+  SCHEDULED_13H_DAY_JOB,
+  SCHEDULED_9H_DAY_JOB,
+  SCHEDULED_FRIDAY_JOB,
+} = require('../constants')
 const COMMON_QUEUE = 'common'
 
 class QueueEngine {
@@ -21,6 +26,7 @@ class QueueEngine {
     // TODO: add scheduled jobs here
     console.log('Init queue')
     const QueueService = use('App/Services/QueueService')
+    const Logger = use('Logger')
     this.commonWorker = new Worker(
       COMMON_QUEUE,
       async (job) => {
@@ -31,8 +37,20 @@ class QueueEngine {
 
     // Run every 5 min check for moving expire job
     this.commonQueue
-      .add(MOVE_EXPIRE_JOB, {}, { repeat: { cron: '*/1 * * * *' }, removeOnComplete: true })
-      .catch(console.log)
+      .add(SCHEDULED_EVERY_5M_JOB, {}, { repeat: { cron: '*/5 * * * *' }, removeOnComplete: true })
+      .catch(Logger.error)
+
+    this.commonQueue
+      .add(SCHEDULED_13H_DAY_JOB, {}, { repeat: { cron: '15 13 * * *' }, removeOnComplete: true })
+      .catch(Logger.error)
+
+    this.commonQueue
+      .add(SCHEDULED_FRIDAY_JOB, {}, { repeat: { cron: '10 14 * * 5' }, removeOnComplete: true })
+      .catch(Logger.error)
+
+    this.commonQueue
+      .add(SCHEDULED_9H_DAY_JOB, {}, { repeat: { cron: '0 9 * * *' }, removeOnComplete: true })
+      .catch(Logger.error)
   }
 
   /**

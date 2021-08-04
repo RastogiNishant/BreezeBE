@@ -56,6 +56,12 @@ class Notifications {
       )
     }
     const message = dataToString(data)
+    // message.notification.imageUrl =
+    //   'https://icdn.lenta.ru/images/0000/0003/000000033224/detail_1358264090.jpg'
+    // message.notification.image =
+    //   'https://icdn.lenta.ru/images/0000/0003/000000033224/detail_1358264090.jpg'
+    // message.data.click_action = 'FLUTTER_NOTIFICATION_CLICK'
+
     const options = {
       //contentAvailable: true,
       ttl: 30,
