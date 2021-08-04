@@ -467,7 +467,7 @@ class MatchService {
   static async bookTimeslot(estateId, userId, date) {
     const getMatch = async () => {
       return Database.table('matches')
-        .where({ user_id: userId, status: MATCH_STATUS_INVITE, estate: estateId })
+        .where({ user_id: userId, status: MATCH_STATUS_INVITE, estate_id: estateId })
         .first()
     }
 
