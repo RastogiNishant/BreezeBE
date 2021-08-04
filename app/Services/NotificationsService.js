@@ -434,7 +434,7 @@ class NotificationsService {
    * When another user got final confirm request and accept it, another
    */
   static async sendProspectEstatesRentAnother(notices) {
-    const title = 'prospect.notification.event.prospect_reject'
+    const title = 'prospect.notification.event.prospect_rejected'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (

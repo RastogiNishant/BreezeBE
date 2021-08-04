@@ -156,6 +156,12 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/visit')
 
+Route.group(() => {
+  Route.get('/', 'NoticeController.getNotices').middleware([])
+})
+  .prefix('/api/v1/notices')
+  .middleware(['auth:jwtLandlord,jwt'])
+
 // Timeslots for tenant
 Route.group(() => {
   Route.get('/:estate_id/slots/free', 'EstateController.getEstateFreeTimeslots').middleware([

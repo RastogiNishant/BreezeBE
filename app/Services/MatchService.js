@@ -428,7 +428,7 @@ class MatchService {
   static async inviteKnockedUser(estateId, userId) {
     const match = await Database.query()
       .table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_KNOCK })
+      .where({ estate_id: estateId, user_id: userId, status: MATCH_STATUS_KNOCK })
       .first()
 
     if (!match) {
@@ -448,7 +448,7 @@ class MatchService {
   static async cancelInvite(estateId, userId) {
     const match = await Database.query()
       .table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_INVITE })
+      .where({ user_id: userId, status: MATCH_STATUS_INVITE, estate_id: estateId })
       .first()
 
     if (!match) {
@@ -467,7 +467,7 @@ class MatchService {
   static async bookTimeslot(estateId, userId, date) {
     const getMatch = async () => {
       return Database.table('matches')
-        .where({ user_id: userId, status: MATCH_STATUS_INVITE })
+        .where({ user_id: userId, status: MATCH_STATUS_INVITE, estate: estateId })
         .first()
     }
 

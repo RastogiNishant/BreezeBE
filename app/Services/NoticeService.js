@@ -219,7 +219,7 @@ class NoticeService {
         .select('_m.user_id')
         .where({ '_m.estate_id': estateId })
         .where(function () {
-          this.orWhere({ '_m.status': MATCH_STATUS_TOP, '_m.share': true })
+          this.orWhere({ '_m.status': MATCH_STATUS_TOP }).orWhere({ '_m.share': true })
         })
         .whereNot('_m.user_id', userId)
         .limit(100)
