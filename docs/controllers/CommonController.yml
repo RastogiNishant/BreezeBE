@@ -81,3 +81,18 @@ paths:
           type: string
           required: true
       responses: [200]
+
+  /api/v1/notices:
+    get:
+      tags: [notices]
+      security: [bearerAuth: []]
+      description: Get user saved notifications
+      produces: [application/json]
+      parameters:
+        - name: date_from
+          in: query
+          type: date
+        - name: date_to
+          in: query
+          type: date
+      responses: [200]

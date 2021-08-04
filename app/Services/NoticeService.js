@@ -6,6 +6,7 @@ const P = require('bluebird')
 const Logger = use('Logger')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
+const Notice = use('App/Models/Notice')
 const EstateService = use('App/Services/EstateService')
 const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
@@ -526,6 +527,22 @@ class NoticeService {
 
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendLandlordVisitIn30m(notices)
+  }
+
+  /**
+   *
+   */
+  static async getUserNoticesList(userId, dateFrom, dateTo, limit = 20) {
+    const query = Notice.query().orderBy('id', 'desc').limit(limit)
+    if (dateTo) {
+      query.where('created_at', '>', moment.utc(dateTo).format(DATE_FORMAT))
+    }
+
+    if (dateFrom) {
+      query.where('created_at', '<', moment.utc(dateFrom).format(DATE_FORMAT))
+    }
+
+    return (await query.fetch()).rows
   }
 }
 

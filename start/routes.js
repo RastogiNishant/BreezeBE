@@ -157,10 +157,11 @@ Route.group(() => {
 }).prefix('/api/v1/visit')
 
 Route.group(() => {
-  Route.get('/', 'NoticeController.getNotices').middleware([])
-})
-  .prefix('/api/v1/notices')
-  .middleware(['auth:jwtLandlord,jwt'])
+  Route.get('/', 'NoticeController.getNotices').middleware([
+    'valid:GetNotifications',
+    'auth:jwt,jwtLandlord',
+  ])
+}).prefix('/api/v1/notices')
 
 // Timeslots for tenant
 Route.group(() => {
