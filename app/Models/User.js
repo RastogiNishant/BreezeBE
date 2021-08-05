@@ -33,6 +33,7 @@ class User extends Model {
       'google_id',
       'lord_size',
       'request_full_profile',
+      'notice',
     ]
   }
 

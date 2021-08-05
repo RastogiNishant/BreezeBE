@@ -367,6 +367,7 @@ class UserService {
       .whereIn('id', userIds)
       .whereNot('device_token', '')
       .whereNot('device_token', null)
+      .where('notice', true)
       .limit(Math.min(userIds.length, limit))
 
     return data

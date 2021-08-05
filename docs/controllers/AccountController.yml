@@ -37,6 +37,10 @@ definitions:
     name: delay
     in: formData
     type: number
+  notice:
+    name: notice
+    in: formData
+    type: boolean
 
 paths:
   /api/v1/login:
@@ -183,6 +187,7 @@ paths:
         - $ref: '#/definitions/avatar'
         - $ref: '#/definitions/lord_size'
         - $ref: '#/definitions/request_full_profile'
+        - $ref: '#/definitions/notice'
       responses: [200]
 
   /api/v1/users/avatar:
