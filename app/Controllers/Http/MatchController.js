@@ -274,7 +274,7 @@ class MatchController {
       limit
     )
 
-    const fields = ['buddy', 'date', 'user_id']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
     const extraFields = filters.commit
       ? ['email', 'avatar', 'phone', 'firstname', 'secondname', ...fields]
       : fields
@@ -309,7 +309,7 @@ class MatchController {
       page,
       limit
     )
-    const fields = ['buddy', 'date', 'user_id']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
     const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
     return response.res({
