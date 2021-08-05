@@ -114,7 +114,7 @@ class NoticeService {
    * If prospect register 2 days ago and has no activity
    */
   static async sandProspectNoActivity() {
-    const dateTo = moment.utc().startOf('day').add(-2, 'days')
+    const dateTo = moment().startOf('day').add(-2, 'days')
     const dateFrom = dateTo.clone().add().add(-1, 'days')
     // WITH users register 2 days ago
     const queryWith = Database.table({ _u: 'users' })
@@ -287,7 +287,7 @@ class NoticeService {
     const result = await Database.table({ _m: 'matches' })
       .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
       .where('_m.status', MATCH_STATUS_NEW)
-      .where('_m.updated_at', '>', moment.utc().add(-7, 'days').format(DATE_FORMAT))
+      .where('_m.updated_at', '>', moment().add(-7, 'days').format(DATE_FORMAT))
       .groupBy('_m.user_id')
 
     if (isEmpty(result)) {
@@ -311,7 +311,7 @@ class NoticeService {
    *
    */
   static async getNewWeekMatches() {
-    const start = moment.utc().add(-2, 'hours')
+    const start = moment().add(-2, 'hours')
     const end = start.clone().add(5, 'min')
     const withQuery = Database.table({ _e: 'estates' })
       .select('id')
@@ -368,7 +368,7 @@ class NoticeService {
    * Get visits in {time}
    */
   static async getVisitsIn(hours) {
-    const start = moment.utc().startOf('minute').subtract(hours, 'hours')
+    const start = moment().startOf('minute').subtract(hours, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
@@ -416,9 +416,9 @@ class NoticeService {
    *
    */
   static async getLandlordVisitsIn(hoursOffset) {
-    const minDate = moment.utc().startOf('day')
+    const minDate = moment().startOf('day')
     const maxDate = minDate.clone().add(1, 'day')
-    const start = moment.utc().startOf('minute').subtract(hoursOffset, 'hours')
+    const start = moment().startOf('minute').subtract(hoursOffset, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     const withQuery = Database.table({ _v: 'visits' })
