@@ -79,6 +79,7 @@ class Notifications {
         }
 
         console.log({
+          tokens,
           successCount: result.successCount,
           failureCount: result.failureCount,
           messages: JSON.stringify(result.results, null, 2),
