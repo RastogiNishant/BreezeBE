@@ -7,6 +7,7 @@ const Logger = use('Logger')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const Notice = use('App/Models/Notice')
+const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
@@ -458,13 +459,13 @@ class NoticeService {
   /**
    *
    */
-  static async prospectRequestConfirm(estatesId, userId) {
-    const estate = await Database.table('estates').where('id', estatesId).first()
+  static async prospectRequestConfirm(estateId, userId) {
+    const estate = await Estate.query().where('id', estateId).first()
     const notice = {
       user_id: userId,
       type: NOTICE_TYPE_PROSPECT_COMMIT_ID,
       data: {
-        estate_id: estatesId,
+        estate_id: estateId,
         estate_address: estate.address,
         params: estate.getAptParams(),
       },
