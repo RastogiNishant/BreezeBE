@@ -1,9 +1,10 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty, omit } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
+const Contact = use('App/Models/Contact')
 
 const Model = require('./BaseModel')
 const {
@@ -280,6 +281,20 @@ class Estate extends Model {
    */
   static getFinalPrice(e) {
     return (parseFloat(e.net_rent) || 0) + (parseFloat(e.additional_costs) || 0)
+  }
+
+  /**
+   *
+   */
+  async getContacts() {
+    const contact = await Contact.query()
+      .select('contacts.*', '_c.avatar')
+      .innerJoin({ _c: 'companies' }, '_c.id', 'contacts.company_id')
+      .where('_c.user_id', this.user_id)
+      .orderBy('contacts.id')
+      .first()
+
+    return contact
   }
 }
 

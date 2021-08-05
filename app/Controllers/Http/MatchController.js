@@ -3,6 +3,7 @@
 const Logger = use('Logger')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
+const CompanyService = use('App/Services/CompanyService')
 const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -30,8 +31,12 @@ class MatchController {
   /**
    *
    */
-  async getActiveEstate(estateId) {
-    const estate = await EstateService.getActiveById(estateId)
+  async getActiveEstate(estateId, withExpired = true) {
+    const estate = await EstateService.getActiveById(
+      estateId,
+      withExpired ? undefined : { status: STATUS_ACTIVE }
+    )
+
     if (!estate) {
       throw new HttpException('Estate not found', 404)
     }
@@ -45,7 +50,7 @@ class MatchController {
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id } = request.all()
-    await this.getActiveEstate(estate_id)
+    await this.getActiveEstate(estate_id, false)
 
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id)
@@ -246,10 +251,14 @@ class MatchController {
   async commitEstateRent({ request, auth, response }) {
     const userId = auth.user.id
     const { estate_id } = request.all()
-    await this.getActiveEstate(estate_id)
-    const estate = await MatchService.finalConfirm(estate_id, userId)
-
-    response.res({ user_id: estate.user_id })
+    const estate = await this.getActiveEstate(estate_id)
+    await MatchService.finalConfirm(estate_id, userId)
+    let contact = await estate.getContacts()
+    if (contact) {
+      contact = contact.toJSON()
+      contact.avatar = File.getPublicUrl(contact.avatar)
+    }
+    response.res({ estate, contact })
   }
 
   /**
