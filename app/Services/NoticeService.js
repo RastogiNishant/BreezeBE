@@ -466,6 +466,7 @@ class NoticeService {
       data: {
         estate_id: estatesId,
         estate_address: estate.address,
+        params: estate.getAptParams(),
       },
     }
 

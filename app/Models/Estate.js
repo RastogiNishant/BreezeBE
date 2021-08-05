@@ -296,6 +296,13 @@ class Estate extends Model {
 
     return contact
   }
+
+  /**
+   *
+   */
+  getAptParams() {
+    return `${this.rooms_number}r ${this.area}㎡ ${this.floor}/${this.number_floors}`
+  }
 }
 
 module.exports = Estate
