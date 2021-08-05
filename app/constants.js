@@ -339,7 +339,6 @@ const constants = {
   NOTICE_TYPE_LANDLORD_VISIT_STARTING: 'notification_landlord_visit_starting',
   NOTICE_TYPE_LANDLORD_MATCH: 'notification_landlord_match',
   NOTICE_TYPE_LANDLORD_DECISION: 'notification_landlord_decision',
-
   NOTICE_TYPE_PROSPECT_QUESTION: 'notification_prospect_question',
   NOTICE_TYPE_PROSPECT_MENTION: 'notification_prospect_mentioned',
   NOTICE_TYPE_PROSPECT_NEW_MATCH: 'notification_prospect_new_match',
@@ -350,7 +349,6 @@ const constants = {
   NOTICE_TYPE_PROSPECT_COMMIT: 'notification_prospect_commit',
   NOTICE_TYPE_PROSPECT_REJECT: 'notification_prospect_reject',
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY: 'notification_prospect_no_activity',
-
   NOTICE_TYPE_CONFIRM_QUESTION: 'notification_confirmation_question',
   NOTICE_TYPE_PROSPECT_VISIT90M: 'notification_prospect_visit_90m',
   NOTICE_TYPE_LANDLORD_VISIT90M: 'notification_landlord_visit_90m',

@@ -14,6 +14,18 @@ class NoticeController {
 
     response.res(notices)
   }
+
+  /**
+   *
+   */
+  async sendTestNotification({ request, auth, response }) {
+    const userId = auth.user.id
+    const { estate_id, data, type } = request.all()
+
+    const result = await NoticeService.sendTestNotification(userId, type, estate_id, data)
+
+    response.res(result)
+  }
 }
 
 module.exports = NoticeController

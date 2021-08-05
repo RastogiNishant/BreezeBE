@@ -39,6 +39,26 @@ const {
   NOTICE_TYPE_CONFIRM_QUESTION_ID,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
+
+  NOTICE_TYPE_LANDLORD_FILL_PROFILE,
+  NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
+  NOTICE_TYPE_LANDLORD_TIME_FINISHED,
+  NOTICE_TYPE_LANDLORD_CONFIRM_VISIT,
+  NOTICE_TYPE_LANDLORD_VISIT_STARTING,
+  NOTICE_TYPE_LANDLORD_MATCH,
+  NOTICE_TYPE_LANDLORD_DECISION,
+  NOTICE_TYPE_PROSPECT_NEW_MATCH,
+  NOTICE_TYPE_PROSPECT_MATCH_LEFT,
+  NOTICE_TYPE_PROSPECT_INVITE,
+  NOTICE_TYPE_PROSPECT_VISIT3H,
+  NOTICE_TYPE_PROSPECT_VISIT90M,
+  NOTICE_TYPE_LANDLORD_VISIT90M,
+  NOTICE_TYPE_PROSPECT_VISIT30M,
+  NOTICE_TYPE_PROSPECT_COMMIT,
+  NOTICE_TYPE_PROSPECT_REJECT,
+  NOTICE_TYPE_PROSPECT_NO_ACTIVITY,
+  NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
+
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   MATCH_STATUS_NEW,
@@ -157,13 +177,13 @@ class NoticeService {
       .whereIn('_e.id', estateIds)
 
     // Create new notice items
-    const items = data.map(({ address, id, user_id }) => ({
+    const notices = data.map(({ address, id, user_id }) => ({
       user_id,
       type: NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID,
       data: { estate_id: id, estate_address: address },
     }))
-    await NoticeService.insertNotices(items)
-    await NotificationsService.sendEstateExpired(items)
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendEstateExpired(notices)
   }
 
   /**
@@ -432,7 +452,7 @@ class NoticeService {
     }))
 
     await NoticeService.insertNotices(notices)
-    await NotificationsService.sendProspectVisit90m(notices)
+    await NotificationsService.sendLandlordVisit90m(notices)
   }
 
   /**
@@ -543,6 +563,61 @@ class NoticeService {
     }
 
     return (await query.fetch()).rows
+  }
+
+  /**
+   *
+   */
+  static async sendTestNotification(userId, type, estateId, extraData = {}) {
+    const estate = await Database.table('estates').where('id', estateId).first()
+    const notice = {
+      user_id: userId,
+      type: NotificationsService.getIdByType(type),
+      data: {
+        ...extraData,
+        estate_id: estate.id,
+        estate_address: estate.address,
+      },
+    }
+
+    switch (type) {
+      case NOTICE_TYPE_LANDLORD_FILL_PROFILE:
+        return NotificationsService.sendLandlordNoProperty([notice])
+      case NOTICE_TYPE_LANDLORD_NEW_PROPERTY:
+        return NotificationsService.sendLandlordNewProperty([notice])
+      case NOTICE_TYPE_LANDLORD_TIME_FINISHED:
+        return NotificationsService.sendEstateExpired([notice])
+      case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT:
+        return NotificationsService.sendLandlordSlotsSelected([notice])
+      case NOTICE_TYPE_LANDLORD_VISIT_STARTING:
+        return NotificationsService.sendLandlordVisitIn30m([notice])
+      case NOTICE_TYPE_LANDLORD_MATCH:
+        return NotificationsService.sendLandlordGetFinalMatch([notice])
+      case NOTICE_TYPE_LANDLORD_DECISION:
+        return NotificationsService.sendLandlordFinalMatchRejected([notice])
+      case NOTICE_TYPE_PROSPECT_NEW_MATCH:
+        return NotificationsService.sendProspectNewMatch([notice])
+      case NOTICE_TYPE_PROSPECT_MATCH_LEFT:
+        return NotificationsService.sendProspectEstateExpiring([notice])
+      case NOTICE_TYPE_PROSPECT_INVITE:
+        return NotificationsService.sendProspectNewInvite(notice)
+      case NOTICE_TYPE_PROSPECT_VISIT3H:
+        return NotificationsService.sendProspectFirstVisitConfirm([notice])
+      case NOTICE_TYPE_PROSPECT_VISIT90M:
+        return NotificationsService.sendProspectVisit90m([notice])
+      case NOTICE_TYPE_LANDLORD_VISIT90M:
+        return NotificationsService.sendLandlordVisit90m([notice])
+      case NOTICE_TYPE_PROSPECT_VISIT30M:
+        return NotificationsService.sendProspectFinalVisitConfirm([notice])
+      case NOTICE_TYPE_PROSPECT_COMMIT:
+        return NotificationsService.sendProspectLandlordConfirmed(notice)
+      case NOTICE_TYPE_PROSPECT_REJECT:
+        return NotificationsService.sendProspectEstatesRentAnother([notice])
+      case NOTICE_TYPE_PROSPECT_NO_ACTIVITY:
+        return NotificationsService.sendProspectNoActivity([notice])
+      case NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE:
+        return NotificationsService.sendProspectProfileExpiring([notice])
+    }
   }
 }
 

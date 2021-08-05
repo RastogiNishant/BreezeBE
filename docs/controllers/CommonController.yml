@@ -96,3 +96,49 @@ paths:
           in: query
           type: date
       responses: [200]
+
+  /api/v1/debug/notifications:
+    post:
+      tags: [debug]
+      security: [bearerAuth: []]
+      description: Dend debug notifications for current user
+      produces: [application/json]
+      parameters:
+        - name: type
+          in: formData
+          type: string
+          enum:
+            [
+              'notification_landlord_question',
+              'notification_landlord_fill_profile',
+              'notification_landlord_new_property',
+              'notification_landlord_time_finished',
+              'notification_landlord_confirmed_visits',
+              'notification_landlord_reconfirmed_visits',
+              'notification_landlord_visit_starting',
+              'notification_landlord_match',
+              'notification_landlord_decision',
+              'notification_prospect_question',
+              'notification_prospect_mentioned',
+              'notification_prospect_new_match',
+              'notification_prospect_match_left',
+              'notification_prospect_invite',
+              'notification_prospect_visit_1',
+              'notification_prospect_visit_2',
+              'notification_prospect_commit',
+              'notification_prospect_reject',
+              'notification_prospect_no_activity',
+              'notification_confirmation_question',
+              'notification_prospect_visit_90m',
+              'notification_landlord_visit_90m',
+              'notification_prospect_profile_expire',
+            ]
+          required: true
+        - name: estate_id
+          in: formData
+          type: number
+          required: true
+        - name: data
+          in: formData
+          type: json
+      responses: [200]

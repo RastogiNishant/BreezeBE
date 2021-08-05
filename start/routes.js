@@ -348,6 +348,11 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/contacts')
 
+Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification').middleware([
+  'auth:jwtLandlord,jwt',
+  'valid:DebugNotification',
+])
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
