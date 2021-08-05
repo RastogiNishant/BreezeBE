@@ -622,7 +622,7 @@ class MatchService {
       .update({ status: MATCH_STATUS_FINISH })
 
     // remove another users matches for this estate
-    await NoticeService.estateFinalConfirm(estateId, tenantId)
+    return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
 
   /**

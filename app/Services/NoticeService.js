@@ -268,11 +268,16 @@ class NoticeService {
 
     // Save notices
     await NoticeService.insertNotices([...rejectNotices, successNotice, ...rejectedUsers])
+    try {
+      // Send notification to current estate owner
+      await NotificationsService.sendLandlordGetFinalMatch([successNotice])
+      await NotificationsService.sendLandlordFinalMatchRejected(rejectNotices)
+      await NotificationsService.sendProspectEstatesRentAnother(rejectedUsers)
+    } catch (e) {
+      console.log(e)
+    }
 
-    // Send notification to current estate owner
-    await NotificationsService.sendLandlordGetFinalMatch([successNotice])
-    await NotificationsService.sendLandlordFinalMatchRejected(rejectNotices)
-    await NotificationsService.sendProspectEstatesRentAnother(rejectedUsers)
+    return estate
   }
 
   /**

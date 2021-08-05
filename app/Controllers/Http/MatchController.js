@@ -247,9 +247,9 @@ class MatchController {
     const userId = auth.user.id
     const { estate_id } = request.all()
     await this.getActiveEstate(estate_id)
-    await MatchService.finalConfirm(estate_id, userId)
+    const estate = await MatchService.finalConfirm(estate_id, userId)
 
-    response.res(true)
+    response.res({ user_id: estate.user_id })
   }
 
   /**
