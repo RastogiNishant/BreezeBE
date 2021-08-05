@@ -48,6 +48,9 @@ class File {
    *
    */
   static getPublicUrl(filePathName) {
+    if (!filePathName) {
+      return null
+    }
     return Drive.disk('s3public').getUrl(filePathName)
   }
 

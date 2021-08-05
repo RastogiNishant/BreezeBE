@@ -1,6 +1,7 @@
 'use strict'
 
 const Logger = use('Logger')
+const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
@@ -312,8 +313,12 @@ class MatchController {
     const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
     const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
+    const data = tenants.toJSON({ isShort: true, extraFields })
+    // Add avatar path to data
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+
     return response.res({
-      ...tenants.toJSON({ isShort: true, extraFields }),
+      ...data,
       tab: currentTab,
     })
   }
