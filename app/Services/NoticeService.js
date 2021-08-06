@@ -323,7 +323,7 @@ class NoticeService {
    *
    */
   static async getNewWeekMatches() {
-    const start = moment().add(2, 'hours')
+    const start = moment().add(2, 'hours').startOf('minutes')
     const end = start.clone().add(5, 'min')
     const withQuery = Database.table({ _e: 'estates' })
       .select('id')
