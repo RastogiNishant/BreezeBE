@@ -1055,7 +1055,7 @@ class MatchService {
     const currentDay = moment().startOf('day')
     await Database.table('visits')
       .where({ estate_id: estateId })
-      .where('date', '<=', currentDay.format(DATE_FORMAT))
+      .where('date', '>', currentDay.format(DATE_FORMAT))
       .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
       .update(data)
   }
