@@ -156,7 +156,7 @@ class MatchController {
 
     await MatchService.updateVisitStatusLandlord(estate_id, {
       lord_status: status,
-      lord_delay: delay,
+      lord_delay: delay || 0,
     })
 
     return response.res(true)
