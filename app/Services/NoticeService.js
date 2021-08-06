@@ -3,7 +3,7 @@
 const { isEmpty, chunk } = require('lodash')
 const moment = require('moment')
 const P = require('bluebird')
-const Logger = use('Logger')
+const File = use('App/Classes/File')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const Notice = use('App/Models/Notice')
@@ -67,8 +67,10 @@ class NoticeService {
    */
   static async insertNotices(data) {
     return Database.from('notices').insert(
-      data.map((i) => ({
-        ...i,
+      data.map(({ user_id, type, data }) => ({
+        user_id,
+        type,
+        data,
         created_at: Database.fn.now(),
         updated_at: Database.fn.now(),
       }))
@@ -168,15 +170,16 @@ class NoticeService {
     }
 
     // Get just expired estate data
-    const data = await Database.select('_e.address', '_e.id', '_e.user_id')
+    const data = await Database.select('_e.address', '_e.id', '_e.user_id', '_e.cover')
       .table({ _e: 'estates' })
       .whereIn('_e.id', estateIds)
 
     // Create new notice items
-    const notices = data.map(({ address, id, user_id }) => ({
+    const notices = data.map(({ address, id, user_id, cover }) => ({
       user_id,
       type: NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID,
       data: { estate_id: id, estate_address: address },
+      image: File.getPublicUrl(cover),
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendEstateExpired(notices)
@@ -201,7 +204,12 @@ class NoticeService {
       booked,
     }
 
-    const notice = { user_id: estate.user_id, type: NOTICE_TYPE_LANDLORD_CONFIRM_VISIT_ID, data }
+    const notice = {
+      user_id: estate.user_id,
+      type: NOTICE_TYPE_LANDLORD_CONFIRM_VISIT_ID,
+      data,
+      image: File.getPublicUrl(estate.cover),
+    }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendLandlordSlotsSelected([notice])
   }
@@ -212,7 +220,7 @@ class NoticeService {
   static async estateFinalConfirm(estateId, userId) {
     const getCurrentEstate = () => {
       return Database.table('estates')
-        .select('address', 'user_id', 'id')
+        .select('address', 'user_id', 'id', 'cover')
         .where({ id: estateId })
         .first()
     }
@@ -253,18 +261,21 @@ class NoticeService {
       user_id: estate.user_id,
       type: NOTICE_TYPE_LANDLORD_MATCH_ID,
       data: { estate_id: estate.id, estate_address: estate.address },
+      image: File.getPublicUrl(estate.cover),
     }
 
     const rejectNotices = anotherEstates.map(({ user_id, address, id }) => ({
       user_id,
       type: NOTICE_TYPE_LANDLORD_DECISION_ID,
       data: { estate_id: id, estate_address: address },
+      image: File.getPublicUrl(estate.cover),
     }))
 
     const rejectedUsers = anotherUsers.map(({ user_id }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_REJECT_ID,
       data: { estate_id: estate.id, estate_address: estate.address },
+      image: File.getPublicUrl(estate.cover),
     }))
 
     // Save notices
@@ -321,7 +332,7 @@ class NoticeService {
       .where('_e.available_date', '<', end.format(DATE_FORMAT))
 
     const result = await Database.table({ _l: 'likes' })
-      .select('_l.user_id', '_l.estate_id', '_e.address')
+      .select('_l.user_id', '_l.estate_id', '_e.address', '_e.cover')
       .innerJoin({ _e: 'estates' }, '_e.id', '_l.estate_id')
       .whereIn('_l.estate_id', function () {
         this.select('*').from('expiring_estates')
@@ -332,13 +343,14 @@ class NoticeService {
       return false
     }
 
-    const notices = result.map(({ estate_id, user_id, address }) => ({
+    const notices = result.map(({ estate_id, user_id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_MATCH_LEFT_ID,
       data: {
         estate_id,
         estate_address: address,
       },
+      image: File.getPublicUrl(cover),
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendProspectEstateExpiring(notices)
@@ -349,7 +361,7 @@ class NoticeService {
    */
   static async userInvite(estateId, userId) {
     const estate = await Database.table({ _e: 'estates' })
-      .select('address', 'id')
+      .select('address', 'id', 'cover')
       .where('id', estateId)
       .first()
 
@@ -360,6 +372,7 @@ class NoticeService {
         estate_id: estate.id,
         estate_address: estate.address,
       },
+      image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectNewInvite(notice)
@@ -373,7 +386,7 @@ class NoticeService {
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
-      .select('_v.user_id', '_v.estate_id', '_e.address')
+      .select('_v.user_id', '_v.estate_id', '_e.address', '_e.cover')
       .innerJoin({ _e: 'estates' }, '_e.id', '_v.estate_id')
       .where('_v.date', '>=', start.format(DATE_FORMAT))
       .where('_v.date', '<', end.format(DATE_FORMAT))
@@ -387,10 +400,11 @@ class NoticeService {
   static async getProspectVisitIn3H() {
     const result = await NoticeService.getVisitsIn(3)
 
-    const notices = result.map(({ user_id, estate_id, address }) => ({
+    const notices = result.map(({ user_id, estate_id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT3H_ID,
       data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
     }))
 
     await NoticeService.insertNotices(notices)
@@ -403,10 +417,11 @@ class NoticeService {
   static async prospectVisitIn90m() {
     const result = await NoticeService.getVisitsIn(1.5)
 
-    const notices = result.map(({ user_id, estate_id, address }) => ({
+    const notices = result.map(({ user_id, estate_id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT90M_ID,
       data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
     }))
 
     await NoticeService.insertNotices(notices)
@@ -429,7 +444,7 @@ class NoticeService {
       .groupBy('_v.estate_id')
 
     return Database.from({ _mv: 'min_visit' })
-      .select('_e.id', '_e.user_id', '_e.address')
+      .select('_e.id', '_e.user_id', '_e.address', '_e.cover')
       .innerJoin({ _e: 'estates' }, '_e.id', '_mv.estate_id')
       .where('_mv.min_date', '>=', start.format(DATE_FORMAT))
       .where('_mv.min_date', '<', end.format(DATE_FORMAT))
@@ -446,10 +461,11 @@ class NoticeService {
       return false
     }
 
-    const notices = result.map(({ user_id, id, address }) => ({
+    const notices = result.map(({ user_id, id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_LANDLORD_VISIT90M_ID,
       data: { estate_id: id, estate_address: address },
+      image: File.getPublicUrl(cover),
     }))
 
     await NoticeService.insertNotices(notices)
@@ -469,6 +485,7 @@ class NoticeService {
         estate_address: estate.address,
         params: estate.getAptParams(),
       },
+      image: File.getPublicUrl(estate.cover),
     }
 
     await NoticeService.insertNotices([notice])
@@ -522,10 +539,11 @@ class NoticeService {
       return false
     }
 
-    const notices = result.map(({ user_id, estate_id, address }) => ({
+    const notices = result.map(({ user_id, estate_id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT30M_ID,
       data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
     }))
 
     await NoticeService.insertNotices(notices)
@@ -541,10 +559,11 @@ class NoticeService {
       return false
     }
 
-    const notices = result.map(({ user_id, id, address }) => ({
+    const notices = result.map(({ user_id, id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_LANDLORD_VISIT30M_ID,
       data: { estate_id: id, estate_address: address },
+      image: File.getPublicUrl(cover),
     }))
 
     await NoticeService.insertNotices(notices)
@@ -580,6 +599,7 @@ class NoticeService {
         estate_id: estate.id,
         estate_address: estate.address,
       },
+      image: File.getPublicUrl(estate.cover),
     }
 
     switch (type) {

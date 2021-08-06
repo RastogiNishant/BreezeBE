@@ -102,7 +102,12 @@ class NotificationsService {
   /**
    * Send notification and add job for deferred send
    */
-  static async sendNotification(tokens, type, { body, data, title = '' }) {
+  static async sendNotification(
+    tokens,
+    type,
+    { body, data, title = '' },
+    image = process.env.APP_LOGO
+  ) {
     // send deferred
     const options = {
       notification: {
@@ -116,6 +121,9 @@ class NotificationsService {
         title,
         payload: isEmpty(data) ? '' : JSON.stringify(data),
       },
+    }
+    if (image) {
+      options.notification.image = image
     }
 
     return NotificationsService.sendRaw(tokens, options)
@@ -272,6 +280,7 @@ class NotificationsService {
       const lang = get(v, '0.lang')
       const data = get(v, '0.data', {})
       const typeId = get(v, '0.type')
+      const image = get(v, '0.image')
 
       try {
         return NotificationsService.sendNotification(
@@ -281,7 +290,8 @@ class NotificationsService {
             title: isFunction(title) ? title(data, lang) : l.get(title, lang),
             body: isFunction(body) ? body(data, lang) : l.get(body, lang),
             data,
-          }
+          },
+          image
         )
       } catch (e) {
         console.log(e)
