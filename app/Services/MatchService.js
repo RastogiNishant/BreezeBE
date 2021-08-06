@@ -1045,7 +1045,6 @@ class MatchService {
   static async updateVisitStatus(estateId, userId, data) {
     await Database.table('visits')
       .where({ estate_id: estateId, user_id: userId })
-      .where('date', '<=', moment().format(DATE_FORMAT))
       .update(data)
   }
 
