@@ -278,7 +278,6 @@ class NoticeService {
       console.log(e)
     }
 
-    // console.log({ successNotice, rejectNotices, rejectedUsers })
     return estate
   }
 
