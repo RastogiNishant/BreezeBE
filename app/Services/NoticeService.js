@@ -382,7 +382,7 @@ class NoticeService {
    * Get visits in {time}
    */
   static async getVisitsIn(hours) {
-    const start = moment().startOf('minute').subtract(hours, 'hours')
+    const start = moment().startOf('minute').add(hours, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
@@ -434,7 +434,7 @@ class NoticeService {
   static async getLandlordVisitsIn(hoursOffset) {
     const minDate = moment().startOf('day')
     const maxDate = minDate.clone().add(1, 'day')
-    const start = moment().startOf('minute').subtract(hoursOffset, 'hours')
+    const start = moment().startOf('minute').add(hoursOffset, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     const withQuery = Database.table({ _v: 'visits' })
