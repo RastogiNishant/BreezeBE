@@ -554,7 +554,7 @@ class NoticeService {
    *
    */
   static async landlordVisitIn30m() {
-    const result = NoticeService.getLandlordVisitsIn(0.5)
+    const result = await NoticeService.getLandlordVisitsIn(0.5)
     if (isEmpty(result)) {
       return false
     }
