@@ -85,7 +85,7 @@ class QueueService {
    *
    */
   static async sendEveryDay9AM() {
-    return Promise.all([wrapException(NoticeService.prospectProfileExpiring())])
+    return Promise.all([wrapException(NoticeService.prospectProfileExpiring)])
   }
 
   /**

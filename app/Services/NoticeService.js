@@ -224,8 +224,8 @@ class NoticeService {
         .innerJoin({ _e: 'estates' }, '_e.id', '_m.estate_id')
         .where({
           '_m.user_id': userId,
-          '_m.status': MATCH_STATUS_COMMIT,
         })
+        .whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_TOP])
         .whereNot('_e.id', estateId)
         .limit(100)
     }
@@ -278,6 +278,7 @@ class NoticeService {
       console.log(e)
     }
 
+    // console.log({ successNotice, rejectNotices, rejectedUsers })
     return estate
   }
 
