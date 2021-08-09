@@ -150,6 +150,10 @@ Route.group(() => {
     'auth:jwtLandlord',
     'valid:UpdateVisitStatusLord',
   ])
+  Route.put('/landlord/come', 'MatchController.inviteToCome').middleware([
+    'auth:jwtLandlord',
+    'valid:InviteUserToCome',
+  ])
   Route.put('/tenant', 'MatchController.updateVisitTimeslotTenant').middleware([
     'auth:jwt',
     'valid:UpdateVisitStatusTenant',

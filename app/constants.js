@@ -348,6 +348,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_VISIT90M: 'notification_prospect_visit_90m',
   NOTICE_TYPE_LANDLORD_VISIT90M: 'notification_landlord_visit_90m',
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE: 'notification_prospect_profile_expire',
+  NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -367,12 +368,14 @@ const constants = {
   NOTICE_TYPE_LANDLORD_VISIT90M_ID: 21,
   NOTICE_TYPE_PROSPECT_REJECT_ID: 22,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID: 23,
+  NOTICE_TYPE_PROSPECT_COME_ID: 24,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
   TIMESLOT_STATUS_CONFIRM: 'confirm',
   TIMESLOT_STATUS_REJECT: 'reject',
   TIMESLOT_STATUS_DELAY: 'delay',
+  TIMESLOT_STATUS_COME: 'come'
 }
 
 module.exports = constants

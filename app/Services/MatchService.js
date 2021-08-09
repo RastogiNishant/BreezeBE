@@ -41,6 +41,7 @@ const {
   LANDLORD_TABS_VISIT,
   LANDLORD_TABS_TOP,
   LANDLORD_TABS_COMMIT,
+  TIMESLOT_STATUS_COME,
 } = require('../constants')
 
 const MATCH_PERCENT_PASS = 40
@@ -1043,9 +1044,7 @@ class MatchService {
    *
    */
   static async updateVisitStatus(estateId, userId, data) {
-    await Database.table('visits')
-      .where({ estate_id: estateId, user_id: userId })
-      .update(data)
+    await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
   }
 
   /**
@@ -1058,6 +1057,22 @@ class MatchService {
       .where('date', '>', currentDay.format(DATE_FORMAT))
       .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
       .update(data)
+  }
+
+  /**
+   *
+   */
+  static async inviteUserToCome(estateId, userId) {
+    const currentDay = moment().startOf('day')
+    const result = await Database.table('visits')
+      .where({ estate_id: estateId, user_id: userId })
+      .where('date', '>', currentDay.format(DATE_FORMAT))
+      .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+      .update('lord_status', TIMESLOT_STATUS_COME)
+
+    if (result) {
+      await NoticeService.inviteUserToCome(estateId, userId)
+    }
   }
 }
 

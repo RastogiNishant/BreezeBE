@@ -340,8 +340,20 @@ class MatchController {
     if (auth.user.role === ROLE_LANDLORD && !user_id) {
       throw ValidationException.validationFailed([{ field: 'user_id', validation: 'required' }])
     }
-
     await MatchService.reorderMatches(auth.user, estate_id, user_id, position)
+
+    return response.res(true)
+  }
+
+  /**
+   *
+   */
+  async inviteToCome({ request, auth, response }) {
+    const { estate_id, user_id } = request.all()
+    await this.getOwnEstate(estate_id, auth.user.id)
+    await MatchService.inviteUserToCome(estate_id, user_id)
+
+    response.res(true)
   }
 }
 

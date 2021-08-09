@@ -35,6 +35,7 @@ const {
   NOTICE_TYPE_PROSPECT_REJECT_ID,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
+  NOTICE_TYPE_PROSPECT_COME_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -54,6 +55,7 @@ const {
   NOTICE_TYPE_PROSPECT_REJECT,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
+  NOTICE_TYPE_PROSPECT_COME,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -639,7 +641,27 @@ class NoticeService {
         return NotificationsService.sendProspectNoActivity([notice])
       case NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE:
         return NotificationsService.sendProspectProfileExpiring([notice])
+      case NOTICE_TYPE_PROSPECT_COME:
+        return NotificationsService.sendProspectProfileExpiring([notice])
     }
+  }
+
+  /**
+   *
+   */
+  static async inviteUserToCome(estateId, userId) {
+    const estate = await Database.table('estates').where('id', estateId).first()
+    const notice = {
+      user_id: userId,
+      type: NOTICE_TYPE_PROSPECT_COME_ID,
+      data: {
+        estate_id: estate.id,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+
+    await NotificationsService.sendProspectInviteToCome([notice])
   }
 }
 

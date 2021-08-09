@@ -26,6 +26,7 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT3H,
   NOTICE_TYPE_PROSPECT_VISIT30M,
   NOTICE_TYPE_PROSPECT_COMMIT,
+  NOTICE_TYPE_PROSPECT_COME,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -51,6 +52,7 @@ const {
   NOTICE_TYPE_PROSPECT_REJECT_ID,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
+  NOTICE_TYPE_PROSPECT_COME_ID,
 } = require('../constants')
 
 const mapping = [
@@ -72,6 +74,7 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_VISIT90M_ID, NOTICE_TYPE_LANDLORD_VISIT90M],
   [NOTICE_TYPE_PROSPECT_REJECT_ID, NOTICE_TYPE_PROSPECT_REJECT],
   [NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID, NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE],
+  [NOTICE_TYPE_PROSPECT_COME_ID, NOTICE_TYPE_PROSPECT_COME],
 ]
 
 class NotificationsService {
@@ -475,6 +478,19 @@ class NotificationsService {
         capitalize(data.estate_address) +
         ' \n' +
         l.get('landlord.notification.next.visit_status', lang)
+      )
+    })
+  }
+
+  /**
+   *
+   */
+  static async sendProspectInviteToCome(notices) {
+    const title = 'prospect.notification.event.come'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) + ' \n' + l.get('prospect.notification.next.come', lang)
       )
     })
   }

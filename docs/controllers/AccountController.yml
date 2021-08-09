@@ -307,3 +307,14 @@ paths:
         - $ref: '#/definitions/visitStatus'
         - $ref: '#/definitions/delay'
       responses: [200]
+
+  /api/v1/visit/landlord/come:
+    put:
+      security: [bearerAuth: []]
+      tags: [visit]
+      description: Landlord send prospect invite to come
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/visitEstateId'
+        - $ref: '#/definitions/visitUserId'
+      responses: [200]
