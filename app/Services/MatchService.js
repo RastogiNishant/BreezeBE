@@ -1064,15 +1064,13 @@ class MatchService {
    */
   static async inviteUserToCome(estateId, userId) {
     const currentDay = moment().startOf('day')
-    const result = await Database.table('visits')
+    await Database.table('visits')
       .where({ estate_id: estateId, user_id: userId })
       .where('date', '>', currentDay.format(DATE_FORMAT))
       .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
       .update('lord_status', TIMESLOT_STATUS_COME)
 
-    if (result) {
-      await NoticeService.inviteUserToCome(estateId, userId)
-    }
+    await NoticeService.inviteUserToCome(estateId, userId)
   }
 }
 

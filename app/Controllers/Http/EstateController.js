@@ -96,7 +96,7 @@ class EstateController {
     const importFilePathName = request.file('file')
     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
 
-    response.res(result)
+    return response.res(result)
   }
 
   /**
