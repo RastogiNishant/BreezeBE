@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray } = require('lodash')
+const { get, isEmpty, findIndex, range, isArray, size } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -589,7 +589,7 @@ class EstateService {
         .select(Database.raw('extract(epoch from start_at) as b'))
         .select(Database.raw('extract(epoch from end_at) as e'))
         .where({ estate_id: estateId })
-        // .where('start_at', '>=', dateFrom)
+        .where('start_at', '>=', dateFrom)
         .orderBy('start_at')
         .limit(500)
     }
