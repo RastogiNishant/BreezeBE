@@ -6,6 +6,13 @@ paths:
       produces: [application/json]
       responses: [200]
 
+  /import.xlsx:
+    get:
+      tags: [common]
+      description: Get import document example
+      produces: [application/vnd.ms-excel, application/json]
+      responses: [200]
+
   /api/v1/references:
     get:
       tags: [references]

@@ -232,7 +232,7 @@ class ExcelReader {
         House: PROPERTY_TYPE_HOUSE,
         Site: PROPERTY_TYPE_SITE,
       },
-      apartment_type: {
+      apt_type: {
         flat: APARTMENT_TYPE_FLAT,
         ground_floor: APARTMENT_TYPE_GROUND,
         roof_floor: APARTMENT_TYPE_ROOF,
@@ -368,7 +368,7 @@ class ExcelReader {
         stairs: ROOM_TYPE_STAIRS,
         property_entrance: ROOM_TYPE_PROPERTY_ENTRANCE,
       },
-      household_type: {
+      family_status: {
         family_no_kids: FAMILY_STATUS_NO_CHILD,
         family_with_kids: FAMILY_STATUS_WITH_CHILD,
         single: FAMILY_STATUS_SINGLE,
@@ -396,7 +396,7 @@ class ExcelReader {
       },
       address: (i, o) => {
         return trim(
-          `${o.street || ''} ${o.house_number || ''} ${o.address || ''}, ${o.zip || ''} ${
+          `${o.street || ''} ${o.house_number || ''}, ${o.zip || ''} ${
             o.city || ''
           }`,
           ', '
@@ -431,7 +431,7 @@ class ExcelReader {
       country, // 'Country',
       property_id, // 'Property ID',
       property_type, // 'Property Type',
-      apartment_type, // 'Apartment Type',
+      apt_type, // 'Apartment Type',
       house_type, // 'House Type',
       use_type, // 'Use Type',
       occupancy, // 'occupancy',
@@ -475,9 +475,8 @@ class ExcelReader {
       credit_score, // 'Credit Score',
       tenant_min_age, // 'Tenant Age Min',
       tenant_max_age, // 'Tenant Age Max',
-      household_type, // 'Family Status',
+      family_status, // 'Family Status',
       non_smoker, // 'Smoking Allowed',
-      kids_type, // 'Kids Allowed',
     ] = row
 
     const result = {
@@ -485,11 +484,11 @@ class ExcelReader {
       house_number,
       zip,
       city,
-      country,
+      country: 'Germany',
       address,
       property_id,
       property_type,
-      apartment_type,
+      apt_type,
       house_type,
       use_type,
       occupancy,
@@ -531,11 +530,10 @@ class ExcelReader {
       budget,
       rent_arrears,
       credit_score,
-      tenant_min_age,
-      tenant_max_age,
-      household_type,
+      min_age: tenant_min_age,
+      max_age: tenant_max_age,
+      family_status,
       non_smoker,
-      kids_type,
     }
 
     const mapValue = (k, v, result) => {
