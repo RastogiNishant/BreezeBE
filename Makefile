@@ -8,19 +8,20 @@ Makefile: ;              # skip prerequisite discovery
 #################
 # This task will be called on the PRODUCTION server
 #################
-#update-prod:
-#		echo "RUN: update-prod"
-#		make npm-client-install-production;
-#		# remove swagger dock
-#		cp .env.prod .env
-#		cp prod.ecosystem.config.js ecosystem.config.js
-#		node ace migration:run --force
-#		make restart-pm2;
-#		echo "READY!"
+update-prod:
+		echo "RUN: update-staging"
+		make npm-client-install;
+		cp .env.production .env
+		# run migration
+		NODE_ENV=production node ace migration:run --force
+		# run clear
+		node ace app:clear
+		make restart-pm2-prod;
+		echo "READY!"
 #
 update-staging:
 		echo "RUN: update-staging"
-		make npm-client-install-stage;
+		make npm-client-install;
 		cp .env.staging .env
 		# run migration
 		NODE_ENV=staging node ace migration:run --force
@@ -31,7 +32,7 @@ update-staging:
 
 update-development:
 		echo "RUN: update-development"
-		make npm-client-install-dev;
+		make npm-client-install;
 		cp .env.dev .env
 		# run migration
 		NODE_ENV=development node ace migration:run --force
@@ -40,8 +41,8 @@ update-development:
 		make restart-pm2-development;
 		echo "READY!"
 
-npm-client-install-stage:
-	    echo
+npm-client-install:
+		echo
 		echo "==== Running: npm install ===="
 		if test -f package.json; then\
 			npm "install"; \
@@ -49,16 +50,7 @@ npm-client-install-stage:
 			echo 'No package.json found'; \
 		fi;
 
-npm-client-install-dev:
-	    echo
-		echo "==== Running: npm install ===="
-		if test -f package.json; then\
-			npm "install"; \
-		else \
-			echo 'No package.json found'; \
-		fi;
-
-npm-client-install-production:
+#npm-client-install-production:
 #		echo
 #		echo "==== Running: npm install ===="
 #		if test -f package.json; then\
@@ -82,6 +74,16 @@ npm-client-install-production:
 #			echo 'No ecosystem.config.js found'; \
 #        fi;
 #
+
+
+restart-pm2-prod:
+		echo "==== Running: pm2 restart ecosystem.config.js --env staging ===="
+		if test -f ecosystem.config.js; then\
+			pm2 restart ecosystem.config.js --only breeze-prod --env production;\
+        else \
+			echo 'No ecosystem.config.js found'; \
+        fi;
+
 
 restart-pm2-staging:
 		echo "==== Running: pm2 restart ecosystem.config.js --env staging ===="
