@@ -95,6 +95,10 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
   'valid:SignInGoogleMobile',
 ])
 
+Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
+  'valid:SignInAppleMobile',
+])
+
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])

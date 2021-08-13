@@ -91,5 +91,9 @@ module.exports = {
       clientSecret: Env.get('FOURSQUARE_SECRET'),
       redirectUri: `${Env.get('APP_URL')}/authenticated/foursquare`
     }
+  },
+
+  apple: {
+    clientId: Env.get('APPLE_ID'),
   }
 }

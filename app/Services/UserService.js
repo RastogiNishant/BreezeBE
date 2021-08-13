@@ -60,7 +60,7 @@ class UserService {
       throw new AppException('User same email, another role exists')
     }
 
-    const { user } = await UserService.createUser({
+    const userData = {
       ...data,
       email,
       firstname,
@@ -69,7 +69,10 @@ class UserService {
       role,
       google_id,
       status: STATUS_NEED_VERIFY,
-    })
+    }
+    console.log(userData)
+
+    const { user } = await UserService.createUser(userData)
 
     return user
   }

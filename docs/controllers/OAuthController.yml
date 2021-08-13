@@ -1,3 +1,20 @@
+definitions:
+  queryToken:
+    name: token
+    in: query
+    description: social id token
+    type: string
+    required: true
+  queryRole:
+    name: role
+    in: query
+    type: number
+    default: '1'
+  queryDeviceToken:
+    name: device_token
+    description: token for push notifications
+    in: query
+    type: string
 #  /auth/google
 #  auth/google/authenticated
 #    auth/google/mobile
@@ -36,4 +53,16 @@ paths:
           description: token for push notifications
           in: query
           type: string
+      responses: [200]
+
+  /auth/apple/mobile:
+    get:
+      tags: [auth]
+      description: Login via apple
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/queryToken'
+        - $ref: '#/definitions/queryRole'
+        - name: device_token
+          allOf: [$ref: '#/definitions/queryDeviceToken', required: true]
       responses: [200]

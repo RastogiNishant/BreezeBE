@@ -1,5 +1,6 @@
 'use strict'
 
+const appleSignIn = require('apple-signin-auth')
 const { get } = require('lodash')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -63,6 +64,27 @@ class OAuthController {
   }
 
   /**
+   *
+   */
+  async authorizeUser(email, role) {
+    const query = User.query()
+      .where('email', email)
+      .whereNot('status', STATUS_DELETE)
+      .orderBy('updated_at', 'desc')
+    if ([ROLE_LANDLORD, ROLE_USER].includes(role)) {
+      query.where('role', role)
+    } else {
+      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER])
+    }
+    const user = await query.first()
+    if (!user && !role) {
+      throw new HttpException('User not exists', 412)
+    }
+
+    return user
+  }
+
+  /**
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
@@ -79,21 +101,7 @@ class OAuthController {
 
     const email = get(ticket, 'payload.email')
     const googleId = get(ticket, 'payload.sub')
-
-    const query = User.query()
-      .where('email', email)
-      .whereNot('status', STATUS_DELETE)
-      .orderBy('updated_at', 'desc')
-    if ([ROLE_LANDLORD, ROLE_USER].includes(role)) {
-      query.where('role', role)
-    } else {
-      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER])
-    }
-    let user = await query.first()
-
-    if (!user && !role) {
-      throw new HttpException('User not exists', 412)
-    }
+    let user = await this.authorizeUser(email, role)
 
     if (!user && [ROLE_LANDLORD, ROLE_USER].includes(role)) {
       try {
@@ -102,6 +110,43 @@ class OAuthController {
           google_id: googleId,
           device_token,
           role,
+        })
+      } catch (e) {
+        throw new HttpException(e.message, 400)
+      }
+    }
+
+    if (user) {
+      const authenticator = getAuthByRole(auth, user.role)
+      const token = await authenticator.generate(user)
+      return response.res(token)
+    }
+
+    throw new HttpException('Invalid role', 400)
+  }
+
+  /**
+   *
+   */
+  async tokenAuthApple({ request, auth, response }) {
+    const { token, device_token, role } = request.all()
+    const options = { audience: Config.get('services.apple.client_id') }
+    let email
+    try {
+      const socialData = await appleSignIn.verifyIdToken(token, options)
+      email = socialData.email
+    } catch (e) {
+      throw new HttpException('Invalid token', 400)
+    }
+    let user = await this.authorizeUser(email, role)
+
+    if (!user && [ROLE_LANDLORD, ROLE_USER].includes(role)) {
+      try {
+        user = await UserService.createUserFromOAuth({
+          email,
+          device_token,
+          role,
+          name: 'Apple User',
         })
       } catch (e) {
         throw new HttpException(e.message, 400)
