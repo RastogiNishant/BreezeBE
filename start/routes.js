@@ -47,6 +47,8 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',
 ])
+Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
+
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
   'auth:jwt,jwtLandlord',
 ])

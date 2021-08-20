@@ -18,6 +18,7 @@ const { getHash } = require('../Libs/utils.js')
 
 const {
   STATUS_NEED_VERIFY,
+  STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
   STATUS_DRAFT,
   STATUS_EXPIRE,
@@ -168,6 +169,19 @@ class UserService {
       code,
       user_id: user.id,
     })
+  }
+
+  /**
+   *
+   */
+  static async resendUserConfirm(userId) {
+    const user = await User.query().where('id', userId).where('status', STATUS_EMAIL_VERIFY).first()
+    if (!user) {
+      return false
+    }
+    await UserService.sendConfirmEmail(user)
+
+    return true
   }
 
   /**
