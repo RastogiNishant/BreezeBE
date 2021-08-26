@@ -286,13 +286,12 @@ class UserService {
     const userData = user.toJSON({ publicOnly: !user.finish })
     userData.tenant = null
     // Get tenant extend data
-    if (user.share) {
-      userData.tenant = await Tenant.query()
-        .where('user_id', user.id)
-        .with('members')
-        .with('members.incomes')
-        .with('members.incomes.proofs')
-        .first()
+    if (user.share || user.finish) {
+      const tenantQuery = Tenant.query().where('user_id', user.id)
+      if (user.share) {
+        tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
+      }
+      userData.tenant = await tenantQuery.first()
     }
 
     return userData
