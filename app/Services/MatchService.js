@@ -611,6 +611,25 @@ class MatchService {
   }
 
   /**
+   *
+   */
+  /**
+   *
+   */
+  static async removeNonConfirmUserMatches(estateId, tenantId) {
+    return Database.table('matches')
+      .where({ user_id: tenantId })
+      .whereNot(function () {
+        this.where({
+          user_id: tenantId,
+          estate_id: estateId,
+          status: MATCH_STATUS_FINISH,
+        })
+      })
+      .delete()
+  }
+
+  /**
    * Tenant confirmed final request
    */
   static async finalConfirm(estateId, tenantId) {
@@ -621,6 +640,7 @@ class MatchService {
         status: MATCH_STATUS_COMMIT,
       })
       .update({ status: MATCH_STATUS_FINISH })
+    await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
 
     // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)
