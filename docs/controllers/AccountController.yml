@@ -140,6 +140,18 @@ paths:
           required: true
       responses: [200]
 
+  /api/v1/users/reconfirm:
+    post:
+      tags: [account]
+      description: Resend account confirmation email
+      produces: [application/json]
+      parameters:
+        - name: user_id
+          in: query
+          type: number
+          required: true
+      responses: [200]
+
   /api/v1/me:
     get:
       security: [bearerAuth: []]

@@ -55,6 +55,16 @@ class AccountController {
   /**
    *
    */
+  async resendUserConfirm({ request, response }) {
+    const { user_id } = request.all()
+    const result = await UserService.resendUserConfirm(user_id)
+
+    return response.res(result)
+  }
+
+  /**
+   *
+   */
   async confirmEmail({ request, response }) {
     const { code, user_id } = request.all()
     const user = await User.findOrFail(user_id)

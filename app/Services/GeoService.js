@@ -59,6 +59,9 @@ class GeoService {
     // Simplify polygon to ~300 points
     const filterPoints = (points) => {
       const getTolerance = (c) => 0.00000000004 * c * c - 0.000000009 * c
+      if (isArray(get(points, '0.0'))) {
+        points = points[0]
+      }
       const pointsCount = points.length
       const zone = points.map(([x, y]) => ({ x, y }))
       let poly = simplify(zone, getTolerance(pointsCount), false)

@@ -18,6 +18,7 @@ const { getHash } = require('../Libs/utils.js')
 
 const {
   STATUS_NEED_VERIFY,
+  STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
   STATUS_DRAFT,
   STATUS_EXPIRE,
@@ -173,6 +174,19 @@ class UserService {
   /**
    *
    */
+  static async resendUserConfirm(userId) {
+    const user = await User.query().where('id', userId).where('status', STATUS_EMAIL_VERIFY).first()
+    if (!user) {
+      return false
+    }
+    await UserService.sendConfirmEmail(user)
+
+    return true
+  }
+
+  /**
+   *
+   */
   static async confirmEmail(user, userCode) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
@@ -272,13 +286,12 @@ class UserService {
     const userData = user.toJSON({ publicOnly: !user.finish })
     userData.tenant = null
     // Get tenant extend data
-    if (user.share) {
-      userData.tenant = await Tenant.query()
-        .where('user_id', user.id)
-        .with('members')
-        .with('members.incomes')
-        .with('members.incomes.proofs')
-        .first()
+    if (user.share || user.finish) {
+      const tenantQuery = Tenant.query().where('user_id', user.id)
+      if (user.share) {
+        tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
+      }
+      userData.tenant = await tenantQuery.first()
     }
 
     return userData
