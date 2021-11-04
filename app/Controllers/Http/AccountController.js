@@ -218,6 +218,45 @@ class AccountController {
     return response.res()
   }
 
+   /**
+   *  send email with code for forget Password
+   */
+  async sendCodeForgetPassword({ request, response }) {
+    const { email } = request.only(['email'])
+   
+    try {
+      await UserService.requestSendCodeForgetPassword(email);
+    } catch (e) {
+      if (e.name === "AppException") {
+        throw new HttpException(e.message, 400);
+      }
+      throw e;
+    }
+
+    return response.res();  
+      
+  }
+
+
+  /**
+   *  setemail with code for forget Password
+   */
+  async setPasswordForgetPassword({ request, response }) {
+    const { email, password, code } = request.only(["email", "password", "code"]);
+
+    try {
+      await UserService.requestSetPasswordForgetPassword(email, password, code);
+    } catch (e) {
+      if (e.name === "AppException") {
+        throw new HttpException(e.message, 400);
+      }
+      throw e;
+    }
+
+    return response.res();
+  }
+
+
   /**
    * Confirm user password change with secret code
    */

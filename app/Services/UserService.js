@@ -122,6 +122,33 @@ class UserService {
   }
 
   /**
+   *
+   */
+  static async requestSendCodeForgetPassword(email) {
+    const code = getHash(3)
+    const user = await User.findByOrFail({ email })
+    await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
+    await MailService.sendcodeForgetPasswordMail(user.email, code);
+  }
+
+   /**
+   *
+   */
+  static async requestSetPasswordForgetPassword(email, password, codeSent) {
+    const user = await User.findByOrFail({ email })
+    const data = await DataStorage.getItem(user.id, "forget_password");
+    const { code } = data || {};
+    console.log('code', data, code, codeSent);
+    if (code !== codeSent) {
+      throw new AppException("Invalid confirmation code");
+    }
+
+    user.password = password
+    await user.save()
+    await DataStorage.remove(user.id, "forget_password");
+  }
+
+  /**
    * Reset password to all users with same email
    */
   static async resetPassword(code, password) {
