@@ -275,6 +275,13 @@ Route.group(() => {
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
 
+Route.group(() => {
+  Route.get('/', 'LandlordController.getLandlords')
+  Route.get('/toggle', 'LandlordController.toggleStatus')
+})
+  .prefix('api/v1/landlords')
+  .middleware(['auth:jwtLandlord,jwt'])  
+
 Route.get('/map', 'MapController.getMap')
 
 Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middleware([

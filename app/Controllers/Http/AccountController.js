@@ -17,7 +17,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN } = require('../../constants')
 
 class AccountController {
   /**
