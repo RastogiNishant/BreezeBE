@@ -1,5 +1,21 @@
 #Breeze
 
+## First time setup
+
+create your local copy of the env file by running one of the following commands.
+
+```bash
+npm run setup-env
+```
+```bash
+npm run setup-env:staging
+```
+```bash
+npm run setup-env:production
+```
+
+this will setup the local to the dev environment. use the relevant command
+
 ## Install
 
 Use the adonis command to install the blueprint
