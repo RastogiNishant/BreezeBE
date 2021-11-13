@@ -146,6 +146,21 @@ class AccountController {
   /**
    *
    */
+  async closeAccount({ auth, response }) {
+    const user = await User.query()
+    .where("id", auth.user.id).first();
+    const email = user.email;
+    const newEmail = email.concat('_breezeClose');
+    user.email =  newEmail;
+    user.save();
+
+    return response.res({ message: "Account Closed" });
+    
+  }
+
+  /**
+   *
+   */
   async updateProfile({ request, auth, response }) {
     const data = request.all()
     const user = auth.user
