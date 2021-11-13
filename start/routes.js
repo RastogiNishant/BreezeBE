@@ -153,7 +153,6 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
-
 // Change visits statuses
 Route.group(() => {
   Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([
@@ -278,6 +277,8 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'LandlordController.getLandlords')
   Route.get('/toggle', 'LandlordController.toggleStatus')
+  Route.post('/buddies/import', 'BuddyController.importBuddies')
+  Route.get('/buddies/get', 'BuddyController.getBuddies')
 })
   .prefix('api/v1/landlords')
   .middleware(['auth:jwtLandlord,jwt'])  
