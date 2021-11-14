@@ -152,6 +152,11 @@ class AccountController {
     const email = user.email;
     const newEmail = email.concat('_breezeClose');
     user.email =  newEmail;
+    user.firstname = '';
+    user.secondname = '';
+    user.is_admin = '';
+    user.approved_landlord = false;
+    user.is_admin = false;
     user.save();
 
     return response.res({ message: "Account Closed" });
