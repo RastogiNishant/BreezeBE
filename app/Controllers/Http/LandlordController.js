@@ -27,7 +27,6 @@ class LandlordController {
     query.whereNot("email", null);
     query.whereNot("firstname", null);
     const landlords = await query.orderBy('id', 'desc').paginate(page, limit)
-    console.log('ggg', landlords);
     response.res(landlords)
   }
   
@@ -48,6 +47,8 @@ class LandlordController {
 
     const query = User.query()
     query.where('role', 1)
+    query.whereNot("email", null);
+    query.whereNot("firstname", null);
     const landlords = await query.orderBy('id', 'desc').paginate(1, 20)
      
     response.res(landlords);

@@ -24,7 +24,7 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, ...userData } = request.all()
+    const { email,firstname, ...userData } = request.all();
     if (![ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
       throw new HttpException('Invalid user role', 401)
     }
@@ -39,8 +39,9 @@ class AccountController {
       const { user } = await UserService.createUser({
         ...userData,
         email,
+        firstname,
         status: STATUS_EMAIL_VERIFY,
-      })
+      });
       await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
