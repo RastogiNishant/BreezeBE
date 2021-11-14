@@ -36,6 +36,7 @@ jobs:
           host: ${{ secrets.REMOTE_HOST_PROD }}
           username: ${{ secrets.REMOTE_USER_PROD }}
           key: ${{ secrets.SERVER_SSH_KEY_PROD }}
+          script_stop: true
           # Below are test commands to verify integration
           script: |
             cd /home/ubuntu/source/core
