@@ -159,7 +159,7 @@ class AccountController {
     user.is_admin = false;
     user.save();
 
-    return response.res({ message: "Account Closed" });
+    return response.res({ message: "User Account Closed" });
     
   }
 
