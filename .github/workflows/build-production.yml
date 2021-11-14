@@ -1,0 +1,44 @@
+name: Breeze Backend Production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      # Enable once build commands are created
+      # - name: Install Node.js
+      #   uses: actions/setup-node@v1
+      #   with:
+      #     node-version: '12.x'
+      # - name: Install npm dependencies
+      #   run: npm install --force
+      # - name: Run build task
+      #   run: npm run build --if-present
+      - name: Sync to Server
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY_PROD }}
+          ARGS: '-rltgoDzvO --delete'
+          SOURCE: './*'
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST_PROD }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER_PROD }}
+          TARGET: /home/ubuntu/source/core
+          EXCLUDE: '/.github/'
+      - name: executing build command remotely
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST_PROD }}
+          username: ${{ secrets.REMOTE_USER_PROD }}
+          key: ${{ secrets.SERVER_SSH_KEY_PROD }}
+          # Below are test commands to verify integration
+          script: |
+            cd /home/ubuntu/source/core
+            pwd 
+            whoami
+            npm install
