@@ -39,4 +39,4 @@ jobs:
           # Below are test commands to verify integration
           script: |
             cd /home/ubuntu/source/core
-            make update-development
+            ./trigger-build.sh
