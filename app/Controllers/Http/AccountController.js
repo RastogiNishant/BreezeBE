@@ -154,7 +154,7 @@ class AccountController {
     user.email =  newEmail;
     user.save();
 
-    return response.res({ message: "Account Closed" });
+    return response.res({ message: "User Account Closed" });
     
   }
 
