@@ -63,7 +63,12 @@ class ExcelReader {
     var workbook = new Excel.Workbook()
     const result = []
     const again = await workbook.xlsx.readFile(filePath)
-    var worksheet = workbook.getWorksheet('Sheet1');
+    // const sheetList = workbook.SheetNames; //Array of sheet names.
+    //   worksheetsArray.forEach(sheet => {
+    //     console.log(sheet.name);
+    // })
+    // console.log(sheetList)
+    var worksheet = workbook.getWorksheet(1);
     worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
       console.log("Row " + rowNumber + " = " + JSON.stringify(row.values));
       if(rowNumber != 1){
