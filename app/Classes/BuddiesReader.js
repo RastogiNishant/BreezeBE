@@ -63,22 +63,25 @@ class ExcelReader {
     var workbook = new Excel.Workbook()
     const result = []
     const again = await workbook.xlsx.readFile(filePath)
-    // const sheetList = workbook.SheetNames; //Array of sheet names.
-    //   worksheetsArray.forEach(sheet => {
-    //     console.log(sheet.name);
-    // })
-    // console.log(sheetList)
+
     var worksheet = workbook.getWorksheet(1);
-    worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
-      console.log("Row " + rowNumber + " = " + JSON.stringify(row.values));
-      if(rowNumber != 1){
-        let name = row.values[2]
-        let tel = JSON.stringify(row.values[3])
-        let email = row.values[4]
-        result[rowNumber-2] = {'name': name, 'tel' : tel, email : email}
-      }
-      
-    });
+    try {
+      worksheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+        console.log("Row " + rowNumber + " = " + JSON.stringify(row.values));
+        if(rowNumber != 1){
+          let name = row.values[2]
+          let tel = JSON.stringify(row.values[3])
+          let email = row.values[4]
+          if (name === 'Name' || email === 'Email' || tel === 'Tel.'){
+          } else {
+            result.push({'name': name, 'tel' : tel, email : email});
+          }
+        }
+        
+      });
+    } catch (err){
+
+    }
     
     const errors = []
     return { errors, data: result }
