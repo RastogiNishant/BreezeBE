@@ -128,7 +128,7 @@ class UserService {
     const code = getHash(3)
     let user = null;
     try {
-      const user = await User.findByOrFail({ email })
+      user = await User.findByOrFail({ email })
     } catch (error) {      
       throw new AppException("User with this email does not exist");
     }
