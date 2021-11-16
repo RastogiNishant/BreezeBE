@@ -124,16 +124,20 @@ class UserService {
   /**
    *
    */
-  static async requestSendCodeForgetPassword(email) {
+   static async requestSendCodeForgetPassword(email) {
     const code = getHash(3)
-    let user = null;
-    try {
-      user = await User.findByOrFail({ email })
-    } catch (error) {      
-      throw new AppException("User with this email does not exist");
-    }
+
+        // Check is user same email another role is exists
+    const existingUser = await User.query()
+      .where('email', email)
+      .first()
+    if (existingUser) {
+      const user = await User.findByOrFail({ email })
       await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
       await MailService.sendcodeForgetPasswordMail(user.email, code);
+    }else{
+      throw new AppException("User with this email does not exist");
+    }
 
   }
 
