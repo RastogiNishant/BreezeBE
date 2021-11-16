@@ -41,7 +41,7 @@ Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'val
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
 Route.get("/api/v1/closeAccount", "AccountController.closeAccount").middleware(["auth:jwt,jwtLandlord"]);
 Route.group(() => {
-  Route.post("/sendCode","AccountController.sendCodeForgetPassword" ).middleware(["guest", "valid:ResetEmailRequest"]);
+  Route.post("/","AccountController.sendCodeForgetPassword" ).middleware(["guest", "valid:ResetEmailRequest"]);
   Route.post("/setPassword", "AccountController.setPasswordForgetPassword").middleware(["guest","valid:SetPassword"]);
 }).prefix("/api/v1/forgetPassword");
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
