@@ -3,7 +3,7 @@ name: Breeze Backend Production
 on:
   push:
     branches:
-      - master
+      - development
 
 jobs:
   build:
@@ -23,21 +23,21 @@ jobs:
       - name: Sync to Server
         uses: easingthemes/ssh-deploy@main
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY_PROD }}
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY_DEV }}
           ARGS: '-rltgoDzvO --delete'
           SOURCE: './*'
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST_PROD }}
-          REMOTE_USER: ${{ secrets.REMOTE_USER_PROD }}
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST_DEV }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER_DEV }}
           TARGET: /home/ubuntu/source/core
           EXCLUDE: '/.github/'
       - name: executing build command remotely
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.REMOTE_HOST_PROD }}
-          username: ${{ secrets.REMOTE_USER_PROD }}
-          key: ${{ secrets.SERVER_SSH_KEY_PROD }}
+          host: ${{ secrets.REMOTE_HOST_DEV }}
+          username: ${{ secrets.REMOTE_USER_DEV }}
+          key: ${{ secrets.SERVER_SSH_KEY_DEV }}
           script_stop: true
           # Below are test commands to verify integration
           script: |
             cd /home/ubuntu/source/core
-            ./trigger-build.sh -e prod
+            ./trigger-build.sh -e dev
