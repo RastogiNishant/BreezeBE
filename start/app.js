@@ -34,15 +34,13 @@ providers.push(path.join(__dirname, '..', 'providers', 'Localize/Provider'))
 providers.push(path.join(__dirname, '..', 'providers', 'GeoAPIProvider'))
 providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
 
-if (process.env.NODE_ENV !== 'production') {
-  providers.push('adonis-swagger/providers/SwaggerProvider')
-}
+providers.push('adonis-swagger/providers/SwaggerProvider')
 
 const aceProviders = [
-  '@adonisjs/lucid/providers/MigrationsProvider',
-  'adonis-acl/providers/CommandsProvider',
-  '@adonisjs/vow/providers/VowProvider',
-  'adonis-cache/providers/CommandsProvider',
+	'@adonisjs/lucid/providers/MigrationsProvider',
+	'adonis-acl/providers/CommandsProvider',
+	'@adonisjs/vow/providers/VowProvider',
+	'adonis-cache/providers/CommandsProvider',
 ]
 
 /*
@@ -58,15 +56,15 @@ const aceProviders = [
 |
 */
 const aliases = {
-  Role: 'Adonis/Acl/Role',
-  Permission: 'Adonis/Acl/Permission',
-  Cache: 'Adonis/Addons/Cache',
+	Role: 'Adonis/Acl/Role',
+	Permission: 'Adonis/Acl/Permission',
+	Cache: 'Adonis/Addons/Cache',
 }
 
 const commands = ['App/Commands/CreateAdmin', 'App/Commands/ClearCache', 'App/Commands/Recalc']
 
 const http = {
-  loggerEnv: ['development', 'production'],
+	loggerEnv: ['development', 'production'],
 }
 
 module.exports = { providers, aceProviders, aliases, commands, http }
