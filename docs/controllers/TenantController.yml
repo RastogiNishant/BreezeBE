@@ -192,3 +192,11 @@ definitions:
     description: Get tenant selection zone
     produces: [application/json]
     responses: [200]
+
+/api/v1/users/tenant/all:
+  get:
+    tags: [tenant]
+    security: [bearerAuth: []]
+    description: Get all tenants
+    produces: [application/json]
+    responses: [200]
