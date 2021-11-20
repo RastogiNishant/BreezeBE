@@ -130,6 +130,16 @@ definitions:
     name: rent_start
     in: formData
     type: date
+  skip:
+    name: skip
+    type: number
+    minimum: 0
+    default: 0
+  limit:
+    name: limit
+    type: number
+    minimum: 0
+    default: 50
 
 # Routes list
 /api/v1/tenant/file:
@@ -198,5 +208,8 @@ definitions:
     tags: [tenant]
     security: [bearerAuth: []]
     description: Get all tenants
+    parameters:
+      - $ref: '#/definitions/skip'
+      - $ref: '#/definitions/limit'
     produces: [application/json]
     responses: [200]
