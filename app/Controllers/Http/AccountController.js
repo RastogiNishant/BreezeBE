@@ -242,11 +242,11 @@ class AccountController {
    /**
    *  send email with code for forget Password
    */
-  async sendCodeForgetPassword({ request, response }) {
+  async sendCodeForgotPassword({ request, response }) {
     const { email } = request.only(['email'])
    
     try {
-      await UserService.requestSendCodeForgetPassword(email);
+      await UserService.requestSendCodeForgotPassword(email);
     } catch (e) {
       if (e.name === "AppException") {
         throw new HttpException(e.message, 400);
@@ -262,11 +262,11 @@ class AccountController {
   /**
    *  setemail with code for forget Password
    */
-  async setPasswordForgetPassword({ request, response }) {
+  async setPasswordForgotPassword({ request, response }) {
     const { email, password, code } = request.only(["email", "password", "code"]);
 
     try {
-      await UserService.requestSetPasswordForgetPassword(email, password, code);
+      await UserService.requestSetPasswordForgotPassword(email, password, code);
     } catch (e) {
       if (e.name === "AppException") {
         throw new HttpException(e.message, 400);
