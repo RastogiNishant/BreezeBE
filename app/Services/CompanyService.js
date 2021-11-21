@@ -6,6 +6,7 @@ const { ValidationException } = use('Validator')
 const Company = use('App/Models/Company')
 const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
+const HttpException = use('App/Exceptions/HttpException')
 
 // const CreateCompany = require('../Validators/CreateCompany')
 // const CreateContact = require('../Validators/CreateContact')

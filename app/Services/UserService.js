@@ -13,6 +13,7 @@ const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
+const HttpException = use('App/Exceptions/HttpException')
 
 const { getHash } = require('../Libs/utils.js')
 
@@ -131,7 +132,7 @@ class UserService {
     try {
       user = await User.findByOrFail({ email })
     } catch (error) {      
-      throw new AppException("User with this email does not exist");
+      throw new HttpException('User with this email does not exist', 404);
     }
       await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
       await MailService.sendcodeForgotPasswordMail(user.email, code);
@@ -152,7 +153,7 @@ class UserService {
     const { code } = data || {};
     console.log('code', data, code, codeSent);
     if (code !== codeSent) {
-      throw new AppException("Invalid confirmation code");
+      throw new HttpException('Invalid confirmation code', 404)
     }
 
     user.password = password
