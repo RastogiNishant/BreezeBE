@@ -124,23 +124,23 @@ class UserService {
   /**
    *
    */
-  static async requestSendCodeForgetPassword(email) {
+  static async requestSendCodeForgotPassword(email) {
     const code = getHash(3)
     let user = null;
     try {
-      const user = await User.findByOrFail({ email })
+      user = await User.findByOrFail({ email })
     } catch (error) {      
       throw new AppException("User with this email does not exist");
     }
       await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
-      await MailService.sendcodeForgetPasswordMail(user.email, code);
+      await MailService.sendcodeForgotPasswordMail(user.email, code);
 
   }
 
    /**
    *
    */
-  static async requestSetPasswordForgetPassword(email, password, codeSent) {
+  static async requestSetPasswordForgotPassword(email, password, codeSent) {
     let user = null
     try {
       user = await User.findByOrFail({ email })

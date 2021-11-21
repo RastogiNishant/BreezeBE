@@ -10,7 +10,7 @@ class MailService {
     })
   }
 
-  static async sendcodeForgetPasswordMail(email, code) {
+  static async sendcodeForgotPasswordMail(email, code) {
     await Mail.send('mail/send-code', { code }, (message) => {
       message.to(email).from(Config.get('mail.mailAccount')).subject('Code for forget password')
     })
