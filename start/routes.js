@@ -281,6 +281,7 @@ Route.group(() => {
 	Route.get('/toggle', 'LandlordController.toggleStatus')
 	Route.post('/buddies/import', 'BuddyController.importBuddies')
 	Route.get('/buddies/get', 'BuddyController.getBuddies')
+	Route.delete('/buddies', 'BuddyController.removeBuddies')
 })
 	.prefix('api/v1/landlords')
 	.middleware(['auth:jwtLandlord,jwt'])
