@@ -1,4 +1,4 @@
-name: Breeze Backend Production
+name: Breeze Backend Staging
 
 on:
   push:

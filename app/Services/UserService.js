@@ -13,6 +13,7 @@ const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
+const HttpException = use('App/Exceptions/HttpException')
 
 const { getHash } = require('../Libs/utils.js')
 
@@ -124,23 +125,35 @@ class UserService {
   /**
    *
    */
-  static async requestSendCodeForgetPassword(email) {
+
+  static async requestSendCodeForgotPassword(email) {
     const code = getHash(3)
-    const user = await User.findByOrFail({ email })
-    await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
-    await MailService.sendcodeForgetPasswordMail(user.email, code);
+    let user = null;
+    try {
+      user = await User.findByOrFail({ email })
+    } catch (error) {      
+      throw new HttpException('User with this email does not exist', 404);
+    }
+      await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
+      await MailService.sendcodeForgotPasswordMail(user.email, code);
   }
 
    /**
    *
    */
-  static async requestSetPasswordForgetPassword(email, password, codeSent) {
-    const user = await User.findByOrFail({ email })
+  static async requestSetPasswordForgotPassword(email, password, codeSent) {
+    let user = null
+    try {
+      user = await User.findByOrFail({ email })
+    } catch (error) {
+      throw new AppException("User with this email does not exist");
+    }
+
     const data = await DataStorage.getItem(user.id, "forget_password");
     const { code } = data || {};
     console.log('code', data, code, codeSent);
     if (code !== codeSent) {
-      throw new AppException("Invalid confirmation code");
+      throw new HttpException('Invalid confirmation code', 404)
     }
 
     user.password = password
