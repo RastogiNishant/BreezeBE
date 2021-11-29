@@ -69,7 +69,7 @@ class ImportService {
     const result = await schema.validate(data)
     const buddy = new Buddy()
     buddy.name = result.name
-    buddy.phone = result.tel
+    buddy.phone = result.phone
     buddy.email = result.email
     buddy.user_id = userId
 
