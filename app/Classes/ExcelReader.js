@@ -556,6 +556,9 @@ class ExcelReader {
           // Address should process separately
           if (k === 'address') {
             return { ...n, [k]: mapValue(k, '', result) }
+          } else if (k == 'property_id') {
+            const r = Math.random().toString(36).substr(2, 8).toUpperCase();
+            return { ...n, [k]: r}
           }
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
@@ -563,7 +566,7 @@ class ExcelReader {
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
-        }
+        } 
 
         return { ...n, [k]: v }
       },

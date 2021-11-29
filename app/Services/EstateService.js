@@ -566,7 +566,14 @@ class EstateService {
    *
    */
   static async publishEstate(estate) {
-    await CompanyService.validateUserContacts(estate.user_id)
+    const User = use('App/Models/User')
+    const user = await User.query()
+      .where('id',  estate.user_id)
+      .first()
+    if (!user) return
+    if (user.company_id != null){
+      await CompanyService.validateUserContacts(estate.user_id)
+    }
     await props({
       delMatches: () => Database.table('matches').where({ estate_id: estate.id }).delete(),
       delLikes: () => Database.table('likes').where({ estate_id: estate.id }).delete(),
