@@ -1,14 +1,3 @@
-definitions:
-  selectedIds:
-    name: selectedIds
-    description: Selected Buddy Ids
-    schema:
-      type: array
-      items:
-        type: string
-    explode: true
-    example: '[1, 2]'
-
 # Routes list
 /api/v1/landlord/visit:
   get:
@@ -23,15 +12,5 @@ definitions:
     tags: [landlord]
     security: [bearerAuth: []]
     description: Check is user fill his contacts
-    produces: [application/json]
-    responses: [200]
-
-/api/v1/landlord/buddies:
-  delete:
-    tags: [landlord, buddy]
-    security: [bearerAuth: []]
-    description: Delete buddies
-    parameters:
-      - $ref: '#/definitions/selectedIds'
     produces: [application/json]
     responses: [200]

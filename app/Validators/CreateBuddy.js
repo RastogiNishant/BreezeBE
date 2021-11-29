@@ -6,9 +6,9 @@ const Base = require('./Base')
 class CreateBuddy extends Base {
   static schema = () =>
     yup.object().shape({
-      name: yup.string().max(30).required(),
+      name: yup.string().max(30),
       phone: yup.string(),
-      email: yup.string().email().max('255').required(),
+      email: yup.string().email().max('255'),
     })
 }
 
