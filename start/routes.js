@@ -280,6 +280,7 @@ Route.group(() => {
 
 Route.group(() => {
 	Route.get('/', 'LandlordController.getLandlords')
+	Route.get('/getLandlords', 'LandlordController.landlords')
 	Route.get('/toggle', 'LandlordController.toggleStatus')
 	Route.post('/buddies/import', 'BuddyController.importBuddies')
 	Route.get('/buddies/get', 'BuddyController.getBuddies')
