@@ -563,6 +563,9 @@ class ExcelReader {
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
+        } else if (k == 'property_id') {
+          const r = Math.floor(100000 + Math.random() * 900000)
+          return { ...n, [k]: r}
         }
 
         return { ...n, [k]: v }
