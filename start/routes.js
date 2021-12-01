@@ -280,6 +280,7 @@ Route.group(() => {
 
 Route.group(() => {
 	Route.get('/', 'LandlordController.getLandlords')
+	Route.get('/getLandlords', 'LandlordController.landlords')
 	Route.get('/toggle', 'LandlordController.toggleStatus')
 	Route.post('/buddies/import', 'BuddyController.importBuddies')
 	Route.get('/buddies/get', 'BuddyController.getBuddies')
@@ -357,6 +358,18 @@ Route.group(() => {
 })
 	.middleware(['auth:jwtLandlord'])
 	.prefix('api/v1/companies')
+
+/**
+ * Landlord notes 
+ */
+ Route.group(() => {
+	Route.get('/', 'NoteController.getNotes')
+	Route.post('/', 'NoteController.createNote').middleware(['valid:CreateNote'])
+	Route.put('/', 'NoteController.updateNote').middleware(['valid:CreateNote'])
+	Route.delete('/', 'NoteController.removeNote')
+})
+	.middleware(['auth:jwtLandlord'])
+	.prefix('api/v1/notes')	
 
 Route.get('/api/v1/landlord/:id/company', 'CompanyController.getCompanyByLandlord').middleware([
 	'auth:jwt',

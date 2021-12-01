@@ -30,6 +30,23 @@ class LandlordController {
     response.res(landlords)
   }
   
+      /**
+   *
+   */
+  async landlords({ request, auth, response }) {
+    
+    const { limit, page, ...params } = request.all()
+    const user = auth.user
+
+    const query = User.query()
+    query.where('role', 1)
+    query.whereNot("email", null);
+    query.whereNot("firstname", null);
+    query.select('firstname', 'secondname', 'coord', 'email', 'phone', 'approved_landlord')
+    let landlords = await query.orderBy('id', 'desc').paginate(page, limit)
+    landlords = landlords.toJSON({ basicFields: true, publicOnly : false })
+    response.res(landlords)
+  }
 
     /**
    *

@@ -26,7 +26,7 @@ class BuddyController {
 		const { selectedIds } = request.all()
 		const userId = auth.current.user.id
 		const query = Buddy.query()
-		const res = await query.whereIn('id', selectedIds).del()
+		const res = await query.whereIn('id', selectedIds).where('user_id', userId).delete()
 		return response.res(true)
 	}
 
