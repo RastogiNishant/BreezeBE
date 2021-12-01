@@ -58,6 +58,14 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
+
+    // Update expired estates status to unpublished
+    await EstateService.getEstates(params)
+      .where('user_id', auth.user.id)
+      .where('status', STATUS_EXPIRE)
+      .whereNot('status', STATUS_DELETE)
+      .update({ status: STATUS_DRAFT })
+
     const result = await EstateService.getEstates(params)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
@@ -118,6 +126,7 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+        console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate)
