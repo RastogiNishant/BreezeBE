@@ -568,10 +568,10 @@ class EstateService {
   static async publishEstate(estate) {
     const User = use('App/Models/User')
     const user = await User.query()
-      .where('id',  estate.user_id)
+      .where('id', estate.user_id)
       .first()
     if (!user) return
-    if (user.company_id != null){
+    if (user.company_id != null) {
       await CompanyService.validateUserContacts(estate.user_id)
     }
     await props({
