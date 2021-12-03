@@ -363,10 +363,10 @@ Route.group(() => {
  * Landlord notes 
  */
  Route.group(() => {
-	Route.get('/', 'NoteController.getNotes')
+	Route.get('/', 'NoteController.getNotes').middleware(['valid:TenantId'])
 	Route.post('/', 'NoteController.createNote').middleware(['valid:CreateNote'])
 	Route.put('/', 'NoteController.updateNote').middleware(['valid:CreateNote'])
-	Route.delete('/', 'NoteController.removeNote')
+	Route.delete('/', 'NoteController.removeNote').middleware(['valid:TenantId'])
 })
 	.middleware(['auth:jwtLandlord'])
 	.prefix('api/v1/notes')	
