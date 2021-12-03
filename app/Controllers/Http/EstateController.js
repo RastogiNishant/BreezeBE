@@ -69,6 +69,7 @@ class EstateController {
     const result = await EstateService.getEstates(params)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
+      .whereNot('area', 0)
       .paginate(page, limit)
 
     response.res(result)
