@@ -38,8 +38,13 @@ class UserService {
     const user = await User.createItem(userData)
     if (user.role === ROLE_USER) {
       // Create empty tenant and link to user
+      const tenant = userData.signupData
       await Tenant.createItem({
         user_id: user.id,
+        coord: tenant.address.coord,
+        dist_type: tenant.transport,
+        dist_min: tenant.time,
+        address: tenant.address.title,
       })
     }
 
