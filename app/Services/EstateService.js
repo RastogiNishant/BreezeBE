@@ -65,9 +65,11 @@ class EstateService {
    *
    */
   static async createEstate(data, userId) {
+    const propertyId = data.property_id ? data.property_id : Math.random().toString(36).substr(2, 8).toUpperCase();
     return Estate.createItem({
       ...data,
       user_id: userId,
+      property_id: propertyId,
       status: STATUS_DRAFT,
     })
   }
