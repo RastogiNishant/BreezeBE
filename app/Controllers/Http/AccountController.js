@@ -24,7 +24,7 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email,firstname, ...userData } = request.all();
+    const { email, firstname, ...userData } = request.all()
     if (![ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
       throw new HttpException('Invalid user role', 401)
     }
@@ -41,7 +41,7 @@ class AccountController {
         email,
         firstname,
         status: STATUS_EMAIL_VERIFY,
-      });
+      })
       await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
@@ -148,20 +148,18 @@ class AccountController {
    *
    */
   async closeAccount({ auth, response }) {
-    const user = await User.query()
-    .where("id", auth.user.id).first();
-    const email = user.email;
-    const newEmail = email.concat('_breezeClose');
-    user.email =  newEmail;
-    user.firstname = '';
-    user.secondname = '';
-    user.is_admin = '';
-    user.approved_landlord = false;
-    user.is_admin = false;
-    user.save();
+    const user = await User.query().where('id', auth.user.id).first()
+    const email = user.email
+    const newEmail = email.concat('_breezeClose')
+    user.email = newEmail
+    user.firstname = ''
+    user.secondname = ''
+    user.is_admin = ''
+    user.approved_landlord = false
+    user.is_admin = false
+    user.save()
 
-    return response.res({ message: "User Account Closed" });
-    
+    return response.res({ message: 'User Account Closed' })
   }
 
   /**
@@ -239,44 +237,41 @@ class AccountController {
     return response.res()
   }
 
-   /**
+  /**
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
     const { email } = request.only(['email'])
-   
+
     try {
-      await UserService.requestSendCodeForgotPassword(email);
+      await UserService.requestSendCodeForgotPassword(email)
     } catch (e) {
-      if (e.name === "AppException") {
-        throw new HttpException(e.message, 400);
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
       }
-      throw e;
+      throw e
     }
 
-    return response.res();  
-      
+    return response.res()
   }
-
 
   /**
    *  setemail with code for forget Password
    */
   async setPasswordForgotPassword({ request, response }) {
-    const { email, password, code } = request.only(["email", "password", "code"]);
+    const { email, password, code } = request.only(['email', 'password', 'code'])
 
     try {
-      await UserService.requestSetPasswordForgotPassword(email, password, code);
+      await UserService.requestSetPasswordForgotPassword(email, password, code)
     } catch (e) {
-      if (e.name === "AppException") {
-        throw new HttpException(e.message, 400);
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
       }
-      throw e;
+      throw e
     }
 
-    return response.res();
+    return response.res()
   }
-
 
   /**
    * Confirm user password change with secret code
@@ -355,6 +350,17 @@ class AccountController {
     try {
       const user = await UserService.getLandlordInfo(id, auth.user.id)
       return response.res(user)
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async resetUnreadNotificationCount({ request, auth, response }) {
+    console.log({ req: request.all(), auth })
+    try {
+      await UserService.resetUnreadNotificationCount(auth.user.id)
+      return response.send(200)
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)

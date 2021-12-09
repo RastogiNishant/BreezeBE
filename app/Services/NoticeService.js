@@ -68,15 +68,24 @@ class NoticeService {
    * Insert multiple notices
    */
   static async insertNotices(data) {
-    return Database.from('notices').insert(
-      data.map(({ user_id, type, data }) => ({
-        user_id,
-        type,
-        data,
-        created_at: Database.fn.now(),
-        updated_at: Database.fn.now(),
-      }))
+    const promises = []
+    data.map((item) => {
+      promises.push(
+        UserService.increaseUnreadNotificationCount(item.user_id).catch((e) => console.log(e))
+      )
+    })
+    promises.push(
+      Database.from('notices').insert(
+        data.map(({ user_id, type, data }) => ({
+          user_id,
+          type,
+          data,
+          created_at: Database.fn.now(),
+          updated_at: Database.fn.now(),
+        }))
+      )
     )
+    return Promise.all(promises)
   }
 
   /**
@@ -610,7 +619,8 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_NEW_PROPERTY:
         return NotificationsService.sendLandlordNewProperty([notice])
       case NOTICE_TYPE_LANDLORD_TIME_FINISHED:
-        return NotificationsService.sendEstateExpired([notice])
+        // return NotificationsService.sendEstateExpired([notice])
+        return this.landLandlordEstateExpired([estate.id])
       case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT:
         return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_LANDLORD_VISIT30M:

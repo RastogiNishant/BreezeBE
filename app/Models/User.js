@@ -34,6 +34,7 @@ class User extends Model {
       'lord_size',
       'request_full_profile',
       'notice',
+      'unread_notification_count',
     ]
   }
 
