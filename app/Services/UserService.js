@@ -133,17 +133,17 @@ class UserService {
 
   static async requestSendCodeForgotPassword(email) {
     const code = getHash(3)
-    let user = null;
+    let user = null
     try {
       user = await User.findByOrFail({ email })
-    } catch (error) {      
-      throw new HttpException('User with this email does not exist', 404);
+    } catch (error) {
+      throw new HttpException('User with this email does not exist', 404)
     }
-      await DataStorage.setItem(user.id, { code }, "forget_password", {ttl: 3600});
-      await MailService.sendcodeForgotPasswordMail(user.email, code);
+    await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
+    await MailService.sendcodeForgotPasswordMail(user.email, code)
   }
 
-   /**
+  /**
    *
    */
   static async requestSetPasswordForgotPassword(email, password, codeSent) {
@@ -151,19 +151,18 @@ class UserService {
     try {
       user = await User.findByOrFail({ email })
     } catch (error) {
-      throw new AppException("User with this email does not exist");
+      throw new AppException('User with this email does not exist')
     }
 
-    const data = await DataStorage.getItem(user.id, "forget_password");
-    const { code } = data || {};
-    console.log('code', data, code, codeSent);
+    const data = await DataStorage.getItem(user.id, 'forget_password')
+    const { code } = data || {}
     if (code !== codeSent) {
       throw new HttpException('Invalid confirmation code', 404)
     }
 
     user.password = password
     await user.save()
-    await DataStorage.remove(user.id, "forget_password");
+    await DataStorage.remove(user.id, 'forget_password')
   }
 
   /**
@@ -397,6 +396,13 @@ class UserService {
     ])
   }
 
+  static async increaseUnreadNotificationCount(id) {
+    await Database.raw(
+      'UPDATE users SET unread_notification_count = unread_notification_count + 1 WHERE id = ?',
+      id
+    )
+  }
+
   /**
    *
    */
@@ -467,6 +473,10 @@ class UserService {
       .where('_u.created_at', '<=', moment().add(-7, 'days').format(DATE_FORMAT))
       .where('_u.created_at', '>=', moment().add(-8, 'days').format(DATE_FORMAT))
       .limit(500)
+  }
+
+  static async resetUnreadNotificationCount(id) {
+    return Database.raw('UPDATE users SET unread_notification_count = 0 WHERE id = ?', id)
   }
 }
 

@@ -21,6 +21,7 @@ class UserSchema extends Schema {
       table.specificType('coord', 'geometry(point, 4326)')
       table.string('lang', 2)
       table.integer('role').unsigned().notNullable()
+      table.integer('unread_notification_count').unsigned().defaultTo(0)
       table.timestamps()
 
       table.unique(['email', 'role'])
