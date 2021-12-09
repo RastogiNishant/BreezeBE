@@ -34,8 +34,6 @@ class AccountController {
     if (availableUser) {
       throw new HttpException('User already exists, can be switched', 400)
     }
-    //phrase lang chnaged to en-us
-    userData.lang == 'en-US' ? userData.lang = 'en' : null
 
     try {
       const { user } = await UserService.createUser({
