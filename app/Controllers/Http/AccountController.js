@@ -357,7 +357,6 @@ class AccountController {
   }
 
   async resetUnreadNotificationCount({ request, auth, response }) {
-    console.log({ req: request.all(), auth })
     try {
       await UserService.resetUnreadNotificationCount(auth.user.id)
       return response.send(200)

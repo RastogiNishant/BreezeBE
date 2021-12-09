@@ -619,8 +619,7 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_NEW_PROPERTY:
         return NotificationsService.sendLandlordNewProperty([notice])
       case NOTICE_TYPE_LANDLORD_TIME_FINISHED:
-        // return NotificationsService.sendEstateExpired([notice])
-        return this.landLandlordEstateExpired([estate.id])
+        return NotificationsService.sendEstateExpired([notice])
       case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT:
         return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_LANDLORD_VISIT30M:

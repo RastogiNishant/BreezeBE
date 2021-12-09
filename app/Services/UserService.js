@@ -156,7 +156,6 @@ class UserService {
 
     const data = await DataStorage.getItem(user.id, 'forget_password')
     const { code } = data || {}
-    console.log('code', data, code, codeSent)
     if (code !== codeSent) {
       throw new HttpException('Invalid confirmation code', 404)
     }
@@ -398,7 +397,6 @@ class UserService {
   }
 
   static async increaseUnreadNotificationCount(id) {
-    console.log('girdi', id)
     await Database.raw(
       'UPDATE users SET unread_notification_count = unread_notification_count + 1 WHERE id = ?',
       id
