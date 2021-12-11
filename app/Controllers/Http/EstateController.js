@@ -399,6 +399,16 @@ class EstateController {
 
     return response.res(slots)
   }
+
+   /**
+   *
+   */
+    async verifyPropertyId({ request, auth, response }) {
+      const { id } = request.all()
+      const estate = await Estate.query().where({ property_id: id }).orderBy('id').fetch()
+      const duplicate = estate.rows.length > 0 ? false : true
+      response.res(duplicate)
+    }
 }
 
 module.exports = EstateController
