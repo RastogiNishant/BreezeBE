@@ -1,6 +1,7 @@
 'use strict'
 
 const Logger = use('Logger')
+const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const CompanyService = use('App/Services/CompanyService')
@@ -8,9 +9,9 @@ const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
-const { reduce, isEmpty } = require('lodash')
+const { reduce, isEmpty, toArray } = require('lodash')
 
-const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE } = require('../../constants')
+const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE, MATCH_STATUS_COMMIT, MATCH_STATUS_INVITE } = require('../../constants')
 
 class MatchController {
   /**
@@ -295,6 +296,33 @@ class MatchController {
     })
   }
 
+  /**
+   * Get matches summary  for landlord
+   */
+   async getMatchesSummaryLandlord({ request, auth, response }) {
+    const user = auth.user
+    const estates = await Estate.query().where({ user_id: user.id }).select('id').fetch()
+    const estatesJson = estates.toJSON({ isShort: true })
+    var estatesId = estatesJson.map(function(item) { return item["id"]; });
+
+    const totalInvite = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
+    // .whereIn({estate_id: estatesId})    
+
+    const totalVisits = await Database.table('visits').count('*').whereIn('estate_id', estatesId)
+
+    const totalDecided = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_COMMIT })
+    // .whereIn({estate_id: estatesId})
+
+    return response.res({
+      totalInvite: totalInvite[0].count,
+      totalVisits: totalVisits[0].count,
+      totalDecided: totalDecided[0].count,
+    })
+  }
   /**
    * Get matches user for landlord
    */

@@ -311,6 +311,10 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'valid:MatchListLandlord,Pagination',
 ])
 
+Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware([
+  'auth:jwtLandlord',
+])
+
 // Landlord specific routes
 Route.group(() => {
   Route.get('/visit', 'LandlordController.getLordVisits')

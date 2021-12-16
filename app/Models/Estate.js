@@ -29,6 +29,8 @@ const {
 
   STATUS_DRAFT,
   STATUS_ACTIVE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_INVITE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -233,6 +235,27 @@ class Estate extends Model {
     return this.hasMany('App/Models/Room')
   }
 
+  /**
+   *
+   */
+   visits() {
+    return this.hasMany('App/Models/Visit')
+  }
+
+   /**
+   *
+   */
+    decided() {
+      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
+    }
+
+   /**
+   *
+   */
+    invite() {
+      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_INVITE)
+    }
+    
   /**
    *
    */
