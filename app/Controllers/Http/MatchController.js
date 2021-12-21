@@ -301,7 +301,9 @@ class MatchController {
    */
    async getMatchesSummaryLandlord({ request, auth, response }) {
     const user = auth.user
-    const estates = await Estate.query().where({ user_id: user.id }).select('id').fetch()
+    const estates = await Estate.query().where({ user_id: user.id })
+                    .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+                    .select('id').fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     var estatesId = estatesJson.map(function(item) { return item["id"]; });
 
