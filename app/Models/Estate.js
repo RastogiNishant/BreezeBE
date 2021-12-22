@@ -254,9 +254,16 @@ class Estate extends Model {
   /**
    *
    */
-  decided() {
-    return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
-  }
+    matches() {
+      return this.hasMany('App/Models/Match')
+    }
+
+   /**
+   *
+   */
+    decided() {
+      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
+    }
 
   /**
    *
