@@ -24,7 +24,6 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
-  MATCH_STATUS_VISIT,
 } = require('../constants')
 const MAX_DIST = 10000
 
@@ -96,7 +95,7 @@ class EstateService {
     if(params.filter) {
       query
       .whereHas('matches', (query) => {
-            query.whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_VISIT])
+            query.whereIn('status', params.filter)
       })
     }
 

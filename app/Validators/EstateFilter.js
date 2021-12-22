@@ -10,7 +10,7 @@ class EstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
       query: yup.string().min(2),
-      filter: yup.boolean(),
+      filter: yup.array().of(yup.number()).nullable(),
       status: yup.lazy((value) => {
         if (isArray(value)) {
           return yup
