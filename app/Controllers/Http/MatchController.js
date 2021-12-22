@@ -391,70 +391,16 @@ class MatchController {
   }
 
   async getMatchesCountsTenant({ auth, response }) {
-    const user = auth.user
-    const datas = await Promise.all([
-      MatchService.getTenantLikesCount(user.id),
-      MatchService.getTenantDislikesCount(user.id),
-      MatchService.getTenantKnocksCount(user.id),
-      MatchService.getTenantSharesCount(user.id),
-      MatchService.getTenantInvitesCount(user.id),
-      MatchService.getTenantVisitsCount(user.id),
-      MatchService.getTenantCommitsCount(user.id),
-      MatchService.getTenantTopsCount(user.id),
-      MatchService.getTenantBuddiesCount(user.id),
-    ])
-    const [{ count: likesCount }] = datas[0]
-    const [{ count: dislikesCount }] = datas[1]
-    const [{ count: knocksCount }] = datas[2]
-    const [{ count: sharesCount }] = datas[3]
-    const [{ count: invitesCount }] = datas[4]
-    const [{ count: visitsCount }] = datas[5]
-    const [{ count: commitsCount }] = datas[6]
-    const [{ count: topsCount }] = datas[7]
-    const [{ count: buddiesCount }] = datas[8]
-    return response.res({
-      like: parseInt(likesCount),
-      dislike: parseInt(dislikesCount),
-      knock: parseInt(knocksCount),
-      share: parseInt(sharesCount),
-      visit: parseInt(parseInt(invitesCount) + parseInt(visitsCount)),
-      commit: parseInt(commitsCount),
-      decide: parseInt(commitsCount) + parseInt(topsCount),
-      buddie: parseInt(buddiesCount),
-    })
+    const userId = auth.user.id
+    const counts = await MatchService.getMatchesCountsTenant(userId)
+    return response.res(counts)
   }
 
   async getMatchesStageCountsTenant({ request, auth, response }) {
-    const user = auth.user
+    const userId = auth.user.id
     const { filter } = request.all()
-
-    if (filter === 'visit') {
-      const datas = await Promise.all([
-        MatchService.getTenantInvitesCount(user.id),
-        MatchService.getTenantVisitsCount(user.id),
-      ])
-      const [{ count: invitesCount }] = datas[0]
-      const [{ count: visitsCount }] = datas[1]
-      return response.res({
-        invite: parseInt(invitesCount),
-        visit: parseInt(visitsCount),
-        stage: parseInt(invitesCount) + parseInt(visitsCount),
-      })
-    } else if (filter === 'decide') {
-      const datas = await Promise.all([
-        MatchService.getTenantTopsCount(user.id),
-        MatchService.getTenantCommitsCount(user.id),
-      ])
-      const [{ count: topsCount }] = datas[0]
-      const [{ count: commitsCount }] = datas[1]
-      return response.res({
-        top: parseInt(topsCount),
-        commit: parseInt(commitsCount),
-        stage: parseInt(topsCount) + parseInt(commitsCount),
-      })
-    } else {
-      throw new HttpException('Invalid stage', 400)
-    }
+    const counts = await MatchService.getMatchesStageCountsTenant(filter, userId)
+    return response.res(counts)
   }
 
   async searchForTenant({ request, auth, response }) {
