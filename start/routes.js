@@ -306,14 +306,29 @@ Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middle
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
 ])
+Route.get('/api/v1/match/tenant/upcoming', 'MatchController.getTenantUpcomingVisits').middleware([
+  'auth:jwt',
+])
+Route.get('/api/v1/match/tenant/count', 'MatchController.getMatchesCountsTenant').middleware([
+  'auth:jwt',
+  'valid:MatchListTenant,Pagination',
+])
+Route.get(
+  '/api/v1/match/tenant/stage/count',
+  'MatchController.getMatchesStageCountsTenant'
+).middleware(['auth:jwt'])
+Route.get('/api/v1/match/tenant/search', 'MatchController.searchForTenant').middleware([
+  'auth:jwt',
+  'valid:Pagination,EstateFilter',
+])
 Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').middleware([
   'auth:jwtLandlord',
   'valid:MatchListLandlord,Pagination',
 ])
 
-Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware([
-  'auth:jwtLandlord',
-])
+Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware(
+  ['auth:jwtLandlord']
+)
 
 // Landlord specific routes
 Route.group(() => {
@@ -326,6 +341,7 @@ Route.group(() => {
 // MATCH FLOW
 Route.group(() => {
   Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])
+  Route.delete('/knock', 'MatchController.removeKnock').middleware(['auth:jwt'])
   // invite
   Route.post('/invite', 'MatchController.matchToInvite').middleware([
     'auth:jwtLandlord',
@@ -344,13 +360,16 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot',
   ])
+  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
   // Share tenant profile to landlord
   Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
+  Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
   // Move/remove top tenant
   Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])
   Route.delete('/top', 'MatchController.discardUserToTop').middleware(['auth:jwtLandlord'])
   // Request confirmation
   Route.post('/request', 'MatchController.requestUserCommit').middleware(['auth:jwtLandlord'])
+  Route.delete('/commit', 'MatchController.tenantCancelCommit').middleware(['auth:jwt'])
   // Final confirm
   Route.post('/confirm', 'MatchController.commitEstateRent').middleware([
     'auth:jwt',

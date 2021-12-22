@@ -20,6 +20,7 @@ class MatchListTenant extends Base {
           buddy: yup.boolean(),
           knock: yup.boolean(),
           invite: yup.boolean(),
+          visit: yup.boolean(),
           share: yup.boolean(),
           top: yup.boolean(),
           commit: yup.boolean(),

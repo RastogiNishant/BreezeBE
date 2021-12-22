@@ -65,7 +65,9 @@ class EstateService {
    *
    */
   static async createEstate(data, userId) {
-    const propertyId = data.property_id ? data.property_id : Math.random().toString(36).substr(2, 8).toUpperCase();
+    const propertyId = data.property_id
+      ? data.property_id
+      : Math.random().toString(36).substr(2, 8).toUpperCase()
     return Estate.createItem({
       ...data,
       user_id: userId,
@@ -569,9 +571,7 @@ class EstateService {
    */
   static async publishEstate(estate) {
     const User = use('App/Models/User')
-    const user = await User.query()
-      .where('id', estate.user_id)
-      .first()
+    const user = await User.query().where('id', estate.user_id).first()
     if (!user) return
     if (user.company_id != null) {
       await CompanyService.validateUserContacts(estate.user_id)
