@@ -11,7 +11,16 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const { reduce, isEmpty, toArray } = require('lodash')
 
-const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE, MATCH_STATUS_COMMIT, MATCH_STATUS_INVITE } = require('../../constants')
+const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE,
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_FINISH,
+} = require('../../constants')
 
 class MatchController {
   /**
@@ -319,10 +328,49 @@ class MatchController {
     .where({ user_id: user.id, status: MATCH_STATUS_COMMIT })
     // .whereIn({estate_id: estatesId})
 
+    const matches = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_KNOCK })
+
+    const buddies = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_NEW, buddy: true })
+
+    const invites = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
+
+    const visits = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_VISIT, buddy: true })
+    .orWhere({user_id: user.id, status: MATCH_STATUS_SHARE, buddy: true })
+
+    const top = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_TOP })
+
+    const finalMatches = await Database.table('matches')
+    .count('*')
+    .where({ user_id: user.id, status: MATCH_STATUS_COMMIT, buddy: true })
+    .orWhere({user_id: user.id, status: MATCH_STATUS_FINISH, buddy: true })
+
+    console.log('jgkgjkgjgk',totalInvite[0].count,totalVisits[0].count,totalDecided[0].count,matches[0].count,
+    buddies[0].count,
+    invites[0].count,
+    visits[0].count,
+    top[0].count,
+    finalMatches[0].count)
     return response.res({
       totalInvite: totalInvite[0].count,
       totalVisits: totalVisits[0].count,
       totalDecided: totalDecided[0].count,
+
+      matches: matches[0].count,
+      buddies: buddies[0].count,
+      invites: invites[0].count,
+      visits: visits[0].count,
+      top: top[0].count,
+      finalMatches: finalMatches[0].count,
     })
   }
   /**
