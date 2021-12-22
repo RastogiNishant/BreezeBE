@@ -162,12 +162,21 @@ class Estate extends Model {
       'net_rent',
       'area',
       'cover',
+      'street',
+      'city',
+      'zip',
       'rooms_number',
       'status',
       'match',
       'net_rent',
       'budget',
       'updated_at',
+      'share',
+      'like',
+      'dislike',
+      'visit_status',
+      'delay',
+      'date',
     ]
   }
 
@@ -238,24 +247,24 @@ class Estate extends Model {
   /**
    *
    */
-   visits() {
+  visits() {
     return this.hasMany('App/Models/Visit')
   }
 
-   /**
+  /**
    *
    */
-    decided() {
-      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
-    }
+  decided() {
+    return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
+  }
 
-   /**
+  /**
    *
    */
-    invite() {
-      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_INVITE)
-    }
-    
+  invite() {
+    return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_INVITE)
+  }
+
   /**
    *
    */

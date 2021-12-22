@@ -11,7 +11,13 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const { reduce, isEmpty, toArray } = require('lodash')
 
-const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE, MATCH_STATUS_COMMIT, MATCH_STATUS_INVITE } = require('../../constants')
+const {
+  ROLE_LANDLORD,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_INVITE,
+} = require('../../constants')
 
 class MatchController {
   /**
@@ -55,6 +61,22 @@ class MatchController {
 
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id)
+      return response.res(result)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  async removeKnock({ request, auth, response }) {
+    const { estate_id } = request.all()
+    await this.getActiveEstate(estate_id, false)
+
+    try {
+      const result = await MatchService.cancelKnock(estate_id, auth.user.id)
       return response.res(result)
     } catch (e) {
       Logger.error(e)
@@ -145,6 +167,24 @@ class MatchController {
     }
   }
 
+  async cancelVisit({ request, auth, response }) {
+    const userId = auth.user.id
+    const { estate_id } = request.all()
+    console.log({ estate_id, userId })
+    await this.getActiveEstate(estate_id)
+
+    try {
+      await MatchService.cancelVisit(estate_id, userId)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
   /**
    *
    */
@@ -168,7 +208,7 @@ class MatchController {
    */
   async updateVisitTimeslotTenant({ request, auth, response }) {
     const { estate_id, status, delay = null } = request.all()
-
+    console.log({ status })
     await MatchService.updateVisitStatus(estate_id, auth.user.id, {
       tenant_status: status,
       tenant_delay: delay,
@@ -188,6 +228,21 @@ class MatchController {
 
     try {
       await MatchService.share(userId, estate_id, code)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  async cancelShare({ request, auth, response }) {
+    const { estate_id } = request.all()
+    await this.getActiveEstate(estate_id)
+    try {
+      await MatchService.cancelShare(estate_id, auth.user.id)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -245,6 +300,13 @@ class MatchController {
     response.res(true)
   }
 
+  async tenantCancelCommit({ request, auth, response }) {
+    const { estate_id } = request.all()
+    await this.getActiveEstate(estate_id)
+    await MatchService.tenantCancelCommit(estate_id, auth.user.id)
+    response.res(true)
+  }
+
   /**
    * Tenant
    * Accept rent
@@ -285,7 +347,7 @@ class MatchController {
       limit
     )
 
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'share']
     const extraFields = filters.commit
       ? ['email', 'avatar', 'phone', 'firstname', 'secondname', ...fields]
       : fields
@@ -296,25 +358,147 @@ class MatchController {
     })
   }
 
+  async getTenantUpcomingVisits({ auth, response }) {
+    const estates = await MatchService.getTenantUpcomingVisits(auth.user.id).paginate(1, 999999)
+    const fields = [
+      'street',
+      'city',
+      'zip',
+      'email',
+      'avatar',
+      'phone',
+      'firstname',
+      'secondname',
+      'buddy',
+      'date',
+      'user_id',
+      'visit_status',
+      'delay',
+      'share',
+      'like',
+      'dislike',
+    ]
+
+    return response.res({
+      ...estates.toJSON({ isShort: true, fields }),
+    })
+  }
+
+  async getMatchesCountsTenant({ auth, response }) {
+    const user = auth.user
+    const datas = await Promise.all([
+      MatchService.getTenantLikesCount(user.id),
+      MatchService.getTenantDislikesCount(user.id),
+      MatchService.getTenantKnocksCount(user.id),
+      MatchService.getTenantSharesCount(user.id),
+      MatchService.getTenantInvitesCount(user.id),
+      MatchService.getTenantVisitsCount(user.id),
+      MatchService.getTenantCommitsCount(user.id),
+      MatchService.getTenantTopsCount(user.id),
+      MatchService.getTenantBuddiesCount(user.id),
+    ])
+    const [{ count: likesCount }] = datas[0]
+    const [{ count: dislikesCount }] = datas[1]
+    const [{ count: knocksCount }] = datas[2]
+    const [{ count: sharesCount }] = datas[3]
+    const [{ count: invitesCount }] = datas[4]
+    const [{ count: visitsCount }] = datas[5]
+    const [{ count: commitsCount }] = datas[6]
+    const [{ count: topsCount }] = datas[7]
+    const [{ count: buddiesCount }] = datas[8]
+    return response.res({
+      like: parseInt(likesCount),
+      dislike: parseInt(dislikesCount),
+      knock: parseInt(knocksCount),
+      share: parseInt(sharesCount),
+      visit: parseInt(parseInt(invitesCount) + parseInt(visitsCount)),
+      commit: parseInt(commitsCount),
+      decide: parseInt(commitsCount) + parseInt(topsCount),
+      buddie: parseInt(buddiesCount),
+    })
+  }
+
+  async getMatchesStageCountsTenant({ request, auth, response }) {
+    const user = auth.user
+    const { filter } = request.all()
+
+    if (filter === 'visit') {
+      const datas = await Promise.all([
+        MatchService.getTenantInvitesCount(user.id),
+        MatchService.getTenantVisitsCount(user.id),
+      ])
+      const [{ count: invitesCount }] = datas[0]
+      const [{ count: visitsCount }] = datas[1]
+      return response.res({
+        invite: parseInt(invitesCount),
+        visit: parseInt(visitsCount),
+        stage: parseInt(invitesCount) + parseInt(visitsCount),
+      })
+    } else if (filter === 'decide') {
+      const datas = await Promise.all([
+        MatchService.getTenantTopsCount(user.id),
+        MatchService.getTenantCommitsCount(user.id),
+      ])
+      const [{ count: topsCount }] = datas[0]
+      const [{ count: commitsCount }] = datas[1]
+      return response.res({
+        top: parseInt(topsCount),
+        commit: parseInt(commitsCount),
+        stage: parseInt(topsCount) + parseInt(commitsCount),
+      })
+    } else {
+      throw new HttpException('Invalid stage', 400)
+    }
+  }
+
+  async searchForTenant({ request, auth, response }) {
+    const { limit, page, ...params } = request.all()
+    const estates = await MatchService.searchForTenant(auth.user.id, params).paginate(1, 999999)
+    const fields = [
+      'street',
+      'city',
+      'zip',
+      'email',
+      'avatar',
+      'phone',
+      'firstname',
+      'secondname',
+      'buddy',
+      'date',
+      'user_id',
+      'visit_status',
+      'delay',
+      'share',
+      'like',
+      'dislike',
+    ]
+
+    return response.res({
+      ...estates.toJSON({ isShort: true, fields }),
+    })
+  }
+
   /**
    * Get matches summary  for landlord
    */
-   async getMatchesSummaryLandlord({ request, auth, response }) {
+  async getMatchesSummaryLandlord({ request, auth, response }) {
     const user = auth.user
     const estates = await Estate.query().where({ user_id: user.id }).select('id').fetch()
     const estatesJson = estates.toJSON({ isShort: true })
-    var estatesId = estatesJson.map(function(item) { return item["id"]; });
+    var estatesId = estatesJson.map(function (item) {
+      return item['id']
+    })
 
     const totalInvite = await Database.table('matches')
-    .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
-    // .whereIn({estate_id: estatesId})    
+      .count('*')
+      .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
+    // .whereIn({estate_id: estatesId})
 
     const totalVisits = await Database.table('visits').count('*').whereIn('estate_id', estatesId)
 
     const totalDecided = await Database.table('matches')
-    .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_COMMIT })
+      .count('*')
+      .where({ user_id: user.id, status: MATCH_STATUS_COMMIT })
     // .whereIn({estate_id: estatesId})
 
     return response.res({
