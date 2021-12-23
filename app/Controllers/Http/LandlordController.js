@@ -8,8 +8,8 @@ class LandlordController {
   /**
    *
    */
-  async getLordVisits({ auth, response }) {
-    const slots = await LandlordService.getBookedTimeslots(auth.user.id)
+  async getLordVisits({ auth, response, params }) {
+    const slots = await LandlordService.getBookedTimeslots(auth.user.id, params)
 
     response.res(slots)
   }
