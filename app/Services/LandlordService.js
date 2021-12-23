@@ -4,10 +4,10 @@ class LandlordService {
   /**
    *
    */
-  static async getBookedTimeslots(userId, params = false) {
+  static async getBookedTimeslots(userId, params = {} ) {
 
-    let date 
-    if( params.upcoming ) {
+    let date
+    if(params.upcoming) {
       const myDate = new Date(new Date().getTime()+(2*24*60*60*1000));
       date = myDate.toISOString().slice(0, 19).replace('T', ' ')
     } else {
