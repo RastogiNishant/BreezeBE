@@ -5,14 +5,6 @@ class LandlordService {
    *
    */
   static async getBookedTimeslots(userId, upcoming ) {
-
-    let date
-    if(upcoming) {
-      const myDate = new Date(new Date().getTime()+(2*24*60*60*1000));
-      date = myDate.toISOString().slice(0, 19).replace('T', ' ')
-    } else {
-      date = Database.fn.now()
-    }
     return Database.table({ _v: 'visits' })
       .select(
         '_u.firstname',
@@ -42,7 +34,7 @@ class LandlordService {
       })
       .innerJoin({ _u: 'users' }, '_u.id', '_v.user_id')
       .innerJoin({ _t: 'tenants' }, '_t.user_id', '_u.id')
-      .where('_v.date', '>', date)
+      .where('_v.date', '>', Database.fn.now())
       .orderBy('_v.date')
       .limit(500)
   }
