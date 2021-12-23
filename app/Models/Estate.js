@@ -29,6 +29,8 @@ const {
 
   STATUS_DRAFT,
   STATUS_ACTIVE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_INVITE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -160,12 +162,21 @@ class Estate extends Model {
       'net_rent',
       'area',
       'cover',
+      'street',
+      'city',
+      'zip',
       'rooms_number',
       'status',
       'match',
       'net_rent',
       'budget',
       'updated_at',
+      'share',
+      'like',
+      'dislike',
+      'visit_status',
+      'delay',
+      'date',
     ]
   }
 
@@ -231,6 +242,34 @@ class Estate extends Model {
    */
   rooms() {
     return this.hasMany('App/Models/Room')
+  }
+
+  /**
+   *
+   */
+  visits() {
+    return this.hasMany('App/Models/Visit')
+  }
+
+  /**
+   *
+   */
+    matches() {
+      return this.hasMany('App/Models/Match')
+    }
+
+   /**
+   *
+   */
+    decided() {
+      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
+    }
+
+  /**
+   *
+   */
+  invite() {
+    return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_INVITE)
   }
 
   /**

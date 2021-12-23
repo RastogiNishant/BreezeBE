@@ -68,15 +68,24 @@ class NoticeService {
    * Insert multiple notices
    */
   static async insertNotices(data) {
-    return Database.from('notices').insert(
-      data.map(({ user_id, type, data }) => ({
-        user_id,
-        type,
-        data,
-        created_at: Database.fn.now(),
-        updated_at: Database.fn.now(),
-      }))
+    const promises = []
+    data.map((item) => {
+      promises.push(
+        UserService.increaseUnreadNotificationCount(item.user_id).catch((e) => console.log(e))
+      )
+    })
+    promises.push(
+      Database.from('notices').insert(
+        data.map(({ user_id, type, data }) => ({
+          user_id,
+          type,
+          data,
+          created_at: Database.fn.now(),
+          updated_at: Database.fn.now(),
+        }))
+      )
     )
+    return Promise.all(promises)
   }
 
   /**

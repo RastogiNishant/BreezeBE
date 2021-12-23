@@ -39,11 +39,20 @@ Route.get('/', () => {
 Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'valid:SignUp'])
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
-Route.get("/api/v1/closeAccount", "AccountController.closeAccount").middleware(["auth:jwt,jwtLandlord"]);
+Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
+  'auth:jwt,jwtLandlord',
+])
 Route.group(() => {
-  Route.post("/","AccountController.sendCodeForgotPassword" ).middleware(["guest", "valid:ResetEmailRequest"]);
-  Route.post("/setPassword", "AccountController.setPasswordForgotPassword").middleware(["guest","valid:SetPassword"]);
-}).prefix("/api/v1/forgotPassword");
+  Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
+    'guest',
+    'valid:ResetEmailRequest',
+  ])
+  Route.post('/setPassword', 'AccountController.setPasswordForgotPassword').middleware([
+    'guest',
+    'valid:SetPassword',
+  ])
+}).prefix('/api/v1/forgotPassword')
+
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
@@ -88,6 +97,7 @@ Route.group(() => {
   Route.put('/', 'TenantController.updateTenant').middleware(['valid:UpdateTenant'])
   Route.post('/activate', 'TenantController.activateTenant')
   Route.get('/map', 'TenantController.getTenantMap')
+  Route.get('/all', 'TenantController.getAllTenants')
 })
   .prefix('/api/v1/users/tenant')
   .middleware(['auth:jwt'])
@@ -111,6 +121,7 @@ Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware(['valid:IncomeId'])
   // add slots
   Route.get('/:estate_id/slots', 'EstateController.getSlots').middleware(['valid:EstateId'])
   Route.post('/:estate_id/slots', 'EstateController.createSlot').middleware([
@@ -173,6 +184,9 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'NoticeController.getNotices').middleware([
     'valid:GetNotifications',
+    'auth:jwt,jwtLandlord',
+  ])
+  Route.get('/resetCount', 'AccountController.resetUnreadNotificationCount').middleware([
     'auth:jwt,jwtLandlord',
   ])
 }).prefix('/api/v1/notices')
@@ -277,12 +291,14 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/', 'LandlordController.getLandlords')
+  Route.get('/getLandlords', 'LandlordController.landlords')
   Route.get('/toggle', 'LandlordController.toggleStatus')
   Route.post('/buddies/import', 'BuddyController.importBuddies')
   Route.get('/buddies/get', 'BuddyController.getBuddies')
+  Route.delete('/buddies', 'BuddyController.removeBuddies')
 })
   .prefix('api/v1/landlords')
-  .middleware(['auth:jwtLandlord,jwt'])  
+  .middleware(['auth:jwtLandlord,jwt'])
 
 Route.get('/map', 'MapController.getMap')
 
@@ -290,10 +306,29 @@ Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middle
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
 ])
+Route.get('/api/v1/match/tenant/upcoming', 'MatchController.getTenantUpcomingVisits').middleware([
+  'auth:jwt',
+])
+Route.get('/api/v1/match/tenant/count', 'MatchController.getMatchesCountsTenant').middleware([
+  'auth:jwt',
+  'valid:MatchListTenant,Pagination',
+])
+Route.get(
+  '/api/v1/match/tenant/stage/count',
+  'MatchController.getMatchesStageCountsTenant'
+).middleware(['auth:jwt'])
+Route.get('/api/v1/match/tenant/search', 'MatchController.searchForTenant').middleware([
+  'auth:jwt',
+  'valid:Pagination,EstateFilter',
+])
 Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').middleware([
   'auth:jwtLandlord',
   'valid:MatchListLandlord,Pagination',
 ])
+
+Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware(
+  ['auth:jwtLandlord']
+)
 
 // Landlord specific routes
 Route.group(() => {
@@ -306,6 +341,7 @@ Route.group(() => {
 // MATCH FLOW
 Route.group(() => {
   Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])
+  Route.delete('/knock', 'MatchController.removeKnock').middleware(['auth:jwt'])
   // invite
   Route.post('/invite', 'MatchController.matchToInvite').middleware([
     'auth:jwtLandlord',
@@ -324,13 +360,16 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot',
   ])
+  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
   // Share tenant profile to landlord
   Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
+  Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
   // Move/remove top tenant
   Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])
   Route.delete('/top', 'MatchController.discardUserToTop').middleware(['auth:jwtLandlord'])
   // Request confirmation
   Route.post('/request', 'MatchController.requestUserCommit').middleware(['auth:jwtLandlord'])
+  Route.delete('/commit', 'MatchController.tenantCancelCommit').middleware(['auth:jwt'])
   // Final confirm
   Route.post('/confirm', 'MatchController.commitEstateRent').middleware([
     'auth:jwt',
@@ -353,6 +392,18 @@ Route.group(() => {
 })
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/companies')
+
+/**
+ * Landlord notes
+ */
+Route.group(() => {
+  Route.get('/', 'NoteController.getNotes').middleware(['valid:TenantId'])
+  Route.post('/', 'NoteController.createNote').middleware(['valid:CreateNote'])
+  Route.put('/', 'NoteController.updateNote').middleware(['valid:CreateNote'])
+  Route.delete('/', 'NoteController.removeNote').middleware(['valid:TenantId'])
+})
+  .middleware(['auth:jwtLandlord'])
+  .prefix('api/v1/notes')
 
 Route.get('/api/v1/landlord/:id/company', 'CompanyController.getCompanyByLandlord').middleware([
   'auth:jwt',

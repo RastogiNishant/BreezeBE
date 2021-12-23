@@ -65,9 +65,13 @@ class EstateService {
    *
    */
   static async createEstate(data, userId) {
+    const propertyId = data.property_id
+      ? data.property_id
+      : Math.random().toString(36).substr(2, 8).toUpperCase()
     return Estate.createItem({
       ...data,
       user_id: userId,
+      property_id: propertyId,
       status: STATUS_DRAFT,
     })
   }
@@ -76,7 +80,7 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query()
+    const query = Estate.query().withCount('visits').withCount('decided').withCount('invite')
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -86,6 +90,13 @@ class EstateService {
 
     if (params.status) {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
+    }
+
+    if(params.filter) {
+      query
+      .whereHas('matches', (query) => {
+            query.whereIn('status', params.filter)
+      })
     }
 
     return query.orderBy('estates.id', 'desc')
@@ -566,7 +577,12 @@ class EstateService {
    *
    */
   static async publishEstate(estate) {
-    await CompanyService.validateUserContacts(estate.user_id)
+    const User = use('App/Models/User')
+    const user = await User.query().where('id', estate.user_id).first()
+    if (!user) return
+    if (user.company_id != null) {
+      await CompanyService.validateUserContacts(estate.user_id)
+    }
     await props({
       delMatches: () => Database.table('matches').where({ estate_id: estate.id }).delete(),
       delLikes: () => Database.table('likes').where({ estate_id: estate.id }).delete(),

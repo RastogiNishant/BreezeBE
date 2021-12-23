@@ -58,9 +58,18 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
+
+    // Update expired estates status to unpublished
+    await EstateService.getEstates(params)
+      .where('user_id', auth.user.id)
+      .where('status', STATUS_EXPIRE)
+      .whereNot('status', STATUS_DELETE)
+      .update({ status: STATUS_DRAFT })
+
     const result = await EstateService.getEstates(params)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
+      .whereNot('area', 0)
       .paginate(page, limit)
 
     response.res(result)
@@ -118,6 +127,7 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+        console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate)
@@ -388,6 +398,16 @@ class EstateController {
     const slots = await EstateService.getFreeTimeslots(estate_id)
 
     return response.res(slots)
+  }
+
+  /**
+   *
+   */
+  async verifyPropertyId({ request, auth, response }) {
+    const { id } = request.all()
+    const estate = await Estate.query().where({ property_id: id }).orderBy('id').fetch()
+    const duplicate = estate.rows.length > 0 ? false : true
+    response.res(duplicate)
   }
 }
 
