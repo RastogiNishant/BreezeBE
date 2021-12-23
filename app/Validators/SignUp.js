@@ -36,7 +36,7 @@ class SignUp extends Base {
       firstname: yup.string().min(2).max(254),
       secondname: yup.string().min(2).max(254),
       birthday: yup.date().required(),
-      lang: yup.string().oneOf(['en-US', 'de']).default('en-US').required(),
+      lang: yup.string().oneOf(['en', 'de']).default('en').required(),
       lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
       request_full_profile: yup.boolean(),
     })
