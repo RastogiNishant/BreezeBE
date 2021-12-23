@@ -39,6 +39,7 @@ class LandlordService {
       .innerJoin({ _s: 'time_slots' }, '_s.estate_id', '_v.estate_id')
       .innerJoin({ _t: 'tenants' }, '_t.user_id', '_u.id')
       .where('_v.date', '>', Database.fn.now())
+      .where('_s.start_at', '>', Database.fn.now())
       .orderBy('_v.date')
       .limit(500)
   }
