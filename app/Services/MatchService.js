@@ -992,7 +992,7 @@ class MatchService {
   static async getTenantVisitsCount(userId, estateIds) {
     const data = await Database.table('matches')
       .where({ user_id: userId })
-      .whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
+      .whereIn('status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
       .whereIn('estate_id', estateIds)
       .count('*')
     return data
