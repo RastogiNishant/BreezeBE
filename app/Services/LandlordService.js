@@ -15,11 +15,6 @@ class LandlordService {
         '_u.birthday',
         '_v.date',
         '_e.address',
-        '_e.area',
-        '_e.rooms_number',
-        '_e.floor',
-        '_e.number_floors',
-        '_e.cover',
         '_v.estate_id',
         '_v.user_id'
       )
