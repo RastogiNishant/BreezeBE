@@ -804,7 +804,7 @@ class MatchService {
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
     } else if (visit) {
-      query.where('_m.status', MATCH_STATUS_VISIT)
+      query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (share) {
       query
         .where({ '_m.share': true })
