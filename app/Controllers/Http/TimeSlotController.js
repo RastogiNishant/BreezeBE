@@ -2,7 +2,7 @@
 
 const TimeSlot = use('App/Models/TimeSlot')
 const Database = use('Database')
-
+const EstateService = use('App/Services/EstateService')
 class TimeSlotController {
 
   async getUpcomingShows({ request, auth, response }) {
