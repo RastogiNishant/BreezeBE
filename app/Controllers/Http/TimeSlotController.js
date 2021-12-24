@@ -9,19 +9,16 @@ class TimeSlotController {
 
       const { query } = request.all()
       const userId = auth.user.id
-      const slots = await TimeSlot.query().with('user')
-      // .whereHas('user', (estateQuery) => {
-      //       if(query?.length > 0) {
-      //             estateQuery.where('address', 'ILIKE', `%${query}%`)
-      //       }
-      // })
+
+      const result = await EstateService.getUpcomingShows(query)
       .select('time_slots.*')
       .innerJoin({ _e: 'estates' }, '_e.id', 'time_slots.estate_id')
       .where('_e.user_id', userId)
-      .where('time_slots.start_at', '>', Database.fn.now())
+      .where('start_at', '>', Database.fn.now())
       .orderBy('start_at', 'asc')
+      .with('user')
       .fetch()
-      return response.res(slots)
+      return response.res(result)
 
    }
 

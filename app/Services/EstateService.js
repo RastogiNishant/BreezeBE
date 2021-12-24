@@ -102,6 +102,22 @@ class EstateService {
     return query.orderBy('estates.id', 'desc')
   }
 
+    /**
+   *
+   */
+     static getUpcomingShows(query = '') {
+      const timeSlot = TimeSlot.query()
+      
+      if(query.length > 0 ) {
+        timeSlot
+        .whereHas('user', (estateQuery) => {
+                    estateQuery.where('address', 'ILIKE', `%${query}%`)
+                  })
+      }
+  
+      return timeSlot
+    }
+
   /**
    *
    */
