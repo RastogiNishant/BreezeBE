@@ -15,6 +15,7 @@ class TimeSlotController {
       .innerJoin({ _e: 'estates' }, '_e.id', 'time_slots.estate_id')
       .where('_e.user_id', userId)
       .where('time_slots.start_at', '>', Database.fn.now())
+      .orderBy('start_at', 'asc')
       .fetch()
       return response.res(slots)
 
