@@ -5,12 +5,16 @@ const Database = use('Database')
 
 class TimeSlotController {
 
-	async getUpcomingShows({ request, auth, response }) {
+  async getUpcomingShows({ request, auth, response }) {
 
-	const { limit, page } = request.all()
-	const userId = auth.user.id
-      console.log('jjjj', userId)
-	const slots = await TimeSlot.query().with('user')
+      const { query } = request.all()
+      const userId = auth.user.id
+      const slots = await TimeSlot.query().with('user')
+      .whereHas('user', (estateQuery) => {
+            if(query?.length > 0) {
+                  estateQuery.where('address', 'ILIKE', `%${query}%`)
+            }
+      })
       .select('time_slots.*')
       .innerJoin({ _e: 'estates' }, '_e.id', 'time_slots.estate_id')
       .where('_e.user_id', userId)
@@ -19,7 +23,7 @@ class TimeSlotController {
       .fetch()
       return response.res(slots)
 
-	}
+   }
 
 }
 
