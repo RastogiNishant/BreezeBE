@@ -134,6 +134,8 @@ Route.group(() => {
     'valid:EstateId,SlotId',
   ])
 
+  Route.get('/upcomingShows', 'TimeSlotController.getUpcomingShows')
+
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
