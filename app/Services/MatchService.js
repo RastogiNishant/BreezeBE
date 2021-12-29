@@ -747,7 +747,6 @@ class MatchService {
     userId,
     { buddy, like, dislike, knock, invite, visit, share, top, commit }
   ) {
-    console.log({ visit })
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
@@ -959,18 +958,38 @@ class MatchService {
     }
   }
 
-  static getTenantLikesCount(userId, estateIds) {
-    return Database.table('likes')
-      .where({ user_id: userId })
-      .whereIn('estate_id', estateIds)
-      .count('*')
+  static async getTenantLikesCount(userId) {
+    const estates = await Estate.query()
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .select('estates.*')
+      .innerJoin({ _l: 'likes' }, function () {
+        this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+      })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      })
+      .where(function () {
+        this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+      })
+      .fetch()
+    return [{ count: estates.rows.length }]
   }
 
-  static getTenantDislikesCount(userId, estateIds) {
-    return Database.table('dislikes')
-      .where({ user_id: userId })
-      .whereIn('estate_id', estateIds)
-      .count('*')
+  static async getTenantDislikesCount(userId) {
+    const estates = await Estate.query()
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .select('estates.*')
+      .innerJoin({ _l: 'dislikes' }, function () {
+        this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+      })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      })
+      .where(function () {
+        this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+      })
+      .fetch()
+    return [{ count: estates.rows.length }]
   }
 
   static async getTenantKnocksCount(userId, estateIds) {
