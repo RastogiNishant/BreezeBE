@@ -439,7 +439,7 @@ class MatchController {
     var estatesId = estatesJson.map(function (item) {
       return item['id']
     })
-
+    const totalEstates = estatesId.length
     const totalInvite = await Database.table('matches')
       .count('*')
       .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
@@ -495,6 +495,8 @@ class MatchController {
       visits: visits[0].count,
       top: top[0].count,
       finalMatches: finalMatches[0].count,
+
+      totalEstates: totalEstates,
     })
   }
   /**
