@@ -442,15 +442,20 @@ class MatchController {
     const totalEstates = estatesId.length
     const totalInvite = await Database.table('matches')
       .count('*')
-      .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
-    // .whereIn({estate_id: estatesId})
+      .where({ user_id: user.id })
+      .whereIn('status', [MATCH_STATUS_NEW,MATCH_STATUS_KNOCK])
+      .whereIn('estate_id', estatesId)
 
-    const totalVisits = await Database.table('visits').count('*').whereIn('estate_id', estatesId)
+    const totalVisits = await Database.table('matches')
+      .count('*')
+      .where({ user_id: user.id })
+      .whereIn('status', [MATCH_STATUS_INVITE,MATCH_STATUS_VISIT])
+      .whereIn('estate_id', estatesId)
 
     const totalDecided = await Database.table('matches')
       .count('*')
-      .where({ user_id: user.id, status: MATCH_STATUS_COMMIT })
-    // .whereIn({estate_id: estatesId})
+      .whereIn('status', [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT])
+      .whereIn('estate_id', estatesId)
 
     const matches = await Database.table('matches')
     .count('*')
