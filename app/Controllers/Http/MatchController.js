@@ -538,7 +538,7 @@ class MatchController {
 
     const matchesCount = await Database.table('matches')
     .count('*')
-    .whereIn('status', [MATCH_STATUS_NEW])
+    .whereIn('status', [MATCH_STATUS_KNOCK])
     .whereIn('estate_id', estatesId)
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { knock : true }).paginate(
@@ -553,7 +553,7 @@ class MatchController {
 
     const buddiesCount = await Database.table('matches')
     .count('*')
-    .whereIn('status', [MATCH_STATUS_KNOCK])
+    .whereIn('status', [MATCH_STATUS_NEW])
     .whereIn('estate_id', estatesId)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { buddy : true }).paginate(
