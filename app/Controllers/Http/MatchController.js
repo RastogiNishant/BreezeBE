@@ -11,7 +11,10 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const { reduce, isEmpty, toArray } = require('lodash')
 
-const { ROLE_LANDLORD, STATUS_ACTIVE, STATUS_EXPIRE,
+const {
+  ROLE_LANDLORD,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_INVITE,
@@ -432,9 +435,11 @@ class MatchController {
    */
   async getMatchesSummaryLandlord({ request, auth, response }) {
     const user = auth.user
-    const estates = await Estate.query().where({ user_id: user.id })
-                    .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-                    .select('id').fetch()
+    const estates = await Estate.query()
+      .where({ user_id: user.id })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .select('id')
+      .fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     var estatesId = estatesJson.map(function (item) {
       return item['id']
@@ -442,55 +447,61 @@ class MatchController {
     const totalEstates = estatesId.length
     const totalInvite = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_NEW,MATCH_STATUS_KNOCK])
+      .whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK])
       .whereIn('estate_id', estatesId)
 
     const totalVisits = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_INVITE,MATCH_STATUS_VISIT])
+      .whereIn('status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
       .whereIn('estate_id', estatesId)
 
     const totalDecided = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT])
+      .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
       .whereIn('estate_id', estatesId)
 
     const matches = await Database.table('matches')
-    .count('*')
-    .whereIn('status', [MATCH_STATUS_NEW])
-    .whereIn('estate_id', estatesId)
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_NEW])
+      .whereIn('estate_id', estatesId)
 
     const buddies = await Database.table('matches')
-    .count('*')
-    .whereIn('status', [MATCH_STATUS_KNOCK])
-    .whereIn('estate_id', estatesId)
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_KNOCK])
+      .whereIn('estate_id', estatesId)
 
     const invites = await Database.table('matches')
-    .count('*')
-    .whereIn('status', [MATCH_STATUS_INVITE,])
-    .whereIn('estate_id', estatesId)
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_INVITE])
+      .whereIn('estate_id', estatesId)
 
     const visits = await Database.table('matches')
-    .count('*')
-    .whereIn('status', [MATCH_STATUS_VISIT])
-    .whereIn('estate_id', estatesId)
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_VISIT])
+      .whereIn('estate_id', estatesId)
 
     const top = await Database.table('matches')
-    .count('*')
-    .whereIn('status', [MATCH_STATUS_TOP])
-    .whereIn('estate_id', estatesId)
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_TOP])
+      .whereIn('estate_id', estatesId)
 
     const finalMatches = await Database.table('matches')
-    .count('*')
-    .whereIn('status', [MATCH_STATUS_COMMIT])
-    .whereIn('estate_id', estatesId)
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_COMMIT])
+      .whereIn('estate_id', estatesId)
 
-    console.log('jgkgjkgjgk',totalInvite[0].count,totalVisits[0].count,totalDecided[0].count,matches[0].count,
-    buddies[0].count,
-    invites[0].count,
-    visits[0].count,
-    top[0].count,
-    finalMatches[0].count)
+    console.log(
+      'jgkgjkgjgk',
+      totalInvite[0].count,
+      totalVisits[0].count,
+      totalDecided[0].count,
+      matches[0].count,
+      buddies[0].count,
+      invites[0].count,
+      visits[0].count,
+      top[0].count,
+      finalMatches[0].count
+    )
     return response.res({
       totalInvite: totalInvite[0].count,
       totalVisits: totalVisits[0].count,
@@ -530,7 +541,7 @@ class MatchController {
       page,
       limit
     )
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'updated_at']
     const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
     const data = tenants.toJSON({ isShort: true, extraFields })
