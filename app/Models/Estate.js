@@ -252,7 +252,7 @@ class Estate extends Model {
    *
    */
   visits() {
-    return this.hasMany('App/Models/Visit').whereIn('status', [MATCH_STATUS_INVITE,MATCH_STATUS_VISIT])
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_INVITE,MATCH_STATUS_VISIT])
   }
 
   /**
