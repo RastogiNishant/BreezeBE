@@ -519,6 +519,133 @@ class MatchController {
   }
 
   /**
+   * Get All matches user for estate
+   */
+   async getMatchesSummaryLandlordEstate({ request, auth, response }) {
+    const user = auth.user
+    // filters = { knock, buddy, invite, visit, top, commit }
+    let filters = {}
+    const { estate_id, page, limit } = request.all()
+    const estate = await EstateService.getQuery({ id: estate_id, user_id: user.id }).first()
+    console.log('estate', estate)
+    if (!estate) {
+      throw new HttpException('Not found', 404)
+    }
+    const estatesId = [estate_id]
+    let data
+
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
+
+    const matchesCount = await Database.table('matches')
+    .count('*')
+    .whereIn('status', [MATCH_STATUS_NEW])
+    .whereIn('estate_id', estatesId)
+
+    let tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { knock : true }).paginate(
+      page,
+      limit
+    )
+    
+
+    data = tenants.toJSON({ isShort: true, fields })
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    const matches = data
+
+    const buddiesCount = await Database.table('matches')
+    .count('*')
+    .whereIn('status', [MATCH_STATUS_KNOCK])
+    .whereIn('estate_id', estatesId)
+
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { buddy : true }).paginate(
+      page,
+      limit
+    )
+    
+
+    data = tenants.toJSON({ isShort: true, fields })
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    const buddies = data
+
+    const invitesCount = await Database.table('matches')
+    .count('*')
+    .whereIn('status', [MATCH_STATUS_INVITE])
+    .whereIn('estate_id', estatesId)
+
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { invite : true }).paginate(
+      page,
+      limit
+    )
+    
+
+    data = tenants.toJSON({ isShort: true, fields })
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    const invites = data
+
+    const visitsCount = await Database.table('matches')
+    .count('*')
+    .whereIn('status', [MATCH_STATUS_VISIT])
+    .whereIn('estate_id', estatesId)
+
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { visit : true }).paginate(
+      page,
+      limit
+    )
+    
+
+    data = tenants.toJSON({ isShort: true, fields })
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    const visits = data
+
+    const topCount = await Database.table('matches')
+    .count('*')
+    .whereIn('status', [MATCH_STATUS_TOP])
+    .whereIn('estate_id', estatesId)
+
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { top : true }).paginate(
+      page,
+      limit
+    )
+    
+
+    data = tenants.toJSON({ isShort: true, fields })
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    const top = data
+
+    const finalMatchesCount = await Database.table('matches')
+    .count('*')
+    .whereIn('status', [MATCH_STATUS_COMMIT])
+    .whereIn('estate_id', estatesId)
+
+    const extraFields =  ['email', 'phone', 'last_address', ...fields]
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(estate, filters = { commit : true }).paginate(
+      page,
+      limit
+    )
+    
+
+    data = tenants.toJSON({ isShort: true, extraFields })
+    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    const finalMatches = data
+
+    return response.res({
+      matchesCount: matchesCount[0].count,
+      buddiesCount: buddiesCount[0].count,
+      invitesCount: invitesCount[0].count,
+      visitsCount:visitsCount[0].count,
+      topCount:topCount[0].count,
+      finalMatchesCount:finalMatchesCount[0].count,
+
+
+      matches: matches,
+      buddies: buddies,
+      invites: invites,
+      visits: visits,
+      top: top,
+      finalMatches: finalMatches,
+    })
+  }
+
+  /**
    *
    */
   async changeOrder({ request, auth, response }) {
