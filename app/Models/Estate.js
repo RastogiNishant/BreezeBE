@@ -180,6 +180,7 @@ class Estate extends Model {
       'dislike',
       'visit_status',
       'delay',
+      'estate_status',
       'date',
     ]
   }
@@ -252,28 +253,37 @@ class Estate extends Model {
    *
    */
   visits() {
-    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_INVITE,MATCH_STATUS_VISIT])
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_INVITE,
+      MATCH_STATUS_VISIT,
+    ])
   }
 
   /**
    *
    */
-    matches() {
-      return this.hasMany('App/Models/Match')
-    }
+  matches() {
+    return this.hasMany('App/Models/Match')
+  }
 
-   /**
+  /**
    *
    */
-    decided() {
-      return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT])
-    }
+  decided() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_TOP,
+      MATCH_STATUS_COMMIT,
+    ])
+  }
 
   /**
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_NEW,MATCH_STATUS_KNOCK])
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_NEW,
+      MATCH_STATUS_KNOCK,
+    ])
   }
 
   /**
