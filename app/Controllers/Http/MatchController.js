@@ -457,29 +457,33 @@ class MatchController {
 
     const matches = await Database.table('matches')
     .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_KNOCK })
+    .whereIn('status', [MATCH_STATUS_NEW])
+    .whereIn('estate_id', estatesId)
 
     const buddies = await Database.table('matches')
     .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_NEW, buddy: true })
+    .whereIn('status', [MATCH_STATUS_KNOCK])
+    .whereIn('estate_id', estatesId)
 
     const invites = await Database.table('matches')
     .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_INVITE })
+    .whereIn('status', [MATCH_STATUS_INVITE,])
+    .whereIn('estate_id', estatesId)
 
     const visits = await Database.table('matches')
     .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_VISIT, buddy: true })
-    .orWhere({user_id: user.id, status: MATCH_STATUS_SHARE, buddy: true })
+    .whereIn('status', [MATCH_STATUS_VISIT])
+    .whereIn('estate_id', estatesId)
 
     const top = await Database.table('matches')
     .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_TOP })
+    .whereIn('status', [MATCH_STATUS_TOP])
+    .whereIn('estate_id', estatesId)
 
     const finalMatches = await Database.table('matches')
     .count('*')
-    .where({ user_id: user.id, status: MATCH_STATUS_COMMIT, buddy: true })
-    .orWhere({user_id: user.id, status: MATCH_STATUS_FINISH, buddy: true })
+    .whereIn('status', [MATCH_STATUS_COMMIT])
+    .whereIn('estate_id', estatesId)
 
     console.log('jgkgjkgjgk',totalInvite[0].count,totalVisits[0].count,totalDecided[0].count,matches[0].count,
     buddies[0].count,
