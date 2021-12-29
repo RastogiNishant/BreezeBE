@@ -23,6 +23,7 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
+  TENANT_MATCH_FIELDS,
 } = require('../../constants')
 
 class MatchController {
@@ -353,37 +354,17 @@ class MatchController {
       limit
     )
 
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'share']
-    const extraFields = filters.commit
-      ? ['email', 'avatar', 'phone', 'firstname', 'secondname', ...fields]
-      : fields
+    const fields = TENANT_MATCH_FIELDS
 
     return response.res({
-      ...estates.toJSON({ isShort: true, extraFields }),
+      ...estates.toJSON({ isShort: true, fields }),
       tab: currentTab,
     })
   }
 
   async getTenantUpcomingVisits({ auth, response }) {
     const estates = await MatchService.getTenantUpcomingVisits(auth.user.id).paginate(1, 999999)
-    const fields = [
-      'street',
-      'city',
-      'zip',
-      'email',
-      'avatar',
-      'phone',
-      'firstname',
-      'secondname',
-      'buddy',
-      'date',
-      'user_id',
-      'visit_status',
-      'delay',
-      'share',
-      'like',
-      'dislike',
-    ]
+    const fields = TENANT_MATCH_FIELDS
 
     return response.res({
       ...estates.toJSON({ isShort: true, fields }),
@@ -406,24 +387,7 @@ class MatchController {
   async searchForTenant({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
     const estates = await MatchService.searchForTenant(auth.user.id, params).paginate(1, 999999)
-    const fields = [
-      'street',
-      'city',
-      'zip',
-      'email',
-      'avatar',
-      'phone',
-      'firstname',
-      'secondname',
-      'buddy',
-      'date',
-      'user_id',
-      'visit_status',
-      'delay',
-      'share',
-      'like',
-      'dislike',
-    ]
+    const fields = TENANT_MATCH_FIELDS
 
     return response.res({
       ...estates.toJSON({ isShort: true, fields }),

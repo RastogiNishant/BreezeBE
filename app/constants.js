@@ -375,7 +375,27 @@ const constants = {
   TIMESLOT_STATUS_CONFIRM: 'confirm',
   TIMESLOT_STATUS_REJECT: 'reject',
   TIMESLOT_STATUS_DELAY: 'delay',
-  TIMESLOT_STATUS_COME: 'come'
+  TIMESLOT_STATUS_COME: 'come',
+
+  TENANT_MATCH_FIELDS: [
+    'estate_status',
+    'street',
+    'city',
+    'zip',
+    'email',
+    'avatar',
+    'phone',
+    'firstname',
+    'secondname',
+    'buddy',
+    'date',
+    'user_id',
+    'visit_status',
+    'delay',
+    'share',
+    'like',
+    'dislike',
+  ],
 }
 
 module.exports = constants
