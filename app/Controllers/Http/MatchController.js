@@ -421,10 +421,6 @@ class MatchController {
       .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
       .whereIn('estate_id', estatesId)
 
-    // const matches = await Database.table('matches')
-    //   .count('*')
-    //   .whereIn('status', [MATCH_STATUS_KNOCK])
-    //   .whereIn('estate_id', estatesId)
     const matches = await MatchService.matchCount( [MATCH_STATUS_KNOCK], estatesId )
 
     const buddies = await Database.table('matches')
@@ -433,28 +429,12 @@ class MatchController {
       .where('buddy', true)
       .whereIn('estate_id', estatesId)
 
-    // const invites = await Database.table('matches')
-    //   .count('*')
-    //   .whereIn('status', [MATCH_STATUS_INVITE])
-    //   .whereIn('estate_id', estatesId)
     const invites = await MatchService.matchCount( [MATCH_STATUS_INVITE], estatesId )
 
-    // const visits = await Database.table('matches')
-    //   .count('*')
-    //   .whereIn('status', [MATCH_STATUS_VISIT])
-    //   .whereIn('estate_id', estatesId)
     const visits = await MatchService.matchCount( [MATCH_STATUS_VISIT], estatesId )
 
-    // const top = await Database.table('matches')
-    //   .count('*')
-    //   .whereIn('status', [MATCH_STATUS_TOP])
-    //   .whereIn('estate_id', estatesId)
     const top = await MatchService.matchCount( [MATCH_STATUS_TOP], estatesId )
 
-    // const finalMatches = await Database.table('matches')
-    //   .count('*')
-    //   .whereIn('status', [MATCH_STATUS_COMMIT])
-    //   .whereIn('estate_id', estatesId)
     const finalMatches = await MatchService.matchCount( [MATCH_STATUS_COMMIT], estatesId )
 
     console.log(
