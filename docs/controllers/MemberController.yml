@@ -113,27 +113,33 @@ definitions:
   unpaid_rental:
     name: unpaid_rental
     in: formData
-    type: boolean
+    type: number
+    enum: ['1', '2', '3']
   execution:
     name: execution
     in: formData
-    type: boolean
+    type: number
+    enum: ['1', '2', '3']
   insolvency_proceed:
     name: insolvency_proceed
     in: formData
-    type: boolean
+    type: number
+    enum: ['1', '2', '3']
   arrest_warranty:
     name: arrest_warranty
     in: formData
-    type: boolean
+    type: number
+    enum: ['1', '2', '3']
   clean_procedure:
     name: clean_procedure
     in: formData
-    type: boolean
+    type: number
+    enum: ['1', '2', '3']
   income_seizure:
     name: income_seizure
     in: formData
-    type: boolean
+    type: number
+    enum: ['1', '2', '3']
   duties_amount:
     name: duties_amount
     in: formData

@@ -42,6 +42,7 @@ const {
   LANDLORD_TABS_TOP,
   LANDLORD_TABS_COMMIT,
   TIMESLOT_STATUS_COME,
+  NO_UNPAID_RENTAL,
   STATUS_DRAFT,
 } = require('../constants')
 
@@ -126,7 +127,7 @@ class MatchService {
     // Get rent arrears score
     const rentArrearsWeight = 1
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
-    if (!estate.rent_arrears || !prospect.unpaid_rental) {
+    if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL ) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
     }
