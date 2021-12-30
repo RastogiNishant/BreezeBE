@@ -286,7 +286,7 @@ class Estate extends Model {
    *
    */
     inviteBuddies() {
-      return this.hasMany('App/Models/Match').Where({ status: MATCH_STATUS_NEW, buddy: true })
+      return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
     }
 
   /**
