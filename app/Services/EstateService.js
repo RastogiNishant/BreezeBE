@@ -80,7 +80,8 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query().withCount('visits').withCount('decided').withCount('invite')
+    const query = Estate.query().withCount('visits').withCount('decided')
+                  .withCount('invite').withCount('inviteBuddies')
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
