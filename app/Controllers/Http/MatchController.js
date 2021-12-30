@@ -390,12 +390,6 @@ class MatchController {
     })
   }
 
-  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId ) {
-    return await Database.table('matches')
-      .count('*')
-      .whereIn('status', status)
-      .whereIn('estate_id', estatesId)
-  }
 
   /**
    * Get matches summary  for landlord
@@ -431,7 +425,7 @@ class MatchController {
     //   .count('*')
     //   .whereIn('status', [MATCH_STATUS_KNOCK])
     //   .whereIn('estate_id', estatesId)
-    const matches = this.matchCount( [MATCH_STATUS_KNOCK], estatesId )
+    const matches = await MatchService.matchCount( [MATCH_STATUS_KNOCK], estatesId )
 
     const buddies = await Database.table('matches')
       .count('*')
@@ -443,25 +437,25 @@ class MatchController {
     //   .count('*')
     //   .whereIn('status', [MATCH_STATUS_INVITE])
     //   .whereIn('estate_id', estatesId)
-    const invites = this.matchCount( [MATCH_STATUS_INVITE], estatesId )
+    const invites = await MatchService.matchCount( [MATCH_STATUS_INVITE], estatesId )
 
     // const visits = await Database.table('matches')
     //   .count('*')
     //   .whereIn('status', [MATCH_STATUS_VISIT])
     //   .whereIn('estate_id', estatesId)
-    const visits = this.matchCount( [MATCH_STATUS_VISIT], estatesId )
+    const visits = await MatchService.matchCount( [MATCH_STATUS_VISIT], estatesId )
 
     // const top = await Database.table('matches')
     //   .count('*')
     //   .whereIn('status', [MATCH_STATUS_TOP])
     //   .whereIn('estate_id', estatesId)
-    const top = this.matchCount( [MATCH_STATUS_TOP], estatesId )
+    const top = await MatchService.matchCount( [MATCH_STATUS_TOP], estatesId )
 
     // const finalMatches = await Database.table('matches')
     //   .count('*')
     //   .whereIn('status', [MATCH_STATUS_COMMIT])
     //   .whereIn('estate_id', estatesId)
-    const finalMatches = this.matchCount( [MATCH_STATUS_COMMIT], estatesId )
+    const finalMatches = await MatchService.matchCount( [MATCH_STATUS_COMMIT], estatesId )
 
     console.log(
       'jgkgjkgjgk',

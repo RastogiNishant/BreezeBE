@@ -619,6 +619,13 @@ class MatchService {
     })
   }
 
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId ) {
+    return await Database.table('matches')
+      .count('*')
+      .whereIn('status', status)
+      .whereIn('estate_id', estatesId)
+  }
+
   /**
    *
    */
