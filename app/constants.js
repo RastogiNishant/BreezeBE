@@ -399,6 +399,25 @@ const constants = {
   YES_INCOME_SEIZURE:2,
   NO_ANSWER_INCOME_SEIZURE:3,
 
+  TENANT_MATCH_FIELDS: [
+    'estate_status',
+    'street',
+    'city',
+    'zip',
+    'email',
+    'avatar',
+    'phone',
+    'firstname',
+    'secondname',
+    'buddy',
+    'date',
+    'user_id',
+    'visit_status',
+    'delay',
+    'share',
+    'like',
+    'dislike',
+  ],
 }
 
 module.exports = constants

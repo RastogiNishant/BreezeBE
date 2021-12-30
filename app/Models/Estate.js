@@ -29,8 +29,12 @@ const {
 
   STATUS_DRAFT,
   STATUS_ACTIVE,
-  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_KNOCK,
   MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_COMMIT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -176,6 +180,7 @@ class Estate extends Model {
       'dislike',
       'visit_status',
       'delay',
+      'estate_status',
       'date',
     ]
   }
@@ -248,28 +253,37 @@ class Estate extends Model {
    *
    */
   visits() {
-    return this.hasMany('App/Models/Visit')
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_INVITE,
+      MATCH_STATUS_VISIT,
+    ])
   }
 
   /**
    *
    */
-    matches() {
-      return this.hasMany('App/Models/Match')
-    }
+  matches() {
+    return this.hasMany('App/Models/Match')
+  }
 
-   /**
+  /**
    *
    */
-    decided() {
-      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
-    }
+  decided() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_TOP,
+      MATCH_STATUS_COMMIT,
+    ])
+  }
 
   /**
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_INVITE)
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_NEW,
+      MATCH_STATUS_KNOCK,
+    ])
   }
 
   /**
