@@ -470,7 +470,7 @@ class MatchController {
       finalMatches[0].count
     )
     return response.res({
-      totalInvite: totalInvite[0].count,
+      totalInvite: matches[0].count +  buddies[0].count,
       totalVisits: totalVisits[0].count,
       totalDecided: totalDecided[0].count,
 
