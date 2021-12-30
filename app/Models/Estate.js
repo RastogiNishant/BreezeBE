@@ -170,6 +170,8 @@ class Estate extends Model {
       'city',
       'zip',
       'rooms_number',
+      'floor',
+      'number_floors',
       'status',
       'match',
       'net_rent',
@@ -282,12 +284,12 @@ class Estate extends Model {
   invite() {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_KNOCK })
   }
-   /**
+  /**
    *
    */
-    inviteBuddies() {
-      return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
-    }
+  inviteBuddies() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
+  }
 
   /**
    *

@@ -24,6 +24,7 @@ class MatchListTenant extends Base {
           share: yup.boolean(),
           top: yup.boolean(),
           commit: yup.boolean(),
+          final: yup.boolean(),
         })
       }),
     })
