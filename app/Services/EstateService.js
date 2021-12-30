@@ -93,9 +93,9 @@ class EstateService {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
 
-    if(params.filter && params.filter.includes(1)) {
-      query.whereHas('inviteBuddies')
-    } 
+    // if(params.filter && params.filter.includes(1)) {
+    //   query.whereHas('inviteBuddies')
+    // } 
     if (params.filter) {
       query
       .whereHas('matches', (query) => {
