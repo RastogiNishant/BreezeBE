@@ -280,10 +280,8 @@ class Estate extends Model {
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').whereIn('status', [
-      MATCH_STATUS_NEW,
-      MATCH_STATUS_KNOCK,
-    ])
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_KNOCK])
+                                          .orWhere({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
   /**
