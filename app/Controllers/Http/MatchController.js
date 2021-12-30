@@ -64,9 +64,11 @@ class MatchController {
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id } = request.all()
+
     await this.getActiveEstate(estate_id, false)
 
     try {
+
       const result = await MatchService.knockEstate(estate_id, auth.user.id)
       return response.res(result)
     } catch (e) {
@@ -161,9 +163,9 @@ class MatchController {
     const userId = auth.user.id
     const { estate_id, date } = request.all()
     await this.getActiveEstate(estate_id)
-
     try {
       await MatchService.bookTimeslot(estate_id, userId, date)
+  
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -177,7 +179,7 @@ class MatchController {
   async cancelVisit({ request, auth, response }) {
     const userId = auth.user.id
     const { estate_id } = request.all()
-    console.log({ estate_id, userId })
+
     await this.getActiveEstate(estate_id)
 
     try {
@@ -215,7 +217,7 @@ class MatchController {
    */
   async updateVisitTimeslotTenant({ request, auth, response }) {
     const { estate_id, status, delay = null } = request.all()
-    console.log({ status })
+
     await MatchService.updateVisitStatus(estate_id, auth.user.id, {
       tenant_status: status,
       tenant_delay: delay,
