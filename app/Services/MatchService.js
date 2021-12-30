@@ -397,12 +397,15 @@ class MatchService {
     if (match) {
       if (match.status === MATCH_STATUS_NEW) {
         // Update match to knock
-        // TODO: send landlord knock notification
+        
         await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
           user_id: userId,
           estate_id: estateId,
         })
 
+        // TODO: send landlord knock notification
+
+        NoticeService.knockToLandlord(estateId);
         return true
       }
 
@@ -748,7 +751,6 @@ class MatchService {
     userId,
     { buddy, like, dislike, knock, invite, visit, share, top, commit }
   ) {
-    console.log({ visit })
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
@@ -843,7 +845,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
-
+console.log('match query', query.toSQL() );
     return query
   }
 
