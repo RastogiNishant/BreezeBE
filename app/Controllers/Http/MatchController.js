@@ -428,12 +428,13 @@ class MatchController {
 
     const matches = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_NEW])
+      .whereIn('status', [MATCH_STATUS_KNOCK])
       .whereIn('estate_id', estatesId)
 
     const buddies = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_KNOCK])
+      .whereIn('status', [MATCH_STATUS_NEW])
+      .where('buddy', true)
       .whereIn('estate_id', estatesId)
 
     const invites = await Database.table('matches')
