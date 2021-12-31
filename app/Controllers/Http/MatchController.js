@@ -444,7 +444,7 @@ class MatchController {
     const expired = await Estate.query().count('*').where({ user_id: user.id })
                     .where('to_date', '<', currentDay.format(DAY_FORMAT))
 
-    const shows = await Estate.query().where({ user_id: user.id })
+    const showed = await Estate.query().where({ user_id: user.id })
                     .whereHas('slots', (estateQuery) => {
                       estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
                     }).count()
@@ -467,7 +467,7 @@ class MatchController {
 
       totalEstates: totalEstates,
       expired: expired[0].count,
-      shows: shows[0].count,
+      showed: showed[0].count,
     })
   }
   /**
