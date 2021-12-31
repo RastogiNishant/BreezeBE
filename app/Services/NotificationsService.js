@@ -82,6 +82,7 @@ const mapping = [
 
 class NotificationsService {
   static async sendRaw(tokens, options) {
+    
     return Notifications.send(tokens, options)
   }
 
@@ -131,7 +132,6 @@ class NotificationsService {
     if (image) {
       options.notification.image = image
     }
-
     return NotificationsService.sendRaw(tokens, options)
   }
 
@@ -264,7 +264,6 @@ class NotificationsService {
       return false
     }
 
-    console.log( 'sendNotes', notes );        
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
@@ -304,7 +303,7 @@ class NotificationsService {
           image
         )
       } catch (e) {
-        console.log(e)
+        console.log('Notification error', e)
       }
     })
   }
@@ -386,6 +385,32 @@ class NotificationsService {
       )
     })
   }
+
+  /**
+   * Notify to landlord that prospect cancels visit
+   */
+   static async sendProspectCancelVisit(notice) {
+    const title = 'prospect.notification.event.cancel_visit'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.cancel_visit', lang)
+      )
+    })
+  }
+
+  //  static async sendProspectNewVisit(notice) {
+  //   const title = 'prospect.notification.event.new_visit_time'
+  //   return NotificationsService.sendNotes(notice, title, (data, lang) => {
+  //     return (
+  //       capitalize(data.estate_address) +
+  //       ' \n' +
+  //       l.get('prospect.notification.next.new_visit_time', lang)
+  //     )
+  //   })
+  // }
 
   /**
    *

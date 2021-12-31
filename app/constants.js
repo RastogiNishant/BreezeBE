@@ -350,6 +350,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE: 'notification_prospect_profile_expire',
   NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
   NOTICE_TYPE_PROSPECT_KNOCK: 'notification_prospect_knock',
+  NOTICE_TYPE_PROSPECT_CANCEL_VISIT: 'notification_prospect_cancel_visit',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -371,6 +372,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID: 23,
   NOTICE_TYPE_PROSPECT_COME_ID: 24,
   NOTICE_TYPE_PROSPECT_KNOCK_ID: 25,
+  NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
+
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',

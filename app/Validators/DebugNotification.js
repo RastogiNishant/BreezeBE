@@ -22,6 +22,8 @@ const {
   NOTICE_TYPE_LANDLORD_VISIT90M,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_KNOCK,
+  NOTICE_TYPE_PROSPECT_CANCEL_VISIT,
+
 } = require('../constants')
 
 class DebugNotification extends Base {
@@ -54,7 +56,8 @@ class DebugNotification extends Base {
           NOTICE_TYPE_PROSPECT_VISIT90M,
           NOTICE_TYPE_LANDLORD_VISIT90M,
           NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
-          NOTICE_TYPE_PROSPECT_KNOCK
+          NOTICE_TYPE_PROSPECT_KNOCK,
+          NOTICE_TYPE_PROSPECT_CANCEL_VISIT
         ]),
       estate_id: yup.number().integer().positive().required(),
       data: yup.object(),

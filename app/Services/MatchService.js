@@ -483,7 +483,7 @@ class MatchService {
   }
 
   /**
-   * Chose available visit timeslot and move to next status
+   * Choose available visit timeslot and move to next status
    */
   static async bookTimeslot(estateId, userId, date) {
     const getMatch = async () => {
@@ -571,7 +571,11 @@ class MatchService {
       estate_id: estateId,
     })
 
-    await Promise.all([deleteVisit, updateMatch])
+    await Promise.all([deleteVisit, updateMatch]);
+
+    //TODO: notify landlord that prospect cancels visit
+
+    NoticeService.cancelVisit(estateId);
   }
 
   /**
