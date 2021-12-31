@@ -449,10 +449,6 @@ class MatchController {
                       estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
                     }).count()
 
-    console.log(
-      'jgkgjkgjgk',
-      expired[0].count, shows[0].count
-    )
     return response.res({
       totalInvite: parseInt(matches[0].count) + parseInt(buddies[0].count),
       totalVisits: totalVisits[0].count,
