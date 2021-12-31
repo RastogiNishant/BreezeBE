@@ -10,7 +10,7 @@ const l = use('Localize')
 const UserService = use('App/Services/UserService')
 const uTime = require('moment')().format('X')
 
-const { capitalize } = require('../Libs/utils')
+const { capitalize, rc } = require('../Libs/utils')
 
 const {
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
@@ -28,6 +28,8 @@ const {
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_COME,
   NOTICE_TYPE_PROSPECT_KNOCK,
+  NOTICE_TYPE_PROSPECT_CANCEL_VISIT,
+  NOTICE_TYPE_VISIT_DELAY,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -55,6 +57,8 @@ const {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
   NOTICE_TYPE_PROSPECT_COME_ID,
   NOTICE_TYPE_PROSPECT_KNOCK_ID,
+  NOTICE_TYPE_VISIT_DELAY_ID,
+  NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID
 } = require('../constants')
 
 const mapping = [
@@ -78,6 +82,8 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID, NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE],
   [NOTICE_TYPE_PROSPECT_COME_ID, NOTICE_TYPE_PROSPECT_COME],
   [NOTICE_TYPE_PROSPECT_KNOCK_ID, NOTICE_TYPE_PROSPECT_KNOCK],
+  [NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID, NOTICE_TYPE_PROSPECT_CANCEL_VISIT],
+  [NOTICE_TYPE_VISIT_DELAY_ID, NOTICE_TYPE_VISIT_DELAY],
 ]
 
 class NotificationsService {
@@ -263,7 +269,7 @@ class NotificationsService {
     if (!isArray(notes) || isEmpty(notes)) {
       return false
     }
-
+    
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
@@ -382,6 +388,20 @@ class NotificationsService {
         capitalize(data.estate_address) +
         ' \n' +
         l.get('prospect.notification.next.new_knock', lang)
+      )
+    })
+  }
+
+  /**
+   *  Notify visit time delayed to landlord or prospect according to user_id
+   */
+   static async sendChangeVisitTime(notice) {
+    const title = 'notification.event.visit_delay'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        rc( l.get('notification.next.visit_delay', lang), [{'^min':data.delay}])
       )
     })
   }

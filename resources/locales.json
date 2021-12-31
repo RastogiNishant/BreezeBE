@@ -3534,6 +3534,9 @@
     "prospect.notification.event.new_knock": {
       "message": "New Invite"
     },
+    "notification.event.visit_delay": {
+      "message": "Visit Delay"
+    },    
     "prospect.notification.event.cancel_visit" : {
       "message": "Not coming"
     },    
@@ -3627,6 +3630,9 @@
     "prospect.notification.next.new_knock": {
       "message": "There is a new knock on your property"
     },
+    "notification.next.visit_delay": {
+      "message": "delay {^min} mins"
+    },    
     "prospect.notification.next.new_visit_time": {
       "message": "New Visit"
     },
@@ -9065,6 +9071,9 @@
     "prospect.notification.event.new_invite": {
       "message": "Neue Besichtigungseinladung"
     },
+    "notification.next.visit_delay": {
+      "message": "delay {^min} mins"
+    },    
     "prospect.notification.event.new_match": {
       "message": "Neues Match"
     },
@@ -9076,6 +9085,9 @@
     },
     "prospect.notification.event.cancel_visit" : {
       "message": "Not coming"
+    },
+    "notification.event.visit_delay" : {
+      "message": "Visit delay"
     },    
     "prospect.notification.event.no_activity": {
       "message": "Lass dich neue Zuhause finden"

@@ -38,6 +38,7 @@ const {
   NOTICE_TYPE_PROSPECT_COME_ID,
   NOTICE_TYPE_PROSPECT_KNOCK_ID,
   NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID,
+  NOTICE_TYPE_VISIT_DELAY_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -60,6 +61,7 @@ const {
   NOTICE_TYPE_PROSPECT_COME,
   NOTICE_TYPE_PROSPECT_KNOCK,
   NOTICE_TYPE_PROSPECT_CANCEL_VISIT,
+  NOTICE_TYPE_VISIT_DELAY,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -715,6 +717,8 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT: // Notification for prospect's picking up timeslot to visit landlord
         notice.user_id = estate.user_id;
         return NotificationsService.sendLandlordSlotsSelected([notice])
+      case NOTICE_TYPE_VISIT_DELAY:              
+      return NotificationsService.sendChangeVisitTime([notice])
     }
   }
 
@@ -761,23 +765,24 @@ class NoticeService {
   /**
    *
    */
-   static async prospectVisit(estateId, userId) {
+   static async changeVisitTime(estateId, userId, delay ) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover')
       .where('id', estateId)
       .first()
-
     const notice = {
       user_id: userId,
-      type: NOTICE_TYPE_PROSPECT_VISIT_ID,
+      type: NOTICE_TYPE_VISIT_DELAY_ID,
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
+        delay: delay
       },
       image: File.getPublicUrl(estate.cover),
     }
+
     await NoticeService.insertNotices([notice])
-    await NotificationsService.sendProspectNewVisit(notice)
+    await NotificationsService.sendChangeVisitTime([notice])
   }  
 }
 
