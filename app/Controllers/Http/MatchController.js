@@ -2,6 +2,7 @@
 
 const Logger = use('Logger')
 const Database = use('Database')
+const moment = require('moment')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const CompanyService = use('App/Services/CompanyService')
@@ -24,6 +25,8 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
   TENANT_MATCH_FIELDS,
+  DATE_FORMAT,
+  DAY_FORMAT,
 } = require('../../constants')
 
 class MatchController {
@@ -396,6 +399,7 @@ class MatchController {
    */
   async getMatchesSummaryLandlord({ request, auth, response }) {
     const user = auth.user
+    const currentDay = moment().startOf('day')
     const estates = await Estate.query()
       .where({ user_id: user.id })
       .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -437,17 +441,17 @@ class MatchController {
 
     const finalMatches = await MatchService.matchCount( [MATCH_STATUS_COMMIT], estatesId )
 
+    const expired = await Estate.query().count('*').where({ user_id: user.id })
+                    .where('to_date', '<', currentDay.format(DAY_FORMAT))
+
+    const shows = await Estate.query().where({ user_id: user.id })
+                    .whereHas('slots', (estateQuery) => {
+                      estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
+                    }).count()
+
     console.log(
       'jgkgjkgjgk',
-      totalInvite[0].count,
-      totalVisits[0].count,
-      totalDecided[0].count,
-      matches[0].count,
-      buddies[0].count,
-      invites[0].count,
-      visits[0].count,
-      top[0].count,
-      finalMatches[0].count
+      expired[0].count, shows[0].count
     )
     return response.res({
       totalInvite: parseInt(matches[0].count) + parseInt(buddies[0].count),
@@ -462,6 +466,8 @@ class MatchController {
       finalMatches: finalMatches[0].count,
 
       totalEstates: totalEstates,
+      expired: expired,
+      shows: shows,
     })
   }
   /**

@@ -20,6 +20,10 @@ const {
   STATUS_DELETE,
   STATUS_EXPIRE,
   ERROR_BUDDY_EXISTS,
+  DATE_FORMAT,
+  DAY_FORMAT,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_COMMIT,
 } = require('../../constants')
 
 class EstateController {
@@ -148,6 +152,50 @@ class EstateController {
     response.res(true)
   }
 
+    /**
+   *
+   */
+  async getEstatesQuickLinks({ request, auth, response }) {
+
+    const { filter } = request.all()
+    const currentDay = moment().startOf('day')
+    console.log('para,sss', filter, filter == 4)
+    const userId = auth.user.id
+    const finalMatches = [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT]
+    let estates = {}
+    if( filter == 1 ) {
+      console.log('g11114',userId, DATE_FORMAT, currentDay.format(DAY_FORMAT))
+      estates = await Estate.query().where({ user_id: userId })
+                    .where('to_date', '<', currentDay.format(DAY_FORMAT))
+                    .orderBy('id').fetch()
+    }
+
+    if(filter == 2 ) {
+      console.log('22222')
+      estates= await Estate.query().where({ user_id: userId })
+                    .whereHas('slots', (estateQuery) => {
+                      estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
+                    })
+                  .orderBy('id').fetch() 
+     } 
+
+     if(filter == 3 ) {
+      estates = await Estate.query().where({ user_id: userId })
+                      .whereHas('matches', (estateQuery) => {
+                        estateQuery.whereIn('status', [MATCH_STATUS_NEW] ).where('buddy', true)
+                      })
+                      .orderBy('id').fetch()  
+     } 
+                          
+     if(filter == 4 ) {
+      estates = await Estate.query().where({ user_id: userId })
+                      .whereHas('matches', (estateQuery) => {
+                        estateQuery.whereIn('status', finalMatches )
+                      })
+                      .orderBy('id').fetch()                    
+      }
+    response.res(estates)
+  }
   /**
    *
    */

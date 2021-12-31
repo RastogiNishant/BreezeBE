@@ -1,0 +1,6 @@
+create user Tarar with encrypted password 'Tarar';
+
+psql -d breeze -f /Applications/Postgres.app/Contents/Versions/12/share/postgresql/contrib/postgis-3.0/postgis.sql
+
+
+psql -d breeze -f /Applications/Postgres.app/Contents/Versions/12/share/postgresql/contrib/postgis-3.0/spatial_ref_sys.sql

@@ -314,6 +314,7 @@ const constants = {
   LANDLORD_TABS_COMMIT: 'commit',
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+  DAY_FORMAT: 'YYYY-MM-DD',
 
   AMENITIES_OPTIONS: [
     'elevator',
