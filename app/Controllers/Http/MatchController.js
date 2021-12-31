@@ -466,8 +466,8 @@ class MatchController {
       finalMatches: finalMatches[0].count,
 
       totalEstates: totalEstates,
-      expired: expired,
-      shows: shows,
+      expired: expired[0].count,
+      shows: shows[0].count,
     })
   }
   /**
