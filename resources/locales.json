@@ -3531,6 +3531,12 @@
     "prospect.notification.event.new_invite": {
       "message": "New Invite"
     },
+    "prospect.notification.event.new_knock": {
+      "message": "New Invite"
+    },
+    "prospect.notification.event.cancel_visit" : {
+      "message": "Not coming"
+    },    
     "prospect.notification.event.new_match": {
       "message": "New Match"
     },
@@ -3619,7 +3625,13 @@
       "message": "Choose your time slot"
     },
     "prospect.notification.next.new_knock": {
-      "message": "New knock"
+      "message": "There is a new knock on your property"
+    },
+    "prospect.notification.next.new_visit_time": {
+      "message": "New Visit"
+    },
+    "prospect.notification.next.cancel_visit" : {
+      "message": "Not coming"
     },
     "prospect.notification.next.new_match": {
       "message": "You have 5h to knock"
@@ -9060,8 +9072,11 @@
       "message": "Neue Besuchszeit"
     },
     "prospect.notification.event.new_knock": {
-      "message": "New Invite"
+      "message": "New Knock"
     },
+    "prospect.notification.event.cancel_visit" : {
+      "message": "Not coming"
+    },    
     "prospect.notification.event.no_activity": {
       "message": "Lass dich neue Zuhause finden"
     },
@@ -9144,7 +9159,13 @@
       "message": "Wähle dein Zeitfenster"
     },
     "prospect.notification.next.new_knock": {
-      "message": "New knock"
+      "message": "There is a new knock on your property"
+    },
+    "prospect.notification.next.new_visit_time": {
+      "message": "New Visit"
+    },
+    "prospect.notification.next.cancel_visit" : {
+      "message": "Not coming"
     },
     "prospect.notification.next.new_match": {
       "message": "Du hast 5h Zeit zu klopfen"

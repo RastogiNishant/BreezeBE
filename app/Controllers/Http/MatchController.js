@@ -165,7 +165,7 @@ class MatchController {
     await this.getActiveEstate(estate_id)
     try {
       await MatchService.bookTimeslot(estate_id, userId, date)
-  
+
       return response.res(true)
     } catch (e) {
       Logger.error(e)
