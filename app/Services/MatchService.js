@@ -6,6 +6,8 @@ const { props } = require('bluebird')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const User = use('App/Models/User')
+const Visit = use('App/Models/Visit')
+const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
 const EstateService = use('App/Services/EstateService')
 const NoticeService = use('App/Services/NoticeService')
@@ -45,6 +47,7 @@ const {
   NO_UNPAID_RENTAL,
   STATUS_DRAFT,
 } = require('../constants')
+const { logger } = require('../../config/app')
 
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
@@ -1411,6 +1414,12 @@ class MatchService {
    */
   static async updateVisitStatus(estateId, userId, data) {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
+    const estate = await EstateService.getActiveById(estateId);
+    if( estate ) {
+      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay )
+    }else{
+      throw new AppException('No estate')
+    }
   }
 
   /**
@@ -1418,11 +1427,27 @@ class MatchService {
    */
   static async updateVisitStatusLandlord(estateId, data) {
     const currentDay = moment().startOf('day')
-    await Database.table('visits')
+    try{
+
+      const visit = await Visit.query()
+                          .where({ estate_id: estateId })
+                          .where('date', '>', currentDay.format(DATE_FORMAT))
+                          .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+                          .first()
+
+      await Database.table('visits')
       .where({ estate_id: estateId })
       .where('date', '>', currentDay.format(DATE_FORMAT))
       .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
       .update(data)
+
+      if( visit ){
+        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
+      }
+    }catch(e){
+      Logger.error(e)
+      throw new AppException(e);
+    }
   }
 
   /**
