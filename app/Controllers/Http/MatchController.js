@@ -193,6 +193,26 @@ class MatchController {
   }
 
   /**
+   * Not coming/cancel visit by landloard 
+   * 
+   */
+  async cancelVisitByLandlord({ request, auth, response }) {
+    const { estate_id, tenant_id } = request.all()
+
+    try {
+      await MatchService.cancelVisit(estate_id, tenant_id)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }  
+  
+
+  /**
    *
    */
   async updateVisitTimeslotLandlord({ request, auth, response }) {

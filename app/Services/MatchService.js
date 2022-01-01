@@ -23,6 +23,7 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
+  MATCH_STATUS_CANCEL,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DATE_FORMAT,
@@ -569,18 +570,48 @@ class MatchService {
     const deleteVisit = Database.table('visits')
       .where({ estate_id: estateId, user_id: userId })
       .delete()
-    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
+    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_CANCEL }).where({
       user_id: userId,
+      estate_id: estateId,
+    })
+
+    await Promise.all([deleteVisit, updateMatch])
+
+    //TODO: notify landlord that prospect canceled visit
+
+    NoticeService.cancelVisit(estateId)
+  }
+
+  /**
+   * cancel visit by landlord
+   */
+  static async cancelVisitByLandlord(estateId, tenantId) {
+    const visit = await Database.table('visits')
+      .where({ estate_id: estateId })
+      .where({ status: MATCH_STATUS_VISIT })
+      .where({ user_id: tenantId })
+      .first()
+
+    if (!visit) {
+      throw new AppException('there is no visit')
+    }
+
+    const deleteVisit = Database.table('visits')
+      .where({ estate_id: estateId })
+      .where({ status: MATCH_STATUS_VISIT })
+      .where({ user_id: tenantId })
+      .delete()
+
+    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
+      user_id: tenantId,
       estate_id: estateId,
     })
 
     await Promise.all([deleteVisit, updateMatch]);
 
-    //TODO: notify landlord that prospect cancels visit
-
-    NoticeService.cancelVisit(estateId);
+    // //TODO: notify landlord that prospect cancels visit
+    NoticeService.cancelVisit(estateId, tenantId );
   }
-
   /**
    * Share tenant personal data to landlord
    */
@@ -626,7 +657,7 @@ class MatchService {
     })
   }
 
-  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId ) {
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
     return await Database.table('matches')
       .count('*')
       .whereIn('status', status)
@@ -1414,10 +1445,10 @@ class MatchService {
    */
   static async updateVisitStatus(estateId, userId, data) {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
-    const estate = await EstateService.getActiveById(estateId);
-    if( estate ) {
-      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay )
-    }else{
+    const estate = await EstateService.getActiveById(estateId)
+    if (estate) {
+      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
+    } else {
       throw new AppException('No estate')
     }
   }
@@ -1427,26 +1458,25 @@ class MatchService {
    */
   static async updateVisitStatusLandlord(estateId, data) {
     const currentDay = moment().startOf('day')
-    try{
-
+    try {
       const visit = await Visit.query()
-                          .where({ estate_id: estateId })
-                          .where('date', '>', currentDay.format(DATE_FORMAT))
-                          .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-                          .first()
+        .where({ estate_id: estateId })
+        .where('date', '>', currentDay.format(DATE_FORMAT))
+        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+        .first()
 
       await Database.table('visits')
-      .where({ estate_id: estateId })
-      .where('date', '>', currentDay.format(DATE_FORMAT))
-      .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-      .update(data)
+        .where({ estate_id: estateId })
+        .where('date', '>', currentDay.format(DATE_FORMAT))
+        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+        .update(data)
 
-      if( visit ){
+      if (visit) {
         NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
       }
-    }catch(e){
+    } catch (e) {
       Logger.error(e)
-      throw new AppException(e);
+      throw new AppException(e)
     }
   }
 

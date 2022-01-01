@@ -27,6 +27,11 @@ definitions:
     in: path
     type: number
     required: true
+  tenantId:
+    name: tenant_id
+    in: formData
+    type: number
+    required: true    
   userId:
     name: user_id
     in: formData
@@ -159,6 +164,23 @@ definitions:
       - $ref: '#/definitions/timeslotDate'
     responses: [200]
 
+  delete:
+    tags: [match]
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estateId'
+    responses: [200]
+
+/api/v1/match/landlordVisit:
+  delete:
+    tags: [match]
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estateId'
+      - $ref: '#/definitions/tenantId'
+    responses: [200]
 /api/v1/match/share:
   post:
     tags: [match]
