@@ -83,12 +83,14 @@ class AccountController {
    *
    */
   async login({ request, auth, response }) {
+
     let { email, role, password, device_token } = request.all()
     // Select role if not set, (allows only for non-admin users)
     let roles = [ROLE_USER, ROLE_LANDLORD]
     if (role) {
       roles = [role]
     }
+
     const user = await User.query()
       .where('email', email)
       .whereIn('role', roles)
@@ -106,7 +108,6 @@ class AccountController {
     } catch (e) {
       throw new HttpException(e.message, 403)
     }
-
     const uid = User.getHash(email, role)
     let token
     try {
