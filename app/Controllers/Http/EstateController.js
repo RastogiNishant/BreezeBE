@@ -164,13 +164,13 @@ class EstateController {
     const finalMatches = [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT]
     let estates = {}
     if( filter == 1 ) {
-      estates = await EstateService.getPublishedEstates(userId)
+      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
                     .where('to_date', '<', currentDay.format(DAY_FORMAT))
                     .orderBy('id').fetch()
     }
 
     if(filter == 2 ) {
-      estates= await EstateService.getPublishedEstates(userId).with('slots')
+      estates= await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('slots')
                     .whereHas('slots', (estateQuery) => {
                       estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
                     })
@@ -178,7 +178,7 @@ class EstateController {
      } 
 
      if(filter == 3 ) {
-      estates = await EstateService.getPublishedEstates(userId).with('matches')
+      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('matches')
                       .whereHas('matches', (estateQuery) => {
                         estateQuery.whereIn('status', [MATCH_STATUS_NEW] ).where('buddy', true)
                       })
@@ -186,7 +186,7 @@ class EstateController {
      } 
                           
      if(filter == 4 ) {
-      estates = await EstateService.getPublishedEstates(userId).with('matches')
+      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('matches')
                       .whereHas('matches', (estateQuery) => {
                         estateQuery.whereIn('status', finalMatches )
                       })
