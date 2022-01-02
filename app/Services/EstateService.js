@@ -302,6 +302,14 @@ class EstateService {
     return slot
   }
 
+   static getPublishedEstates(userID = null) {
+    if (isEmpty(userID)) {
+      return Estate.query()
+    }
+
+    return Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+  }
+
   /**
    *
    */

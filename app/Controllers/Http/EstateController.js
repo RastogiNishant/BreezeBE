@@ -16,9 +16,9 @@ const Drive = use('Drive')
 
 const {
   STATUS_ACTIVE,
+  STATUS_EXPIRE,
   STATUS_DRAFT,
   STATUS_DELETE,
-  STATUS_EXPIRE,
   ERROR_BUDDY_EXISTS,
   DATE_FORMAT,
   DAY_FORMAT,
@@ -164,13 +164,13 @@ class EstateController {
     const finalMatches = [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT]
     let estates = {}
     if( filter == 1 ) {
-      estates = await Estate.query().where({ user_id: userId })
+      estates = await EstateService.getPublishedEstates(userId)
                     .where('to_date', '<', currentDay.format(DAY_FORMAT))
                     .orderBy('id').fetch()
     }
 
     if(filter == 2 ) {
-      estates= await Estate.query().where({ user_id: userId }).with('slots')
+      estates= await EstateService.getPublishedEstates(userId)
                     .whereHas('slots', (estateQuery) => {
                       estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
                     })
@@ -178,7 +178,7 @@ class EstateController {
      } 
 
      if(filter == 3 ) {
-      estates = await Estate.query().where({ user_id: userId })
+      estates = await EstateService.getPublishedEstates(userId)
                       .whereHas('matches', (estateQuery) => {
                         estateQuery.whereIn('status', [MATCH_STATUS_NEW] ).where('buddy', true)
                       })
@@ -186,7 +186,7 @@ class EstateController {
      } 
                           
      if(filter == 4 ) {
-      estates = await Estate.query().where({ user_id: userId }).with('matches')
+      estates = await EstateService.getPublishedEstates(userId)
                       .whereHas('matches', (estateQuery) => {
                         estateQuery.whereIn('status', finalMatches )
                       })
