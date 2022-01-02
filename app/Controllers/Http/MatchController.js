@@ -462,9 +462,11 @@ class MatchController {
     const finalMatches = await MatchService.matchCount( [MATCH_STATUS_COMMIT], estatesId )
 
     const expired = await Estate.query().count('*').where({ user_id: user.id })
+                    .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
                     .where('to_date', '<', currentDay.format(DAY_FORMAT))
 
     const showed = await Estate.query().where({ user_id: user.id })
+                   .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
                     .whereHas('slots', (estateQuery) => {
                       estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
                     }).count()
