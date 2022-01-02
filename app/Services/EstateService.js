@@ -307,7 +307,7 @@ class EstateService {
       return Estate.query()
     }
 
-    return Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+    return Estate.query().where({ user_id: userID }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
   }
 
   /**

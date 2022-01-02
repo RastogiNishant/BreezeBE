@@ -170,7 +170,7 @@ class EstateController {
     }
 
     if(filter == 2 ) {
-      estates= await EstateService.getPublishedEstates(userId)
+      estates= await EstateService.getPublishedEstates(userId).with('slots')
                     .whereHas('slots', (estateQuery) => {
                       estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
                     })
@@ -178,7 +178,7 @@ class EstateController {
      } 
 
      if(filter == 3 ) {
-      estates = await EstateService.getPublishedEstates(userId)
+      estates = await EstateService.getPublishedEstates(userId).with('matches')
                       .whereHas('matches', (estateQuery) => {
                         estateQuery.whereIn('status', [MATCH_STATUS_NEW] ).where('buddy', true)
                       })
@@ -186,7 +186,7 @@ class EstateController {
      } 
                           
      if(filter == 4 ) {
-      estates = await EstateService.getPublishedEstates(userId)
+      estates = await EstateService.getPublishedEstates(userId).with('matches')
                       .whereHas('matches', (estateQuery) => {
                         estateQuery.whereIn('status', finalMatches )
                       })
