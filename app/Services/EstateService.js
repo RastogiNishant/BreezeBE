@@ -21,6 +21,7 @@ const {
   STATUS_DRAFT,
   STATUS_DELETE,
   STATUS_ACTIVE,
+  STATUS_EXPIRE,
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
@@ -300,6 +301,14 @@ class EstateService {
     await slot.save()
 
     return slot
+  }
+
+   static getPublishedEstates(userID = null) {
+    if (isEmpty(userID)) {
+      return Estate.query()
+    }
+
+    return Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
   }
 
   /**
