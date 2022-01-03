@@ -10,13 +10,12 @@ class UserPremiumPlan extends Model {
       'premium_id',
     ]
   }
-
-  /**
-   *
-   */
-  static get Serializer() {
-    return 'App/Serializers/CompanySerializer'
+  user() {
+    return this.belongsTo('App/Models/User', 'user_id', 'id')
   }
+  premium() {
+    return this.belongsTo('App/Models/PremiumFeature', 'premium_id', 'id')
+  }  
 }
 
-module.exports = Company
+module.exports = UserPremiumPlan

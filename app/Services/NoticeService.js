@@ -11,6 +11,7 @@ const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
+const Logger = use('Logger')
 
 const MIN_TIME_SLOT = 5
 
@@ -405,7 +406,7 @@ class NoticeService {
         .where('id', estateId)
         .first()
       if( !estate || !estate.user_id ) {
-        Log.e('knockToLandloard', `there is no estate for${estateId}` );
+        Logger.error('knockToLandloard', `there is no estate for${estateId}` );
         throw new HttpException( 'there is no estate', 400);
       }
       const notice = {
@@ -433,7 +434,7 @@ class NoticeService {
         .where('id', estateId)
         .first()
       if( !estate || !estate.user_id ) {
-        Log.e('knockToLandloard', `there is no estate for${estateId}` );
+        Logger.error('knockToLandloard', `there is no estate for${estateId}` );
         throw new AppException('there is no estate')
       }
       const notice = {

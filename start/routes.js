@@ -445,6 +445,15 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
 
 Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwt'])
 
+Route.group(() => {
+  Route.post('/', 'AccountController.updateUserPremiumPlan')
+  Route.get('/', 'AccountController.getUserPremiumPlans')
+})
+  .middleware(['auth:jwtLandlord,jwt'])
+  .prefix('api/v1/updateUserPremiumPlan')
+
+
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
