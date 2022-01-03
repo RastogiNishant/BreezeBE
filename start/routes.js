@@ -213,6 +213,14 @@ Route.group(() => {
   .prefix('api/v1/admin/users')
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
+//Route.post('api/v1/admin/feature', 'FeatureController.createFeature').middleware(['auth:jwtAdmin', 'is:admin'])
+Route.group(()=> {
+  Route.post('/', 'FeatureController.createFeature').middleware(['auth:jwt'])
+  Route.put('/', 'FeatureController.updateFeature').middleware(['auth:jwt'])
+  Route.delete('/', 'FeatureController.removeFeature').middleware(['auth:jwt'])
+}).prefix('api/v1/admin/feature').middleware(['auth:jwt'])
+
+
 Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
   Route.post('/', 'Admin/AgreementController.createAgreement').middleware(['valid:CreateAgreement'])
@@ -434,6 +442,8 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
   'auth:jwtLandlord,jwt',
   'valid:DebugNotification',
 ])
+
+Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwt'])
 
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
