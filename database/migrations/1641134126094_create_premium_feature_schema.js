@@ -2,6 +2,7 @@
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
+const Database = use('Database')
 
 class CreatePremiumFeatureSchema extends Schema {
   up () {
@@ -9,7 +10,8 @@ class CreatePremiumFeatureSchema extends Schema {
       table.increments()
       table.string('feature', 500)
       table.string('description', 500)
-      table.timestamps()
+      table.timestamp('created_at', { precision: 3 }).defaultTo(Database.fn.now(3))
+      table.timestamp('updated_at', { precision: 3 }).defaultTo(Database.fn.now(3))
     })
   }
 
