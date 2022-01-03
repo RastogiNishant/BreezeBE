@@ -12,7 +12,9 @@ const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
 const ImageService = use('App/Services/ImageService')
+const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -83,7 +85,6 @@ class AccountController {
    *
    */
   async login({ request, auth, response }) {
-
     let { email, role, password, device_token } = request.all()
     // Select role if not set, (allows only for non-admin users)
     let roles = [ROLE_USER, ROLE_LANDLORD]
@@ -364,6 +365,26 @@ class AccountController {
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  async updateUserPremiumPlan({request, auth, response}) {
+    try{
+      const {premiums} = request.all();
+      const ret = await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)
+      return response.send(ret)
+    }catch(e) {
+      Logger.error(e)
+      // throw new AppException(e.message, 400)
+    }
+  }
+
+  async getUserPremiumPlans({request, auth, response}) {
+    try{
+      const userPremiumPlans = await UserPremiumPlanService.getUserPremiumPlans(auth.user.id)
+      return response.send(userPremiumPlans)
+    }catch(e) {
+      Logger.error(e)
     }
   }
 }
