@@ -1,0 +1,64 @@
+definitions:
+  deleteIds:
+    name: ids
+    description: Selected Feature Ids
+    schema:
+      type: array
+      items:
+        type: string
+    explode: true
+    example: '[1, 2]'
+
+  feature_id:
+    name: id
+    in: path
+    type: number
+    required: true
+  feature:
+    name: feature
+    in: path
+    type: string
+    required: true
+  description:
+    name: description
+    in: path
+    type: string
+
+# Routes list
+/api/v1/feature:
+  get:
+    tags: [Feature]
+    security: [bearerAuth: []]
+    description: Get Features
+    produces: [application/json]
+    responses: [200]
+
+  post:
+    tags: [Feature-Admin]
+    security: [bearerAuth: []]
+    description: Admin - Create Features
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/feature'
+      - $ref: '#/definitions/description'
+    responses: [200]
+
+  put:
+    tags: [Feature-Admin]
+    security: [bearerAuth: []]
+    description: Admin - Update Features
+    parameters:
+      - $ref: '#/definitions/feature_id'
+      - $ref: '#/definitions/feature'
+      - $ref: '#/definitions/description'
+    produces: [application/json]
+    responses: [200]
+
+  delete:
+    tags: [Feature-Admin]
+    security: [bearerAuth: []]
+    description: Admin - Delete Features
+    parameters:
+      - $ref: '#/definitions/deleteIds'    
+    produces: [application/json]
+    responses: [200]    
