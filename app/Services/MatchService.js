@@ -570,7 +570,7 @@ class MatchService {
     const deleteVisit = Database.table('visits')
       .where({ estate_id: estateId, user_id: userId })
       .delete()
-    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_CANCEL }).where({
+    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
       user_id: userId,
       estate_id: estateId,
     })
