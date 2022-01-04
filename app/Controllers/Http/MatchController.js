@@ -10,6 +10,7 @@ const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const { reduce, isEmpty, toArray } = require('lodash')
+const moment = require('moment')
 
 const {
   ROLE_LANDLORD,
@@ -24,6 +25,8 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
   TENANT_MATCH_FIELDS,
+  DAY_FORMAT,
+  DATE_FORMAT
 } = require('../../constants')
 
 class MatchController {
@@ -474,6 +477,8 @@ class MatchController {
     const top = await MatchService.matchCount([MATCH_STATUS_TOP], estatesId)
 
     const finalMatches = await MatchService.matchCount([MATCH_STATUS_COMMIT], estatesId)
+
+    const currentDay = moment().startOf('day')
 
     const expired = await Estate.query()
       .count('*')
