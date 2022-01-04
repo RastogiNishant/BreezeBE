@@ -169,6 +169,7 @@ const constants = {
   FIRING_WOOD: 13,
   FIRING_LIQUID_GAS: 14,
 
+  HEATING_TYPE_NO: 0,
   HEATING_TYPE_OVEN: 1,
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_CENTRAL: 3,
@@ -405,6 +406,9 @@ const constants = {
   NO_INCOME_SEIZURE:1,
   YES_INCOME_SEIZURE:2,
   NO_ANSWER_INCOME_SEIZURE:3,
+
+  MONTHLY_PAYMENT:'monthly',
+  YEARLY_PAYMENT:'yearly',
 
   TENANT_MATCH_FIELDS: [
     'estate_status',
