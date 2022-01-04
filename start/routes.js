@@ -384,7 +384,6 @@ Route.group(() => {
     'valid:ChooseTimeslot',
   ])
   Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
-  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt', 'valid:EstateId'])
   Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([
     'auth:jwtLandlord',
     'valid:LandlordVisitCancel',
