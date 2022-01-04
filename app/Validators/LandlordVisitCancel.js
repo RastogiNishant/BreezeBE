@@ -7,8 +7,8 @@ const Base = require('./Base')
 class LandlordVisitCancel extends Base {
   static schema = () =>
     yup.object().shape({
-      estate_id: estate_id.required(),
-      tenant_id: tenant_id.required(),
+      estate_id: id.required(),
+      tenant_id: id.required(),
     })
 }
 

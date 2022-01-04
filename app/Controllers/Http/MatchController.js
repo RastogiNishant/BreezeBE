@@ -553,7 +553,6 @@ class MatchController {
     let filters = {}
     const { estate_id, page, limit } = request.all()
     const estate = await EstateService.getQuery({ id: estate_id, user_id: user.id }).first()
-    console.log('estate', estate)
     if (!estate) {
       throw new HttpException('Not found', 404)
     }
