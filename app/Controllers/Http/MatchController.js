@@ -2,7 +2,6 @@
 
 const Logger = use('Logger')
 const Database = use('Database')
-const moment = require('moment')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const CompanyService = use('App/Services/CompanyService')
@@ -25,8 +24,6 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
   TENANT_MATCH_FIELDS,
-  DATE_FORMAT,
-  DAY_FORMAT,
 } = require('../../constants')
 
 class MatchController {
@@ -193,8 +190,8 @@ class MatchController {
   }
 
   /**
-   * Not coming/cancel visit by landloard 
-   * 
+   * Not coming/cancel visit by landloard
+   *
    */
   async cancelVisitByLandlord({ request, auth, response }) {
     const { estate_id, tenant_id } = request.all()
@@ -209,8 +206,7 @@ class MatchController {
       }
       throw e
     }
-  }  
-  
+  }
 
   /**
    *
@@ -381,6 +377,26 @@ class MatchController {
     })
   }
 
+  async getTenantTopMatchesByEstate(estateId, tenantId) {
+    const estate = await MatchService.getTenantTopMatchesByEstate(estateId, tenantId)
+
+    if (!estate) {
+      throw new HttpException('Estate not found', 404)
+    }
+
+    return estate
+  }
+
+  async checkTenantMatchCommitedAlready({ request, auth, response }) {
+    const { estate_id } = request.all()
+    const { id } = auth.user
+    await this.getTenantTopMatchesByEstate(estate_id, id)
+    response.res(200)
+    // const count = await MatchService.getCommitsCountByEstateExceptTenant(estate_id, id)
+    // console.log({ count })
+    // return response.res(count)
+  }
+
   async getTenantUpcomingVisits({ auth, response }) {
     const estates = await MatchService.getTenantUpcomingVisits(auth.user.id).paginate(1, 999999)
     const fields = TENANT_MATCH_FIELDS
@@ -413,13 +429,11 @@ class MatchController {
     })
   }
 
-
   /**
    * Get matches summary  for landlord
    */
   async getMatchesSummaryLandlord({ request, auth, response }) {
     const user = auth.user
-    const currentDay = moment().startOf('day')
     const estates = await Estate.query()
       .where({ user_id: user.id })
       .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -445,7 +459,7 @@ class MatchController {
       .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
       .whereIn('estate_id', estatesId)
 
-    const matches = await MatchService.matchCount( [MATCH_STATUS_KNOCK], estatesId )
+    const matches = await MatchService.matchCount([MATCH_STATUS_KNOCK], estatesId)
 
     const buddies = await Database.table('matches')
       .count('*')
@@ -453,23 +467,25 @@ class MatchController {
       .where('buddy', true)
       .whereIn('estate_id', estatesId)
 
-    const invites = await MatchService.matchCount( [MATCH_STATUS_INVITE], estatesId )
+    const invites = await MatchService.matchCount([MATCH_STATUS_INVITE], estatesId)
 
-    const visits = await MatchService.matchCount( [MATCH_STATUS_VISIT], estatesId )
+    const visits = await MatchService.matchCount([MATCH_STATUS_VISIT], estatesId)
 
-    const top = await MatchService.matchCount( [MATCH_STATUS_TOP], estatesId )
+    const top = await MatchService.matchCount([MATCH_STATUS_TOP], estatesId)
 
-    const finalMatches = await MatchService.matchCount( [MATCH_STATUS_COMMIT], estatesId )
+    const finalMatches = await MatchService.matchCount([MATCH_STATUS_COMMIT], estatesId)
 
-    const expired = await Estate.query().count('*').where({ user_id: user.id })
-                     .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-                    .where('to_date', '<', currentDay.format(DAY_FORMAT))
+    const expired = await Estate.query()
+      .count('*')
+      .where({ user_id: user.id })
+      .where('to_date', '<', currentDay.format(DAY_FORMAT))
 
-    const showed = await Estate.query().where({ user_id: user.id })
-                    .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-                    .whereHas('slots', (estateQuery) => {
-                      estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
-                    }).count()
+    const showed = await Estate.query()
+      .where({ user_id: user.id })
+      .whereHas('slots', (estateQuery) => {
+        estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+      })
+      .count()
 
     return response.res({
       totalInvite: parseInt(matches[0].count) + parseInt(buddies[0].count),
@@ -484,8 +500,6 @@ class MatchController {
       finalMatches: finalMatches[0].count,
 
       totalEstates: totalEstates,
-      expired: expired[0].count,
-      showed: showed[0].count,
     })
   }
   /**
