@@ -582,6 +582,39 @@ class MatchService {
   }
 
   /**
+<<<<<<< Updated upstream
+=======
+   * cancel visit by landlord
+   */
+  static async cancelVisitByLandlord(estateId, tenantId) {
+    const visit = await Database.table('visits')
+      .where({ estate_id: estateId })
+      .where({ status: MATCH_STATUS_VISIT })
+      .where({ user_id: tenantId })
+      .first()
+
+    if (!visit) {
+      throw new AppException('there is no visit')
+    }
+
+    const deleteVisit = Database.table('visits')
+      .where({ estate_id: estateId })
+      .where({ status: MATCH_STATUS_VISIT })
+      .where({ user_id: tenantId })
+      .delete()
+
+    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
+      user_id: tenantId,
+      estate_id: estateId,
+    })
+
+    await Promise.all([deleteVisit, updateMatch])
+
+    // //TODO: notify landlord that prospect cancels visit
+    NoticeService.cancelVisit(estateId, tenantId)
+  }
+  /**
+>>>>>>> Stashed changes
    * Share tenant personal data to landlord
    */
   static async share(landlordId, estateId, tenantCode) {
@@ -759,6 +792,28 @@ class MatchService {
     })
   }
 
+  static getTenantTopMatchesByEstate(estateId, tenantId) {
+    console.log({ tenantId })
+    const query = Estate.query().select('estates.*')
+    //   .where('estates.id', estateId)
+    //   .innerJoin({ _m: 'matches' })
+    //   .where('_m.estate_id', 'estates.id')
+    //   .where('_m.user_id', tenantId)
+    //   .where('_m.status', MATCH_STATUS_COMMIT)
+    // return query.fetch()
+  }
+
+  static getCommitsCountByEstateExceptTenant(estateId, tenantId) {
+    const query = Estate.query()
+      .select('estates.*')
+      .where('estates.id', estateId)
+      .innerJoin({ _m: 'matches' })
+      .where('_m.estate_id', 'estates.id')
+      .where('_m.status', MATCH_STATUS_COMMIT)
+      .whereNot('_m.user_id', tenantId)
+    return query.first()
+  }
+
   /**
    *
    */
@@ -856,6 +911,7 @@ class MatchService {
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
     })
+
     query.select(
       'estates.user_id',
       'estates.street',
@@ -869,7 +925,6 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
-    console.log('match query', query.toSQL())
     return query
   }
 
@@ -1243,6 +1298,7 @@ class MatchService {
 
     // Refresh current items order
     // noinspection SqlResolve
+
     const updateQuery = `
       UPDATE matches as _m
         SET ${field} = _t2.item_order

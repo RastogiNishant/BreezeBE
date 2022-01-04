@@ -308,6 +308,12 @@ Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middle
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
 ])
+
+Route.get(
+  '/api/v1/match/tenant/check/commitedAlready',
+  'MatchController.checkTenantMatchCommitedAlready'
+).middleware(['auth:jwt'])
+
 Route.get('/api/v1/match/tenant/upcoming', 'MatchController.getTenantUpcomingVisits').middleware([
   'auth:jwt',
 ])
@@ -328,9 +334,10 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'valid:MatchListLandlord,Pagination',
 ])
 
-Route.get('/api/v1/match/landlord/estate', 'MatchController.getMatchesSummaryLandlordEstate').middleware(
-  ['auth:jwtLandlord']
-)
+Route.get(
+  '/api/v1/match/landlord/estate',
+  'MatchController.getMatchesSummaryLandlordEstate'
+).middleware(['auth:jwtLandlord'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware(
   ['auth:jwtLandlord']
@@ -366,7 +373,15 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot',
   ])
+<<<<<<< Updated upstream
   Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
+=======
+  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt', 'valid:EstateId'])
+  Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([
+    'auth:jwtLandlord',
+    'valid:LandlordVisitCancel',
+  ])
+>>>>>>> Stashed changes
   // Share tenant profile to landlord
   Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
   Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
