@@ -7,6 +7,7 @@ const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
+const RoomService = use('App/Services/RoomService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const schema = require('../Validators/CreateBuddy').schema()
@@ -36,6 +37,7 @@ class ImportService {
    *
    */
   static async createSingleEstate({ data, line }, userId) {
+
     try {
       if (!data.address) {
         throw new AppException('Invalid address')
@@ -44,20 +46,20 @@ class ImportService {
         .where('user_id', userId)
         .where('address', data.address.toLowerCase())
         .first()
-
       if (!existingEstate) {
         data.avail_duration = 144
         data.status = STATUS_DRAFT
         data.available_date = data.available_date || moment().format(DATE_FORMAT)
 
         const estate = await EstateService.createEstate(data, userId)
+        await RoomService.createBulkRooms(estate.id, data)
         // Run task to separate get coords and point of estate
         QueueService.getEstateCoords(estate.id)
         return estate
       }
       return existingEstate.updateItem(data)
     } catch (e) {
-      return { error: [e.message], line }
+      return { error: [e.message], line, address: data.address }
     }
   }
 
@@ -92,9 +94,11 @@ class ImportService {
    */
   static async process(filePath, userId, type) {
     const { errors, data } = await ImportService.readFile(filePath)
+
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
-    const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
+
+    const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line') )
 
     return {
       errors: [...errors, ...createErrors],

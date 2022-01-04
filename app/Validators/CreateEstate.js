@@ -109,6 +109,7 @@ const {
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
   // heating
+  HEATING_TYPE_NO,
   HEATING_TYPE_OVEN,
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
@@ -364,8 +365,8 @@ class CreateEstate extends Base {
         ]),
       heating_type: yup
         .number()
-        .positive()
-        .oneOf([HEATING_TYPE_OVEN, HEATING_TYPE_FLOOR, HEATING_TYPE_CENTRAL, HEATING_TYPE_REMOTE]),
+        // .positive()
+        .oneOf([HEATING_TYPE_NO, HEATING_TYPE_OVEN, HEATING_TYPE_FLOOR, HEATING_TYPE_CENTRAL, HEATING_TYPE_REMOTE]),
       equipment: yup
         .array()
         .of(
@@ -423,8 +424,8 @@ class CreateEstate extends Base {
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40),
       zip: yup.string().max(8),
-      budget: yup.number().integer().min(1).max(100),
-      credit_score: yup.number().integer().min(1).max(100),
+      budget: yup.number().integer().min(0).max(100),
+      credit_score: yup.number().integer().min(0).max(100),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),

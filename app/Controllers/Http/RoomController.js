@@ -2,6 +2,8 @@
 
 const moment = require('moment')
 const uuid = require('uuid')
+const AppException = use('App/Exceptions/AppException')
+const Logger = use('Logger')
 
 const Drive = use('Drive')
 const Event = use('Event')
@@ -17,14 +19,20 @@ class RoomController {
    */
   async createRoom({ request, auth, response }) {
     const { estate_id, ...roomData } = request.all()
-    await Estate.findByOrFail({ user_id: auth.user.id, id: estate_id })
-    const room = await Room.createItem({
-      ...roomData,
-      estate_id,
-    })
-    Event.fire('estate::update', estate_id)
-
-    response.res(room)
+    try{
+      await Estate.findByOrFail({ user_id: auth.user.id, id: estate_id })
+      
+          const room = await Room.createItem({
+            ...roomData,
+            estate_id,
+          })
+          Event.fire('estate::update', estate_id)
+      
+          response.res(room)
+    }catch(e) {
+      Logger.error('Create Room error', e);
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
@@ -71,6 +79,8 @@ class RoomController {
     }
 
     const image = request.file('file')
+    console.log( 'image', image)    
+
     const ext = image.extname
       ? image.extname
       : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
