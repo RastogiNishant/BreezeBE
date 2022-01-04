@@ -72,6 +72,12 @@ const capt = (str) => {
   return String(str).split(' ').map(capitalize).join(' ')
 }
 
+const localeTemplateToValue = ( str, values ) => {
+  return str.split(/{(.*?)}/).map(s => {
+    return values.map(k=> s.replace(Object.keys(k),Object.values(k)));
+  }).join('');
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -80,4 +86,5 @@ module.exports = {
   getGeoRange,
   getAuthByRole,
   capitalize: capt,
+  rc:localeTemplateToValue,
 }

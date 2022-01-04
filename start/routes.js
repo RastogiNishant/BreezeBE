@@ -135,6 +135,7 @@ Route.group(() => {
   ])
 
   Route.get('/upcomingShows', 'TimeSlotController.getUpcomingShows')
+  Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
@@ -211,6 +212,15 @@ Route.group(() => {
 })
   .prefix('api/v1/admin/users')
   .middleware(['auth:jwtAdmin', 'is:admin'])
+
+//Route.post('api/v1/admin/feature', 'FeatureController.createFeature').middleware(['auth:jwtAdmin', 'is:admin'])
+Route.group(() => {
+  Route.post('/', 'FeatureController.createFeature').middleware(['auth:jwt'])
+  Route.put('/', 'FeatureController.updateFeature').middleware(['auth:jwt'])
+  Route.delete('/', 'FeatureController.removeFeature').middleware(['auth:jwt'])
+})
+  .prefix('api/v1/admin/feature')
+  .middleware(['auth:jwt'])
 
 Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
@@ -373,15 +383,17 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot',
   ])
-<<<<<<< Updated upstream
   Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
-=======
   Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt', 'valid:EstateId'])
   Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([
     'auth:jwtLandlord',
     'valid:LandlordVisitCancel',
   ])
->>>>>>> Stashed changes
+  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt', 'valid:EstateId'])
+  Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([
+    'auth:jwtLandlord',
+    'valid:LandlordVisitCancel',
+  ])
   // Share tenant profile to landlord
   Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
   Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
@@ -447,6 +459,15 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
   'auth:jwtLandlord,jwt',
   'valid:DebugNotification',
 ])
+
+Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.post('/', 'AccountController.updateUserPremiumPlan')
+  Route.get('/', 'AccountController.getUserPremiumPlans')
+})
+  .middleware(['auth:jwtLandlord,jwt'])
+  .prefix('api/v1/updateUserPremiumPlan')
 
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']

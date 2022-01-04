@@ -271,6 +271,13 @@ class Estate extends Model {
   /**
    *
    */
+   slots() {
+    return this.hasMany('App/Models/TimeSlot')
+  }
+
+  /**
+   *
+   */
   decided() {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_TOP,

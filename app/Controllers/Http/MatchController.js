@@ -190,8 +190,6 @@ class MatchController {
   }
 
   /**
-<<<<<<< Updated upstream
-=======
    * Not coming/cancel visit by landloard
    *
    */
@@ -211,7 +209,6 @@ class MatchController {
   }
 
   /**
->>>>>>> Stashed changes
    *
    */
   async updateVisitTimeslotLandlord({ request, auth, response }) {
@@ -478,20 +475,6 @@ class MatchController {
 
     const finalMatches = await MatchService.matchCount([MATCH_STATUS_COMMIT], estatesId)
 
-<<<<<<< Updated upstream
-    console.log(
-      'jgkgjkgjgk',
-      totalInvite[0].count,
-      totalVisits[0].count,
-      totalDecided[0].count,
-      matches[0].count,
-      buddies[0].count,
-      invites[0].count,
-      visits[0].count,
-      top[0].count,
-      finalMatches[0].count
-    )
-=======
     const expired = await Estate.query()
       .count('*')
       .where({ user_id: user.id })
@@ -504,7 +487,6 @@ class MatchController {
       })
       .count()
 
->>>>>>> Stashed changes
     return response.res({
       totalInvite: parseInt(matches[0].count) + parseInt(buddies[0].count),
       totalVisits: totalVisits[0].count,

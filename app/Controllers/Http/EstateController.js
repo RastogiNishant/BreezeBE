@@ -16,10 +16,15 @@ const Drive = use('Drive')
 
 const {
   STATUS_ACTIVE,
+  STATUS_EXPIRE,
   STATUS_DRAFT,
   STATUS_DELETE,
-  STATUS_EXPIRE,
   ERROR_BUDDY_EXISTS,
+  DATE_FORMAT,
+  DAY_FORMAT,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_NEW,
 } = require('../../constants')
 
 class EstateController {
@@ -148,6 +153,47 @@ class EstateController {
     response.res(true)
   }
 
+    /**
+   *
+   */
+  async getEstatesQuickLinks({ request, auth, response }) {
+
+    const { filter } = request.all()
+    const currentDay = moment().startOf('day')
+    const userId = auth.user.id
+    const finalMatches = [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT]
+    let estates = {}
+    if( filter == 1 ) {
+      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+                    .where('to_date', '<', currentDay.format(DAY_FORMAT))
+                    .orderBy('id').fetch()
+    }
+
+    if(filter == 2 ) {
+      estates= await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('slots')
+                    .whereHas('slots', (estateQuery) => {
+                      estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
+                    })
+                  .orderBy('id').fetch() 
+     } 
+
+     if(filter == 3 ) {
+      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('matches')
+                      .whereHas('matches', (estateQuery) => {
+                        estateQuery.whereIn('status', [MATCH_STATUS_NEW] ).where('buddy', true)
+                      })
+                      .orderBy('id').fetch()  
+     } 
+                          
+     if(filter == 4 ) {
+      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('matches')
+                      .whereHas('matches', (estateQuery) => {
+                        estateQuery.whereIn('status', finalMatches )
+                      })
+                      .orderBy('id').fetch()                    
+      }
+    response.res(estates)
+  }
   /**
    *
    */

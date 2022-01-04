@@ -284,6 +284,7 @@ const constants = {
   MATCH_STATUS_TOP: 6,
   MATCH_STATUS_COMMIT: 7,
   MATCH_STATUS_FINISH: 8,
+  MATCH_STATUS_CANCEL: 9,
 
   COMPANY_TYPE_PRIVATE: 'private',
   COMPANY_TYPE_PROPERTY_MANAGER: 'propMan',
@@ -314,6 +315,7 @@ const constants = {
   LANDLORD_TABS_COMMIT: 'commit',
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+  DAY_FORMAT: 'YYYY-MM-DD',
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -350,7 +352,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE: 'notification_prospect_profile_expire',
   NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
   NOTICE_TYPE_PROSPECT_KNOCK: 'notification_prospect_knock',
-  NOTICE_TYPE_PROSPECT_CANCEL_VISIT: 'notification_prospect_cancel_visit',
+  NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
+  NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -372,7 +375,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID: 23,
   NOTICE_TYPE_PROSPECT_COME_ID: 24,
   NOTICE_TYPE_PROSPECT_KNOCK_ID: 25,
-  NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
+  NOTICE_TYPE_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
+  NOTICE_TYPE_VISIT_DELAY_ID:27, // visit delayed
 
 
   TIMESLOT_STATUS_BOOK: 'new',

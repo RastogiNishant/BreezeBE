@@ -12,7 +12,9 @@ const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
 const ImageService = use('App/Services/ImageService')
+const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -89,6 +91,7 @@ class AccountController {
     if (role) {
       roles = [role]
     }
+
     const user = await User.query()
       .where('email', email)
       .whereIn('role', roles)
@@ -106,7 +109,6 @@ class AccountController {
     } catch (e) {
       throw new HttpException(e.message, 403)
     }
-
     const uid = User.getHash(email, role)
     let token
     try {
@@ -363,6 +365,26 @@ class AccountController {
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  async updateUserPremiumPlan({request, auth, response}) {
+    try{
+      const {premiums} = request.all();
+      const ret = await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)
+      return response.send(ret)
+    }catch(e) {
+      Logger.error(e)
+      // throw new AppException(e.message, 400)
+    }
+  }
+
+  async getUserPremiumPlans({request, auth, response}) {
+    try{
+      const userPremiumPlans = await UserPremiumPlanService.getUserPremiumPlans(auth.user.id)
+      return response.send(userPremiumPlans)
+    }catch(e) {
+      Logger.error(e)
     }
   }
 }

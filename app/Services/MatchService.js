@@ -582,8 +582,6 @@ class MatchService {
   }
 
   /**
-<<<<<<< Updated upstream
-=======
    * cancel visit by landlord
    */
   static async cancelVisitByLandlord(estateId, tenantId) {
@@ -614,7 +612,6 @@ class MatchService {
     NoticeService.cancelVisit(estateId, tenantId)
   }
   /**
->>>>>>> Stashed changes
    * Share tenant personal data to landlord
    */
   static async share(landlordId, estateId, tenantCode) {

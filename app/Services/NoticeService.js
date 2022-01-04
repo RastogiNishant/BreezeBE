@@ -11,6 +11,7 @@ const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
+const Logger = use('Logger')
 
 const MIN_TIME_SLOT = 5
 
@@ -37,7 +38,7 @@ const {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
   NOTICE_TYPE_PROSPECT_COME_ID,
   NOTICE_TYPE_PROSPECT_KNOCK_ID,
-  NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID,
+  NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
@@ -60,7 +61,7 @@ const {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_COME,
   NOTICE_TYPE_PROSPECT_KNOCK,
-  NOTICE_TYPE_PROSPECT_CANCEL_VISIT,
+  NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
 
   MATCH_STATUS_COMMIT,
@@ -405,7 +406,7 @@ class NoticeService {
         .where('id', estateId)
         .first()
       if( !estate || !estate.user_id ) {
-        Log.e('knockToLandloard', `there is no estate for${estateId}` );
+        Logger.error('knockToLandloard', `there is no estate for${estateId}` );
         throw new HttpException( 'there is no estate', 400);
       }
       const notice = {
@@ -422,20 +423,23 @@ class NoticeService {
     }
  
     /**
-   *
+   * Notify landlord or prospect that visit has been canceled
+   * parameters
+   * userId : null => prospect cancel his visit
+   * userId: not null => landlord cancel his visit
    */
-     static async cancelVisit(estateId) {
+     static async cancelVisit(estateId, userId = null) {
       const estate = await Database.table({ _e: 'estates' })
         .select('address', 'id', 'cover', 'user_id')
         .where('id', estateId)
         .first()
       if( !estate || !estate.user_id ) {
-        Log.e('knockToLandloard', `there is no estate for${estateId}` );
+        Logger.error('knockToLandloard', `there is no estate for${estateId}` );
         throw new AppException('there is no estate')
       }
       const notice = {
-        user_id: estate.user_id,
-        type: NOTICE_TYPE_PROSPECT_CANCEL_VISIT_ID,
+        user_id: userId?userId:estate.user_id,
+        type: NOTICE_TYPE_CANCEL_VISIT_ID,
         data: {
           estate_id: estate.id,
           estate_address: estate.address,
@@ -711,7 +715,7 @@ class NoticeService {
       case NOTICE_TYPE_PROSPECT_KNOCK:
         notice.user_id = estate.user_id;
         return NotificationsService.sendProspectNewKnock([notice])
-      case NOTICE_TYPE_PROSPECT_CANCEL_VISIT:
+      case NOTICE_TYPE_CANCEL_VISIT:
         notice.user_id = estate.user_id;
         return NotificationsService.sendProspectCancelVisit([notice])
       case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT: // Notification for prospect's picking up timeslot to visit landlord

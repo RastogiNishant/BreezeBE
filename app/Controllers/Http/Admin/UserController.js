@@ -12,11 +12,16 @@ class UserController {
    * admin login
    */
   async login({ request, auth, response }) {
+
     const { email, password } = request.all()
     const authenticator = await auth.authenticator('jwtAdmin')
 
     const uid = User.getHash(email, ROLE_ADMIN)
+
     const token = await authenticator.attempt(uid, password)
+
+    console.log('User', token );    
+
     const user = await User.findByOrFail({ email, role: ROLE_ADMIN })
     const roles = await user.getRoles()
     if (isEmpty(roles)) {
