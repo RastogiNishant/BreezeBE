@@ -10,7 +10,7 @@ const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
-const ImportService = use('App/Services/ImportService')
+// const ImportService = use('App/Services/ImportService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 
@@ -106,13 +106,13 @@ class EstateController {
   /**
    *
    */
-  async importEstate({ request, auth, response }) {
-    const importFilePathName = request.file('file')
+  // async importEstate({ request, auth, response }) {
+  //   const importFilePathName = request.file('file')
 
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+  //   const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
 
-    return response.res(result)
-  }
+  //   return response.res(result)
+  // }
 
   /**
    *
@@ -154,45 +154,59 @@ class EstateController {
     response.res(true)
   }
 
-    /**
+  /**
    *
    */
   async getEstatesQuickLinks({ request, auth, response }) {
-
     const { filter } = request.all()
     const currentDay = moment().startOf('day')
     const userId = auth.user.id
-    const finalMatches = [MATCH_STATUS_TOP,MATCH_STATUS_COMMIT]
+    const finalMatches = [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT]
     let estates = {}
-    if( filter == 1 ) {
-      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-                    .where('to_date', '<', currentDay.format(DAY_FORMAT))
-                    .orderBy('id').fetch()
+    if (filter == 1) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .where('to_date', '<', currentDay.format(DAY_FORMAT))
+        .orderBy('id')
+        .fetch()
     }
 
-    if(filter == 2 ) {
-      estates= await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('slots')
-                    .whereHas('slots', (estateQuery) => {
-                      estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT) )
-                    })
-                  .orderBy('id').fetch() 
-     } 
+    if (filter == 2) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('slots')
+        .whereHas('slots', (estateQuery) => {
+          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+        })
+        .orderBy('id')
+        .fetch()
+    }
 
-     if(filter == 3 ) {
-      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('matches')
-                      .whereHas('matches', (estateQuery) => {
-                        estateQuery.whereIn('status', [MATCH_STATUS_NEW] ).where('buddy', true)
-                      })
-                      .orderBy('id').fetch()  
-     } 
-                          
-     if(filter == 4 ) {
-      estates = await Estate.query().where({ user_id: userId }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).with('matches')
-                      .whereHas('matches', (estateQuery) => {
-                        estateQuery.whereIn('status', finalMatches )
-                      })
-                      .orderBy('id').fetch()                    
-      }
+    if (filter == 3) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('matches')
+        .whereHas('matches', (estateQuery) => {
+          estateQuery.whereIn('status', [MATCH_STATUS_NEW]).where('buddy', true)
+        })
+        .orderBy('id')
+        .fetch()
+    }
+
+    if (filter == 4) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('matches')
+        .whereHas('matches', (estateQuery) => {
+          estateQuery.whereIn('status', finalMatches)
+        })
+        .orderBy('id')
+        .fetch()
+    }
     response.res(estates)
   }
   /**
