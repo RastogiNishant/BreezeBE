@@ -634,7 +634,7 @@ class MatchController {
 
     const finalMatchesCount = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_COMMIT])
+      .whereIn('status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
 
     const extraFields = ['email', 'phone', 'last_address', ...fields]
