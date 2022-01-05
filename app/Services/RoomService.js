@@ -2,7 +2,7 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 const Room = use('App/Models/Room')
 const Image = use('App/Models/Image')
-const { get, has, trim, isEmpty, reduce, isString, isFunction } = require('lodash')
+const { get, has, trim, isEmpty, reduce, isString, isFunction, omit, pick, assign } = require('lodash')
 const Event = use('Event')
 const { STATUS_DELETE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
@@ -64,17 +64,19 @@ class RoomService {
    *
    */
   static async createBulkRooms(estate_id, data) {
-    
-    const roomsWithPhotos = RoomService.extractBulkData(estate_id, data)
+    let roomsWithPhotos = RoomService.extractBulkData(estate_id, data)
+    const columns = Room.columns;
     if( roomsWithPhotos && roomsWithPhotos.length ) {
-
       const rooms = await Promise.all( roomsWithPhotos.map( async rp => {
-        delete( rp.photos )
-        await schema.validate(data)
-        return rp
+        const room = omit( pick(rp, columns || [] ), ['photos'] );
+        await schema.validate(room)
+        return room
       }))
 
-      await Room.createMany(rooms)
+      const ret = await Room.createMany(rooms)
+      const images = roomsWithPhotos.map( (rp, index) => assign( pick(rp, ['photos'] ), {room_id:ret[index]['id']} ) )
+
+console.log('images', images);
     }
   }
 
