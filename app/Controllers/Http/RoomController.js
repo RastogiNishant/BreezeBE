@@ -86,6 +86,7 @@ class RoomController {
       : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
     const filename = `${uuid.v4()}.${ext}`
     const filePathName = `${moment().format('YYYYMM')}/${filename}`
+
     await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
       ACL: 'public-read',
       ContentType: image.headers['content-type'],
@@ -95,7 +96,6 @@ class RoomController {
       await EstateService.setCover(room.estate_id, filePathName)
     }
     Event.fire('estate::update', room.estate_id)
-
     response.res(imageObj)
   }
 
