@@ -79,6 +79,7 @@
 		"App": "./app"
 	},
 	"devDependencies": {
+		"@adonisjs/cli": "^4.0.13",
 		"concurrently": "^6.0.0"
 	}
 }

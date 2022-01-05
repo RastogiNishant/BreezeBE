@@ -10,7 +10,7 @@ const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
-// const ImportService = use('App/Services/ImportService')
+//const ImportService = use('App/Services/ImportService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 
@@ -109,9 +109,15 @@ class EstateController {
   // async importEstate({ request, auth, response }) {
   //   const importFilePathName = request.file('file')
 
-  //   const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-
-  //   return response.res(result)
+  //   if( importFilePathName && importFilePathName.tmpPath ){
+  //     if( importFilePathName.headers['content-type'] !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ){
+  //       throw new HttpException('No excel format', 400 );  
+  //     }
+  //     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+  //     return response.res(result)
+  //   }else {
+  //     throw new HttpException('There is no excel data to import', 400 );
+  //   }
   // }
 
   /**
