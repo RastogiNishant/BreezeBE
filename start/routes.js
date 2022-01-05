@@ -214,12 +214,13 @@ Route.group(() => {
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
 //Route.post('api/v1/admin/feature', 'FeatureController.createFeature').middleware(['auth:jwtAdmin', 'is:admin'])
-Route.group(()=> {
+Route.group(() => {
   Route.post('/', 'FeatureController.createFeature').middleware(['auth:jwt'])
   Route.put('/', 'FeatureController.updateFeature').middleware(['auth:jwt'])
   Route.delete('/', 'FeatureController.removeFeature').middleware(['auth:jwt'])
-}).prefix('api/v1/admin/feature').middleware(['auth:jwt'])
-
+})
+  .prefix('api/v1/admin/feature')
+  .middleware(['auth:jwt'])
 
 Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
@@ -317,6 +318,12 @@ Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middle
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
 ])
+
+Route.get(
+  '/api/v1/match/tenant/check/commitedAlready',
+  'MatchController.checkTenantMatchCommitedAlready'
+).middleware(['auth:jwt'])
+
 Route.get('/api/v1/match/tenant/upcoming', 'MatchController.getTenantUpcomingVisits').middleware([
   'auth:jwt',
 ])
@@ -337,9 +344,10 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'valid:MatchListLandlord,Pagination',
 ])
 
-Route.get('/api/v1/match/landlord/estate', 'MatchController.getMatchesSummaryLandlordEstate').middleware(
-  ['auth:jwtLandlord']
-)
+Route.get(
+  '/api/v1/match/landlord/estate',
+  'MatchController.getMatchesSummaryLandlordEstate'
+).middleware(['auth:jwtLandlord'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware(
   ['auth:jwtLandlord']
@@ -375,8 +383,11 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot',
   ])
-  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt', 'valid:EstateId'])
-  Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware(['auth:jwtLandlord', 'valid:LandlordVisitCancel',])  
+  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
+  Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([
+    'auth:jwtLandlord',
+    'valid:LandlordVisitCancel',
+  ])
   // Share tenant profile to landlord
   Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
   Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
@@ -451,8 +462,6 @@ Route.group(() => {
 })
   .middleware(['auth:jwtLandlord,jwt'])
   .prefix('api/v1/updateUserPremiumPlan')
-
-
 
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']

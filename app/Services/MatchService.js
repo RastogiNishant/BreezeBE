@@ -23,7 +23,6 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
-  MATCH_STATUS_CANCEL,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DATE_FORMAT,
@@ -570,16 +569,16 @@ class MatchService {
     const deleteVisit = Database.table('visits')
       .where({ estate_id: estateId, user_id: userId })
       .delete()
-    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_CANCEL }).where({
+    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
       user_id: userId,
       estate_id: estateId,
     })
 
-    await Promise.all([deleteVisit, updateMatch])
+    await Promise.all([deleteVisit, updateMatch]);
 
-    //TODO: notify landlord that prospect canceled visit
+    //TODO: notify landlord that prospect cancels visit
 
-    NoticeService.cancelVisit(estateId)
+    NoticeService.cancelVisit(estateId);
   }
 
   /**
@@ -607,10 +606,10 @@ class MatchService {
       estate_id: estateId,
     })
 
-    await Promise.all([deleteVisit, updateMatch]);
+    await Promise.all([deleteVisit, updateMatch])
 
     // //TODO: notify landlord that prospect cancels visit
-    NoticeService.cancelVisit(estateId, tenantId );
+    NoticeService.cancelVisit(estateId, tenantId)
   }
   /**
    * Share tenant personal data to landlord
@@ -657,7 +656,7 @@ class MatchService {
     })
   }
 
-  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId ) {
     return await Database.table('matches')
       .count('*')
       .whereIn('status', status)
@@ -790,6 +789,28 @@ class MatchService {
     })
   }
 
+  static getTenantTopMatchesByEstate(estateId, tenantId) {
+    console.log({ tenantId })
+    const query = Estate.query().select('estates.*')
+    //   .where('estates.id', estateId)
+    //   .innerJoin({ _m: 'matches' })
+    //   .where('_m.estate_id', 'estates.id')
+    //   .where('_m.user_id', tenantId)
+    //   .where('_m.status', MATCH_STATUS_COMMIT)
+    // return query.fetch()
+  }
+
+  static getCommitsCountByEstateExceptTenant(estateId, tenantId) {
+    const query = Estate.query()
+      .select('estates.*')
+      .where('estates.id', estateId)
+      .innerJoin({ _m: 'matches' })
+      .where('_m.estate_id', 'estates.id')
+      .where('_m.status', MATCH_STATUS_COMMIT)
+      .whereNot('_m.user_id', tenantId)
+    return query.first()
+  }
+
   /**
    *
    */
@@ -887,6 +908,7 @@ class MatchService {
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
     })
+
     query.select(
       'estates.user_id',
       'estates.street',
@@ -900,7 +922,6 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
-    console.log('match query', query.toSQL())
     return query
   }
 
@@ -1274,6 +1295,7 @@ class MatchService {
 
     // Refresh current items order
     // noinspection SqlResolve
+
     const updateQuery = `
       UPDATE matches as _m
         SET ${field} = _t2.item_order
@@ -1445,10 +1467,10 @@ class MatchService {
    */
   static async updateVisitStatus(estateId, userId, data) {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
-    const estate = await EstateService.getActiveById(estateId)
-    if (estate) {
-      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
-    } else {
+    const estate = await EstateService.getActiveById(estateId);
+    if( estate ) {
+      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay )
+    }else{
       throw new AppException('No estate')
     }
   }
@@ -1458,25 +1480,26 @@ class MatchService {
    */
   static async updateVisitStatusLandlord(estateId, data) {
     const currentDay = moment().startOf('day')
-    try {
+    try{
+
       const visit = await Visit.query()
-        .where({ estate_id: estateId })
-        .where('date', '>', currentDay.format(DATE_FORMAT))
-        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-        .first()
+                          .where({ estate_id: estateId })
+                          .where('date', '>', currentDay.format(DATE_FORMAT))
+                          .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+                          .first()
 
       await Database.table('visits')
-        .where({ estate_id: estateId })
-        .where('date', '>', currentDay.format(DATE_FORMAT))
-        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-        .update(data)
+      .where({ estate_id: estateId })
+      .where('date', '>', currentDay.format(DATE_FORMAT))
+      .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+      .update(data)
 
-      if (visit) {
+      if( visit ){
         NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
       }
-    } catch (e) {
+    }catch(e){
       Logger.error(e)
-      throw new AppException(e)
+      throw new AppException(e);
     }
   }
 
