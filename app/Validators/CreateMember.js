@@ -44,17 +44,21 @@ class CreateMember extends Base {
       landlord_email: yup.string().email().max('255'),
       last_address: yup.string().max('255'),
       credit_score: yup.number().min(0).max(100),
-      // unpaid_rental: yup.number().oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL]),
-      // insolvency_proceed: yup.number().oneOf([NO_INSOLVENCY, YES_INSOLVENCY, NO_ANSWER_INSOLVENCY]),
-      // arrest_warranty: yup.number().oneOf([NO_ARREST_WARRANTY, YES_ARREST_WARRANTY,NO_ANSWER_WARRANTY]),
-      // clean_procedure: yup.number().oneOf([NO_CLEAN_PROCEDURE, YES_CLEAN_PROCEDURE,NO_ANSWER_CLEAN_PROCEDURE]),
-      // income_seizure: yup.number().oneOf([NO_INCOME_SEIZURE,YES_INCOME_SEIZURE,NO_ANSWER_INCOME_SEIZURE]),
-      unpaid_rental: yup.boolean(),
-      insolvency_proceed: yup.boolean(),
-      arrest_warranty: yup.boolean(),
-      clean_procedure: yup.boolean(),
-      income_seizure: yup.boolean(),
-      execution: yup.boolean(),
+      unpaid_rental: yup
+        .number()
+        .oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL]),
+      insolvency_proceed: yup.number().oneOf([NO_INSOLVENCY, YES_INSOLVENCY, NO_ANSWER_INSOLVENCY]),
+      arrest_warranty: yup
+        .number()
+        .oneOf([NO_ARREST_WARRANTY, YES_ARREST_WARRANTY, NO_ANSWER_WARRANTY]),
+      clean_procedure: yup
+        .number()
+        .oneOf([NO_CLEAN_PROCEDURE, YES_CLEAN_PROCEDURE, NO_ANSWER_CLEAN_PROCEDURE]),
+      income_seizure: yup
+        .number()
+        .oneOf([NO_INCOME_SEIZURE, YES_INCOME_SEIZURE, NO_ANSWER_INCOME_SEIZURE]),
+
+      // execution: yup.boolean(),
       external_duties: yup.array().of(yup.number().oneOf([1, 2, 3])),
       duties_amount: yup.number().min(0).max(1000000),
     })
