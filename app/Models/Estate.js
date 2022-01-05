@@ -35,6 +35,7 @@ const {
   MATCH_STATUS_VISIT,
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
+  TENANT_MATCH_FIELDS,
 } = require('../constants')
 
 class Estate extends Model {
@@ -160,31 +161,7 @@ class Estate extends Model {
   }
 
   static get shortFieldsList() {
-    return [
-      'id',
-      'coord',
-      'net_rent',
-      'area',
-      'cover',
-      'street',
-      'city',
-      'zip',
-      'rooms_number',
-      'floor',
-      'number_floors',
-      'status',
-      'match',
-      'net_rent',
-      'budget',
-      'updated_at',
-      'share',
-      'like',
-      'dislike',
-      'visit_status',
-      'delay',
-      'estate_status',
-      'date',
-    ]
+    return TENANT_MATCH_FIELDS
   }
 
   /**
@@ -271,7 +248,7 @@ class Estate extends Model {
   /**
    *
    */
-   slots() {
+  slots() {
     return this.hasMany('App/Models/TimeSlot')
   }
 
