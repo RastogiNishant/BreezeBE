@@ -394,6 +394,7 @@ Route.group(() => {
   // Move/remove top tenant
   Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])
   Route.delete('/top', 'MatchController.discardUserToTop').middleware(['auth:jwtLandlord'])
+  Route.delete('/top/tenant', 'MatchController.cancelTopByTenant').middleware(['auth:jwt'])
   // Request confirmation
   Route.post('/request', 'MatchController.requestUserCommit').middleware(['auth:jwtLandlord'])
   Route.delete('/commit', 'MatchController.tenantCancelCommit').middleware(['auth:jwt'])

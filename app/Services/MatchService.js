@@ -574,11 +574,11 @@ class MatchService {
       estate_id: estateId,
     })
 
-    await Promise.all([deleteVisit, updateMatch]);
+    await Promise.all([deleteVisit, updateMatch])
 
     //TODO: notify landlord that prospect cancels visit
 
-    NoticeService.cancelVisit(estateId);
+    NoticeService.cancelVisit(estateId)
   }
 
   /**
@@ -656,7 +656,7 @@ class MatchService {
     })
   }
 
-  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId ) {
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
     return await Database.table('matches')
       .count('*')
       .whereIn('status', status)
@@ -674,6 +674,35 @@ class MatchService {
         estate_id: estateId,
       })
       .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+  }
+
+  static async cancelTopByTenant(estateId, tenantId) {
+    const deleteMatch = Database.table('matches')
+      .where({
+        status: MATCH_STATUS_TOP,
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+      .delete()
+
+    const deleteVisit = Database.table('visits')
+      .where({ estate_id: estateId, user_id: tenantId })
+      .delete()
+
+    const checkDislikeExist = async () => {
+      const dislike = await Estate.query()
+        .where('estates.id', estateId)
+        .select('estates.*')
+        .innerJoin({ _l: 'dislikes' }, function () {
+          this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', tenantId)
+        })
+        .first()
+      if (!dislike) {
+        await EstateService.addDislike(tenantId, estateId)
+      }
+    }
+
+    await Promise.all([deleteMatch, deleteVisit, checkDislikeExist()])
   }
 
   /**
@@ -1467,10 +1496,10 @@ class MatchService {
    */
   static async updateVisitStatus(estateId, userId, data) {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
-    const estate = await EstateService.getActiveById(estateId);
-    if( estate ) {
-      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay )
-    }else{
+    const estate = await EstateService.getActiveById(estateId)
+    if (estate) {
+      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
+    } else {
       throw new AppException('No estate')
     }
   }
@@ -1480,26 +1509,25 @@ class MatchService {
    */
   static async updateVisitStatusLandlord(estateId, data) {
     const currentDay = moment().startOf('day')
-    try{
-
+    try {
       const visit = await Visit.query()
-                          .where({ estate_id: estateId })
-                          .where('date', '>', currentDay.format(DATE_FORMAT))
-                          .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-                          .first()
+        .where({ estate_id: estateId })
+        .where('date', '>', currentDay.format(DATE_FORMAT))
+        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+        .first()
 
       await Database.table('visits')
-      .where({ estate_id: estateId })
-      .where('date', '>', currentDay.format(DATE_FORMAT))
-      .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-      .update(data)
+        .where({ estate_id: estateId })
+        .where('date', '>', currentDay.format(DATE_FORMAT))
+        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+        .update(data)
 
-      if( visit ){
+      if (visit) {
         NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
       }
-    }catch(e){
+    } catch (e) {
       Logger.error(e)
-      throw new AppException(e);
+      throw new AppException(e)
     }
   }
 
