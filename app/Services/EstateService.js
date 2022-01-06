@@ -130,6 +130,10 @@ class EstateService {
     return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
   }
 
+  static async completeRemoveEstate(id) {
+    return await Estate.query().where('id', id).delete()
+  }
+
   /**
    *
    */

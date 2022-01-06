@@ -44,20 +44,23 @@ class ImportService {
       }
       const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
-        .where('address', data.address.toLowerCase())
+        .where('address', 'LIKE', `%${data.address.toLowerCase()}%`)
         .first()
-      if (!existingEstate) {
-        data.avail_duration = 144
-        data.status = STATUS_DRAFT
-        data.available_date = data.available_date || moment().format(DATE_FORMAT)
 
-        const estate = await EstateService.createEstate(data, userId)
-        await RoomService.createBulkRooms(estate.id, data)
-        // Run task to separate get coords and point of estate
-        QueueService.getEstateCoords(estate.id)
-        return estate
+      if( existingEstate ){
+        await EstateService.completeRemoveEstate(existingEstate.id)
       }
-      return existingEstate.updateItem(data)
+
+      data.avail_duration = 144
+      data.status = STATUS_DRAFT
+      data.available_date = data.available_date || moment().format(DATE_FORMAT)
+
+      const estate = await EstateService.createEstate(data, userId)
+      await RoomService.createBulkRooms(estate.id, data)
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estate.id)
+      return estate
+
     } catch (e) {
       return { error: [e.message], line, address: data.address }
     }
