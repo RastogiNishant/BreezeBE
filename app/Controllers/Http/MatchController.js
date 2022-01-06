@@ -26,7 +26,7 @@ const {
   MATCH_STATUS_FINISH,
   TENANT_MATCH_FIELDS,
   DAY_FORMAT,
-  DATE_FORMAT
+  DATE_FORMAT,
 } = require('../../constants')
 
 class MatchController {
@@ -292,6 +292,17 @@ class MatchController {
     }
 
     response.res(true)
+  }
+
+  async cancelTopByTenant({ request, auth, response }) {
+    const tenantId = auth.user.id
+    const { estate_id } = request.all()
+    try {
+      await MatchService.cancelTopByTenant(estate_id, tenantId)
+      response.res(true)
+    } catch (e) {
+      throw new HttpException('Cant cancel top', 400)
+    }
   }
 
   /**
