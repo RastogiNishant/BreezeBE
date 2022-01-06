@@ -215,8 +215,8 @@ Route.group(() => {
 
 //Route.post('api/v1/admin/feature', 'FeatureController.createFeature').middleware(['auth:jwtAdmin', 'is:admin'])
 Route.group(() => {
-  Route.post('/', 'FeatureController.createFeature').middleware(['auth:jwt'])
-  Route.put('/', 'FeatureController.updateFeature').middleware(['auth:jwt'])
+  Route.post('/', 'FeatureController.createFeature').middleware(['auth:jwt', 'valid:CreateFeature'])
+  Route.put('/', 'FeatureController.updateFeature').middleware(['auth:jwt', 'valid:CreateFeature,Id'])
   Route.delete('/', 'FeatureController.removeFeature').middleware(['auth:jwt'])
 })
   .prefix('api/v1/admin/feature')
@@ -460,7 +460,7 @@ Route.group(() => {
   Route.post('/', 'AccountController.updateUserPremiumPlan')
   Route.get('/', 'AccountController.getUserPremiumPlans')
 })
-  .middleware(['auth:jwtLandlord,jwt'])
+  .middleware(['auth:jwtLandlord,jwt', 'valid:UserPremiumPlan'])
   .prefix('api/v1/updateUserPremiumPlan')
 
 // Force add named middleware to all requests

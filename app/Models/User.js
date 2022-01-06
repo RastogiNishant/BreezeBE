@@ -35,6 +35,8 @@ class User extends Model {
       'request_full_profile',
       'notice',
       'unread_notification_count',
+      'is_premium',
+      'payment_plan'
     ]
   }
 

@@ -1,10 +1,17 @@
 'use strict'
 
 const FeatureService = use('App/Services/FeatureService')
+const { YEARLY_DISCOUNT_RATE } = require('../../constants')
+
 class FeatureController {
   async getFeatures({ request, response }) {
-    const result = await FeatureService.getFeatures();
-    return response.res(result)
+    const { limit, page, ...params } = request.all()
+    const features = await FeatureService.getFeatures(params);
+    const data = {
+      year_discount_rate:YEARLY_DISCOUNT_RATE,
+      features:features
+    }
+    return response.res(data)
   }
 
   async createFeature({ request, response }) {
