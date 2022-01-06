@@ -57,8 +57,7 @@ class CreateMember extends Base {
       income_seizure: yup
         .number()
         .oneOf([NO_INCOME_SEIZURE, YES_INCOME_SEIZURE, NO_ANSWER_INCOME_SEIZURE]),
-
-      // execution: yup.boolean(),
+      execution: yup.number().positive().oneOf([1, 2, 3]),
       external_duties: yup.array().of(yup.number().oneOf([1, 2, 3])),
       duties_amount: yup.number().min(0).max(1000000),
     })
