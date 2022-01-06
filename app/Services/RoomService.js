@@ -2,7 +2,7 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 const Room = use('App/Models/Room')
 const Image = use('App/Models/Image')
-const ImageService = use('App/Services/ImageService')
+const QueueService = use('App/Services/QueueService')
 const {
   get,
   has,
@@ -92,7 +92,9 @@ class RoomService {
       const images = roomsWithPhotos.map((rp, index) =>
         assign(pick(rp, ['photos']), { room_id: ret[index]['id'] })
       )
-      ImageService.savePropertyBulkImages(images)
+      // Separately run task to save images for rooms
+      QueueService.savePropertyBulkImages(images)
+//ImageService.savePropertyBulkImages(images)
     }
   }
 

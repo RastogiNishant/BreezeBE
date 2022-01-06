@@ -3,10 +3,12 @@ const Logger = use('Logger')
 const NoticeService = use('App/Services/NoticeService')
 const EstateService = use('App/Services/EstateService')
 const TenantService = use('App/Services/TenantService')
+const ImageService = use('App/Services/ImageService')
 
 const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
+const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 
 const {
   SCHEDULED_EVERY_5M_JOB,
@@ -46,6 +48,11 @@ class QueueService {
    */
   static getEstateCoords(estateId) {
     Queue.addJob(GET_COORDINATES, { estateId }, { delay: 1 })
+  }
+
+  static savePropertyBulkImages(properyImages) {
+    Queue.addJob(SAVE_PROPERTY_IMAGES, { properyImages }, { delay: 1 })
+    
   }
 
   /**
@@ -108,6 +115,8 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
+        case SAVE_PROPERTY_IMAGES:
+          return ImageService.savePropertyBulkImages(job.data.properyImages)  
         default:
           console.log(`No job processor for: ${job.name}`)
       }

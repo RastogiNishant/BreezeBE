@@ -47,9 +47,10 @@ class ImageService {
       }
     }
   }
+  
   static async savePropertyImage(imagePath, roomId ) {
 
-    const filePathName = fs.readFile( imagePath, async function(err, data) {
+    fs.readFile( imagePath, async function(err, data) {
       if (err) throw err; // Fail if the file can't be read.
       try{
         const ext = ContentType.getExt(imagePath);
@@ -69,7 +70,6 @@ class ImageService {
       }catch(e) {
         console.log(e);
       }
-      return filePathName;
     });
   }
 }
