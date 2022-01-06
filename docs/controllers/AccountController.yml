@@ -42,6 +42,24 @@ definitions:
     in: formData
     type: boolean
 
+  premiums:
+    name: premiums
+    in: formData
+    type: string
+    example: '[1,3,5]: premium ids' 
+  isPremium:
+    name: is_premium
+    in: formData
+    type: number
+    default: 1
+    example: '1: basic, 2:premium'
+  paymentPlan:
+    name: payment_plan
+    in: formData
+    type: number
+    default: 1
+    example: '1: monthly, 2:yearly, only for is_premium=2'
+
 paths:
   /api/v1/login:
     post:
@@ -329,4 +347,16 @@ paths:
       parameters:
         - $ref: '#/definitions/visitEstateId'
         - $ref: '#/definitions/visitUserId'
+      responses: [200]
+
+  /api/v1/updateUserPremiumPlan:
+    post:
+      security: [bearerAuth: []]
+      tags: [update plan]
+      description: Update premium member's plan 
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/premiums'
+        - $ref: '#/definitions/isPremium'
+        - $ref: '#/definitions/paymentPlan'
       responses: [200]

@@ -8,6 +8,10 @@ class PremiumFeature extends Model {
       'id',
       'feature',
       'description',
+      'is_basic_plan',
+      'is_premium_plan',
+      'prices',
+      'status'
     ]
   }
 

@@ -406,8 +406,15 @@ const constants = {
   YES_INCOME_SEIZURE: 2,
   NO_ANSWER_INCOME_SEIZURE: 3,
 
-  MONTHLY_PAYMENT: 'monthly',
-  YEARLY_PAYMENT: 'yearly',
+  MONTHLY_PAYMENT: 1,
+  YEARLY_PAYMENT: 2,
+
+  BASIC_MEMBER:1,
+  PENDING_PREMIUM_MEMBER:2,
+  PREMIUM_MEMBER:3,
+
+  // this has to be stored in database later.
+  YEARLY_DISCOUNT_RATE:0.1,
 
   TENANT_MATCH_FIELDS: [
     'id',

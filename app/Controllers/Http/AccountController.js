@@ -15,11 +15,15 @@ const ImageService = use('App/Services/ImageService')
 const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
+const {
+  assign,
+} = require('lodash')
+
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN } = require('../../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE } = require('../../constants')
 
 class AccountController {
   /**
@@ -370,8 +374,29 @@ class AccountController {
 
   async updateUserPremiumPlan({request, auth, response}) {
     try{
-      const {premiums} = request.all();
-      const ret = await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)
+      const {is_premium, payment_plan, premiums} = request.all();
+      if( is_premium !== 1 && (!premiums || JSON.stringify(premiums).length <= 0 ) ){
+        throw new AppException( 'Please select features', 400)  
+      }
+      
+      let ret = {
+        status: false,
+        data:{
+        }
+      }
+      if( premiums ) {
+        assign(ret.data, {premiums:await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)} )
+      }
+
+      if( payment_plan ) {
+        await UserService.updatePaymentPlan(auth.user.id, PREMIUM_MEMBER, payment_plan )
+        assign(ret.data, {payment_plan:payment_plan} )
+      }
+
+      assign( ret.data,  { year_discount_rate:YEARLY_DISCOUNT_RATE} )
+
+      ret.status = true;
+
       return response.send(ret)
     }catch(e) {
       Logger.error(e)

@@ -2,8 +2,19 @@ const PremiumFeature = use('App/Models/PremiumFeature')
 const HttpException = use('App/Exceptions/HttpException')
 
 class FeatureService {
-  static async getFeatures() {
+  static async getFeatures(params = {}) {
     const query = PremiumFeature.query()
+    if( params.is_basic_plan !== undefined ) {
+      query.where('is_basic_plan', params.is_basic_plan)
+    }
+    if( params.is_premium_plan !== undefined ) {
+      query.where('is_premium_plan', params.is_premium_plan)
+    }
+    if( params.status !== undefined ) {
+      query.where('status', params.status)
+    }else{
+      query.where('status', true)
+    }
     const features = (await query.orderBy('id', 'desc').fetch()).rows
     return features
   }
