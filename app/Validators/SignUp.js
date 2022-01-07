@@ -45,4 +45,5 @@ class SignUp extends Base {
     })
 }
 
+
 module.exports = SignUp
