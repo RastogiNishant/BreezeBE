@@ -134,7 +134,6 @@ Route.group(() => {
     'valid:EstateId,SlotId',
   ])
 
-
   // Extend or deactivate Estate
   Route.get('/activate', 'EstateController.activateEstate')
 
@@ -218,7 +217,11 @@ Route.group(() => {
   .prefix('api/v1/admin/users')
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
-Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middleware(['auth:jwtAdmin', 'is:admin', 'valid:Ids,UserVerify'])  
+Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middleware([
+  'auth:jwtAdmin',
+  'is:admin',
+  'valid:Ids,UserVerify',
+])
 
 Route.group(() => {
   Route.post('/', 'FeatureController.createFeature').middleware(['valid:CreateFeature'])
@@ -388,6 +391,10 @@ Route.group(() => {
   Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware([
     'auth:jwt',
     'valid:ChooseTimeslot',
+  ])
+  Route.post('/visit/inviteIn', 'MatchController.inviteTenantInToVisit').middleware([
+    'auth:jwtLandlord',
+    'valid:InviteInToVisit',
   ])
   Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
   Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([

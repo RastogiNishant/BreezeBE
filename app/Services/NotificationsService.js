@@ -58,7 +58,7 @@ const {
   NOTICE_TYPE_PROSPECT_COME_ID,
   NOTICE_TYPE_PROSPECT_KNOCK_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
-  NOTICE_TYPE_CANCEL_VISIT_ID
+  NOTICE_TYPE_CANCEL_VISIT_ID,
 } = require('../constants')
 
 const mapping = [
@@ -88,7 +88,6 @@ const mapping = [
 
 class NotificationsService {
   static async sendRaw(tokens, options) {
-    
     return Notifications.send(tokens, options)
   }
 
@@ -269,7 +268,7 @@ class NotificationsService {
     if (!isArray(notes) || isEmpty(notes)) {
       return false
     }
-    
+
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
@@ -286,8 +285,8 @@ class NotificationsService {
       return md5(String(i.type + JSON.stringify(i.data) + i.lang).replace(/\s/g, ''))
     })
 
-    if( !items || !Object.values(items).length ) {
-      return;
+    if (!items || !Object.values(items).length) {
+      return
     }
     // Send user notifications
     return P.map(Object.values(items), (v) => {
@@ -381,7 +380,7 @@ class NotificationsService {
   /**
    *
    */
-   static async sendProspectNewKnock(notice) {
+  static async sendProspectNewKnock(notice) {
     const title = 'prospect.notification.event.new_knock'
     return NotificationsService.sendNotes(notice, title, (data, lang) => {
       return (
@@ -395,13 +394,13 @@ class NotificationsService {
   /**
    *  Notify visit time delayed to landlord or prospect according to user_id
    */
-   static async sendChangeVisitTime(notice) {
+  static async sendChangeVisitTime(notice) {
     const title = 'notification.event.visit_delay'
     return NotificationsService.sendNotes(notice, title, (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        rc( l.get('notification.next.visit_delay', lang), [{'^min':data.delay}])
+        rc(l.get('notification.next.visit_delay', lang), [{ '^min': data.delay }])
       )
     })
   }
@@ -409,10 +408,21 @@ class NotificationsService {
   /**
    * Notify to landlord that prospect cancels visit
    */
-   static async sendProspectCancelVisit(notice) {
+  static async sendProspectCancelVisit(notice) {
     const title = 'prospect.notification.event.cancel_visit'
     return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.cancel_visit', lang)
+      )
+    })
+  }
 
+  //TODO: change notification text when it's ready
+  static async sendTenantInviteInToVisit(notice) {
+    const title = 'prospect.notification.event.cancel_visit'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +

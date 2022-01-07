@@ -611,6 +611,11 @@ class MatchService {
     // //TODO: notify landlord that prospect cancels visit
     NoticeService.cancelVisit(estateId, tenantId)
   }
+
+  static async inviteTenantInToVisit (estateId, tenantId){
+    NoticeService.inviteTenantInToVisit(estateId, tenantId)
+  }
+
   /**
    * Share tenant personal data to landlord
    */
