@@ -23,7 +23,7 @@ const {
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE } = require('../../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE, ROLE_PROPERTY_MANAGER } = require('../../constants')
 
 class AccountController {
   /**
@@ -31,7 +31,7 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, firstname, ...userData } = request.all()
-    if (![ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
+    if (![ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(userData.role)) {
       throw new HttpException('Invalid user role', 401)
     }
 
@@ -91,7 +91,7 @@ class AccountController {
   async login({ request, auth, response }) {
     let { email, role, password, device_token } = request.all()
     // Select role if not set, (allows only for non-admin users)
-    let roles = [ROLE_USER, ROLE_LANDLORD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     if (role) {
       roles = [role]
     }
