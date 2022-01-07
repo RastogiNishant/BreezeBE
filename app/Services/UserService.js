@@ -491,6 +491,16 @@ class UserService {
       member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
     })
   }
+
+  static async verifyUsers( adminId, userIds, is_verify ) {
+    return await User.query()
+    .whereIn('id', userIds)
+    .update({ 
+      is_verified:is_verify,
+      verified_by:adminId,
+      verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
+    })
+  }
 }
 
 module.exports = UserService

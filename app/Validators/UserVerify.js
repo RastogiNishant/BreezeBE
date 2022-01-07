@@ -3,13 +3,11 @@
 const yup = require('yup')
 
 const Base = require('./Base')
-class Ids extends Base {
+class UserVerify extends Base {
   static schema = () =>
     yup.object().shape({
-      ids: yup.array().of(yup.number().integer().positive()).required(),
+      is_verify: yup.boolean().required(),
     })
 }
 
-module.exports = Ids
-
-
+module.exports = UserVerify

@@ -3,7 +3,7 @@
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 
-class UsersSchema extends Schema {
+class UsersAddMemberPlanDateSchema extends Schema {
   up () {
     this.table('users', (table) => {
       // alter table
@@ -19,4 +19,4 @@ class UsersSchema extends Schema {
   }
 }
 
-module.exports = UsersSchema
+module.exports = UsersAddMemberPlanDateSchema
