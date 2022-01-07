@@ -405,6 +405,20 @@ class NotificationsService {
     })
   }
 
+    /**
+   *  Notify " Are you sure you want to invite this prospect in? " landlord or prospect according to user_id
+   */
+     static async sendInviteIn(notice) {
+      const title = 'notification.event.invite_in'
+      return NotificationsService.sendNotes(notice, title, (data, lang) => {
+        return (
+          capitalize(data.estate_address) +
+          ' \n' +
+          l.get('notification.event.invite_in', lang)
+        )
+      })
+    }
+
   /**
    * Notify to landlord that prospect cancels visit
    */

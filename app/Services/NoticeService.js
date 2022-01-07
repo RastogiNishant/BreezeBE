@@ -63,6 +63,7 @@ const {
   NOTICE_TYPE_PROSPECT_KNOCK,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
+  NOTICE_TYPE_PROSPECT_INVITE_IN,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -745,6 +746,8 @@ class NoticeService {
         return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_VISIT_DELAY:
         return NotificationsService.sendChangeVisitTime([notice])
+      case NOTICE_TYPE_PROSPECT_INVITE_IN:
+        return NotificationsService.sendInviteIn([notice])
     }
   }
 

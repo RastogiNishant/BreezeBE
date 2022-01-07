@@ -355,6 +355,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
   NOTICE_TYPE_PROSPECT_KNOCK: 'notification_prospect_knock',
   NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
+  NOTICE_TYPE_PROSPECT_INVITE_IN: 'notification_prospect_invite_in',
   NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
