@@ -387,11 +387,9 @@ class AccountController {
       if( premiums ) {
         assign(ret.data, {premiums:await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)} )
       }
-
-      if( payment_plan ) {
-        await UserService.updatePaymentPlan(auth.user.id, PREMIUM_MEMBER, payment_plan )
-        assign(ret.data, {payment_plan:payment_plan} )
-      }
+      
+      await UserService.updatePaymentPlan(auth.user.id, is_premium, payment_plan )
+      assign(ret.data, {payment_plan:payment_plan} )
 
       assign( ret.data,  { year_discount_rate:YEARLY_DISCOUNT_RATE} )
 
