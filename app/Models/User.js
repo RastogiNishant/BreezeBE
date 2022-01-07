@@ -36,7 +36,8 @@ class User extends Model {
       'notice',
       'unread_notification_count',
       'is_premium',
-      'payment_plan'
+      'payment_plan',
+      'member_plan_date'
     ]
   }
 

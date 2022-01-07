@@ -215,12 +215,12 @@ Route.group(() => {
 
 //Route.post('api/v1/admin/feature', 'FeatureController.createFeature').middleware(['auth:jwtAdmin', 'is:admin'])
 Route.group(() => {
-  Route.post('/', 'FeatureController.createFeature').middleware(['auth:jwt', 'valid:CreateFeature'])
-  Route.put('/', 'FeatureController.updateFeature').middleware(['auth:jwt', 'valid:CreateFeature,Id'])
-  Route.delete('/', 'FeatureController.removeFeature').middleware(['auth:jwt'])
+  Route.post('/', 'FeatureController.createFeature').middleware(['valid:CreateFeature'])
+  Route.put('/', 'FeatureController.updateFeature').middleware(['valid:CreateFeature,Id'])
+  Route.delete('/', 'FeatureController.removeFeature').middleware(['valid:Ids'])
 })
   .prefix('api/v1/admin/feature')
-  .middleware(['auth:jwt'])
+  .middleware(['auth:jwtAdmin', 'is:admin'])
 
 Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
