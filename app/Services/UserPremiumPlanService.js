@@ -2,6 +2,7 @@ const UserPremiumPlan = use('App/Models/UserPremiumPlan')
 const AppException = use('App/Exceptions/AppException')
 const Logger = use('Logger')
 const Database = use('Database')
+const { isObject } = require('lodash')
 
 class UserPremiumPlanService {
 
@@ -17,7 +18,7 @@ class UserPremiumPlanService {
     }
     try{
 
-      if(typeof premiums === 'string'){
+      if(!isObject(premiums)){
         premiums = JSON.parse(premiums);
       }
 
