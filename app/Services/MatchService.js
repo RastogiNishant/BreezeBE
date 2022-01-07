@@ -780,7 +780,8 @@ class MatchService {
         status: MATCH_STATUS_COMMIT,
       })
       .update({ status: MATCH_STATUS_FINISH })
-    await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
+      
+    //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
 
     // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)

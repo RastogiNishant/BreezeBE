@@ -64,7 +64,7 @@ class UserController {
     const { ...data } = request.all()
     const userId = auth.user.id;
     await UserService.verifyUsers(userId, data.ids, data.is_verify)
-    response.res(data)
+    response.res( data )
   }
 }
 
