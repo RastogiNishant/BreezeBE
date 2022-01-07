@@ -90,6 +90,7 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     let { email, role, password, device_token } = request.all()
+    
     // Select role if not set, (allows only for non-admin users)
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     if (role) {
