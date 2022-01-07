@@ -352,11 +352,18 @@ paths:
   /api/v1/updateUserPremiumPlan:
     post:
       security: [bearerAuth: []]
-      tags: [update plan]
-      description: Update premium member's plan 
+      tags: [Update plan]
+      description: Update member's plan 
       produces: [application/json]
       parameters:
         - $ref: '#/definitions/premiums'
         - $ref: '#/definitions/isPremium'
         - $ref: '#/definitions/paymentPlan'
       responses: [200]
+
+    get:
+      security: [bearerAuth: []]
+      tags: [Get plan]
+      description: Get member's plan 
+      produces: [application/json]
+      responses: [200]      

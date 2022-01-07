@@ -488,6 +488,7 @@ class UserService {
     .update({ 
       is_premium:is_premium,
       payment_plan:payment_plan,
+      member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
     })
   }
 }
