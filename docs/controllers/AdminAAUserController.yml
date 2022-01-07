@@ -101,7 +101,7 @@ paths:
           type: string
           example: '[1,3,5]: ids for verify' 
         - name: ids
-          description: Selected Feature Ids
+          description: Selected Feature Ids 
           schema:
             type: array
             items:
