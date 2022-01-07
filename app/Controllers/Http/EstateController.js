@@ -106,26 +106,15 @@ class EstateController {
   /**
    *
    */
-   async extendEstate({ request, auth, response }) {
+   async activateEstate({ request, auth, response }) {
     const { estate_id, to_date } = request.all()
+    console.log('pppppp', to_date)
     const estate = await EstateService.getQuery()
       .where('id', estate_id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
-      .update({ to_date: to_date, is_active: true })
-      response.res(estate)
-  }
-  
-  /**
-   *
-   */
-   async deactivateEstate({ request, auth, response }) {
-    const { estate_id } = request.all()
-    const estate = await EstateService.getQuery()
-      .where('id', estate_id)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .update({ is_active: false })
+      .update({ to_date: to_date })
+      console.log(estate)
       response.res(estate)
   }
   /**

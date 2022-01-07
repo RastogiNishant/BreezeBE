@@ -136,8 +136,7 @@ Route.group(() => {
 
 
   // Extend or deactivate Estate
-  Route.get('/extend', 'EstateController.extendEstate')
-  Route.get('/deactivate', 'EstateController.deactivateEstate')
+  Route.get('/activate', 'EstateController.activateEstate')
 
   Route.get('/upcomingShows', 'TimeSlotController.getUpcomingShows')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
