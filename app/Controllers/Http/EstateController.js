@@ -127,7 +127,7 @@ class EstateController {
        .where('id', estate_id)
        .where('user_id', auth.user.id)
        .whereNot('status', STATUS_DELETE)
-      .update({status: STATUS_EXPIRE })
+      .update({status: STATUS_DELETE })
        response.res(estate)
    }
 
