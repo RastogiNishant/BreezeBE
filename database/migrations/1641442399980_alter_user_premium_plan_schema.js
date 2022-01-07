@@ -7,7 +7,6 @@ class AlterUserPremiumPlanSchema extends Schema {
   up () {
     this.table('user_premium_plans', (table) => {
       // alter table
-      table.dropUnique(['premium_id', 'user_id'])
       table.unique(['premium_id', 'user_id'])
     })
   }
