@@ -15,13 +15,14 @@ const {
   TRANSPORT_TYPE_CAR,
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
+  ROLE_PROPERTY_MANAGER,
 } = require('../constants')
 
 class SignUp extends Base {
   static schema = () =>
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
-      role: yup.number().oneOf([ROLE_USER, ROLE_LANDLORD]).required(),
+      role: yup.number().oneOf([ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]).required(),
       signupData: yup.object().shape({
         address: yup.object().shape({
           title: yup.string(), 
@@ -39,6 +40,8 @@ class SignUp extends Base {
       lang: yup.string().oneOf(['en', 'de']).default('en').required(),
       lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
       request_full_profile: yup.boolean(),
+      landlord_email: yup.string().email().lowercase(),
+      landlord_confirm_email:yup.string().email().lowercase(),
     })
 }
 
