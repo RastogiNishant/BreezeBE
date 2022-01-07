@@ -11,7 +11,6 @@ class AlterUsersPaymentFieldsSchema extends Schema {
     })
     const exists = await this.hasColumn('users', 'payment_plan')
     if( exists ) {
-console.log('exists===', exists)      
       await this.table('users', async(table) => {
         await table.dropColumn('payment_plan')
       })
