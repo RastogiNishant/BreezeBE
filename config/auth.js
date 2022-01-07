@@ -39,4 +39,16 @@ module.exports = {
       expiresIn: 7200, // 2 Hours lifetime
     },
   },
+
+  jwtPropertyManager: {
+    serializer: 'lucid',
+    model: 'App/Models/User',
+    scheme: 'jwt',
+    uid: 'uid',
+    password: 'password',
+    options: {
+      secret: Env.get('PROPERTY_MANAGER_APP_KEY'),
+      expiresIn: 7200, // 2 Hours lifetime
+    },
+  },  
 }
