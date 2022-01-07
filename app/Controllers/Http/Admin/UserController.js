@@ -2,6 +2,7 @@
 
 const User = use('App/Models/User')
 const Database = use('Database')
+const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 
 const { isEmpty, find, get } = require('lodash')
@@ -57,6 +58,13 @@ class UserController {
     const mixedUserRoles = await mixRoles(users.data)
 
     response.res({ ...users, data: mixedUserRoles })
+  }
+
+  async verifyUsers({request, auth, response}) {
+    const { ...data } = request.all()
+    const userId = auth.user.id;
+    await UserService.verifyUsers(userId, data.ids, data.is_verify)
+    response.res(data)
   }
 }
 

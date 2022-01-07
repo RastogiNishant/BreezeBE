@@ -205,6 +205,7 @@ Route.group(() => {
 
 // Admin user edit part
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware(['guest', 'valid:SignIn'])
+
 Route.group(() => {
   Route.get('/', 'Admin/UserController.getUsers').middleware(['pagination'])
   Route.get('/:user_id', 'Admin/UserController.getUser')
@@ -213,7 +214,8 @@ Route.group(() => {
   .prefix('api/v1/admin/users')
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
-//Route.post('api/v1/admin/feature', 'FeatureController.createFeature').middleware(['auth:jwtAdmin', 'is:admin'])
+Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middleware(['auth:jwtAdmin', 'is:admin', 'valid:Ids,UserVerify'])  
+
 Route.group(() => {
   Route.post('/', 'FeatureController.createFeature').middleware(['valid:CreateFeature'])
   Route.put('/', 'FeatureController.updateFeature').middleware(['valid:CreateFeature,Id'])
