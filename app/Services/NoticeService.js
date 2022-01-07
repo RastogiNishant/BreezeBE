@@ -68,7 +68,7 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_NEW,
   STATUS_ACTIVE,
-
+  NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -397,59 +397,59 @@ class NoticeService {
     await NotificationsService.sendProspectNewInvite(notice)
   }
 
-    /**
+  /**
    *
    */
-     static async knockToLandlord(estateId) {
-      const estate = await Database.table({ _e: 'estates' })
-        .select('address', 'id', 'cover', 'user_id')
-        .where('id', estateId)
-        .first()
-      if( !estate || !estate.user_id ) {
-        Logger.error('knockToLandloard', `there is no estate for${estateId}` );
-        throw new HttpException( 'there is no estate', 400);
-      }
-      const notice = {
-        user_id: estate.user_id,
-        type: NOTICE_TYPE_PROSPECT_KNOCK_ID,
-        data: {
-          estate_id: estate.id,
-          estate_address: estate.address,
-        },
-        image: File.getPublicUrl(estate.cover),
-      }
-      await NoticeService.insertNotices([notice])
-      await NotificationsService.sendProspectNewKnock(notice)
+  static async knockToLandlord(estateId) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    if (!estate || !estate.user_id) {
+      Logger.error('knockToLandloard', `there is no estate for${estateId}`)
+      throw new HttpException('there is no estate', 400)
     }
- 
-    /**
+    const notice = {
+      user_id: estate.user_id,
+      type: NOTICE_TYPE_PROSPECT_KNOCK_ID,
+      data: {
+        estate_id: estate.id,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendProspectNewKnock(notice)
+  }
+
+  /**
    * Notify landlord or prospect that visit has been canceled
    * parameters
    * userId : null => prospect cancel his visit
    * userId: not null => landlord cancel his visit
    */
-     static async cancelVisit(estateId, userId = null) {
-      const estate = await Database.table({ _e: 'estates' })
-        .select('address', 'id', 'cover', 'user_id')
-        .where('id', estateId)
-        .first()
-      if( !estate || !estate.user_id ) {
-        Logger.error('knockToLandloard', `there is no estate for${estateId}` );
-        throw new AppException('there is no estate')
-      }
-      const notice = {
-        user_id: userId?userId:estate.user_id,
-        type: NOTICE_TYPE_CANCEL_VISIT_ID,
-        data: {
-          estate_id: estate.id,
-          estate_address: estate.address,
-        },
-        image: File.getPublicUrl(estate.cover),
-      }
-      await NoticeService.insertNotices([notice])
-      await NotificationsService.sendProspectCancelVisit([notice])
-    }    
-  
+  static async cancelVisit(estateId, userId = null) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    if (!estate || !estate.user_id) {
+      Logger.error('knockToLandloard', `there is no estate for${estateId}`)
+      throw new AppException('there is no estate')
+    }
+    const notice = {
+      user_id: userId ? userId : estate.user_id,
+      type: NOTICE_TYPE_CANCEL_VISIT_ID,
+      data: {
+        estate_id: estate.id,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendProspectCancelVisit([notice])
+  }
+
   /**
    * Get visits in {time}
    */
@@ -464,6 +464,28 @@ class NoticeService {
       .where('_v.date', '<', end.format(DATE_FORMAT))
       .limit(1000)
     // .limit(1)
+  }
+
+  static async inviteTenantInToVisit(estateId, tenantId) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    if (!estate || !estate.user_id) {
+      Logger.error('knockToLandloard', `there is no estate for${estateId}`)
+      throw new AppException('there is no estate')
+    }
+    const notice = {
+      user_id: tenantId,
+      type: NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID,
+      data: {
+        estate_id: estateId,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendTenantInviteInToVisit([notice])
   }
 
   /**
@@ -713,16 +735,16 @@ class NoticeService {
       case NOTICE_TYPE_PROSPECT_COME:
         return NotificationsService.sendProspectProfileExpiring([notice])
       case NOTICE_TYPE_PROSPECT_KNOCK:
-        notice.user_id = estate.user_id;
+        notice.user_id = estate.user_id
         return NotificationsService.sendProspectNewKnock([notice])
       case NOTICE_TYPE_CANCEL_VISIT:
-        notice.user_id = estate.user_id;
+        notice.user_id = estate.user_id
         return NotificationsService.sendProspectCancelVisit([notice])
       case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT: // Notification for prospect's picking up timeslot to visit landlord
-        notice.user_id = estate.user_id;
+        notice.user_id = estate.user_id
         return NotificationsService.sendLandlordSlotsSelected([notice])
-      case NOTICE_TYPE_VISIT_DELAY:              
-      return NotificationsService.sendChangeVisitTime([notice])
+      case NOTICE_TYPE_VISIT_DELAY:
+        return NotificationsService.sendChangeVisitTime([notice])
     }
   }
 
@@ -747,7 +769,7 @@ class NoticeService {
   /**
    *
    */
-   static async userKnock(estateId, userId) {
+  static async userKnock(estateId, userId) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover')
       .where('id', estateId)
@@ -769,7 +791,7 @@ class NoticeService {
   /**
    *
    */
-   static async changeVisitTime(estateId, userId, delay ) {
+  static async changeVisitTime(estateId, userId, delay) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover')
       .where('id', estateId)
@@ -780,17 +802,14 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
-        delay: delay
+        delay: delay,
       },
       image: File.getPublicUrl(estate.cover),
     }
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendChangeVisitTime([notice])
-  }  
+  }
 }
-
-
-
 
 module.exports = NoticeService
