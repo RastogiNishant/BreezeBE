@@ -473,10 +473,6 @@ class MatchController {
       return item['id']
     })
     const totalEstates = estatesId.length
-    const totalInvite = await Database.table('matches')
-      .count('*')
-      .whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK])
-      .whereIn('estate_id', estatesId)
 
     const totalVisits = await Database.table('matches')
       .count('*')
@@ -522,14 +518,14 @@ class MatchController {
       totalInvite: parseInt(matches[0].count) + parseInt(buddies[0].count),
       totalVisits: totalVisits[0].count,
       totalDecided: totalDecided[0].count,
-
+      expired: expired[0].count,
       matches: matches[0].count,
       buddies: buddies[0].count,
       invites: invites[0].count,
       visits: visits[0].count,
       top: top[0].count,
       finalMatches: finalMatches[0].count,
-
+      showed: showed[0].count,
       totalEstates: totalEstates,
     })
   }
