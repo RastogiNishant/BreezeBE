@@ -106,7 +106,7 @@ class EstateController {
   /**
    *
    */
-   async extendEstate({ request, auth, response }) {
+  async extendEstate({ request, auth, response }) {
     const { estate_id, to_date } = request.all()
     console.log('pppppp', to_date)
     const estate = await EstateService.getQuery()
@@ -114,29 +114,29 @@ class EstateController {
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .update({ to_date: to_date, status: STATUS_ACTIVE })
-      console.log(estate)
-      response.res(estate)
+    console.log(estate)
+    response.res(estate)
   }
 
-   /**
-    *
-    */
-    async deactivateEstate({ request, auth, response }) {
-     const { estate_id } = request.all()
-     const estate = await EstateService.getQuery()
-       .where('id', estate_id)
-       .where('user_id', auth.user.id)
-       .whereNot('status', STATUS_DELETE)
-      .update({status: STATUS_DELETE })
-       response.res(estate)
-   }
+  /**
+   *
+   */
+  async deactivateEstate({ request, auth, response }) {
+    const { estate_id } = request.all()
+    const estate = await EstateService.getQuery()
+      .where('id', estate_id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ status: STATUS_DELETE })
+    response.res(estate)
+  }
 
   // async importEstate({ request, auth, response }) {
   //   const importFilePathName = request.file('file')
 
   //   if( importFilePathName && importFilePathName.tmpPath ){
   //     if( importFilePathName.headers['content-type'] !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ){
-  //       throw new HttpException('No excel format', 400 );  
+  //       throw new HttpException('No excel format', 400 );
   //     }
   //     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
   //     return response.res(result)
@@ -496,8 +496,12 @@ class EstateController {
    *
    */
   async verifyPropertyId({ request, auth, response }) {
-    const { id } = request.all()
-    const estate = await Estate.query().where({ property_id: id }).orderBy('id').fetch()
+    const { property_id, estate_id } = request.all()
+    const estate = await Estate.query()
+      .where({ property_id })
+      .whereNot({ id: estate_id || null })
+      .orderBy('id')
+      .fetch()
     const duplicate = estate.rows.length > 0 ? false : true
     response.res(duplicate)
   }
