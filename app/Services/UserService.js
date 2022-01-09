@@ -479,27 +479,43 @@ class UserService {
     return Database.raw('UPDATE users SET unread_notification_count = 0 WHERE id = ?', id)
   }
 
-  static async updatePaymentPlan( userId, is_premium, payment_plan ) {
-    if( is_premium === 1 ) {//basic member
-      payment_plan = null;
+  static async updatePaymentPlan(userId, is_premium, payment_plan) {
+    if (is_premium === 1) {
+      //basic member
+      payment_plan = null
     }
     return await User.query()
-    .where({ id: userId })
-    .update({ 
-      is_premium:is_premium,
-      payment_plan:payment_plan,
-      member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
-    })
+      .where({ id: userId })
+      .update({
+        is_premium: is_premium,
+        payment_plan: payment_plan,
+        member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      })
   }
 
-  static async verifyUsers( adminId, userIds, is_verify ) {
+  static async verifyUsers(adminId, userIds, is_verify) {
     return await User.query()
-    .whereIn('id', userIds)
-    .update({ 
-      is_verified:is_verify,
-      verified_by:adminId,
-      verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
-    })
+      .whereIn('id', userIds)
+      .update({
+        is_verified: is_verify,
+        verified_by: adminId,
+        verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      })
+  }
+
+  static async getByIdWithRole( ids, role ) {
+    return await User.query()
+      .whereIn('id', ids )
+      .where({ role: role })
+      .pluck('id')
+  }
+
+  static async getByEmailWithRole( emails, role ) {
+    return await User.query()
+      .select(['id', 'email'])
+      .whereIn('email', emails )
+      .where({ role: role })
+      .fetch()
   }
 }
 

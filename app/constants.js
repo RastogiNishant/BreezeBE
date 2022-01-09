@@ -416,6 +416,9 @@ const constants = {
   PENDING_PREMIUM_MEMBER: 2,
   PREMIUM_MEMBER: 3,
 
+  PROPERTY_MANAGE_REQUEST: 1,
+  PROPERTY_MANAGE_ALLOWED: 2,
+
   // this has to be stored in database later.
   YEARLY_DISCOUNT_RATE: 0.1,
 

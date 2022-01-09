@@ -1,0 +1,82 @@
+definitions:
+  Ids:
+    name: ids
+    in: formData
+    schema:
+      type: array
+      items:
+        type: string
+    explode: true
+    example: '["1","2"]'
+  Emails:
+    name: emails
+    in: formData
+    schema:
+      type: array
+      items:
+        type: string
+    explode: true
+    example: '["sample@gmail.com","sample_2@breeze.com"]'    
+  Status:
+    name: status
+    in: formData
+    type: number
+    description: 1 => request/cancel permission to manage , 2=> allow to manage property
+    enum: ['1', '2']
+
+
+paths:
+  /api/v1/estatePermission/id:
+    post:
+      tags: [estatePermission]
+      description: Request to manage landloard's property. PropertyManager only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/Ids'
+      responses: [200]
+
+  /api/v1/estatePermission/email:
+    post:
+      tags: [estatePermission]
+      description: Request to manage landloard's property. PropertyManager only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/Emails'
+      responses: [200]
+
+  /api/v1/estatePermission:
+    post:
+      tags: [estatePermission]
+      description: Give permission to manage landloard's property. Landlord only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/Emails'
+        - $ref: '#/definitions/Status'
+      responses: [200]
+
+    put:
+      tags: [estatePermission]
+      description: Allow/cancel to manage landloard's property. Landlord only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/Ids'
+        - $ref: '#/definitions/Status'
+      responses: [200]
+
+  /api/v1/estatePermission/pm:
+    delete:
+      tags: [estatePermission]
+      description: delete request to manage landloard's property. Property manager only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/ids'
+      responses: [200]
+
+  /api/v1/estatePermission/landlord:
+    delete:
+      tags: [estatePermission]
+      description: delete property manager's request. landlord only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/ids'
+      responses: [200]
