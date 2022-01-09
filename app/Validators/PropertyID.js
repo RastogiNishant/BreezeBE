@@ -6,7 +6,7 @@ const Base = require('./Base')
 class PropertyId extends Base {
   static schema = () =>
     yup.object().shape({
-      property_id: yup.string().min(5, 'Must be 5 digits'),
+      property_id: yup.string().max(20),
       estate_id: yup.string().nullable(),
     })
 }
