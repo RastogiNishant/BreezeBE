@@ -10,6 +10,7 @@ const {
   isEmpty,
   reduce,
   isString,
+  isArray,
   isFunction,
   omit,
   pick,
@@ -28,7 +29,12 @@ class RoomService {
       .select('rooms.*', '_e.cover')
       .where('rooms.id', roomId)
       .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
+        if( isArray(userId)){
+          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)          
+        }else{
+          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)  
+        }
+
       })
       .first()
   }
