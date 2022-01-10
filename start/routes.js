@@ -497,7 +497,7 @@ Route.group(()=> {
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
-  // Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
+  Route.post('/', 'EstateController.createEstateByPM').middleware(['valid:CreateEstate,LandlordId'])
   // Route.post('/import', 'EstateController.importEstate')
   // Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
   //   'valid:PropertyId',
