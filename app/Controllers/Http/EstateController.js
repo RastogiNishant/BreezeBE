@@ -57,6 +57,29 @@ class EstateController {
     response.res(estate)
   }
 
+
+  async updateEstateByPM({request, auth, response}) {
+    const { id, ...data } = request.all()
+
+    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
+    try{
+      const estate = await Estate.findOrFail(id)
+
+      if (!estate || !landlordIds.includes(estate.user_id)) {
+        throw new HttpException('Not allow', 403)
+      }
+  
+      await estate.updateItem(data)
+      Event.fire('estate::update', estate.id)
+  
+      // Run processing estate geo nearest
+      QueueService.getEstatePoint(estate.id)
+  
+      response.res(estate)
+    }catch(e) {
+      throw(new HttpException(e.message, 400))
+    }
+  }
   /**
    *
    */
@@ -117,12 +140,32 @@ class EstateController {
     response.res(estate.toJSON({ isOwner: true }))
   }
 
+  async getEstateByPM({ request, auth, response }) {
+    const { id } = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)    
+    const estate = await EstateService.getQuery()
+      .where('id', id)
+      .whereIn('user_id', landlordIds )
+      .whereNot('status', STATUS_DELETE)
+      .with('point')
+      .with('files')
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
+      })
+      .first()
+
+    if (!estate) {
+      throw new HttpException('Invalid estate', 404)
+    }
+
+    response.res(estate.toJSON({ isOwner: true }))
+  }
+
   /**
    *
    */
   async extendEstate({ request, auth, response }) {
     const { estate_id, to_date } = request.all()
-    console.log('pppppp', to_date)
     const estate = await EstateService.getQuery()
       .where('id', estate_id)
       .where('user_id', auth.user.id)

@@ -503,12 +503,8 @@ Route.group(() => {
   //   'valid:PropertyId',
   // ])
 
-  // // Extend or deactivate Estate
-  // Route.get('/extend', 'EstateController.extendEstate')
-  // Route.get('/deactivate', 'EstateController.deactivateEstate')
-
-  // Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
-  // Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
+  Route.get('/:id', 'EstateController.getEstateByPM').middleware(['valid:Id'])
+  Route.put('/:id', 'EstateController.updateEstateByPM').middleware(['valid:UpdateEstate'])
   // // Rooms manage
   // Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
   // Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
@@ -534,7 +530,7 @@ Route.group(() => {
   //   'RoomController.removeRoomPhoto'
   // ).middleware(['valid:RoomId,Id'])
 })
-  .prefix('/api/v1/properymanager/estates')
+  .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
 
 // Force add named middleware to all requests
