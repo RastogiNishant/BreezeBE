@@ -494,6 +494,49 @@ Route.group(()=> {
 })
   .prefix('api/v1/estatePermission')
 
+// Estate management
+Route.group(() => {
+  Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
+  // Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
+  // Route.post('/import', 'EstateController.importEstate')
+  // Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
+  //   'valid:PropertyId',
+  // ])
+
+  // // Extend or deactivate Estate
+  // Route.get('/extend', 'EstateController.extendEstate')
+  // Route.get('/deactivate', 'EstateController.deactivateEstate')
+
+  // Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
+  // Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
+  // // Rooms manage
+  // Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
+  // Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
+  //   'valid:CreateRoom,EstateId',
+  // ])
+  // Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
+  // Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
+  //   'valid:EstateId,Id',
+  // ])
+
+  // Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
+  //   'valid:CreateRoom,EstateId,RoomId',
+  // ])
+  // Route.delete('/:estate_id/rooms/:room_id', 'RoomController.removeRoom').middleware([
+  //   'valid:RoomId',
+  // ])
+  // // Room photos add
+  // Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
+  //   'valid:RoomId',
+  // ])
+  // Route.delete(
+  //   '/:estate_id/rooms/:room_id/images/:id',
+  //   'RoomController.removeRoomPhoto'
+  // ).middleware(['valid:RoomId,Id'])
+})
+  .prefix('/api/v1/properymanager/estates')
+  .middleware(['auth:jwtPropertyManager'])
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {

@@ -25,7 +25,9 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_NEW,
+  PROPERTY_MANAGE_ALLOWED,
 } = require('../../constants')
+const EstatePermissionService = require('../../Services/EstatePermissionService')
 
 class EstateController {
   /**
@@ -58,6 +60,13 @@ class EstateController {
     response.res(estate)
   }
 
+  async getEstatesByPM({ request, auth, response}) {
+    const { limit, page, ...params } = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
+    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params )
+console.log('landlordIds', result)      
+    response.res(result)
+  }
   /**
    *
    */
@@ -65,20 +74,10 @@ class EstateController {
     const { limit, page, ...params } = request.all()
 
     // Update expired estates status to unpublished
-    await EstateService.getEstates(params)
-      .where('user_id', auth.user.id)
-      .where('status', STATUS_EXPIRE)
-      .whereNot('status', STATUS_DELETE)
-      .update({ status: STATUS_DRAFT })
-
-    const result = await EstateService.getEstates(params)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .whereNot('area', 0)
-      .paginate(page, limit)
-
+    const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params )
     response.res(result)
   }
+
 
   /**
    * Get single estate with POI

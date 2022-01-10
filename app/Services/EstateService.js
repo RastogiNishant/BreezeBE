@@ -625,6 +625,20 @@ class EstateService {
     Event.fire('match::estate', estate.id)
   }
 
+  static async getEstatesByUserId(ids,limit, page, params) {
+    await EstateService.getEstates(params)
+      .whereIn('user_id', ids)
+      .where('status', STATUS_EXPIRE)
+      .whereNot('status', STATUS_DELETE)
+      .update({ status: STATUS_DRAFT })
+
+    return await EstateService.getEstates(params)
+      .whereIn('user_id', ids)
+      .whereNot('status', STATUS_DELETE)
+      .whereNot('area', 0)
+      .paginate(page, limit)
+  }
+
   /**
    *
    */
