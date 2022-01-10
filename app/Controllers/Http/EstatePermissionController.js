@@ -5,6 +5,7 @@ const { ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, PROPERTY_MANAGE_REQUEST } = requir
 const HttpException = require('../../Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
+const EstatePermission = use('App/Models/EstatePermission')
 
 class EstatePermissionController {
 
@@ -195,6 +196,41 @@ class EstatePermissionController {
     }catch(e) {
       throw new HttpException('Authorize please', 400 )
     }
+  }
+
+  async getLandlords({request, auth, response}) {
+    const {page, limit, ...params} = request.all()
+    const filter = {
+      property_manager_id:auth.user.id,
+      ...params
+    }
+    const result = await EstatePermission.query()
+          .where(function () {
+            if( filter['status'] ){
+              this.where('status', filter['status'])
+            }
+          })
+          .with('landlord')
+          .orderBy('id', 'desc').paginate(page, limit)
+
+    response.res(result)
+  }
+
+  async getPermittedPropertyManagers({request, auth, response}) {
+    const {page, limit, ...params} = request.all()
+    const filter = {
+      landlord_id:auth.user.id,
+      ...params
+    }
+    const result = await await EstatePermission.query()
+    .where(function () {
+      if( filter['status'] ){
+        this.where('status', filter['status'])
+      }
+    })
+    .with('propertyManager')
+    .orderBy('id', 'desc').paginate(page, limit)
+    response.res(result)
   }
 
   async deletePermissionLandlordByEmail({ request, auth, response }) {}
