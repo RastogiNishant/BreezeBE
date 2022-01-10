@@ -30,6 +30,22 @@ const {
 const EstatePermissionService = require('../../Services/EstatePermissionService')
 
 class EstateController {
+
+
+  async createEstateByPM({ request, auth, response }) {
+    const data = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
+
+    if( landlordIds.includes(data.landlord_id) ) {
+      const estate = await EstateService.createEstate(data, auth.user.id)
+      // Run processing estate geo nearest
+      QueueService.getEstatePoint(estate.id)
+      response.res(estate)
+    }else{
+      throw( new HttpException('Not Allowed',400))
+    }
+  }
+
   /**
    *
    */
@@ -64,7 +80,6 @@ class EstateController {
     const { limit, page, ...params } = request.all()
     const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params )
-console.log('landlordIds', result)      
     response.res(result)
   }
   /**
