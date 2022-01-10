@@ -11,8 +11,13 @@ const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
+const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
-
+const {
+  PROPERTY_MANAGE_ALLOWED,
+  ROLE_LANDLORD,
+  ROLE_PROPERTY_MANAGER
+} = require('../../constants')
 class RoomController {
   /**
    *
@@ -20,15 +25,24 @@ class RoomController {
   async createRoom({ request, auth, response }) {
     const { estate_id, ...roomData } = request.all()
     try{
-      await Estate.findByOrFail({ user_id: auth.user.id, id: estate_id })
+
+      let userIds = [auth.user.id]
+      if( auth.user.role === ROLE_PROPERTY_MANAGER ) {
+        userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)      
+      }
+
+      await Estate.query()
+        .where('id', estate_id)
+        .whereIn('user_id', userIds)
+        .firstOrFail()
       
-          const room = await Room.createItem({
-            ...roomData,
-            estate_id,
-          })
-          Event.fire('estate::update', estate_id)
-      
-          response.res(room)
+      const room = await Room.createItem({
+        ...roomData,
+        estate_id,
+      })
+      Event.fire('estate::update', estate_id)
+  
+      response.res(room)
     }catch(e) {
       Logger.error('Create Room error', e);
       throw new HttpException(e.message, 400)
@@ -41,7 +55,13 @@ class RoomController {
   async updateRoom({ request, auth, response }) {
     const { estate_id, room_id, ...data } = request.all()
     // Get room and check estate owner
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+
+    let userIds = [auth.user.id]
+    if( auth.user.role === ROLE_PROPERTY_MANAGER ) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)      
+    }
+
+    const room = await RoomService.getRoomByUser(userIds, room_id)
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -73,13 +93,19 @@ class RoomController {
    */
   async addRoomPhoto({ request, auth, response }) {
     const { room_id } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+
+    let userIds = [auth.user.id]
+		if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)            
+    }
+
+    const room = await RoomService.getRoomByUser(userIds, room_id)
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
 
     const image = request.file('file')
-    console.log( 'image', image)    
+
 
     const ext = image.extname
       ? image.extname

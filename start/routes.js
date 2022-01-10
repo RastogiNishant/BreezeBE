@@ -506,29 +506,19 @@ Route.group(() => {
   Route.get('/:id', 'EstateController.getEstateByPM').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstateByPM').middleware(['valid:UpdateEstate'])
   // // Rooms manage
-  // Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
-  // Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
-  //   'valid:CreateRoom,EstateId',
-  // ])
-  // Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
-  // Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
-  //   'valid:EstateId,Id',
-  // ])
+  Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
+  Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
+    'valid:CreateRoom,EstateId',
+  ])
+  Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
 
-  // Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
-  //   'valid:CreateRoom,EstateId,RoomId',
-  // ])
-  // Route.delete('/:estate_id/rooms/:room_id', 'RoomController.removeRoom').middleware([
-  //   'valid:RoomId',
-  // ])
+  Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
+    'valid:CreateRoom,EstateId,RoomId',
+  ])
   // // Room photos add
-  // Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
-  //   'valid:RoomId',
-  // ])
-  // Route.delete(
-  //   '/:estate_id/rooms/:room_id/images/:id',
-  //   'RoomController.removeRoomPhoto'
-  // ).middleware(['valid:RoomId,Id'])
+  Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
+    'valid:RoomId',
+  ])
 })
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])

@@ -229,6 +229,7 @@ class EstatePermissionController {
       .with('propertyManager')
       .orderBy('id', 'desc')
       .paginate(page, limit)
+      
     response.res(result)
   }
 

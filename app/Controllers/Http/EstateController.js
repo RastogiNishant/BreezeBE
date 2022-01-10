@@ -26,18 +26,19 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_NEW,
   PROPERTY_MANAGE_ALLOWED,
+  ROLE_LANDLORD,
+  ROLE_PROPERTY_MANAGER
 } = require('../../constants')
 const EstatePermissionService = require('../../Services/EstatePermissionService')
 
 class EstateController {
-
 
   async createEstateByPM({ request, auth, response }) {
     const data = request.all()
     const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
 
     if( landlordIds.includes(data.landlord_id) ) {
-      const estate = await EstateService.createEstate(data, auth.user.id)
+      const estate = await EstateService.createEstate(data, data.landlord_id)
       // Run processing estate geo nearest
       QueueService.getEstatePoint(estate.id)
       response.res(estate)
@@ -51,6 +52,7 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     const data = request.all()
+    
     const estate = await EstateService.createEstate(data, auth.user.id)
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
@@ -110,6 +112,8 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
+
+    const userIds = [auth.user.id]
 
     // Update expired estates status to unpublished
     const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params )
@@ -313,7 +317,18 @@ class EstateController {
    */
   async addFile({ request, auth, response }) {
     const { estate_id, type } = request.all()
-    const estate = await Estate.findByOrFail({ id: estate_id, user_id: auth.user.id })
+
+    let userIds = [auth.user.id]
+
+		if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)            
+    }
+
+    const estate = await Estate.query()
+    .where('id', estate_id)
+    .whereIn('user_id', userIds)
+    .firstOrFail()
+
 
     const disk = 's3public'
     const file = request.file('file')
