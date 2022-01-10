@@ -80,3 +80,21 @@ paths:
       parameters:
         - $ref: '#/definitions/ids'
       responses: [200]
+
+  /api/v1/estatePermission/propertyManagers:
+    get:
+      tags: [estatePermission]
+      description: get property managers . landlord only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/Status'
+      responses: [200]
+
+  /api/v1/estatePermission/landlords:
+    get:
+      tags: [estatePermission]
+      description: get landlords. property manager only
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/Status'
+      responses: [200]            
