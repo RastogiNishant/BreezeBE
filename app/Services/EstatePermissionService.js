@@ -3,7 +3,7 @@ const UserPremiumPlan = use('App/Models/UserPremiumPlan')
 const HttpException = use('App/Exceptions/HttpException')
 const Logger = use('Logger')
 const Database = use('Database')
-const { isObject, pick } = require('lodash')
+const { isObject, pick, get } = require('lodash')
 const { PROPERTY_MANAGE_REQUEST, PROPERTY_MANAGE_ALLOWED, ROLE_LANDLORD } = require('../constants')
 const UserService = use('App/Services/UserService')
 
@@ -90,7 +90,6 @@ class EstatePermissionService {
               .where('landlord_id', userId)
               .update({ status: permission })
             }else {
-console.log('estatePermissionCreate here')              
               return await EstatePermission.createItem({
                   property_manager_id: pmId,
                   landlord_id: userId,
@@ -133,5 +132,17 @@ console.log('estatePermissionCreate here')
     )
     return data
   }
+
+  static async getLandlordIds( userId, status ) {
+    const landlords = await EstatePermission.query()
+      .where('property_manager_id', userId)
+      .where('status', status )
+      .select('landlord_id')
+      .fetch()
+    
+    const lds = landlords.toJSON().map( lr => get(lr,'landlord_id') )      
+    return lds
+  }
+
 }
 module.exports = EstatePermissionService

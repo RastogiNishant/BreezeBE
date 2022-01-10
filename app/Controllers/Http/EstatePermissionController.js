@@ -8,8 +8,7 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstatePermission = use('App/Models/EstatePermission')
 
 class EstatePermissionController {
-
-  async userExists(auth, ids, role ) {
+  async userExists(auth, ids, role) {
     if (!auth || !auth.user) {
       throw new HttpException('Authorize please', 400)
     }
@@ -23,19 +22,21 @@ class EstatePermissionController {
       const exceptIds = difference(ids, landLordIds)
       if (exceptIds && exceptIds.length) {
         const data = {
-          message: `These ids don't have ${role === ROLE_PROPERTY_MANAGER?'Property manager':'landlord'} roles`,
+          message: `These ids don't have ${
+            role === ROLE_PROPERTY_MANAGER ? 'Property manager' : 'landlord'
+          } roles`,
           ids: exceptIds,
         }
         throw new HttpException(data, 400)
       }
-    }catch(e) {
-      throw new HttpException(e.message, 400)      
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
-    return true;
+    return true
   }
   /**
-   * 
-   * @param {*} param0 
+   *
+   * @param {*} param0
    * Ask for landlords to manage property By Ids
    */
   async requestPermissionToLandlordById({ request, auth, response }) {
@@ -53,8 +54,8 @@ class EstatePermissionController {
   }
 
   /**
-   * 
-   * @param {*} param0 
+   *
+   * @param {*} param0
    * Ask for landlords to manage property By landlords'emails
    */
 
@@ -78,7 +79,10 @@ class EstatePermissionController {
         publicOnly: true,
       })
 
-      const exceptIds = difference(emails, landLords.map((lr) => get(pick(lr, ['email']), 'email')))
+      const exceptIds = difference(
+        emails,
+        landLords.map((lr) => get(pick(lr, ['email']), 'email'))
+      )
 
       if (exceptIds && exceptIds.length) {
         const data = {
@@ -98,14 +102,11 @@ class EstatePermissionController {
     }
   }
 
-  async givePermissionToPropertyManager({request, auth, response}) {
+  async givePermissionToPropertyManager({ request, auth, response }) {
     try {
-      const {ids} = request.all()
+      const { ids } = request.all()
       await this.userExists(auth, ids, ROLE_PROPERTY_MANAGER)
-      const result = await EstatePermissionService.permissionToPropertyManager(
-        auth.user.id,
-        ids
-      )
+      const result = await EstatePermissionService.permissionToPropertyManager(auth.user.id, ids)
 
       response.res(result)
     } catch (e) {
@@ -114,8 +115,8 @@ class EstatePermissionController {
   }
 
   /**
-   * 
-   * @param {*} param0 
+   *
+   * @param {*} param0
    * Allow permission to property managers to manage property By property manager Ids
    */
 
@@ -145,91 +146,89 @@ class EstatePermissionController {
     response.res(auth.user.id, 200)
   }
 
-
   /**
-   * 
-   * @param {*} param0 
+   *
+   * @param {*} param0
    * cancel permission not to let property manager manage his/her property
    */
 
-  async deletePermissionByLandlord({request, auth, response}) {
-    let {ids} = request.all()
+  async deletePermissionByLandlord({ request, auth, response }) {
+    let { ids } = request.all()
     if (!auth || !auth.user) {
       throw new HttpException('Authorize please', 400)
     }
-    
+
     try {
       if (!isObject(ids)) {
         ids = JSON.parse(ids)
       }
-      const result = await EstatePermissionService.deletePermissionByLandlord(
-        auth.user.id,
-        ids,
-      )
+      const result = await EstatePermissionService.deletePermissionByLandlord(auth.user.id, ids)
       response.res(result)
-    }catch(e) {
-      throw new HttpException('Authorize please', 400 )
+    } catch (e) {
+      throw new HttpException('Authorize please', 400)
     }
   }
 
   /**
-   * 
-   * @param {*} param0 
+   *
+   * @param {*} param0
    * delete permission to manager property by property manage himself
    */
 
-  async deletePermissionByPM({request, auth, response}) {
-    let {ids} = request.all()
+  async deletePermissionByPM({ request, auth, response }) {
+    let { ids } = request.all()
     if (!auth || !auth.user) {
       throw new HttpException('Authorize please', 400)
     }
-    
+
     try {
       if (!isObject(ids)) {
         ids = JSON.parse(ids)
       }
       const result = await EstatePermissionService.deletePermissionByPropertyManager(
         auth.user.id,
-        ids,
+        ids
       )
       response.res(result)
-    }catch(e) {
-      throw new HttpException('Authorize please', 400 )
+    } catch (e) {
+      throw new HttpException('Authorize please', 400)
     }
   }
 
-  async getLandlords({request, auth, response}) {
-    const {page, limit, ...params} = request.all()
+  async getLandlords({ request, auth, response }) {
+    const { page, limit, ...params } = request.all()
     const filter = {
-      property_manager_id:auth.user.id,
-      ...params
+      property_manager_id: auth.user.id,
+      ...params,
     }
     const result = await EstatePermission.query()
-          .where(function () {
-            if( filter['status'] ){
-              this.where('status', filter['status'])
-            }
-          })
-          .with('landlord')
-          .orderBy('id', 'desc').paginate(page, limit)
+      .where(function () {
+        if (filter['status']) {
+          this.where('status', filter['status'])
+        }
+      })
+      .with('landlord')
+      .orderBy('id', 'desc')
+      .paginate(page, limit)
 
     response.res(result)
   }
 
-  async getPermittedPropertyManagers({request, auth, response}) {
-    const {page, limit, ...params} = request.all()
+  async getPermittedPropertyManagers({ request, auth, response }) {
+    const { page, limit, ...params } = request.all()
     const filter = {
-      landlord_id:auth.user.id,
-      ...params
+      landlord_id: auth.user.id,
+      ...params,
     }
     const result = await await EstatePermission.query()
-    .where(function () {
-      if( filter['status'] ){
-        this.where('status', filter['status'])
-      }
-    })
-    .with('propertyManager')
-    .orderBy('id', 'desc').paginate(page, limit)
+      .where(function () {
+        if (filter['status']) {
+          this.where('status', filter['status'])
+        }
+      })
+      .with('propertyManager')
+      .orderBy('id', 'desc')
+      .paginate(page, limit)
     response.res(result)
   }
 
