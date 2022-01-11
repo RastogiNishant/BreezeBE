@@ -215,6 +215,7 @@ class MatchController {
     const { estate_id, tenant_id } = request.all()
     console.log('girdi')
     try {
+      await MatchService.updateVisitIn(estate_id, tenant_id)
       await MatchService.inviteTenantInToVisit(estate_id, tenant_id)
       return response.res(true)
     } catch (e) {
@@ -583,7 +584,7 @@ class MatchController {
     const estatesId = [estate_id]
     let data
 
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'u_status', 'updated_at']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'u_status', 'updated_at', 'inviteIn']
 
     const matchesCount = await Database.table('matches')
       .count('*')

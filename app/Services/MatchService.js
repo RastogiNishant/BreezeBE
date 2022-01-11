@@ -556,6 +556,13 @@ class MatchService {
     }
   }
 
+  static async updateVisitIn( estateId, userId, inviteIn = true) {
+    await Database.table('matches').update({ inviteIn: inviteIn }).where({
+      user_id: userId,
+      estate_id: estateId,
+    })    
+  }
+
   static async cancelVisit(estateId, userId) {
     const match = await Database.query()
       .table('matches')
@@ -1225,7 +1232,7 @@ class MatchService {
   static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
     const query = Tenant.query()
       .select('tenants.*')
-      .select('_m.updated_at', '_m.percent as percent', '_m.share')
+      .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
