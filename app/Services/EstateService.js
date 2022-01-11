@@ -127,7 +127,7 @@ class EstateService {
       .whereNot('area', 0)
       .where(function(){
         if( query !== '')
-          this.on( 'address', 'ILIKE', `%${query}%`)
+          this.where( 'address', 'ILIKE', `%${query}%`)
       })
       .where('_t.start_at', '>', Database.fn.now())
       .orderBy('start_at', 'asc')
