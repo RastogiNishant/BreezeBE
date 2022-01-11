@@ -109,17 +109,28 @@ class EstateService {
     /**
    *
    */
-     static getUpcomingShows(query = '') {
-      const timeSlot = TimeSlot.query()
+     static getUpcomingShows(ids, query = '') {
+      // const timeSlot = TimeSlot.query()
       
-      if(query.length > 0 ) {
-        timeSlot
-        .whereHas('user', (estateQuery) => {
-                    estateQuery.where('address', 'ILIKE', `%${query}%`)
-                  })
-      }
+      // if(query.length > 0 ) {
+      //   timeSlot
+      //   .whereHas('user', (estateQuery) => {
+      //               estateQuery.where('address', 'ILIKE', `%${query}%`)
+      //             })
+      // }
   
-      return timeSlot
+      // return timeSlot
+      return EstateService.getEstates()
+      .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
+      .whereIn('user_id', ids)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
+      .whereNot('area', 0)
+      .where(function(){
+        if( query !== '')
+          this.on( 'address', 'ILIKE', `%${query}%`)
+      })
+      .where('_t.start_at', '>', Database.fn.now())
+      .orderBy('start_at', 'asc')
     }
 
   /**
