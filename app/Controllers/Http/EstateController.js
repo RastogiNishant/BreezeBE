@@ -22,28 +22,28 @@ const {
   ERROR_BUDDY_EXISTS,
   DATE_FORMAT,
   DAY_FORMAT,
-  MATCH_STATUS_TOP,
-  MATCH_STATUS_COMMIT,
   MATCH_STATUS_NEW,
   PROPERTY_MANAGE_ALLOWED,
-  ROLE_LANDLORD,
-  ROLE_PROPERTY_MANAGER
+  ROLE_PROPERTY_MANAGER,
+  MATCH_STATUS_FINISH,
 } = require('../../constants')
 const EstatePermissionService = require('../../Services/EstatePermissionService')
 
 class EstateController {
-
   async createEstateByPM({ request, auth, response }) {
     const data = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
 
-    if( landlordIds.includes(data.landlord_id) ) {
+    if (landlordIds.includes(data.landlord_id)) {
       const estate = await EstateService.createEstate(data, data.landlord_id)
       // Run processing estate geo nearest
       QueueService.getEstatePoint(estate.id)
       response.res(estate)
-    }else{
-      throw( new HttpException('Not Allowed',400))
+    } else {
+      throw new HttpException('Not Allowed', 400)
     }
   }
 
@@ -52,34 +52,36 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     const data = request.all()
-    
+
     const estate = await EstateService.createEstate(data, auth.user.id)
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
     response.res(estate)
   }
 
-
-  async updateEstateByPM({request, auth, response}) {
+  async updateEstateByPM({ request, auth, response }) {
     const { id, ...data } = request.all()
 
-    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
-    try{
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+    try {
       const estate = await Estate.findOrFail(id)
 
       if (!estate || !landlordIds.includes(estate.user_id)) {
         throw new HttpException('Not allow', 403)
       }
-  
+
       await estate.updateItem(data)
       Event.fire('estate::update', estate.id)
-  
+
       // Run processing estate geo nearest
       QueueService.getEstatePoint(estate.id)
-  
+
       response.res(estate)
-    }catch(e) {
-      throw(new HttpException(e.message, 400))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
   /**
@@ -101,10 +103,13 @@ class EstateController {
     response.res(estate)
   }
 
-  async getEstatesByPM({ request, auth, response}) {
+  async getEstatesByPM({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
-    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params )
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
     response.res(result)
   }
   /**
@@ -116,10 +121,9 @@ class EstateController {
     const userIds = [auth.user.id]
 
     // Update expired estates status to unpublished
-    const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params )
+    const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     response.res(result)
   }
-
 
   /**
    * Get single estate with POI
@@ -146,10 +150,13 @@ class EstateController {
 
   async getEstateByPM({ request, auth, response }) {
     const { id } = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)    
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
     const estate = await EstateService.getQuery()
       .where('id', id)
-      .whereIn('user_id', landlordIds )
+      .whereIn('user_id', landlordIds)
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
@@ -253,7 +260,7 @@ class EstateController {
     const { filter } = request.all()
     const currentDay = moment().startOf('day')
     const userId = auth.user.id
-    const finalMatches = [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT]
+    const finalMatches = [MATCH_STATUS_FINISH]
     let estates = {}
     if (filter == 1) {
       estates = await Estate.query()
@@ -320,15 +327,14 @@ class EstateController {
 
     let userIds = [auth.user.id]
 
-		if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)            
+    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
     const estate = await Estate.query()
-    .where('id', estate_id)
-    .whereIn('user_id', userIds)
-    .firstOrFail()
-
+      .where('id', estate_id)
+      .whereIn('user_id', userIds)
+      .firstOrFail()
 
     const disk = 's3public'
     const file = request.file('file')

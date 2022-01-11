@@ -485,7 +485,7 @@ class MatchController {
       .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
       .whereIn('estate_id', estatesId)
 
-    const matches = await MatchService.matchCount([MATCH_STATUS_KNOCK], estatesId)
+    const matches = await MatchService.matchCount([MATCH_STATUS_KNOCK], estatesId, true)
 
     const buddies = await Database.table('matches')
       .count('*')
@@ -499,17 +499,19 @@ class MatchController {
 
     const top = await MatchService.matchCount([MATCH_STATUS_TOP], estatesId)
 
-    const finalMatches = await MatchService.matchCount([MATCH_STATUS_COMMIT], estatesId)
+    const finalMatches = await MatchService.matchCount([MATCH_STATUS_FINISH], estatesId)
 
     const currentDay = moment().startOf('day')
 
     const expired = await Estate.query()
       .count('*')
       .where({ user_id: user.id })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .where('to_date', '<', currentDay.format(DAY_FORMAT))
 
     const showed = await Estate.query()
       .where({ user_id: user.id })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .whereHas('slots', (estateQuery) => {
         estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
       })
@@ -575,16 +577,26 @@ class MatchController {
     // filters = { knock, buddy, invite, visit, top, commit }
     let filters = {}
     const { estate_id, page, limit } = request.all()
-    const estate = await EstateService
-      .getQuery({ id: estate_id, 'estates.user_id': user.id })
-      .first()
+    const estate = await EstateService.getQuery({
+      id: estate_id,
+      'estates.user_id': user.id,
+    }).first()
     if (!estate) {
       throw new HttpException('Not found', 404)
     }
     const estatesId = [estate_id]
     let data
 
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'u_status', 'updated_at', 'inviteIn']
+    const fields = [
+      'buddy',
+      'date',
+      'user_id',
+      'visit_status',
+      'delay',
+      'u_status',
+      'updated_at',
+      'inviteIn',
+    ]
 
     const matchesCount = await Database.table('matches')
       .count('*')
@@ -595,7 +607,7 @@ class MatchController {
       estate,
       (filters = { knock: true })
     ).paginate(page, limit)
-    
+
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -611,7 +623,7 @@ class MatchController {
       estate,
       (filters = { buddy: true })
     ).paginate(page, limit)
-    
+
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const buddies = data
@@ -639,7 +651,7 @@ class MatchController {
       estate,
       (filters = { visit: true })
     ).paginate(page, limit)
-     
+
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const visits = data

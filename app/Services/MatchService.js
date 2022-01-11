@@ -556,11 +556,11 @@ class MatchService {
     }
   }
 
-  static async updateVisitIn( estateId, userId, inviteIn = true) {
+  static async updateVisitIn(estateId, userId, inviteIn = true) {
     await Database.table('matches').update({ inviteIn: inviteIn }).where({
       user_id: userId,
       estate_id: estateId,
-    })    
+    })
   }
 
   static async cancelVisit(estateId, userId) {
@@ -619,7 +619,7 @@ class MatchService {
     NoticeService.cancelVisit(estateId, tenantId)
   }
 
-  static async inviteTenantInToVisit (estateId, tenantId){
+  static async inviteTenantInToVisit(estateId, tenantId) {
     NoticeService.inviteTenantInToVisit(estateId, tenantId)
   }
 
@@ -668,11 +668,23 @@ class MatchService {
     })
   }
 
-  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
-    return await Database.table('matches')
-      .count('*')
-      .whereIn('status', status)
-      .whereIn('estate_id', estatesId)
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId, onlyActiveEstates) {
+    if (onlyActiveEstates) {
+      const estates = await Estate.query()
+        .select('estates.*')
+        .whereIn('estates.id', estatesId)
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .innerJoin({ _m: 'matches' }, function () {
+          this.on('_m.estate_id', 'estates.id').onIn('_m.status', status)
+        })
+        .fetch()
+      return [{ count: estates.rows.length }]
+    } else {
+      return await Database.table('matches')
+        .whereIn('status', status)
+        .whereIn('estate_id', estatesId)
+        .count('*')
+    }
   }
 
   /**
@@ -792,7 +804,7 @@ class MatchService {
         status: MATCH_STATUS_COMMIT,
       })
       .update({ status: MATCH_STATUS_FINISH })
-      
+
     //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
 
     // remove another users matches for this estate
