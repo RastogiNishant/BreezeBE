@@ -9,7 +9,7 @@ const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
-const { reduce, isEmpty, toArray } = require('lodash')
+const { reduce, isEmpty } = require('lodash')
 const moment = require('moment')
 
 const {
@@ -574,14 +574,16 @@ class MatchController {
     // filters = { knock, buddy, invite, visit, top, commit }
     let filters = {}
     const { estate_id, page, limit } = request.all()
-    const estate = await EstateService.getQuery({ id: estate_id, user_id: user.id }).first()
+    const estate = await EstateService
+      .getQuery({ id: estate_id, 'estates.user_id': user.id })
+      .first()
     if (!estate) {
       throw new HttpException('Not found', 404)
     }
     const estatesId = [estate_id]
     let data
 
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'u_status', 'updated_at']
 
     const matchesCount = await Database.table('matches')
       .count('*')
@@ -592,8 +594,9 @@ class MatchController {
       estate,
       (filters = { knock: true })
     ).paginate(page, limit)
-
-    data = tenants.toJSON({ isShort: true, fields })
+    
+    let extraFields = [...fields]
+    data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const matches = data
 
@@ -607,8 +610,8 @@ class MatchController {
       estate,
       (filters = { buddy: true })
     ).paginate(page, limit)
-
-    data = tenants.toJSON({ isShort: true, fields })
+    
+    data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const buddies = data
 
@@ -622,7 +625,7 @@ class MatchController {
       (filters = { invite: true })
     ).paginate(page, limit)
 
-    data = tenants.toJSON({ isShort: true, fields })
+    data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const invites = data
 
@@ -635,8 +638,8 @@ class MatchController {
       estate,
       (filters = { visit: true })
     ).paginate(page, limit)
-
-    data = tenants.toJSON({ isShort: true, fields })
+     
+    data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const visits = data
 
@@ -659,7 +662,7 @@ class MatchController {
       .whereIn('status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
 
-    const extraFields = ['email', 'phone', 'last_address', ...fields]
+    extraFields = ['email', 'phone', 'last_address', ...fields]
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { commit: true })
