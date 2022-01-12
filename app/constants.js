@@ -32,7 +32,7 @@ const constants = {
   ROLE_ADMIN: 2,
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,
-  ROLE_PROPERTY_MANAGER:4,
+  ROLE_PROPERTY_MANAGER: 4,
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
@@ -453,6 +453,7 @@ const constants = {
     'avatar',
     'address',
     'user_id',
+    'available_date',
   ],
 }
 

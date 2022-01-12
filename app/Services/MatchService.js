@@ -968,6 +968,7 @@ class MatchService {
       'estates.street',
       'estates.city',
       'estates.zip',
+      'estates.available_date',
       'estates.status as estate_status',
       '_m.status as status',
       '_m.buddy',
