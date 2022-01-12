@@ -80,8 +80,11 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query().withCount('visits').withCount('decided')
-                  .withCount('invite').withCount('inviteBuddies')
+    const query = Estate.query()
+      .withCount('visits')
+      .withCount('decided')
+      .withCount('invite')
+      .withCount('inviteBuddies')
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -95,43 +98,42 @@ class EstateService {
 
     // if(params.filter && params.filter.includes(1)) {
     //   query.whereHas('inviteBuddies')
-    // } 
+    // }
     if (params.filter) {
-      query
-      .whereHas('matches', (query) => {
-            query.whereIn('status', params.filter)
+      query.whereHas('matches', (query) => {
+        query.whereIn('status', params.filter)
       })
     }
 
     return query.orderBy('estates.id', 'desc')
   }
 
-    /**
+  /**
    *
    */
-     static getUpcomingShows(ids, query = '') {
-      // const timeSlot = TimeSlot.query()
-      
-      // if(query.length > 0 ) {
-      //   timeSlot
-      //   .whereHas('user', (estateQuery) => {
-      //               estateQuery.where('address', 'ILIKE', `%${query}%`)
-      //             })
-      // }
-  
-      // return timeSlot
-      return EstateService.getEstates()
+  static getUpcomingShows(ids, query = '') {
+    // const timeSlot = TimeSlot.query()
+
+    // if(query.length > 0 ) {
+    //   timeSlot
+    //   .whereHas('user', (estateQuery) => {
+    //               estateQuery.where('address', 'ILIKE', `%${query}%`)
+    //             })
+    // }
+
+    // return timeSlot
+    return EstateService.getEstates()
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .whereIn('user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
-      .where(function(){
-        if( query !== '')
-          this.where( 'address', 'ILIKE', `%${query}%`)
+      .where(function () {
+        if (query !== '') this.where('address', 'ILIKE', `%${query}%`)
       })
       .where('_t.start_at', '>', Database.fn.now())
+      .with('slots')
       .orderBy('start_at', 'asc')
-    }
+  }
 
   /**
    *
@@ -317,12 +319,14 @@ class EstateService {
     return slot
   }
 
-   static getPublishedEstates(userID = null) {
+  static getPublishedEstates(userID = null) {
     if (isEmpty(userID)) {
       return Estate.query()
     }
 
-    return Estate.query().where({ user_id: userID }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+    return Estate.query()
+      .where({ user_id: userID })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
   }
 
   /**
@@ -636,7 +640,7 @@ class EstateService {
     Event.fire('match::estate', estate.id)
   }
 
-  static async getEstatesByUserId(ids,limit, page, params) {
+  static async getEstatesByUserId(ids, limit, page, params) {
     await EstateService.getEstates(params)
       .whereIn('user_id', ids)
       .where('status', STATUS_EXPIRE)
