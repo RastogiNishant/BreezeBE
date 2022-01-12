@@ -517,7 +517,8 @@ class MatchController {
       })
       .count()
 
-    const totalInvite = totalEstates - totalVisits - totalDecided
+    const totalInvite =
+      totalEstates - parseInt(totalVisits[0].count) - parseInt(totalDecided[0].count)
 
     return response.res({
       totalInvite,
