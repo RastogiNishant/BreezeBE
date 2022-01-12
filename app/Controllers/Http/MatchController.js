@@ -517,8 +517,10 @@ class MatchController {
       })
       .count()
 
+    const totalInvite = totalEstates - totalVisits - totalDecided
+
     return response.res({
-      totalInvite: parseInt(matches[0].count) + parseInt(buddies[0].count),
+      totalInvite,
       totalVisits: totalVisits[0].count,
       totalDecided: totalDecided[0].count,
       expired: expired[0].count,
