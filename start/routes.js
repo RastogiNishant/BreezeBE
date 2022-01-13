@@ -361,9 +361,9 @@ Route.get(
   'MatchController.getMatchesSummaryLandlordEstate'
 ).middleware(['auth:jwtLandlord'])
 
-Route.get('/api/v1/match/landlord/summary', 'MatchController.getMatchesSummaryLandlord').middleware(
-  ['auth:jwtLandlord']
-)
+Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
+  'auth:jwtLandlord',
+])
 
 // Landlord specific routes
 Route.group(() => {
@@ -480,19 +480,45 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord,jwt', 'valid:UserPremiumPlan'])
   .prefix('api/v1/updateUserPremiumPlan')
 
-Route.group(()=> {
-  Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware(['auth:jwtPropertyManager', 'valid:Ids'])
-  Route.post('/email', 'EstatePermissionController.requestPermissionToLandlordByEmail').middleware(['auth:jwtPropertyManager', 'valid:Emails'])
-  Route.delete('/pm', 'EstatePermissionController.deletePermissionByPM').middleware(['auth:jwtPropertyManager', 'valid:Ids'])
-  Route.delete('/landlord', 'EstatePermissionController.deletePermissionByLandlord').middleware(['auth:jwtLandlord', 'valid:Ids'])
-  Route.delete('/email', 'EstatePermissionController.deletePermissionLandlordByEmail').middleware(['auth:jwtPropertyManager', 'valid:Emails'])
-  Route.post('/', 'EstatePermissionController.givePermissionToPropertyManager').middleware(['auth:jwtLandlord', 'valid:EstatePermission'])  
-  Route.put('/', 'EstatePermissionController.permissionToPropertyManager').middleware(['auth:jwtLandlord', 'valid:EstatePermission'])
+Route.group(() => {
+  Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([
+    'auth:jwtPropertyManager',
+    'valid:Ids',
+  ])
+  Route.post('/email', 'EstatePermissionController.requestPermissionToLandlordByEmail').middleware([
+    'auth:jwtPropertyManager',
+    'valid:Emails',
+  ])
+  Route.delete('/pm', 'EstatePermissionController.deletePermissionByPM').middleware([
+    'auth:jwtPropertyManager',
+    'valid:Ids',
+  ])
+  Route.delete('/landlord', 'EstatePermissionController.deletePermissionByLandlord').middleware([
+    'auth:jwtLandlord',
+    'valid:Ids',
+  ])
+  Route.delete('/email', 'EstatePermissionController.deletePermissionLandlordByEmail').middleware([
+    'auth:jwtPropertyManager',
+    'valid:Emails',
+  ])
+  Route.post('/', 'EstatePermissionController.givePermissionToPropertyManager').middleware([
+    'auth:jwtLandlord',
+    'valid:EstatePermission',
+  ])
+  Route.put('/', 'EstatePermissionController.permissionToPropertyManager').middleware([
+    'auth:jwtLandlord',
+    'valid:EstatePermission',
+  ])
 
-  Route.get('/propertyManagers', 'EstatePermissionController.getPermittedPropertyManagers').middleware(['auth:jwtLandlord', 'valid:EstatePermissionFilter,Pagination'])
-  Route.get('/landlords', 'EstatePermissionController.getLandlords').middleware(['auth:jwtPropertyManager', 'valid:EstatePermissionFilter,Pagination'])
-})
-  .prefix('api/v1/estatePermission')
+  Route.get(
+    '/propertyManagers',
+    'EstatePermissionController.getPermittedPropertyManagers'
+  ).middleware(['auth:jwtLandlord', 'valid:EstatePermissionFilter,Pagination'])
+  Route.get('/landlords', 'EstatePermissionController.getLandlords').middleware([
+    'auth:jwtPropertyManager',
+    'valid:EstatePermissionFilter,Pagination',
+  ])
+}).prefix('api/v1/estatePermission')
 
 // Estate management
 Route.group(() => {

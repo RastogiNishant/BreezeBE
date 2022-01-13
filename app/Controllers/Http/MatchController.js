@@ -213,7 +213,6 @@ class MatchController {
 
   async inviteTenantInToVisit({ request, auth, response }) {
     const { estate_id, tenant_id } = request.all()
-    console.log('girdi')
     try {
       await MatchService.updateVisitIn(estate_id, tenant_id)
       await MatchService.inviteTenantInToVisit(estate_id, tenant_id)
@@ -422,9 +421,6 @@ class MatchController {
     const { id } = auth.user
     await this.getTenantTopMatchesByEstate(estate_id, id)
     response.res(200)
-    // const count = await MatchService.getCommitsCountByEstateExceptTenant(estate_id, id)
-    // console.log({ count })
-    // return response.res(count)
   }
 
   async getTenantUpcomingVisits({ auth, response }) {
@@ -459,6 +455,112 @@ class MatchController {
     })
   }
 
+  async getLandlordSummary({ request, auth, response }) {
+    const user = auth.user
+    try {
+      const allEstates = await Estate.query()
+        .where('user_id', user.id)
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .select('id')
+        .select('to_date')
+        .fetch()
+      const allEstatesJson = allEstates.toJSON()
+      const allEstatesCount = allEstatesJson.length
+
+      const matchedEstates = await Estate.query()
+        .select('estates.id')
+        .select('estates.user_id')
+        .select('estates.status')
+        .where('estates.user_id', user.id)
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .innerJoin('matches', 'matches.estate_id', 'estates.id')
+        .select('matches.status as match_status')
+        .fetch()
+      const matchedEstatesJson = matchedEstates.toJSON()
+
+      let groupedEstates = []
+
+      matchedEstatesJson.map(({ id, match_status }) => {
+        const index = groupedEstates.findIndex((e) => e.id === id)
+        if (index !== -1) {
+          if (groupedEstates[index][match_status]) {
+            groupedEstates[index][match_status] += 1
+          } else {
+            groupedEstates[index][match_status] = 1
+          }
+        } else {
+          groupedEstates.push({
+            id,
+            [match_status]: 1,
+          })
+        }
+      })
+
+      let groupedFilteredEstates = [...groupedEstates]
+
+      const removeFiltereds = (allEstates, filteredEstates) => {
+        filteredEstates.map((estate) => {
+          const index = allEstates.findIndex((e) => e.id === estate.id)
+          allEstates.splice(index, 1)
+        })
+        return allEstates
+      }
+
+      const filters = [
+        { value: MATCH_STATUS_FINISH, key: 'finalMatches' },
+        { value: MATCH_STATUS_COMMIT, key: 'commits' },
+        { value: MATCH_STATUS_TOP, key: 'top' },
+        { value: MATCH_STATUS_VISIT, key: 'visits' },
+        { value: MATCH_STATUS_INVITE, key: 'invites' },
+        { value: MATCH_STATUS_KNOCK, key: 'matches' },
+      ]
+
+      const counts = {}
+      counts.totalEstates = allEstatesCount
+
+      filters.map((filter) => {
+        const estates = groupedFilteredEstates.filter((e) => e[filter.value])
+        groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, estates)
+        counts[filter.key] = estates.length
+      })
+
+      const buddies = groupedFilteredEstates.filter(
+        (e) => e.match_status === MATCH_STATUS_NEW && e.buddy === true
+      )
+      groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, buddies)
+      counts.buddies = buddies.length
+
+      const newMatchedEstatesCount = groupedFilteredEstates.length
+      const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
+
+      counts.totalVisits = counts.visits + counts.invites
+      counts.totalDecided = counts.top + counts.commits
+      counts.totalInvite =
+        counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+
+      const currentDay = moment().startOf('day')
+      counts.expired = allEstatesJson.filter((e) => moment(e.to_date).isBefore(currentDay)).length
+
+      const showed = await Estate.query()
+        .where({ user_id: user.id })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereHas('slots', (estateQuery) => {
+          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+        })
+        .count()
+
+      counts.showed = showed[0].count
+
+      return response.res(counts)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
   /**
    * Get matches summary  for landlord
    */
@@ -485,7 +587,7 @@ class MatchController {
       .whereIn('status', [MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
       .whereIn('estate_id', estatesId)
 
-    const matches = await MatchService.matchCount([MATCH_STATUS_KNOCK], estatesId, true)
+    const matches = await MatchService.matchCount([MATCH_STATUS_KNOCK], estatesId)
 
     const buddies = await Database.table('matches')
       .count('*')
@@ -498,6 +600,8 @@ class MatchController {
     const visits = await MatchService.matchCount([MATCH_STATUS_VISIT], estatesId)
 
     const top = await MatchService.matchCount([MATCH_STATUS_TOP], estatesId)
+
+    const commit = await MatchService.matchCount([MATCH_STATUS_COMMIT], estatesId)
 
     const finalMatches = await MatchService.matchCount([MATCH_STATUS_FINISH], estatesId)
 
@@ -518,7 +622,10 @@ class MatchController {
       .count()
 
     const totalInvite =
-      totalEstates - parseInt(totalVisits[0].count) - parseInt(totalDecided[0].count)
+      totalEstates -
+      parseInt(totalVisits[0].count) -
+      parseInt(totalDecided[0].count) -
+      parseInt(finalMatches[0].count)
 
     return response.res({
       totalInvite,

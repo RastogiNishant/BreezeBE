@@ -668,23 +668,11 @@ class MatchService {
     })
   }
 
-  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId, onlyActiveEstates) {
-    if (onlyActiveEstates) {
-      const estates = await Estate.query()
-        .select('estates.*')
-        .whereIn('estates.id', estatesId)
-        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .innerJoin({ _m: 'matches' }, function () {
-          this.on('_m.estate_id', 'estates.id').onIn('_m.status', status)
-        })
-        .fetch()
-      return [{ count: estates.rows.length }]
-    } else {
-      return await Database.table('matches')
-        .whereIn('status', status)
-        .whereIn('estate_id', estatesId)
-        .count('*')
-    }
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
+    return await Database.table('matches')
+      .whereIn('status', status)
+      .whereIn('estate_id', estatesId)
+      .count('*')
   }
 
   /**
