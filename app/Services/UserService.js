@@ -153,16 +153,13 @@ class UserService {
         },
       });
       await DataStorage.setItem(user.id, { shortLink }, 'forget_password', { ttl: 3600 })
-console.log('ShortLink', shortLink )      
+
       await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
 
   
     } catch (error) {
       throw new HttpException( error.message, 404)
     }
-
-    await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
-    await MailService.sendcodeForgotPasswordMail(user.email, code)
   }
 
   /**
