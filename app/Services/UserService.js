@@ -138,22 +138,23 @@ class UserService {
     let user = null
     try {
       user = await User.findByOrFail({ email })
-      // const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY);
+      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY);
 
-      // const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
-      //   dynamicLinkInfo: {
-      //     domainUriPrefix: process.env.DOMAIN_PREFIX,
-      //     link: `${process.env.DEEP_LINK}/type=newpassword`,
-      //     androidInfo: {
-      //       androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-      //     },
-      //     iosInfo: {
-      //       iosBundleId: process.env.IOS_BUNDLE_ID,
-      //     },
-      //   },
-      // });
-      // await DataStorage.setItem(user.id, { shortLink }, 'forget_password', { ttl: 3600 })
-      // await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
+      const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
+        dynamicLinkInfo: {
+          domainUriPrefix: process.env.DOMAIN_PREFIX,
+          link: `${process.env.DEEP_LINK}/type=newpassword`,
+          androidInfo: {
+            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          },
+          iosInfo: {
+            iosBundleId: process.env.IOS_BUNDLE_ID,
+          },
+        },
+      });
+      await DataStorage.setItem(user.id, { shortLink }, 'forget_password', { ttl: 3600 })
+console.log('ShortLink', shortLink )      
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
 
   
     } catch (error) {
