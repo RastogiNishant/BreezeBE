@@ -143,7 +143,7 @@ class UserService {
       const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}/type=newpassword`,
+          link: `${process.env.DEEP_LINK}/type=newpassword/code=${code}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
@@ -152,7 +152,7 @@ class UserService {
           },
         },
       });
-      await DataStorage.setItem(user.id, { shortLink }, 'forget_password', { ttl: 3600 })
+      await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
       await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
 
@@ -354,6 +354,25 @@ class UserService {
       if (user.share) {
         tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
       }
+
+      /** Updated by Yong */
+      const tenant =  await tenantQuery.first()
+
+
+      if( !tenant.personal_shown ) {
+
+      }
+
+      if( !tenant.income_shown ){
+
+      }
+
+      if( !tenant.residency_shown){
+
+      }
+
+      /** End by Yong*/
+
       userData.tenant = await tenantQuery.first()
     }
 
