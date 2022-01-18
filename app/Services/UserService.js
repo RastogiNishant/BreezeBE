@@ -4,7 +4,7 @@ const {FirebaseDynamicLinks} = use('firebase-dynamic-links');
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq } = require('lodash')
+const { get, isArray, isEmpty, uniq, omit } = require('lodash')
 const Promise = require('bluebird')
 
 const Role = use('Role')
@@ -143,7 +143,7 @@ class UserService {
       const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}/type=newpassword/code=${code}`,
+          link: `${process.env.DEEP_LINK}?type=newpassword&code=${code}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
@@ -346,7 +346,7 @@ class UserService {
       throw new AppException('User not exists')
     }
 
-    const userData = user.toJSON({ publicOnly: !user.finish })
+    let userData = user.toJSON({ publicOnly: !user.finish })
     userData.tenant = null
     // Get tenant extend data
     if (user.share || user.finish) {
@@ -357,23 +357,60 @@ class UserService {
 
       /** Updated by Yong */
       const tenant =  await tenantQuery.first()
+      if(!tenant) {
+        return userData  
+      }
 
-
+      let extraFields = Tenant.columns
       if( !tenant.personal_shown ) {
-
+        extraFields = Object.values(omit( extraFields, ['unpaid_rental','insolvency_proceed','arrest_warranty','clean_procedure']) )
       }
 
       if( !tenant.income_shown ){
-
+        extraFields = Object.values(omit( extraFields, ['income']))
       }
 
       if( !tenant.residency_shown){
-
+        extraFields = Object.values(omit( extraFields, ['address','coord']))
       }
 
-      /** End by Yong*/
+      if( !tenant.creditscore_shown){
+        extraFields = Object.values(omit( extraFields, ['credit_score']))
+      }      
 
-      userData.tenant = await tenantQuery.first()
+      if( !tenant.solvency_shown){
+        extraFields = Object.values(omit( extraFields, ['income_seizure']))
+      }
+      
+      /** End by Yong*/
+      userData.tenant = tenant.toJSON({isShort:true, extraFields: extraFields })
+
+
+      if( !tenant.income_shown ){
+        const members = userData.tenant.members && userData.tenant.members.map( m => {
+          if( !tenant.income_shown ){
+            delete m.incomes
+          }
+          if( !tenant.residency_shown){
+            delete m.last_address
+          }
+          if( !tenant.creditscore_shown){
+            delete m.credit_score
+          }
+          if( !tenant.solvency_shown){
+            delete m.income_seizure
+          }
+
+        })
+        userData = {
+          members,
+          ...userData
+        }
+      }
+
+      if( !tenant.profile_shown || !tenant.personal_shown){
+        delete userData.tenant.members
+      }
     }
 
     return userData
