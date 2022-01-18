@@ -5,7 +5,7 @@ const yup = require('yup')
 const Base = require('./Base')
 
 const { phoneSchema } = require('../Libs/schemas.js')
-const { GENDER_MALE, GENDER_FEMALE, GENDER_ANY } = require('../constants')
+const { GENDER_MALE, GENDER_FEMALE, GENDER_ANY, IS_PUBLIC, IS_PRIVATE } = require('../constants')
 
 class UpdateUser extends Base {
   static schema = () =>
@@ -19,6 +19,8 @@ class UpdateUser extends Base {
       lang: yup.string().oneOf(['en', 'de']),
       avatar: yup.string().max(512),
       notice: yup.boolean(),
+      prospect_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
+      landlord_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
     })
 }
 

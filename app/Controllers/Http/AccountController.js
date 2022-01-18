@@ -175,8 +175,10 @@ class AccountController {
   async updateProfile({ request, auth, response }) {
     const data = request.all()
     const user = auth.user
-    await user.updateItem(data)
 
+    auth.user.role === ROLE_USER?delete data.landlord_visibility:auth.user.role === ROLE_LANDLORD ? delete data.prospect_visibility:data
+    
+    await user.updateItem(data)
     return response.res(user)
   }
 
