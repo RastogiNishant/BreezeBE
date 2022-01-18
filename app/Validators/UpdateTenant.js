@@ -101,6 +101,12 @@ class UpdateTenant extends Base {
       garden: yup.boolean(),
       options: yup.array().of(yup.number().integer().positive().max(999)),
       rent_start: yup.date(),
+      personal_shown: yup.boolean(),
+      income_shown: yup.boolean(),
+      residency_shown: yup.boolean(),
+      creditscore_shown: yup.boolean(),
+      solvency_shown: yup.boolean(),
+      profile_shown: yup.boolean(),
     })
 }
 
