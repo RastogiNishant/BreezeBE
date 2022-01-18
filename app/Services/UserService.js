@@ -79,7 +79,6 @@ class UserService {
       google_id,
       status: STATUS_NEED_VERIFY,
     }
-    console.log(userData)
 
     const { user } = await UserService.createUser(userData)
 
