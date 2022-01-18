@@ -29,6 +29,9 @@ const constants = {
   STATUS_DRAFT: 5,
   STATUS_EXPIRE: 6,
 
+  IS_PRIVATE : 1,
+  IS_PUBLIC : 2,
+  
   ROLE_ADMIN: 2,
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,

@@ -37,7 +37,9 @@ class User extends Model {
       'unread_notification_count',
       'is_premium',
       'payment_plan',
-      'member_plan_date'
+      'member_plan_date',
+      'prospect_visibility',
+      'landlord_visibility'
     ]
   }
 
