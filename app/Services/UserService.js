@@ -143,7 +143,7 @@ class UserService {
       const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}/type=newpassword/code=${code}`,
+          link: `${process.env.DEEP_LINK}?type=newpassword&code=${code}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
@@ -358,17 +358,18 @@ class UserService {
       /** Updated by Yong */
       const tenant =  await tenantQuery.first()
 
+      let exclude = []
 
       if( !tenant.personal_shown ) {
-
+        exclude = []
       }
 
       if( !tenant.income_shown ){
-
+        exclude = []
       }
 
       if( !tenant.residency_shown){
-
+        exclude = []
       }
 
       /** End by Yong*/
