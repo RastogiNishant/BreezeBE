@@ -139,7 +139,7 @@ class UserService {
       user = await User.findByOrFail({ email })
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY);
 
-      const { shortLink, previewLink } = await firebaseDynamicLinks.createLink({
+      const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
           link: `${process.env.DEEP_LINK}?type=newpassword&code=${code}`,
@@ -157,7 +157,7 @@ class UserService {
 
   
     } catch (error) {
-      throw new HttpException( error.message, 404)
+      throw new HttpException( error.error?error.error.message:error.message, error.error?error.error.code:400)
     }
   }
 
