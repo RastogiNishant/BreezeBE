@@ -30,7 +30,7 @@ class CompanyService {
    *
    */
   static async getUserCompany(userId) {
-    return Company.query().where({ user_id: userId }).first()
+    return Company.query().where({ user_id: userId }).with('contacts').first()
   }
 
   /**

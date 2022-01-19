@@ -11,6 +11,7 @@ class UpdateContact extends Base {
       full_name: yup.string().min(2).max(255),
       phone: yup.string().matches(/^(\+|0)[0-9]{10,20}$/),
       region: yup.string().max(255),
+      avatar: yup.string().max(255),
     });
   };
 }
