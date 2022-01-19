@@ -261,7 +261,6 @@ class EstateController {
   async getEstatesQuickLinks({ request, auth, response }) {
     const { filter } = request.all()
     const currentDay = moment().startOf('day');
-console.log( 'currentDay', currentDay.format(DAY_FORMAT) )    
     const userId = auth.user.id
     const finalMatches = [MATCH_STATUS_FINISH]
     let estates = {}
@@ -306,8 +305,8 @@ console.log( 'currentDay', currentDay.format(DAY_FORMAT) )
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_EXPIRE])
-        .whereNotNull('to_date' )        
-        .where('to_date', '<', currentDay.format(DAY_FORMAT))
+        // .whereNotNull('to_date' )        
+        // .where('to_date', '<', currentDay.format(DAY_FORMAT))
         .orderBy('id')
         .fetch()
     }
