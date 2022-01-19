@@ -260,7 +260,8 @@ class EstateController {
    */
   async getEstatesQuickLinks({ request, auth, response }) {
     const { filter } = request.all()
-    const currentDay = moment().startOf('day')
+    const currentDay = moment().startOf('day');
+
     const userId = auth.user.id
     const finalMatches = [MATCH_STATUS_FINISH]
     let estates = {}
@@ -268,24 +269,20 @@ class EstateController {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .where('to_date', '<', currentDay.format(DAY_FORMAT))
+        .where('to_date', '<', currentDay.format('YYYY-MM-DDTZ'))
         .orderBy('id')
         .fetch()
-    }
-
-    if (filter == 2) {
+    }else if (filter == 2) {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .with('slots')
         .whereHas('slots', (estateQuery) => {
-          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+          estateQuery.where('end_at', '<=', currentDay.format('YYYY-MM-DDTZ'))
         })
         .orderBy('id')
         .fetch()
-    }
-
-    if (filter == 3) {
+    }else if (filter == 3) {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -295,9 +292,7 @@ class EstateController {
         })
         .orderBy('id')
         .fetch()
-    }
-
-    if (filter == 4) {
+    }else if (filter == 4) {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -307,7 +302,16 @@ class EstateController {
         })
         .orderBy('id')
         .fetch()
+    }else if( filter == 5) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_EXPIRE])
+        .whereNotNull('to_date' )        
+        .where('to_date', '<', currentDay.format('YYYY-MM-DDTZ'))
+        .orderBy('id')
+        .fetch()
     }
+
     response.res(estates)
   }
   /**
