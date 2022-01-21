@@ -6,7 +6,7 @@ const MemberService = use('App/Services/MemberService')
 const Member = use('App/Models/Member')
 const DataStorage = use('DataStorage')
 const HttpException = use('App/Exceptions/HttpException')
-const { getHash } = require('../../Libs/utils.js')
+
 
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_PNG, File.IMAGE_PDF]
@@ -217,18 +217,26 @@ class MemberController {
   async sendInviteCode({ request, auth, response } ) {
     const {id} = request.all()
     const userId = auth.user.id;
-    const code = getHash(3)
     try{
-      await Member.findByOrFail({ id })
-
-      await DataStorage.setItem(code, { userId: userId }, 'sms_invite_code', { ttl: 3600 })    
+      const code = await MemberService.sendInvitationCode(id, userId)
+      return response.res(code)    
     }catch(e){
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
       }
       throw e
     }
-    return response.res()    
+    
+  }
+
+  async confirmInviteCode( {request, auth, response} ) {
+    const {code} = request.all();
+    try{
+      const member = await MemberService.getInvitationCode(code)
+      response.res(member)
+    }catch(e){
+      throw new HttpException(e.message, 400)
+    }
   }
 }
 

@@ -60,7 +60,7 @@ class AccountController {
   }
 
   async householdSignup({ request, response}) {
-    const { email, password, confirmPassword } = request.all()
+    const { email, owner_id, password, confirmPassword } = request.all()
 
     // Check user not exists
     const availableUser = await User.query().where('email', email).first()
@@ -73,10 +73,12 @@ class AccountController {
     }
 
     try {
+      await User.query().where('id', owner_id).firstOrFail()
       const { user } = await UserService.createUser({
         email,
         role:ROLE_HOUSEHOLD,
         password,
+        owner_id: owner_id,
         status: STATUS_EMAIL_VERIFY,
       })
       
