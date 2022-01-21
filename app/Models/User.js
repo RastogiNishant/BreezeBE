@@ -39,7 +39,8 @@ class User extends Model {
       'payment_plan',
       'member_plan_date',
       'prospect_visibility',
-      'landlord_visibility'
+      'landlord_visibility',
+      'owner_id'
     ]
   }
 

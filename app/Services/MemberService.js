@@ -3,9 +3,9 @@ const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
-
+const { getHash } = require('../Libs/utils.js')
 const { isEmpty } = require('lodash')
-
+const moment = require('moment')
 const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
@@ -141,6 +141,22 @@ class MemberService {
     `,
       [userId, userId]
     )
+  }
+
+  static async sendInvitationCode(id, userId) {
+    await Member.findByOrFail({ id:id, user_id:userId })
+    const code = getHash(3)
+    await Member.query()
+    .where({ id: id })
+    .update({
+      code: code,
+      published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+    })
+    return code;
+  }
+
+  static async getInvitationCode(code) {
+    return await Member.query().select('id').where('code', code).firstOrFail()
   }
 }
 
