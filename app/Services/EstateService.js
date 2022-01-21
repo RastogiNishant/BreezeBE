@@ -641,11 +641,6 @@ class EstateService {
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
-    await EstateService.getEstates(params)
-      .whereIn('user_id', ids)
-      .where('status', STATUS_EXPIRE)
-      .whereNot('status', STATUS_DELETE)
-      .update({ status: STATUS_DRAFT })
 
     return await EstateService.getEstates(params)
       .whereIn('user_id', ids)
