@@ -3,7 +3,7 @@
 const Route = use('Route')
 const Helpers = use('Helpers')
 const fs = use('fs')
-
+const Hash = use('Hash')
 /**
  *  Admin entry point router
  */
@@ -40,8 +40,9 @@ Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'v
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
-  'auth:jwt,jwtLandlord',
+  'auth:jwt,jwtLandlord,jwtHousehold,jwtPropertyManager',
 ])
+Route.post('/api/v1/hoseholdSignup', 'AccountController.householdSignup').middleware(['guest', 'valid:HoseholdSignUp'])
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
     'guest',
@@ -285,6 +286,7 @@ Route.group(() => {
   Route.delete('/:id/income/:income_id', 'MemberController.removeMemberIncome').middleware([
     'valid:Id,IncomeId',
   ])
+  Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt'])
