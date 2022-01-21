@@ -1,6 +1,6 @@
 const url = require('url')
 const { isString, get, isEmpty, capitalize } = require('lodash')
-const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN, ROLE_PROPERTY_MANAGER } = require('../constants')
+const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
   const base = url.parse(use('Env').get('APP_URL'))
@@ -65,7 +65,8 @@ const getAuthByRole = (auth, role) => {
       return auth.authenticator('jwtAdmin')
     case ROLE_PROPERTY_MANAGER:
       return auth.authenticator('jwtPropertyManager')
-  
+    case ROLE_HOUSEHOLD:
+      return auth.authenticator('jwtHousehold')  
     default:
       throw new Error('Invalid role')
   }

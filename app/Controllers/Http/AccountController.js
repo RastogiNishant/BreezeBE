@@ -23,7 +23,7 @@ const {
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE, ROLE_PROPERTY_MANAGER } = require('../../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD } = require('../../constants')
 
 class AccountController {
   /**
@@ -49,6 +49,38 @@ class AccountController {
         status: STATUS_EMAIL_VERIFY,
       })
       await UserService.sendConfirmEmail(user)
+      return response.res(user)
+    } catch (e) {
+      if (e.constraint === 'users_uid_unique') {
+        throw new HttpException('User already exists', 400)
+      }
+
+      throw e
+    }
+  }
+
+  async householdSignup({ request, response}) {
+    const { email, password, confirmPassword } = request.all()
+
+    // Check user not exists
+    const availableUser = await User.query().where('email', email).first()
+    if (availableUser) {
+      throw new HttpException('User already exists, can be switched', 400)
+    }
+
+    if( password !== confirmPassword ) {
+      throw new HttpException('Password not matched', 400)
+    }
+
+    try {
+      const { user } = await UserService.createUser({
+        email,
+        role:ROLE_HOUSEHOLD,
+        password,
+        status: STATUS_EMAIL_VERIFY,
+      })
+      
+      //TODO: Send verification code via SMS
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -92,7 +124,7 @@ class AccountController {
     let { email, role, password, device_token } = request.all()
     
     // Select role if not set, (allows only for non-admin users)
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
     if (role) {
       roles = [role]
     }
