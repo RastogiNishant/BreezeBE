@@ -301,12 +301,13 @@ class EstateController {
         })
         .orderBy('id')
         .fetch()
-    }else if( filter == 5) {
+    }else if( filter == 5) { // get expired property
+
       estates = await Estate.query()
         .where({ user_id: userId })
-        .whereIn('status', [STATUS_EXPIRE])
-        // .whereNotNull('to_date' )        
-        // .where('to_date', '<', currentDay.format(DAY_FORMAT))
+        .where('status', STATUS_EXPIRE )        
+        .whereNotNull('available_date' )
+        .where('available_date', '<', currentDay.format(DAY_FORMAT))
         .orderBy('id')
         .fetch()
     }

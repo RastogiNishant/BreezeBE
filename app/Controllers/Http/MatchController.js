@@ -462,9 +462,11 @@ class MatchController {
         .where('user_id', user.id)
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .select('id')
-        .select('to_date')
+        .select('available_date')
         .fetch()
+
       const allEstatesJson = allEstates.toJSON()
+
       const allEstatesCount = allEstatesJson.length
 
       const matchedEstates = await Estate.query()
@@ -539,7 +541,8 @@ class MatchController {
         counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
 
       const currentDay = moment().startOf('day')
-      counts.expired = allEstatesJson.filter((e) => moment(e.to_date).isBefore(currentDay)).length
+
+      counts.expired = allEstatesJson.filter((e) => moment(e.available_date).isBefore(currentDay)).length
 
       const showed = await Estate.query()
         .where({ user_id: user.id })
