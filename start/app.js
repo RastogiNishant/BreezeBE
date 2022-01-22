@@ -20,6 +20,8 @@ providers.push('@adonisjs/redis/providers/RedisProvider')
 providers.push('@adonisjs/drive/providers/DriveProvider')
 providers.push('@adonisjs/antl/providers/AntlProvider')
 providers.push('@adonisjs/mail/providers/MailProvider')
+providers.push('adonis-twilio-node/providers/TwilioProvider')
+
 providers.push('adonis-cache/providers/CacheProvider')
 
 providers.push('adonis-acl/providers/AclProvider')
@@ -41,6 +43,7 @@ const aceProviders = [
 	'adonis-acl/providers/CommandsProvider',
 	'@adonisjs/vow/providers/VowProvider',
 	'adonis-cache/providers/CommandsProvider',
+	'adonis-twilio/providers/TwilioProvider'
 ]
 
 /*

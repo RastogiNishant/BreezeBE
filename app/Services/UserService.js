@@ -16,8 +16,10 @@ const Tenant = use('App/Models/Tenant')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
+const SMSService = use('App/Services/SMSService')
 
 const { getHash } = require('../Libs/utils.js')
+const random = require('random')
 
 const {
   STATUS_NEED_VERIFY,
@@ -30,6 +32,7 @@ const {
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
+  ROLE_HOUSEHOLD,
 } = require('../constants')
 
 class UserService {
@@ -590,6 +593,28 @@ class UserService {
       .whereIn('email', emails )
       .where({ role: role })
       .fetch()
+  }
+
+  static async signUpHouseHold( ownerId, email, password, phone ) {
+    await User.query().where('id', ownerId).firstOrFail()
+   
+    const code = random.int(1000, 9999)
+
+    const user = await UserService.createUser({
+      email,
+      role:ROLE_HOUSEHOLD,
+      password,
+      owner_id: ownerId,
+      phone:phone,
+      status: STATUS_EMAIL_VERIFY,
+    })
+
+    await DataStorage.setItem(code, { userId: user.id }, 'confirm_household_account', { ttl: 3600 })    
+
+    //TODO: Send verification code via SMS
+
+    await SMSService.send( phone, code ) 
+    return user      
   }
 }
 

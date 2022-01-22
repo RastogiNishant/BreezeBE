@@ -7,6 +7,7 @@ const Promise = require('bluebird')
 const User = use('App/Models/User')
 const Hash = use('Hash')
 const Drive = use('Drive')
+
 const Database = use('Database')
 const Logger = use('Logger')
 
@@ -60,7 +61,7 @@ class AccountController {
   }
 
   async householdSignup({ request, response}) {
-    const { email, owner_id, password, confirmPassword } = request.all()
+    const { email, owner_id, password, confirmPassword, phone } = request.all()
 
     // Check user not exists
     const availableUser = await User.query().where('email', email).first()
@@ -73,16 +74,7 @@ class AccountController {
     }
 
     try {
-      await User.query().where('id', owner_id).firstOrFail()
-      const { user } = await UserService.createUser({
-        email,
-        role:ROLE_HOUSEHOLD,
-        password,
-        owner_id: owner_id,
-        status: STATUS_EMAIL_VERIFY,
-      })
-      
-      //TODO: Send verification code via SMS
+      const user = await UserService.signUpHouseHold( owner_id, email, password, phone )
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
