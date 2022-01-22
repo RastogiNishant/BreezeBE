@@ -43,6 +43,7 @@ Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousehold,jwtPropertyManager',
 ])
 Route.post('/api/v1/hoseholdSignup', 'AccountController.householdSignup').middleware(['guest', 'valid:HoseholdSignUp'])
+
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
     'guest',
