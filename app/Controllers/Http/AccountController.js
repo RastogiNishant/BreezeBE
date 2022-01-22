@@ -80,9 +80,12 @@ class AccountController {
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException('User already exists', 400)
       }
-
       throw e
     }
+  }
+
+  async checkSignUpConfirm({}){
+    
   }
 
   /**
