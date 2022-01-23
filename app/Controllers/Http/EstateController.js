@@ -260,7 +260,7 @@ class EstateController {
    */
   async getEstatesQuickLinks({ request, auth, response }) {
     const { filter } = request.all()
-    const currentDay = moment().startOf('day');
+    const currentDay = moment().startOf('day')
     const userId = auth.user.id
     const finalMatches = [MATCH_STATUS_FINISH]
     let estates = {}
@@ -271,7 +271,7 @@ class EstateController {
         .where('to_date', '<', currentDay.format(DAY_FORMAT))
         .orderBy('id')
         .fetch()
-    }else if (filter == 2) {
+    } else if (filter == 2) {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -281,7 +281,7 @@ class EstateController {
         })
         .orderBy('id')
         .fetch()
-    }else if (filter == 3) {
+    } else if (filter == 3) {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -291,7 +291,7 @@ class EstateController {
         })
         .orderBy('id')
         .fetch()
-    }else if (filter == 4) {
+    } else if (filter == 4) {
       estates = await Estate.query()
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -301,13 +301,12 @@ class EstateController {
         })
         .orderBy('id')
         .fetch()
-    }else if( filter == 5) { // get expired property
-
+    } else if (filter == 5) {
       estates = await Estate.query()
         .where({ user_id: userId })
-        .where('status', STATUS_EXPIRE )        
-        .whereNotNull('available_date' )
-        .where('available_date', '<', currentDay.format(DAY_FORMAT))
+        .whereIn('status', [STATUS_EXPIRE])
+        // .whereNotNull('to_date' )
+        // .where('to_date', '<', currentDay.format(DAY_FORMAT))
         .orderBy('id')
         .fetch()
     }
@@ -436,7 +435,7 @@ class EstateController {
     }
 
     try {
-      await MatchService.addBuddy(estate.id, auth.user.id)
+      await MatchService.addBuddy(estate, auth.user.id)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400, ERROR_BUDDY_EXISTS)

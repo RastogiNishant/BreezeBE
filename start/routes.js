@@ -42,7 +42,10 @@ Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,j
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousehold,jwtPropertyManager',
 ])
-Route.post('/api/v1/hoseholdSignup', 'AccountController.householdSignup').middleware(['guest', 'valid:HoseholdSignUp'])
+Route.post('/api/v1/hoseholdSignup', 'AccountController.householdSignup').middleware([
+  'guest',
+  'valid:HoseholdSignUp',
+])
 
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
@@ -98,6 +101,7 @@ Route.group(() => {
 Route.group(() => {
   Route.put('/', 'TenantController.updateTenant').middleware(['valid:UpdateTenant'])
   Route.post('/activate', 'TenantController.activateTenant')
+  Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
 })
@@ -292,7 +296,9 @@ Route.group(() => {
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt'])
 
-  Route.post('/confirmInvite', 'MemberController.confirmInviteCode').prefix('api/v1/tenant/members').middleware(['valid:InvitationCode'])    
+Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
+  .prefix('api/v1/tenant/members')
+  .middleware(['valid:InvitationCode'])
 // Add income files
 Route.group(() => {
   Route.post('/:income_id/proof', 'MemberController.addMemberIncomeProof').middleware([

@@ -13,6 +13,7 @@ const EstateService = use('App/Services/EstateService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
+const Buddy = use('App/Models/Buddy')
 
 const {
   MATCH_STATUS_NEW,
@@ -46,6 +47,7 @@ const {
   TIMESLOT_STATUS_COME,
   NO_UNPAID_RENTAL,
   STATUS_DRAFT,
+  BUDDY_STATUS_ACCEPTED,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -802,7 +804,32 @@ class MatchService {
   /**
    * If buddy accept invite
    */
-  static async addBuddy(estateId, tenantId) {
+  static async addBuddy(estate, tenantId) {
+    const estateId = estate.id
+    const landlordId = estate.user_id
+    const buddy = await Database.table('buddies')
+      .where('user_id', landlordId)
+      .where('tenant_id', tenantId)
+      .first()
+    const tenant = await Database.table('users').where('id', tenantId).first()
+    if (buddy) {
+      if (buddy.status !== BUDDY_STATUS_ACCEPTED) {
+      }
+      await Database.table('buddies')
+        .update({ status: BUDDY_STATUS_ACCEPTED })
+        .where({ user_id: landlordId, tenant_id: tenantId })
+    } else {
+      const newBuddy = new Buddy()
+      newBuddy.name = tenant.firstname
+      newBuddy.phone = tenant.phone
+      newBuddy.email = tenant.email
+      newBuddy.user_id = landlordId
+      newBuddy.tenant_id = tenantId
+      newBuddy.status = BUDDY_STATUS_ACCEPTED
+      await newBuddy.save()
+      console.log({ newBuddy })
+    }
+
     const match = await Database.table('matches')
       .where({
         user_id: tenantId,
@@ -877,7 +904,7 @@ class MatchService {
       // Buddy show knocked matches with buddy only for active estate
       query
         .clearWhere()
-        .where({ 'estates.status': STATUS_ACTIVE })
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
         .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (like) {
       // All liked estates
