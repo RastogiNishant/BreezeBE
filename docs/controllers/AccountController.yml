@@ -95,7 +95,7 @@ paths:
   /api/v1/signup:
     post:
       tags: [account]
-      description: Signup to the application
+      description: Sign up to the application
       produces: [application/json]
       parameters:
         - name: email
@@ -140,6 +140,77 @@ paths:
         - $ref: '#/definitions/lord_size'
         - $ref: '#/definitions/request_full_profile'
       responses: [200]
+
+  /api/v1/housekeeperSignup:
+    post:
+      tags: [account]
+      description: Sign up as a housekeeper to the application. *****member_id and owner_id come from '/api/v1/confirmsms *****
+                                    
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+        - name: confirmPassword
+          in: formData
+          type: string
+          required: true
+        - name: member_id
+          in: formData
+          type: number
+          required: true
+        - name: owner_id
+          in: formData
+          type: number
+          required: true
+        - name: code
+          in: formData
+          type: string
+          required: true          
+        - name: phone
+          in: formData
+          type: string
+          required: true
+      responses: [200]      
+
+  /api/v1/resendsms:
+    post:
+      tags: [account]
+      description: Resend SMS for confirming Signup
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: phone
+          in: formData
+          type: string
+      responses: [200]      
+
+  /api/v1/confirmsms:
+    post:
+      tags: [account]
+      description: ConfimSMS for housekeeper sign up
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: code
+          in: formData
+          type: string
+          required: true          
+        - name: phone
+          in: formData
+          type: string
+      responses: [200]      
 
   /api/v1/confirm_email:
     get:
