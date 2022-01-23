@@ -29,9 +29,9 @@ const constants = {
   STATUS_DRAFT: 5,
   STATUS_EXPIRE: 6,
 
-  IS_PRIVATE : 1,
-  IS_PUBLIC : 2,
-  
+  IS_PRIVATE: 1,
+  IS_PUBLIC: 2,
+
   ROLE_ADMIN: 2,
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,
@@ -291,7 +291,6 @@ const constants = {
   MATCH_STATUS_COMMIT: 7,
   MATCH_STATUS_FINISH: 8,
 
-
   COMPANY_TYPE_PRIVATE: 'private',
   COMPANY_TYPE_PROPERTY_MANAGER: 'propMan',
   COMPANY_TYPE_PRIVATE_HOUSING: 'prHost',
@@ -425,6 +424,10 @@ const constants = {
 
   // this has to be stored in database later.
   YEARLY_DISCOUNT_RATE: 0.1,
+
+  BUDDY_STATUS_PENDING: 1,
+  BUDDY_STATUS_ACCEPTED: 2,
+  BUDDY_STATUS_REMOVED: 3,
 
   TENANT_MATCH_FIELDS: [
     'id',

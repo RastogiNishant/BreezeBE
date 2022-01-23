@@ -44,9 +44,18 @@ Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
 ])
 
 //Household
-Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware(['guest', 'valid:HoseholdSignUp'])
-Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware(['guest', 'valid:ResendSMS'])
-Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware(['guest', 'valid:ConfirmSMS'])
+Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
+  'guest',
+  'valid:HoseholdSignUp',
+])
+Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
+  'guest',
+  'valid:ResendSMS',
+])
+Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
+  'guest',
+  'valid:ConfirmSMS',
+])
 
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
@@ -102,6 +111,7 @@ Route.group(() => {
 Route.group(() => {
   Route.put('/', 'TenantController.updateTenant').middleware(['valid:UpdateTenant'])
   Route.post('/activate', 'TenantController.activateTenant')
+  Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
 })
@@ -296,7 +306,9 @@ Route.group(() => {
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt'])
 
-  Route.post('/confirmInvite', 'MemberController.confirmInviteCode').prefix('api/v1/tenant/members').middleware(['valid:InvitationCode'])    
+Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
+  .prefix('api/v1/tenant/members')
+  .middleware(['valid:InvitationCode'])
 // Add income files
 Route.group(() => {
   Route.post('/:income_id/proof', 'MemberController.addMemberIncomeProof').middleware([

@@ -13,6 +13,7 @@ const Database = use('Database')
 const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
+const Buddy = use('App/Models/Buddy')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
@@ -34,6 +35,7 @@ const {
   DATE_FORMAT,
   DEFAULT_LANG,
   ROLE_HOUSEHOLD,
+  BUDDY_STATUS_ACCEPTED,
   SMS_VERIFY_PREFIX,
 } = require('../constants')
 
@@ -605,28 +607,30 @@ class UserService {
   static async housekeeperSignup(ownerId, email, password, phone) {
     await User.query().where('id', ownerId).firstOrFail()
 
-    const trx = await Database.beginTransaction()    
-    try{
-      const user = await User.create({
-        email,
-        role: ROLE_HOUSEHOLD,
-        password,
-        owner_id: ownerId,
-        phone: phone,
-        status: STATUS_EMAIL_VERIFY,
-      }, trx)
-  
+    const trx = await Database.beginTransaction()
+    try {
+      const user = await User.create(
+        {
+          email,
+          role: ROLE_HOUSEHOLD,
+          password,
+          owner_id: ownerId,
+          phone: phone,
+          status: STATUS_EMAIL_VERIFY,
+        },
+        trx
+      )
+
       UserService.sendSMS(user.id, phone)
       const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
       console.log('data=', data)
       await trx.commit()
       return user
-    }catch(e){
+    } catch (e) {
       await trx.rollback()
       Logger.error(e)
       return null
     }
-
   }
 
   static async sendSMS(userId, phone) {
@@ -637,41 +641,77 @@ class UserService {
 
   static async confirmSMS(email, phone, code) {
     const user = await User.query()
-      .select('id')    
+      .select('id')
       .where('email', email)
       .where('phone', phone)
       .firstOrFail()
 
-      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+    const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
 
-      if (!data) {
-        throw new HttpException('No code', 400)
-      }
+    if (!data) {
+      throw new HttpException('No code', 400)
+    }
 
-      if (parseInt(data.code) !== parseInt(code)) {
-        await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
-  
-        if (parseInt(data.count) <= 0) {
-          throw new HttpException('Your code invalid any more', 400)
-        }
-  
-        await DataStorage.setItem(
-          user.id,
-          { code: data.code, count: parseInt(data.count) - 1 },
-          SMS_VERIFY_PREFIX,
-          { ttl: 3600 }
-        )
-        throw new HttpException('Not Correct', 400)
-      }
-
-      await User.query()
-      .where({ id: user.id })
-      .update({ 
-        status: STATUS_ACTIVE
-      })
-
+    if (parseInt(data.code) !== parseInt(code)) {
       await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
-      return true      
+
+      if (parseInt(data.count) <= 0) {
+        throw new HttpException('Your code invalid any more', 400)
+      }
+
+      await DataStorage.setItem(
+        user.id,
+        { code: data.code, count: parseInt(data.count) - 1 },
+        SMS_VERIFY_PREFIX,
+        { ttl: 3600 }
+      )
+      throw new HttpException('Not Correct', 400)
+    }
+
+    await User.query().where({ id: user.id }).update({
+      status: STATUS_ACTIVE,
+    })
+
+    await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+    return true
+  }
+
+  static async proceedBuddyInviteLink(uid, tenantId) {
+    const landlord = await Database.table('users')
+      .select('id as landlordId')
+      .where('uid', uid)
+      .first()
+
+    const tenant = await Database.table('users').where('id', tenantId).first()
+
+    if (!tenant || !landlord) {
+      throw new AppException('Wrong invitation link')
+    }
+
+    const { landlordId } = landlord
+
+    const buddy = await Buddy.query()
+      .where('user_id', landlordId)
+      .where('phone', tenant.phone)
+      .where('email', tenant.email)
+      .first()
+    if (buddy) {
+      if (!buddy.name) buddy.name = tenant.firstname
+      if (!buddy.tenant_id) buddy.tenant_id = tenant.tenantId
+      buddy.status = BUDDY_STATUS_ACCEPTED
+      await buddy.save()
+    } else {
+      const newBuddy = new Buddy()
+      newBuddy.name = tenant.firstname
+      newBuddy.phone = tenant.phone
+      newBuddy.email = tenant.email
+      newBuddy.user_id = landlordId
+      newBuddy.tenant_id = tenantId
+      newBuddy.status = BUDDY_STATUS_ACCEPTED
+      await newBuddy.save()
+    }
+
+    return true
   }
 }
 

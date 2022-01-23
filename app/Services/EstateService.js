@@ -225,7 +225,10 @@ class EstateService {
    *
    */
   static async getEstateByHash(hash) {
-    return Estate.query().where('hash', hash).where('status', STATUS_ACTIVE).first()
+    return Estate.query()
+      .where('hash', hash)
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .first()
   }
 
   /**
@@ -641,7 +644,6 @@ class EstateService {
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
-
     return await EstateService.getEstates(params)
       .whereIn('user_id', ids)
       .whereNot('status', STATUS_DELETE)
