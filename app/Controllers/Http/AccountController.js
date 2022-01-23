@@ -5,6 +5,7 @@ const uuid = require('uuid')
 const Promise = require('bluebird')
 
 const User = use('App/Models/User')
+const Member = use('App/Models/Member')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -25,6 +26,7 @@ const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
 const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD } = require('../../constants')
+
 
 class AccountController {
   /**
@@ -60,21 +62,26 @@ class AccountController {
     }
   }
 
-  async householdSignup({ request, response}) {
-    const { email, owner_id, password, confirmPassword, phone } = request.all()
-
-    // Check user not exists
-    const availableUser = await User.query().where('email', email).first()
-    if (availableUser) {
-      throw new HttpException('User already exists, can be switched', 400)
-    }
-
-    if( password !== confirmPassword ) {
-      throw new HttpException('Password not matched', 400)
-    }
+  async housekeeperSignup({ request, response}) {
+    const { email, owner_id, password, code, member_id, confirmPassword, phone } = request.all()
 
     try {
-      const user = await UserService.signUpHouseHold( owner_id, email, password, phone )
+      const member = await Member.query().select('user_id').where('id', member_id).where('code', code).firstOrFail()
+
+      if( owner_id.toString() !== member.user_id.toString() ) {
+        throw new HttpException('Not allowed', 400)
+      }
+      // Check user not exists
+      const availableUser = await User.query().where('email', email).first()
+      if (availableUser) {
+        throw new HttpException('User already exists, can be switched', 400)
+      }
+  
+      if( password !== confirmPassword ) {
+        throw new HttpException('Password not matched', 400)
+      }
+  
+      const user = await UserService.housekeeperSignup( member.user_id, email, password, phone )
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -84,8 +91,31 @@ class AccountController {
     }
   }
 
-  async checkSignUpConfirm({}){
-    
+  async resendUserConfirmBySMS({ request, response }) {
+    const { email, phone } = request.all()
+
+    try{
+      const availableUser = await User.query().select('id').where('email', email).first()
+      if (!availableUser) {
+        throw new HttpException('Your email doesn\'t exist', 400)
+      }
+  
+      await UserService.sendSMS(availableUser.id, phone )
+      return response.res(true)
+    }catch(e){
+      throw new HttpException(e.message, 400)
+    }
+
+  }
+
+  async checkSignUpConfirmBySMS({request, response}){
+    const {email, phone, code } = request.all()
+    try{
+      await UserService.confirmSMS(email, phone, code)
+      return response.res(true)
+    }catch(e){
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

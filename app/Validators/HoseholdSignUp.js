@@ -13,6 +13,8 @@ class HoseholdSignUp extends Base {
       password: yup.string().trim().min(6).max(36).required(),
       confirmPassword: yup.string().trim().min(6).max(36).required(),
       owner_id:id.required(),
+      member_id:id.required(),
+      code:yup.string().min(3).max(10).required(),
       phone: phoneSchema.required(),
     })
 }

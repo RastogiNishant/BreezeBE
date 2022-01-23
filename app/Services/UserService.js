@@ -1,6 +1,6 @@
 'use strict'
 
-const {FirebaseDynamicLinks} = use('firebase-dynamic-links');
+const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
@@ -17,6 +17,7 @@ const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
+const Logger = use('Logger')
 
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
@@ -33,6 +34,7 @@ const {
   DATE_FORMAT,
   DEFAULT_LANG,
   ROLE_HOUSEHOLD,
+  SMS_VERIFY_PREFIX,
 } = require('../constants')
 
 class UserService {
@@ -140,7 +142,7 @@ class UserService {
     let user = null
     try {
       user = await User.findByOrFail({ email })
-      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY);
+      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
@@ -153,14 +155,15 @@ class UserService {
             iosBundleId: process.env.IOS_BUNDLE_ID,
           },
         },
-      });
+      })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
       await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
-
-  
     } catch (error) {
-      throw new HttpException( error.error?error.error.message:error.message, error.error?error.error.code:400)
+      throw new HttpException(
+        error.error ? error.error.message : error.message,
+        error.error ? error.error.code : 400
+      )
     }
   }
 
@@ -358,59 +361,66 @@ class UserService {
       }
 
       /** Updated by Yong */
-      const tenant =  await tenantQuery.first()
-      if(!tenant) {
-        return userData  
+      const tenant = await tenantQuery.first()
+      if (!tenant) {
+        return userData
       }
 
       let extraFields = Tenant.columns
-      if( !tenant.personal_shown ) {
-        extraFields = Object.values(omit( extraFields, ['unpaid_rental','insolvency_proceed','arrest_warranty','clean_procedure']) )
+      if (!tenant.personal_shown) {
+        extraFields = Object.values(
+          omit(extraFields, [
+            'unpaid_rental',
+            'insolvency_proceed',
+            'arrest_warranty',
+            'clean_procedure',
+          ])
+        )
       }
 
-      if( !tenant.income_shown ){
-        extraFields = Object.values(omit( extraFields, ['income']))
+      if (!tenant.income_shown) {
+        extraFields = Object.values(omit(extraFields, ['income']))
       }
 
-      if( !tenant.residency_shown){
-        extraFields = Object.values(omit( extraFields, ['address','coord']))
+      if (!tenant.residency_shown) {
+        extraFields = Object.values(omit(extraFields, ['address', 'coord']))
       }
 
-      if( !tenant.creditscore_shown){
-        extraFields = Object.values(omit( extraFields, ['credit_score']))
-      }      
-
-      if( !tenant.solvency_shown){
-        extraFields = Object.values(omit( extraFields, ['income_seizure']))
+      if (!tenant.creditscore_shown) {
+        extraFields = Object.values(omit(extraFields, ['credit_score']))
       }
-      
+
+      if (!tenant.solvency_shown) {
+        extraFields = Object.values(omit(extraFields, ['income_seizure']))
+      }
+
       /** End by Yong*/
-      userData.tenant = tenant.toJSON({isShort:true, extraFields: extraFields })
+      userData.tenant = tenant.toJSON({ isShort: true, extraFields: extraFields })
 
-
-      if( !tenant.income_shown ){
-        const members = userData.tenant.members && userData.tenant.members.map( m => {
-          if( !tenant.income_shown ){
-            delete m.incomes
-          }
-          if( !tenant.residency_shown){
-            delete m.last_address
-          }
-          if( !tenant.creditscore_shown){
-            delete m.credit_score
-          }
-          if( !tenant.solvency_shown){
-            delete m.income_seizure
-          }
-
-        })
+      if (!tenant.income_shown) {
+        const members =
+          userData.tenant.members &&
+          userData.tenant.members.map((m) => {
+            if (!tenant.income_shown) {
+              delete m.incomes
+            }
+            if (!tenant.residency_shown) {
+              delete m.last_address
+            }
+            if (!tenant.creditscore_shown) {
+              delete m.credit_score
+            }
+            if (!tenant.solvency_shown) {
+              delete m.income_seizure
+            }
+          })
         userData = {
           members,
-          ...userData
+          ...userData,
         }
       }
 
-      if( !tenant.profile_shown || !tenant.personal_shown){
+      if (!tenant.profile_shown || !tenant.personal_shown) {
         delete userData.tenant.members
       }
     }
@@ -580,41 +590,88 @@ class UserService {
       })
   }
 
-  static async getByIdWithRole( ids, role ) {
-    return await User.query()
-      .whereIn('id', ids )
-      .where({ role: role })
-      .pluck('id')
+  static async getByIdWithRole(ids, role) {
+    return await User.query().whereIn('id', ids).where({ role: role }).pluck('id')
   }
 
-  static async getByEmailWithRole( emails, role ) {
+  static async getByEmailWithRole(emails, role) {
     return await User.query()
       .select(['id', 'email'])
-      .whereIn('email', emails )
+      .whereIn('email', emails)
       .where({ role: role })
       .fetch()
   }
 
-  static async signUpHouseHold( ownerId, email, password, phone ) {
+  static async housekeeperSignup(ownerId, email, password, phone) {
     await User.query().where('id', ownerId).firstOrFail()
-   
+
+    const trx = await Database.beginTransaction()    
+    try{
+      const user = await User.create({
+        email,
+        role: ROLE_HOUSEHOLD,
+        password,
+        owner_id: ownerId,
+        phone: phone,
+        status: STATUS_EMAIL_VERIFY,
+      }, trx)
+  
+      UserService.sendSMS(user.id, phone)
+      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+      console.log('data=', data)
+      await trx.commit()
+      return user
+    }catch(e){
+      await trx.rollback()
+      Logger.error(e)
+      return null
+    }
+
+  }
+
+  static async sendSMS(userId, phone) {
     const code = random.int(1000, 9999)
+    await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
+    await SMSService.send(phone, code)
+  }
 
-    const user = await UserService.createUser({
-      email,
-      role:ROLE_HOUSEHOLD,
-      password,
-      owner_id: ownerId,
-      phone:phone,
-      status: STATUS_EMAIL_VERIFY,
-    })
+  static async confirmSMS(email, phone, code) {
+    const user = await User.query()
+      .select('id')    
+      .where('email', email)
+      .where('phone', phone)
+      .firstOrFail()
 
-    await DataStorage.setItem(code, { userId: user.id }, 'confirm_household_account', { ttl: 3600 })    
+      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
 
-    //TODO: Send verification code via SMS
+      if (!data) {
+        throw new HttpException('No code', 400)
+      }
 
-    await SMSService.send( phone, code ) 
-    return user      
+      if (parseInt(data.code) !== parseInt(code)) {
+        await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+  
+        if (parseInt(data.count) <= 0) {
+          throw new HttpException('Your code invalid any more', 400)
+        }
+  
+        await DataStorage.setItem(
+          user.id,
+          { code: data.code, count: parseInt(data.count) - 1 },
+          SMS_VERIFY_PREFIX,
+          { ttl: 3600 }
+        )
+        throw new HttpException('Not Correct', 400)
+      }
+
+      await User.query()
+      .where({ id: user.id })
+      .update({ 
+        status: STATUS_ACTIVE
+      })
+
+      await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+      return true      
   }
 }
 

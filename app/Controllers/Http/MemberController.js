@@ -229,11 +229,10 @@ class MemberController {
     
   }
 
-  async confirmInviteCode( {request, auth, response} ) {
+  async confirmInviteCode( {request, response} ) {
     const {code} = request.all();
     try{
-      const member = await MemberService.getInvitationCode(code)
-      response.res(member)
+      response.res(await MemberService.getInvitationCode(code))
     }catch(e){
       throw new HttpException(e.message, 400)
     }

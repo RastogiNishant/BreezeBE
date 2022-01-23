@@ -1,11 +1,14 @@
 const Database = use('Database')
 const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
+const User = use('App/Models/User')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 const { getHash } = require('../Libs/utils.js')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
+const MailService = use('App/Services/MailService')
+
 const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
@@ -144,19 +147,43 @@ class MemberService {
   }
 
   static async sendInvitationCode(id, userId) {
-    await Member.findByOrFail({ id:id, user_id:userId })
-    const code = getHash(3)
-    await Member.query()
-    .where({ id: id })
-    .update({
-      code: code,
-      published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-    })
-    return code;
+
+    const trx = await Database.beginTransaction()    
+    try{
+      await Member.findByOrFail({ id:id, user_id:userId })
+
+      const code = getHash(3)
+      const user = await User.query().select('email').where('id', userId).firstOrFail()
+      if( user && user.email ){
+        await Member.query()
+        .where({ id: id })
+        .update({
+          code: code,
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        }, trx)
+   
+  
+        await MailService.sendcodeForMemberInvitation(user.email, code)    
+        trx.commit()
+        return true        
+      }        
+      return false
+
+    }catch(e){
+      await trx.rollback()
+      return false
+    }   
   }
 
   static async getInvitationCode(code) {
-    return await Member.query().select('id').where('code', code).firstOrFail()
+    const member = await Member.query().select(['id', 'user_id']).where('code', code).firstOrFail()
+    await Member.query()
+        .where({ id: member.id, user_id:member.user_id })
+        .update({
+          is_verified: true,
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        })
+    return member
   }
 }
 
