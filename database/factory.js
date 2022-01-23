@@ -180,11 +180,12 @@ Factory.blueprint('App/Models/Member', async (faker, i, { user_id, child, doc })
     rent_arrears_doc: doc,
     credit_score: faker.integer({ min: 60, max: 98 }),
     debt_proof: doc,
-    unpaid_rental: faker.pickone([false, false, true]),
-    insolvency_proceed: faker.pickone([false, false, true]),
-    arrest_warranty: faker.pickone([false, false, true]),
-    clean_procedure: faker.pickone([false, false, true]),
-    income_seizure: faker.pickone([false, false, true]),
+    unpaid_rental: faker.pickone([1, 2, 3, 1, 2, 1]),
+    insolvency_proceed: faker.pickone([1, 2, 3, 1, 2, 1]),
+    arrest_warranty: faker.pickone([1, 2, 3, 1, 2, 1]),
+    clean_procedure: faker.pickone([1, 2, 3, 1, 2, 1]),
+    income_seizure: faker.pickone([1, 2, 3, 1, 2, 1]),
+
     execution: faker.pickone([false, false, true]),
   }
 })

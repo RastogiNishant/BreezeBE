@@ -3531,6 +3531,15 @@
     "prospect.notification.event.new_invite": {
       "message": "New Invite"
     },
+    "prospect.notification.event.new_knock": {
+      "message": "New Invite"
+    },
+    "notification.event.visit_delay": {
+      "message": "Visit Delay"
+    },    
+    "prospect.notification.event.cancel_visit" : {
+      "message": "Not coming"
+    },    
     "prospect.notification.event.new_match": {
       "message": "New Match"
     },
@@ -3617,6 +3626,18 @@
     },
     "prospect.notification.next.new_invite": {
       "message": "Choose your time slot"
+    },
+    "prospect.notification.next.new_knock": {
+      "message": "There is a new knock on your property"
+    },
+    "notification.next.visit_delay": {
+      "message": "delay {^min} mins"
+    },    
+    "prospect.notification.next.new_visit_time": {
+      "message": "New Visit"
+    },
+    "prospect.notification.next.cancel_visit" : {
+      "message": "Not coming"
     },
     "prospect.notification.next.new_match": {
       "message": "You have 5h to knock"
@@ -9050,12 +9071,24 @@
     "prospect.notification.event.new_invite": {
       "message": "Neue Besichtigungseinladung"
     },
+    "notification.next.visit_delay": {
+      "message": "delay {^min} mins"
+    },    
     "prospect.notification.event.new_match": {
       "message": "Neues Match"
     },
     "prospect.notification.event.new_visit_time": {
       "message": "Neue Besuchszeit"
     },
+    "prospect.notification.event.new_knock": {
+      "message": "New Knock"
+    },
+    "prospect.notification.event.cancel_visit" : {
+      "message": "Not coming"
+    },
+    "notification.event.visit_delay" : {
+      "message": "Visit delay"
+    },    
     "prospect.notification.event.no_activity": {
       "message": "Lass dich neue Zuhause finden"
     },
@@ -9136,6 +9169,15 @@
     },
     "prospect.notification.next.new_invite": {
       "message": "Wähle dein Zeitfenster"
+    },
+    "prospect.notification.next.new_knock": {
+      "message": "There is a new knock on your property"
+    },
+    "prospect.notification.next.new_visit_time": {
+      "message": "New Visit"
+    },
+    "prospect.notification.next.cancel_visit" : {
+      "message": "Not coming"
     },
     "prospect.notification.next.new_match": {
       "message": "Du hast 5h Zeit zu klopfen"

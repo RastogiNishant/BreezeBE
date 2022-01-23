@@ -77,7 +77,7 @@ npm-client-install:
 
 
 restart-pm2-prod:
-		echo "==== Running: pm2 restart ecosystem.config.js --env staging ===="
+		echo "==== Running: pm2 restart ecosystem.config.js --env prod ===="
 		if test -f ecosystem.config.js; then\
 			pm2 restart ecosystem.config.js --only breeze-prod --env production;\
         else \

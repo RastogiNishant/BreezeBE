@@ -16,6 +16,12 @@ class MailService {
     })
   }
 
+  static async sendcodeForMemberInvitation(email, code) {
+    await Mail.send('mail/send-code', { code }, (message) => {
+      message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
+    })
+  }  
+
   static async sendChangeEmailConfirmation(email, code) {
     await Mail.send('mail/confirm-email', { code }, (message) => {
       message.to(email).from(Config.get('mail.mailAccount')).subject('Reset password')

@@ -30,6 +30,9 @@ class Member extends Model {
       'external_duties',
       'duties_amount',
       'execution',
+      'code',
+      'published_at',
+      'is_verified'
     ]
   }
 

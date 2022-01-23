@@ -10,7 +10,7 @@ const l = use('Localize')
 const UserService = use('App/Services/UserService')
 const uTime = require('moment')().format('X')
 
-const { capitalize } = require('../Libs/utils')
+const { capitalize, rc } = require('../Libs/utils')
 
 const {
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
@@ -27,6 +27,9 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT30M,
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_COME,
+  NOTICE_TYPE_PROSPECT_KNOCK,
+  NOTICE_TYPE_CANCEL_VISIT,
+  NOTICE_TYPE_VISIT_DELAY,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -53,6 +56,9 @@ const {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
   NOTICE_TYPE_PROSPECT_COME_ID,
+  NOTICE_TYPE_PROSPECT_KNOCK_ID,
+  NOTICE_TYPE_VISIT_DELAY_ID,
+  NOTICE_TYPE_CANCEL_VISIT_ID,
 } = require('../constants')
 
 const mapping = [
@@ -75,6 +81,9 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_REJECT_ID, NOTICE_TYPE_PROSPECT_REJECT],
   [NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID, NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE],
   [NOTICE_TYPE_PROSPECT_COME_ID, NOTICE_TYPE_PROSPECT_COME],
+  [NOTICE_TYPE_PROSPECT_KNOCK_ID, NOTICE_TYPE_PROSPECT_KNOCK],
+  [NOTICE_TYPE_CANCEL_VISIT_ID, NOTICE_TYPE_CANCEL_VISIT],
+  [NOTICE_TYPE_VISIT_DELAY_ID, NOTICE_TYPE_VISIT_DELAY],
 ]
 
 class NotificationsService {
@@ -128,7 +137,6 @@ class NotificationsService {
     if (image) {
       options.notification.image = image
     }
-
     return NotificationsService.sendRaw(tokens, options)
   }
 
@@ -264,6 +272,7 @@ class NotificationsService {
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
+
     notes = notes.reduce((n, i) => {
       const token = langTokens.find(({ id, lang, device_token }) => +id === +i.user_id)
       if (!token) {
@@ -271,12 +280,14 @@ class NotificationsService {
       }
       return [...n, { ...i, lang: token.lang, device_token: token.device_token }]
     }, [])
-
     // Group bu uniq params
     const items = groupBy(notes, (i) => {
       return md5(String(i.type + JSON.stringify(i.data) + i.lang).replace(/\s/g, ''))
     })
 
+    if (!items || !Object.values(items).length) {
+      return
+    }
     // Send user notifications
     return P.map(Object.values(items), (v) => {
       const tokens = v.map((i) => i.device_token)
@@ -297,7 +308,7 @@ class NotificationsService {
           image
         )
       } catch (e) {
-        console.log(e)
+        console.log('Notification error', e)
       }
     })
   }
@@ -365,6 +376,85 @@ class NotificationsService {
       )
     })
   }
+
+  /**
+   *
+   */
+  static async sendProspectNewKnock(notice) {
+    const title = 'prospect.notification.event.new_knock'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.new_knock', lang)
+      )
+    })
+  }
+
+  /**
+   *  Notify visit time delayed to landlord or prospect according to user_id
+   */
+  static async sendChangeVisitTime(notice) {
+    const title = 'notification.event.visit_delay'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        rc(l.get('notification.next.visit_delay', lang), [{ '^min': data.delay }])
+      )
+    })
+  }
+
+    /**
+   *  Notify " Are you sure you want to invite this prospect in? " landlord or prospect according to user_id
+   */
+  static async sendInviteIn(notice) {
+    const title = 'notification.event.invite_in'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('notification.event.invite_in', lang)
+      )
+    })
+  }
+
+  /**
+   * Notify to landlord that prospect cancels visit
+   */
+  static async sendProspectCancelVisit(notice) {
+    const title = 'prospect.notification.event.cancel_visit'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.cancel_visit', lang)
+      )
+    })
+  }
+
+  //TODO: change notification text when it's ready
+  static async sendTenantInviteInToVisit(notice) {
+    const title = 'prospect.notification.event.cancel_visit'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.cancel_visit', lang)
+      )
+    })
+  }
+
+  //  static async sendProspectNewVisit(notice) {
+  //   const title = 'prospect.notification.event.new_visit_time'
+  //   return NotificationsService.sendNotes(notice, title, (data, lang) => {
+  //     return (
+  //       capitalize(data.estate_address) +
+  //       ' \n' +
+  //       l.get('prospect.notification.next.new_visit_time', lang)
+  //     )
+  //   })
+  // }
 
   /**
    *

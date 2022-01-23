@@ -5,19 +5,33 @@ const uuid = require('uuid')
 const Promise = require('bluebird')
 
 const User = use('App/Models/User')
+const Member = use('App/Models/Member')
 const Hash = use('Hash')
 const Drive = use('Drive')
+
 const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
 const ImageService = use('App/Services/ImageService')
+const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
+const { assign } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN } = require('../../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  STATUS_EMAIL_VERIFY,
+  ROLE_ADMIN,
+  PREMIUM_MEMBER,
+  YEARLY_DISCOUNT_RATE,
+  ROLE_PROPERTY_MANAGER,
+  ROLE_HOUSEHOLD,
+} = require('../../constants')
 
 class AccountController {
   /**
@@ -25,7 +39,7 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, firstname, ...userData } = request.all()
-    if (![ROLE_LANDLORD, ROLE_USER].includes(userData.role)) {
+    if (![ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(userData.role)) {
       throw new HttpException('Invalid user role', 401)
     }
 
@@ -50,6 +64,65 @@ class AccountController {
       }
 
       throw e
+    }
+  }
+
+  async housekeeperSignup({ request, response }) {
+    const { email, owner_id, password, code, member_id, confirmPassword, phone } = request.all()
+
+    try {
+      const member = await Member.query()
+        .select('user_id')
+        .where('id', member_id)
+        .where('code', code)
+        .firstOrFail()
+
+      if (owner_id.toString() !== member.user_id.toString()) {
+        throw new HttpException('Not allowed', 400)
+      }
+      // Check user not exists
+      const availableUser = await User.query().where('email', email).first()
+      if (availableUser) {
+        throw new HttpException('User already exists, can be switched', 400)
+      }
+
+      if (password !== confirmPassword) {
+        throw new HttpException('Password not matched', 400)
+      }
+
+      const user = await UserService.housekeeperSignup(member.user_id, email, password, phone)
+      return response.res(user)
+    } catch (e) {
+      if (e.constraint === 'users_uid_unique') {
+        throw new HttpException('User already exists', 400)
+      }
+      throw e
+    }
+  }
+
+  async resendUserConfirmBySMS({ request, response }) {
+    const { email, phone } = request.all()
+
+    try {
+      const availableUser = await User.query().select('id').where('email', email).first()
+      if (!availableUser) {
+        throw new HttpException("Your email doesn't exist", 400)
+      }
+
+      await UserService.sendSMS(availableUser.id, phone)
+      return response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async checkSignUpConfirmBySMS({ request, response }) {
+    const { email, phone, code } = request.all()
+    try {
+      await UserService.confirmSMS(email, phone, code)
+      return response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -84,11 +157,13 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     let { email, role, password, device_token } = request.all()
+
     // Select role if not set, (allows only for non-admin users)
-    let roles = [ROLE_USER, ROLE_LANDLORD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
     if (role) {
       roles = [role]
     }
+
     const user = await User.query()
       .where('email', email)
       .whereIn('role', roles)
@@ -106,7 +181,6 @@ class AccountController {
     } catch (e) {
       throw new HttpException(e.message, 403)
     }
-
     const uid = User.getHash(email, role)
     let token
     try {
@@ -168,8 +242,14 @@ class AccountController {
   async updateProfile({ request, auth, response }) {
     const data = request.all()
     const user = auth.user
-    await user.updateItem(data)
 
+    auth.user.role === ROLE_USER
+      ? delete data.landlord_visibility
+      : auth.user.role === ROLE_LANDLORD
+      ? delete data.prospect_visibility
+      : data
+
+    await user.updateItem(data)
     return response.res(user)
   }
 
@@ -363,6 +443,46 @@ class AccountController {
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  async updateUserPremiumPlan({ request, auth, response }) {
+    try {
+      const { is_premium, payment_plan, premiums } = request.all()
+      if (is_premium !== 1 && (!premiums || JSON.stringify(premiums).length <= 0)) {
+        throw new AppException('Please select features', 400)
+      }
+
+      let ret = {
+        status: false,
+        data: {},
+      }
+      if (premiums) {
+        assign(ret.data, {
+          premiums: await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id),
+        })
+      }
+
+      await UserService.updatePaymentPlan(auth.user.id, is_premium, payment_plan)
+
+      assign(ret.data, { payment_plan: payment_plan })
+      assign(ret.data, { year_discount_rate: YEARLY_DISCOUNT_RATE })
+
+      ret.status = true
+
+      return response.send(ret)
+    } catch (e) {
+      Logger.error(e)
+      // throw new AppException(e.message, 400)
+    }
+  }
+
+  async getUserPremiumPlans({ request, auth, response }) {
+    try {
+      const userPremiumPlans = await UserPremiumPlanService.getUserPremiumPlans(auth.user.id)
+      return response.send(userPremiumPlans)
+    } catch (e) {
+      Logger.error(e)
     }
   }
 }

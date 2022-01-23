@@ -35,6 +35,12 @@ class User extends Model {
       'request_full_profile',
       'notice',
       'unread_notification_count',
+      'is_premium',
+      'payment_plan',
+      'member_plan_date',
+      'prospect_visibility',
+      'landlord_visibility',
+      'owner_id',
     ]
   }
 

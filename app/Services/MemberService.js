@@ -1,10 +1,13 @@
 const Database = use('Database')
 const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
+const User = use('App/Models/User')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
-
+const { getHash } = require('../Libs/utils.js')
 const { isEmpty } = require('lodash')
+const moment = require('moment')
+const MailService = use('App/Services/MailService')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -35,11 +38,6 @@ class MemberService {
       .select(
         Database.raw(`SUM(CASE WHEN child IS TRUE THEN 1 ELSE 0 END) AS minors_count`),
         Database.raw(`SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) AS members_count`),
-        Database.raw(`bool_and(COALESCE(unpaid_rental, FALSE)) as unpaid_rental`),
-        Database.raw(`bool_and(COALESCE(insolvency_proceed, FALSE)) as insolvency_proceed`),
-        Database.raw(`bool_and(COALESCE(arrest_warranty, FALSE)) as arrest_warranty`),
-        Database.raw(`bool_and(COALESCE(clean_procedure, FALSE)) as clean_procedure`),
-        Database.raw(`bool_and(COALESCE(income_seizure, FALSE)) as income_seizure`),
         Database.raw(
           `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
         ),
@@ -146,6 +144,46 @@ class MemberService {
     `,
       [userId, userId]
     )
+  }
+
+  static async sendInvitationCode(id, userId) {
+
+    const trx = await Database.beginTransaction()    
+    try{
+      await Member.findByOrFail({ id:id, user_id:userId })
+
+      const code = getHash(3)
+      const user = await User.query().select('email').where('id', userId).firstOrFail()
+      if( user && user.email ){
+        await Member.query()
+        .where({ id: id })
+        .update({
+          code: code,
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        }, trx)
+   
+  
+        await MailService.sendcodeForMemberInvitation(user.email, code)    
+        trx.commit()
+        return true        
+      }        
+      return false
+
+    }catch(e){
+      await trx.rollback()
+      return false
+    }   
+  }
+
+  static async getInvitationCode(code) {
+    const member = await Member.query().select(['id', 'user_id']).where('code', code).firstOrFail()
+    await Member.query()
+        .where({ id: member.id, user_id:member.user_id })
+        .update({
+          is_verified: true,
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        })
+    return member
   }
 }
 

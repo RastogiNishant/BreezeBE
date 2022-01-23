@@ -1,8 +1,10 @@
 'use strict'
 
+const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
+
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq } = require('lodash')
+const { get, isArray, isEmpty, uniq, omit } = require('lodash')
 const Promise = require('bluebird')
 
 const Role = use('Role')
@@ -11,11 +13,15 @@ const Database = use('Database')
 const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
+const Buddy = use('App/Models/Buddy')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
+const SMSService = use('App/Services/SMSService')
+const Logger = use('Logger')
 
 const { getHash } = require('../Libs/utils.js')
+const random = require('random')
 
 const {
   STATUS_NEED_VERIFY,
@@ -28,6 +34,9 @@ const {
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
+  ROLE_HOUSEHOLD,
+  BUDDY_STATUS_ACCEPTED,
+  SMS_VERIFY_PREFIX,
 } = require('../constants')
 
 class UserService {
@@ -77,7 +86,6 @@ class UserService {
       google_id,
       status: STATUS_NEED_VERIFY,
     }
-    console.log(userData)
 
     const { user } = await UserService.createUser(userData)
 
@@ -136,11 +144,29 @@ class UserService {
     let user = null
     try {
       user = await User.findByOrFail({ email })
+      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+      const { shortLink } = await firebaseDynamicLinks.createLink({
+        dynamicLinkInfo: {
+          domainUriPrefix: process.env.DOMAIN_PREFIX,
+          link: `${process.env.DEEP_LINK}?type=newpassword&code=${code}`,
+          androidInfo: {
+            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          },
+          iosInfo: {
+            iosBundleId: process.env.IOS_BUNDLE_ID,
+          },
+        },
+      })
+      await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
+
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
     } catch (error) {
-      throw new HttpException('User with this email does not exist', 404)
+      throw new HttpException(
+        error.error ? error.error.message : error.message,
+        error.error ? error.error.code : 400
+      )
     }
-    await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
-    await MailService.sendcodeForgotPasswordMail(user.email, code)
   }
 
   /**
@@ -327,7 +353,7 @@ class UserService {
       throw new AppException('User not exists')
     }
 
-    const userData = user.toJSON({ publicOnly: !user.finish })
+    let userData = user.toJSON({ publicOnly: !user.finish })
     userData.tenant = null
     // Get tenant extend data
     if (user.share || user.finish) {
@@ -335,7 +361,70 @@ class UserService {
       if (user.share) {
         tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
       }
-      userData.tenant = await tenantQuery.first()
+
+      /** Updated by Yong */
+      const tenant = await tenantQuery.first()
+      if (!tenant) {
+        return userData
+      }
+
+      let extraFields = Tenant.columns
+      if (!tenant.personal_shown) {
+        extraFields = Object.values(
+          omit(extraFields, [
+            'unpaid_rental',
+            'insolvency_proceed',
+            'arrest_warranty',
+            'clean_procedure',
+          ])
+        )
+      }
+
+      if (!tenant.income_shown) {
+        extraFields = Object.values(omit(extraFields, ['income']))
+      }
+
+      if (!tenant.residency_shown) {
+        extraFields = Object.values(omit(extraFields, ['address', 'coord']))
+      }
+
+      if (!tenant.creditscore_shown) {
+        extraFields = Object.values(omit(extraFields, ['credit_score']))
+      }
+
+      if (!tenant.solvency_shown) {
+        extraFields = Object.values(omit(extraFields, ['income_seizure']))
+      }
+
+      /** End by Yong*/
+      userData.tenant = tenant.toJSON({ isShort: true, extraFields: extraFields })
+
+      if (!tenant.income_shown) {
+        const members =
+          userData.tenant.members &&
+          userData.tenant.members.map((m) => {
+            if (!tenant.income_shown) {
+              delete m.incomes
+            }
+            if (!tenant.residency_shown) {
+              delete m.last_address
+            }
+            if (!tenant.creditscore_shown) {
+              delete m.credit_score
+            }
+            if (!tenant.solvency_shown) {
+              delete m.income_seizure
+            }
+          })
+        userData = {
+          members,
+          ...userData,
+        }
+      }
+
+      if (!tenant.profile_shown || !tenant.personal_shown) {
+        delete userData.tenant.members
+      }
     }
 
     return userData
@@ -477,6 +566,152 @@ class UserService {
 
   static async resetUnreadNotificationCount(id) {
     return Database.raw('UPDATE users SET unread_notification_count = 0 WHERE id = ?', id)
+  }
+
+  static async updatePaymentPlan(userId, is_premium, payment_plan) {
+    if (is_premium === 1) {
+      //basic member
+      payment_plan = null
+    }
+    return await User.query()
+      .where({ id: userId })
+      .update({
+        is_premium: is_premium,
+        payment_plan: payment_plan,
+        member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      })
+  }
+
+  static async verifyUsers(adminId, userIds, is_verify) {
+    return await User.query()
+      .whereIn('id', userIds)
+      .update({
+        is_verified: is_verify,
+        verified_by: adminId,
+        verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      })
+  }
+
+  static async getByIdWithRole(ids, role) {
+    return await User.query().whereIn('id', ids).where({ role: role }).pluck('id')
+  }
+
+  static async getByEmailWithRole(emails, role) {
+    return await User.query()
+      .select(['id', 'email'])
+      .whereIn('email', emails)
+      .where({ role: role })
+      .fetch()
+  }
+
+  static async housekeeperSignup(ownerId, email, password, phone) {
+    await User.query().where('id', ownerId).firstOrFail()
+
+    const trx = await Database.beginTransaction()
+    try {
+      const user = await User.create(
+        {
+          email,
+          role: ROLE_HOUSEHOLD,
+          password,
+          owner_id: ownerId,
+          phone: phone,
+          status: STATUS_EMAIL_VERIFY,
+        },
+        trx
+      )
+
+      UserService.sendSMS(user.id, phone)
+      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+      console.log('data=', data)
+      await trx.commit()
+      return user
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(e)
+      return null
+    }
+  }
+
+  static async sendSMS(userId, phone) {
+    const code = random.int(1000, 9999)
+    await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
+    await SMSService.send(phone, code)
+  }
+
+  static async confirmSMS(email, phone, code) {
+    const user = await User.query()
+      .select('id')
+      .where('email', email)
+      .where('phone', phone)
+      .firstOrFail()
+
+    const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+
+    if (!data) {
+      throw new HttpException('No code', 400)
+    }
+
+    if (parseInt(data.code) !== parseInt(code)) {
+      await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+
+      if (parseInt(data.count) <= 0) {
+        throw new HttpException('Your code invalid any more', 400)
+      }
+
+      await DataStorage.setItem(
+        user.id,
+        { code: data.code, count: parseInt(data.count) - 1 },
+        SMS_VERIFY_PREFIX,
+        { ttl: 3600 }
+      )
+      throw new HttpException('Not Correct', 400)
+    }
+
+    await User.query().where({ id: user.id }).update({
+      status: STATUS_ACTIVE,
+    })
+
+    await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+    return true
+  }
+
+  static async proceedBuddyInviteLink(uid, tenantId) {
+    const landlord = await Database.table('users')
+      .select('id as landlordId')
+      .where('uid', uid)
+      .first()
+
+    const tenant = await Database.table('users').where('id', tenantId).first()
+
+    if (!tenant || !landlord) {
+      throw new AppException('Wrong invitation link')
+    }
+
+    const { landlordId } = landlord
+
+    const buddy = await Buddy.query()
+      .where('user_id', landlordId)
+      .where('phone', tenant.phone)
+      .where('email', tenant.email)
+      .first()
+    if (buddy) {
+      if (!buddy.name) buddy.name = tenant.firstname
+      if (!buddy.tenant_id) buddy.tenant_id = tenant.tenantId
+      buddy.status = BUDDY_STATUS_ACCEPTED
+      await buddy.save()
+    } else {
+      const newBuddy = new Buddy()
+      newBuddy.name = tenant.firstname
+      newBuddy.phone = tenant.phone
+      newBuddy.email = tenant.email
+      newBuddy.user_id = landlordId
+      newBuddy.tenant_id = tenantId
+      newBuddy.status = BUDDY_STATUS_ACCEPTED
+      await newBuddy.save()
+    }
+
+    return true
   }
 }
 

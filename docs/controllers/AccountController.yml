@@ -42,6 +42,24 @@ definitions:
     in: formData
     type: boolean
 
+  premiums:
+    name: premiums
+    in: formData
+    type: string
+    example: '[1,3,5]: premium ids' 
+  isPremium:
+    name: is_premium
+    in: formData
+    type: number
+    default: 1
+    example: '1: basic, 2:premium'
+  paymentPlan:
+    name: payment_plan
+    in: formData
+    type: number
+    default: 1
+    example: '1: monthly, 2:yearly, only for is_premium=2'
+
 paths:
   /api/v1/login:
     post:
@@ -77,7 +95,7 @@ paths:
   /api/v1/signup:
     post:
       tags: [account]
-      description: Signup to the application
+      description: Sign up to the application
       produces: [application/json]
       parameters:
         - name: email
@@ -122,6 +140,77 @@ paths:
         - $ref: '#/definitions/lord_size'
         - $ref: '#/definitions/request_full_profile'
       responses: [200]
+
+  /api/v1/housekeeperSignup:
+    post:
+      tags: [account]
+      description: Sign up as a housekeeper to the application. *****member_id and owner_id come from '/api/v1/confirmsms *****
+                                    
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+        - name: confirmPassword
+          in: formData
+          type: string
+          required: true
+        - name: member_id
+          in: formData
+          type: number
+          required: true
+        - name: owner_id
+          in: formData
+          type: number
+          required: true
+        - name: code
+          in: formData
+          type: string
+          required: true          
+        - name: phone
+          in: formData
+          type: string
+          required: true
+      responses: [200]      
+
+  /api/v1/resendsms:
+    post:
+      tags: [account]
+      description: Resend SMS for confirming Signup
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: phone
+          in: formData
+          type: string
+      responses: [200]      
+
+  /api/v1/confirmsms:
+    post:
+      tags: [account]
+      description: ConfimSMS for housekeeper sign up
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: code
+          in: formData
+          type: string
+          required: true          
+        - name: phone
+          in: formData
+          type: string
+      responses: [200]      
 
   /api/v1/confirm_email:
     get:
@@ -330,3 +419,22 @@ paths:
         - $ref: '#/definitions/visitEstateId'
         - $ref: '#/definitions/visitUserId'
       responses: [200]
+
+  /api/v1/updateUserPremiumPlan:
+    post:
+      security: [bearerAuth: []]
+      tags: [Update plan]
+      description: Update member's plan 
+      produces: [application/json]
+      parameters:
+        - $ref: '#/definitions/premiums'
+        - $ref: '#/definitions/isPremium'
+        - $ref: '#/definitions/paymentPlan'
+      responses: [200]
+
+    get:
+      security: [bearerAuth: []]
+      tags: [Get plan]
+      description: Get member's plan 
+      produces: [application/json]
+      responses: [200]      

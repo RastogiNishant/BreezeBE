@@ -33,7 +33,7 @@ class Localization {
     // }
 
     try {
-      this._data = await File.readLog('../resources/locales.json')
+      this._data = JSON.parse(await File.readLog('../resources/locales.json'))
     } catch (e) {
       console.log('Cache file not exists')
     }
@@ -57,6 +57,7 @@ class Localization {
    *
    */
   get(key, locale = this.locales[0]) {
+
     return get(this._data, [locale, key, 'message'], key)
   }
 }

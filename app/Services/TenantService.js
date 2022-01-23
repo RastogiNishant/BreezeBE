@@ -33,6 +33,21 @@ const {
   STATUS_DRAFT,
   MATCH_STATUS_NEW,
   ERROR_USER_INCOME_EXPIRE,
+  NO_UNPAID_RENTAL,
+  YES_UNPAID_RENTAL,
+  NO_ANSWER_UNPAID_RENTAL,
+  NO_INSOLVENCY,
+  YES_INSOLVENCY,
+  NO_ANSWER_INSOLVENCY,
+  NO_ARREST_WARRANTY,
+  YES_ARREST_WARRANTY,
+  NO_ANSWER_WARRANTY,
+  NO_CLEAN_PROCEDURE,
+  YES_CLEAN_PROCEDURE,
+  NO_ANSWER_CLEAN_PROCEDURE,
+  NO_INCOME_SEIZURE,
+  YES_INCOME_SEIZURE,
+  NO_ANSWER_INCOME_SEIZURE,
 } = require('../constants')
 
 class TenantService {
@@ -189,12 +204,32 @@ class TenantService {
       secondname: yup.string().required(),
       debt_proof: yup.string().required(),
       birthday: yup.date().required(),
-      unpaid_rental: yup.boolean().required(),
-      insolvency_proceed: yup.boolean().required(),
-      arrest_warranty: yup.boolean().required(),
-      clean_procedure: yup.boolean().required(),
-      income_seizure: yup.boolean().required(),
-      execution: yup.boolean().required(),
+      unpaid_rental: yup
+        .number()
+        .positive()
+        .oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL])
+        .required(),
+      insolvency_proceed: yup
+        .number()
+        .positive()
+        .oneOf([NO_INSOLVENCY, YES_INSOLVENCY, NO_ANSWER_INSOLVENCY])
+        .required(),
+      arrest_warranty: yup
+        .number()
+        .oneOf([NO_ARREST_WARRANTY, YES_ARREST_WARRANTY, NO_ANSWER_WARRANTY])
+        .required(),
+      clean_procedure: yup
+        .number()
+        .oneOf([NO_CLEAN_PROCEDURE, YES_CLEAN_PROCEDURE, NO_ANSWER_CLEAN_PROCEDURE])
+        .required(),
+      income_seizure: yup
+        .number()
+        .oneOf([NO_INCOME_SEIZURE, YES_INCOME_SEIZURE, NO_ANSWER_INCOME_SEIZURE])
+        .required(),
+      execution: yup
+        .number()
+        .oneOf([NO_INCOME_SEIZURE, YES_INCOME_SEIZURE, NO_ANSWER_INCOME_SEIZURE])
+        .required(),
       hiring_date: yup.date().required(),
       income_type: yup
         .string()

@@ -6,11 +6,14 @@ const { props } = require('bluebird')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const User = use('App/Models/User')
+const Visit = use('App/Models/Visit')
+const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
 const EstateService = use('App/Services/EstateService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
+const Buddy = use('App/Models/Buddy')
 
 const {
   MATCH_STATUS_NEW,
@@ -42,7 +45,11 @@ const {
   LANDLORD_TABS_TOP,
   LANDLORD_TABS_COMMIT,
   TIMESLOT_STATUS_COME,
+  NO_UNPAID_RENTAL,
+  STATUS_DRAFT,
+  BUDDY_STATUS_ACCEPTED,
 } = require('../constants')
+const { logger } = require('../../config/app')
 
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
@@ -125,7 +132,7 @@ class MatchService {
     // Get rent arrears score
     const rentArrearsWeight = 1
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
-    if (!estate.rent_arrears || !prospect.unpaid_rental) {
+    if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
     }
@@ -396,12 +403,15 @@ class MatchService {
     if (match) {
       if (match.status === MATCH_STATUS_NEW) {
         // Update match to knock
-        // TODO: send landlord knock notification
+
         await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
           user_id: userId,
           estate_id: estateId,
         })
 
+        // TODO: send landlord knock notification
+
+        NoticeService.knockToLandlord(estateId)
         return true
       }
 
@@ -478,7 +488,7 @@ class MatchService {
   }
 
   /**
-   * Chose available visit timeslot and move to next status
+   * Choose available visit timeslot and move to next status
    */
   static async bookTimeslot(estateId, userId, date) {
     const getMatch = async () => {
@@ -548,6 +558,13 @@ class MatchService {
     }
   }
 
+  static async updateVisitIn(estateId, userId, inviteIn = true) {
+    await Database.table('matches').update({ inviteIn: inviteIn }).where({
+      user_id: userId,
+      estate_id: estateId,
+    })
+  }
+
   static async cancelVisit(estateId, userId) {
     const match = await Database.query()
       .table('matches')
@@ -567,6 +584,45 @@ class MatchService {
     })
 
     await Promise.all([deleteVisit, updateMatch])
+
+    //TODO: notify landlord that prospect cancels visit
+
+    NoticeService.cancelVisit(estateId)
+  }
+
+  /**
+   * cancel visit by landlord
+   */
+  static async cancelVisitByLandlord(estateId, tenantId) {
+    const visit = await Database.table('visits')
+      .where({ estate_id: estateId })
+      .where({ status: MATCH_STATUS_VISIT })
+      .where({ user_id: tenantId })
+      .first()
+
+    if (!visit) {
+      throw new AppException('there is no visit')
+    }
+
+    const deleteVisit = Database.table('visits')
+      .where({ estate_id: estateId })
+      .where({ status: MATCH_STATUS_VISIT })
+      .where({ user_id: tenantId })
+      .delete()
+
+    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
+      user_id: tenantId,
+      estate_id: estateId,
+    })
+
+    await Promise.all([deleteVisit, updateMatch])
+
+    // //TODO: notify landlord that prospect cancels visit
+    NoticeService.cancelVisit(estateId, tenantId)
+  }
+
+  static async inviteTenantInToVisit(estateId, tenantId) {
+    NoticeService.inviteTenantInToVisit(estateId, tenantId)
   }
 
   /**
@@ -614,6 +670,13 @@ class MatchService {
     })
   }
 
+  static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
+    return await Database.table('matches')
+      .whereIn('status', status)
+      .whereIn('estate_id', estatesId)
+      .count('*')
+  }
+
   /**
    *
    */
@@ -625,6 +688,35 @@ class MatchService {
         estate_id: estateId,
       })
       .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+  }
+
+  static async cancelTopByTenant(estateId, tenantId) {
+    const deleteMatch = Database.table('matches')
+      .where({
+        status: MATCH_STATUS_TOP,
+        user_id: tenantId,
+        estate_id: estateId,
+      })
+      .delete()
+
+    const deleteVisit = Database.table('visits')
+      .where({ estate_id: estateId, user_id: tenantId })
+      .delete()
+
+    const checkDislikeExist = async () => {
+      const dislike = await Estate.query()
+        .where('estates.id', estateId)
+        .select('estates.*')
+        .innerJoin({ _l: 'dislikes' }, function () {
+          this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', tenantId)
+        })
+        .first()
+      if (!dislike) {
+        await EstateService.addDislike(tenantId, estateId)
+      }
+    }
+
+    await Promise.all([deleteMatch, deleteVisit, checkDislikeExist()])
   }
 
   /**
@@ -702,7 +794,8 @@ class MatchService {
         status: MATCH_STATUS_COMMIT,
       })
       .update({ status: MATCH_STATUS_FINISH })
-    await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
+
+    //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
 
     // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)
@@ -711,7 +804,32 @@ class MatchService {
   /**
    * If buddy accept invite
    */
-  static async addBuddy(estateId, tenantId) {
+  static async addBuddy(estate, tenantId) {
+    const estateId = estate.id
+    const landlordId = estate.user_id
+    const buddy = await Database.table('buddies')
+      .where('user_id', landlordId)
+      .where('tenant_id', tenantId)
+      .first()
+    const tenant = await Database.table('users').where('id', tenantId).first()
+    if (buddy) {
+      if (buddy.status !== BUDDY_STATUS_ACCEPTED) {
+      }
+      await Database.table('buddies')
+        .update({ status: BUDDY_STATUS_ACCEPTED })
+        .where({ user_id: landlordId, tenant_id: tenantId })
+    } else {
+      const newBuddy = new Buddy()
+      newBuddy.name = tenant.firstname
+      newBuddy.phone = tenant.phone
+      newBuddy.email = tenant.email
+      newBuddy.user_id = landlordId
+      newBuddy.tenant_id = tenantId
+      newBuddy.status = BUDDY_STATUS_ACCEPTED
+      await newBuddy.save()
+      console.log({ newBuddy })
+    }
+
     const match = await Database.table('matches')
       .where({
         user_id: tenantId,
@@ -740,12 +858,34 @@ class MatchService {
     })
   }
 
+  static getTenantTopMatchesByEstate(estateId, tenantId) {
+    console.log({ tenantId })
+    const query = Estate.query().select('estates.*')
+    //   .where('estates.id', estateId)
+    //   .innerJoin({ _m: 'matches' })
+    //   .where('_m.estate_id', 'estates.id')
+    //   .where('_m.user_id', tenantId)
+    //   .where('_m.status', MATCH_STATUS_COMMIT)
+    // return query.fetch()
+  }
+
+  static getCommitsCountByEstateExceptTenant(estateId, tenantId) {
+    const query = Estate.query()
+      .select('estates.*')
+      .where('estates.id', estateId)
+      .innerJoin({ _m: 'matches' })
+      .where('_m.estate_id', 'estates.id')
+      .where('_m.status', MATCH_STATUS_COMMIT)
+      .whereNot('_m.user_id', tenantId)
+    return query.first()
+  }
+
   /**
    *
    */
   static getTenantMatchesWithFilterQuery(
     userId,
-    { buddy, like, dislike, knock, invite, visit, share, top, commit }
+    { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
   ) {
     console.log({ visit })
     const query = Estate.query()
@@ -753,7 +893,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
@@ -765,7 +905,7 @@ class MatchService {
       // Buddy show knocked matches with buddy only for active estate
       query
         .clearWhere()
-        .where({ 'estates.status': STATUS_ACTIVE })
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
         .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (like) {
       // All liked estates
@@ -804,7 +944,7 @@ class MatchService {
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
     } else if (visit) {
-      query.where('_m.status', MATCH_STATUS_VISIT)
+      query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (share) {
       query
         .where({ '_m.share': true })
@@ -826,6 +966,11 @@ class MatchService {
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
         .whereIn('_m.status', [MATCH_STATUS_COMMIT])
+    } else if (final) {
+      query
+        .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
+        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
+        .whereIn('_m.status', [MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')
     }
@@ -833,8 +978,14 @@ class MatchService {
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
     })
+
     query.select(
       'estates.user_id',
+      'estates.street',
+      'estates.city',
+      'estates.zip',
+      'estates.available_date',
+      'estates.status as estate_status',
       '_m.status as status',
       '_m.buddy',
       '_m.share',
@@ -842,7 +993,6 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
-
     return query
   }
 
@@ -854,7 +1004,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
 
     query.innerJoin({ _m: 'matches' }, function () {
       this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
@@ -868,6 +1018,7 @@ class MatchService {
       'estates.street',
       'estates.city',
       'estates.zip',
+      'estates.status as estate_status',
       '_m.status as status',
       '_m.buddy',
       '_m.share',
@@ -882,7 +1033,7 @@ class MatchService {
   static async getMatchesCountsTenant(userId) {
     const estates = await Estate.query()
       .select('status', 'id')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
       .fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     const estateIds = estatesJson.map(function (item) {
@@ -898,8 +1049,8 @@ class MatchService {
       this.getTenantCommitsCount(userId, estateIds),
       this.getTenantTopsCount(userId, estateIds),
       this.getTenantBuddiesCount(userId, estateIds),
+      this.getTenantFinalMatchesCount(userId, estateIds),
     ])
-    console.log({ datas })
     const [{ count: likesCount }] = datas[0]
     const [{ count: dislikesCount }] = datas[1]
     const [{ count: knocksCount }] = datas[2]
@@ -909,6 +1060,7 @@ class MatchService {
     const [{ count: commitsCount }] = datas[6]
     const [{ count: topsCount }] = datas[7]
     const [{ count: buddiesCount }] = datas[8]
+    const [{ count: finalMatchesCount }] = datas[9]
     return {
       like: parseInt(likesCount),
       dislike: parseInt(dislikesCount),
@@ -917,14 +1069,15 @@ class MatchService {
       visit: parseInt(parseInt(invitesCount) + parseInt(visitsCount)),
       commit: parseInt(commitsCount),
       decide: parseInt(commitsCount) + parseInt(topsCount),
-      buddie: parseInt(buddiesCount),
+      buddy: parseInt(buddiesCount),
+      final: parseInt(finalMatchesCount),
     }
   }
 
   static async getMatchesStageCountsTenant(filter, userId) {
     const estates = await Estate.query()
       .select('status', 'id')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
       .fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     const estateIds = estatesJson.map(function (item) {
@@ -959,18 +1112,38 @@ class MatchService {
     }
   }
 
-  static getTenantLikesCount(userId, estateIds) {
-    return Database.table('likes')
-      .where({ user_id: userId })
-      .whereIn('estate_id', estateIds)
-      .count('*')
+  static async getTenantLikesCount(userId) {
+    const estates = await Estate.query()
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .select('estates.*')
+      .innerJoin({ _l: 'likes' }, function () {
+        this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+      })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      })
+      .where(function () {
+        this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+      })
+      .fetch()
+    return [{ count: estates.rows.length }]
   }
 
-  static getTenantDislikesCount(userId, estateIds) {
-    return Database.table('dislikes')
-      .where({ user_id: userId })
-      .whereIn('estate_id', estateIds)
-      .count('*')
+  static async getTenantDislikesCount(userId) {
+    const estates = await Estate.query()
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .select('estates.*')
+      .innerJoin({ _l: 'dislikes' }, function () {
+        this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+      })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      })
+      .where(function () {
+        this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+      })
+      .fetch()
+    return [{ count: estates.rows.length }]
   }
 
   static async getTenantKnocksCount(userId, estateIds) {
@@ -991,7 +1164,8 @@ class MatchService {
 
   static async getTenantVisitsCount(userId, estateIds) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_VISIT })
+      .where({ user_id: userId })
+      .whereIn('status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
       .whereIn('estate_id', estateIds)
       .count('*')
     return data
@@ -1021,6 +1195,14 @@ class MatchService {
     return data
   }
 
+  static async getTenantFinalMatchesCount(userId, estateIds) {
+    const data = await Database.table('matches')
+      .where({ user_id: userId, status: MATCH_STATUS_FINISH })
+      .whereIn('estate_id', estateIds)
+      .count('*')
+    return data
+  }
+
   static async getTenantBuddiesCount(userId, estateIds) {
     const data = await Database.table('matches')
       .where({ user_id: userId, buddy: true })
@@ -1035,7 +1217,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
 
     query.innerJoin({ _m: 'matches' }, function () {
       this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
@@ -1060,6 +1242,7 @@ class MatchService {
       'estates.street',
       'estates.city',
       'estates.zip',
+      'estates.status as estate_status',
       '_m.status as status',
       '_m.buddy',
       '_m.share',
@@ -1078,8 +1261,8 @@ class MatchService {
   static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
     const query = Tenant.query()
       .select('tenants.*')
-      .select('_m.updated_at', '_m.percent as percent', '_m.share')
-      .select('_u.email', '_u.phone')
+      .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
+      .select('_u.email', '_u.phone', '_u.status as u_status')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1183,6 +1366,7 @@ class MatchService {
 
     // Refresh current items order
     // noinspection SqlResolve
+
     const updateQuery = `
       UPDATE matches as _m
         SET ${field} = _t2.item_order
@@ -1354,6 +1538,12 @@ class MatchService {
    */
   static async updateVisitStatus(estateId, userId, data) {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
+    const estate = await EstateService.getActiveById(estateId)
+    if (estate) {
+      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
+    } else {
+      throw new AppException('No estate')
+    }
   }
 
   /**
@@ -1361,11 +1551,26 @@ class MatchService {
    */
   static async updateVisitStatusLandlord(estateId, data) {
     const currentDay = moment().startOf('day')
-    await Database.table('visits')
-      .where({ estate_id: estateId })
-      .where('date', '>', currentDay.format(DATE_FORMAT))
-      .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
-      .update(data)
+    try {
+      const visit = await Visit.query()
+        .where({ estate_id: estateId })
+        .where('date', '>', currentDay.format(DATE_FORMAT))
+        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+        .first()
+
+      await Database.table('visits')
+        .where({ estate_id: estateId })
+        .where('date', '>', currentDay.format(DATE_FORMAT))
+        .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
+        .update(data)
+
+      if (visit) {
+        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
+      }
+    } catch (e) {
+      Logger.error(e)
+      throw new AppException(e)
+    }
   }
 
   /**
