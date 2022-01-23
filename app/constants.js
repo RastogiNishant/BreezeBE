@@ -462,6 +462,10 @@ const constants = {
     'user_id',
     'available_date',
   ],
+
+  SMS_VERIFY_PREFIX:'confirm_household_account',
 }
+
+
 
 module.exports = constants

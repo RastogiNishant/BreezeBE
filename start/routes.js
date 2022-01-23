@@ -42,9 +42,19 @@ Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,j
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousehold,jwtPropertyManager',
 ])
-Route.post('/api/v1/hoseholdSignup', 'AccountController.householdSignup').middleware([
+
+//Household
+Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
   'guest',
   'valid:HoseholdSignUp',
+])
+Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
+  'guest',
+  'valid:ResendSMS',
+])
+Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
+  'guest',
+  'valid:ConfirmSMS',
 ])
 
 Route.group(() => {

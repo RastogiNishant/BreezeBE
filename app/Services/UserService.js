@@ -18,6 +18,7 @@ const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
+const Logger = use('Logger')
 
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
@@ -35,6 +36,7 @@ const {
   DEFAULT_LANG,
   ROLE_HOUSEHOLD,
   BUDDY_STATUS_ACCEPTED,
+  SMS_VERIFY_PREFIX,
 } = require('../constants')
 
 class UserService {
@@ -602,26 +604,76 @@ class UserService {
       .fetch()
   }
 
-  static async signUpHouseHold(ownerId, email, password, phone) {
+  static async housekeeperSignup(ownerId, email, password, phone) {
     await User.query().where('id', ownerId).firstOrFail()
 
-    const code = random.int(1000, 9999)
+    const trx = await Database.beginTransaction()
+    try {
+      const user = await User.create(
+        {
+          email,
+          role: ROLE_HOUSEHOLD,
+          password,
+          owner_id: ownerId,
+          phone: phone,
+          status: STATUS_EMAIL_VERIFY,
+        },
+        trx
+      )
 
-    const user = await UserService.createUser({
-      email,
-      role: ROLE_HOUSEHOLD,
-      password,
-      owner_id: ownerId,
-      phone: phone,
-      status: STATUS_EMAIL_VERIFY,
+      UserService.sendSMS(user.id, phone)
+      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+      console.log('data=', data)
+      await trx.commit()
+      return user
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(e)
+      return null
+    }
+  }
+
+  static async sendSMS(userId, phone) {
+    const code = random.int(1000, 9999)
+    await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
+    await SMSService.send(phone, code)
+  }
+
+  static async confirmSMS(email, phone, code) {
+    const user = await User.query()
+      .select('id')
+      .where('email', email)
+      .where('phone', phone)
+      .firstOrFail()
+
+    const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+
+    if (!data) {
+      throw new HttpException('No code', 400)
+    }
+
+    if (parseInt(data.code) !== parseInt(code)) {
+      await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+
+      if (parseInt(data.count) <= 0) {
+        throw new HttpException('Your code invalid any more', 400)
+      }
+
+      await DataStorage.setItem(
+        user.id,
+        { code: data.code, count: parseInt(data.count) - 1 },
+        SMS_VERIFY_PREFIX,
+        { ttl: 3600 }
+      )
+      throw new HttpException('Not Correct', 400)
+    }
+
+    await User.query().where({ id: user.id }).update({
+      status: STATUS_ACTIVE,
     })
 
-    await DataStorage.setItem(code, { userId: user.id }, 'confirm_household_account', { ttl: 3600 })
-
-    //TODO: Send verification code via SMS
-
-    await SMSService.send(phone, code)
-    return user
+    await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+    return true
   }
 
   static async proceedBuddyInviteLink(uid, tenantId) {

@@ -174,7 +174,10 @@ definitions:
     enum: ['rent_arrears_doc', 'debt_proof']
     type: string
     require: true
-
+  code:
+    name: email
+    in: formData
+    type: string
 # Routes list
 /api/v1/tenant/members:
   get:
@@ -343,4 +346,26 @@ definitions:
     parameters:
       - $ref: '#/definitions/id'
       - $ref: '#/definitions/income_id'
+    responses: [200]
+
+/api/v1/tenant/members/invite/:id:
+  post:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Send invitation code
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'
+
+    responses: [200]
+
+/api/v1/tenant/members/confirmInvite:
+  post:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Confirm invite
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/code'
+
     responses: [200]
