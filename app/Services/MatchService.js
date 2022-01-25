@@ -369,8 +369,14 @@ class MatchService {
   /**
    * Try to knock to estate
    */
-  static async knockEstate(estateId, userId) {
-    const tenant = await Tenant.query().where({ user_id: userId, status: STATUS_ACTIVE }).first()
+  static async knockEstate(estateId, userId, knock_anyway) {
+    const query = Tenant.query().where({ user_id: userId })
+    if (knock_anyway) {
+      query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+    } else {
+      query.where({ status: STATUS_ACTIVE })
+    }
+    const tenant = await query.first()
     if (!tenant) {
       throw new AppException('Invalid user status')
     }
@@ -399,7 +405,6 @@ class MatchService {
       match: getMatches(),
       like: getLikes(),
     })
-
     if (match) {
       if (match.status === MATCH_STATUS_NEW) {
         // Update match to knock
@@ -418,7 +423,7 @@ class MatchService {
       throw new AppException('Invalid match stage')
     }
 
-    if (like) {
+    if (like || knock_anyway) {
       // TODO: send landlord knock notification
       await Database.into('matches').insert({
         status: MATCH_STATUS_KNOCK,
@@ -827,7 +832,6 @@ class MatchService {
       newBuddy.tenant_id = tenantId
       newBuddy.status = BUDDY_STATUS_ACCEPTED
       await newBuddy.save()
-      console.log({ newBuddy })
     }
 
     const match = await Database.table('matches')
@@ -859,7 +863,6 @@ class MatchService {
   }
 
   static getTenantTopMatchesByEstate(estateId, tenantId) {
-    console.log({ tenantId })
     const query = Estate.query().select('estates.*')
     //   .where('estates.id', estateId)
     //   .innerJoin({ _m: 'matches' })

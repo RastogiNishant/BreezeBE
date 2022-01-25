@@ -542,6 +542,14 @@ class EstateService {
         })
     })
 
+    query.whereNotIn('estates.id', function () {
+      // Remove already matched
+      this.select('estate_id')
+        .from('matches')
+        .whereNot('status', MATCH_STATUS_NEW)
+        .where('user_id', userId)
+    })
+
     if (excludeMin && excludeMax) {
       query.whereNotBetween('estates.id', [excludeMin, excludeMax])
     }
@@ -568,7 +576,6 @@ class EstateService {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
-
     if (tenant.isActive()) {
       query = EstateService.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
     } else {

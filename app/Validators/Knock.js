@@ -8,6 +8,7 @@ class Knock extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
+      knock_anyway: yup.boolean().nullable(),
     })
 }
 
