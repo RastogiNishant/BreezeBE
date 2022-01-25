@@ -48,6 +48,7 @@ const {
   STATUS_DRAFT,
 } = require('../constants')
 const { logger } = require('../../config/app')
+const Match = require('../Models/Match')
 
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
@@ -744,6 +745,16 @@ class MatchService {
   /**
    *
    */
+
+  static async getFinalMatch(estateId) {
+    return await Database.table('matches')
+      .where({
+        estate_id: estateId,
+        status: MATCH_STATUS_FINISH
+      })
+      .first()
+  }
+
   static async requestFinalConfirm(estateId, tenantId) {
     const result = await Database.table('matches').update({ status: MATCH_STATUS_COMMIT }).where({
       user_id: tenantId,
@@ -1230,7 +1241,7 @@ class MatchService {
   /**
    * Get tenants matched to current estate
    */
-  static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit }) {
+  static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit, final }) {
     const query = Tenant.query()
       .select('tenants.*')
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
@@ -1259,7 +1270,9 @@ class MatchService {
           { column: '_m.updated_at', order: 'DESC' },
         ])
     } else if (commit) {
-      query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
+      query.whereIn('_m.status', [MATCH_STATUS_COMMIT,MATCH_STATUS_FINISH])
+    } else if(final) {
+      query.whereIn('_m.status', [MATCH_STATUS_FINISH])
     }
 
     query

@@ -347,8 +347,13 @@ class MatchController {
   async requestUserCommit({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
     await this.getOwnEstate(estate_id, auth.user.id)
-    await MatchService.requestFinalConfirm(estate_id, user_id)
 
+    const finalMatch = await MatchService.getFinalMatch(estate_id)
+ console.log('finalMatch', finalMatch )    
+    if( finalMatch ) {
+      throw new HttpException('There is a final match for that property', 400)      
+    }
+    await MatchService.requestFinalConfirm(estate_id, user_id)
     response.res(true)
   }
 
@@ -783,15 +788,24 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const top = data
 
-    const finalMatchesCount = await Database.table('matches')
+    let finalMatchesCount = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
+      .whereIn('status', [MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
+    
+    if( !finalMatchesCount || !finalMatchesCount.length || finalMatchesCount[0].count <= 0 ) {
+      finalMatchesCount = await Database.table('matches')
+      .count('*')
+      .whereIn('status', [MATCH_STATUS_COMMIT])
+      .whereIn('estate_id', estatesId)      
+    }  
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
+
+    const filter = finalMatchesCount && finalMatchesCount.length && finalMatchesCount[0].count > 0 ? {final:true}: {commit:true}
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { commit: true })
+      (filters = filter)
     ).paginate(page, limit)
 
     data = tenants.toJSON({ isShort: true, extraFields })
