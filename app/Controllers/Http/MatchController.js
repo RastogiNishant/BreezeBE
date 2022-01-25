@@ -66,12 +66,12 @@ class MatchController {
    * Knock to estate
    */
   async knockEstate({ request, auth, response }) {
-    const { estate_id } = request.all()
+    const { estate_id, knock_anyway } = request.all()
 
     await this.getActiveEstate(estate_id, false)
 
     try {
-      const result = await MatchService.knockEstate(estate_id, auth.user.id)
+      const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
       return response.res(result)
     } catch (e) {
       Logger.error(e)
