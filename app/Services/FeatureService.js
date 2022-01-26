@@ -7,15 +7,25 @@ class FeatureService {
     if( params.is_basic_plan !== undefined ) {
       query.where('is_basic_plan', params.is_basic_plan)
     }
+
+    if( params.belong_to_basic_plan !== undefined ) {
+      query.where('belong_to_basic_plan', params.belong_to_basic_plan)
+    }    
+
     if( params.is_premium_plan !== undefined ) {
       query.where('is_premium_plan', params.is_premium_plan)
     }
+
+    if( params.belong_to_premium_plan !== undefined ) {
+      query.where('belong_to_premium_plan', params.belong_to_premium_plan)
+    }    
+    
     if( params.status !== undefined ) {
       query.where('status', params.status)
     }else{
       query.where('status', true)
     }
-    const features = (await query.orderBy('id', 'desc').fetch()).rows
+    const features = (await query.orderBy('id', 'asc').fetch()).rows
     return features
   }
 
@@ -41,7 +51,7 @@ class FeatureService {
 
   static async removeFeature(ids) {
     try{
-      await PremiumFeature.query().whereIn('id', JSON.parse(ids)).delete()
+      await PremiumFeature.query().whereIn('id', ids).delete()
       return true
     }catch(e) {
       return e;
