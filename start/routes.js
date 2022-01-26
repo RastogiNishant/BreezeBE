@@ -491,7 +491,7 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
   'valid:DebugNotification',
 ])
 
-Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwt'])
+Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwtLandlord,jwt'])
 
 Route.group(() => {
   Route.post('/', 'AccountController.updateUserPremiumPlan')
