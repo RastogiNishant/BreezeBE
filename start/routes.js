@@ -498,7 +498,7 @@ Route.group(() => {
   Route.get('/', 'AccountController.getUserPremiumPlans')
 })
   .middleware(['auth:jwtLandlord,jwt', 'valid:UserPremiumPlan'])
-  .prefix('api/v1/updateUserPremiumPlan')
+  .prefix('api/v1/userPremiumPlan')
 
 Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([

@@ -9,7 +9,9 @@ class CreateFeature extends Base {
       feature: yup.string(),
       description: yup.string(),
       is_basic_plan: yup.boolean().default(false),
+      belong_to_basic_plan:yup.boolean().default(false),
       is_premium_plan: yup.boolean().default(false),
+      belong_to_premium_plan:yup.boolean().default(false),
       status: yup.boolean().default(true),
       prices:yup.number().positive()
     })

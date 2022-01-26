@@ -420,7 +420,7 @@ paths:
         - $ref: '#/definitions/visitUserId'
       responses: [200]
 
-  /api/v1/updateUserPremiumPlan:
+  /api/v1/userPremiumPlan:
     post:
       security: [bearerAuth: []]
       tags: [Update plan]

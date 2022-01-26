@@ -27,10 +27,18 @@ definitions:
     name: is_basic_plan
     in: path
     type: boolean
+  belongToBasicPlan:
+    name: belong_to_basic_plan
+    in: path
+    type: boolean    
   premiumPlan:
     name: is_premium_plan
     in: path
     type: boolean
+  belongToPremiumPlan:
+    name: belong_to_premium_plan
+    in: path
+    type: boolean        
   status:
     name: status
     in: path
@@ -50,6 +58,8 @@ definitions:
     parameters:
       - $ref: '#/definitions/basicPlan'
       - $ref: '#/definitions/premiumPlan'
+      - $ref: '#/definitions/belongToBasicPlan'
+      - $ref: '#/definitions/belongToPremiumPlan'      
       - $ref: '#/definitions/status'      
     responses: [200]
 
@@ -63,6 +73,8 @@ definitions:
       - $ref: '#/definitions/description'
       - $ref: '#/definitions/basicPlan'
       - $ref: '#/definitions/premiumPlan'
+      - $ref: '#/definitions/belongToBasicPlan'
+      - $ref: '#/definitions/belongToPremiumPlan'      
       - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'            
     responses: [200]
@@ -77,6 +89,8 @@ definitions:
       - $ref: '#/definitions/description'
       - $ref: '#/definitions/basicPlan'
       - $ref: '#/definitions/premiumPlan'
+      - $ref: '#/definitions/belongToBasicPlan'
+      - $ref: '#/definitions/belongToPremiumPlan'      
       - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'             
     produces: [application/json]

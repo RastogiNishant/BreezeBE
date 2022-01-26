@@ -9,7 +9,9 @@ class PremiumFeature extends Model {
       'feature',
       'description',
       'is_basic_plan',
+      'belong_to_basic_plan',
       'is_premium_plan',
+      'belong_to_premium_plan',
       'prices',
       'status'
     ]
