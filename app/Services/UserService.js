@@ -568,18 +568,15 @@ class UserService {
     return Database.raw('UPDATE users SET unread_notification_count = 0 WHERE id = ?', id)
   }
 
-  static async updatePaymentPlan(userId, is_premium, payment_plan) {
-    if (is_premium === 1) {
-      //basic member
-      payment_plan = null
-    }
+  static async updatePaymentPlan(userId, plan_id, payment_plan, trx = null ) {
+    
     return await User.query()
       .where({ id: userId })
       .update({
-        is_premium: is_premium,
+        plan_id: plan_id,
         payment_plan: payment_plan,
         member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-      })
+      }, trx)
   }
 
   static async verifyUsers(adminId, userIds, is_verify) {
