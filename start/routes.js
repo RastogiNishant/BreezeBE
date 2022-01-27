@@ -334,7 +334,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.get('/', 'LandlordController.getLandlords')
+  Route.get('/', 'LandlordController.landlords')
   Route.get('/getLandlords', 'LandlordController.landlords')
   Route.get('/toggle', 'LandlordController.toggleStatus')
   Route.post('/buddies/import', 'BuddyController.importBuddies')
