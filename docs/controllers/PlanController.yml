@@ -1,0 +1,74 @@
+definitions:
+  deleteIds:
+    name: ids
+    description: Selected Plan Ids
+    schema:
+      type: array
+      items:
+        type: string
+    explode: true
+    example: '[1, 2]'
+
+  planId:
+    name: id
+    in: path
+    type: number
+    required: true
+  name:
+    name: name
+    in: path
+    type: string
+    required: true
+  description:
+    name: description
+    in: path
+    type: string
+  prices:
+    name: prices
+    in: path
+    type: number
+
+# Routes list
+/api/v1/plan:
+  get:
+    tags: [Plan]
+    security: [bearerAuth: []]
+    description: Get Plan
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/planId'
+    responses: [200]
+
+  post:
+    tags: [Plan-Admin]
+    security: [bearerAuth: []]
+    description: Admin - Create Plan
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/name'
+      - $ref: '#/definitions/description'
+      - $ref: '#/definitions/prices'
+      - $ref: '#/definitions/status'            
+    responses: [200]
+
+  put:
+    tags: [Plan-Admin]
+    security: [bearerAuth: []]
+    description: Admin - Update Plan
+    parameters:
+      - $ref: '#/definitions/planId'
+      - $ref: '#/definitions/name'
+      - $ref: '#/definitions/description'
+      - $ref: '#/definitions/prices'
+      - $ref: '#/definitions/status'             
+    produces: [application/json]
+    responses: [200]
+
+  delete:
+    tags: [Plan-Admin]
+    security: [bearerAuth: []]
+    description: Admin - Delete Plan
+    parameters:
+      - $ref: '#/definitions/deleteIds'
+    produces: [application/json]
+    responses: [200]
