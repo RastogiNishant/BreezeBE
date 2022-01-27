@@ -82,6 +82,7 @@ const {
   USE_TYPE_CONSTRUCT,
   USE_TYPE_WAZ,
 
+  HEATING_TYPE_NO,
   HEATING_TYPE_OVEN,
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
@@ -206,16 +207,34 @@ class ExcelReader {
       'Parking Space Type',
       'Room 1',
       'Tags 1',
+      'Area 1',
+      'Name 1',
+      'Photos 1',
       'Room 2',
       'Tags 2',
+      'Area 2',
+      'Name 2',
+      'Photos 2',
       'Room 3',
       'Tags 3',
+      'Area 3',
+      'Name 3',
+      'Photos 3',
       'Room 4',
       'Tags 4',
+      'Area 4',
+      'Name 4',      
+      'Photos 4',
       'Room 5',
       'Tags 5',
+      'Area 5',
+      'Name 5',      
+      'Photos 5',
       'Room 6',
       'Tags 6',
+      'Area 6',
+      'Name 6',      
+      'Photos 6',
       'Salary Burden',
       'Rent Arrears',
       'Credit Score',
@@ -315,6 +334,7 @@ class ExcelReader {
         liquid_gas: FIRING_LIQUID_GAS,
       },
       heating_type: {
+        no_heating: HEATING_TYPE_NO,
         oven: HEATING_TYPE_OVEN,
         floor: HEATING_TYPE_FLOOR,
         central: HEATING_TYPE_CENTRAL,
@@ -412,7 +432,7 @@ class ExcelReader {
     const header = get(sheet, `data.${this.headerCol}`) || []
     header.forEach((i) => {
       if (!this.columns.includes(i)) {
-        throw new AppException('Invalid header data')
+        throw new AppException('Invalid header data=' + i )
       }
     })
   }
@@ -460,16 +480,34 @@ class ExcelReader {
       parking_space_type, // 'Parking Space Type',
       room1_type, // 'Room 1',
       room1_tags, // 'Tags 1',
+      room1_area,  // 'Area 1',
+      room1_name,  // 'Name 1',
+      room1_photos, // 'Photo 1',
       room2_type, // 'Room 2',
       room2_tags, // 'Tags 2',
+      room2_area,  // 'Area 2',
+      room2_name,  // 'Name 2',      
+      room2_photos, // 'Photo 2',
       room3_type, // 'Room 3',
       room3_tags, // 'Tags 3',
+      room3_area,  // 'Area 3',
+      room3_name,  // 'Name 3',            
+      room3_photos, // 'Photo 3',
       room4_type, // 'Room 4',
       room4_tags, // 'Tags 4',
+      room4_area,  // 'Area 4',
+      room4_name,  // 'Name 4',      
+      room4_photos, // 'Photo 4',
       room5_type, // 'Room 5',
       room5_tags, // 'Tags 5',
+      room5_area,  // 'Area 5',
+      room5_name,  // 'Name 5',      
+      room5_photos, // 'Photo 5',
       room6_type, // 'Room 6',
       room6_tags, // 'Tags 6',
+      room6_area,  // 'Area 6',
+      room6_name,  // 'Name 6',      
+      room6_photos, // 'Photo 6',
       budget, // 'Salary Burden',
       rent_arrears, // 'Rent Arrears',
       credit_score, // 'Credit Score',
@@ -517,16 +555,34 @@ class ExcelReader {
       parking_space_type,
       room1_type,
       room1_tags,
+      room1_area,
+      room1_name,
+      room1_photos,
       room2_type,
       room2_tags,
+      room2_area,
+      room2_name,
+      room2_photos,
       room3_type,
       room3_tags,
+      room3_area,
+      room3_name,
+      room3_photos,
       room4_type,
       room4_tags,
+      room4_area,
+      room4_name,
+      room4_photos,
       room5_type,
       room5_tags,
+      room5_area,
+      room5_name,
+      room5_photos,
       room6_type,
       room6_tags,
+      room6_area,
+      room6_name,
+      room6_photos,
       budget,
       rent_arrears,
       credit_score,
@@ -552,6 +608,7 @@ class ExcelReader {
     return reduce(
       result,
       (n, v, k) => {
+
         if (v === undefined) {
           // Address should process separately
           if (k === 'address') {
@@ -578,7 +635,7 @@ class ExcelReader {
    */
   async readFile(filePath) {
     const data = xlsx.parse(filePath, { cellDates: true })
-    const sheet = data.find((i) => i.name === 'Import data')
+    const sheet = data.find((i) => i.name === 'data')
     if (!sheet || !sheet.data) {
       throw new AppException('Invalid spreadsheet')
     }
@@ -586,16 +643,23 @@ class ExcelReader {
 
     const errors = []
     const toImport = []
+
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
       if (k <= this.headerCol || isEmpty(sheet.data[k])) {
         continue
       }
+      let itemData = this.mapDataToEntity(sheet.data[k])
 
-      const itemData = this.mapDataToEntity(sheet.data[k])
+      itemData = {
+        ...itemData,
+        credit_score:itemData.credit_score?parseFloat(itemData.credit_score)*100:0,
+        floor:itemData.floor?itemData.floor:0,
+      }
+
       try {
         toImport.push({ line: k, data: await schema.validate(itemData) })
       } catch (e) {
-        errors.push({ line: k, error: e.errors })
+        errors.push({ line: k, error: e.errors, street:itemData?.street, postcode: itemData?.zip })
       }
     }
 

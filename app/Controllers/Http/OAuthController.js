@@ -11,7 +11,7 @@ const UserService = use('App/Services/UserService')
 
 const { getAuthByRole } = require('../../Libs/utils')
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE, STATUS_NEED_VERIFY } = require('../../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE, STATUS_NEED_VERIFY, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER } = require('../../constants')
 
 class OAuthController {
   /**
@@ -35,7 +35,7 @@ class OAuthController {
     const { id, email } = authUser.toJSON({ isOwner: true })
     let user = await User.query()
       .where('email', email)
-      .where('role', ROLE_LANDLORD)
+      .whereIn('role', [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD])
       .whereNot('status', STATUS_DELETE)
       .first()
 
@@ -71,10 +71,10 @@ class OAuthController {
       .where('email', email)
       .whereNot('status', STATUS_DELETE)
       .orderBy('updated_at', 'desc')
-    if ([ROLE_LANDLORD, ROLE_USER].includes(role)) {
+    if ([ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER].includes(role)) {
       query.where('role', role)
     } else {
-      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER])
+      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER])
     }
     const user = await query.first()
     if (!user && !role) {
@@ -103,7 +103,7 @@ class OAuthController {
     const googleId = get(ticket, 'payload.sub')
     let user = await this.authorizeUser(email, role)
 
-    if (!user && [ROLE_LANDLORD, ROLE_USER].includes(role)) {
+    if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD].includes(role)) {
       try {
         user = await UserService.createUserFromOAuth({
           ...ticket.getPayload(),
@@ -140,7 +140,7 @@ class OAuthController {
     }
     let user = await this.authorizeUser(email, role)
 
-    if (!user && [ROLE_LANDLORD, ROLE_USER].includes(role)) {
+    if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
         user = await UserService.createUserFromOAuth({
           email,

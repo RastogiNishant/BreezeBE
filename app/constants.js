@@ -29,9 +29,14 @@ const constants = {
   STATUS_DRAFT: 5,
   STATUS_EXPIRE: 6,
 
+  IS_PRIVATE: 1,
+  IS_PUBLIC: 2,
+
   ROLE_ADMIN: 2,
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,
+  ROLE_PROPERTY_MANAGER: 4,
+  ROLE_HOUSEHOLD: 5,
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
@@ -169,6 +174,7 @@ const constants = {
   FIRING_WOOD: 13,
   FIRING_LIQUID_GAS: 14,
 
+  HEATING_TYPE_NO: 0,
   HEATING_TYPE_OVEN: 1,
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_CENTRAL: 3,
@@ -314,6 +320,7 @@ const constants = {
   LANDLORD_TABS_COMMIT: 'commit',
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+  DAY_FORMAT: 'YYYY-MM-DD',
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -349,6 +356,10 @@ const constants = {
   NOTICE_TYPE_LANDLORD_VISIT90M: 'notification_landlord_visit_90m',
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE: 'notification_prospect_profile_expire',
   NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
+  NOTICE_TYPE_PROSPECT_KNOCK: 'notification_prospect_knock',
+  NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
+  NOTICE_TYPE_PROSPECT_INVITE_IN: 'notification_prospect_invite_in',
+  NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -369,13 +380,92 @@ const constants = {
   NOTICE_TYPE_PROSPECT_REJECT_ID: 22,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID: 23,
   NOTICE_TYPE_PROSPECT_COME_ID: 24,
+  NOTICE_TYPE_PROSPECT_KNOCK_ID: 25,
+  NOTICE_TYPE_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
+  NOTICE_TYPE_VISIT_DELAY_ID: 27, // visit delayed
+  NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID: 26,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
   TIMESLOT_STATUS_CONFIRM: 'confirm',
   TIMESLOT_STATUS_REJECT: 'reject',
   TIMESLOT_STATUS_DELAY: 'delay',
-  TIMESLOT_STATUS_COME: 'come'
+  TIMESLOT_STATUS_COME: 'come',
+
+  NO_UNPAID_RENTAL: 1,
+  YES_UNPAID_RENTAL: 2,
+  NO_ANSWER_UNPAID_RENTAL: 3,
+
+  NO_INSOLVENCY: 1,
+  YES_INSOLVENCY: 2,
+  NO_ANSWER_INSOLVENCY: 3,
+
+  NO_ARREST_WARRANTY: 1,
+  YES_ARREST_WARRANTY: 2,
+  NO_ANSWER_WARRANTY: 3,
+
+  NO_CLEAN_PROCEDURE: 1,
+  YES_CLEAN_PROCEDURE: 2,
+  NO_ANSWER_CLEAN_PROCEDURE: 3,
+
+  NO_INCOME_SEIZURE: 1,
+  YES_INCOME_SEIZURE: 2,
+  NO_ANSWER_INCOME_SEIZURE: 3,
+
+  MONTHLY_PAYMENT: 1,
+  YEARLY_PAYMENT: 2,
+
+  BASIC_MEMBER: 1,
+  PENDING_PREMIUM_MEMBER: 2,
+  PREMIUM_MEMBER: 3,
+
+  PROPERTY_MANAGE_REQUEST: 1,
+  PROPERTY_MANAGE_ALLOWED: 2,
+
+  // this has to be stored in database later.
+  YEARLY_DISCOUNT_RATE: 0.1,
+
+  BUDDY_STATUS_PENDING: 1,
+  BUDDY_STATUS_ACCEPTED: 2,
+  BUDDY_STATUS_REMOVED: 3,
+
+  TENANT_MATCH_FIELDS: [
+    'id',
+    'coord',
+    'net_rent',
+    'area',
+    'cover',
+    'street',
+    'city',
+    'zip',
+    'rooms_number',
+    'floor',
+    'number_floors',
+    'status',
+    'match',
+    'net_rent',
+    'budget',
+    'updated_at',
+    'share',
+    'like',
+    'dislike',
+    'visit_status',
+    'delay',
+    'estate_status',
+    'date',
+    'email',
+    'firstname',
+    'secondname',
+    'phone',
+    'avatar',
+    'address',
+    'user_id',
+    'available_date',
+  ],
+
+  SMS_VERIFY_PREFIX:'confirm_household_account',
 }
+
+
 
 module.exports = constants

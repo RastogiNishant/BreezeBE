@@ -29,8 +29,13 @@ const {
 
   STATUS_DRAFT,
   STATUS_ACTIVE,
-  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_KNOCK,
   MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_COMMIT,
+  TENANT_MATCH_FIELDS,
 } = require('../constants')
 
 class Estate extends Model {
@@ -156,28 +161,7 @@ class Estate extends Model {
   }
 
   static get shortFieldsList() {
-    return [
-      'id',
-      'coord',
-      'net_rent',
-      'area',
-      'cover',
-      'street',
-      'city',
-      'zip',
-      'rooms_number',
-      'status',
-      'match',
-      'net_rent',
-      'budget',
-      'updated_at',
-      'share',
-      'like',
-      'dislike',
-      'visit_status',
-      'delay',
-      'date',
-    ]
+    return TENANT_MATCH_FIELDS
   }
 
   /**
@@ -248,28 +232,47 @@ class Estate extends Model {
    *
    */
   visits() {
-    return this.hasMany('App/Models/Visit')
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_INVITE,
+      MATCH_STATUS_VISIT,
+    ])
   }
 
   /**
    *
    */
-    matches() {
-      return this.hasMany('App/Models/Match')
-    }
+  matches() {
+    return this.hasMany('App/Models/Match')
+  }
 
-   /**
+  /**
    *
    */
-    decided() {
-      return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_COMMIT)
-    }
+  slots() {
+    return this.hasMany('App/Models/TimeSlot')
+  }
+
+  /**
+   *
+   */
+  decided() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_TOP,
+      MATCH_STATUS_COMMIT,
+    ])
+  }
 
   /**
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').where('status', MATCH_STATUS_INVITE)
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_KNOCK })
+  }
+  /**
+   *
+   */
+  inviteBuddies() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
   /**

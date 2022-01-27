@@ -83,7 +83,15 @@ class CompanyController {
    *
    */
   async createContact({ request, auth, response }) {
-    const data = request.all()
+    const data = request.all()    
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
+    const files = await File.saveRequestFiles(request, [
+      { field: 'avatar', mime: imageMimes, isPublic: true },
+    ])
+    if (files.avatar) {
+      data.avatar = files.avatar
+    }
+
     const contacts = await CompanyService.createContact(data, auth.user.id)
 
     return response.res(contacts)

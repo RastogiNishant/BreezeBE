@@ -2,17 +2,17 @@ const Promise = require('bluebird')
 const { has } = require('lodash')
 const moment = require('moment')
 const xlsx = require('node-xlsx')
-const Excel   = require('exceljs')
+const Excel = require('exceljs')
 const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
+const RoomService = use('App/Services/RoomService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const schema = require('../Validators/CreateBuddy').schema()
 
-
-const { STATUS_DRAFT, DATE_FORMAT } = require('../constants')
+const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING } = require('../constants')
 
 /**
  *
@@ -22,12 +22,11 @@ class ImportService {
    *
    */
   static async readFile(filePath) {
-       
     const reader = new ExcelReader()
     return await reader.readFile(filePath)
   }
 
-  static async readBuddyFile(filePath) {     
+  static async readBuddyFile(filePath) {
     const reader = new BuddiesReader()
     return await reader.readFile(filePath)
   }
@@ -42,22 +41,24 @@ class ImportService {
       }
       const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
-        .where('address', data.address.toLowerCase())
+        .where('address', 'LIKE', `%${data.address.toLowerCase()}%`)
         .first()
 
-      if (!existingEstate) {
-        data.avail_duration = 144
-        data.status = STATUS_DRAFT
-        data.available_date = data.available_date || moment().format(DATE_FORMAT)
-
-        const estate = await EstateService.createEstate(data, userId)
-        // Run task to separate get coords and point of estate
-        QueueService.getEstateCoords(estate.id)
-        return estate
+      if (existingEstate) {
+        await EstateService.completeRemoveEstate(existingEstate.id)
       }
-      return existingEstate.updateItem(data)
+
+      data.avail_duration = 144
+      data.status = STATUS_DRAFT
+      data.available_date = data.available_date || moment().format(DATE_FORMAT)
+
+      const estate = await EstateService.createEstate(data, userId)
+      await RoomService.createBulkRooms(estate.id, data)
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estate.id)
+      return estate
     } catch (e) {
-      return { error: [e.message], line }
+      return { error: [e.message], line, address: data.address }
     }
   }
 
@@ -65,16 +66,15 @@ class ImportService {
    *
    */
   static async createSingleBuddy(data, userId) {
-    
     const result = await schema.validate(data)
     const buddy = new Buddy()
     buddy.name = result.name
     buddy.phone = result.phone
     buddy.email = result.email
     buddy.user_id = userId
+    buddy.status = BUDDY_STATUS_PENDING
 
     await buddy.save()
-
   }
 
   /**
@@ -82,9 +82,9 @@ class ImportService {
    */
   static async processBuddies(filePath, userId, type) {
     const { errors, data } = await ImportService.readBuddyFile(filePath)
-    const result = await Promise.map(data, (i) => ImportService.createSingleBuddy(i, userId)) 
+    const result = await Promise.map(data, (i) => ImportService.createSingleBuddy(i, userId))
     return {
-      success: result.length ,
+      success: result.length,
     }
   }
   /**
@@ -92,8 +92,10 @@ class ImportService {
    */
   static async process(filePath, userId, type) {
     const { errors, data } = await ImportService.readFile(filePath)
+
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
+
     const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
 
     return {

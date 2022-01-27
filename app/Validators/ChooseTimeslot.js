@@ -11,7 +11,7 @@ class ChooseTimeslot extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
-      date: yup.date().transform((value, origin) => {
+      date: yup.date().required().transform((value, origin) => {
         return moment.utc(origin, DATE_FORMAT).toDate()
       }),
     })

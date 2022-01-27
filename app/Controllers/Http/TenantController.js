@@ -92,19 +92,30 @@ class TenantController {
 		response.res(true)
 	}
 
-	/**
-	 *
-	 */
-	async getTenantMap({ auth, response }) {
-		const zone = await TenantService.getTenantZone(auth.user.id)
-		response.res(zone)
-	}
+  /**
+   *
+   */
+  async getTenantMap({ auth, response }) {
+    const zone = await TenantService.getTenantZone(auth.user.id)
+    response.res(zone)
+  }
 
-	async getAllTenants({ request, auth, response }) {
-		const { skip = 0, limit = 50 } = request.all()
-		const tenants = await Tenant.query().limit(limit).offset(skip).fetch()
-		response.res(tenants || [])
-	}
+  async getAllTenants({ request, auth, response }) {
+    const { skip = 0, limit = 50 } = request.all()
+    const tenants = await Tenant.query().limit(limit).offset(skip).fetch()
+    response.res(tenants || [])
+  }
+
+  async acceptBuddyInvite({ request, auth, response }) {
+    // represents landlord's uid
+    const { uid } = request.all()
+    const { id } = auth.user
+    try {
+      await UserService.proceedBuddyInviteLink(uid, id)
+    } catch (e) {
+      throw new HttpException(e.message, 400, e.code)
+    }
+  }
 }
 
 module.exports = TenantController

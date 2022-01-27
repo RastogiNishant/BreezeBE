@@ -80,7 +80,11 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query().withCount('visits').withCount('decided').withCount('invite')
+    const query = Estate.query()
+      .withCount('visits')
+      .withCount('decided')
+      .withCount('invite')
+      .withCount('inviteBuddies')
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -92,10 +96,12 @@ class EstateService {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
 
-    if(params.filter) {
-      query
-      .whereHas('matches', (query) => {
-            query.whereIn('status', params.filter)
+    // if(params.filter && params.filter.includes(1)) {
+    //   query.whereHas('inviteBuddies')
+    // }
+    if (params.filter) {
+      query.whereHas('matches', (query) => {
+        query.whereIn('status', params.filter)
       })
     }
 
@@ -105,9 +111,40 @@ class EstateService {
   /**
    *
    */
+  static getUpcomingShows(ids, query = '') {
+    // const timeSlot = TimeSlot.query()
+
+    // if(query.length > 0 ) {
+    //   timeSlot
+    //   .whereHas('user', (estateQuery) => {
+    //               estateQuery.where('address', 'ILIKE', `%${query}%`)
+    //             })
+    // }
+
+    // return timeSlot
+    return EstateService.getEstates()
+      .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
+      .whereIn('user_id', ids)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
+      .whereNot('area', 0)
+      .where(function () {
+        if (query !== '') this.where('address', 'ILIKE', `%${query}%`)
+      })
+      .where('_t.start_at', '>', Database.fn.now())
+      .with('slots')
+      .orderBy('start_at', 'asc')
+  }
+
+  /**
+   *
+   */
   static async removeEstate(id) {
     // TODO: remove indexes
     return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
+  }
+
+  static async completeRemoveEstate(id) {
+    return await Estate.query().where('id', id).delete()
   }
 
   /**
@@ -188,7 +225,10 @@ class EstateService {
    *
    */
   static async getEstateByHash(hash) {
-    return Estate.query().where('hash', hash).where('status', STATUS_ACTIVE).first()
+    return Estate.query()
+      .where('hash', hash)
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .first()
   }
 
   /**
@@ -280,6 +320,16 @@ class EstateService {
     await slot.save()
 
     return slot
+  }
+
+  static getPublishedEstates(userID = null) {
+    if (isEmpty(userID)) {
+      return Estate.query()
+    }
+
+    return Estate.query()
+      .where({ user_id: userID })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
   }
 
   /**
@@ -492,6 +542,14 @@ class EstateService {
         })
     })
 
+    query.whereNotIn('estates.id', function () {
+      // Remove already matched
+      this.select('estate_id')
+        .from('matches')
+        .whereNot('status', MATCH_STATUS_NEW)
+        .where('user_id', userId)
+    })
+
     if (excludeMin && excludeMax) {
       query.whereNotBetween('estates.id', [excludeMin, excludeMax])
     }
@@ -518,7 +576,6 @@ class EstateService {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
-
     if (tenant.isActive()) {
       query = EstateService.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
     } else {
@@ -591,6 +648,14 @@ class EstateService {
     await estate.publishEstate()
     // Run match estate
     Event.fire('match::estate', estate.id)
+  }
+
+  static async getEstatesByUserId(ids, limit, page, params) {
+    return await EstateService.getEstates(params)
+      .whereIn('user_id', ids)
+      .whereNot('status', STATUS_DELETE)
+      .whereNot('area', 0)
+      .paginate(page, limit)
   }
 
   /**

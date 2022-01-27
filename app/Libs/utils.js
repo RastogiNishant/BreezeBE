@@ -1,6 +1,6 @@
 const url = require('url')
 const { isString, get, isEmpty, capitalize } = require('lodash')
-const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN } = require('../constants')
+const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
   const base = url.parse(use('Env').get('APP_URL'))
@@ -63,6 +63,10 @@ const getAuthByRole = (auth, role) => {
       return auth.authenticator('jwtLandlord')
     case ROLE_ADMIN:
       return auth.authenticator('jwtAdmin')
+    case ROLE_PROPERTY_MANAGER:
+      return auth.authenticator('jwtPropertyManager')
+    case ROLE_HOUSEHOLD:
+      return auth.authenticator('jwtHousehold')  
     default:
       throw new Error('Invalid role')
   }
@@ -70,6 +74,12 @@ const getAuthByRole = (auth, role) => {
 
 const capt = (str) => {
   return String(str).split(' ').map(capitalize).join(' ')
+}
+
+const localeTemplateToValue = ( str, values ) => {
+  return str.split(/{(.*?)}/).map(s => {
+    return values.map(k=> s.replace(Object.keys(k),Object.values(k)));
+  }).join('');
 }
 
 module.exports = {
@@ -80,4 +90,5 @@ module.exports = {
   getGeoRange,
   getAuthByRole,
   capitalize: capt,
+  rc:localeTemplateToValue,
 }

@@ -36,6 +36,12 @@ class Tenant extends Model {
       'options',
       'status',
       'rent_start',
+      'personal_shown',
+      'income_shown',
+      'residency_shown',
+      'creditscore_shown',
+      'solvency_shown',
+      'profile_shown'
     ]
   }
 

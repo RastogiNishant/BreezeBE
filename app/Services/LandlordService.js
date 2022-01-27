@@ -16,7 +16,7 @@ class LandlordService {
         '_v.date',
         '_e.address',
         '_v.estate_id',
-        '_v.user_id'
+        '_v.user_id',
       )
       .select(Database.raw("'50'::int AS percent"))
       .select(Database.raw("'10'::int AS slot_length"))

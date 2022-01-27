@@ -10,30 +10,80 @@ const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
-const ImportService = use('App/Services/ImportService')
+//const ImportService = use('App/Services/ImportService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 
 const {
   STATUS_ACTIVE,
+  STATUS_EXPIRE,
   STATUS_DRAFT,
   STATUS_DELETE,
-  STATUS_EXPIRE,
   ERROR_BUDDY_EXISTS,
+  DATE_FORMAT,
+  DAY_FORMAT,
+  MATCH_STATUS_NEW,
+  PROPERTY_MANAGE_ALLOWED,
+  ROLE_PROPERTY_MANAGER,
+  MATCH_STATUS_FINISH,
 } = require('../../constants')
+const EstatePermissionService = require('../../Services/EstatePermissionService')
 
 class EstateController {
+  async createEstateByPM({ request, auth, response }) {
+    const data = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+
+    if (landlordIds.includes(data.landlord_id)) {
+      const estate = await EstateService.createEstate(data, data.landlord_id)
+      // Run processing estate geo nearest
+      QueueService.getEstatePoint(estate.id)
+      response.res(estate)
+    } else {
+      throw new HttpException('Not Allowed', 400)
+    }
+  }
+
   /**
    *
    */
   async createEstate({ request, auth, response }) {
     const data = request.all()
+
     const estate = await EstateService.createEstate(data, auth.user.id)
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
     response.res(estate)
   }
 
+  async updateEstateByPM({ request, auth, response }) {
+    const { id, ...data } = request.all()
+
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+    try {
+      const estate = await Estate.findOrFail(id)
+
+      if (!estate || !landlordIds.includes(estate.user_id)) {
+        throw new HttpException('Not allow', 403)
+      }
+
+      await estate.updateItem(data)
+      Event.fire('estate::update', estate.id)
+
+      // Run processing estate geo nearest
+      QueueService.getEstatePoint(estate.id)
+
+      response.res(estate)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
   /**
    *
    */
@@ -53,25 +103,25 @@ class EstateController {
     response.res(estate)
   }
 
+  async getEstatesByPM({ request, auth, response }) {
+    const { limit, page, ...params } = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    response.res(result)
+  }
   /**
    *
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
 
+    const userIds = [auth.user.id]
+
     // Update expired estates status to unpublished
-    await EstateService.getEstates(params)
-      .where('user_id', auth.user.id)
-      .where('status', STATUS_EXPIRE)
-      .whereNot('status', STATUS_DELETE)
-      .update({ status: STATUS_DRAFT })
-
-    const result = await EstateService.getEstates(params)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .whereNot('area', 0)
-      .paginate(page, limit)
-
+    const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     response.res(result)
   }
 
@@ -98,15 +148,72 @@ class EstateController {
     response.res(estate.toJSON({ isOwner: true }))
   }
 
+  async getEstateByPM({ request, auth, response }) {
+    const { id } = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+    const estate = await EstateService.getQuery()
+      .where('id', id)
+      .whereIn('user_id', landlordIds)
+      .whereNot('status', STATUS_DELETE)
+      .with('point')
+      .with('files')
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
+      })
+      .first()
+
+    if (!estate) {
+      throw new HttpException('Invalid estate', 404)
+    }
+
+    response.res(estate.toJSON({ isOwner: true }))
+  }
+
   /**
    *
    */
-  async importEstate({ request, auth, response }) {
-    const importFilePathName = request.file('file')
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-
-    return response.res(result)
+  async extendEstate({ request, auth, response }) {
+    const { estate_id, avail_duration } = request.all()
+    const available_date = moment().add(avail_duration, 'hours').toDate()
+    console.log('available_date:', available_date)
+    const estate = await EstateService.getQuery()
+      .where('id', estate_id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ available_date: available_date, status: STATUS_ACTIVE })
+    console.log(estate)
+    response.res(estate)
   }
+
+  /**
+   *
+   */
+  async deactivateEstate({ request, auth, response }) {
+    const { estate_id } = request.all()
+    const estate = await EstateService.getQuery()
+      .where('id', estate_id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ status: STATUS_DELETE })
+    response.res(estate)
+  }
+
+  // async importEstate({ request, auth, response }) {
+  //   const importFilePathName = request.file('file')
+
+  //   if( importFilePathName && importFilePathName.tmpPath ){
+  //     if( importFilePathName.headers['content-type'] !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ){
+  //       throw new HttpException('No excel format', 400 );
+  //     }
+  //     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+  //     return response.res(result)
+  //   }else {
+  //     throw new HttpException('There is no excel data to import', 400 );
+  //   }
+  // }
 
   /**
    *
@@ -151,6 +258,64 @@ class EstateController {
   /**
    *
    */
+  async getEstatesQuickLinks({ request, auth, response }) {
+    const { filter } = request.all()
+    const currentDay = moment().startOf('day')
+    const userId = auth.user.id
+    const finalMatches = [MATCH_STATUS_FINISH]
+    let estates = {}
+    if (filter == 1) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .where('to_date', '<', currentDay.format(DAY_FORMAT))
+        .orderBy('id')
+        .fetch()
+    } else if (filter == 2) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('slots')
+        .whereHas('slots', (estateQuery) => {
+          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+        })
+        .orderBy('id')
+        .fetch()
+    } else if (filter == 3) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('matches')
+        .whereHas('matches', (estateQuery) => {
+          estateQuery.whereIn('status', [MATCH_STATUS_NEW]).where('buddy', true)
+        })
+        .orderBy('id')
+        .fetch()
+    } else if (filter == 4) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('matches')
+        .whereHas('matches', (estateQuery) => {
+          estateQuery.whereIn('status', finalMatches)
+        })
+        .orderBy('id')
+        .fetch()
+    } else if (filter == 5) {
+      estates = await Estate.query()
+        .where({ user_id: userId })
+        .whereIn('status', [STATUS_EXPIRE])
+        // .whereNotNull('to_date' )
+        // .where('to_date', '<', currentDay.format(DAY_FORMAT))
+        .orderBy('id')
+        .fetch()
+    }
+
+    response.res(estates)
+  }
+  /**
+   *
+   */
   async removeEstate({ request, auth, response }) {
     const { id } = request.all()
     await Estate.findByOrFail({ id, user_id: auth.user.id })
@@ -164,7 +329,17 @@ class EstateController {
    */
   async addFile({ request, auth, response }) {
     const { estate_id, type } = request.all()
-    const estate = await Estate.findByOrFail({ id: estate_id, user_id: auth.user.id })
+
+    let userIds = [auth.user.id]
+
+    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
+    }
+
+    const estate = await Estate.query()
+      .where('id', estate_id)
+      .whereIn('user_id', userIds)
+      .firstOrFail()
 
     const disk = 's3public'
     const file = request.file('file')
@@ -260,7 +435,7 @@ class EstateController {
     }
 
     try {
-      await MatchService.addBuddy(estate.id, auth.user.id)
+      await MatchService.addBuddy(estate, auth.user.id)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400, ERROR_BUDDY_EXISTS)
@@ -404,8 +579,12 @@ class EstateController {
    *
    */
   async verifyPropertyId({ request, auth, response }) {
-    const { id } = request.all()
-    const estate = await Estate.query().where({ property_id: id }).orderBy('id').fetch()
+    const { property_id, estate_id } = request.all()
+    const estate = await Estate.query()
+      .where({ property_id })
+      .whereNot({ id: estate_id || null })
+      .orderBy('id')
+      .fetch()
     const duplicate = estate.rows.length > 0 ? false : true
     response.res(duplicate)
   }
