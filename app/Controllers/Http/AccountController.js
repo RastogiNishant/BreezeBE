@@ -435,23 +435,22 @@ class AccountController {
   }
 
   async updateUserPremiumPlan({request, auth, response}) {
+
+    const trx = await Database.beginTransaction()    
     try{
-      const {is_premium, payment_plan, premiums} = request.all();
-      if( is_premium !== 1 && (!premiums || JSON.stringify(premiums).length <= 0 ) ){
-        throw new AppException( 'Please select features', 400)  
-      }
+      const {plan_id, payment_plan, receipt} = request.all()
       
       let ret = {
         status: false,
         data:{
+          plan_id: plan_id,
+          payment_plan:payment_plan,
         }
       }
-      if( premiums ) {
-        assign(ret.data, {premiums:await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)} )
-      }
-      
-      await UserService.updatePaymentPlan(auth.user.id, is_premium, payment_plan )
-      
+
+      await UserPremiumPlanService.updateUserPremiumPlans(auth.user.id, plan_id, receipt, trx)
+      await UserService.updatePaymentPlan(auth.user.id, plan_id, payment_plan, trx )
+      trx.commit()
       assign(ret.data, {payment_plan:payment_plan} )
       assign( ret.data,  { year_discount_rate:YEARLY_DISCOUNT_RATE} )
 
@@ -459,6 +458,7 @@ class AccountController {
 
       return response.send(ret)
     }catch(e) {
+      await trx.rollback()      
       Logger.error(e)
       // throw new AppException(e.message, 400)
     }
