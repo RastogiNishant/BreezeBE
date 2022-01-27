@@ -507,7 +507,7 @@ Route.group(() => {
   Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])  
   Route.get('/', 'PlanController.getPlanAll')
 })
-  .prefix('api/v1/admin/plan')
+  .prefix('api/v1/plan')
   .middleware(['auth:jwtLandlord,jwt'])
 
 Route.group(() => {
