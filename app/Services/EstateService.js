@@ -503,6 +503,10 @@ class EstateService {
             this.select('estate_id').from('dislikes').where('user_id', userId)
           })
       })
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
+      })
+      .with('files')
       .orderBy('_m.percent', 'DESC')
   }
 
@@ -557,6 +561,10 @@ class EstateService {
     return (
       query
         .select('estates.*')
+        .with('rooms', function (b) {
+          b.whereNot('status', STATUS_DELETE).with('images')
+        })
+        .with('files')
         .select(Database.raw(`'0' AS match`))
         // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
         .orderBy('estates.id', 'DESC')
