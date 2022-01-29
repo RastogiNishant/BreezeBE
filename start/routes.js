@@ -557,11 +557,11 @@ Route.group(() => {
   ])
 }).prefix('api/v1/estatePermission')
 
-// Estate management
+// Estate management by property manager
 Route.group(() => {
   Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstateByPM').middleware(['valid:CreateEstate,LandlordId'])
-  // Route.post('/import', 'EstateController.importEstate')
+  Route.post('/import', 'EstateController.importEstateByPM')
   // Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
   //   'valid:PropertyId',
   // ])

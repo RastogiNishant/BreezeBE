@@ -1,11 +1,14 @@
+'use strict'
+
 const EstatePermission = use('App/Models/EstatePermission')
 const UserPremiumPlan = use('App/Models/UserPremiumPlan')
 const HttpException = use('App/Exceptions/HttpException')
+const UserService = use('App/Services/UserService')
+
 const Logger = use('Logger')
 const Database = use('Database')
 const { isObject, pick, get } = require('lodash')
 const { PROPERTY_MANAGE_REQUEST, PROPERTY_MANAGE_ALLOWED, ROLE_LANDLORD } = require('../constants')
-const UserService = use('App/Services/UserService')
 
 class EstatePermissionService {
   /**
@@ -144,5 +147,16 @@ class EstatePermissionService {
     return lds
   }
 
+  static async getLandlordHasPermissionByEmail( propertyManagerId, landlord_email ) {
+    const estatePermission = await EstatePermission.query('landlord_id')
+      .innerJoin({ _u: 'users' }, '_u.id', 'estate_permissions.landlord_id')
+      .where('property_manager_id', propertyManagerId)
+      .where('_u.email', landlord_email)
+      .where('estate_permissions.status', PROPERTY_MANAGE_ALLOWED)
+      .first()
+    
+    return estatePermission      
+    return []
+  }
 }
 module.exports = EstatePermissionService
