@@ -4,7 +4,24 @@ const LandlordService = use('App/Services/LandlordService')
 const CompanyService = use('App/Services/CompanyService')
 const User = use('App/Models/User')
 
+
 class LandlordController {
+
+
+  async fetchLandlords( limit, page)
+  {
+    const query = User.query()
+    query.where('role', 1)
+    query.whereNot("email", null);
+    query.whereNot("firstname", null);
+    query.select('id', 'firstname', 'secondname', 'coord', 'email', 'phone', 'approved_landlord')
+    // query.select('firstname', 'approved_landlord')
+    let landlords = await query.orderBy('id', 'desc').paginate(page, limit)
+    const users = landlords.toJSON({ basicFields: true, publicOnly : false })
+    return users
+
+  }
+
   /**
    *
    */
@@ -37,15 +54,8 @@ class LandlordController {
     
     const { limit, page, ...params } = request.all()
     const user = auth.user
-
-    const query = User.query()
-    query.where('role', 1)
-    query.whereNot("email", null);
-    query.whereNot("firstname", null);
-    query.select('firstname', 'secondname', 'coord', 'email', 'phone', 'approved_landlord')
-    let landlords = await query.orderBy('id', 'desc').paginate(page, limit)
-    landlords = landlords.toJSON({ basicFields: true, publicOnly : false })
-    response.res(landlords)
+    const users = await this.fetchLandlords( limit, page);
+    return response.res(users)
   }
 
     /**
@@ -53,7 +63,7 @@ class LandlordController {
    */
   async toggleStatus({ request, response }) {
 
-    const {  ...params } = request.all()
+    const { limit, page, ...params } = request.all()
     const id = params.value;
      
     
@@ -61,14 +71,8 @@ class LandlordController {
     user.approved_landlord = !user.approved_landlord  
 
     await user.save()
-
-    const query = User.query()
-    query.where('role', 1)
-    query.whereNot("email", null);
-    query.whereNot("firstname", null);
-    const landlords = await query.orderBy('id', 'desc').paginate(1, 20)
-     
-    response.res(landlords);
+    const users = await this.fetchLandlords( limit, page);
+    return response.res(users)
   }
 
   /**

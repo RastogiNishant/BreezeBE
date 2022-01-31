@@ -8,11 +8,13 @@ const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
 const RoomService = use('App/Services/RoomService')
+const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const schema = require('../Validators/CreateBuddy').schema()
 
 const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING } = require('../constants')
+const HttpException = use('App/Exceptions/HttpException')
 
 /**
  *
@@ -103,6 +105,50 @@ class ImportService {
       success: result.length - createErrors.length,
     }
   }
+
+  //import estate process by property manager
+  /**
+   * 
+   * @param {*} filePath 
+   * @param {*} userId : property manager Id
+   * @param {*} type 
+   * @returns 
+   */
+
+  static async processByPM(filePath, userId, type) {
+
+    const { errors, data } = await ImportService.readFile(filePath)
+
+    const opt = { concurrency: 0 }
+
+    const result = await Promise.map(data, async (i) => {
+      
+      if( !i || !i.data || !i.data.landlord_email ) {
+        return { error: `Landlord email is not defined`, line:i.line, address: i.data.address, postcode: i?.data.zip }
+
+        return
+      }
+
+      const estatePermission = await EstatePermissionService.getLandlordHasPermissionByEmail(userId, i.data.landlord_email)
+
+      if( !estatePermission || !estatePermission.landlord_id) {
+        return { error: `You don't have permission for that property`, line:i.line, address: i.data.address, postcode: i?.data.zip }
+        return
+      }
+
+      await ImportService.createSingleEstate(i, estatePermission.landlord_id)
+    }, opt)
+
+    const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
+
+    return {
+      errors: [...errors, ...createErrors],
+      success: result.length - createErrors.length,
+    }
+  }
+
 }
+
+
 
 module.exports = ImportService

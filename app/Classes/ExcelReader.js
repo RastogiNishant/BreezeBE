@@ -141,9 +141,11 @@ const {
   KIDS_TO_5,
   KIDS_UP_5,
 } = require('../constants')
+const HttpException = use('App/Exceptions/HttpException')
 
 escapeStr = (v) => {
   return (v || '')
+    .toString()
     .toLowerCase()
     .trim()
     .replace(/[^a-zà-ž\u0370-\u03FF\u0400-\u04FF]/g, '_')
@@ -170,6 +172,7 @@ class ExcelReader {
     this.headerCol = 4
     this.columns = [
       'No.',
+      'Landlord email address',
       'Street',
       'House Number',
       'Extra Address',
@@ -443,6 +446,7 @@ class ExcelReader {
   mapDataToEntity(row) {
     const [
       num, // 'No.',
+      landlord_email, // if property manager helps adding properties on behalf of landlord,
       street, // 'Street',
       house_number, // 'House Number',
       address, // 'Extra Address',
@@ -518,6 +522,7 @@ class ExcelReader {
     ] = row
 
     const result = {
+      landlord_email,
       street,
       house_number,
       zip,
@@ -635,10 +640,14 @@ class ExcelReader {
    */
   async readFile(filePath) {
     const data = xlsx.parse(filePath, { cellDates: true })
+
     const sheet = data.find((i) => i.name === 'data')
+
+
     if (!sheet || !sheet.data) {
       throw new AppException('Invalid spreadsheet')
     }
+
     await this.validateHeader(sheet)
 
     const errors = []
@@ -648,6 +657,14 @@ class ExcelReader {
       if (k <= this.headerCol || isEmpty(sheet.data[k])) {
         continue
       }
+      let itemData = this.mapDataToEntity(sheet.data[k])
+
+      itemData = {
+        ...itemData,
+        credit_score:itemData.credit_score?parseFloat(itemData.credit_score)*100:0,
+        floor:itemData.floor?itemData.floor:0,
+      }
+
       let itemData = this.mapDataToEntity(sheet.data[k])
 
       itemData = {
