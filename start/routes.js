@@ -78,6 +78,13 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
 ])
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
 
+Route.group(() => {
+  Route.get('/', 'AccountController.onboard').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt,jwtLandlord'])
+}).prefix('/api/v1/onboarding')
+
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
   'auth:jwt,jwtLandlord',
 ])
@@ -251,7 +258,7 @@ Route.group(() => {
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
 Route.group(() => {
-  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])  
+  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
   Route.get('/', 'PlanController.getPlanAll')
   Route.post('/', 'PlanController.createPlan').middleware(['valid:CreatePlan'])
   Route.put('/', 'PlanController.updatePlan').middleware(['valid:CreatePlan,Id'])
@@ -504,7 +511,7 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
 Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwtLandlord,jwt'])
 
 Route.group(() => {
-  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])  
+  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
   Route.get('/', 'PlanController.getPlanAll')
 })
   .prefix('api/v1/plan')

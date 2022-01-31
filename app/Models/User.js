@@ -40,7 +40,11 @@ class User extends Model {
       'member_plan_date',
       'prospect_visibility',
       'landlord_visibility',
-      'owner_id'
+      'owner_id',
+      'is_onboarded',
+      'is_profile_onboarded',
+      'is_dashboard_onboarded',
+      'is_selection_onboarded',
     ]
   }
 
