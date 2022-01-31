@@ -27,7 +27,13 @@ const {
   TENANT_MATCH_FIELDS,
   DAY_FORMAT,
   DATE_FORMAT,
+  LOG_TYPE_KNOCKED,
+  LOG_TYPE_VISITED,
+  LOG_TYPE_FINAL_MATCH_REQUEST,
+  LOG_TYPE_FINAL_MATCH_APPROVAL,
+  LOG_TYPE_INVITED,
 } = require('../../constants')
+const { logEvent } = require('../../Services/TrackingService')
 
 class MatchController {
   /**
@@ -72,6 +78,7 @@ class MatchController {
 
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
+      logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id })
       return response.res(result)
     } catch (e) {
       Logger.error(e)
@@ -108,6 +115,7 @@ class MatchController {
 
     try {
       await MatchService.inviteKnockedUser(estate_id, user_id)
+      logEvent(request, LOG_TYPE_INVITED, user_id, { estate_id })
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -269,6 +277,7 @@ class MatchController {
 
     try {
       await MatchService.share(userId, estate_id, code)
+      logEvent(request, LOG_TYPE_VISITED, auth.user.id, { estate_id })
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -349,11 +358,11 @@ class MatchController {
     await this.getOwnEstate(estate_id, auth.user.id)
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
- console.log('finalMatch', finalMatch )    
-    if( finalMatch ) {
-      throw new HttpException('There is a final match for that property', 400)      
+    if (finalMatch) {
+      throw new HttpException('There is a final match for that property', 400)
     }
     await MatchService.requestFinalConfirm(estate_id, user_id)
+    logEvent(request, LOG_TYPE_FINAL_MATCH_REQUEST, user_id, { estate_id })
     response.res(true)
   }
 
@@ -377,6 +386,7 @@ class MatchController {
       contact = contact.toJSON()
       contact.avatar = File.getPublicUrl(contact.avatar)
     }
+    logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id })
     response.res({ estate, contact })
   }
 
@@ -547,7 +557,9 @@ class MatchController {
 
       const currentDay = moment().startOf('day')
 
-      counts.expired = allEstatesJson.filter((e) => moment(e.available_date).isBefore(currentDay)).length
+      counts.expired = allEstatesJson.filter((e) =>
+        moment(e.available_date).isBefore(currentDay)
+      ).length
 
       const showed = await Estate.query()
         .where({ user_id: user.id })
@@ -792,17 +804,20 @@ class MatchController {
       .count('*')
       .whereIn('status', [MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
-    
-    if( !finalMatchesCount || !finalMatchesCount.length || finalMatchesCount[0].count <= 0 ) {
+
+    if (!finalMatchesCount || !finalMatchesCount.length || finalMatchesCount[0].count <= 0) {
       finalMatchesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('status', [MATCH_STATUS_COMMIT])
-      .whereIn('estate_id', estatesId)      
-    }  
+        .count('*')
+        .whereIn('status', [MATCH_STATUS_COMMIT])
+        .whereIn('estate_id', estatesId)
+    }
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
 
-    const filter = finalMatchesCount && finalMatchesCount.length && finalMatchesCount[0].count > 0 ? {final:true}: {commit:true}
+    const filter =
+      finalMatchesCount && finalMatchesCount.length && finalMatchesCount[0].count > 0
+        ? { final: true }
+        : { commit: true }
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
