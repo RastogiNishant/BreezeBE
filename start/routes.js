@@ -79,10 +79,10 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
 
 Route.group(() => {
-  Route.get('/', 'AccountController.onboard').middleware(['auth:jwt'])
-  Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt'])
-  Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt'])
-  Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt'])
+  Route.get('/', 'AccountController.onboard').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt,jwtLandlord'])
 }).prefix('/api/v1/onboarding')
 
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
