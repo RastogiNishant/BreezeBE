@@ -23,10 +23,22 @@ definitions:
     name: description
     in: path
     type: string
-  planId:
-    name: plan_id
+  basicPlan:
+    name: is_basic_plan
     in: path
     type: boolean
+  belongToBasicPlan:
+    name: belong_to_basic_plan
+    in: path
+    type: boolean    
+  premiumPlan:
+    name: is_premium_plan
+    in: path
+    type: boolean
+  belongToPremiumPlan:
+    name: belong_to_premium_plan
+    in: path
+    type: boolean        
   status:
     name: status
     in: path
@@ -44,7 +56,11 @@ definitions:
     description: Get Features
     produces: [application/json]
     parameters:
-      - $ref: '#/definitions/planId'
+      - $ref: '#/definitions/basicPlan'
+      - $ref: '#/definitions/premiumPlan'
+      - $ref: '#/definitions/belongToBasicPlan'
+      - $ref: '#/definitions/belongToPremiumPlan'      
+      - $ref: '#/definitions/status'      
     responses: [200]
 
   post:
@@ -55,7 +71,10 @@ definitions:
     parameters:
       - $ref: '#/definitions/feature'
       - $ref: '#/definitions/description'
-      - $ref: '#/definitions/planId'
+      - $ref: '#/definitions/basicPlan'
+      - $ref: '#/definitions/premiumPlan'
+      - $ref: '#/definitions/belongToBasicPlan'
+      - $ref: '#/definitions/belongToPremiumPlan'      
       - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'            
     responses: [200]
@@ -68,7 +87,10 @@ definitions:
       - $ref: '#/definitions/feature_id'
       - $ref: '#/definitions/feature'
       - $ref: '#/definitions/description'
-      - $ref: '#/definitions/planId'
+      - $ref: '#/definitions/basicPlan'
+      - $ref: '#/definitions/premiumPlan'
+      - $ref: '#/definitions/belongToBasicPlan'
+      - $ref: '#/definitions/belongToPremiumPlan'      
       - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'             
     produces: [application/json]
@@ -81,4 +103,4 @@ definitions:
     parameters:
       - $ref: '#/definitions/deleteIds'
     produces: [application/json]
-    responses: [200]
+    responses: [200]    

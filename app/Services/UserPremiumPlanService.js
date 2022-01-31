@@ -12,17 +12,22 @@ class UserPremiumPlanService {
    * data : JSON Object [{user_id:user_id, premium_id:premium_id}]
    */
 
-  static async updateUserPremiumPlans(userId, plan_id, receipt, trx ) {
+  static async updateUserPremiumPlans(premiums, userId) {
+    if( !premiums ) {
+      throw AppException( 'There is no data' )
+    }
     try{
 
-      // await UserPremiumPlan.query().where('user_id', userId).delete()
-      // const userPremiumPlans = await Promise.all( premiums.map( p => {
-      //   return { user_id: userId, plan_id:p}
-      // }) );
+      if(!isObject(premiums)){
+        premiums = JSON.parse(premiums);
+      }
 
-      // return await UserPremiumPlan.createMany(userPremiumPlans)
+      await UserPremiumPlan.query().where('user_id', userId).delete()
+      const userPremiumPlans = await Promise.all( premiums.map( p => {
+        return { user_id: userId, premium_id:p}
+      }) );
 
-      /** To do: this api needs to be updated later  */
+      return await UserPremiumPlan.createMany(userPremiumPlans)
     }catch(e) {
       Logger.error('updateUserPremiumPlans error', e );
       return false;
@@ -30,9 +35,19 @@ class UserPremiumPlanService {
   }
 
   static async getUserPremiumPlans(userId) {
-    return await UserPremiumPlan.query()
-      .with('plan')
-      .where('user_id', userId)
+    // const query = UserPremiumPlan.query()
+    // const pserPremiumPlans = await query.where('user_id', userId).orderBy('premium_id', 'asc').fetch()
+    // return pserPremiumPlans    
+    return Database
+      .select('pf.*')
+      .select('upp.user_id')
+      .from({ pf: 'premium_features' })
+      // .leftJoin({ upp: 'user_premium_plans' }, 'upp.premium_id', 'pf.id' )
+      .leftJoin({ upp: 'user_premium_plans' }, function () {
+        this.on('upp.premium_id', 'pf.id').onIn('upp.user_id', userId)
+      })
+
+      .orderBy('upp.premium_id', 'asc')
   }
 }
 

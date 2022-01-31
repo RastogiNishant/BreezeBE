@@ -8,14 +8,13 @@ class PremiumFeature extends Model {
       'id',
       'feature',
       'description',
-      'plan_id',
+      'is_basic_plan',
+      'belong_to_basic_plan',
+      'is_premium_plan',
+      'belong_to_premium_plan',
       'prices',
       'status'
     ]
-  }
-
-  plan() {
-    return this.belongsTo('App/Models/Plan', 'plan_id', 'id')
   }
 
   /**

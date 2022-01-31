@@ -251,16 +251,6 @@ Route.group(() => {
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
 Route.group(() => {
-  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])  
-  Route.get('/', 'PlanController.getPlanAll')
-  Route.post('/', 'PlanController.createPlan').middleware(['valid:CreatePlan'])
-  Route.put('/', 'PlanController.updatePlan').middleware(['valid:CreatePlan,Id'])
-  Route.delete('/', 'PlanController.deletePlan').middleware(['valid:Ids'])
-})
-  .prefix('api/v1/admin/plan')
-  .middleware(['auth:jwtAdmin', 'is:admin'])
-
-Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
   Route.post('/', 'Admin/AgreementController.createAgreement').middleware(['valid:CreateAgreement'])
   Route.put('/:id', 'Admin/AgreementController.updateAgreement').middleware([
@@ -504,13 +494,6 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
 Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwtLandlord,jwt'])
 
 Route.group(() => {
-  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])  
-  Route.get('/', 'PlanController.getPlanAll')
-})
-  .prefix('api/v1/plan')
-  .middleware(['auth:jwtLandlord,jwt'])
-
-Route.group(() => {
   Route.post('/', 'AccountController.updateUserPremiumPlan')
   Route.get('/', 'AccountController.getUserPremiumPlans')
 })
@@ -557,11 +540,11 @@ Route.group(() => {
   ])
 }).prefix('api/v1/estatePermission')
 
-// Estate management by property manager
+// Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstateByPM').middleware(['valid:CreateEstate,LandlordId'])
-  Route.post('/import', 'EstateController.importEstateByPM')
+  // Route.post('/import', 'EstateController.importEstate')
   // Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
   //   'valid:PropertyId',
   // ])

@@ -463,33 +463,7 @@ const constants = {
     'available_date',
   ],
 
-  SMS_VERIFY_PREFIX: 'confirm_household_account',
-
-  LOG_TYPE_OPEN_APP: 'open_app',
-  LOG_TYPE_SIGN_UP: 'sign_up',
-  LOG_TYPE_SIGN_IN: 'sign_in',
-  LOG_TYPE_PUBLISHED_PROPERTY: 'published_property',
-  LOG_TYPE_PROPERTIES_IMPORTED: 'properties_imported',
-  LOG_TYPE_INVITED: 'invited',
-  LOG_TYPE_SHOWED: 'showed',
-  LOG_TYPE_FINAL_MATCH_REQUEST: 'final_match_request',
-  LOG_TYPE_FINAL_MATCH_APPROVAL: 'final_match_approval',
-  LOG_TYPE_SIGN_IN_FIRST_TIME: 'sign_in_first_time',
-  LOG_TYPE_OPEN_APP_FIRST_TIME: 'open_app_first_time',
-  LOG_TYPE_SIGN_IN_HIGH_VALUE: 'sign_in_high_value',
-  LOG_TYPE_SIGN_IN_LOW_VALUE: 'sign_in_low_value',
-  LOG_TYPE_SIGN_IN_INACTIVE: 'sign_in_inactive',
-  LOG_TYPE_ACTIVATED_PROFILE: 'activated_profile',
-  LOG_TYPE_KNOCKED: 'knocked',
-  LOG_TYPE_VISITED: 'visited',
-
-  SIGN_IN_METHOD_GOOGLE: 'google',
-  SIGN_IN_METHOD_APPLE: 'apple',
-  SIGN_IN_METHOD_EMAIL: 'email',
-
-  SIGN_UP_METHOD_GOOGLE: 'google',
-  SIGN_UP_METHOD_APPLE: 'apple',
-  SIGN_UP_METHOD_EMAIL: 'email',
+  SMS_VERIFY_PREFIX:'confirm_household_account',
 }
 
 

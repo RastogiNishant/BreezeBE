@@ -42,21 +42,23 @@ definitions:
     in: formData
     type: boolean
 
-  planId:
-    name: plan_id
+  premiums:
+    name: premiums
     in: formData
     type: string
     example: '[1,3,5]: premium ids' 
-  receipt:
-    name: receipt
+  isPremium:
+    name: is_premium
     in: formData
     type: number
+    default: 1
+    example: '1: basic, 2:premium'
   paymentPlan:
     name: payment_plan
     in: formData
     type: number
     default: 1
-    example: '1: monthly, 2:yearly'
+    example: '1: monthly, 2:yearly, only for is_premium=2'
 
 paths:
   /api/v1/login:
@@ -425,14 +427,14 @@ paths:
       description: Update member's plan 
       produces: [application/json]
       parameters:
-        - $ref: '#/definitions/planId'
+        - $ref: '#/definitions/premiums'
+        - $ref: '#/definitions/isPremium'
         - $ref: '#/definitions/paymentPlan'
-        - $ref: '#/definitions/receipt'        
       responses: [200]
 
     get:
       security: [bearerAuth: []]
       tags: [Get plan]
-      description: Get member's plan
+      description: Get member's plan 
       produces: [application/json]
       responses: [200]      

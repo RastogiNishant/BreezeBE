@@ -11,19 +11,7 @@ const UserService = use('App/Services/UserService')
 
 const { getAuthByRole } = require('../../Libs/utils')
 
-const {
-  ROLE_LANDLORD,
-  ROLE_USER,
-  STATUS_DELETE,
-  STATUS_NEED_VERIFY,
-  ROLE_HOUSEHOLD,
-  ROLE_PROPERTY_MANAGER,
-  LOG_TYPE_SIGN_IN,
-  SIGN_IN_METHOD_GOOGLE,
-  SIGN_IN_METHOD_APPLE,
-  LOG_TYPE_SIGN_UP,
-} = require('../../constants')
-const { logEvent } = require('../../Services/TrackingService')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE, STATUS_NEED_VERIFY, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER } = require('../../constants')
 
 class OAuthController {
   /**
@@ -36,7 +24,7 @@ class OAuthController {
   /**
    * Login with web client
    */
-  async googleAuthConfirm({ request, ally, auth, response }) {
+  async googleAuthConfirm({ ally, auth, response }) {
     let authUser
     try {
       authUser = await ally.driver('google').getUser()
@@ -54,7 +42,7 @@ class OAuthController {
     // Create user if not exists
     if (!user) {
       try {
-        user = await UserService.createUserFromOAuth(request, {
+        user = await UserService.createUserFromOAuth({
           ...authUser.toJSON({ isOwner: true }),
           role: ROLE_LANDLORD,
           google_id: id,
@@ -117,7 +105,7 @@ class OAuthController {
 
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD].includes(role)) {
       try {
-        user = await UserService.createUserFromOAuth(request, {
+        user = await UserService.createUserFromOAuth({
           ...ticket.getPayload(),
           google_id: googleId,
           device_token,
@@ -131,11 +119,6 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
-      logEvent(request, LOG_TYPE_SIGN_IN, user.id, {
-        method: SIGN_IN_METHOD_GOOGLE,
-        role: user.role,
-        email: user.email,
-      })
       return response.res(token)
     }
 
@@ -159,16 +142,12 @@ class OAuthController {
 
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
-        user = await UserService.createUserFromOAuth(
-          request,
-          {
-            email,
-            device_token,
-            role,
-            name: 'Apple User',
-          },
-          SIGN_IN_METHOD_APPLE
-        )
+        user = await UserService.createUserFromOAuth({
+          email,
+          device_token,
+          role,
+          name: 'Apple User',
+        })
       } catch (e) {
         throw new HttpException(e.message, 400)
       }
@@ -177,11 +156,6 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
-      logEvent(request, LOG_TYPE_SIGN_IN, user.id, {
-        method: SIGN_IN_METHOD_APPLE,
-        role: user.role,
-        email: user.email,
-      })
       return response.res(token)
     }
 

@@ -7,14 +7,14 @@ class UserPremiumPlan extends Model {
     return [
       'id',
       'user_id',
-      'plan_id',
+      'premium_id',
     ]
   }
   user() {
     return this.belongsTo('App/Models/User', 'user_id', 'id')
   }
-  plan() {
-    return this.belongsTo('App/Models/Plan', 'plan_id', 'id')
+  premium() {
+    return this.belongsTo('App/Models/PremiumFeature', 'premium_id', 'id')
   }  
 }
 
