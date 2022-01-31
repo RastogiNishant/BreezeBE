@@ -37,6 +37,8 @@ const {
   ROLE_HOUSEHOLD,
   BUDDY_STATUS_ACCEPTED,
   SMS_VERIFY_PREFIX,
+  LOG_TYPE_SIGN_UP,
+  SIGN_IN_METHOD_GOOGLE,
 } = require('../constants')
 
 class UserService {
@@ -63,7 +65,11 @@ class UserService {
   /**
    *
    */
-  static async createUserFromOAuth({ email, name, role, google_id, ...data }) {
+  static async createUserFromOAuth(
+    request,
+    { email, name, role, google_id, ...data },
+    method = SIGN_IN_METHOD_GOOGLE
+  ) {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
@@ -88,6 +94,12 @@ class UserService {
     }
 
     const { user } = await UserService.createUser(userData)
+
+    logEvent(request, LOG_TYPE_SIGN_UP, user.id, {
+      role: user.role,
+      email: user.email,
+      method,
+    })
 
     return user
   }
@@ -568,15 +580,17 @@ class UserService {
     return Database.raw('UPDATE users SET unread_notification_count = 0 WHERE id = ?', id)
   }
 
-  static async updatePaymentPlan(userId, plan_id, payment_plan, trx = null ) {
-    
+  static async updatePaymentPlan(userId, plan_id, payment_plan, trx = null) {
     return await User.query()
       .where({ id: userId })
-      .update({
-        plan_id: plan_id,
-        payment_plan: payment_plan,
-        member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-      }, trx)
+      .update(
+        {
+          plan_id: plan_id,
+          payment_plan: payment_plan,
+          member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        },
+        trx
+      )
   }
 
   static async verifyUsers(adminId, userIds, is_verify) {
