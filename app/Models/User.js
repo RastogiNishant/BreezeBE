@@ -42,6 +42,9 @@ class User extends Model {
       'landlord_visibility',
       'owner_id',
       'is_onboarded',
+      'is_profile_onboarded',
+      'is_dashboard_onboarded',
+      'is_selection_onboarded',
     ]
   }
 

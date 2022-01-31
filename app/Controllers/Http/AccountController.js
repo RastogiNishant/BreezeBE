@@ -256,6 +256,34 @@ class AccountController {
     return response.res({ message: 'User Account Closed' })
   }
 
+  async onboard({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+
+  async onboardProfile({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_profile_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+
+  async onboardDashboard({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_dashboard_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+
+  async onboardSelection({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_selection_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+
   /**
    *
    */
