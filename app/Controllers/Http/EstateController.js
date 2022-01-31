@@ -10,7 +10,8 @@ const File = use('App/Models/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
-//const ImportService = use('App/Services/ImportService')
+const ImportService = use('App/Services/ImportService')
+const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 
@@ -26,8 +27,9 @@ const {
   PROPERTY_MANAGE_ALLOWED,
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
+  LOG_TYPE_PROPERTIES_IMPORTED,
 } = require('../../constants')
-const EstatePermissionService = require('../../Services/EstatePermissionService')
+const { logEvent } = require('../../Services/TrackingService')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -201,19 +203,45 @@ class EstateController {
     response.res(estate)
   }
 
-  // async importEstate({ request, auth, response }) {
-  //   const importFilePathName = request.file('file')
+  async importEstate({ request, auth, response }) {
+    const importFilePathName = request.file('file')
 
-  //   if( importFilePathName && importFilePathName.tmpPath ){
-  //     if( importFilePathName.headers['content-type'] !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ){
-  //       throw new HttpException('No excel format', 400 );
-  //     }
-  //     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-  //     return response.res(result)
-  //   }else {
-  //     throw new HttpException('There is no excel data to import', 400 );
-  //   }
-  // }
+    if (importFilePathName && importFilePathName.tmpPath) {
+      if (
+        importFilePathName.headers['content-type'] !==
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ) {
+        throw new HttpException('No excel format', 400)
+      }
+      const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+      return response.res(result)
+    } else {
+      throw new HttpException('There is no excel data to import', 400)
+    }
+  }
+
+  //import Estate by property manager
+  async importEstateByPM({ request, auth, response }) {
+    const importFilePathName = request.file('file')
+
+    if (importFilePathName && importFilePathName.tmpPath) {
+      if (
+        importFilePathName.headers['content-type'] !==
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ) {
+        throw new HttpException('No excel format', 400)
+      }
+      const result = await ImportService.processByPM(
+        importFilePathName.tmpPath,
+        auth.user.id,
+        'xls'
+      )
+      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id)
+      return response.res(result)
+    } else {
+      throw new HttpException('There is no excel data to import', 400)
+    }
+  }
 
   /**
    *
@@ -237,7 +265,7 @@ class EstateController {
         console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
-          await EstateService.publishEstate(estate)
+          await EstateService.publishEstate(estate, request)
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)

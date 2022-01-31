@@ -17,16 +17,26 @@ const ImageService = use('App/Services/ImageService')
 const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const {
-  assign,
-} = require('lodash')
-
+const { assign } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, ROLE_ADMIN, PREMIUM_MEMBER, YEARLY_DISCOUNT_RATE, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD } = require('../../constants')
-
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  STATUS_EMAIL_VERIFY,
+  ROLE_ADMIN,
+  PREMIUM_MEMBER,
+  YEARLY_DISCOUNT_RATE,
+  ROLE_PROPERTY_MANAGER,
+  ROLE_HOUSEHOLD,
+  LOG_TYPE_SIGN_IN,
+  SIGN_IN_METHOD_EMAIL,
+  LOG_TYPE_SIGN_UP,
+  LOG_TYPE_OPEN_APP,
+} = require('../../constants')
+const { logEvent } = require('../../Services/TrackingService')
 
 class AccountController {
   /**
@@ -51,6 +61,10 @@ class AccountController {
         firstname,
         status: STATUS_EMAIL_VERIFY,
       })
+      logEvent(request, LOG_TYPE_SIGN_UP, user.id, {
+        role: user.role,
+        email: user.email,
+      })
       await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
@@ -62,13 +76,17 @@ class AccountController {
     }
   }
 
-  async housekeeperSignup({ request, response}) {
+  async housekeeperSignup({ request, response }) {
     const { email, owner_id, password, code, member_id, confirmPassword, phone } = request.all()
 
     try {
-      const member = await Member.query().select('user_id').where('id', member_id).where('code', code).firstOrFail()
+      const member = await Member.query()
+        .select('user_id')
+        .where('id', member_id)
+        .where('code', code)
+        .firstOrFail()
 
-      if( owner_id.toString() !== member.user_id.toString() ) {
+      if (owner_id.toString() !== member.user_id.toString()) {
         throw new HttpException('Not allowed', 400)
       }
       // Check user not exists
@@ -76,12 +94,12 @@ class AccountController {
       if (availableUser) {
         throw new HttpException('User already exists, can be switched', 400)
       }
-  
-      if( password !== confirmPassword ) {
+
+      if (password !== confirmPassword) {
         throw new HttpException('Password not matched', 400)
       }
-  
-      const user = await UserService.housekeeperSignup( member.user_id, email, password, phone )
+
+      const user = await UserService.housekeeperSignup(member.user_id, email, password, phone)
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -94,26 +112,25 @@ class AccountController {
   async resendUserConfirmBySMS({ request, response }) {
     const { email, phone } = request.all()
 
-    try{
+    try {
       const availableUser = await User.query().select('id').where('email', email).first()
       if (!availableUser) {
-        throw new HttpException('Your email doesn\'t exist', 400)
+        throw new HttpException("Your email doesn't exist", 400)
       }
-  
-      await UserService.sendSMS(availableUser.id, phone )
+
+      await UserService.sendSMS(availableUser.id, phone)
       return response.res(true)
-    }catch(e){
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
-
   }
 
-  async checkSignUpConfirmBySMS({request, response}){
-    const {email, phone, code } = request.all()
-    try{
+  async checkSignUpConfirmBySMS({ request, response }) {
+    const { email, phone, code } = request.all()
+    try {
       await UserService.confirmSMS(email, phone, code)
       return response.res(true)
-    }catch(e){
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
   }
@@ -149,7 +166,7 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     let { email, role, password, device_token } = request.all()
-    
+
     // Select role if not set, (allows only for non-admin users)
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
     if (role) {
@@ -186,18 +203,29 @@ class AccountController {
     if (device_token) {
       await User.query().where({ id: user.id }).update({ device_token })
     }
-
+    logEvent(request, LOG_TYPE_SIGN_IN, user.id, {
+      method: SIGN_IN_METHOD_EMAIL,
+      role,
+      email: user.email,
+    })
     return response.res(token)
   }
 
   /**
    *
    */
-  async me({ auth, response }) {
+  async me({ auth, response, request }) {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
       .with('tenant')
       .firstOrFail()
+
+    if (user) {
+      logEvent(request, LOG_TYPE_OPEN_APP, auth.current.user.id, {
+        email: user.email,
+        role: user.role,
+      })
+    }
 
     return response.res(user.toJSON({ isOwner: true }))
   }
@@ -235,8 +263,12 @@ class AccountController {
     const data = request.all()
     const user = auth.user
 
-    auth.user.role === ROLE_USER?delete data.landlord_visibility:auth.user.role === ROLE_LANDLORD ? delete data.prospect_visibility:data
-    
+    auth.user.role === ROLE_USER
+      ? delete data.landlord_visibility
+      : auth.user.role === ROLE_LANDLORD
+      ? delete data.prospect_visibility
+      : data
+
     await user.updateItem(data)
     return response.res(user)
   }
@@ -434,41 +466,40 @@ class AccountController {
     }
   }
 
-  async updateUserPremiumPlan({request, auth, response}) {
-    try{
-      const {is_premium, payment_plan, premiums} = request.all();
-      if( is_premium !== 1 && (!premiums || JSON.stringify(premiums).length <= 0 ) ){
-        throw new AppException( 'Please select features', 400)  
-      }
-      
+  async updateUserPremiumPlan({ request, auth, response }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const { plan_id, payment_plan, receipt } = request.all()
+
       let ret = {
         status: false,
-        data:{
-        }
+        data: {
+          plan_id: plan_id,
+          payment_plan: payment_plan,
+        },
       }
-      if( premiums ) {
-        assign(ret.data, {premiums:await UserPremiumPlanService.updateUserPremiumPlans(premiums, auth.user.id)} )
-      }
-      
-      await UserService.updatePaymentPlan(auth.user.id, is_premium, payment_plan )
-      
-      assign(ret.data, {payment_plan:payment_plan} )
-      assign( ret.data,  { year_discount_rate:YEARLY_DISCOUNT_RATE} )
 
-      ret.status = true;
+      await UserPremiumPlanService.updateUserPremiumPlans(auth.user.id, plan_id, receipt, trx)
+      await UserService.updatePaymentPlan(auth.user.id, plan_id, payment_plan, trx)
+      trx.commit()
+      assign(ret.data, { payment_plan: payment_plan })
+      assign(ret.data, { year_discount_rate: YEARLY_DISCOUNT_RATE })
+
+      ret.status = true
 
       return response.send(ret)
-    }catch(e) {
+    } catch (e) {
+      await trx.rollback()
       Logger.error(e)
       // throw new AppException(e.message, 400)
     }
   }
 
-  async getUserPremiumPlans({request, auth, response}) {
-    try{
+  async getUserPremiumPlans({ request, auth, response }) {
+    try {
       const userPremiumPlans = await UserPremiumPlanService.getUserPremiumPlans(auth.user.id)
       return response.send(userPremiumPlans)
-    }catch(e) {
+    } catch (e) {
       Logger.error(e)
     }
   }

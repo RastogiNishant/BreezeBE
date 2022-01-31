@@ -24,7 +24,9 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  LOG_TYPE_PUBLISHED_PROPERTY,
 } = require('../constants')
+const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
 
 /**
@@ -503,6 +505,10 @@ class EstateService {
             this.select('estate_id').from('dislikes').where('user_id', userId)
           })
       })
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
+      })
+      .with('files')
       .orderBy('_m.percent', 'DESC')
   }
 
@@ -557,6 +563,10 @@ class EstateService {
     return (
       query
         .select('estates.*')
+        .with('rooms', function (b) {
+          b.whereNot('status', STATUS_DELETE).with('images')
+        })
+        .with('files')
         .select(Database.raw(`'0' AS match`))
         // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
         .orderBy('estates.id', 'DESC')
@@ -633,7 +643,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate) {
+  static async publishEstate(estate, request) {
     const User = use('App/Models/User')
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) return
@@ -646,6 +656,7 @@ class EstateService {
       delDislikes: () => Database.table('dislikes').where({ estate_id: estate.id }).delete(),
     })
     await estate.publishEstate()
+    logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id })
     // Run match estate
     Event.fire('match::estate', estate.id)
   }
