@@ -656,7 +656,7 @@ class EstateService {
       delDislikes: () => Database.table('dislikes').where({ estate_id: estate.id }).delete(),
     })
     await estate.publishEstate()
-    logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id })
+    logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
     // Run match estate
     Event.fire('match::estate', estate.id)
   }

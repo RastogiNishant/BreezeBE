@@ -78,7 +78,7 @@ class MatchController {
 
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
-      logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id })
+      logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id }, false)
       return response.res(result)
     } catch (e) {
       Logger.error(e)
@@ -115,7 +115,7 @@ class MatchController {
 
     try {
       await MatchService.inviteKnockedUser(estate_id, user_id)
-      logEvent(request, LOG_TYPE_INVITED, user_id, { estate_id })
+      logEvent(request, LOG_TYPE_INVITED, user_id, { estate_id }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -277,7 +277,7 @@ class MatchController {
 
     try {
       await MatchService.share(userId, estate_id, code)
-      logEvent(request, LOG_TYPE_VISITED, auth.user.id, { estate_id })
+      logEvent(request, LOG_TYPE_VISITED, auth.user.id, { estate_id }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -362,7 +362,7 @@ class MatchController {
       throw new HttpException('There is a final match for that property', 400)
     }
     await MatchService.requestFinalConfirm(estate_id, user_id)
-    logEvent(request, LOG_TYPE_FINAL_MATCH_REQUEST, user_id, { estate_id })
+    logEvent(request, LOG_TYPE_FINAL_MATCH_REQUEST, user_id, { estate_id }, false)
     response.res(true)
   }
 
@@ -386,7 +386,7 @@ class MatchController {
       contact = contact.toJSON()
       contact.avatar = File.getPublicUrl(contact.avatar)
     }
-    logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id })
+    logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id }, false)
     response.res({ estate, contact })
   }
 

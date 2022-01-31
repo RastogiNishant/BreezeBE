@@ -40,6 +40,7 @@ const {
   LOG_TYPE_SIGN_UP,
   SIGN_IN_METHOD_GOOGLE,
 } = require('../constants')
+const { logEvent } = require('./TrackingService.js')
 
 class UserService {
   /**
@@ -95,7 +96,7 @@ class UserService {
 
     const { user } = await UserService.createUser(userData)
 
-    logEvent(request, LOG_TYPE_SIGN_UP, user.id, {
+    logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
       role: user.role,
       email: user.email,
       method,

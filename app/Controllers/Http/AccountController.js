@@ -61,7 +61,7 @@ class AccountController {
         firstname,
         status: STATUS_EMAIL_VERIFY,
       })
-      logEvent(request, LOG_TYPE_SIGN_UP, user.id, {
+      logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
@@ -203,7 +203,7 @@ class AccountController {
     if (device_token) {
       await User.query().where({ id: user.id }).update({ device_token })
     }
-    logEvent(request, LOG_TYPE_SIGN_IN, user.id, {
+    logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
       method: SIGN_IN_METHOD_EMAIL,
       role,
       email: user.email,
@@ -221,11 +221,11 @@ class AccountController {
       .firstOrFail()
 
     if (user) {
-      logEvent(request, LOG_TYPE_OPEN_APP, auth.current.user.id, {
+      logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
         email: user.email,
         role: user.role,
       })
-      logEvent(request, 'identity-test-log', auth.current.user.id, {
+      logEvent(request, 'identity-test-log', user.uid, {
         email: user.email,
         role: user.role,
       })

@@ -85,7 +85,7 @@ class TenantController {
     const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
     try {
       await TenantService.activateTenant(tenant)
-      logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id)
+      logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
     } catch (e) {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)

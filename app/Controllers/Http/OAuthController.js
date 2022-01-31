@@ -131,7 +131,7 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
-      logEvent(request, LOG_TYPE_SIGN_IN, user.id, {
+      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_GOOGLE,
         role: user.role,
         email: user.email,
@@ -177,7 +177,7 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
-      logEvent(request, LOG_TYPE_SIGN_IN, user.id, {
+      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_APPLE,
         role: user.role,
         email: user.email,
