@@ -1,9 +1,13 @@
 const Env = use('Env')
 const Amplitude = require('@amplitude/node')
+const { Identify } = require('@amplitude/identify')
+
 const { get } = require('lodash')
 
 const AMPLITUDE_API_KEY = Env.get('AMPLITUDE_API_KEY')
 var amplitudeClient = Amplitude.init(AMPLITUDE_API_KEY)
+
+amplitudeClient.identify()
 
 const logEvent = async (request, event_type, user_id, event_properties = {}) => {
   if (!request || !event_type || !user_id) {
@@ -17,7 +21,15 @@ const logEvent = async (request, event_type, user_id, event_properties = {}) => 
     user_id,
     ip,
     event_properties,
+    user_properties: {
+      user_id,
+    },
   }
+
+  const identify = new Identify()
+  identify.identifyUser(user_id)
+
+  amplitudeClient.identify(identify)
 
   console.log({ event })
 
