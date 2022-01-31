@@ -10,11 +10,13 @@ const Tenant = use('App/Models/Tenant')
 const { without } = require('lodash')
 
 const {
-	ROLE_USER,
-	ROLE_LANDLORD,
-	MEMBER_FILE_TYPE_INCOME,
-	STATUS_DRAFT,
+  ROLE_USER,
+  ROLE_LANDLORD,
+  MEMBER_FILE_TYPE_INCOME,
+  STATUS_DRAFT,
+  LOG_TYPE_ACTIVATED_PROFILE,
 } = require('../../constants')
+const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
 	/**
@@ -76,18 +78,19 @@ class TenantController {
 		response.res(updatedTenant)
 	}
 
-	/**
-	 * Check is all required fields exist and change user status
-	 */
-	async activateTenant({ auth, response }) {
-		const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
-		try {
-			await TenantService.activateTenant(tenant)
-		} catch (e) {
-			console.log(e.message)
-			throw new HttpException(e.message, 400, e.code)
-		}
-		await MatchService.matchByUser(auth.user.id)
+  /**
+   * Check is all required fields exist and change user status
+   */
+  async activateTenant({ auth, response, request }) {
+    const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
+    try {
+      await TenantService.activateTenant(tenant)
+      logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id)
+    } catch (e) {
+      console.log(e.message)
+      throw new HttpException(e.message, 400, e.code)
+    }
+    await MatchService.matchByUser(auth.user.id)
 
 		response.res(true)
 	}

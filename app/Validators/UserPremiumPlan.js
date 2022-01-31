@@ -8,9 +8,9 @@ const { BASIC_MEMBER, PENDING_PREMIUM_MEMBER, MONTHLY_PAYMENT, YEARLY_PAYMENT } 
 class UserPremiumPlan extends Base {
   static schema = () =>
     yup.object().shape({
-      is_premium: yup.number().positive().oneOf([BASIC_MEMBER, PENDING_PREMIUM_MEMBER]),
+      receipt: yup.string(),
       payment_plan: yup.number().positive().oneOf([MONTHLY_PAYMENT, YEARLY_PAYMENT]),
-      premiums: yup.array().of(yup.number().integer().positive()),
+      plan_id: yup.number().positive()
     })
 }
 
