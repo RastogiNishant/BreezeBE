@@ -1,6 +1,6 @@
   'use strict'
 
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
+// const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
