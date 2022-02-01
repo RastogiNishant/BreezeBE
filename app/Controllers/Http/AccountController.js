@@ -31,16 +31,12 @@ const {
   YEARLY_DISCOUNT_RATE,
   ROLE_PROPERTY_MANAGER,
   ROLE_HOUSEHOLD,
-<<<<<<< HEAD
-} = require('../../constants')
-=======
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
->>>>>>> 8769926f8460b51b4e4f4b468521703e08bfe941
 
 class AccountController {
   /**
