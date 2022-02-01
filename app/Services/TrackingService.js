@@ -32,38 +32,52 @@ const logEvent = async (
   const headers = request.headers()
   const ip = get(headers, 'x-real-ip') || request.ip()
 
-  // const identify = new Identify()
-  // identify.identifyUser(user_id, '123')
+  const identify = new Identify()
+  identify.identifyUser(user_id, ip)
 
-  // amplitudeClient.identify(identify)
+  amplitudeClient.identify(identify)
 
-  const inputBody = {
-    api_key: Env.get('AMPLITUDE_API_KEY'),
-    events: [
-      {
-        user_id: user_id,
-        device_id: 'C8F9E604-F01A-4BD9-95C6-8E5357DF265D',
-        event_type,
-        time: Date.now(),
-        event_properties: event_properties,
-        ip: ip,
-      },
-    ],
+  const event = {
+    event_type,
+    user_id,
+    ip,
+    event_properties,
   }
-  fetch('https://api2.amplitude.com/2/httpapi', {
-    method: 'POST',
-    body: JSON.stringify(inputBody),
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: '*/*',
-    },
-  })
-    .then(function (res) {
-      return res.json()
+
+  amplitudeClient
+    .logEvent(event)
+    .then((res) => {
+      console.log({ res })
     })
-    .then(function (body) {
-      console.log(body)
-    })
+    .catch((e) => console.log({ e }))
+
+  // const inputBody = {
+  //   api_key: Env.get('AMPLITUDE_API_KEY'),
+  //   events: [
+  //     {
+  //       user_id: user_id,
+  //       device_id: 'C8F9E604-F01A-4BD9-95C6-8E5357DF265D',
+  //       event_type,
+  //       time: Date.now(),
+  //       event_properties: event_properties,
+  //       ip: ip,
+  //     },
+  //   ],
+  // }
+  // fetch('https://api2.amplitude.com/2/httpapi', {
+  //   method: 'POST',
+  //   body: JSON.stringify(inputBody),
+  //   headers: {
+  //     'Content-Type': 'application/json',
+  //     Accept: '*/*',
+  //   },
+  // })
+  //   .then(function (res) {
+  //     return res.json()
+  //   })
+  //   .then(function (body) {
+  //     console.log(body)
+  //   })
 }
 
 module.exports = { logEvent }

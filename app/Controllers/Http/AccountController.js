@@ -225,10 +225,6 @@ class AccountController {
         email: user.email,
         role: user.role,
       })
-      logEvent(request, 'identity-test-log', user.uid, {
-        email: user.email,
-        role: user.role,
-      })
     }
 
     return response.res(user.toJSON({ isOwner: true }))
