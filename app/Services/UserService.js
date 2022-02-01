@@ -4,8 +4,6 @@
 
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
-
 const uuid = require('uuid')
 const moment = require('moment')
 const { get, isArray, isEmpty, uniq, omit } = require('lodash')
