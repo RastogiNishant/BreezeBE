@@ -8,8 +8,7 @@ class CreateFeature extends Base {
     yup.object().shape({
       feature: yup.string(),
       description: yup.string(),
-      is_basic_plan: yup.boolean().default(false),
-      is_premium_plan: yup.boolean().default(false),
+      plan_id:yup.number().positive(),
       status: yup.boolean().default(true),
       prices:yup.number().positive()
     })

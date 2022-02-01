@@ -1,7 +1,7 @@
 definitions:
   deleteIds:
     name: ids
-    description: Selected Feature Ids
+    description: Selected Plan Ids
     schema:
       type: array
       items:
@@ -9,13 +9,13 @@ definitions:
     explode: true
     example: '[1, 2]'
 
-  feature_id:
+  planId:
     name: id
     in: path
     type: number
     required: true
-  feature:
-    name: feature
+  name:
+    name: name
     in: path
     type: string
     required: true
@@ -23,61 +23,51 @@ definitions:
     name: description
     in: path
     type: string
-  planId:
-    name: plan_id
-    in: path
-    type: boolean
-  status:
-    name: status
-    in: path
-    type: boolean    
   prices:
     name: prices
     in: path
     type: number
 
 # Routes list
-/api/v1/feature:
+/api/v1/plan:
   get:
-    tags: [Feature]
+    tags: [Plan]
     security: [bearerAuth: []]
-    description: Get Features
+    description: Get Plan
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/planId'
     responses: [200]
 
   post:
-    tags: [Feature-Admin]
+    tags: [Plan-Admin]
     security: [bearerAuth: []]
-    description: Admin - Create Features
+    description: Admin - Create Plan
     produces: [application/json]
     parameters:
-      - $ref: '#/definitions/feature'
+      - $ref: '#/definitions/name'
       - $ref: '#/definitions/description'
-      - $ref: '#/definitions/planId'
       - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'            
     responses: [200]
 
   put:
-    tags: [Feature-Admin]
+    tags: [Plan-Admin]
     security: [bearerAuth: []]
-    description: Admin - Update Features
+    description: Admin - Update Plan
     parameters:
-      - $ref: '#/definitions/feature_id'
-      - $ref: '#/definitions/feature'
-      - $ref: '#/definitions/description'
       - $ref: '#/definitions/planId'
+      - $ref: '#/definitions/name'
+      - $ref: '#/definitions/description'
       - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'             
     produces: [application/json]
     responses: [200]
 
   delete:
-    tags: [Feature-Admin]
+    tags: [Plan-Admin]
     security: [bearerAuth: []]
-    description: Admin - Delete Features
+    description: Admin - Delete Plan
     parameters:
       - $ref: '#/definitions/deleteIds'
     produces: [application/json]

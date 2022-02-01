@@ -14,7 +14,9 @@ const {
   ROLE_LANDLORD,
   MEMBER_FILE_TYPE_INCOME,
   STATUS_DRAFT,
+  LOG_TYPE_ACTIVATED_PROFILE,
 } = require('../../constants')
+const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
   /**
@@ -79,10 +81,11 @@ class TenantController {
   /**
    * Check is all required fields exist and change user status
    */
-  async activateTenant({ auth, response }) {
+  async activateTenant({ auth, response, request }) {
     const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
     try {
       await TenantService.activateTenant(tenant)
+      logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
     } catch (e) {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)

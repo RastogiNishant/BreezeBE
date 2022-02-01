@@ -37,7 +37,10 @@ const {
   ROLE_HOUSEHOLD,
   BUDDY_STATUS_ACCEPTED,
   SMS_VERIFY_PREFIX,
+  LOG_TYPE_SIGN_UP,
+  SIGN_IN_METHOD_GOOGLE,
 } = require('../constants')
+const { logEvent } = require('./TrackingService.js')
 
 class UserService {
   /**
@@ -63,7 +66,11 @@ class UserService {
   /**
    *
    */
-  static async createUserFromOAuth({ email, name, role, google_id, ...data }) {
+  static async createUserFromOAuth(
+    request,
+    { email, name, role, google_id, ...data },
+    method = SIGN_IN_METHOD_GOOGLE
+  ) {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
@@ -88,6 +95,12 @@ class UserService {
     }
 
     const { user } = await UserService.createUser(userData)
+
+    logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
+      role: user.role,
+      email: user.email,
+      method,
+    })
 
     return user
   }
@@ -568,18 +581,17 @@ class UserService {
     return Database.raw('UPDATE users SET unread_notification_count = 0 WHERE id = ?', id)
   }
 
-  static async updatePaymentPlan(userId, is_premium, payment_plan) {
-    if (is_premium === 1) {
-      //basic member
-      payment_plan = null
-    }
+  static async updatePaymentPlan(userId, plan_id, payment_plan, trx = null) {
     return await User.query()
       .where({ id: userId })
-      .update({
-        is_premium: is_premium,
-        payment_plan: payment_plan,
-        member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-      })
+      .update(
+        {
+          plan_id: plan_id,
+          payment_plan: payment_plan,
+          member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        },
+        trx
+      )
   }
 
   static async verifyUsers(adminId, userIds, is_verify) {
