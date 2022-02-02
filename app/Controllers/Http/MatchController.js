@@ -115,7 +115,7 @@ class MatchController {
 
     try {
       await MatchService.inviteKnockedUser(estate_id, user_id)
-      logEvent(request, LOG_TYPE_INVITED, user_id, { estate_id }, false)
+      logEvent(request, LOG_TYPE_INVITED, auth.user.id, { estate_id, tenant_id: user_id }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -362,7 +362,13 @@ class MatchController {
       throw new HttpException('There is a final match for that property', 400)
     }
     await MatchService.requestFinalConfirm(estate_id, user_id)
-    logEvent(request, LOG_TYPE_FINAL_MATCH_REQUEST, user_id, { estate_id }, false)
+    logEvent(
+      request,
+      LOG_TYPE_FINAL_MATCH_REQUEST,
+      auth.user.id,
+      { estate_id, tenant_id: user_id },
+      false
+    )
     response.res(true)
   }
 
