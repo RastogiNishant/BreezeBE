@@ -31,9 +31,12 @@ const logEvent = async (
 
   const headers = request.headers()
   const ip = get(headers, 'x-real-ip') || request.ip()
+  const deviceId = get(headers, 'ampdeviceid')
+
+  console.log({ deviceId })
 
   const identify = new Identify()
-  identify.identifyUser(user_id, id)
+  identify.identifyUser(user_id, deviceId)
 
   amplitudeClient.identify(identify)
 
