@@ -17,7 +17,7 @@ class CompanyController {
    */
   async createCompany({ request, auth, response }) {
     const data = request.all()
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])
@@ -41,7 +41,7 @@ class CompanyController {
    */
   async updateCompany({ request, auth, response }) {
     const { id, ...data } = request.all()
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])
@@ -83,8 +83,8 @@ class CompanyController {
    *
    */
   async createContact({ request, auth, response }) {
-    const data = request.all()    
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
+    const data = request.all()
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])

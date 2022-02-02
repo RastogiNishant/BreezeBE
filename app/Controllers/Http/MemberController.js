@@ -7,9 +7,8 @@ const Member = use('App/Models/Member')
 const DataStorage = use('DataStorage')
 const HttpException = use('App/Exceptions/HttpException')
 
-
-const imageMimes = [File.IMAGE_JPG, File.IMAGE_PNG]
-const docMimes = [File.IMAGE_JPG, File.IMAGE_PNG, File.IMAGE_PDF]
+const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
+const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
 /**
  *
@@ -214,26 +213,25 @@ class MemberController {
     response.res(true)
   }
 
-  async sendInviteCode({ request, auth, response } ) {
-    const {id} = request.all()
-    const userId = auth.user.id;
-    try{
+  async sendInviteCode({ request, auth, response }) {
+    const { id } = request.all()
+    const userId = auth.user.id
+    try {
       const code = await MemberService.sendInvitationCode(id, userId)
-      return response.res(code)    
-    }catch(e){
+      return response.res(code)
+    } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
       }
       throw e
     }
-    
   }
 
-  async confirmInviteCode( {request, response} ) {
-    const {code} = request.all();
-    try{
+  async confirmInviteCode({ request, response }) {
+    const { code } = request.all()
+    try {
       response.res(await MemberService.getInvitationCode(code))
-    }catch(e){
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
   }

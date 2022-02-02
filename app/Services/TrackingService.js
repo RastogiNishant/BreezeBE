@@ -33,7 +33,7 @@ const logEvent = async (
   const ip = get(headers, 'x-real-ip') || request.ip()
 
   const identify = new Identify()
-  identify.identifyUser(user_id, ip)
+  identify.identifyUser(user_id, id)
 
   amplitudeClient.identify(identify)
 
