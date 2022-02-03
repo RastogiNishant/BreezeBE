@@ -32,7 +32,7 @@ const logEvent = async (
   const headers = request.headers()
   const ip = get(headers, 'x-real-ip') || request.ip()
   const deviceId = get(headers, 'ampdeviceid')
-  const smartlook_visitor_url = get(headers, 'smartlook_visitor_url')
+  const smartlook_visitor_url = get(headers, 'smartlookvisitorurl')
 
   const identify = new Identify()
   console.log({ user_id, deviceId })
