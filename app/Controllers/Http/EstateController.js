@@ -203,22 +203,22 @@ class EstateController {
     response.res(estate)
   }
 
-  async importEstate({ request, auth, response }) {
-    const importFilePathName = request.file('file')
+  // async importEstate({ request, auth, response }) {
+  //   const importFilePathName = request.file('file')
 
-    if (importFilePathName && importFilePathName.tmpPath) {
-      if (
-        importFilePathName.headers['content-type'] !==
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ) {
-        throw new HttpException('No excel format', 400)
-      }
-      const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-      return response.res(result)
-    } else {
-      throw new HttpException('There is no excel data to import', 400)
-    }
-  }
+  //   if (importFilePathName && importFilePathName.tmpPath) {
+  //     if (
+  //       importFilePathName.headers['content-type'] !==
+  //       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  //     ) {
+  //       throw new HttpException('No excel format', 400)
+  //     }
+  //     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+  //     return response.res(result)
+  //   } else {
+  //     throw new HttpException('There is no excel data to import', 400)
+  //   }
+  // }
 
   //import Estate by property manager
   // async importEstateByPM({ request, auth, response }) {
