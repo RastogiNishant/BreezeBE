@@ -45,7 +45,7 @@ const logEvent = async (
     })
     .catch((e) => console.log({ e }))
 
-  console.log({ smartlook_visitor_url })
+  console.log({ smartlook_visitor_url, headers })
 
   const event = {
     event_type,
