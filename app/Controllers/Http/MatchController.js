@@ -115,7 +115,7 @@ class MatchController {
 
     try {
       await MatchService.inviteKnockedUser(estate_id, user_id)
-      logEvent(request, LOG_TYPE_INVITED, user_id, { estate_id }, false)
+      logEvent(request, LOG_TYPE_INVITED, auth.user.id, { estate_id, tenant_id: user_id }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -411,7 +411,13 @@ class MatchController {
       throw new HttpException('There is a final match for that property', 400)
     }
     await MatchService.requestFinalConfirm(estate_id, user_id)
-    logEvent(request, LOG_TYPE_FINAL_MATCH_REQUEST, user_id, { estate_id }, false)
+    logEvent(
+      request,
+      LOG_TYPE_FINAL_MATCH_REQUEST,
+      auth.user.id,
+      { estate_id, tenant_id: user_id },
+      false
+    )
     response.res(true)
   }
 
@@ -761,7 +767,7 @@ class MatchController {
       'estates.user_id': user.id,
     }).first()
     if (!estate) {
-      throw new HttpException('Not found', 404)
+      throw new HttpException('Not found', 400)
     }
     const estatesId = [estate_id]
     let data
@@ -849,12 +855,16 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const top = data
 
+    let isFinalMatch = false;
     let finalMatchesCount = await Database.table('matches')
       .count('*')
       .whereIn('status', [MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
 
-    if (!finalMatchesCount || !finalMatchesCount.length || finalMatchesCount[0].count <= 0) {
+    if( finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0 ) {
+      isFinalMatch = true
+    }
+    if (!finalMatchesCount || !finalMatchesCount.length || parseInt(finalMatchesCount[0].count) <= 0) {
       finalMatchesCount = await Database.table('matches')
         .count('*')
         .whereIn('status', [MATCH_STATUS_COMMIT])
@@ -863,10 +873,8 @@ class MatchController {
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
 
-    const filter =
-      finalMatchesCount && finalMatchesCount.length && finalMatchesCount[0].count > 0
-        ? { final: true }
-        : { commit: true }
+    const filter = isFinalMatch? { final: true } : { commit: true }
+
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
