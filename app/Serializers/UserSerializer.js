@@ -29,7 +29,9 @@ class UserSerializer extends BaseSerializer {
       item.coord = undefined
       item.contact = item.phone
       item.activationStatus = item.approved_landlord
+      item.requestedOn = item.created_at
       item.approved_landlord = undefined
+      item.created_at = undefined
     }
 
     return this._getRowJSON(item)
