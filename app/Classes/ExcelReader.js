@@ -669,7 +669,7 @@ class ExcelReader {
       try {
         toImport.push({ line: k, data: await schema.validate(itemData) })
       } catch (e) {
-        errors.push({ line: k, error: e.errors, street:itemData?.street, postcode: itemData?.zip })
+        errors.push({ line: k, error: e.errors, street:itemData?itemData.street:`no street code`, postcode: itemData?itemData.zip:`no zip code` })
       }
     }
 
