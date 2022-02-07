@@ -226,17 +226,17 @@ class ExcelReader {
       'Room 4',
       'Tags 4',
       'Area 4',
-      'Name 4',
+      'Name 4',      
       'Photos 4',
       'Room 5',
       'Tags 5',
       'Area 5',
-      'Name 5',
+      'Name 5',      
       'Photos 5',
       'Room 6',
       'Tags 6',
       'Area 6',
-      'Name 6',
+      'Name 6',      
       'Photos 6',
       'Salary Burden',
       'Rent Arrears',
@@ -419,7 +419,9 @@ class ExcelReader {
       },
       address: (i, o) => {
         return trim(
-          `${o.street || ''} ${o.house_number || ''}, ${o.zip || ''} ${o.city || ''}`,
+          `${o.street || ''} ${o.house_number || ''}, ${o.zip || ''} ${
+            o.city || ''
+          }`,
           ', '
         ).replace(/\s,/g, ',')
       },
@@ -433,7 +435,7 @@ class ExcelReader {
     const header = get(sheet, `data.${this.headerCol}`) || []
     header.forEach((i) => {
       if (!this.columns.includes(i)) {
-        throw new AppException('Invalid header data=' + i)
+        throw new AppException('Invalid header data=' + i )
       }
     })
   }
@@ -482,33 +484,33 @@ class ExcelReader {
       parking_space_type, // 'Parking Space Type',
       room1_type, // 'Room 1',
       room1_tags, // 'Tags 1',
-      room1_area, // 'Area 1',
-      room1_name, // 'Name 1',
+      room1_area,  // 'Area 1',
+      room1_name,  // 'Name 1',
       room1_photos, // 'Photo 1',
       room2_type, // 'Room 2',
       room2_tags, // 'Tags 2',
-      room2_area, // 'Area 2',
-      room2_name, // 'Name 2',
+      room2_area,  // 'Area 2',
+      room2_name,  // 'Name 2',      
       room2_photos, // 'Photo 2',
       room3_type, // 'Room 3',
       room3_tags, // 'Tags 3',
-      room3_area, // 'Area 3',
-      room3_name, // 'Name 3',
+      room3_area,  // 'Area 3',
+      room3_name,  // 'Name 3',            
       room3_photos, // 'Photo 3',
       room4_type, // 'Room 4',
       room4_tags, // 'Tags 4',
-      room4_area, // 'Area 4',
-      room4_name, // 'Name 4',
+      room4_area,  // 'Area 4',
+      room4_name,  // 'Name 4',      
       room4_photos, // 'Photo 4',
       room5_type, // 'Room 5',
       room5_tags, // 'Tags 5',
-      room5_area, // 'Area 5',
-      room5_name, // 'Name 5',
+      room5_area,  // 'Area 5',
+      room5_name,  // 'Name 5',      
       room5_photos, // 'Photo 5',
       room6_type, // 'Room 6',
       room6_tags, // 'Tags 6',
-      room6_area, // 'Area 6',
-      room6_name, // 'Name 6',
+      room6_area,  // 'Area 6',
+      room6_name,  // 'Name 6',      
       room6_photos, // 'Photo 6',
       budget, // 'Salary Burden',
       rent_arrears, // 'Rent Arrears',
@@ -611,13 +613,14 @@ class ExcelReader {
     return reduce(
       result,
       (n, v, k) => {
+
         if (v === undefined) {
           // Address should process separately
           if (k === 'address') {
             return { ...n, [k]: mapValue(k, '', result) }
           } else if (k == 'property_id') {
-            const r = Math.random().toString(36).substr(2, 8).toUpperCase()
-            return { ...n, [k]: r }
+            const r = Math.random().toString(36).substr(2, 8).toUpperCase();
+            return { ...n, [k]: r}
           }
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
@@ -625,7 +628,7 @@ class ExcelReader {
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
-        }
+        } 
         return { ...n, [k]: v }
       },
       {}
@@ -640,6 +643,7 @@ class ExcelReader {
 
     const sheet = data.find((i) => i.name === 'data')
 
+
     if (!sheet || !sheet.data) {
       throw new AppException('Invalid spreadsheet')
     }
@@ -653,28 +657,13 @@ class ExcelReader {
       if (k <= this.headerCol || isEmpty(sheet.data[k])) {
         continue
       }
-      let itemData = this.mapDataToEntity(sheet.data[k])
-
-      itemData = {
-        ...itemData,
-        credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
-        floor: itemData.floor ? itemData.floor : 0,
-      }
 
       let itemData = this.mapDataToEntity(sheet.data[k])
 
       itemData = {
         ...itemData,
-        credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
-        floor: itemData.floor ? itemData.floor : 0,
-      }
-
-      let itemData = this.mapDataToEntity(sheet.data[k])
-
-      itemData = {
-        ...itemData,
-        credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
-        floor: itemData.floor ? itemData.floor : 0,
+        credit_score:itemData.credit_score?parseFloat(itemData.credit_score)*100:0,
+        floor:itemData.floor?itemData.floor:0,
       }
 
       try {

@@ -7,7 +7,7 @@ class UserUnreadNotificationsCount extends Schema {
   up() {
     this.table('users', (table) => {
       // alter table
-      table.integer('unread_notification_count').defaultTo(0)
+      table.integer('unread_notification_count').defaultTo(0).alter()
     })
   }
 }
