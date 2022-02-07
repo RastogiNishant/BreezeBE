@@ -32,6 +32,7 @@ const {
   LOG_TYPE_FINAL_MATCH_REQUEST,
   LOG_TYPE_FINAL_MATCH_APPROVAL,
   LOG_TYPE_INVITED,
+  LOG_TYPE_SHOWED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -276,8 +277,9 @@ class MatchController {
     await this.getOwnEstate(estate_id, userId)
 
     try {
-      await MatchService.share(userId, estate_id, code)
-      logEvent(request, LOG_TYPE_VISITED, auth.user.id, { estate_id }, false)
+      const { tenantId, tenantUid } = await MatchService.share(userId, estate_id, code)
+      logEvent(request, LOG_TYPE_VISITED, tenantUid, { estate_id })
+      logEvent(request, LOG_TYPE_SHOWED, auth.user.id, { tenant_id: tenantId, estate_id }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -806,16 +808,20 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const top = data
 
-    let isFinalMatch = false;
+    let isFinalMatch = false
     let finalMatchesCount = await Database.table('matches')
       .count('*')
       .whereIn('status', [MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
 
-    if( finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0 ) {
+    if (finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0) {
       isFinalMatch = true
     }
-    if (!finalMatchesCount || !finalMatchesCount.length || parseInt(finalMatchesCount[0].count) <= 0) {
+    if (
+      !finalMatchesCount ||
+      !finalMatchesCount.length ||
+      parseInt(finalMatchesCount[0].count) <= 0
+    ) {
       finalMatchesCount = await Database.table('matches')
         .count('*')
         .whereIn('status', [MATCH_STATUS_COMMIT])
@@ -824,7 +830,7 @@ class MatchController {
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
 
-    const filter = isFinalMatch? { final: true } : { commit: true }
+    const filter = isFinalMatch ? { final: true } : { commit: true }
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
