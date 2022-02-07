@@ -901,6 +901,7 @@ class MatchService {
     userId,
     { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
   ) {
+    console.log({ visit })
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')

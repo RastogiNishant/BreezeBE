@@ -234,6 +234,56 @@ class MatchController {
     }
   }
 
+  async cancelVisit({ request, auth, response }) {
+    const userId = auth.user.id
+    const { estate_id } = request.all()
+
+    try {
+      await MatchService.cancelVisit(estate_id, userId)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  /**
+   * Not coming/cancel visit by landloard
+   *
+   */
+  async cancelVisitByLandlord({ request, auth, response }) {
+    const { estate_id, tenant_id } = request.all()
+
+    try {
+      await MatchService.cancelVisit(estate_id, tenant_id)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  async inviteTenantInToVisit({ request, auth, response }) {
+    const { estate_id, tenant_id } = request.all()
+    try {
+      await MatchService.updateVisitIn(estate_id, tenant_id)
+      await MatchService.inviteTenantInToVisit(estate_id, tenant_id)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
   /**
    *
    */
@@ -257,7 +307,7 @@ class MatchController {
    */
   async updateVisitTimeslotTenant({ request, auth, response }) {
     const { estate_id, status, delay = null } = request.all()
-
+    console.log({ status })
     await MatchService.updateVisitStatus(estate_id, auth.user.id, {
       tenant_status: status,
       tenant_delay: delay,
@@ -290,7 +340,6 @@ class MatchController {
 
   async cancelShare({ request, auth, response }) {
     const { estate_id } = request.all()
-
     try {
       await MatchService.cancelShare(estate_id, auth.user.id)
       return response.res(true)
