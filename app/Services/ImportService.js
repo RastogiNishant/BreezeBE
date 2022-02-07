@@ -124,16 +124,13 @@ class ImportService {
     const result = await Promise.map(data, async (i) => {
       
       if( !i || !i.data || !i.data.landlord_email ) {
-        return { error: `Landlord email is not defined`, line:i.line, address: i.data.address, postcode: i?.data.zip }
-
-        return
+        return { error: `Landlord email is not defined`, line:i.line, address: i?i.data.address:`no address here`, postcode: i?i.data.zip:`no zip code here` }
       }
 
       const estatePermission = await EstatePermissionService.getLandlordHasPermissionByEmail(userId, i.data.landlord_email)
 
       if( !estatePermission || !estatePermission.landlord_id) {
-        return { error: `You don't have permission for that property`, line:i.line, address: i.data.address, postcode: i?.data.zip }
-        return
+        return { error: `You don't have permission for that property`, line:i.line, address: i?i.data.address:`no address here`, postcode: i?i.data.zip:`no zip code here` }
       }
 
       await ImportService.createSingleEstate(i, estatePermission.landlord_id)
