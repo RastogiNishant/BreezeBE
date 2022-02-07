@@ -656,6 +656,7 @@ class MatchService {
         user_id: userTenant.id,
         estate_id: estateId,
       })
+    return { tenantId: userTenant.id, tenantUid: userTenant.uid }
   }
 
   static async cancelShare(estateId, user_id) {
@@ -757,7 +758,7 @@ class MatchService {
     return await Database.table('matches')
       .where({
         estate_id: estateId,
-        status: MATCH_STATUS_FINISH
+        status: MATCH_STATUS_FINISH,
       })
       .first()
   }
@@ -1271,7 +1272,10 @@ class MatchService {
   /**
    * Get tenants matched to current estate
    */
-  static getLandlordMatchesWithFilterQuery(estate, { knock, buddy, invite, visit, top, commit, final }) {
+  static getLandlordMatchesWithFilterQuery(
+    estate,
+    { knock, buddy, invite, visit, top, commit, final }
+  ) {
     const query = Tenant.query()
       .select('tenants.*')
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
@@ -1300,8 +1304,8 @@ class MatchService {
           { column: '_m.updated_at', order: 'DESC' },
         ])
     } else if (commit) {
-      query.whereIn('_m.status', [MATCH_STATUS_COMMIT,MATCH_STATUS_FINISH])
-    } else if(final) {
+      query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
+    } else if (final) {
       query.whereIn('_m.status', [MATCH_STATUS_FINISH])
     }
 
