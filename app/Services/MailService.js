@@ -135,7 +135,8 @@ class MailService {
         console.error(error.response.body)
       }
     });
-  
+
+    
     // return Mail.send('mail/confirm-email', { code, user_id }, (message) => {
     //   message.to(email).from(Config.get('mail.mailAccount')).subject('Confirm email')
     // })
