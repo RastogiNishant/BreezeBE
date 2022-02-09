@@ -116,7 +116,7 @@ class UserService {
       user.confirm = false
       user.save(trx)
       await DataStorage.setItem(code, { userId: user.id }, 'change_email', { ttl: 3600 })
-      await MailService.sendChangeEmailConfirmation(email, code)
+      await MailService.sendChangeEmailConfirmation(email, code, user.role)
       trx.commit()
     } catch (e) {
       trx.rollback()
@@ -173,7 +173,7 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      await MailService.sendcodeForgotPasswordMail(user.email, shortLink)
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, 1)
     } catch (error) {
       throw new HttpException(
         error.error ? error.error.message : error.message,
@@ -251,6 +251,7 @@ class UserService {
     await MailService.sendUserConfirmation(user.email, {
       code,
       user_id: user.id,
+      role: user.role,
     })
   }
 
