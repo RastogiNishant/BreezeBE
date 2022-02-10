@@ -14,7 +14,8 @@ class LandlordController {
     query.where('role', 1)
     query.whereNot("email", null);
     query.whereNot("firstname", null);
-    query.select('id', 'firstname', 'secondname', 'coord', 'email', 'phone', 'approved_landlord')
+    query.whereNot("is_admin", true);
+    query.select('id', 'firstname', 'secondname', 'coord', 'email', 'phone', 'approved_landlord', 'created_at')
     // query.select('firstname', 'approved_landlord')
     let landlords = await query.orderBy('id', 'desc').paginate(page, limit)
     const users = landlords.toJSON({ basicFields: true, publicOnly : false })

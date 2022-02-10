@@ -31,17 +31,30 @@ const logEvent = async (
 
   const headers = request.headers()
   const ip = get(headers, 'x-real-ip') || request.ip()
+  const deviceId = get(headers, 'ampdeviceid')
+  const smartlook_visitor_url = get(headers, 'smartlookvisitorurl')
 
   const identify = new Identify()
-  identify.identifyUser(user_id, id)
+  console.log({ user_id, deviceId })
+  identify.identifyUser(user_id, deviceId)
 
-  amplitudeClient.identify(identify)
+  await amplitudeClient
+    .identify(user_id, deviceId, identify)
+    .then((res) => {
+      console.log({ res })
+    })
+    .catch((e) => console.log({ e }))
+
+  console.log({ smartlook_visitor_url, headers })
 
   const event = {
     event_type,
     user_id,
     ip,
     event_properties,
+    user_properties: {
+      smartlook_visitor_url,
+    },
   }
 
   amplitudeClient

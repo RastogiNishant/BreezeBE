@@ -11,7 +11,8 @@ const Drive = use('Drive')
 const AppException = use('App/Exceptions/AppException')
 
 class File {
-  static IMAGE_JPG = 'image/jpeg'
+  static IMAGE_JPG = 'image/jpg'
+  static IMAGE_JPEG = 'image/jpeg'
   static IMAGE_PNG = 'image/png'
   static IMAGE_PDF = 'application/pdf'
 
