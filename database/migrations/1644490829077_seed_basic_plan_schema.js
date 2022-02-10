@@ -11,7 +11,7 @@ INSERT INTO "plans" ("name",description,prices,created_at,updated_at) VALUES
 class AddBasicPlanSchema extends Schema {
   up() {
     this.schedule(async (trx) => {
-      await Database.raw(sql)
+      await Database.raw(planSql)
     })
   }
 
