@@ -32,6 +32,7 @@ const {
   LOG_TYPE_FINAL_MATCH_REQUEST,
   LOG_TYPE_FINAL_MATCH_APPROVAL,
   LOG_TYPE_INVITED,
+  LOG_TYPE_SHOWED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -234,56 +235,6 @@ class MatchController {
     }
   }
 
-  async cancelVisit({ request, auth, response }) {
-    const userId = auth.user.id
-    const { estate_id } = request.all()
-
-    try {
-      await MatchService.cancelVisit(estate_id, userId)
-      return response.res(true)
-    } catch (e) {
-      Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
-    }
-  }
-
-  /**
-   * Not coming/cancel visit by landloard
-   *
-   */
-  async cancelVisitByLandlord({ request, auth, response }) {
-    const { estate_id, tenant_id } = request.all()
-
-    try {
-      await MatchService.cancelVisit(estate_id, tenant_id)
-      return response.res(true)
-    } catch (e) {
-      Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
-    }
-  }
-
-  async inviteTenantInToVisit({ request, auth, response }) {
-    const { estate_id, tenant_id } = request.all()
-    try {
-      await MatchService.updateVisitIn(estate_id, tenant_id)
-      await MatchService.inviteTenantInToVisit(estate_id, tenant_id)
-      return response.res(true)
-    } catch (e) {
-      Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
-    }
-  }
-
   /**
    *
    */
@@ -307,7 +258,7 @@ class MatchController {
    */
   async updateVisitTimeslotTenant({ request, auth, response }) {
     const { estate_id, status, delay = null } = request.all()
-    console.log({ status })
+
     await MatchService.updateVisitStatus(estate_id, auth.user.id, {
       tenant_status: status,
       tenant_delay: delay,
@@ -326,8 +277,9 @@ class MatchController {
     await this.getOwnEstate(estate_id, userId)
 
     try {
-      await MatchService.share(userId, estate_id, code)
-      logEvent(request, LOG_TYPE_VISITED, auth.user.id, { estate_id }, false)
+      const { tenantId, tenantUid } = await MatchService.share(userId, estate_id, code)
+      logEvent(request, LOG_TYPE_VISITED, tenantUid, { estate_id })
+      logEvent(request, LOG_TYPE_SHOWED, auth.user.id, { tenant_id: tenantId, estate_id }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -340,6 +292,7 @@ class MatchController {
 
   async cancelShare({ request, auth, response }) {
     const { estate_id } = request.all()
+
     try {
       await MatchService.cancelShare(estate_id, auth.user.id)
       return response.res(true)
@@ -855,16 +808,20 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const top = data
 
-    let isFinalMatch = false;
+    let isFinalMatch = false
     let finalMatchesCount = await Database.table('matches')
       .count('*')
       .whereIn('status', [MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
 
-    if( finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0 ) {
+    if (finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0) {
       isFinalMatch = true
     }
-    if (!finalMatchesCount || !finalMatchesCount.length || parseInt(finalMatchesCount[0].count) <= 0) {
+    if (
+      !finalMatchesCount ||
+      !finalMatchesCount.length ||
+      parseInt(finalMatchesCount[0].count) <= 0
+    ) {
       finalMatchesCount = await Database.table('matches')
         .count('*')
         .whereIn('status', [MATCH_STATUS_COMMIT])
@@ -873,7 +830,7 @@ class MatchController {
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
 
-    const filter = isFinalMatch? { final: true } : { commit: true }
+    const filter = isFinalMatch ? { final: true } : { commit: true }
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
