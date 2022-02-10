@@ -44,12 +44,20 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, firstname, ...userData } = request.all()
-    if (![ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(userData.role)) {
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    const role = userData.role
+    if (!roles.includes(role)) {
       throw new HttpException('Invalid user role', 401)
     }
+    if (role) {
+      roles = [role]
+    }
 
-    // Check user not exists
-    const availableUser = await User.query().where('email', email).first()
+    const availableUser = await User.query()
+      .where('email', email)
+      .whereIn('role', roles)
+      .orderBy('updated_at', 'desc')
+      .first()
     if (availableUser) {
       throw new HttpException('User already exists, can be switched', 400)
     }
@@ -178,7 +186,6 @@ class AccountController {
       .whereIn('role', roles)
       .orderBy('updated_at', 'desc')
       .first()
-
     if (!user) {
       throw new HttpException('User not found', 404)
     }
