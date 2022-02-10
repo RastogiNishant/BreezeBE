@@ -218,6 +218,7 @@ class AccountController {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
       .with('tenant')
+      .with('plan')
       .firstOrFail()
 
     if (user) {

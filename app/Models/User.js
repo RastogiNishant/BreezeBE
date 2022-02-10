@@ -133,7 +133,9 @@ class User extends Model {
   tenant() {
     return this.hasOne('App/Models/Tenant', 'id', 'user_id')
   }
-
+  plan() {
+    return this.belongsTo('App/Models/Plan', 'plan_id', 'id')
+  }
   /**
    *
    */
