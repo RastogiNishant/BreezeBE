@@ -213,6 +213,7 @@ class EstateController {
         throw new HttpException('No excel format', 400)
       }
       const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id)
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
