@@ -180,8 +180,9 @@ class MailService {
 
     const templateId =
       role === ROLE_LANDLORD
-        ? `d-eac817b4c5934599b956fc07d0dfac5e`
-        : `d-87fde342eaf3493485bddb1823f50ca3`
+        ? LANDLORD_EMAIL_TEMPLATE
+        : PROSPECT_EMAIL_TEMPLATE
+        
     const msg = {
       to: email,
       from: FromEmail,
