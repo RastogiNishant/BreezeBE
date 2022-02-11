@@ -288,14 +288,14 @@ class UserService {
    *
    */
   static async confirmEmail(user, userCode) {
-    // const data = await DataStorage.getItem(user.id, 'confirm_email')
-    // const { code } = data || {}
-    // if (code !== userCode) {
-    //   throw new AppException('Invalid code')
-    // }
-    // // TODO: check user status active is allow
-    // user.status = STATUS_ACTIVE
-    // await DataStorage.remove(user.id, 'confirm_email')
+    const data = await DataStorage.getItem(user.id, 'confirm_email')
+    const { code } = data || {}
+    if (code !== userCode) {
+      throw new AppException('Invalid code')
+    }
+    // TODO: check user status active is allow
+    user.status = STATUS_ACTIVE
+    await DataStorage.remove(user.id, 'confirm_email')
 
 
     const localData = await UserService.getTokenWithLocale([user.id])
@@ -315,7 +315,6 @@ class UserService {
         },
       },
     })
-console.log('short Link=', shortLink)
     await MailService.sendWelcomeMail(user.email, {
       code: shortLink,
       role: user.role,
