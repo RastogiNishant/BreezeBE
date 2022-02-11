@@ -110,7 +110,7 @@ class MailService {
 
     const msg = {
       to: email,
-      from: FromEmail,
+      from: FromEmail, 
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_reset.password.subject.message', lang),
