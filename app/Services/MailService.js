@@ -182,7 +182,7 @@ class MailService {
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
-        
+
     const msg = {
       to: email,
       from: FromEmail,
@@ -250,6 +250,8 @@ class MailService {
         website: l.get('email_signature.website.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
+        display:'none',
+
       },
     }
 
