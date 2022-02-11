@@ -31,10 +31,11 @@ const {
   STATUS_EXPIRE,
   ROLE_USER,
   ROLE_LANDLORD,
+  ROLE_PROPERTY_MANAGER,
+  ROLE_HOUSEHOLD,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
-  ROLE_HOUSEHOLD,
   BUDDY_STATUS_ACCEPTED,
   SMS_VERIFY_PREFIX,
   LOG_TYPE_SIGN_UP,
@@ -49,17 +50,21 @@ class UserService {
   static async createUser(userData) {
     const user = await User.createItem(userData)
     if (user.role === ROLE_USER) {
-      // Create empty tenant and link to user
-      const tenant = userData.signupData
-      await Tenant.createItem({
-        user_id: user.id,
-        coord: tenant.address.coord,
-        dist_type: tenant.transport,
-        dist_min: tenant.time,
-        address: tenant.address.title,
-      })
+      try {
+        // Create empty tenant and link to user
+        const tenant = userData.signupData
+        console.log('tenanttenant', tenant)
+        await Tenant.createItem({
+          user_id: user.id,
+          coord: tenant.address.coord,
+          dist_type: tenant.transport,
+          dist_min: tenant.time,
+          address: tenant.address.title,
+        })
+      } catch (e) {      
+        console.log('createUser exception', e)
+      }
     }
-
     return { user }
   }
 
@@ -74,10 +79,14 @@ class UserService {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    if (role) {
+      roles = [role]
+    }
     // Check is user same email another role is exists
     const existingUser = await User.query()
       .where('email', email)
-      .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+      .whereIn('role', roles)
       .first()
     if (existingUser) {
       throw new AppException('User same email, another role exists')
