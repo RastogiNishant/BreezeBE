@@ -23,35 +23,37 @@ class Localization {
   async init() {
     const File = use('App/Classes/File')
     // Disable loading localisation from phrase
-    // const req = new Request(ROOT_LOCALISATION_API)
-    // const getLocale = async (locale) => {
-    //   return req.send({
-    //     url: `/projects/${this.settings.projectId}/locales/${locale}/download?file_format=json`,
-    //     data: {},
-    //     headers: { Authorization: `token ${this.settings.accessToken}` },
-    //   })
+    const req = new Request(ROOT_LOCALISATION_API)
+    const getLocale = async (locale) => {
+      return req.send({
+        url: `/projects/${this.settings.projectId}/locales/${locale}/download?file_format=json`,
+        data: {},
+        headers: { Authorization: `token ${this.settings.accessToken}` },
+      })
+    }
+
+console.log('Location File downloading')    
+    // try {
+    //   this._data = JSON.parse(await File.readLog('../resources/locales.json'))
+
+    // } catch (e) {
+    //   console.log('Cache file not exists')
     // }
 
     try {
-      this._data = JSON.parse(await File.readLog('../resources/locales.json'))
+      const data = await map(this.locales, async (l) => {
+        const res = await getLocale(l)
+        return { locale: l, data: res }
+      })
+    
+      this._data = data.reduce((n, { locale, data }) => ({ ...n, [locale]: data }), {})
+//console.log( "Locale", this._data );      
+//await File.logFile(this._data, 'locales.json')
+      console.log('Location loading success')
     } catch (e) {
-      console.log('Cache file not exists')
+      console.log('Loading location failure', e )
     }
-    console.log('Location loading success')
-
-    // try {
-    //   const data = await map(this.locales, async (l) => {
-    //     const res = await getLocale(l)
-    //     return { locale: l, data: res }
-    //   })
-    //
-    //   this._data = data.reduce((n, { locale, data }) => ({ ...n, [locale]: data }), {})
-    //   await File.logFile(this._data, 'locales.json')
-    //   console.log('Location loading success')
-    // } catch (e) {
-    //   console.log('Loading location failure')
-    // }
-  }
+   }
 
   /**
    *

@@ -182,7 +182,10 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, 1)
+      const data = await this.getTokenWithLocale([user.id])
+      const lang = data && data.length && data[0].lang?data[0].lang:user.lang
+  
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, user.role, lang)
     } catch (error) {
       throw new HttpException(
         error.error ? error.error.message : error.message,
@@ -257,10 +260,14 @@ class UserService {
     const date = String(new Date().getTime())
     const code = date.slice(date.length - 4, date.length)
     await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+    const data = await UserService.getTokenWithLocale([user.id])
+    const lang = data && data.length && data[0].lang?data[0].lang:user.lang;
+
     await MailService.sendUserConfirmation(user.email, {
       code,
       user_id: user.id,
       role: user.role,
+      lang: lang,
     })
   }
 
@@ -281,14 +288,39 @@ class UserService {
    *
    */
   static async confirmEmail(user, userCode) {
-    const data = await DataStorage.getItem(user.id, 'confirm_email')
-    const { code } = data || {}
-    if (code !== userCode) {
-      throw new AppException('Invalid code')
-    }
-    // TODO: check user status active is allow
-    user.status = STATUS_ACTIVE
-    await DataStorage.remove(user.id, 'confirm_email')
+    // const data = await DataStorage.getItem(user.id, 'confirm_email')
+    // const { code } = data || {}
+    // if (code !== userCode) {
+    //   throw new AppException('Invalid code')
+    // }
+    // // TODO: check user status active is allow
+    // user.status = STATUS_ACTIVE
+    // await DataStorage.remove(user.id, 'confirm_email')
+
+
+    const localData = await UserService.getTokenWithLocale([user.id])
+    const lang = localData && localData.length && localData[0].lang?localData[0].lang:user.lang;
+
+    const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+    const { shortLink } = await firebaseDynamicLinks.createLink({
+      dynamicLinkInfo: {
+        domainUriPrefix: process.env.DOMAIN_PREFIX,
+        link: `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`,
+        androidInfo: {
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+        },
+        iosInfo: {
+          iosBundleId: process.env.IOS_BUNDLE_ID,
+        },
+      },
+    })
+console.log('short Link=', shortLink)
+    await MailService.sendWelcomeMail(user.email, {
+      code: shortLink,
+      role: user.role,
+      lang: lang,
+    })    
     return user.save()
   }
 
