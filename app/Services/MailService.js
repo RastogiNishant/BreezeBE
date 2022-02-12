@@ -64,6 +64,7 @@ class MailService {
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
         website: l.get('email_signature.website.message', lang),
+        team: l.get('email_signature.team.message', lang),        
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
       },
@@ -127,6 +128,7 @@ class MailService {
         address: l.get('email_signature.address.message', lang),
         website: l.get('email_signature.website.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
+        team: l.get('email_signature.team.message', lang),        
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
       },
     }
@@ -248,6 +250,7 @@ class MailService {
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
         website: l.get('email_signature.website.message', lang),
+        team: l.get('email_signature.team.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
         display:'none',
