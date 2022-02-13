@@ -48,16 +48,16 @@ class MailService {
         : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
-      to: trim(email),
+      to: trim(email, ' '),
       from: FromEmail,
       templateId: templateId,
       dynamic_template_data: {
-        subject: l.get('landlord.email_activation.subject.message', lang),
+        subject: l.get('landlord.email_confirmation.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        intro: l.get('landlord.email_activation.intro.message', lang),
-        CTA: l.get('landlord.email_activation.CTA.message', lang),
+        intro: l.get('landlord.email_confirmation.intro.message', lang),
+        CTA: l.get('landlord.email_confirmation.CTA.message', lang),
         link: code,
-        final: l.get('landlord.email_activation.final.message', lang),
+        final: l.get('landlord.email_confirmation.final.message', lang),
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
         position: l.get('email_signature.position.message', lang),        
@@ -145,9 +145,9 @@ class MailService {
     return sgMail
     .send(msg)
     .then(() => {
-      console.log('Email delivery successfully')
+      console.log('Reset Email delivery successfully')
     }, error => {
-      console.log('Email delivery failed', error);
+      console.log('Reset Email delivery failed', error);
         if (error.response) {
         console.error(error.response.body)
       }
