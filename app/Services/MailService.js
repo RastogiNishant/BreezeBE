@@ -3,6 +3,7 @@
 const Mail = use('Mail')
 const Config = use('Config')
 const l = use('Localize')
+const { trim } = require('lodash')
 
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
@@ -40,23 +41,23 @@ class MailService {
     // })
   }
 
-  static async sendWelcomeMail( email, {link, role, lang} ) {
+  static async sendWelcomeMail( email, {code, role, lang} ) {
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
-      to: email,
+      to: trim(email, ' '),
       from: FromEmail,
       templateId: templateId,
       dynamic_template_data: {
-        subject: l.get('landlord.email_activation.subject.message', lang),
+        subject: l.get('landlord.email_confirmation.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        intro: l.get('landlord.email_activation.intro.message', lang),
-        CTA: l.get('landlord.email_activation.CTA.message', lang),
-        link: link,
-        final: l.get('landlord.email_activation.final.message', lang),
+        intro: l.get('landlord.email_confirmation.intro.message', lang),
+        CTA: l.get('landlord.email_confirmation.CTA.message', lang),
+        link: code,
+        final: l.get('landlord.email_confirmation.final.message', lang),
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
         position: l.get('email_signature.position.message', lang),        
@@ -64,7 +65,11 @@ class MailService {
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
         website: l.get('email_signature.website.message', lang),
-        team: l.get('email_signature.team.message', lang),        
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
       },
@@ -73,9 +78,9 @@ class MailService {
     return sgMail
     .send(msg)
     .then(() => {
-      console.log('Email delivery successfully')
+      console.log('Welcome Email delivery successfully')
     }, error => {
-      console.log('Email delivery failed', error);
+      console.log('Welcome Email delivery failed', error);
         if (error.response) {
         console.error(error.response.body)
       }
@@ -110,8 +115,8 @@ class MailService {
         : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
-      to: email,
-      from: FromEmail, 
+      to: trim(email),
+      from: FromEmail,
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_reset.password.subject.message', lang),
@@ -127,6 +132,10 @@ class MailService {
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
         website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
         team: l.get('email_signature.team.message', lang),        
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
@@ -136,9 +145,9 @@ class MailService {
     return sgMail
     .send(msg)
     .then(() => {
-      console.log('Email delivery successfully')
+      console.log('Reset Email delivery successfully')
     }, error => {
-      console.log('Email delivery failed', error);
+      console.log('Reset Email delivery failed', error);
         if (error.response) {
         console.error(error.response.body)
       }
@@ -186,7 +195,7 @@ class MailService {
         : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
-      to: email,
+      to: trim(email),
       from: FromEmail,
       templateId: templateId,
       dynamic_template_data: {
@@ -233,7 +242,7 @@ class MailService {
         : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
-      to: email,
+      to: trim(email),
       from: FromEmail,
       templateId: templateId,
       dynamic_template_data: {
@@ -250,6 +259,10 @@ class MailService {
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
         website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
         team: l.get('email_signature.team.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),

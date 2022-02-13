@@ -368,8 +368,8 @@ class AccountController {
   async passwordReset({ request, response }) {
     const { email } = request.only(['email'])
     // Send email with reset password code
-    await UserService.requestPasswordReset(email)
-
+    //await UserService.requestPasswordReset(email)
+    await UserService.requestSendCodeForgotPassword(email)
     return response.res()
   }
 
