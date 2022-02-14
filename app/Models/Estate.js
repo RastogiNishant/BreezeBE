@@ -231,7 +231,7 @@ class Estate extends Model {
   /**
    *
    */
-   knocks() {
+   knocked() {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_KNOCK,
     ])

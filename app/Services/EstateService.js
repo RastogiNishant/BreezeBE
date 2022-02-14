@@ -84,7 +84,7 @@ class EstateService {
   static getEstates(params = {}) {
     const query = Estate.query()
       .withCount('visits')
-      .withCount('knocks')
+      .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
       .withCount('inviteBuddies')
@@ -488,6 +488,9 @@ class EstateService {
 
     return Estate.query()
       .select('estates.*')
+      .withCount('knocked', function (m) {
+        m.whereNotIn('estate_id', exclude)
+      })
       .select(Database.raw(`_m.percent AS match`))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
@@ -511,6 +514,7 @@ class EstateService {
       })
       .with('files')
       .orderBy('_m.percent', 'DESC')
+    
   }
 
   /**
@@ -564,6 +568,7 @@ class EstateService {
     return (
       query
         .select('estates.*')
+        .withCount('knocked')
         .with('rooms', function (b) {
           b.whereNot('status', STATUS_DELETE).with('images')
         })
