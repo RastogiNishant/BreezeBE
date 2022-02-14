@@ -84,6 +84,7 @@ class EstateService {
   static getEstates(params = {}) {
     const query = Estate.query()
       .withCount('visits')
+      .withCount('knocks')
       .withCount('decided')
       .withCount('invite')
       .withCount('inviteBuddies')
