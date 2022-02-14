@@ -231,6 +231,15 @@ class Estate extends Model {
   /**
    *
    */
+   knocks() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_KNOCK,
+    ])
+  }
+
+  /**
+   *
+   */
   visits() {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_INVITE,
