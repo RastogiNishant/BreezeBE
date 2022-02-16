@@ -179,10 +179,12 @@ class Tenant extends Model {
    *
    */
   static async createItem(data) {
-    const options = await Database.table('options')
-      .select('id')
-      .whereIn('title', AMENITIES_OPTIONS)
-      .limit(AMENITIES_OPTIONS.length)
+    // const options = await Database.table('options')
+    //   .select('id')
+    //   .whereIn('title', AMENITIES_OPTIONS)
+    //   .limit(AMENITIES_OPTIONS.length)
+
+    const options = [];
 
     return super.createItem({
       ...data,
