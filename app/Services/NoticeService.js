@@ -667,7 +667,7 @@ class NoticeService {
   /**
    *
    */
-  static async getUserNoticesList(userId, dateFrom, dateTo, limit = 20) {
+  static async getUserNoticesList(userId, dateFrom, dateTo, estate_id = null, limit = 20) {
     const query = Notice.query().orderBy('id', 'desc').where('user_id', userId).limit(limit)
     if (dateTo) {
       query.where('created_at', '>', moment.utc(dateTo).add(1, 'seconds').format(DATE_FORMAT))
