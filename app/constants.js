@@ -490,6 +490,9 @@ const constants = {
   SIGN_UP_METHOD_GOOGLE: 'google',
   SIGN_UP_METHOD_APPLE: 'apple',
   SIGN_UP_METHOD_EMAIL: 'email',
+
+  PLAN_FEATURE_COMMON:  '',  
+  PLAN_FEATURE_NEW:  'New',
 }
 
 module.exports = constants
