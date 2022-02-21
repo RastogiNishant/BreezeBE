@@ -174,8 +174,8 @@ definitions:
     enum: ['rent_arrears_doc', 'debt_proof']
     type: string
     require: true
-  code:
-    name: email
+  inviteCode:
+    name: code
     in: formData
     type: string
 # Routes list
@@ -366,6 +366,7 @@ definitions:
     description: Confirm invite
     produces: [application/json]
     parameters:
-      - $ref: '#/definitions/code'
+      - $ref: '#/definitions/inviteCode'
+      - $ref: '#/definitions/email'
 
     responses: [200]
