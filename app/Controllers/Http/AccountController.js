@@ -30,7 +30,7 @@ const {
   PREMIUM_MEMBER,
   YEARLY_DISCOUNT_RATE,
   ROLE_PROPERTY_MANAGER,
-  ROLE_HOUSEHOLD,
+  ROLE_HOUSEKEEPER,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
@@ -44,7 +44,7 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, firstname, ...userData } = request.all()
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     const role = userData.role
     if (!roles.includes(role)) {
       throw new HttpException('Invalid user role', 401)
@@ -73,6 +73,7 @@ class AccountController {
         role: user.role,
         email: user.email,
       })
+
       await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
@@ -176,7 +177,7 @@ class AccountController {
     let { email, role, password, device_token } = request.all()
 
     // Select role if not set, (allows only for non-admin users)
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     if (role) {
       roles = [role]
     }
@@ -190,6 +191,8 @@ class AccountController {
       throw new HttpException('User not found', 404)
     }
     role = user.role
+
+console.log( 'User', user )
 
     let authenticator
     try {

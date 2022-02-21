@@ -40,13 +40,13 @@ Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'v
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
-  'auth:jwt,jwtLandlord,jwtHousehold,jwtPropertyManager',
+  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
 
-//Household
+//Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
   'guest',
-  'valid:HoseholdSignUp',
+  'valid:HosekeeperSignUp',
 ])
 Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
   'guest',
