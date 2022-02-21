@@ -215,9 +215,11 @@ class MemberController {
 
   async sendInviteCode({ request, auth, response }) {
     const { id } = request.all()
+
     const userId = auth.user.id
     try {
       const code = await MemberService.sendInvitationCode(id, userId)
+console.log('Send invitation code Controller', code )      
       return response.res(code)
     } catch (e) {
       if (e.name === 'AppException') {
@@ -228,9 +230,9 @@ class MemberController {
   }
 
   async confirmInviteCode({ request, response }) {
-    const { code } = request.all()
+    const { email,code } = request.all()
     try {
-      response.res(await MemberService.getInvitationCode(code))
+      response.res(await MemberService.getInvitationCode(email,code))
     } catch (e) {
       throw new HttpException(e.message, 400)
     }

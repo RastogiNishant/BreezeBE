@@ -52,14 +52,14 @@ module.exports = {
     },
   },  
 
-  jwtHousehold: {
+  jwtHousekeeper: {
     serializer: 'lucid',
     model: 'App/Models/User',
     scheme: 'jwt',
     uid: 'uid',
     password: 'password',
     options: {
-      secret: Env.get('HOUSEHOLD_APP_KEY'),
+      secret: Env.get('HOUSEKEEPER_APP_KEY'),
       expiresIn: 7200, // 2 Hours lifetime
     },
   },    

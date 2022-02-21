@@ -367,5 +367,6 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/code'
+      - $ref: '#/definitions/email'
 
     responses: [200]
