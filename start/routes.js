@@ -529,7 +529,7 @@ Route.group(() => {
     'auth:jwt',
     'valid:CreateEstateAbuse',
   ])
-}).prefix('api/v1/estateAbuse')
+}).prefix('api/v1/estateReportAbuse')
 
 Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([

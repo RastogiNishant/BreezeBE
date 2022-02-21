@@ -1,0 +1,22 @@
+definitions:
+  estateId:
+    name: estate_id
+    in: path
+    type: number
+    required: true
+  abuse:
+    name: abuse
+    in: path
+    type: string
+
+# Routes list
+/api/v1/estateReportAbuse:
+  post:
+    tags: [Report-Abuse]
+    security: [bearerAuth: []]
+    description: Report Abuse
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/estateId'
+      - $ref: '#/definitions/abuse'
+    responses: [200]
