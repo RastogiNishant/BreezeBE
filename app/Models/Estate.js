@@ -130,6 +130,7 @@ class Estate extends Model {
       'options',
       'avail_duration',
       'vacant_date',
+      'others',
     ]
   }
 

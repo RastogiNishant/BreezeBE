@@ -461,6 +461,7 @@ const constants = {
     'address',
     'user_id',
     'available_date',
+    'others',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
