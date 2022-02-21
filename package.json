@@ -4,6 +4,10 @@
 	"adonis-version": "4.1.0",
 	"description": "breeze",
 	"main": "index.js",
+	"engines": {
+		"npm": ">=7.0.0",
+		"node": ">=14.0.0"
+	},
 	"scripts": {
 		"start": "nodemon server.js",
 		"dev": "DEBUG=query DEV=true adonis serve --dev",
@@ -13,7 +17,7 @@
 		"migrate": "node ace migration:run",
 		"test-dev": "adonis test -f ",
 		"setup-env:dev": "cp ./.env.dev ./.env",
-		"setup-env:staging": "cp ./.env.dev ./.env",
+		"setup-env:staging": "cp ./.env.staging ./.env",
 		"setup-env:prod": "cp ./.env.dev ./.env"
 	},
 	"keywords": [
