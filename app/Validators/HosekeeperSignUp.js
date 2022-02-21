@@ -6,7 +6,7 @@ const { id } = require('../Libs/schemas.js')
 
 const { phoneSchema } = require('../Libs/schemas.js')
 
-class HoseholdSignUp extends Base {
+class HosekeeperSignUp extends Base {
   static schema = () =>
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
@@ -20,4 +20,4 @@ class HoseholdSignUp extends Base {
 }
 
 
-module.exports = HoseholdSignUp
+module.exports = HosekeeperSignUp

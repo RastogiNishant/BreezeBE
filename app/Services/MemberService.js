@@ -14,6 +14,7 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
 } = require('../constants')
+const HttpException = require('../Exceptions/HttpException.js')
 
 class MemberService {
   /**
@@ -150,11 +151,11 @@ class MemberService {
 
     const trx = await Database.beginTransaction()    
     try{
-      await Member.findByOrFail({ id:id, user_id:userId })
-
+console.log('Send Invitation Code', userId )      
+      const member = await Member.findByOrFail({ id:id, user_id:userId })
       const code = getHash(3)
-      const user = await User.query().select('email').where('id', userId).firstOrFail()
-      if( user && user.email ){
+      //const user = await User.query().select('email').where('id', userId).firstOrFail()
+      if( member && member.email ){
         await Member.query()
         .where({ id: id })
         .update({
@@ -163,20 +164,27 @@ class MemberService {
         }, trx)
    
   
-        await MailService.sendcodeForMemberInvitation(user.email, code)    
+        await MailService.sendcodeForMemberInvitation(member.email, code)    
         trx.commit()
-        return true        
-      }        
+        return true
+      }
+      if( member && !member.email ) {
+        throw new HttpException('this member doesn\'t have email. please add email first', 400 )
+      }
       return false
 
     }catch(e){
+console.log('Send Invitation code', e )      
       await trx.rollback()
-      return false
+      throw new HttpException(e.message, 400)
     }   
   }
 
-  static async getInvitationCode(code) {
-    const member = await Member.query().select(['id', 'user_id']).where('code', code).firstOrFail()
+  static async getInvitationCode(email,code) {
+    const member = await Member.query()
+      .select(['id', 'user_id'])
+      .where('email', email)
+      .where('code', code).firstOrFail()
     await Member.query()
         .where({ id: member.id, user_id:member.user_id })
         .update({
