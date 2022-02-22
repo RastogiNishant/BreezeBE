@@ -99,7 +99,9 @@ class AccountController {
         throw new HttpException('Not allowed', 400)
       }
       // Check user not exists
-      const availableUser = await User.query().where('email', email).first()
+      const availableUser = await User.query()
+          .where('role', ROLE_HOUSEKEEPER )
+          .where('email', email).first()
       if (availableUser) {
         throw new HttpException('User already exists, can be switched', 400)
       }
