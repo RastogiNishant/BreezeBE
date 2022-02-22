@@ -154,15 +154,15 @@ class MailService {
     });
   }
 
-  static async sendcodeForMemberInvitation(email, code) {
+  static async sendcodeForMemberInvitation(email, shortLink) {
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
-      subject: `Code for invitation is`,
-      text: `Code for invitation is ${code}`,
-      html: `<h3> Code for invitation is is <b>${code}</b></h3>`,
+      subject: `You got the link for invitation for your household`,
+      text: `Here is the link is ${shortLink}`,
+      html: `<h3> Code for invitation is is <b>${shortLink}</b></h3>`,
     }
-
+console.log('SendCodeForMember Email', email )
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')

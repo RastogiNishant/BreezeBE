@@ -8,6 +8,7 @@ const { getHash } = require('../Libs/utils.js')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
+const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -151,7 +152,6 @@ class MemberService {
 
     const trx = await Database.beginTransaction()    
     try{
-console.log('Send Invitation Code', userId )      
       const member = await Member.findByOrFail({ id:id, user_id:userId })
       const code = getHash(3)
       //const user = await User.query().select('email').where('id', userId).firstOrFail()
@@ -163,8 +163,21 @@ console.log('Send Invitation Code', userId )
           published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
         }, trx)
    
-  
-        await MailService.sendcodeForMemberInvitation(member.email, code)    
+        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)        
+        const { shortLink } = await firebaseDynamicLinks.createLink({
+          dynamicLinkInfo: {
+            domainUriPrefix: process.env.DOMAIN_PREFIX,
+            link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}`,
+            androidInfo: {
+              androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+            },
+            iosInfo: {
+              iosBundleId: process.env.IOS_BUNDLE_ID,
+            },
+          },
+        })
+
+        await MailService.sendcodeForMemberInvitation(member.email, shortLink)    
         trx.commit()
         return true
       }

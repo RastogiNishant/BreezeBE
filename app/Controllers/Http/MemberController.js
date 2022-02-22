@@ -218,9 +218,8 @@ class MemberController {
 
     const userId = auth.user.id
     try {
-      const code = await MemberService.sendInvitationCode(id, userId)
-console.log('Send invitation code Controller', code )      
-      return response.res(code)
+      const result = await MemberService.sendInvitationCode(id, userId)
+      return response.res(result)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
