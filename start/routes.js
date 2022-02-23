@@ -68,7 +68,7 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
+Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
@@ -303,6 +303,7 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
 // Tenant members
 Route.group(() => {
   Route.get('/', 'MemberController.getMembers')
+  Route.post('/email', 'MemberController.addMember').middleware(['valid:CreateMember,Email'])  
   Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.put('/:id', 'MemberController.updateMember').middleware(['valid:CreateMember,Id'])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])

@@ -13,6 +13,7 @@ const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
+const MemberService = use('App/Services/MemberService')
 const ImageService = use('App/Services/ImageService')
 const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -111,6 +112,9 @@ class AccountController {
       }
 
       const user = await UserService.housekeeperSignup(member.user_id, email, password, phone)
+      if( user ) {
+        await MemberService.setMemberOwner(member_id, user.id)
+      }
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -230,6 +234,7 @@ console.log( 'User', user )
     const user = await User.query()
       .where('users.id', auth.current.user.id)
       .with('tenant')
+      .with('household')
       .with('plan')
       .firstOrFail()
 

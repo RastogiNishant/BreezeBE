@@ -32,7 +32,8 @@ class Member extends Model {
       'execution',
       'code',
       'published_at',
-      'is_verified'
+      'is_verified',
+      'owner_id'
     ]
   }
 

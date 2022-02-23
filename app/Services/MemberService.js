@@ -92,6 +92,14 @@ class MemberService {
     return Member.createItem({ ...member, user_id })
   }
 
+  static async setMemberOwner( member_id, owner_id ) {
+    await Member.query()
+      .update({
+        owner_user_id:owner_id
+      })
+      .where({ id: member_id })
+  }
+
   /**
    *
    */
