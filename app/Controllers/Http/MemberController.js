@@ -3,6 +3,7 @@ const File = use('App/Classes/File')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 const MemberService = use('App/Services/MemberService')
+const UserService = use('App/Services/UserService')
 const Member = use('App/Models/Member')
 const DataStorage = use('DataStorage')
 const HttpException = use('App/Exceptions/HttpException')
@@ -10,6 +11,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
+const { ROLE_HOUSEKEEPER } = require('../../constants')
 /**
  *
  */
@@ -18,7 +20,12 @@ class MemberController {
    *
    */
   async getMembers({ request, auth, response }) {
-    const members = await MemberService.getMembers(auth.user.id)
+    let userId = auth.user.id
+    if( auth.user.role === ROLE_HOUSEKEEPER ) {
+      const owner = await UserService.getHousehouseId(userId)
+      userId = owner.owner_id
+    }
+    const members = await MemberService.getMembers(userId)
 
     response.res(members)
   }
