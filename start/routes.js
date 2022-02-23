@@ -322,7 +322,7 @@ Route.group(() => {
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/members')
-  .middleware(['auth:jwt'])
+  .middleware(['auth:jwt,jwtHousekeeper'])
 
 Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
   .prefix('api/v1/tenant/members')

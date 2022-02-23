@@ -20,6 +20,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
 
+
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 
@@ -240,6 +241,19 @@ class UserService {
     await DataStorage.remove(code, 'reset_password')
   }
 
+  static async getHousehouseId( user_id ) {
+    try{
+      const owner = await User.query()
+      .select('owner_id')
+      .where('id', user_id)
+      .where('role', ROLE_HOUSEKEEPER)
+      .firstOrFail()
+
+      return owner        
+    }catch(e) {
+      throw new HttpException(e.message, 400)    
+    }
+  }
   /**
    *
    */
