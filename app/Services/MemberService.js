@@ -15,6 +15,7 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
   ROLE_HOUSEKEEPER,
+  ROLE_USER,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -23,41 +24,67 @@ class MemberService {
    *
    */
 
-  static async getMemberIdByOwnerId(owner_id, role){
-    let member = await Member.query()
-      .select('id')
-      .where('owner_user_id', owner_id)
-      .first()
+  static async getMemberIdsByOwnerId(owner_id, role) {
+    try {
+      const member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
-    if(!member) {
-      if( role === ROLE_HOUSEKEEPER ) {
-        throw new HttpException('You are not the member anymore', 400 )
+      if (!member) {
+        if (role === ROLE_HOUSEKEEPER) {
+          throw new HttpException('You are not the member anymore', 400)
+        }
+
+        //Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
+
+        const members = await Member.query()
+          .select('id')
+          .where('user_id', owner_id)
+          .orderBy('id', 'asc')
+          .fetch()
+
+        if (!members) {
+          throw new HttpException('No member exists', 400)
+        }
+
+        return members.toJSON().map((m) => m.id)
+      }
+      return [member.id]
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async getMemberIdByOwnerId(owner_id, role) {
+    let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
+
+    if (!member) {
+      if (role === ROLE_HOUSEKEEPER) {
+        throw new HttpException('You are not the member anymore', 400)
       }
 
       //Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
       member = await Member.query()
-      .select('id')
-      .where('user_id', owner_id)
-      .orderBy('id', 'asc')
-      .first()
+        .select('id')
+        .where('user_id', owner_id)
+        .orderBy('id', 'asc')
+        .first()
 
-      if(!member){
-        throw new HttpException('No member exists', 400 )        
+      if (!member) {
+        throw new HttpException('No member exists', 400)
       }
     }
-console.log('getMemberId', member)    
     return member.id
   }
+
   static async getMembers(householdId) {
     const query = Member.query()
-      .select('members.*')    
+      .select('members.*')
       .where('members.user_id', householdId)
       .with('incomes', function (b) {
         b.with('proofs')
       })
       .orderBy('id', 'asc')
 
-    return (await query.fetch())
+    return await query.fetch()
   }
 
   /**
@@ -107,10 +134,13 @@ console.log('getMemberId', member)
       : tenantData[0]
 
     await Tenant.query()
-      .update({
-        ...toUpdate,
-        credit_score: parseInt(toUpdate.credit_score) || null,
-      }, trx)
+      .update(
+        {
+          ...toUpdate,
+          credit_score: parseInt(toUpdate.credit_score) || null,
+        },
+        trx
+      )
       .where({ user_id: userId })
   }
 
@@ -121,14 +151,27 @@ console.log('getMemberId', member)
     return Member.createItem({ ...member, user_id }, trx)
   }
 
-  static async setMemberOwner( member_id, owner_id ) {
+  static async setMemberOwner(member_id, owner_id) {
     await Member.query()
       .update({
-        owner_user_id:owner_id
+        owner_user_id: owner_id,
       })
       .where({ id: member_id })
   }
 
+  static async getMember(id, user_id, role) {
+    let member
+    if (role === ROLE_USER) {
+      member = await Member.query()
+        .where('id', id)
+        .whereNull('owner_user_id')
+        .where('user_id', user_id)
+        .first()
+    } else {
+      member = await Member.query().where('id', id).where('owner_user_id', user_id).first()
+    }
+    return member
+  }
   /**
    *
    */
@@ -150,12 +193,9 @@ console.log('getMemberId', member)
    *
    */
   static async getIncomeByIdAndUser(id, user) {
-    return Income.query()
-      .where('id', id)
-      .whereIn('member_id', function () {
-        this.select('id').from('members').where('user_id', user.id)
-      })
-      .first()
+    const memberIds = await this.getMemberIdsByOwnerId(user.id, user.role)
+    console.log('MemberId', memberIds)
+    return Income.query().where('id', id).whereIn('member_id', memberIds).first()
   }
 
   /**
@@ -186,21 +226,23 @@ console.log('getMemberId', member)
   }
 
   static async sendInvitationCode(id, userId) {
-
-    const trx = await Database.beginTransaction()    
-    try{
-      const member = await Member.findByOrFail({ id:id, user_id:userId })
+    const trx = await Database.beginTransaction()
+    try {
+      const member = await Member.findByOrFail({ id: id, user_id: userId })
       const code = getHash(3)
       //const user = await User.query().select('email').where('id', userId).firstOrFail()
-      if( member && member.email ){
+      if (member && member.email) {
         await Member.query()
-        .where({ id: id })
-        .update({
-          code: code,
-          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-        }, trx)
-   
-        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)        
+          .where({ id: id })
+          .update(
+            {
+              code: code,
+              published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+            },
+            trx
+          )
+
+        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
         const { shortLink } = await firebaseDynamicLinks.createLink({
           dynamicLinkInfo: {
             domainUriPrefix: process.env.DOMAIN_PREFIX,
@@ -214,33 +256,33 @@ console.log('getMemberId', member)
           },
         })
 
-        await MailService.sendcodeForMemberInvitation(member.email, shortLink)    
+        await MailService.sendcodeForMemberInvitation(member.email, shortLink)
         trx.commit()
         return true
       }
-      if( member && !member.email ) {
-        throw new HttpException('this member doesn\'t have email. please add email first', 400 )
+      if (member && !member.email) {
+        throw new HttpException("this member doesn't have email. please add email first", 400)
       }
       return false
-
-    }catch(e){
-console.log('Send Invitation code', e )      
+    } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
-    }   
+    }
   }
 
-  static async getInvitationCode(email,code) {
+  static async getInvitationCode(email, code) {
     const member = await Member.query()
       .select(['id', 'user_id'])
       .where('email', email)
-      .where('code', code).firstOrFail()
+      .where('code', code)
+      .firstOrFail()
+
     await Member.query()
-        .where({ id: member.id, user_id:member.user_id })
-        .update({
-          is_verified: true,
-          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-        })
+      .where({ id: member.id, user_id: member.user_id })
+      .update({
+        is_verified: true,
+        published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+      })
     return member
   }
 }

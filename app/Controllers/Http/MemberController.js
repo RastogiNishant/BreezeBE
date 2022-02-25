@@ -104,25 +104,10 @@ class MemberController {
    */
   async updateMember({ request, auth, response }) {
     const { id, ...data } = request.all()
-    let user_id = auth.user.id
-    const search_label = auth.user.role === ROLE_USER?'user_id':'owner_user_id'
 
-    let member = null
-    if( auth.user.role === ROLE_USER ) {
-      member = await MemberService.getMemberQuery()
-        .where('id', id)
-        .whereNull('owner_user_id')
-        .where(search_label, user_id)
-        .first()
-    }else {
-      member = await MemberService.getMemberQuery()
-        .where('id', id)
-        .where(search_label, user_id)
-        .first()
-    }
-
+    const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
     if (!member) {
-      throw new HttpException('Member not exists', 400)
+      throw new HttpException('Member not exists or permission denied', 400)
     }
 
     if( auth.role === ROLE_HOUSEKEEPER ) {
@@ -151,31 +136,25 @@ class MemberController {
     const { id } = request.all()
     const trx = await Database.beginTransaction()    
     try{
-      let user_id = auth.user.id
-      const search_label = auth.role === ROLE_USER?'user_id':'owner_user_id'
-  
-      const member = await MemberService.getMemberQuery()
-      .where('id', id)
-      .where(search_label, user_id)
-      .first()
-
-      if( member ) {
-        /**
-         * ToDo
-         * If a household deletes a member, we might need to delete household account from user table
-         * Need to confirm later with the customer
-         */
-
-        await MemberPermissionService.deletePermission(id, trx)    
-        await MemberService.getMemberQuery().where('id', id).where('user_id', member.user_id).delete(trx)
-        await MemberService.calcTenantMemberData(member.user_id, trx)
-    
-        Event.fire('tenant::update', member.user_id)
-        trx.commit()
+      const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
+      if (!member) {
+        throw new HttpException('Member not exists or permission denied', 400)
       }
+  
+      /**
+       * ToDo
+       * If a household deletes a member, we might need to delete household account from user table
+       * Need to confirm later with the customer
+       */
+
+      await MemberPermissionService.deletePermission(id, trx)    
+      await MemberService.getMemberQuery().where('id', id).delete(trx)
+      await MemberService.calcTenantMemberData(member.user_id, trx)
+  
+      Event.fire('tenant::update', member.user_id)
+      trx.commit()
       response.res(true)
     }catch(e) {
-console.log('Error remove Member')
       await trx.rollback()
       throw new HttpException(e.message, 400)
     }
@@ -211,13 +190,11 @@ console.log('Error remove Member')
    */
   async addMemberIncome({ request, auth, response }) {
     const { id, ...data } = request.all()
-    let member = await MemberService.getMemberQuery()
-      .where('id', id)
-      .where('user_id', auth.user.id)
-      .first()
+
+    const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
 
     if (!member) {
-      throw new HttpException('Member not exists', 404)
+      throw new HttpException('Member not exists or permission denied', 400)
     }
     const files = await File.saveRequestFiles(request, [
       { field: 'company_logo', mime: imageMimes, isPublic: true },
@@ -235,15 +212,19 @@ console.log('Error remove Member')
    */
   async editIncome({ request, auth, response }) {
     const { income_id, id, ...rest } = request.all()
+
+    const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
+    if (!member) {
+      throw new HttpException('Member not exists or permission denied', 400)
+    }
+
     const income = await Income.query()
       .where('id', income_id)
-      .whereIn('member_id', function () {
-        this.select('id').from('members').where('user_id', auth.user.id)
-      })
+      .whereIn('member_id', [member.id])
       .first()
 
     if (!income) {
-      throw new HttpException('Income not exists', 404)
+      throw new HttpException('Income not exists', 400)
     }
     const files = await File.saveRequestFiles(request, [
       { field: 'company_logo', mime: imageMimes, isPublic: true },
@@ -280,7 +261,7 @@ console.log('Error remove Member')
 
     const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
     if (!income) {
-      throw new HttpException('Invalid income', 404)
+      throw new HttpException('Invalid income', 400)
     }
 
     const files = await File.saveRequestFiles(request, [
@@ -298,16 +279,23 @@ console.log('Error remove Member')
     const { id } = request.all()
 
     // get proof
-    const proof = await IncomeProof.query()
+    let proofQuery = IncomeProof.query()
       .select('income_proofs.*')
       .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .where('income_proofs.id', id)
-      .where('_m.user_id', auth.user.id)
-      .first()
+
+      if( auth.user.role === ROLE_USER ){
+        proofQuery = proofQuery.whereNull('owner_user_id')
+          .where('user_id', auth.user.id)
+      }else{
+        proofQuery = proofQuery.where('owner_user_id', auth.user.id)
+      }
+      
+    const proof = await proofQuery.first()
 
     if (!proof) {
-      throw new HttpException('Invalid income proof', 404)
+      throw new HttpException('Invalid income proof', 400)
     }
     await IncomeProof.query().where('id', proof.id).delete()
 
