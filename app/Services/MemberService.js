@@ -24,7 +24,7 @@ class MemberService {
   static async getMembers(userId) {
     const query = Member.query()
       .where('user_id', userId)
-      .leftJoin()
+      //.leftJoin()
       .with('incomes', function (b) {
         b.with('proofs')
       })
