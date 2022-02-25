@@ -57,6 +57,28 @@ class Member extends Model {
   incomes() {
     return this.hasMany('App/Models/Income')
   }
+
+  static get limitFieldsList() {
+    return [
+      'id',
+      'user_id',
+      'firstname',
+      'secondname',
+      'child',
+      'phone',
+      'email',
+      'birthday',
+      'sex',
+      'avatar',
+      'share',
+      'landlord_name',
+      'landlord_phone',
+      'landlord_email',
+      'last_address',
+      'published_at',
+    ]
+  }
+
 }
 
 module.exports = Member

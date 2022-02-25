@@ -10,6 +10,12 @@ class MemberPermissionService {
             })
     }
   }
+  static async getMemberPermission(member_id) {
+    return await MemberPermission.query()
+      .select(['member_id', 'user_id'])
+      .where('member_id', member_id)
+      .fetch()
+  }
 
   static async isExistPermission( member_id, user_id) {
     const memberPermission = await MemberPermission.query()

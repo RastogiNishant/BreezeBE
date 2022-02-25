@@ -9,7 +9,7 @@ const Member = use('App/Models/Member')
 const DataStorage = use('DataStorage')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
-const { omit } = require('lodash')
+const { omit, pick } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
@@ -27,8 +27,27 @@ class MemberController {
       const owner = await UserService.getHousehouseId(userId)
       userId = owner.owner_id
     }
-    const members = await MemberService.getMembers(userId)
 
+    let members = (await MemberService.getMembers(userId)).toJSON()
+    const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user.id, auth.user.role)    
+    const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
+    let userIds = memberPermissions?memberPermissions.map(mp=> mp.user_id):[];
+    userIds.push(auth.user.id)
+
+    if( members ) {
+      members[0].owner_user_id = userId;// first member will be household in default
+      members = members.map( m=> {
+        if( auth.user.role == ROLE_HOUSEKEEPER ){
+          return userIds.includes(m.owner_user_id)?m:pick(m, Member.limitFieldsList)
+        }else {
+          //if housekeeper updates his/her profile
+          if( m.owner_user_id ){
+            return userIds.includes(m.owner_user_id)?m:pick(m, Member.limitFieldsList)
+          }
+          return m
+        }
+      })
+    }
     response.res(members)
   }
 

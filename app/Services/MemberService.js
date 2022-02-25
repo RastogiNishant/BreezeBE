@@ -14,6 +14,7 @@ const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
+  ROLE_HOUSEKEEPER,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -21,15 +22,42 @@ class MemberService {
   /**
    *
    */
-  static async getMembers(userId) {
+
+  static async getMemberIdByOwnerId(owner_id, role){
+    let member = await Member.query()
+      .select('id')
+      .where('owner_user_id', owner_id)
+      .first()
+
+    if(!member) {
+      if( role === ROLE_HOUSEKEEPER ) {
+        throw new HttpException('You are not the member anymore', 400 )
+      }
+
+      //Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
+      member = await Member.query()
+      .select('id')
+      .where('user_id', owner_id)
+      .orderBy('id', 'asc')
+      .first()
+
+      if(!member){
+        throw new HttpException('No member exists', 400 )        
+      }
+    }
+console.log('getMemberId', member)    
+    return member.id
+  }
+  static async getMembers(householdId) {
     const query = Member.query()
-      .where('user_id', userId)
-      //.leftJoin()
+      .select('members.*')    
+      .where('members.user_id', householdId)
       .with('incomes', function (b) {
         b.with('proofs')
       })
+      .orderBy('id', 'asc')
 
-    return (await query.fetch()).rows
+    return (await query.fetch())
   }
 
   /**

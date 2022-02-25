@@ -198,8 +198,6 @@ class AccountController {
     }
     role = user.role
 
-console.log( 'User', user )
-
     let authenticator
     try {
       authenticator = getAuthByRole(auth, role)

@@ -494,6 +494,11 @@ const constants = {
 
   PLAN_FEATURE_COMMON:  '',  
   PLAN_FEATURE_NEW:  'New',
+
+  VISIBLE_TO_NOBODY:1,
+  VISIBLE_TO_EVERYBODY:2,
+  VISIBLE_TO_SPECIFIC: 3,
+  VISIBLE_TO_HOUSEHOLD:4,
 }
 
 module.exports = constants

@@ -21,8 +21,6 @@ class UserController {
 
     const token = await authenticator.attempt(uid, password)
 
-    console.log('User', token );    
-
     const user = await User.findByOrFail({ email, role: ROLE_ADMIN })
     const roles = await user.getRoles()
     if (isEmpty(roles)) {
