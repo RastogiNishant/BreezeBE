@@ -3,15 +3,17 @@ const File = use('App/Classes/File')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 const MemberService = use('App/Services/MemberService')
+const MemberPermissionService = use('App/Services/MemberPermissionService')
 const UserService = use('App/Services/UserService')
 const Member = use('App/Models/Member')
 const DataStorage = use('DataStorage')
 const HttpException = use('App/Exceptions/HttpException')
-
+const Database = use('Database')
+const { omit } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
-const { ROLE_HOUSEKEEPER } = require('../../constants')
+const { ROLE_HOUSEKEEPER, VISIBLE_TO_EVERYBODY, VISIBLE_TO_HOUSEHOLD, VISIBLE_TO_SPECIFIC, VISIBLE_TO_NOBODY, ROLE_USER } = require('../../constants')
 /**
  *
  */
@@ -35,17 +37,47 @@ class MemberController {
    */
   async addMember({ request, auth, response }) {
     const data = request.all()
+
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
       { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
       { field: 'debt_proof', mime: docMimes, isPublic: false },
     ])
-    const result = await MemberService.createMember({ ...data, ...files }, auth.user.id)
-    await MemberService.calcTenantMemberData(auth.user.id)
 
-    Event.fire('tenant::update', auth.user.id)
+    const user_id = auth.user.id
+    const trx = await Database.beginTransaction()
+    if( data.email) {
+      const member = await Member.query()
+      .select('email')
+      .where('email', data.email)
+      .whereNotNull('owner_user_id')
+      .first()
 
-    response.res(result)
+      if(member) {
+        throw new HttpException('Email exists', 400)
+      }
+    }
+
+    try{
+      const result = await MemberService.createMember({ ...data, ...files }, user_id, trx)
+      await MemberService.calcTenantMemberData(user_id, trx)
+      
+      /**
+       * Created by YY
+       * if an adult A is going to let his profile visible to adult B who is created newly
+       *  */ 
+
+      if( data.visibility_to_other === VISIBLE_TO_SPECIFIC ) {
+        Event.fire('memberPermission:create', result.id, user_id)
+      }
+      Event.fire('tenant::update', user_id)
+      trx.commit()
+
+      response.res(result)
+    }catch(e) {
+      trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
@@ -53,12 +85,29 @@ class MemberController {
    */
   async updateMember({ request, auth, response }) {
     const { id, ...data } = request.all()
-    const member = await MemberService.getMemberQuery()
-      .where('id', id)
-      .where('user_id', auth.user.id)
-      .first()
+    let user_id = auth.user.id
+    const search_label = auth.user.role === ROLE_USER?'user_id':'owner_user_id'
+
+    let member = null
+    if( auth.user.role === ROLE_USER ) {
+      member = await MemberService.getMemberQuery()
+        .where('id', id)
+        .whereNull('owner_user_id')
+        .where(search_label, user_id)
+        .first()
+    }else {
+      member = await MemberService.getMemberQuery()
+        .where('id', id)
+        .where(search_label, user_id)
+        .first()
+    }
+
     if (!member) {
-      throw HttpException('Member not exists', 404)
+      throw new HttpException('Member not exists', 400)
+    }
+
+    if( auth.role === ROLE_HOUSEKEEPER ) {
+      user_id = member.owner_user_id
     }
 
     const files = await File.saveRequestFiles(request, [
@@ -66,10 +115,12 @@ class MemberController {
       { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
       { field: 'debt_proof', mime: docMimes, isPublic: false },
     ])
-    await member.updateItem({ ...data, ...files })
-    await MemberService.calcTenantMemberData(auth.user.id)
 
-    Event.fire('tenant::update', auth.user.id)
+    const newData = member.owner_user_id?omit(data, ['email']):data;
+    await member.updateItem({ ...newData, ...files })
+    await MemberService.calcTenantMemberData(member.user_id)
+
+    Event.fire('tenant::update', member.user_id)
 
     response.res(member)
   }
@@ -79,12 +130,36 @@ class MemberController {
    */
   async removeMember({ request, auth, response }) {
     const { id } = request.all()
-    await MemberService.getMemberQuery().where('id', id).where('user_id', auth.user.id).delete()
-    await MemberService.calcTenantMemberData(auth.user.id)
+    const trx = await Database.beginTransaction()    
+    try{
+      let user_id = auth.user.id
+      const search_label = auth.role === ROLE_USER?'user_id':'owner_user_id'
+  
+      const member = await MemberService.getMemberQuery()
+      .where('id', id)
+      .where(search_label, user_id)
+      .first()
 
-    Event.fire('tenant::update', auth.user.id)
+      if( member ) {
+        /**
+         * ToDo
+         * If a household deletes a member, we might need to delete household account from user table
+         * Need to confirm later with the customer
+         */
 
-    response.res(true)
+        await MemberPermissionService.deletePermission(id, trx)    
+        await MemberService.getMemberQuery().where('id', id).where('user_id', member.user_id).delete(trx)
+        await MemberService.calcTenantMemberData(member.user_id, trx)
+    
+        Event.fire('tenant::update', member.user_id)
+        trx.commit()
+      }
+      response.res(true)
+    }catch(e) {
+console.log('Error remove Member')
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

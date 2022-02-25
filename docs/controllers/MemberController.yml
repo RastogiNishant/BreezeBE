@@ -178,6 +178,10 @@ definitions:
     name: code
     in: formData
     type: string
+  visibilityToOther:  
+    name: visibility_to_other
+    in: formData
+    type: string
 # Routes list
 /api/v1/tenant/members:
   get:
@@ -367,6 +371,17 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: '#/definitions/inviteCode'
+      - $ref: '#/definitions/email'
+
+    responses: [200]
+/api/v1/tenant/members/email:
+  post:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Add member by email to send invitation code. In the meantime you can let this member see your profile passing visibility_to_other=3
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/visibilityToOther'
       - $ref: '#/definitions/email'
 
     responses: [200]
