@@ -34,7 +34,7 @@ class MemberService {
   /**
    * Get all tenant members and calculate general tenant params
    */
-  static async calcTenantMemberData(userId) {
+  static async calcTenantMemberData(userId, trx = null) {
     const tenantData = await Database.query()
       .from('members')
       .select(
@@ -81,15 +81,15 @@ class MemberService {
       .update({
         ...toUpdate,
         credit_score: parseInt(toUpdate.credit_score) || null,
-      })
+      }, trx)
       .where({ user_id: userId })
   }
 
   /**
    *
    */
-  static async createMember(member, user_id) {
-    return Member.createItem({ ...member, user_id })
+  static async createMember(member, user_id, trx) {
+    return Member.createItem({ ...member, user_id }, trx)
   }
 
   static async setMemberOwner( member_id, owner_id ) {

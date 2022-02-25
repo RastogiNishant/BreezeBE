@@ -7,6 +7,7 @@ if (!Helpers.isAceCommand()) {
   Event.on('match::estate', 'MatchListener.matchByEstate')
   Event.on('match::user', 'MatchListener.matchByUser')
 
+  Event.on('memberPermission:create', 'MemberPermissionListener.createMemberPermission')
   Event.on('tenant::update', 'TenantListener.updateTenant')
 }
 

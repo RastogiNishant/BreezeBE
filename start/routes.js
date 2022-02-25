@@ -301,12 +301,18 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
   'auth:jwt,jwtLandlord',
 ])
 // Tenant members
+
+Route.group(() => {
+  Route.post('/email', 'MemberController.addMember').middleware(['valid:CreateMember,Email,ProfileVisibilityToOther'])  
+  Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
+  Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])  
+})
+.prefix('api/v1/tenant/members')
+.middleware(['auth:jwt'])
+
 Route.group(() => {
   Route.get('/', 'MemberController.getMembers')
-  Route.post('/email', 'MemberController.addMember').middleware(['valid:CreateMember,Email'])  
-  Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.put('/:id', 'MemberController.updateMember').middleware(['valid:CreateMember,Id'])
-  Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
   Route.delete('/:id/:field', 'MemberController.removeMemberDocs').middleware([
     'valid:RemoveMemberDocs',
   ])
