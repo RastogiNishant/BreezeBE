@@ -130,6 +130,7 @@ class Estate extends Model {
       'options',
       'avail_duration',
       'vacant_date',
+      'others',
     ]
   }
 
@@ -226,6 +227,15 @@ class Estate extends Model {
    */
   rooms() {
     return this.hasMany('App/Models/Room')
+  }
+
+  /**
+   *
+   */
+   knocked() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_KNOCK,
+    ])
   }
 
   /**

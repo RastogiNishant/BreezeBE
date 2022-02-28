@@ -213,7 +213,7 @@ class EstateController {
         throw new HttpException('No excel format', 400)
       }
       const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, {}, false)
+      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
@@ -236,7 +236,7 @@ class EstateController {
         auth.user.id,
         'xls'
       )
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, {}, false)
+      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)

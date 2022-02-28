@@ -12,6 +12,7 @@ class CreateRoom extends Base {
       type: yup.number().positive(),
       area: yup.number().min(0),
       options: yup.array().of(yup.string().lowercase().trim()),
+      favorite: yup.boolean()
     })
 }
 

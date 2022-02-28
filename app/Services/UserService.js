@@ -20,6 +20,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
 
+
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 
@@ -32,7 +33,7 @@ const {
   ROLE_USER,
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
-  ROLE_HOUSEHOLD,
+  ROLE_HOUSEKEEPER,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
@@ -79,7 +80,7 @@ class UserService {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     if (role) {
       roles = [role]
     }
@@ -182,7 +183,10 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, 1)
+      const data = await this.getTokenWithLocale([user.id])
+      const lang = data && data.length && data[0].lang?data[0].lang:user.lang
+  
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, user.role, lang)
     } catch (error) {
       throw new HttpException(
         error.error ? error.error.message : error.message,
@@ -237,6 +241,19 @@ class UserService {
     await DataStorage.remove(code, 'reset_password')
   }
 
+  static async getHousehouseId( user_id ) {
+    try{
+      const owner = await User.query()
+      .select('owner_id')
+      .where('id', user_id)
+      .where('role', ROLE_HOUSEKEEPER)
+      .firstOrFail()
+
+      return owner        
+    }catch(e) {
+      throw new HttpException(e.message, 400)    
+    }
+  }
   /**
    *
    */
@@ -257,10 +274,14 @@ class UserService {
     const date = String(new Date().getTime())
     const code = date.slice(date.length - 4, date.length)
     await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+    const data = await UserService.getTokenWithLocale([user.id])
+    const lang = data && data.length && data[0].lang?data[0].lang:user.lang;
+
     await MailService.sendUserConfirmation(user.email, {
       code,
       user_id: user.id,
       role: user.role,
+      lang: lang,
     })
   }
 
@@ -289,6 +310,30 @@ class UserService {
     // TODO: check user status active is allow
     user.status = STATUS_ACTIVE
     await DataStorage.remove(user.id, 'confirm_email')
+
+
+    const localData = await UserService.getTokenWithLocale([user.id])
+    const lang = localData && localData.length && localData[0].lang?localData[0].lang:user.lang;
+
+    const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+    const { shortLink } = await firebaseDynamicLinks.createLink({
+      dynamicLinkInfo: {
+        domainUriPrefix: process.env.DOMAIN_PREFIX,
+        link: `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`,
+        androidInfo: {
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+        },
+        iosInfo: {
+          iosBundleId: process.env.IOS_BUNDLE_ID,
+        },
+      },
+    })
+    await MailService.sendWelcomeMail(user.email, {
+      code: shortLink,
+      role: user.role,
+      lang: lang,
+    })    
     return user.save()
   }
 
@@ -634,7 +679,7 @@ class UserService {
       const user = await User.create(
         {
           email,
-          role: ROLE_HOUSEHOLD,
+          role: ROLE_HOUSEKEEPER,
           password,
           owner_id: ownerId,
           phone: phone,

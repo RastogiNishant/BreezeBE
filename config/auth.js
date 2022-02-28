@@ -27,7 +27,29 @@ module.exports = {
       expiresIn: 2592000, // 30 days lifetime
     },
   },
+  jwtPropertyManager: {
+    serializer: 'lucid',
+    model: 'App/Models/User',
+    scheme: 'jwt',
+    uid: 'uid',
+    password: 'password',
+    options: {
+      secret: Env.get('PROPERTY_MANAGER_APP_KEY'),
+      expiresIn: 2592000, // 30 days lifetime
+    },
+  },  
 
+  jwtHousekeeper: {
+    serializer: 'lucid',
+    model: 'App/Models/User',
+    scheme: 'jwt',
+    uid: 'uid',
+    password: 'password',
+    options: {
+      secret: Env.get('HOUSEKEEPER_APP_KEY'),
+      expiresIn: 2592000, // 30 days lifetime
+    },
+  },  
   jwtAdmin: {
     serializer: 'lucid',
     model: 'App/Models/User',
@@ -39,28 +61,4 @@ module.exports = {
       expiresIn: 7200, // 2 Hours lifetime
     },
   },
-
-  jwtPropertyManager: {
-    serializer: 'lucid',
-    model: 'App/Models/User',
-    scheme: 'jwt',
-    uid: 'uid',
-    password: 'password',
-    options: {
-      secret: Env.get('PROPERTY_MANAGER_APP_KEY'),
-      expiresIn: 7200, // 2 Hours lifetime
-    },
-  },  
-
-  jwtHousehold: {
-    serializer: 'lucid',
-    model: 'App/Models/User',
-    scheme: 'jwt',
-    uid: 'uid',
-    password: 'password',
-    options: {
-      secret: Env.get('HOUSEHOLD_APP_KEY'),
-      expiresIn: 7200, // 2 Hours lifetime
-    },
-  },    
 }

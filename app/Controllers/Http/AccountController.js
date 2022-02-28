@@ -13,6 +13,7 @@ const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
+const MemberService = use('App/Services/MemberService')
 const ImageService = use('App/Services/ImageService')
 const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -30,7 +31,7 @@ const {
   PREMIUM_MEMBER,
   YEARLY_DISCOUNT_RATE,
   ROLE_PROPERTY_MANAGER,
-  ROLE_HOUSEHOLD,
+  ROLE_HOUSEKEEPER,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
@@ -44,7 +45,7 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, firstname, ...userData } = request.all()
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     const role = userData.role
     if (!roles.includes(role)) {
       throw new HttpException('Invalid user role', 401)
@@ -73,6 +74,7 @@ class AccountController {
         role: user.role,
         email: user.email,
       })
+
       await UserService.sendConfirmEmail(user)
       return response.res(user)
     } catch (e) {
@@ -98,7 +100,9 @@ class AccountController {
         throw new HttpException('Not allowed', 400)
       }
       // Check user not exists
-      const availableUser = await User.query().where('email', email).first()
+      const availableUser = await User.query()
+          .where('role', ROLE_HOUSEKEEPER )
+          .where('email', email).first()
       if (availableUser) {
         throw new HttpException('User already exists, can be switched', 400)
       }
@@ -108,6 +112,9 @@ class AccountController {
       }
 
       const user = await UserService.housekeeperSignup(member.user_id, email, password, phone)
+      if( user ) {
+        await MemberService.setMemberOwner(member_id, user.id)
+      }
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -176,7 +183,7 @@ class AccountController {
     let { email, role, password, device_token } = request.all()
 
     // Select role if not set, (allows only for non-admin users)
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     if (role) {
       roles = [role]
     }
@@ -225,6 +232,7 @@ class AccountController {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
       .with('tenant')
+      .with('household')
       .with('plan')
       .firstOrFail()
 
@@ -368,8 +376,8 @@ class AccountController {
   async passwordReset({ request, response }) {
     const { email } = request.only(['email'])
     // Send email with reset password code
-    await UserService.requestPasswordReset(email)
-
+    //await UserService.requestPasswordReset(email)
+    await UserService.requestSendCodeForgotPassword(email)
     return response.res()
   }
 

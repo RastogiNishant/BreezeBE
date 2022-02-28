@@ -5,10 +5,12 @@ const { get } = require('lodash')
 
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
+const Member = use('App/Models/Member')
+
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const UserService = use('App/Services/UserService')
-
+const MemberService = use('App/Services/MemberService')
 const { getAuthByRole } = require('../../Libs/utils')
 
 const {
@@ -16,7 +18,7 @@ const {
   ROLE_USER,
   STATUS_DELETE,
   STATUS_NEED_VERIFY,
-  ROLE_HOUSEHOLD,
+  ROLE_HOUSEKEEPER,
   ROLE_PROPERTY_MANAGER,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_GOOGLE,
@@ -47,7 +49,7 @@ class OAuthController {
     const { id, email } = authUser.toJSON({ isOwner: true })
     let user = await User.query()
       .where('email', email)
-      .whereIn('role', [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD])
+      .whereIn('role', [ROLE_LANDLORD])
       .whereNot('status', STATUS_DELETE)
       .first()
 
@@ -83,10 +85,10 @@ class OAuthController {
       .where('email', email)
       .whereNot('status', STATUS_DELETE)
       .orderBy('updated_at', 'desc')
-    if ([ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER].includes(role)) {
+    if ([ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEKEEPER, ROLE_PROPERTY_MANAGER].includes(role)) {
       query.where('role', role)
     } else {
-      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER])
+      query.whereIn('role', [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEKEEPER, ROLE_PROPERTY_MANAGER])
     }
     const user = await query.first()
     if (!user && !role) {
@@ -100,7 +102,7 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    const { token, device_token, role } = request.all()
+    const { token, device_token, role, owner_id, member_id, code } = request.all()
     let ticket
     try {
       ticket = await GoogleAuth.verifyIdToken({
@@ -115,8 +117,30 @@ class OAuthController {
     const googleId = get(ticket, 'payload.sub')
     let user = await this.authorizeUser(email, role)
 
-    if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD].includes(role)) {
+    if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER].includes(role)) {
       try {
+        if( ROLE_HOUSEKEEPER === role ) {
+          if( !owner_id || !member_id || !code ) {
+            throw new HttpException('Member Id & prospect owner id needed ', 400)                
+          }
+          const member = await Member.query()
+          .select('user_id')
+          .where('id', member_id)
+          .where('code', code)
+          .firstOrFail()
+  
+          if (owner_id.toString() !== member.user_id.toString()) {
+            throw new HttpException('Not allowed', 400)
+          }
+          // Check user not exists
+          const availableUser = await User.query()
+              .where('role', ROLE_HOUSEKEEPER )
+              .where('email', email).first()
+          if (availableUser) {
+            throw new HttpException('User already exists, can be switched', 400)
+          }          
+        }
+
         user = await UserService.createUserFromOAuth(request, {
           ...ticket.getPayload(),
           google_id: googleId,
@@ -136,6 +160,8 @@ class OAuthController {
         role: user.role,
         email: user.email,
       })
+      await MemberService.setMemberOwner(member_id, user.id)
+
       return response.res(token)
     }
 
@@ -146,7 +172,7 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    const { token, device_token, role } = request.all()
+    const { token, device_token, role, owner_id, member_id, code } = request.all()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
     try {
@@ -157,8 +183,30 @@ class OAuthController {
     }
     let user = await this.authorizeUser(email, role)
 
-    if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEHOLD, ROLE_PROPERTY_MANAGER].includes(role)) {
+    if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_HOUSEKEEPER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
+        if( ROLE_HOUSEKEEPER === role ) {
+          if( !owner_id || !member_id || !code ) {
+            throw new HttpException('Member Id & prospect owner id needed ', 400)                
+          }
+          const member = await Member.query()
+          .select('user_id')
+          .where('id', member_id)
+          .where('code', code)
+          .firstOrFail()
+  
+          if (owner_id.toString() !== member.user_id.toString()) {
+            throw new HttpException('Not allowed', 400)
+          }
+          // Check user not exists
+          const availableUser = await User.query()
+              .where('role', ROLE_HOUSEKEEPER )
+              .where('email', email).first()
+          if (availableUser) {
+            throw new HttpException('User already exists, can be switched', 400)
+          }          
+        }
+                
         user = await UserService.createUserFromOAuth(
           request,
           {
@@ -169,6 +217,10 @@ class OAuthController {
           },
           SIGN_IN_METHOD_APPLE
         )
+
+        if( user ) {
+          await MemberService.setMemberOwner(member_id, user.id)
+        }
       } catch (e) {
         throw new HttpException(e.message, 400)
       }
