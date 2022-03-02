@@ -5,6 +5,7 @@ const { props } = require('bluebird')
 
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
 const User = use('App/Models/User')
 const Visit = use('App/Models/Visit')
 const Logger = use('Logger')
@@ -50,7 +51,7 @@ const {
   BUDDY_STATUS_ACCEPTED,
 } = require('../constants')
 const { logger } = require('../../config/app')
-const Match = require('../Models/Match')
+
 
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
@@ -1604,6 +1605,44 @@ class MatchService {
       .update('lord_status', TIMESLOT_STATUS_COME)
 
     await NoticeService.inviteUserToCome(estateId, userId)
+  }
+
+  static async findCurrentTenant( estateId, userId ) {
+    const finalMatch = await Match.query()
+      .select(['estate_id', 'user_id', 'email', 'phone'])
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.id', 'matches.user_id').onIn('_u.id', userId)
+      })
+      .where('estate_id', estateId)
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_FINISH )
+      // .with('user')
+      .firstOrFail()
+
+    return finalMatch
+  }
+
+  static async invitedTenant( estateId, userId, inviteTo ) {
+    return await Match.query()
+      .where('estate_id', estateId)
+      .where('user_id', userId )
+      .update({inviteToEdit: inviteTo})
+  }
+
+  static async hasPermissionToEditProperty( estateId, userId ) {
+    return await Match.query()
+      .where('estate_id', estateId)
+      .where('user_id', userId)
+      .where('status', MATCH_STATUS_FINISH)
+      .whereNotNull('inviteToEdit')
+      .firstOrFail()
+  }
+
+  static async addTenantProperty(data) {
+    return await Match.query()
+      .where('estate_id', data.estate_id)
+      .where('user_id', data.user_id )
+      .update({properties: data.properties, prices: data.prices})
   }
 }
 
