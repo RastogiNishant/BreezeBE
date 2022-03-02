@@ -401,6 +401,24 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'valid:MatchListLandlord,Pagination',
 ])
 
+/**
+ * sent email to current tenant for a specific estate
+ */
+Route.group( () => {
+  Route.post('', 'MatchController.inviteTenantToEstate').middleware(['valid:InviteInToVisit,InviteTo'])
+  Route.delete('', 'MatchController.removeTenantEdit').middleware(['valid:InviteInToVisit'])
+})
+.prefix('/api/v1/match/landlord/inviteTenantTo')
+.middleware(['auth:jwtLandlord'])
+
+Route.group( () => {
+  Route.post('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
+  Route.put('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
+  Route.delete('', 'MatchController.deleteProperty').middleware(['valid:EstateId'])
+})
+.prefix('/api/v1/match/tenant/property')
+.middleware(['auth:jwt'])
+
 Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
