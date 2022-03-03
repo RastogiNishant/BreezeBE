@@ -204,7 +204,7 @@ console.log('SendCodeForMember Email', email )
     // await Mail.send('mail/send-code', { code }, (message) => {
     //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
     // })
-  }  
+  }
 
   static async sendChangeEmailConfirmation(email, code, role) {
     // const msg = {
