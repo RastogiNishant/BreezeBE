@@ -39,6 +39,7 @@ class RoomController {
       if( roomData.favorite ) {
         await Room.query()
           .where('estate_id', estate_id)
+          .where('type', roomData.type)
           .update({'favorite':false })
       }
       const room = await Room.createItem({
@@ -76,6 +77,7 @@ console.log('updateRoom here', estate_id)
 
       await Room.query()
         .where('estate_id', estate_id)
+        .where('type', data.type)        
         .update({'favorite':false })
     }    
     room.merge(data)
