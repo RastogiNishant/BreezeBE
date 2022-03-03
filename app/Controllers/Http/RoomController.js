@@ -36,6 +36,11 @@ class RoomController {
         .whereIn('user_id', userIds)
         .firstOrFail()
       
+      if( roomData.favorite ) {
+        await Room.query()
+          .where('estate_id', estate_id)
+          .update({'favorite':false })
+      }
       const room = await Room.createItem({
         ...roomData,
         estate_id,
@@ -66,6 +71,13 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
+    if( data.favorite ) {
+console.log('updateRoom here', estate_id)
+
+      await Room.query()
+        .where('estate_id', estate_id)
+        .update({'favorite':false })
+    }    
     room.merge(data)
     await room.save()
     Event.fire('estate::update', estate_id)
