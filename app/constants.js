@@ -36,7 +36,7 @@ const constants = {
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,
   ROLE_PROPERTY_MANAGER: 4,
-  ROLE_HOUSEHOLD: 5,
+  ROLE_HOUSEKEEPER: 5,
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
@@ -291,6 +291,9 @@ const constants = {
   MATCH_STATUS_COMMIT: 7,
   MATCH_STATUS_FINISH: 8,
 
+  TENANT_EMAIL_INVITE: 1,
+  TENANT_SMS_INVITE: 2,
+
   COMPANY_TYPE_PRIVATE: 'private',
   COMPANY_TYPE_PROPERTY_MANAGER: 'propMan',
   COMPANY_TYPE_PRIVATE_HOUSING: 'prHost',
@@ -461,6 +464,7 @@ const constants = {
     'address',
     'user_id',
     'available_date',
+    'others',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -490,6 +494,14 @@ const constants = {
   SIGN_UP_METHOD_GOOGLE: 'google',
   SIGN_UP_METHOD_APPLE: 'apple',
   SIGN_UP_METHOD_EMAIL: 'email',
+
+  PLAN_FEATURE_COMMON:  '',  
+  PLAN_FEATURE_NEW:  'New',
+
+  VISIBLE_TO_NOBODY:1,
+  VISIBLE_TO_EVERYBODY:2,
+  VISIBLE_TO_SPECIFIC: 3,
+  VISIBLE_TO_HOUSEHOLD:4,
 }
 
 module.exports = constants

@@ -20,6 +20,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
 
+
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 
@@ -32,7 +33,7 @@ const {
   ROLE_USER,
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
-  ROLE_HOUSEHOLD,
+  ROLE_HOUSEKEEPER,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
@@ -79,7 +80,7 @@ class UserService {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEHOLD]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     if (role) {
       roles = [role]
     }
@@ -240,6 +241,19 @@ class UserService {
     await DataStorage.remove(code, 'reset_password')
   }
 
+  static async getHousehouseId( user_id ) {
+    try{
+      const owner = await User.query()
+      .select('owner_id')
+      .where('id', user_id)
+      .where('role', ROLE_HOUSEKEEPER)
+      .firstOrFail()
+
+      return owner        
+    }catch(e) {
+      throw new HttpException(e.message, 400)    
+    }
+  }
   /**
    *
    */
@@ -665,7 +679,7 @@ class UserService {
       const user = await User.create(
         {
           email,
-          role: ROLE_HOUSEHOLD,
+          role: ROLE_HOUSEKEEPER,
           password,
           owner_id: ownerId,
           phone: phone,

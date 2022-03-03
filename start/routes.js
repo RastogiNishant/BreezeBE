@@ -40,13 +40,13 @@ Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'v
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
-  'auth:jwt,jwtLandlord,jwtHousehold,jwtPropertyManager',
+  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
 
-//Household
+//Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
   'guest',
-  'valid:HoseholdSignUp',
+  'valid:HosekeeperSignUp',
 ])
 Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
   'guest',
@@ -68,7 +68,7 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt'])
+Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
@@ -301,11 +301,18 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
   'auth:jwt,jwtLandlord',
 ])
 // Tenant members
+
+Route.group(() => {
+  Route.post('/email', 'MemberController.addMember').middleware(['valid:CreateMember,Email,ProfileVisibilityToOther'])  
+  Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
+  Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])  
+})
+.prefix('api/v1/tenant/members')
+.middleware(['auth:jwt'])
+
 Route.group(() => {
   Route.get('/', 'MemberController.getMembers')
-  Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.put('/:id', 'MemberController.updateMember').middleware(['valid:CreateMember,Id'])
-  Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
   Route.delete('/:id/:field', 'MemberController.removeMemberDocs').middleware([
     'valid:RemoveMemberDocs',
   ])
@@ -321,11 +328,12 @@ Route.group(() => {
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/members')
-  .middleware(['auth:jwt'])
+  .middleware(['auth:jwt,jwtHousekeeper'])
 
 Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
   .prefix('api/v1/tenant/members')
   .middleware(['valid:InvitationCode'])
+  
 // Add income files
 Route.group(() => {
   Route.post('/:income_id/proof', 'MemberController.addMemberIncomeProof').middleware([
@@ -336,7 +344,7 @@ Route.group(() => {
   ])
 })
   .prefix('api/v1/tenant/income')
-  .middleware(['auth:jwt'])
+  .middleware(['auth:jwt,jwtHousekeeper'])
 
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
@@ -392,6 +400,24 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'auth:jwtLandlord',
   'valid:MatchListLandlord,Pagination',
 ])
+
+/**
+ * sent email to current tenant for a specific estate
+ */
+Route.group( () => {
+  Route.post('', 'MatchController.inviteTenantToEstate').middleware(['valid:InviteInToVisit,InviteTo'])
+  Route.delete('', 'MatchController.removeTenantEdit').middleware(['valid:InviteInToVisit'])
+})
+.prefix('/api/v1/match/landlord/inviteTenantTo')
+.middleware(['auth:jwtLandlord'])
+
+Route.group( () => {
+  Route.post('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
+  Route.put('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
+  Route.delete('', 'MatchController.deleteProperty').middleware(['valid:EstateId'])
+})
+.prefix('/api/v1/match/tenant/property')
+.middleware(['auth:jwt'])
 
 Route.get(
   '/api/v1/match/landlord/estate',
@@ -523,6 +549,13 @@ Route.group(() => {
 })
   .middleware(['auth:jwtLandlord,jwt', 'valid:UserPremiumPlan'])
   .prefix('api/v1/userPremiumPlan')
+
+Route.group(() => {
+  Route.post('/', 'EstateAbuseController.reportEstateAbuse').middleware([
+    'auth:jwt',
+    'valid:CreateEstateAbuse',
+  ])
+}).prefix('api/v1/estateReportAbuse')
 
 Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([

@@ -25,8 +25,8 @@ class BaseModel extends Model {
   /**
    *
    */
-  static async createItem(data) {
-    return this.create(omit(pick(data, this.columns || []), ['id']))
+  static async createItem(data, trx=null) {
+    return this.create(omit(pick(data, this.columns || []), ['id']), trx)
   }
 
   /**

@@ -9,6 +9,9 @@ const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
+const MailService = use('App/Services/MailService')
+const SMSService = use('App/Services/SMSService')
+const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty } = require('lodash')
 const moment = require('moment')
 
@@ -33,7 +36,9 @@ const {
   LOG_TYPE_FINAL_MATCH_APPROVAL,
   LOG_TYPE_INVITED,
   LOG_TYPE_SHOWED,
+  TENANT_EMAIL_INVITE
 } = require('../../constants')
+
 const { logEvent } = require('../../Services/TrackingService')
 
 class MatchController {
@@ -217,6 +222,78 @@ class MatchController {
         throw new HttpException(e.message, 400)
       }
       throw e
+    }
+  }
+
+  async inviteTenantToEstate({request, auth, response}) {
+    const { estate_id, tenant_id, invite_to } = request.all()
+    try{
+      const currentTenant = await MatchService.findCurrentTenant(estate_id, tenant_id)
+      if(currentTenant) {
+        const result = await MatchService.invitedTenant(estate_id, tenant_id, invite_to)
+        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+        if( invite_to === TENANT_EMAIL_INVITE ) {
+          const { shortLink } = await firebaseDynamicLinks.createLink({
+            dynamicLinkInfo: {
+              domainUriPrefix: process.env.DOMAIN_PREFIX,
+              link: `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`,
+              androidInfo: {
+                androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+              },
+              iosInfo: {
+                iosBundleId: process.env.IOS_BUNDLE_ID,
+              },
+            },
+          })
+  
+          MailService.sendInvitationToTenant(currentTenant.email, shortLink ) 
+        }else {
+          
+        }
+        response.res(true)
+      }
+    }catch(e) {
+      throw new HttpException(e.message,400)
+    }
+  }
+
+  async removeTenantEdit({request, auth, response}) {
+    const {estate_id, tenant_id } = request.all()
+    const result = await MatchService.invitedTenant(estate_id, tenant_id, null)    
+    response.res(true)
+  }
+
+  async updateProperty({request, auth, response}) {
+    const {estate_id, properties, prices} = request.all()
+
+    try{
+      const match = await MatchService.hasPermissionToEditProperty(estate_id, auth.user.id)
+console.log('updateProperty Match', match)      
+      await MatchService.addTenantProperty({
+        estate_id: estate_id,
+        user_id: auth.user.id,
+        properties: properties,
+        prices:prices
+      })
+      response.res(true)
+    }catch(e) {
+      throw new HttpException('No permission to edit', 400 )
+    }
+  }
+
+  async deleteProperty({request, auth, response}) {
+    const {estate_id } = request.all()
+    try{
+      await MatchService.addTenantProperty({
+        estate_id: estate_id,
+        user_id: auth.user.id,
+        properties: null,
+        prices:null
+      })
+      response.res(true)
+    }catch(e) {
+      throw new HttpException(e.message, 400)
     }
   }
 

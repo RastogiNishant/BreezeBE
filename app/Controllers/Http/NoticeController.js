@@ -8,10 +8,12 @@ class NoticeController {
    */
   async getNotices({ request, auth, response }) {
     const userId = auth.user.id
-    const { date_to, date_from } = request.all()
+    const { estate_id, date_to, date_from } = request.all()
 
-    const notices = await NoticeService.getUserNoticesList(userId, date_to, date_from)
-
+    let notices = await NoticeService.getUserNoticesList(userId, date_to, date_from)
+    if( estate_id ) {
+      notices = notices.filter( notice => notice.data && notice.data.estate_id && notice.data.estate_id == estate_id )
+    }
     response.res(notices)
   }
 

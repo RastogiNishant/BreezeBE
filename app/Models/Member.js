@@ -32,7 +32,8 @@ class Member extends Model {
       'execution',
       'code',
       'published_at',
-      'is_verified'
+      'is_verified',
+      'owner_id'
     ]
   }
 
@@ -56,6 +57,28 @@ class Member extends Model {
   incomes() {
     return this.hasMany('App/Models/Income')
   }
+
+  static get limitFieldsList() {
+    return [
+      'id',
+      'user_id',
+      'firstname',
+      'secondname',
+      'child',
+      'phone',
+      'email',
+      'birthday',
+      'sex',
+      'avatar',
+      'share',
+      'landlord_name',
+      'landlord_phone',
+      'landlord_email',
+      'last_address',
+      'published_at',
+    ]
+  }
+
 }
 
 module.exports = Member
