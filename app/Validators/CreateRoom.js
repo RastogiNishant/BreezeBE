@@ -9,7 +9,7 @@ class CreateRoom extends Base {
     yup.object().shape({
       estate_id: id.required(),
       name: yup.string().max(255),
-      type: yup.number().positive(),
+      type: yup.number().positive().required(),
       area: yup.number().min(0),
       options: yup.array().of(yup.string().lowercase().trim()),
       favorite: yup.boolean()
