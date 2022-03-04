@@ -1,5 +1,6 @@
 'use strict'
 
+const { countBy } = require('lodash')
 const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
@@ -36,6 +37,12 @@ class RoomController {
         .whereIn('user_id', userIds)
         .firstOrFail()
       
+      if( roomData.favorite ) {
+        await Room.query()
+          .where('estate_id', estate_id)
+          .where('type', roomData.type)
+          .update({'favorite':false })
+      }
       const room = await Room.createItem({
         ...roomData,
         estate_id,
@@ -66,6 +73,14 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
+    if( data.favorite ) {
+console.log('updateRoom here', estate_id)
+
+      await Room.query()
+        .where('estate_id', estate_id)
+        .where('type', data.type)        
+        .update({'favorite':false })
+    }    
     room.merge(data)
     await room.save()
     Event.fire('estate::update', estate_id)
@@ -85,6 +100,25 @@ class RoomController {
     await RoomService.removeRoom(room_id)
     Event.fire('estate::update', room.estate_id)
 
+    response.res(true)
+  }
+
+  async updateOrder({request, auth, response}) {
+    const {ids} = request.all()
+console.log('updateOrder info', ids )        
+    const roomIds = await RoomService.getRoomIds(auth.user.id, ids)
+console.log('updateOrder', roomIds.length )    
+    if( roomIds.length != ids.length  ) {
+      throw new HttpException('Some roomids don\'t exist')
+    }
+
+    await Promise.all(
+      ids.map(async(id, index) => {
+        await Room.query()
+        .where('id', id)
+        .update({order:index+1})
+      })
+    )
     response.res(true)
   }
 

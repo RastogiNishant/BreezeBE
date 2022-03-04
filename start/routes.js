@@ -179,6 +179,9 @@ Route.group(() => {
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
   ])
+  Route.put('/:estate_id/rooms/order', 'RoomController.updateOrder').middleware([
+    'valid:Ids',
+  ])
 
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
     'valid:CreateRoom,EstateId,RoomId',
@@ -400,6 +403,24 @@ Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').mi
   'auth:jwtLandlord',
   'valid:MatchListLandlord,Pagination',
 ])
+
+/**
+ * sent email to current tenant for a specific estate
+ */
+Route.group( () => {
+  Route.post('', 'MatchController.inviteTenantToEstate').middleware(['valid:InviteInToVisit,InviteTo'])
+  Route.delete('', 'MatchController.removeTenantEdit').middleware(['valid:InviteInToVisit'])
+})
+.prefix('/api/v1/match/landlord/inviteTenantTo')
+.middleware(['auth:jwtLandlord'])
+
+Route.group( () => {
+  Route.post('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
+  Route.put('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
+  Route.delete('', 'MatchController.deleteProperty').middleware(['valid:EstateId'])
+})
+.prefix('/api/v1/match/tenant/property')
+.middleware(['auth:jwt'])
 
 Route.get(
   '/api/v1/match/landlord/estate',

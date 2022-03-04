@@ -27,6 +27,7 @@ const {
   ROLE_LANDLORD,
   ROLE_USER,
   STATUS_EMAIL_VERIFY,
+  STATUS_DELETE,
   ROLE_ADMIN,
   PREMIUM_MEMBER,
   YEARLY_DISCOUNT_RATE,
@@ -262,11 +263,13 @@ class AccountController {
     const email = user.email
     const newEmail = email.concat('_breezeClose')
     user.email = newEmail
-    user.firstname = ''
-    user.secondname = ''
-    user.is_admin = ''
+    user.firstname = ' USER'
+    user.secondname = ' DELETED'
     user.approved_landlord = false
     user.is_admin = false
+    user.device_token = null
+    user.google_id = null
+    user.status = STATUS_DELETE
     user.save()
 
     return response.res({ message: 'User Account Closed' })
