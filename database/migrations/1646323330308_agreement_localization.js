@@ -3,7 +3,7 @@
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 
-class AddOrderToRoomSchema extends Schema {
+class AgreementLocalization extends Schema {
   up() {
     this.table('agreements', (table) => {
       table.text('body_de')
@@ -16,4 +16,4 @@ class AddOrderToRoomSchema extends Schema {
   }
 }
 
-module.exports = AddOrderToRoomSchema
+module.exports = AgreementLocalization
