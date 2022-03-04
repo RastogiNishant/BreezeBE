@@ -39,6 +39,20 @@ class RoomService {
       .first()
   }
 
+  static async getRoomIds( userId, roomIds) {
+    return (await Room.query()
+      .select('rooms.id')
+      .whereIn('rooms.id', roomIds)
+      .innerJoin({ _e: 'estates' }, function () {
+        if( isArray(userId)){
+          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)          
+        }else{
+          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)  
+        }
+      })
+      .fetch()).rows
+  }
+
   /**
    *
    */
