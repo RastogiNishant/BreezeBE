@@ -179,6 +179,9 @@ Route.group(() => {
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
   ])
+  Route.put('/:estate_id/rooms/order', 'RoomController.updateOrder').middleware([
+    'valid:Ids',
+  ])
 
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
     'valid:CreateRoom,EstateId,RoomId',
