@@ -188,7 +188,6 @@ console.log('SendCodeForMember Email', email )
       text: `Here is the link is ${shortLink}`,
       html: `<h3> Code for invitation is is <b>${shortLink}</b></h3>`,
     }
-    
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -205,6 +204,32 @@ console.log('SendCodeForMember Email', email )
     //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
     // })
   }
+
+  static async sendInvitationToTenant(email, shortLink) {
+    const msg = {
+      to: email,
+      from: FromEmail, // Use the email address or domain you verified above
+      subject: `Invitation to add your properties to this estate`,
+      text: `Here is the link is ${shortLink}`,
+      html: `<h3> Code for invitation is is <b>${shortLink}</b></h3>`,
+    }
+    
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+
+    // await Mail.send('mail/send-code', { code }, (message) => {
+    //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
+    // })
+  }  
 
   static async sendChangeEmailConfirmation(email, code, role) {
     // const msg = {
