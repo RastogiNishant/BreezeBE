@@ -13,7 +13,6 @@ class UserController {
    * admin login
    */
   async login({ request, auth, response }) {
-
     const { email, password } = request.all()
     const authenticator = await auth.authenticator('jwtAdmin')
 
@@ -58,11 +57,11 @@ class UserController {
     response.res({ ...users, data: mixedUserRoles })
   }
 
-  async verifyUsers({request, auth, response}) {
+  async verifyUsers({ request, auth, response }) {
     const { ...data } = request.all()
-    const userId = auth.user.id;
+    const userId = auth.user.id
     await UserService.verifyUsers(userId, data.ids, data.is_verify)
-    response.res( data )
+    response.res(data)
   }
 }
 
