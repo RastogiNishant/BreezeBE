@@ -193,6 +193,9 @@ Route.group(() => {
   Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
     'valid:RoomId',
   ])
+  Route.put('/:estate_id/rooms/:room_id/images/order', 'RoomController.orderRoomPhoto').middleware([
+    'valid:RoomId,Ids',
+  ])  
   Route.delete(
     '/:estate_id/rooms/:room_id/images/:id',
     'RoomController.removeRoomPhoto'

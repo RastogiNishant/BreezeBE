@@ -139,7 +139,11 @@ class EstateController {
       .with('point')
       .with('files')
       .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE).with('images')
+        b.whereNot('status', STATUS_DELETE)
+        .with('images', function(i) {
+          i.orderBy('order', 'asc' )
+          i.orderBy('id', 'asc')
+        })
         .orderBy('order','asc')
         .orderBy('favorite', 'desc')        
         .orderBy('id','asc')

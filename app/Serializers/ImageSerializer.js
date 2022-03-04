@@ -9,9 +9,9 @@ const BaseSerializer = require('./BaseSerializer')
  */
 class ImageSerializer extends BaseSerializer {
   mergeData(item) {
-    const { id, url, disk } = item
+    const { id, url, disk, order } = item
 
-    return { id, url: Drive.disk(disk).getUrl(url) }
+    return { id, url: Drive.disk(disk).getUrl(url), order }
   }
 }
 
