@@ -152,6 +152,9 @@ class MemberService {
   }
 
   static async setMemberOwner(member_id, owner_id) {
+    if (member_id == null) {
+      return
+    }
     await Member.query()
       .update({
         owner_user_id: owner_id,
