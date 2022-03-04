@@ -68,7 +68,7 @@ class RoomService {
       .where('estate_id', estateId)
       .whereNot('status', STATUS_DELETE)
       .orderBy('order','asc')
-      .orderBy('id', 'ask')
+      .orderBy('id','asc')
       .fetch()
   }
 
