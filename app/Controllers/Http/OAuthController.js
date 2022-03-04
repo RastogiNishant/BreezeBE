@@ -160,7 +160,10 @@ class OAuthController {
         role: user.role,
         email: user.email,
       })
-      await MemberService.setMemberOwner(member_id, user.id)
+      if( ROLE_HOUSEKEEPER === role && member_id ) {
+        await MemberService.setMemberOwner(member_id, user.id)
+      }
+      
 
       return response.res(token)
     }
@@ -218,7 +221,7 @@ class OAuthController {
           SIGN_IN_METHOD_APPLE
         )
 
-        if( user ) {
+        if( user && role === ROLE_HOUSEKEEPER && member_id ) {
           await MemberService.setMemberOwner(member_id, user.id)
         }
       } catch (e) {
