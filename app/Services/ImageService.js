@@ -72,6 +72,25 @@ class ImageService {
       }
     });
   }
+  static async getImageIds( roomId, imageIds) {
+    return (await Image.query()
+      .select('images.id')
+      .whereIn('images.id', imageIds)
+      .innerJoin({ _r: 'rooms' }, function () {
+        this.on('_r.id', 'images.room_id').onIn('_r.id', roomId)          
+      })
+      .fetch()).rows
+  }
+
+  static async updateOrder( ids ) {
+    await Promise.all(
+      ids.map(async(id, index) => {
+        await Image.query()
+        .where('id', id)
+        .update({order:index+1})
+      })
+    )
+  }
 }
 
 module.exports = ImageService

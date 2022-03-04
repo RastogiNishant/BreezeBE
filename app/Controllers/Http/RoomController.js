@@ -19,6 +19,7 @@ const {
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER
 } = require('../../constants')
+const ImageService = require('../../Services/ImageService')
 class RoomController {
   /**
    *
@@ -74,8 +75,6 @@ class RoomController {
     }
 
     if( data.favorite ) {
-console.log('updateRoom here', estate_id)
-
       await Room.query()
         .where('estate_id', estate_id)
         .where('type', data.type)        
@@ -105,9 +104,7 @@ console.log('updateRoom here', estate_id)
 
   async updateOrder({request, auth, response}) {
     const {ids} = request.all()
-console.log('updateOrder info', ids )        
     const roomIds = await RoomService.getRoomIds(auth.user.id, ids)
-console.log('updateOrder', roomIds.length )    
     if( roomIds.length != ids.length  ) {
       throw new HttpException('Some roomids don\'t exist')
     }
@@ -122,6 +119,23 @@ console.log('updateOrder', roomIds.length )
     response.res(true)
   }
 
+  async orderRoomPhoto({request, auth, response}) {
+    const { room_id, ids } = request.all()
+    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    if (!room) {
+      throw new HttpException('Invalid room', 404)
+    }
+    try{
+      const imageIds = await ImageService.getImageIds(room_id, ids)
+      if( imageIds.length != ids.length ) {
+        throw new HttpException('Some imageIds don\'t exist')        
+      }
+      await ImageService.updateOrder(ids)
+    }catch(e){
+      throw new HttpException(e.message, 400)
+    }
+    response.res(true)
+  }
   /**
    *
    */
