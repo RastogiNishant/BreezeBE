@@ -140,7 +140,10 @@ class EstateController {
       .with('files')
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE).with('images')
-      })
+        .orderBy('order','asc')
+        .orderBy('favorite', 'desc')        
+        .orderBy('id','asc')
+        })
       .first()
 
     if (!estate) {
@@ -180,13 +183,11 @@ class EstateController {
   async extendEstate({ request, auth, response }) {
     const { estate_id, avail_duration } = request.all()
     const available_date = moment().add(avail_duration, 'hours').toDate()
-    console.log('available_date:', available_date)
     const estate = await EstateService.getQuery()
       .where('id', estate_id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .update({ available_date: available_date, status: STATUS_ACTIVE })
-    console.log(estate)
     response.res(estate)
   }
 

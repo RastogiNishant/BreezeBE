@@ -1,5 +1,6 @@
 'use strict'
 
+const { countBy } = require('lodash')
 const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
@@ -99,6 +100,25 @@ console.log('updateRoom here', estate_id)
     await RoomService.removeRoom(room_id)
     Event.fire('estate::update', room.estate_id)
 
+    response.res(true)
+  }
+
+  async updateOrder({request, auth, response}) {
+    const {ids} = request.all()
+console.log('updateOrder info', ids )        
+    const roomIds = await RoomService.getRoomIds(auth.user.id, ids)
+console.log('updateOrder', roomIds.length )    
+    if( roomIds.length != ids.length  ) {
+      throw new HttpException('Some roomids don\'t exist')
+    }
+
+    await Promise.all(
+      ids.map(async(id, index) => {
+        await Room.query()
+        .where('id', id)
+        .update({order:index+1})
+      })
+    )
     response.res(true)
   }
 

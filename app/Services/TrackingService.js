@@ -35,17 +35,9 @@ const logEvent = async (
   const smartlook_visitor_url = get(headers, 'smartlookvisitorurl')
 
   const identify = new Identify()
-  console.log({ user_id, deviceId })
   identify.identifyUser(user_id, deviceId)
 
-  await amplitudeClient
-    .identify(user_id, deviceId, identify)
-    .then((res) => {
-      console.log({ res })
-    })
-    .catch((e) => console.log({ e }))
-
-  console.log({ smartlook_visitor_url, headers })
+  await amplitudeClient.identify(user_id, deviceId, identify).catch((e) => console.log({ e }))
 
   const event = {
     event_type,
@@ -57,40 +49,7 @@ const logEvent = async (
     },
   }
 
-  amplitudeClient
-    .logEvent(event)
-    .then((res) => {
-      console.log({ res })
-    })
-    .catch((e) => console.log({ e }))
-
-  // const inputBody = {
-  //   api_key: Env.get('AMPLITUDE_API_KEY'),
-  //   events: [
-  //     {
-  //       user_id: user_id,
-  //       device_id: 'C8F9E604-F01A-4BD9-95C6-8E5357DF265D',
-  //       event_type,
-  //       time: Date.now(),
-  //       event_properties: event_properties,
-  //       ip: ip,
-  //     },
-  //   ],
-  // }
-  // fetch('https://api2.amplitude.com/2/httpapi', {
-  //   method: 'POST',
-  //   body: JSON.stringify(inputBody),
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     Accept: '*/*',
-  //   },
-  // })
-  //   .then(function (res) {
-  //     return res.json()
-  //   })
-  //   .then(function (body) {
-  //     console.log(body)
-  //   })
+  amplitudeClient.logEvent(event).catch((e) => console.log({ e }))
 }
 
 module.exports = { logEvent }
