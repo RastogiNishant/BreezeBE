@@ -29,7 +29,9 @@ class NoticeController {
     response.res(result)
   }
   async acceptZendeskNotification( {request, response} ) {
-    response.res(true)
+    const {ticket} = request.all()
+console.log('Ticket', ticket)    
+    response.res(ticket?ticket:true)
   }
 }
 
