@@ -28,6 +28,9 @@ class NoticeController {
 
     response.res(result)
   }
+  async acceptZendeskNotification( {request, response} ) {
+    response.res(true)
+  }
 }
 
 module.exports = NoticeController
