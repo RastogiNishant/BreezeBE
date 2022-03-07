@@ -19,15 +19,15 @@ When the container is upped, you need to create the database on the postgres and
 
 ```bash
 > psql -U postgres
-postgres=\# CREATE DATABASE breeze;
-postgres=\# \\c breeze;
-postgres=\# CREATE EXTENSION postgis;
+postgres=# CREATE DATABASE breeze;
+postgres=# \c breeze;
+postgres=# CREATE EXTENSION postgis;
 ```
 
 To verify whether postgis extension is enabled:
 
 ```bash
-postgres=\# \\dx
+postgres=# \dx
 ```
 
 For Redis:
