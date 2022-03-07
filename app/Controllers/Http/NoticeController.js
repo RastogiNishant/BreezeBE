@@ -29,8 +29,15 @@ class NoticeController {
     response.res(result)
   }
   async acceptZendeskNotification( {request, response} ) {
+    // const express = require("express");
+    // const crypto = require("crypto");
+    // require("body-parser-xml")(express);   
+    // const signature = req.headers["x-zendesk-webhook-signature"];
+    // const timestamp = req.headers["x-zendesk-webhook-signature-timestamp"];
+    const body = request.rawBody;
+console.log('Zendesk body', body )
+
     const {ticket} = request.all()
-console.log('Ticket', ticket)    
     response.res(ticket?ticket:true)
   }
 }

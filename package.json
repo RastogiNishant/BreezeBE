@@ -90,6 +90,7 @@
 	},
 	"devDependencies": {
 		"@adonisjs/cli": "^4.0.13",
-		"concurrently": "^6.0.0"
+		"concurrently": "^6.0.0",
+		"jsonwebtoken": "^8.5.1"
 	}
 }

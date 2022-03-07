@@ -13,6 +13,7 @@ const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
+const ZendeskService = use('App/Services/ZendeskService')
 const MemberService = use('App/Services/MemberService')
 const ImageService = use('App/Services/ImageService')
 const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
@@ -224,6 +225,18 @@ class AccountController {
       email: user.email,
     })
     return response.res(token)
+  }
+
+  async createZendeskToken({request, auth, response }){
+    try{
+      const user = await User.query()
+      .where('users.id', auth.current.user.id)
+      .firstOrFail()
+      const token = await ZendeskService.createToken(user.id, user.email, `${user.firstname} ${user.lastname}` )
+      return response.res(token)
+    }catch(e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

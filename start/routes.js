@@ -40,7 +40,8 @@ Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification
 
 Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'valid:SignUp'])
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
-Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord'])
+Route.post('/api/v1/logout', 'AccountController.logout').middleware(['auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager'])
+Route.get('/api/v1/zendeskToken', 'AccountController.createZendeskToken').middleware(['auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager'])
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
