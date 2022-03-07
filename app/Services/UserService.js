@@ -597,6 +597,18 @@ class UserService {
     return data
   }
 
+  static async getUserIdsByToken( devices ) {
+    if( !devices || !devices.length ) {
+      return []
+    }
+    const deviceTokens = devices.map( d => d.identifier)
+    const ids = (await User.query()
+      .select('id')
+      .whereIn('device_token', deviceTokens )
+      .fetch()).rows
+    return ids
+  }
+
   /**
    *
    */
