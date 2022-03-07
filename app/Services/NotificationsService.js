@@ -30,6 +30,7 @@ const {
   NOTICE_TYPE_PROSPECT_KNOCK,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
+  NOTICE_TYPE_ZENDESK_NOTIFY,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -59,6 +60,7 @@ const {
   NOTICE_TYPE_PROSPECT_KNOCK_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
   NOTICE_TYPE_CANCEL_VISIT_ID,
+  NOTICE_TYPE_ZENDESK_NOTIFY_ID
 } = require('../constants')
 
 const mapping = [
@@ -84,6 +86,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_KNOCK_ID, NOTICE_TYPE_PROSPECT_KNOCK],
   [NOTICE_TYPE_CANCEL_VISIT_ID, NOTICE_TYPE_CANCEL_VISIT],
   [NOTICE_TYPE_VISIT_DELAY_ID, NOTICE_TYPE_VISIT_DELAY],
+  [NOTICE_TYPE_ZENDESK_NOTIFY_ID, NOTICE_TYPE_ZENDESK_NOTIFY],  
 ]
 
 class NotificationsService {
@@ -584,6 +587,11 @@ class NotificationsService {
       )
     })
   }
+
+  static async sendZendeskNotification(notices, title, body ) {
+    return NotificationsService.sendNotes(notices, title, body)
+  }  
+
 }
 
 module.exports = NotificationsService

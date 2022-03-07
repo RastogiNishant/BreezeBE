@@ -36,6 +36,8 @@ providers.push(path.join(__dirname, '..', 'providers', 'Localize/Provider'))
 providers.push(path.join(__dirname, '..', 'providers', 'GeoAPIProvider'))
 providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
 
+providers.push(path.join(__dirname, '..', 'providers', 'Zendesk/Provider'))
+
 providers.push('adonis-swagger/providers/SwaggerProvider')
 
 const aceProviders = [
