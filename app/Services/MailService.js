@@ -109,6 +109,15 @@ class MailService {
     //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for forget password')
     // })
 
+
+
+    console.log('llllllllllll::::', l)
+    console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message'))
+    const Localize = use('Localize')
+    await Localize.init()
+
+    console.log('LocalizeLocalizeLocalize:::::::', Localize)
+
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
