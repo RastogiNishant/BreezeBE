@@ -111,9 +111,9 @@ class MailService {
 
 
 
-    console.log('llllllllllll::::', l)
-    console.log('language--Lang::::', lang)
-    console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message', lang))
+    console.log('language__Lang1:', lang)
+    console.log('Localize__l1', l)
+    console.log('subject__message1:',  l.get('landlord.email_reset.password.subject.message', lang))
 
     const templateId =
       role === ROLE_LANDLORD
