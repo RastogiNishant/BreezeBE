@@ -18,7 +18,12 @@ class TenantPaymentPlanController {
   }  
   async getTenantPaymentPlan({request, auth, response}) {
     const {plan_id} = request.all()
-    await TenantPaymentPlanService.getTenantPaymentPlan(plan_id)
+    try{
+      const paymentPlan = await TenantPaymentPlanService.getTenantPaymentPlan(plan_id)
+      response.res(paymentPlan)
+    }catch(e) {
+      throw new HttpException(e.message,400)
+    }
   }
   async createTenantPaymentPlan({request, auth, response}) {
     const{ plan_id, plan_option, ...data} = request.all()
