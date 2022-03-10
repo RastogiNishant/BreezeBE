@@ -4,6 +4,7 @@ const NoticeService = use('App/Services/NoticeService')
 const EstateService = use('App/Services/EstateService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
+const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 
 const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
@@ -52,7 +53,6 @@ class QueueService {
 
   static savePropertyBulkImages(properyImages) {
     Queue.addJob(SAVE_PROPERTY_IMAGES, { properyImages }, { delay: 1 })
-    
   }
 
   /**
@@ -78,6 +78,7 @@ class QueueService {
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
       wrapException(NoticeService.sandProspectNoActivity),
+      wrapException(TenantPremiumPlanService.validateAllSubscriptions())
     ])
   }
 
@@ -116,7 +117,7 @@ class QueueService {
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
         case SAVE_PROPERTY_IMAGES:
-          return ImageService.savePropertyBulkImages(job.data.properyImages)  
+          return ImageService.savePropertyBulkImages(job.data.properyImages)
         default:
           console.log(`No job processor for: ${job.name}`)
       }
