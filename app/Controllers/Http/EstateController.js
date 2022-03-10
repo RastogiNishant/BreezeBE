@@ -14,6 +14,10 @@ const ImportService = use('App/Services/ImportService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
+const User = use('App/Models/User')
+const EstateViewInvite = use('App/Models/EstateViewInvite')
+const Database = use('Database')
+const randomstring = require('randomstring');
 
 const {
   STATUS_ACTIVE,
@@ -28,6 +32,7 @@ const {
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
   LOG_TYPE_PROPERTIES_IMPORTED,
+  ROLE_USER
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -620,6 +625,47 @@ class EstateController {
       .fetch()
     const duplicate = estate.rows.length > 0 ? false : true
     response.res(duplicate)
+  }
+
+  async inviteToView({request, auth, response}) {
+    const estateId = request.params.estate_id || request.body.estate_id
+    const emails = request.body.emails;
+
+    const trx = await Database.beginTransaction()
+    try {
+      let code;
+      do {
+        code = randomstring.generate(8);
+        console.log(code);
+      } while (await EstateViewInvite.findBy('code', code))
+
+      await EstateViewInvite.query().create({
+        invited_by: auth.user.id,
+        estate_id: estateId,
+        code
+      }).transacting(trx)
+    } catch(e) {
+      console.log(e)
+      await trx.rollback()
+    }
+
+    emails.map(email => {
+      console.log(email);
+      /*
+      const user = await User.query()
+        .where('email', email)
+        .where('role', ROLE_USER)
+        .first()
+      
+      if(user) {
+        console.log(user);
+      } else {
+        
+      }
+      return*/
+    });
+    
+    return response.res(true)
   }
 }
 
