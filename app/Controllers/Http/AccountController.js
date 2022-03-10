@@ -558,7 +558,7 @@ class AccountController {
           .where('users.id', auth.current.user.id)
           .with('plan', function (p) {
             p.with('features', function(f) {
-              f.where('role_id', ROLE_USER )
+              f.whereNot('role_id', ROLE_LANDLORD )
               f.orderBy('id', 'asc')
             })
           })
