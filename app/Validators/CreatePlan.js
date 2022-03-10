@@ -8,7 +8,7 @@ class CreatePlan extends Base {
     yup.object().shape({
       name: yup.string(),
       description: yup.string(),
-      prices: yup.number(),
+      // prices: yup.number(),
     })
 }
 
