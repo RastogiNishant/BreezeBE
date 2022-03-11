@@ -662,3 +662,49 @@ Route.list().forEach((r) => {
     }
   }
 })
+
+const User = use('App/Models/User')
+const Estate = use('App/Models/Estate')
+const MatchService = use('App/Services/MatchService')
+const EstateService = use('App/Services/MatchService')
+const Tenant = use('App/Models/Tenant')
+const GeoService = use('App/Services/GeoService')
+
+Route.post('/test-match', async ({request, response}) => {
+  const {tenants, estate_id} = request.all()
+  const estate = await Estate.query().where({ id: estate_id }).first()
+  
+  let scores = [];
+  scores = tenants.map(async function(tenantId){
+    const tenant = await Tenant.query()
+        .select('tenants.*', '_p.data as polygon')
+        .where({ 'tenants.user_id': tenantId })
+        .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+        .first()
+    const score = await MatchService.calculateMatchPercent(tenant, estate)
+    console.log("tenantId", tenantId, "tenantIncome", tenant.income, "score", score.toFixed(2))
+    scores.push({tenantId: tenantId, score: score})
+  })
+  scores = JSON.parse(JSON.stringify(scores))
+  response.res({tenant})
+});
+
+Route.get('/test-match', async ({request, response}) => {
+  const {tenant_id, estate_id} = request.all()
+  const tenant = await Tenant.query()
+      .select('tenants.*', '_p.data as polygon')
+      .where({ 'tenants.user_id': tenant_id })
+      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .first()
+    
+  const estate = await Estate.query().where({ id: estate_id }).first()
+  const score = await MatchService.calculateMatchPercent(tenant, estate)
+  console.log('score', score)
+  const estatePrice = (parseFloat(estate.net_rent) || 0) + (parseFloat(estate.additional_costs) || 0)
+  
+  const realBudget = estatePrice / tenant.income;
+  const budgetMax = (parseFloat(tenant.budget_max) || 0)
+  response.res({
+    estate
+  })
+});
