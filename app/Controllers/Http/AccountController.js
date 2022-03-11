@@ -572,7 +572,7 @@ class AccountController {
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
-      throw new AppException(e.message, 400)
+      throw new AppException(e, 400)
     }
   }
 
@@ -583,8 +583,10 @@ class AccountController {
         auth.user.id,
         app
       )
-
-      response.res(pick(tenantPremiumPlans.toJSON(), ['id', 'plan_id', 'isCancelled', 'startDate','endDate','app']))
+      const data = {
+        purchase: tenantPremiumPlans?pick(tenantPremiumPlans.toJSON(), ['id', 'plan_id', 'isCancelled', 'startDate','endDate','app']):null
+      }  
+      response.res(data)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
