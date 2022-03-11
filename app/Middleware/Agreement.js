@@ -18,6 +18,8 @@ class Agreement {
     const appAgreementId = get(data, 'agreement.id')
     const appTermsId = get(data, 'terms.id')
 
+throw new HttpException( `Agreement ${appAgreementId}  ${appTermsId} ${agreements_id} ${terms_id}` )    
+
     if ((appAgreementId || 0) > (agreements_id || 0)) {
       throw new HttpException('User agreement confirmation need', 412, ERROR_AGREEMENT_CONFIRM)
     }
