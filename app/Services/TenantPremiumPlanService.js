@@ -68,7 +68,7 @@ class TenantPremiumPlanService {
       .where('app', app)
       .where('user_id', userId)
       .orderBy('startDate', 'desc')
-      .firstOrFail()
+      .first()
   }
 
   static async processPurchase(user_id, plan_id, payment_plan, app, receipt, trx = null) {
