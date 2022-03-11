@@ -8,12 +8,15 @@ class Plan extends Model {
       'id',
       'name',
       'description',
-      'prices',
     ]
   }
 
   static get traits() {
     return ['NoTimestamp']
+  }  
+
+  features() {
+    return this.hasMany('App/Models/PremiumFeature')
   }  
 }
 
