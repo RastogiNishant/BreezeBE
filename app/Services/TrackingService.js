@@ -39,6 +39,8 @@ const logEvent = async (
 
   await amplitudeClient.identify(user_id, deviceId, identify).catch((e) => console.log({ e }))
 
+  event_properties = { ...event_properties, user_id }
+
   const event = {
     event_type,
     user_id,
