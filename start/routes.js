@@ -569,7 +569,7 @@ Route.group(() => {
   Route.get('/', 'TenantPaymentPlanController.getTenantPaymentPlan').middleware(['valid:PlanId'])
 })
   .prefix('api/v1/tenant/paymentplan')
-  .middleware(['auth:jwt', 'is:admin'])
+  .middleware(['auth:jwt'])
   
 Route.group(() => {
   Route.post('/', 'AccountController.updateTenantPremiumPlan').middleware(['auth:jwt', 'valid:TenantPremiumPlan,AppType'])
