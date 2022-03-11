@@ -475,6 +475,7 @@ const constants = {
   LOG_TYPE_PUBLISHED_PROPERTY: 'published_property',
   LOG_TYPE_PROPERTIES_IMPORTED: 'properties_imported',
   LOG_TYPE_INVITED: 'invited',
+  LOG_TYPE_GOT_INVITE: 'got_invite',
   LOG_TYPE_SHOWED: 'showed',
   LOG_TYPE_FINAL_MATCH_REQUEST: 'final_match_request',
   LOG_TYPE_FINAL_MATCH_APPROVAL: 'final_match_approval',
@@ -495,13 +496,13 @@ const constants = {
   SIGN_UP_METHOD_APPLE: 'apple',
   SIGN_UP_METHOD_EMAIL: 'email',
 
-  PLAN_FEATURE_COMMON:  '',  
-  PLAN_FEATURE_NEW:  'New',
+  PLAN_FEATURE_COMMON: '',
+  PLAN_FEATURE_NEW: 'New',
 
-  VISIBLE_TO_NOBODY:1,
-  VISIBLE_TO_EVERYBODY:2,
+  VISIBLE_TO_NOBODY: 1,
+  VISIBLE_TO_EVERYBODY: 2,
   VISIBLE_TO_SPECIFIC: 3,
-  VISIBLE_TO_HOUSEHOLD:4,
+  VISIBLE_TO_HOUSEHOLD: 4,
 }
 
 module.exports = constants
