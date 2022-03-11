@@ -278,7 +278,7 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'TenantPaymentPlanController.getTenantPaymentPlanById').middleware(['valid:Id'])
-  Route.get('/', 'PlanController.getPlanAll').middleware(['valid:PlanId'])
+  Route.get('/', 'TenantPaymentPlanController.getTenantPaymentPlan').middleware(['valid:PlanId'])
   Route.post('/', 'TenantPaymentPlanController.createTenantPaymentPlan').middleware(['valid:TenantPaymentPlan'])
   Route.put('/:id', 'TenantPaymentPlanController.updateTenantPaymentPlan').middleware(['valid:TenantPaymentPlan,Id'])
   Route.delete('/:id', 'TenantPaymentPlanController.deleteTenantPaymentPlan').middleware(['valid:Id'])
@@ -566,10 +566,10 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'TenantPaymentPlanController.getTenantPaymentPlanById').middleware(['valid:Id'])
-  Route.get('/', 'PlanController.getPlanAll').middleware(['valid:PlanId'])
+  Route.get('/', 'TenantPaymentPlanController.getTenantPaymentPlan').middleware(['valid:PlanId'])
 })
   .prefix('api/v1/tenant/paymentplan')
-  .middleware(['auth:jwt', 'is:admin'])
+  .middleware(['auth:jwt'])
   
 Route.group(() => {
   Route.post('/', 'AccountController.updateTenantPremiumPlan').middleware(['auth:jwt', 'valid:TenantPremiumPlan,AppType'])
