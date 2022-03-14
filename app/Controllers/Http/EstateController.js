@@ -16,6 +16,8 @@ const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
+const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
+const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const Database = use('Database')
 const randomstring = require('randomstring');
 
@@ -35,6 +37,8 @@ const {
   ROLE_USER
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
+const { result } = require('lodash')
+const INVITE_CODE_STRING_LENGTH = 8;
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -624,45 +628,55 @@ class EstateController {
     response.res(duplicate)
   }
 
+  
   async inviteToView({request, auth, response}) {
     const estateId = request.params.estate_id || request.body.estate_id
     const emails = request.body.emails;
-
+    
+    //Transaction start...
     const trx = await Database.beginTransaction()
+    let code
+    do {
+      //gen
+      code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
+    } while (await EstateViewInvite.findBy('code', code))
+    
     try {
-      let code;
-      do {
-        code = randomstring.generate(8);
-        console.log(code);
-      } while (await EstateViewInvite.findBy('code', code))
-
-      await EstateViewInvite.query().create({
-        invited_by: auth.user.id,
-        estate_id: estateId,
-        code
-      }).transacting(trx)
+      const newInvite = new EstateViewInvite()
+      newInvite.invited_by = auth.user.id
+      newInvite.estate_id = estateId
+      newInvite.code = code
+      
+      const result = await newInvite.save(trx)
+      
+      await Promise.all(
+        emails.map(async email => {
+          // see if this prospect is already a user
+          const userExists = await User.query().where('email', email).where('role', ROLE_USER).first(trx)
+          if(userExists) {
+            let newInvitedUser = new EstateViewInvitedUser()
+            newInvitedUser.user_id = userExists.id
+            newInvitedUser.estate_view_invite_id = newInvite.id
+            await newInvitedUser.save(trx)
+          } else {
+            let newInviteEmail = new EstateViewInvitedEmail()
+            newInviteEmail.email = email
+            newInviteEmail.estate_view_invite_id = newInvite.id
+            await newInviteEmail.save(trx)
+          }
+          //placeholder for now...          
+          console.log('sending email to ', email, 'code', code)
+        })
+      )
+      trx.commit()
+      //transaction end
+      return response.res(result)
     } catch(e) {
       console.log(e)
       await trx.rollback()
+      //transaction failed
+      throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
-
-    emails.map(email => {
-      console.log(email);
-      /*
-      const user = await User.query()
-        .where('email', email)
-        .where('role', ROLE_USER)
-        .first()
-      
-      if(user) {
-        console.log(user);
-      } else {
-        
-      }
-      return*/
-    });
-    
-    return response.res(true)
   }
 }
 

@@ -26,7 +26,7 @@ class EstateViewInvitesSchema extends Schema {
     })
 
     //holds what estates the user are invited to view
-    this.create('user_estate_invites', (table) => {
+    this.create('estate_view_invited_users', (table) => {
       table.increments()
       table.integer('estate_view_invite_id').unsigned().references('id').inTable('estate_view_invites')
       table.integer('user_id').unsigned().references('id').inTable('users')
@@ -36,7 +36,7 @@ class EstateViewInvitesSchema extends Schema {
 
   down () {
     this.drop('estate_view_invited_emails')
-    this.drop('user_estate_invites')
+    this.drop('estate_view_invited_users')
     this.drop('estate_view_invites')
   }
 }

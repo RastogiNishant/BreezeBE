@@ -15,9 +15,9 @@ class ViewEstateInvitationCodeExist {
   async handle ({ request }, next) {
     // call next to advance the request
     const code = request.params.code
-    console.log('code', code)
-    const invite = await EstateViewInvite.findBy('code', code)
-    if(!invite)
+    const inviteCode = await EstateViewInvite.findBy('code', code)
+    console.log('inviteCode', inviteCode)
+    if(!inviteCode)
       throw new HttpException('This code does not exist', 412, ERROR_VIEW_INVITE_NOT_EXISTING)
 
     await next()
