@@ -40,7 +40,7 @@ Route.get('/', () => {
 Route.get('/api/v1/estate-view-invitation/:code', ({request, response}) => {
 
   response.res(request.params.code)
-})
+}).middleware(['ViewEstateInvitationCodeExist'])
 
 Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification').middleware()
 
