@@ -6,6 +6,7 @@ const Promise = require('bluebird')
 
 const User = use('App/Models/User')
 const Member = use('App/Models/Member')
+const EstateViewInvite = use('App/Models/EstateViewInvite')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -86,6 +87,24 @@ class AccountController {
 
       throw e
     }
+  }
+
+  async signupProspectWithViewEstateInvitation({request, response}) {
+    //create user
+    //there should be transaction here...
+    const {email, phone, role, password} = request.all()
+    const newUser = new User()
+    newUser.email = email
+    newUser.phone = phone
+    newUser.role = role
+    newUser.password = password
+
+    await newUser.save()
+    console.log(newUser.id)
+    //insert row on estate_view_invites
+
+
+    return request.res(true)
   }
 
   async housekeeperSignup({ request, response }) {

@@ -9,6 +9,7 @@ class SignupAfterViewEstateInvitation extends Base{
   static schema() {
     return yup.object().shape({
       email: yup.string().email().lowercase().required(),
+      password: yup.string().min(6).max(36).required(),
       role: yup.number().oneOf([ROLE_USER]).required(),
       phone: phoneSchema
     })
