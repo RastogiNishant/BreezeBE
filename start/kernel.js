@@ -43,6 +43,7 @@ const namedMiddleware = {
   pagination: 'App/Middleware/Pagination',
   valid: 'App/Middleware/Validator',
   agreement: 'App/Middleware/Agreement',
+  LandlordOwnsThisEstate: 'App/Middleware/LandlordOwnsThisEstate'
 }
 
 /*

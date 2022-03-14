@@ -36,8 +36,10 @@ Route.get('/', () => {
   }
 })
 
+// get pertinent information for an estate based on code
 Route.get('/api/v1/estate-view-invitation/:code', ({request, response}) => {
-  response.res(true)
+
+  response.res(request.params.code)
 })
 
 Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification').middleware()
@@ -208,7 +210,7 @@ Route.group(() => {
     'RoomController.removeRoomPhoto'
   ).middleware(['valid:RoomId,Id'])
 
-  Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware(['valid:LandlordInviteToView'])
+  Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware(['valid:LandlordInviteToView', 'LandlordOwnsThisEstate'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
@@ -460,7 +462,7 @@ Route.group(() => {
   Route.get('/visit', 'LandlordController.getLordVisits')
   Route.post('/activate', 'LandlordController.activate')
 
-  Route.post('/invite-to-view-estate', 'EstateController.inviteToView').middleware(['valid:LandlordInviteToView'])
+  Route.post('/invite-to-view-estate', 'EstateController.inviteToView').middleware(['valid:LandlordInviteToView', 'LandlordOwnsThisEstate'])
 })
   .prefix('/api/v1/landlord')
   .middleware(['auth:jwtLandlord'])
