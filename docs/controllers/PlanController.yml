@@ -23,10 +23,10 @@ definitions:
     name: description
     in: path
     type: string
-  prices:
-    name: prices
-    in: path
-    type: number
+  # prices:
+  #   name: prices
+  #   in: path
+  #   type: number
 
 # Routes list
 /api/v1/plan:
@@ -47,7 +47,7 @@ definitions:
     parameters:
       - $ref: '#/definitions/name'
       - $ref: '#/definitions/description'
-      - $ref: '#/definitions/prices'
+      # - $ref: '#/definitions/prices'
       - $ref: '#/definitions/status'            
     responses: [200]
 
