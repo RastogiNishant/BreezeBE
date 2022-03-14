@@ -14,7 +14,6 @@ class LandlordOwnsThisEstate {
    */
   async handle ({ request, auth }, next) {
     // call next to advance the request
-    console.log('checking if landlord owns this estate.')
     const {estate_id} = request.all()
     const landlordId = auth.user.id 
     const result = await Estate.query().where('user_id', landlordId).where('id', estate_id).first()
