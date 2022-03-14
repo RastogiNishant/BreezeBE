@@ -36,11 +36,8 @@ Route.get('/', () => {
   }
 })
 
-// get pertinent information for an estate based on code
-Route.get('/api/v1/estate-view-invitation/:code', ({request, response}) => {
-
-  response.res(request.params.code)
-}).middleware(['ViewEstateInvitationCodeExist'])
+// get pertinent information for an invitation to view estate based on code
+Route.get('/api/v1/estate-view-invitation/:code', 'EstateViewInvitationController.getByCode').middleware(['ViewEstateInvitationCodeExist'])
 
 Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification').middleware()
 

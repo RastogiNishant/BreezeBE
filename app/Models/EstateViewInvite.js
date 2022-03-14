@@ -4,16 +4,20 @@
 const Model = use('Model')
 
 class EstateViewInvite extends Model {
-  invited() {
+  invitedUser() {
     return this.belongsTo('App/Models/User', 'invited_user', 'id')
   }
 
-  invited_by_user() {
+  invitedByUser() {
     return this.belongsTo('App/Models/User', 'invited_by', 'id')
   }
 
-  estate_view_invited_emails() {
+  invitedEmails() {
     return this.hasMany('App/EstateViewInvitedEmails', 'id', 'estate_view_invite_id')
+  }
+
+  estate() {
+    return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
   }
 }
 
