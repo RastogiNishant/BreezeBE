@@ -44,7 +44,8 @@ const namedMiddleware = {
   valid: 'App/Middleware/Validator',
   agreement: 'App/Middleware/Agreement',
   LandlordOwnsThisEstate: 'App/Middleware/LandlordOwnsThisEstate',
-  ViewEstateInvitationCodeExist: 'App/Middleware/ViewEstateInvitationCodeExist'
+  ViewEstateInvitationCodeExist: 'App/Middleware/ViewEstateInvitationCodeExist',
+  ProspectHasNotRegisterYet: 'App/Middleware/ProspectHasNotRegisterYet'
 }
 
 /*

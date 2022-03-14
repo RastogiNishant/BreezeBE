@@ -37,7 +37,15 @@ Route.get('/', () => {
 })
 
 // get pertinent information for an invitation to view estate based on code
-Route.get('/api/v1/estate-view-invitation/:code', 'EstateViewInvitationController.getByCode').middleware(['ViewEstateInvitationCodeExist'])
+Route.get('/api/v1/estate-view-invitation/:code', 'EstateViewInvitationController.getByCode')
+  .middleware(['ViewEstateInvitationCodeExist'])
+// signup
+Route.post('/api/v1/invited-signup/:code', 'AccountController.signupProspectWithViewEstateInvitation')
+  .middleware([
+    'ViewEstateInvitationCodeExist',
+    'valid:SignupAfterViewEstateInvitation',
+    'ProspectHasNotRegisterYet'
+  ])
 
 Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification').middleware()
 
