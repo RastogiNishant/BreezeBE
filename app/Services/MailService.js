@@ -84,14 +84,14 @@ class MailService {
     });    
   }
   static async sendcodeForgotPasswordMail(email, code, role, lang) {
-    const l = use('Localize')    
+    const l = use('Localize')
 
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
-throw new HttpException(`ForgotPassword subject= ${lang} ${l.get('landlord.email_reset.password.subject.message')}`)        
+throw new HttpException(`ForgotPassword subject= ${lang} ${l.get('landlord.email_reset.password.subject.message', lang)}`)        
     const msg = {
       to: trim(email),
       from: FromEmail,
