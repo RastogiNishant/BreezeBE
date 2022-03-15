@@ -91,7 +91,7 @@ class MailService {
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
-throw new HttpException(`ForgotPassword subject ${l.get('landlord.email_reset.password.subject.message', lang)}`)        
+throw new HttpException(`ForgotPassword subject= ${lang} ${l.get('landlord.email_reset.password.subject.message')}`)        
     const msg = {
       to: trim(email),
       from: FromEmail,
