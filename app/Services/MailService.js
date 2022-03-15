@@ -36,10 +36,6 @@ class MailService {
         }
       }
     )
-
-    // await Mail.send('mail/reset-password', { code }, (message) => {
-    //   message.to(email).from(Config.get('mail.mailAccount')).subject('Reset password')
-    // })
   }
 
   static async sendWelcomeMail( email, {code, role, lang} ) {
@@ -89,12 +85,6 @@ class MailService {
   }
   static async sendcodeForgotPasswordMail(email, code, role, lang) {
     const l = use('Localize')    
-    console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message'))
-throw new HttpException(`Subject Test${l.get('landlord.email_reset.password.subject.message')}`, 400)    
-    // const Localize = use('Localize')
-    // await Localize.init()
-
-    // console.log('LocalizeLocalizeLocalize:::::::', Localize)
 
     const templateId =
       role === ROLE_LANDLORD
