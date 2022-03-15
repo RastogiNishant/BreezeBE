@@ -636,17 +636,22 @@ class EstateController {
     //Transaction start...
     const trx = await Database.beginTransaction()
     let code
-    do {
-      //gen
-      code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
-    } while (await EstateViewInvite.findBy('code', code))
+    //check if this estate already has an invite
+    const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
+    if(invitation) {
+      code = invitation.code
+    } else {
+      do {
+        //gen
+        code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
+      } while (await EstateViewInvite.findBy('code', code))
+    }
     
     try {
       const newInvite = new EstateViewInvite()
       newInvite.invited_by = auth.user.id
       newInvite.estate_id = estateId
       newInvite.code = code
-      
       const result = await newInvite.save(trx)
       
       await Promise.all(

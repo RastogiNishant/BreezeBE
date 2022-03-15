@@ -11,7 +11,7 @@ class EstateViewInvitesSchema extends Schema {
     this.create('estate_view_invites', (table) => {
       table.increments()
       table.integer('invited_by').unsigned().references('id').inTable('users')
-      table.integer('estate_id').unsigned().references('id').inTable('estates')
+      table.integer('estate_id').unsigned().references('id').inTable('estates').unique()
       table.string('code', 8).unique()
       table.timestamps()
       table.index(['code'])
