@@ -78,7 +78,7 @@ class QueueService {
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
       wrapException(NoticeService.sandProspectNoActivity),
-      wrapException(TenantPremiumPlanService.validateAllSubscriptions())
+      wrapException(TenantPremiumPlanService.validateAllSubscriptions)
     ])
   }
 

@@ -201,7 +201,6 @@ class TenantPremiumPlanService {
   }
 
   static async validateAllSubscriptions() {
-    console.log('Hello Tenant validateAllSuscriptions')
     const purchases = await TenantPremiumPlanService.getActiveSubscriptions()
     if (!purchases || !purchases.length) return
     purchases.map((purchase) => {
