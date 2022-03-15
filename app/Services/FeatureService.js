@@ -11,9 +11,8 @@ class FeatureService {
 
     if( params.status !== undefined ) {
       query.where('status', params.status)
-    }else{
-      query.where('status', true)
     }
+    
     if( params.role_id !== undefined ) {
       query.where(function () {
         this.orWhere('premium_features.role_id', params.role_id).orWhereNull('premium_features.role_id')
