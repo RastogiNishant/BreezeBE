@@ -2,7 +2,6 @@
 
 const Mail = use('Mail')
 const Config = use('Config')
-const l = use('Localize')
 const { trim } = require('lodash')
 
 const sgMail = require('@sendgrid/mail')
@@ -13,9 +12,11 @@ const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
 
 const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
+const HttpException = require('../Exceptions/HttpException')
 
 class MailService {
   static async sendResetPasswordMail(email, code) {
+    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -87,32 +88,9 @@ class MailService {
     });    
   }
   static async sendcodeForgotPasswordMail(email, code, role, lang) {
-    // const msg = {
-    //   to: email,
-    //   from: FromEmail, // Use the email address or domain you verified above
-    //   subject: `Code for forget password`,
-    //   text: `Your code is ${code}`,
-    //   html: `<h3> Your code is <b>${ code }</b></h3>`,
-    // };
-
-    // return sgMail
-    // .send(msg)
-    // .then(() => {
-    //   console.log('Email delivery successfully')
-    // }, error => {
-    //   console.log('Email delivery failed', error);
-    //     if (error.response) {
-    //     console.error(error.response.body)
-    //   }
-    // });
-    // await Mail.send('mail/send-code', { code }, (message) => {
-    //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for forget password')
-    // })
-
-
-
-    // console.log('llllllllllll::::', l)
-    // console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message'))
+    const l = use('Localize')    
+    console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message'))
+throw new HttpException(`Subject Test${l.get('landlord.email_reset.password.subject.message')}`, 400)    
     // const Localize = use('Localize')
     // await Localize.init()
 
@@ -164,6 +142,7 @@ class MailService {
   }
 
   static async sendcodeForMemberInvitation(email, shortLink) {
+    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -190,6 +169,7 @@ console.log('SendCodeForMember Email', email )
   }
 
   static async sendInvitationToTenant(email, shortLink) {
+    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -208,13 +188,10 @@ console.log('SendCodeForMember Email', email )
         }
       }
     )
-
-    // await Mail.send('mail/send-code', { code }, (message) => {
-    //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
-    // })
   }
 
   static async sendInvitationToTenant(email, shortLink) {
+    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -241,14 +218,7 @@ console.log('SendCodeForMember Email', email )
   }  
 
   static async sendChangeEmailConfirmation(email, code, role) {
-    // const msg = {
-    //   to: email,
-    //   from: FromEmail, // Use the email address or domain you verified above
-    //   subject: `Confirm email`,
-    //   text: `your email confirmation code ${code}`,
-    //   html: `<h3> Your email confirmation link <a href="${process.env.APP_URL}/account/change_email?code=${code}&user_id=${user_id}">${ code }</a></h3>`,
-    // };
-
+    const l = use('Localize')
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
@@ -275,27 +245,13 @@ console.log('SendCodeForMember Email', email )
         }
       }
     )
-
-    // await Mail.send('mail/confirm-email', { code }, (message) => {
-    //   message.to(email).from(Config.get('mail.mailAccount')).subject('Reset password')
-    // })
   }
 
   /**
    *
    */
   static async sendUserConfirmation(email, { code, user_id, role, lang = 'de' }) {
-  // const msg = {
-  //   to: email,
-  //   from: FromEmail, // Use the email address or domain you verified above
-  //   subject: `Confirm email`,
-  //   text: `your email confirmation code  ${code}`,
-  //   html: `<h3> Your email confirmation link <a href="${process.env.APP_URL}/account/change_email?code=${code}&user_id=${user_id}">${ code }</a></h3>`,
-  // };
-// return Mail.send('mail/confirm-email', { code, user_id }, (message) => {
-//   message.to(email).from(Config.get('mail.mailAccount')).subject('Confirm email')
-// })
-
+    const l = use('Localize')
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
