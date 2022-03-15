@@ -3,12 +3,36 @@
 const HttpException = use('App/Exceptions/HttpException')
 
 const PlanService = use('App/Services/PlanService')
+const {
+  MONTHLY_PAYMENT, YEARLY_PAYMENT
+} = require('../../constants')
 
 class PlanController {
   async getPlan({ request, response }) {
     const {id } = request.all()
     const plan = await PlanService.getPlan(id)
-    return response.res( plan );
+    let planJson = plan.toJSON()
+    if( !planJson.planOption || planJson.planOption ) {
+      const monthlyOption = planJson.planOption.find(po => po.plan_option == MONTHLY_PAYMENT )
+      if( monthlyOption ){
+        planJson = {
+          priceDescription:`${monthlyOption.price}€ / month`,
+          ...planJson
+        }
+      }else {
+        planJson = {
+          priceDescription:'Free',
+          ...planJson
+        }
+      }
+    }else {
+      planJson = {
+        priceDescription:'Free',
+        ...planJson
+      }
+    }
+console.log( 'plan', plan.toJSON() )
+    return response.res( planJson );
   }
 
   async getPlanAll( {request, response }) {
