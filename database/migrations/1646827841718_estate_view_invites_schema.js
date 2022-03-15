@@ -30,6 +30,7 @@ class EstateViewInvitesSchema extends Schema {
       table.increments()
       table.integer('estate_view_invite_id').unsigned().references('id').inTable('estate_view_invites')
       table.integer('user_id').unsigned().references('id').inTable('users')
+      table.boolean('sticky').defaultsTo(false)
       table.unique(['estate_view_invite_id', 'user_id'])
     })
   }
