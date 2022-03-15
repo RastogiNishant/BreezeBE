@@ -394,9 +394,12 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    const { email } = request.only(['email'])
+    const { email, from_web } = request.only(['email', 'from_web'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
+    if( from_web === undefined ) {
+      from_web = false
+    }
     await UserService.requestSendCodeForgotPassword(email)
     return response.res()
   }
@@ -405,10 +408,14 @@ class AccountController {
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
-    const { email } = request.only(['email'])
+    const { email, from_web } = request.only(['email', 'from_web'])
 
     try {
-      await UserService.requestSendCodeForgotPassword(email)
+      if( from_web === undefined ) {
+        from_web = false
+      }
+console.log('From web', from_web)      
+      await UserService.requestSendCodeForgotPassword(email, from_web)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
