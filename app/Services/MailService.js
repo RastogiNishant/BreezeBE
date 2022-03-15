@@ -3,6 +3,7 @@
 const Mail = use('Mail')
 const Config = use('Config')
 const { trim } = require('lodash')
+const l = use('Localize')
 
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
@@ -16,7 +17,6 @@ const HttpException = require('../Exceptions/HttpException')
 
 class MailService {
   static async sendResetPasswordMail(email, code) {
-    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -84,14 +84,12 @@ class MailService {
     });    
   }
   static async sendcodeForgotPasswordMail(email, code, role, lang) {
-    const l = use('Localize')
 
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
-throw new HttpException(`ForgotPassword subject= ${lang} ${l.get('landlord.email_reset.password.subject.message', lang)}`)        
     const msg = {
       to: trim(email),
       from: FromEmail,
@@ -119,7 +117,6 @@ throw new HttpException(`ForgotPassword subject= ${lang} ${l.get('landlord.email
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
       },
     }
-    throw new HttpException(`ForgotPassword ${JSON.stringify(msg)}`)
 
     return sgMail
     .send(msg)
@@ -134,7 +131,6 @@ throw new HttpException(`ForgotPassword subject= ${lang} ${l.get('landlord.email
   }
 
   static async sendcodeForMemberInvitation(email, shortLink) {
-    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -161,7 +157,6 @@ console.log('SendCodeForMember Email', email )
   }
 
   static async sendInvitationToTenant(email, shortLink) {
-    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -183,7 +178,6 @@ console.log('SendCodeForMember Email', email )
   }
 
   static async sendInvitationToTenant(email, shortLink) {
-    const l = use('Localize')    
     const msg = {
       to: email,
       from: FromEmail, // Use the email address or domain you verified above
@@ -210,7 +204,6 @@ console.log('SendCodeForMember Email', email )
   }  
 
   static async sendChangeEmailConfirmation(email, code, role) {
-    const l = use('Localize')
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
@@ -243,7 +236,6 @@ console.log('SendCodeForMember Email', email )
    *
    */
   static async sendUserConfirmation(email, { code, user_id, role, lang = 'de' }) {
-    const l = use('Localize')
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
