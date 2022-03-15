@@ -555,7 +555,7 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
   'valid:DebugNotification',
 ])
 
-Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwtLandlord,jwt'])
+Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['valid:CreateFeature']).middleware(['auth:jwtLandlord,jwt'])
 
 Route.group(() => {
   Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
