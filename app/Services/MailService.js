@@ -86,7 +86,6 @@ class MailService {
   static async sendcodeForgotPasswordMail(email, code, role, lang) {
     const l = use('Localize')    
 
-throw new HttpException(`ForgotPassword subject${l.get('landlord.email_reset.password.subject.message', lang)}`)    
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
@@ -119,6 +118,7 @@ throw new HttpException(`ForgotPassword subject${l.get('landlord.email_reset.pas
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
       },
     }
+    throw new HttpException(`ForgotPassword ${JSON.stringify(msg)}`)    
 
     return sgMail
     .send(msg)
