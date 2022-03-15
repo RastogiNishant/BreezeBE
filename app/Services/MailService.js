@@ -111,12 +111,12 @@ class MailService {
 
 
 
-    console.log('llllllllllll::::', l)
-    console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message'))
-    const Localize = use('Localize')
-    await Localize.init()
+    // console.log('llllllllllll::::', l)
+    // console.log('...subject.message:::',  l.get('landlord.email_reset.password.subject.message'))
+    // const Localize = use('Localize')
+    // await Localize.init()
 
-    console.log('LocalizeLocalizeLocalize:::::::', Localize)
+    // console.log('LocalizeLocalizeLocalize:::::::', Localize)
 
     const templateId =
       role === ROLE_LANDLORD
