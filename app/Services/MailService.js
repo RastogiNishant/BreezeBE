@@ -91,6 +91,7 @@ class MailService {
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
+throw new HttpException(`ForgotPassword subject ${l.get('landlord.email_reset.password.subject.message', lang)}`)        
     const msg = {
       to: trim(email),
       from: FromEmail,
@@ -118,7 +119,7 @@ class MailService {
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
       },
     }
-    throw new HttpException(`ForgotPassword ${JSON.stringify(msg)}`)    
+    throw new HttpException(`ForgotPassword ${JSON.stringify(msg)}`)
 
     return sgMail
     .send(msg)
