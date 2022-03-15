@@ -6,7 +6,7 @@ const PlanService = use('App/Services/PlanService')
 
 class PlanController {
   async getPlan({ request, response }) {
-    const {id} = request.all()
+    const {id } = request.all()
     const plan = await PlanService.getPlan(id)
     return response.res( plan );
   }

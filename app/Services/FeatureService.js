@@ -3,7 +3,8 @@ const HttpException = use('App/Exceptions/HttpException')
 
 class FeatureService {
   static async getFeatures(params = {}) {
-    const query = PremiumFeature.query().with('plan')
+    const query = PremiumFeature.query()
+    .with('plan')
     if( params.plan_id !== undefined ) {
       query.where('plan_id', params.plan_id)
     }
@@ -13,6 +14,12 @@ class FeatureService {
     }else{
       query.where('status', true)
     }
+    if( params.role_id !== undefined ) {
+      query.where(function () {
+        this.orWhere('premium_features.role_id', params.role_id).orWhereNull('premium_features.role_id')
+      })
+    }
+
     const features = (await query.orderBy('plan_id', 'asc').orderBy('id', 'asc').fetch()).rows
     return features
   }
