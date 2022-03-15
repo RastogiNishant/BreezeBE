@@ -642,32 +642,41 @@ class EstateController {
       code = invitation.code
     } else {
       do {
-        //gen
+        //generate code
         code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
       } while (await EstateViewInvite.findBy('code', code))
     }
     
     try {
-      const newInvite = new EstateViewInvite()
-      newInvite.invited_by = auth.user.id
-      newInvite.estate_id = estateId
-      newInvite.code = code
-      const result = await newInvite.save(trx)
+      let newInvite = new EstateViewInvite()
+      if( ! invitation) {
+        //this needs to be created
+        newInvite.invited_by = auth.user.id
+        newInvite.estate_id = estateId
+        newInvite.code = code
+        const result = await newInvite.save(trx)
+      } else {
+        newInvite = invitation;
+      }
       
       await Promise.all(
         emails.map(async email => {
           // see if this prospect is already a user
           const userExists = await User.query().where('email', email).where('role', ROLE_USER).first(trx)
           if(userExists) {
-            let newInvitedUser = new EstateViewInvitedUser()
-            newInvitedUser.user_id = userExists.id
-            newInvitedUser.estate_view_invite_id = newInvite.id
-            await newInvitedUser.save(trx)
+            //we invite the user
+            await EstateViewInvitedUser.findOrCreate(
+              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
+              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
+              trx
+            )
           } else {
-            let newInviteEmail = new EstateViewInvitedEmail()
-            newInviteEmail.email = email
-            newInviteEmail.estate_view_invite_id = newInvite.id
-            await newInviteEmail.save(trx)
+            //we add email
+            await EstateViewInvitedEmail.findOrCreate(
+              {email, estate_view_invite_id: newInvite.id},
+              {email, estate_view_invite_id: newInvite.id},
+              trx
+            )
           }
           //placeholder for now...          
           console.log('sending email to ', email, 'code', code)
@@ -675,7 +684,7 @@ class EstateController {
       )
       trx.commit()
       //transaction end
-      return response.res(result)
+      return response.res({code})
     } catch(e) {
       console.log(e)
       await trx.rollback()
