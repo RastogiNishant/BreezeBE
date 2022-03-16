@@ -17,7 +17,10 @@ class Plan extends Model {
 
   features() {
     return this.hasMany('App/Models/PremiumFeature')
-  }  
+  }
+  planOption() {
+    return this.hasMany('App/Models/TenantPaymentPlan')
+  }
 }
 
 module.exports = Plan

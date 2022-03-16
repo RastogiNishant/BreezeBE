@@ -11,6 +11,7 @@ class TenantPaymentPlan extends Model {
       'price',
       'plan_option',
       'description',
+      'subscription_sku',
     ]
   }
 }

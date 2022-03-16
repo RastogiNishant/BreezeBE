@@ -27,7 +27,7 @@ class TenantPaymentPlanController {
   }
   async createTenantPaymentPlan({request, auth, response}) {
     const{ plan_id, plan_option, ...data} = request.all()
-
+console.log('createTenantPaymentPlan', data )
     const paymentPlan = await TenantPaymentPlanService.getTenantPaymentPlan({plan_id, plan_option })
     if(paymentPlan && paymentPlan.length){
       throw new HttpException('Payment Plan already exists', 400 )
