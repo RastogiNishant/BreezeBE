@@ -95,17 +95,13 @@ class AccountController {
   async signupProspectWithViewEstateInvitation({request, response}) {
     //create user
     const {email, phone, role, password, ...userData} = request.all()
-    //return response.res(user)
     const trx = await Database.beginTransaction()
     try {
       //add this user
-      let user = await User.findOrCreate(
-        {email, role},
+      let user = await User.create(
         {...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY},
         trx
       )
-      
-      user = user.toJSON()
       if(role === ROLE_USER) {
         await Tenant.create({
           user_id: user.id
