@@ -378,6 +378,19 @@ Route.group(() => {
   .prefix('api/v1/tenant/income')
   .middleware(['auth:jwt,jwtHousekeeper'])
 
+const EstateViewInvite = use('App/Models/EstateViewInvite')
+const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
+
+Route.group(() => {
+  Route.get('/', async ({request, auth, response}) => {
+    const myInvites = await EstateViewInvitedUser.query().where('user_id', auth.user.id).where('sticky', true).first()
+
+    response.res(myInvites)    
+  })
+})
+  .prefix('api/v1/view-estate-invitations')
+  .middleware(['auth:jwt'])
+
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
