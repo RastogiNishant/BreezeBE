@@ -46,6 +46,14 @@ Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
 
+//Payment
+Route.group(() => {
+  Route.post('', 'PaymentController.processPayment')
+  Route.get('', 'PaymentController.getUserPayments')
+})
+  .prefix('/api/v1/landlord/payment')
+  .middleware(['auth:jwtLandlord'])
+
 //Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
   'guest',
