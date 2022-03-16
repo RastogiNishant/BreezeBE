@@ -276,7 +276,8 @@ class UserService {
     await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
     const data = await UserService.getTokenWithLocale([user.id])
     const lang = data && data.length && data[0].lang?data[0].lang:user.lang;
-
+    console.log('user', user, 'code', code, 'lang', lang, 'date', date)
+    return;
     await MailService.sendUserConfirmation(user.email, {
       code,
       user_id: user.id,

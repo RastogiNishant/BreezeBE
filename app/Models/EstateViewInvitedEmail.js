@@ -4,7 +4,7 @@
 const Model = use('Model')
 
 class EstateViewInvitedEmail extends Model {
-  estate_view_invite() {
+  estateViewInvite() {
     return this.belongsTo('App/Model/EstateViewInvite', 'estate_view_invite_id', 'id')
   }
   

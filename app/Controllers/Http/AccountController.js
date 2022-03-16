@@ -7,6 +7,9 @@ const Promise = require('bluebird')
 const User = use('App/Models/User')
 const Member = use('App/Models/Member')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
+const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
+const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
+const Tenant = use('App/Models/Tenant')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -91,20 +94,52 @@ class AccountController {
 
   async signupProspectWithViewEstateInvitation({request, response}) {
     //create user
-    //there should be transaction here...
-    const {email, phone, role, password} = request.all()
-    const newUser = new User()
-    newUser.email = email
-    newUser.phone = phone
-    newUser.role = role
-    newUser.password = password
+    const {email, phone, role, password, ...userData} = request.all()
+    //return response.res(user)
+    const trx = await Database.beginTransaction()
+    try {
+      //add this user
+      let user = await User.findOrCreate(
+        {email, role},
+        {...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY},
+        trx
+      )
+      
+      user = user.toJSON()
+      if(role === ROLE_USER) {
+        await Tenant.create({
+          user_id: user.id
+        }, trx)
+      }
+      //include him on estate_view_invited_users with sticky set to true
+      //this will add him even if he's not invited.
+      //Probably a situation where he has mail forwarded from a different email
+      const invitedUser = new EstateViewInvitedUser
+      invitedUser.user_id = user.id
+      invitedUser.sticky = true
+      invitedUser.estate_view_invite_id = request.estate_view_invite_id
+      await invitedUser.save(trx)
 
-    await newUser.save()
-    console.log(newUser.id)
-    //insert row on estate_view_invites
-
-
-    return request.res(true)
+      //lets find other estates he's invited to view
+      const myInvitesToViewEstates = await EstateViewInvitedEmail.query().where('email', email).fetch()
+      await Promise.all(
+        myInvitesToViewEstates.toJSON().map(async invite => {
+          await EstateViewInvitedUser.findOrCreate(
+            {user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id},
+            {user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id},
+            trx
+          )
+        })
+      )
+      //send email for confirmation
+      await UserService.sendConfirmEmail(user)
+      trx.commit()
+      return response.res(true)
+    } catch(e) {
+      console.log(e)
+      await trx.rollback()
+      throw new HttpException('Signup failed.', 412)
+    }
   }
 
   async housekeeperSignup({ request, response }) {

@@ -16,10 +16,11 @@ class ViewEstateInvitationCodeExist {
     // call next to advance the request
     const code = request.params.code
     const inviteCode = await EstateViewInvite.findBy('code', code)
-    console.log('inviteCode', inviteCode)
-    if(!inviteCode)
+    if(!inviteCode) {
       throw new HttpException('This code does not exist', 412, ERROR_VIEW_INVITE_NOT_EXISTING)
-
+    }
+    request.estate_id = inviteCode.estate_id
+    request.estate_view_invite_id = inviteCode.id
     await next()
   }
 }
