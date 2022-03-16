@@ -36,7 +36,9 @@ const {
   LOG_TYPE_FINAL_MATCH_APPROVAL,
   LOG_TYPE_INVITED,
   LOG_TYPE_SHOWED,
-  TENANT_EMAIL_INVITE
+  TENANT_EMAIL_INVITE,
+  ROLE_USER,
+  LOG_TYPE_GOT_INVITE,
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -84,7 +86,7 @@ class MatchController {
 
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
-      logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id }, false)
+      logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
       return response.res(result)
     } catch (e) {
       Logger.error(e)
@@ -121,7 +123,20 @@ class MatchController {
 
     try {
       await MatchService.inviteKnockedUser(estate_id, user_id)
-      logEvent(request, LOG_TYPE_INVITED, auth.user.id, { estate_id, tenant_id: user_id }, false)
+      logEvent(
+        request,
+        LOG_TYPE_INVITED,
+        auth.user.id,
+        { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
+        false
+      )
+      logEvent(
+        request,
+        LOG_TYPE_GOT_INVITE,
+        user_id,
+        { estate_id, estate_id, role: ROLE_USER },
+        false
+      )
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -179,7 +194,7 @@ class MatchController {
     await this.getActiveEstate(estate_id)
     try {
       await MatchService.bookTimeslot(estate_id, userId, date)
-
+      logEvent(request, LOG_TYPE_VISITED, userId, { estate_id, role: ROLE_USER }, false)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -225,15 +240,15 @@ class MatchController {
     }
   }
 
-  async inviteTenantToEstate({request, auth, response}) {
+  async inviteTenantToEstate({ request, auth, response }) {
     const { estate_id, tenant_id, invite_to } = request.all()
-    try{
+    try {
       const currentTenant = await MatchService.findCurrentTenant(estate_id, tenant_id)
-      if(currentTenant) {
+      if (currentTenant) {
         const result = await MatchService.invitedTenant(estate_id, tenant_id, invite_to)
         const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-        if( invite_to === TENANT_EMAIL_INVITE ) {
+        if (invite_to === TENANT_EMAIL_INVITE) {
           const { shortLink } = await firebaseDynamicLinks.createLink({
             dynamicLinkInfo: {
               domainUriPrefix: process.env.DOMAIN_PREFIX,
@@ -246,53 +261,52 @@ class MatchController {
               },
             },
           })
-  
-          MailService.sendInvitationToTenant(currentTenant.email, shortLink ) 
-        }else {
-          
+
+          MailService.sendInvitationToTenant(currentTenant.email, shortLink)
+        } else {
         }
         response.res(true)
       }
-    }catch(e) {
-      throw new HttpException(e.message,400)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
 
-  async removeTenantEdit({request, auth, response}) {
-    const {estate_id, tenant_id } = request.all()
-    const result = await MatchService.invitedTenant(estate_id, tenant_id, null)    
+  async removeTenantEdit({ request, auth, response }) {
+    const { estate_id, tenant_id } = request.all()
+    const result = await MatchService.invitedTenant(estate_id, tenant_id, null)
     response.res(true)
   }
 
-  async updateProperty({request, auth, response}) {
-    const {estate_id, properties, prices} = request.all()
+  async updateProperty({ request, auth, response }) {
+    const { estate_id, properties, prices } = request.all()
 
-    try{
+    try {
       const match = await MatchService.hasPermissionToEditProperty(estate_id, auth.user.id)
-console.log('updateProperty Match', match)      
+      console.log('updateProperty Match', match)
       await MatchService.addTenantProperty({
         estate_id: estate_id,
         user_id: auth.user.id,
         properties: properties,
-        prices:prices
+        prices: prices,
       })
       response.res(true)
-    }catch(e) {
-      throw new HttpException('No permission to edit', 400 )
+    } catch (e) {
+      throw new HttpException('No permission to edit', 400)
     }
   }
 
-  async deleteProperty({request, auth, response}) {
-    const {estate_id } = request.all()
-    try{
+  async deleteProperty({ request, auth, response }) {
+    const { estate_id } = request.all()
+    try {
       await MatchService.addTenantProperty({
         estate_id: estate_id,
         user_id: auth.user.id,
         properties: null,
-        prices:null
+        prices: null,
       })
       response.res(true)
-    }catch(e) {
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
   }
@@ -354,9 +368,14 @@ console.log('updateProperty Match', match)
     await this.getOwnEstate(estate_id, userId)
 
     try {
-      const { tenantId, tenantUid } = await MatchService.share(userId, estate_id, code)
-      logEvent(request, LOG_TYPE_VISITED, tenantUid, { estate_id })
-      logEvent(request, LOG_TYPE_SHOWED, auth.user.id, { tenant_id: tenantId, estate_id }, false)
+      const { tenantId } = await MatchService.share(userId, estate_id, code)
+      logEvent(
+        request,
+        LOG_TYPE_SHOWED,
+        auth.user.id,
+        { tenant_id: tenantId, estate_id, role: ROLE_LANDLORD },
+        false
+      )
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -445,7 +464,7 @@ console.log('updateProperty Match', match)
       request,
       LOG_TYPE_FINAL_MATCH_REQUEST,
       auth.user.id,
-      { estate_id, tenant_id: user_id },
+      { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
       false
     )
     response.res(true)
@@ -471,7 +490,7 @@ console.log('updateProperty Match', match)
       contact = contact.toJSON()
       contact.avatar = File.getPublicUrl(contact.avatar)
     }
-    logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id }, false)
+    logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id, role: ROLE_USER }, false)
     response.res({ estate, contact })
   }
 
