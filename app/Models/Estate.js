@@ -332,7 +332,7 @@ class Estate extends Model {
    *
    */
   static getFinalPrice(e) {
-    return (parseFloat(e.net_rent) || 0) //+ (parseFloat(e.additional_costs) || 0)
+    return (parseFloat(e.net_rent) || 0) + (parseFloat(e.additional_costs) || 0)
   }
 
   /**

@@ -8,19 +8,13 @@ class Plan extends Model {
       'id',
       'name',
       'description',
+      'prices',
     ]
   }
 
   static get traits() {
     return ['NoTimestamp']
   }  
-
-  features() {
-    return this.hasMany('App/Models/PremiumFeature')
-  }
-  planOption() {
-    return this.hasMany('App/Models/TenantPaymentPlan')
-  }
 }
 
 module.exports = Plan

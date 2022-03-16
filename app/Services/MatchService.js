@@ -70,8 +70,7 @@ const inRange = (value, start, end) => {
 
 const log = (data) => {
   return false
-  //Logger.info('LOG', data)
-  //console.log(data);
+  // Logger.info('LOG', data)
 }
 
 class MatchService {
@@ -90,7 +89,7 @@ class MatchService {
     const smokeWeight = 0.1
     const amenitiesWeight = 0.5 / amenitiesCount
 
-    const userIncome = parseFloat(prospect.income) || 0
+    const userIncome = prospect.income || 0
     const estatePrice = Estate.getFinalPrice(estate)
     let scoreL = 0
     let scoreT = 0
@@ -115,9 +114,6 @@ class MatchService {
       prospectBudget,
     })
     const realBudget = estatePrice / userIncome
-    if(realBudget > 1) {
-      return 0
-    }
     log({ realBudget })
     if (realBudget <= estateBudget / 100) {
       const landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1

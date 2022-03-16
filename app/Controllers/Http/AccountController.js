@@ -13,13 +13,12 @@ const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
-const ZendeskService = use('App/Services/ZendeskService')
 const MemberService = use('App/Services/MemberService')
 const ImageService = use('App/Services/ImageService')
-const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
+const UserPremiumPlanService = use('App/Services/UserPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { assign, upperCase, pick } = require('lodash')
+const { assign } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -103,9 +102,8 @@ class AccountController {
       }
       // Check user not exists
       const availableUser = await User.query()
-        .where('role', ROLE_HOUSEKEEPER)
-        .where('email', email)
-        .first()
+          .where('role', ROLE_HOUSEKEEPER )
+          .where('email', email).first()
       if (availableUser) {
         throw new HttpException('User already exists, can be switched', 400)
       }
@@ -115,7 +113,7 @@ class AccountController {
       }
 
       const user = await UserService.housekeeperSignup(member.user_id, email, password, phone)
-      if (user) {
+      if( user ) {
         await MemberService.setMemberOwner(member_id, user.id)
       }
       return response.res(user)
@@ -228,20 +226,6 @@ class AccountController {
     return response.res(token)
   }
 
-  async createZendeskToken({ request, auth, response }) {
-    try {
-      const user = await User.query().where('users.id', auth.current.user.id).firstOrFail()
-      const token = await ZendeskService.createToken(
-        user.id,
-        user.email,
-        `${user.firstname} ${user.lastname}`
-      )
-      return response.res(token)
-    } catch (e) {
-      throw new HttpException(e.message, 400)
-    }
-  }
-
   /**
    *
    */
@@ -251,7 +235,6 @@ class AccountController {
       .with('tenant')
       .with('household')
       .with('plan')
-      .with('tenantPaymentPlan')
       .firstOrFail()
 
     if (user) {
@@ -394,12 +377,9 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    const { email, from_web } = request.only(['email', 'from_web'])
+    const { email } = request.only(['email'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
-    if( from_web === undefined ) {
-      from_web = false
-    }
     await UserService.requestSendCodeForgotPassword(email)
     return response.res()
   }
@@ -408,14 +388,10 @@ class AccountController {
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
-    const { email, from_web } = request.only(['email', 'from_web'])
+    const { email } = request.only(['email'])
 
     try {
-      if( from_web === undefined ) {
-        from_web = false
-      }
-console.log('From web', from_web)      
-      await UserService.requestSendCodeForgotPassword(email, from_web)
+      await UserService.requestSendCodeForgotPassword(email)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
@@ -537,10 +513,10 @@ console.log('From web', from_web)
     }
   }
 
-  async updateTenantPremiumPlan({ request, auth, response }) {
+  async updateUserPremiumPlan({ request, auth, response }) {
     const trx = await Database.beginTransaction()
     try {
-      const { plan_id, payment_plan, receipt, app } = request.all()
+      const { plan_id, payment_plan, receipt } = request.all()
 
       let ret = {
         status: false,
@@ -549,53 +525,29 @@ console.log('From web', from_web)
           payment_plan: payment_plan,
         },
       }
-      const purchase = await TenantPremiumPlanService.processPurchase(
-        auth.user.id,
-        plan_id,
-        payment_plan,
-        app,
-        receipt,
-        trx
-      )
+
+      await UserPremiumPlanService.updateUserPremiumPlans(auth.user.id, plan_id, receipt, trx)
+      await UserService.updatePaymentPlan(auth.user.id, plan_id, payment_plan, trx)
       trx.commit()
+      assign(ret.data, { payment_plan: payment_plan })
+      assign(ret.data, { year_discount_rate: YEARLY_DISCOUNT_RATE })
 
-      if (purchase) {
-        const user = await User.query()
-          .select(['id', 'plan_id', 'payment_plan'])        
-          .where('users.id', auth.current.user.id)
-          .with('plan', function (p) {
-            p.with('features', function(f) {
-              f.whereNot('role_id', ROLE_LANDLORD )
-              f.orderBy('id', 'asc')
-            })
-          })
-          .with('tenantPaymentPlan')
-          .firstOrFail()
+      ret.status = true
 
-        response.res(user)
-      } else {
-        throw new AppException('Not valid receipt', 400)
-      }
+      return response.send(ret)
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
-      throw new AppException(e, 400)
+      // throw new AppException(e.message, 400)
     }
   }
 
-  async getTenantPremiumPlans({ request, auth, response }) {
+  async getUserPremiumPlans({ request, auth, response }) {
     try {
-      const { app } = request.all()
-      const tenantPremiumPlans = await TenantPremiumPlanService.getTenantPremiumPlans(
-        auth.user.id,
-        app
-      )
-      const data = {
-        purchase: tenantPremiumPlans?pick(tenantPremiumPlans.toJSON(), ['id', 'plan_id', 'isCancelled', 'startDate','endDate','app']):null
-      }  
-      response.res(data)
+      const userPremiumPlans = await UserPremiumPlanService.getUserPremiumPlans(auth.user.id)
+      return response.send(userPremiumPlans)
     } catch (e) {
-      throw new HttpException(e.message, 400)
+      Logger.error(e)
     }
   }
 }

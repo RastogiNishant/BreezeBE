@@ -50,17 +50,13 @@ definitions:
   receipt:
     name: receipt
     in: formData
-    type: string
-  app:
-    name: app
-    in: formData
-    type: ['android','ios']
+    type: number
   paymentPlan:
     name: payment_plan
     in: formData
     type: number
     default: 1
-    example: 'Need to get from /api/v1/admin/tenant/paymentplan'
+    example: '1: monthly, 2:yearly'
 
 paths:
   /api/v1/login:
@@ -422,7 +418,7 @@ paths:
         - $ref: '#/definitions/visitUserId'
       responses: [200]
 
-  /api/v1/tenantPremiumPlan:
+  /api/v1/userPremiumPlan:
     post:
       security: [bearerAuth: []]
       tags: [Update plan]
@@ -431,8 +427,7 @@ paths:
       parameters:
         - $ref: '#/definitions/planId'
         - $ref: '#/definitions/paymentPlan'
-        - $ref: '#/definitions/receipt'
-        - $ref: '#/definitions/app'
+        - $ref: '#/definitions/receipt'        
       responses: [200]
 
     get:

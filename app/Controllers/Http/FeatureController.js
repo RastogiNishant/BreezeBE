@@ -7,7 +7,11 @@ class FeatureController {
   async getFeatures({ request, response }) {
     const { limit, page, ...params } = request.all()
     const features = await FeatureService.getFeatures(params);
-    return response.res(features)
+    const data = {
+      year_discount_rate:YEARLY_DISCOUNT_RATE,
+      features:features
+    }
+    return response.res(data)
   }
 
   async createFeature({ request, response }) {

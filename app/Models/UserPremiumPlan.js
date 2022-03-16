@@ -8,16 +8,6 @@ class UserPremiumPlan extends Model {
       'id',
       'user_id',
       'plan_id',
-      'app',
-      'environment',
-      'latestReceipt',
-      'productId',
-      'transactionId',
-      'isCancelled',
-      'startDate',
-      'endDate',
-      'validationResponse',
-      'fake'
     ]
   }
   user() {
