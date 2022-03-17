@@ -187,7 +187,7 @@ class UserService {
       const data = await this.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang?data[0].lang:user.lang
       
-      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, !from_web?user.role:ROLE_LANDLORD, lang)
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, !from_web? user.role: ROLE_LANDLORD, lang)
     } catch (error) {
       throw new HttpException(
         error.error ? error.error.message : error.message,
