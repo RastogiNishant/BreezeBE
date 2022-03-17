@@ -89,18 +89,21 @@ class AccountController {
   }
 
   async housekeeperSignup({ request, response }) {
-    const { email, owner_id, password, code, member_id, confirmPassword, phone } = request.all()
-
+    const { firstname, email, password, code } = request.all()
+    console.log({ email, code })
     try {
       const member = await Member.query()
         .select('user_id')
-        .where('id', member_id)
+        .where('email', email)
         .where('code', code)
         .firstOrFail()
 
-      if (owner_id.toString() !== member.user_id.toString()) {
-        throw new HttpException('Not allowed', 400)
-      }
+      const member_id = member.id
+
+      // if (owner_id.toString() !== member.user_id.toString()) {
+      //   throw new HttpException('Not allowed', 400)
+      // }
+
       // Check user not exists
       const availableUser = await User.query()
         .where('role', ROLE_HOUSEKEEPER)
@@ -110,11 +113,11 @@ class AccountController {
         throw new HttpException('User already exists, can be switched', 400)
       }
 
-      if (password !== confirmPassword) {
-        throw new HttpException('Password not matched', 400)
-      }
+      // if (password !== confirmPassword) {
+      //   throw new HttpException('Password not matched', 400)
+      // }
 
-      const user = await UserService.housekeeperSignup(member.user_id, email, password, phone)
+      const user = await UserService.housekeeperSignup(member.user_id, email, password, firstname)
       if (user) {
         await MemberService.setMemberOwner(member_id, user.id)
       }
@@ -554,11 +557,11 @@ class AccountController {
 
       if (purchase) {
         const user = await User.query()
-          .select(['id', 'plan_id', 'payment_plan'])        
+          .select(['id', 'plan_id', 'payment_plan'])
           .where('users.id', auth.current.user.id)
           .with('plan', function (p) {
-            p.with('features', function(f) {
-              f.whereNot('role_id', ROLE_LANDLORD )
+            p.with('features', function (f) {
+              f.whereNot('role_id', ROLE_LANDLORD)
               f.orderBy('id', 'asc')
             })
           })
@@ -584,8 +587,17 @@ class AccountController {
         app
       )
       const data = {
-        purchase: tenantPremiumPlans?pick(tenantPremiumPlans.toJSON(), ['id', 'plan_id', 'isCancelled', 'startDate','endDate','app']):null
-      }  
+        purchase: tenantPremiumPlans
+          ? pick(tenantPremiumPlans.toJSON(), [
+              'id',
+              'plan_id',
+              'isCancelled',
+              'startDate',
+              'endDate',
+              'app',
+            ])
+          : null,
+      }
       response.res(data)
     } catch (e) {
       throw new HttpException(e.message, 400)

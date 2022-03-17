@@ -20,7 +20,6 @@ const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
 
-
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 
@@ -62,7 +61,7 @@ class UserService {
           dist_min: tenant.time,
           address: tenant.address.title,
         })
-      } catch (e) {      
+      } catch (e) {
         console.log('createUser exception', e)
       }
     }
@@ -85,10 +84,7 @@ class UserService {
       roles = [role]
     }
     // Check is user same email another role is exists
-    const existingUser = await User.query()
-      .where('email', email)
-      .whereIn('role', roles)
-      .first()
+    const existingUser = await User.query().where('email', email).whereIn('role', roles).first()
     if (existingUser) {
       throw new AppException('User same email, another role exists')
     }
@@ -184,8 +180,8 @@ class UserService {
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
       const data = await this.getTokenWithLocale([user.id])
-      const lang = data && data.length && data[0].lang?data[0].lang:user.lang
-  
+      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+
       await MailService.sendcodeForgotPasswordMail(user.email, shortLink, user.role, lang)
     } catch (error) {
       throw new HttpException(
@@ -241,17 +237,17 @@ class UserService {
     await DataStorage.remove(code, 'reset_password')
   }
 
-  static async getHousehouseId( user_id ) {
-    try{
+  static async getHousehouseId(user_id) {
+    try {
       const owner = await User.query()
-      .select('owner_id')
-      .where('id', user_id)
-      .where('role', ROLE_HOUSEKEEPER)
-      .firstOrFail()
+        .select('owner_id')
+        .where('id', user_id)
+        .where('role', ROLE_HOUSEKEEPER)
+        .firstOrFail()
 
-      return owner        
-    }catch(e) {
-      throw new HttpException(e.message, 400)    
+      return owner
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
   /**
@@ -275,7 +271,7 @@ class UserService {
     const code = date.slice(date.length - 4, date.length)
     await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
     const data = await UserService.getTokenWithLocale([user.id])
-    const lang = data && data.length && data[0].lang?data[0].lang:user.lang;
+    const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
     await MailService.sendUserConfirmation(user.email, {
       code,
@@ -311,9 +307,8 @@ class UserService {
     user.status = STATUS_ACTIVE
     await DataStorage.remove(user.id, 'confirm_email')
 
-
     const localData = await UserService.getTokenWithLocale([user.id])
-    const lang = localData && localData.length && localData[0].lang?localData[0].lang:user.lang;
+    const lang = localData && localData.length && localData[0].lang ? localData[0].lang : user.lang
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
@@ -333,7 +328,7 @@ class UserService {
       code: shortLink,
       role: user.role,
       lang: lang,
-    })    
+    })
     return user.save()
   }
 
@@ -597,15 +592,12 @@ class UserService {
     return data
   }
 
-  static async getUserIdsByToken( devices ) {
-    if( !devices || !devices.length ) {
+  static async getUserIdsByToken(devices) {
+    if (!devices || !devices.length) {
       return []
     }
-    const deviceTokens = devices.map( d => d.identifier)
-    const ids = (await User.query()
-      .select('id')
-      .whereIn('device_token', deviceTokens )
-      .fetch()).rows
+    const deviceTokens = devices.map((d) => d.identifier)
+    const ids = (await User.query().select('id').whereIn('device_token', deviceTokens).fetch()).rows
     return ids
   }
 
@@ -683,7 +675,7 @@ class UserService {
       .fetch()
   }
 
-  static async housekeeperSignup(ownerId, email, password, phone) {
+  static async housekeeperSignup(ownerId, email, password, firstname) {
     await User.query().where('id', ownerId).firstOrFail()
 
     const trx = await Database.beginTransaction()
@@ -694,15 +686,14 @@ class UserService {
           role: ROLE_HOUSEKEEPER,
           password,
           owner_id: ownerId,
-          phone: phone,
+          // phone: phone,
           status: STATUS_EMAIL_VERIFY,
+          firstname,
         },
         trx
       )
 
-      UserService.sendSMS(user.id, phone)
-      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
-      console.log('data=', data)
+      UserService.sendConfirmEmail(user)
       await trx.commit()
       return user
     } catch (e) {
