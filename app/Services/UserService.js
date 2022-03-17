@@ -162,17 +162,18 @@ class UserService {
    *
    */
 
-  static async requestSendCodeForgotPassword(email) {
+  static async requestSendCodeForgotPassword(email, from_web = false) {
     const code = getHash(3)
     let user = null
     try {
       user = await User.findByOrFail({ email })
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
+      const deepLink_URL = from_web?`${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}`:`${process.env.DEEP_LINK}?type=newpassword&code=${code}`
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=newpassword&code=${code}`,
+          link: deepLink_URL,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
@@ -185,8 +186,8 @@ class UserService {
 
       const data = await this.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang?data[0].lang:user.lang
-  
-      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, user.role, lang)
+      
+      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, !from_web?user.role:ROLE_LANDLORD, lang)
     } catch (error) {
       throw new HttpException(
         error.error ? error.error.message : error.message,
@@ -595,6 +596,18 @@ class UserService {
       .limit(Math.min(userIds.length, limit))
 
     return data
+  }
+
+  static async getUserIdsByToken( devices ) {
+    if( !devices || !devices.length ) {
+      return []
+    }
+    const deviceTokens = devices.map( d => d.identifier)
+    const ids = (await User.query()
+      .select('id')
+      .whereIn('device_token', deviceTokens )
+      .fetch()).rows
+    return ids
   }
 
   /**

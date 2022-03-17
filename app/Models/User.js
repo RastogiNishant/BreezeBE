@@ -139,6 +139,9 @@ class User extends Model {
   plan() {
     return this.belongsTo('App/Models/Plan', 'plan_id', 'id')
   }
+  tenantPaymentPlan() {
+    return this.belongsTo('App/Models/TenantPaymentPlan', 'payment_plan', 'id')
+  }
   /**
    *
    */

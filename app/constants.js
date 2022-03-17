@@ -363,6 +363,7 @@ const constants = {
   NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
   NOTICE_TYPE_PROSPECT_INVITE_IN: 'notification_prospect_invite_in',
   NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
+  NOTICE_TYPE_ZENDESK_NOTIFY: 'notification_zendesk_notify',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -387,6 +388,7 @@ const constants = {
   NOTICE_TYPE_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
   NOTICE_TYPE_VISIT_DELAY_ID: 27, // visit delayed
   NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID: 26,
+  NOTICE_TYPE_ZENDESK_NOTIFY_ID: 30,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
