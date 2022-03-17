@@ -411,11 +411,8 @@ class AccountController {
     const { email, from_web } = request.only(['email', 'from_web'])
 
     try {
-      if( from_web === undefined ) {
-        from_web = false
-      }
-console.log('From web', from_web)      
-      await UserService.requestSendCodeForgotPassword(email, from_web)
+
+      await UserService.requestSendCodeForgotPassword(email, from_web )
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
