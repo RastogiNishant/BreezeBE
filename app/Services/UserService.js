@@ -169,11 +169,11 @@ class UserService {
       user = await User.findByOrFail({ email })
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-      const deepLink_URL = from_web?process.env.SITE_URL:process.env.DEEP_LINK
+      const deepLink_URL = from_web?`${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}`:`${process.env.DEEP_LINK}?type=newpassword&code=${code}`
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${deepLink_URL}?type=newpassword&code=${code}`,
+          link: deepLink_URL,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
