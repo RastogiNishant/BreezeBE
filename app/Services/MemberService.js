@@ -54,6 +54,7 @@ class MemberService {
   }
 
   static async getMemberIdByOwnerId(owner_id, role) {
+    //owner_user_id means you only can see your profile, not visible to household and the others
     let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
     if (!member) {
