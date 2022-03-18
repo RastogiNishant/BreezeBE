@@ -330,7 +330,8 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
 // Tenant members
 
 Route.group(() => {
-  Route.post('/email', 'MemberController.addMember').middleware(['valid:CreateMember,Email,ProfileVisibilityToOther'])  
+  Route.post('/email', 'MemberController.addMember').middleware(['valid:CreateMember,Email,ProfileVisibilityToOther'])
+  Route.post('/visible', 'MemberController.showMe').middleware(['valid:MemberId,ProfileVisibilityToOther'])  
   Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])  
 })
