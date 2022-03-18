@@ -487,8 +487,8 @@ Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary'
 Route.group(() => {
   Route.get('/visit', 'LandlordController.getLordVisits')
   Route.post('/activate', 'LandlordController.activate')
-
-  Route.post('/invite-to-view-estate', 'EstateController.inviteToView').middleware(['valid:LandlordInviteToView', 'LandlordOwnsThisEstate'])
+  Route.get('/invite-to-view-estate', 'EstateController.getInviteToView').middleware(['LandlordOwnsThisEstate'])
+  Route.post('/invite-to-view-estate', 'EstateController.createInviteToViewCode').middleware(['valid:LandlordInviteToView', 'LandlordOwnsThisEstate'])
 })
   .prefix('/api/v1/landlord')
   .middleware(['auth:jwtLandlord'])

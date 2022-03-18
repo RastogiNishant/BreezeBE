@@ -628,8 +628,15 @@ class EstateController {
     response.res(duplicate)
   }
 
-  
-  async inviteToView({request, auth, response}) {
+  async getInviteToViewCode({request, auth, response}) {
+
+  }
+
+  async createInviteToViewCode({request, auth, response}) {
+    req.res(request.all())
+  }
+
+  async inviteToViewViaEmail({request, auth, response}) {
     const estateId = request.params.estate_id || request.body.estate_id
     const emails = request.body.emails;
     
