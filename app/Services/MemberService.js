@@ -289,6 +289,17 @@ class MemberService {
       })
     return member
   }
+
+  /**
+   *
+   */
+  static async getIncomeProofs() {
+    console.log('income__Proofs__incomeProofs1income__Proofs__incomeProofs1:')
+    const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD');
+    console.log('startOfstartOf:', startOf)
+    return IncomeProof.query()
+      .where('expire_date', '<=', startOf).delete()
+  }
 }
 
 module.exports = MemberService
