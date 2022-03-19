@@ -325,15 +325,22 @@ class AccountController {
    */
   async updateProfile({ request, auth, response }) {
     const data = request.all()
-    const user = auth.user
-
+    let user = auth.user
+    
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
       ? delete data.prospect_visibility
       : data
-
-    await user.updateItem(data)
+    
+    if(data.email) {
+      user = await User.find(auth.user.id)
+      user.email = data.email
+      await user.save()
+      user = user.toJSON()
+    } else {
+      await user.updateItem(data)
+    }
     return response.res(user)
   }
 

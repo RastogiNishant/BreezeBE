@@ -90,6 +90,7 @@ Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware(
 Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',
+  'userCanValidlyChangeEmail'
 ])
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
 
