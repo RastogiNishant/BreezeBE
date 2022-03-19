@@ -45,6 +45,9 @@ Route.get('/api/v1/zendeskToken', 'AccountController.createZendeskToken').middle
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
+Route.put('/api/v1/updateDeviceToken', 'AccountController.updateDeviceToken').middleware([
+  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager','valid:DeviceToken',
+])
 
 //Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
