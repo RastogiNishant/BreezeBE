@@ -12,7 +12,8 @@ class PaymentService {
   /**
    * process payment flow
    */
-  static async processPayment(paymentData) {
+  //Stripe
+  static async processStripePayment(paymentData) {
     const stripe = require('stripe')('sk_test_51KGnHhLHZE8cb7ZfIKz5loWVvonITW21SlB5tFjn4Sy7k6cZrzX9yTGL3XoWHrMmN3WjvfrazSUmJTwQZQfhXNNi00Wj3O5rc5');
 
     const paymentIntent = await stripe.paymentIntents.create({

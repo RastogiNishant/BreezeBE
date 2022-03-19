@@ -68,6 +68,7 @@ Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
 Route.group(() => {
   Route.post('', 'PaymentController.processPayment')
   Route.get('', 'PaymentController.getUserPayments')
+  Route.post('/paypal', 'PaymentController.processPaypal')
 })
   .prefix('/api/v1/landlord/payment')
   .middleware(['auth:jwtLandlord'])
