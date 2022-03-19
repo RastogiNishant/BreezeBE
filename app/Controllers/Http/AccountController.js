@@ -362,6 +362,18 @@ class AccountController {
     return response.res(true)
   }
 
+  async updateDeviceToken({request, auth, response}) {
+    const user = auth.current.user
+    const {device_token} = request.all()
+    try{
+      const ret = await UserService.updateDeviceToken(user.id, device_token )
+      response.res(ret)
+    }catch(e) {
+      throw new HttpException(e.message, 500)
+    }
+    
+  }
+
   /**
    *
    */

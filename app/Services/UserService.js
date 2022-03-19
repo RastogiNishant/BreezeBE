@@ -268,6 +268,12 @@ class UserService {
     }
   }
 
+  static async updateDeviceToken(userId, device_token ) {
+    return await User.query()
+      .where('id', userId)
+      .update({'device_token':device_token})
+  }
+
   /**
    *
    */
