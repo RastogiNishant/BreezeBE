@@ -54,6 +54,7 @@ class MemberService {
   }
 
   static async getMemberIdByOwnerId(owner_id, hasOwnerId) {
+    //owner_user_id means you only can see your profile, not visible to household and the others
     let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
     //TODO: check
@@ -290,6 +291,16 @@ class MemberService {
         published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
       })
     return member
+  }
+
+  /**
+   *
+   */
+  static async getIncomeProofs() {
+    console.log('income__Proofs__incomeProofs1income__Proofs__incomeProofs1:')
+    const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
+    console.log('startOfstartOf:', startOf)
+    return IncomeProof.query().where('expire_date', '<=', startOf).delete()
   }
 }
 

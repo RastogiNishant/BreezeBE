@@ -49,6 +49,19 @@ Route.get('/api/v1/zendeskToken', 'AccountController.createZendeskToken').middle
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
+Route.put('/api/v1/updateDeviceToken', 'AccountController.updateDeviceToken').middleware([
+  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
+  'valid:DeviceToken',
+])
+
+//Payment
+Route.group(() => {
+  Route.post('', 'PaymentController.processPayment')
+  Route.get('', 'PaymentController.getUserPayments')
+  Route.post('/paypal', 'PaymentController.processPaypal')
+})
+  .prefix('/api/v1/landlord/payment')
+  .middleware(['auth:jwtLandlord'])
 
 //Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
@@ -82,6 +95,7 @@ Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware(
 Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',
+  'userCanValidlyChangeEmail',
 ])
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
 
@@ -333,6 +347,9 @@ Route.group(() => {
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
+  Route.post('/visible', 'MemberController.showMe').middleware([
+    'valid:MemberId,ProfileVisibilityToOther',
+  ])
   Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
 })
@@ -567,7 +584,9 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
   'valid:DebugNotification',
 ])
 
-Route.get('/api/v1/feature', 'FeatureController.getFeatures').middleware(['auth:jwtLandlord,jwt'])
+Route.get('/api/v1/feature', 'FeatureController.getFeatures')
+  .middleware(['valid:CreateFeature'])
+  .middleware(['auth:jwtLandlord,jwt'])
 
 Route.group(() => {
   Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])

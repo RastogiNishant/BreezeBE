@@ -59,7 +59,9 @@ console.log('Location File downloading')
    *
    */
   get(key, locale = this.locales[0]) {
-
+    if(!locale) {
+      locale = 'de'
+    }
     return get(this._data, [locale, key, 'message'], key)
   }
 }

@@ -183,6 +183,24 @@ class MemberController {
     }
   }
 
+  async showMe({ request, auth, response }) {
+    const { member_id, visibility_to_other } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      if (visibility_to_other === VISIBLE_TO_NOBODY) {
+        //hidden
+        await MemberPermissionService.deletePermission(member_id, trx)
+      }
+      if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
+        Event.fire('memberPermission:create', member_id, auth.user.id)
+      }
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   /**
    *
    */
@@ -357,6 +375,8 @@ class MemberController {
       throw new HttpException(e.message, 400)
     }
   }
+
+  async removeInviteConnection({ request, auth, response }) {}
 }
 
 module.exports = MemberController

@@ -14,7 +14,8 @@ class TenantPaymentPlan extends Base {
       plan_id: yup.number().positive().required(),
       plan_option:yup.number().positive().oneOf([MONTHLY_PAYMENT, YEARLY_PAYMENT]).required(),
       price: yup.number().positive(),
-      description:yup.string()
+      description:yup.string(),
+      subscription_sku:yup.string(),
     })
 }
 

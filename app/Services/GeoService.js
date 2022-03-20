@@ -282,12 +282,17 @@ class GeoService {
       if (!zip) {
         throw new AppException('Invalid address')
       } else {
-        const nonPreciseResult = await Database.select('*').from('build_qualities').limit(1)
-        if (nonPreciseResult) {
-          return nonPreciseResult.query()
-        }
+        //if there is no matching address, we need to find any address who has average quality ( mittel ), we can estimate price range.
+//         const nonPreciseResult = await Database.select('*')
+//           .where('quality', 'mittel')
+//           .from('build_qualities').limit(1)
+// console.log('NnPreciseResult', nonPreciseResult)
+//         if (nonPreciseResult) {
+//           return nonPreciseResult
+//         }
 
-        throw new AppException('Invalid address')
+//         throw new AppException('Invalid address')
+        return 'mittel'
       }
     }
   }

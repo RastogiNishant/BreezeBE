@@ -329,15 +329,22 @@ class AccountController {
    */
   async updateProfile({ request, auth, response }) {
     const data = request.all()
-    const user = auth.user
-
+    let user = auth.user
+    
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
       ? delete data.prospect_visibility
       : data
-
-    await user.updateItem(data)
+    
+    if(data.email) {
+      user = await User.find(auth.user.id)
+      user.email = data.email
+      await user.save()
+      user = user.toJSON()
+    } else {
+      await user.updateItem(data)
+    }
     return response.res(user)
   }
 
@@ -364,6 +371,18 @@ class AccountController {
     await Promise.map(users, updatePass)
 
     return response.res(true)
+  }
+
+  async updateDeviceToken({request, auth, response}) {
+    const user = auth.current.user
+    const {device_token} = request.all()
+    try{
+      const ret = await UserService.updateDeviceToken(user.id, device_token )
+      response.res(ret)
+    }catch(e) {
+      throw new HttpException(e.message, 500)
+    }
+    
   }
 
   /**
@@ -398,9 +417,12 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    const { email } = request.only(['email'])
+    const { email, from_web } = request.only(['email', 'from_web'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
+    if( from_web === undefined ) {
+      from_web = false
+    }
     await UserService.requestSendCodeForgotPassword(email)
     return response.res()
   }
@@ -409,10 +431,11 @@ class AccountController {
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
-    const { email } = request.only(['email'])
+    const { email, from_web } = request.only(['email', 'from_web'])
 
     try {
-      await UserService.requestSendCodeForgotPassword(email)
+
+      await UserService.requestSendCodeForgotPassword(email, from_web )
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
