@@ -14,7 +14,6 @@ const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
-  ROLE_HOUSEKEEPER,
   ROLE_USER,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
@@ -24,12 +23,13 @@ class MemberService {
    *
    */
 
-  static async getMemberIdsByOwnerId(owner_id, role) {
+  static async getMemberIdsByOwnerId(owner_id, hasOwnerId) {
     try {
       const member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
+      //TODO: check
       if (!member) {
-        if (role === ROLE_HOUSEKEEPER) {
+        if (hasOwnerId) {
           throw new HttpException('You are not the member anymore', 400)
         }
 
@@ -53,11 +53,12 @@ class MemberService {
     }
   }
 
-  static async getMemberIdByOwnerId(owner_id, role) {
+  static async getMemberIdByOwnerId(owner_id, hasOwnerId) {
     let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
+    //TODO: check
     if (!member) {
-      if (role === ROLE_HOUSEKEEPER) {
+      if (hasOwnerId) {
         throw new HttpException('You are not the member anymore', 400)
       }
 
@@ -152,6 +153,7 @@ class MemberService {
   }
 
   static async setMemberOwner(member_id, owner_id) {
+    console.log({ member_id, owner_id })
     if (member_id == null) {
       return
     }
@@ -162,9 +164,10 @@ class MemberService {
       .where({ id: member_id })
   }
 
-  static async getMember(id, user_id, role) {
+  static async getMember(id, user_id, owner_id) {
     let member
-    if (role === ROLE_USER) {
+    console.log({ user_id, owner_id })
+    if (!owner_id) {
       member = await Member.query()
         .where('id', id)
         .whereNull('owner_user_id')
@@ -196,7 +199,7 @@ class MemberService {
    *
    */
   static async getIncomeByIdAndUser(id, user) {
-    const memberIds = await this.getMemberIdsByOwnerId(user.id, user.role)
+    const memberIds = await this.getMemberIdsByOwnerId(user.id, user.owner_id)
     console.log('MemberId', memberIds)
     return Income.query().where('id', id).whereIn('member_id', memberIds).first()
   }

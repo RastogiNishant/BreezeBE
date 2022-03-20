@@ -32,7 +32,6 @@ const {
   ROLE_USER,
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
-  ROLE_HOUSEKEEPER,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
@@ -79,7 +78,7 @@ class UserService {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     if (role) {
       roles = [role]
     }
@@ -239,11 +238,7 @@ class UserService {
 
   static async getHousehouseId(user_id) {
     try {
-      const owner = await User.query()
-        .select('owner_id')
-        .where('id', user_id)
-        .where('role', ROLE_HOUSEKEEPER)
-        .firstOrFail()
+      const owner = await User.query().select('owner_id').where('id', user_id).firstOrFail()
 
       return owner
     } catch (e) {
@@ -675,25 +670,29 @@ class UserService {
       .fetch()
   }
 
-  static async housekeeperSignup(ownerId, email, password, firstname) {
+  //TODO: update user "owner_id" if adults disconnect each other
+
+  //TODO: check
+  static async housekeeperSignup(ownerId, email, password, firstname, lang) {
     await User.query().where('id', ownerId).firstOrFail()
 
     const trx = await Database.beginTransaction()
     try {
-      const user = await User.create(
+      const user = await User.createItem(
         {
           email,
-          role: ROLE_HOUSEKEEPER,
+          role: ROLE_USER,
           password,
           owner_id: ownerId,
           // phone: phone,
           status: STATUS_EMAIL_VERIFY,
           firstname,
+          lang,
         },
         trx
       )
 
-      UserService.sendConfirmEmail(user)
+      await UserService.sendConfirmEmail(user)
       await trx.commit()
       return user
     } catch (e) {
@@ -744,6 +743,10 @@ class UserService {
 
     await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
     return true
+  }
+
+  static async removeUserOwnerId(user_id, trx) {
+    return Database.table('users').where('id', user_id).update({ owner_id: null }, trx)
   }
 
   static async proceedBuddyInviteLink(uid, tenantId) {
