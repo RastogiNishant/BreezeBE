@@ -13,7 +13,7 @@ const { omit, pick } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
-const { ROLE_HOUSEKEEPER, VISIBLE_TO_EVERYBODY, VISIBLE_TO_HOUSEHOLD, VISIBLE_TO_SPECIFIC, VISIBLE_TO_NOBODY, ROLE_USER } = require('../../constants')
+const { VISIBLE_TO_SPECIFIC, ROLE_USER } = require('../../constants')
 /**
  *
  */
@@ -21,34 +21,35 @@ class MemberController {
   /**
    *
    */
-  async getMembers({ request, auth, response }) {
+  async getMembers({ auth, response }) {
     let userId = auth.user.id
-    if( auth.user.role === ROLE_HOUSEKEEPER ) {
+    if (auth.user.owner_id) {
       const owner = await UserService.getHousehouseId(userId)
       userId = owner.owner_id
     }
 
     let members = (await MemberService.getMembers(userId)).toJSON()
-    const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user.id, auth.user.role)    
+    const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user.id, auth.user.owner_id)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
-    let userIds = memberPermissions?memberPermissions.map(mp=> mp.user_id):[];
+    let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
     userIds.push(auth.user.id)
 
-    if( members ) {
-      members[0].owner_user_id = userId;// first member will be household in default
-      members = members.map( m=> {
-        if( auth.user.role == ROLE_HOUSEKEEPER ){
-          //if member can see other's full profile or not
-          return userIds.includes(m.owner_user_id) ? m : pick(m, Member.limitFieldsList)
-        }else {
-          //if housekeeper updates his/her profile
-          if( m.owner_user_id ){
-            return userIds.includes(m.owner_user_id) ? m : pick(m, Member.limitFieldsList)
-          }
-          return m
-        }
-      })
-    }
+    // NOTE: We need all data to show adults fields completed or not.
+
+    // if (members) {
+    //   members[0].owner_user_id = userId // first member will be household in default
+    //   members = members.map((m) => {
+    //     if (auth.user.owner_id) {
+    //       return userIds.includes(m.owner_user_id) ? m : pick(m, Member.limitFieldsList)
+    //     } else {
+    //       //if housekeeper updates his/her profile
+    //       if (m.owner_user_id) {
+    //         return userIds.includes(m.owner_user_id) ? m : pick(m, Member.limitFieldsList)
+    //       }
+    //       return m
+    //     }
+    //   })
+    // }
     response.res(members)
   }
 
@@ -66,35 +67,39 @@ class MemberController {
 
     const user_id = auth.user.id
     const trx = await Database.beginTransaction()
-    if( data.email) {
+    if (data.email) {
       const member = await Member.query()
-      .select('email')
-      .where('email', data.email)
-      .whereNotNull('owner_user_id')
-      .first()
+        .select('email')
+        .where('email', data.email)
+        // .whereNotNull('owner_user_id')
+        //TODO: look the above line, I think email should be unique for member.
+        .first()
 
-      if(member) {
+      if (member) {
         throw new HttpException('Email exists', 400)
       }
     }
-
-    try{
+    try {
       const result = await MemberService.createMember({ ...data, ...files }, user_id, trx)
       await MemberService.calcTenantMemberData(user_id, trx)
-      
+
       /**
        * Created by YY
        * if an adult A is going to let his profile visible to adult B who is created newly
-       *  */ 
+       *  */
 
-      if( data.visibility_to_other === VISIBLE_TO_SPECIFIC ) {
+      if (data.visibility_to_other === VISIBLE_TO_SPECIFIC) {
         Event.fire('memberPermission:create', result.id, user_id)
       }
       Event.fire('tenant::update', user_id)
       trx.commit()
 
+      if (data.email) {
+        await MemberService.sendInvitationCode(result.id, user_id)
+      }
+
       response.res(result)
-    }catch(e) {
+    } catch (e) {
       trx.rollback()
       throw new HttpException(e.message, 400)
     }
@@ -106,14 +111,16 @@ class MemberController {
   async updateMember({ request, auth, response }) {
     const { id, ...data } = request.all()
 
-    const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
+    console.log({ data })
+
+    const member = await MemberService.getMember(id, auth.user.id, auth.user.owner_id)
     if (!member) {
       throw new HttpException('Member not exists or permission denied', 400)
     }
 
-    if( auth.role === ROLE_HOUSEKEEPER ) {
-      user_id = member.owner_user_id
-    }
+    // if (auth.user.owner_id) {
+    //   user_id = member.owner_user_id
+    // }
 
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
@@ -121,7 +128,7 @@ class MemberController {
       { field: 'debt_proof', mime: docMimes, isPublic: false },
     ])
 
-    const newData = member.owner_user_id?omit(data, ['email']):data;
+    const newData = member.owner_user_id ? omit(data, ['email']) : data
     await member.updateItem({ ...newData, ...files })
     await MemberService.calcTenantMemberData(member.user_id)
 
@@ -135,45 +142,60 @@ class MemberController {
    */
   async removeMember({ request, auth, response }) {
     const { id } = request.all()
-    const trx = await Database.beginTransaction()    
-    try{
-      const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
+    const trx = await Database.beginTransaction()
+    try {
+      const member = await Member.query().where('id', id).first()
       if (!member) {
-        throw new HttpException('Member not exists or permission denied', 400)
+        throw new HttpException('Member not exists', 400)
+      } else if (member.user_id !== auth.user.id && member.owner_user_id !== auth.user.id) {
+        throw new HttpException('Permission denied', 400)
       }
-  
+
       /**
        * ToDo
        * If a household deletes a member, we might need to delete household account from user table
        * Need to confirm later with the customer
        */
 
-      await MemberPermissionService.deletePermission(id, trx)    
-      await MemberService.getMemberQuery().where('id', id).delete(trx)
-      await MemberService.calcTenantMemberData(member.user_id, trx)
-  
-      Event.fire('tenant::update', member.user_id)
+      const owner_id = member.owner_user_id
+      const user_id = member.user_id
+
+      if (owner_id) {
+        await member.updateItem({
+          user_id: owner_id,
+          owner_user_id: null,
+        })
+        await MemberService.calcTenantMemberData(owner_id, trx)
+        await UserService.removeUserOwnerId(owner_id, trx)
+      } else {
+        await MemberService.getMemberQuery().where('id', id).delete(trx)
+      }
+
+      await MemberPermissionService.deletePermission(id, trx)
+      await MemberService.calcTenantMemberData(user_id, trx)
+
+      Event.fire('tenant::update', user_id)
       trx.commit()
       response.res(true)
-    }catch(e) {
+    } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
 
-  async showMe({request, auth, response}) {
+  async showMe({ request, auth, response }) {
     const { member_id, visibility_to_other } = request.all()
-    const trx = await Database.beginTransaction()    
-    try{
-      if( visibility_to_other === VISIBLE_TO_NOBODY ){
-         //hidden 
-         await MemberPermissionService.deletePermission(member_id, trx)    
+    const trx = await Database.beginTransaction()
+    try {
+      if (visibility_to_other === VISIBLE_TO_NOBODY) {
+        //hidden
+        await MemberPermissionService.deletePermission(member_id, trx)
       }
-      if( visibility_to_other === VISIBLE_TO_SPECIFIC ) {
+      if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
         Event.fire('memberPermission:create', member_id, auth.user.id)
       }
       response.res(true)
-    }catch(e) {
+    } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
     }
@@ -184,10 +206,13 @@ class MemberController {
    */
   async removeMemberDocs({ request, auth, response }) {
     const { id, field } = request.all()
+
+    const user_id = auth.user.owner_id || auth.user.id
     const member = await MemberService.getMemberQuery()
       .where('id', id)
-      .where('user_id', auth.user.id)
+      .where('user_id', user_id)
       .first()
+
     if (!member) {
       throw new HttpException('Invalid member', 400)
     }
@@ -200,17 +225,18 @@ class MemberController {
     member[field] = null
     await member.save()
 
-    Event.fire('tenant::update', auth.user.id)
+    Event.fire('tenant::update', user_id)
     response.res(true)
   }
 
   /**
    *
    */
+  //MERGED TENANT
   async addMemberIncome({ request, auth, response }) {
     const { id, ...data } = request.all()
 
-    const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
+    const member = await MemberService.getMember(id, auth.user.id, auth.user.owner_id)
 
     if (!member) {
       throw new HttpException('Member not exists or permission denied', 400)
@@ -220,19 +246,20 @@ class MemberController {
     ])
 
     const income = await MemberService.addIncome({ ...data, ...files }, member)
-    await MemberService.updateUserIncome(auth.user.id)
+    await MemberService.updateUserIncome(member.user_id)
 
-    Event.fire('tenant::update', auth.user.id)
+    Event.fire('tenant::update', member.user_id)
     response.res(income)
   }
 
   /**
    *
    */
+  //MERGED TENANT
   async editIncome({ request, auth, response }) {
     const { income_id, id, ...rest } = request.all()
 
-    const member = await MemberService.getMember(id, auth.user.id, auth.user.role)
+    const member = await MemberService.getMember(id, auth.user.id, auth.user.owner_id)
     if (!member) {
       throw new HttpException('Member not exists or permission denied', 400)
     }
@@ -250,31 +277,34 @@ class MemberController {
     ])
 
     await income.updateItem({ ...rest, ...files })
-    await MemberService.updateUserIncome(auth.user.id)
+    await MemberService.updateUserIncome(member.user_id)
 
-    Event.fire('tenant::update', auth.user.id)
+    Event.fire('tenant::update', member.user_id)
     response.res(income)
   }
 
   /**
    *
    */
+  //MERGED TENANT
   async removeMemberIncome({ request, auth, response }) {
     const { income_id } = request.all()
+    const user_id = auth.user.owner_id || auth.user.id
     await Income.query()
       .where('id', income_id)
       .whereIn('member_id', function () {
-        this.select('id').from('members').where('user_id', auth.user.id)
+        this.select('id').from('members').where('user_id', user_id)
       })
       .delete()
 
-    Event.fire('tenant::update', auth.user.id)
+    Event.fire('tenant::update', user_id)
     response.res(true)
   }
 
   /**
    *
    */
+  //MERGED TENANT
   async addMemberIncomeProof({ request, auth, response }) {
     const { income_id, ...rest } = request.all()
 
@@ -294,6 +324,7 @@ class MemberController {
   /**
    *
    */
+  //MERGED TENANT
   async removeMemberIncomeProof({ request, auth, response }) {
     const { id } = request.all()
 
@@ -303,14 +334,14 @@ class MemberController {
       .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .where('income_proofs.id', id)
+      .where('user_id', auth.user.owner_id || auth.user.id)
 
-      if( auth.user.role === ROLE_USER ){
-        proofQuery = proofQuery.whereNull('owner_user_id')
-          .where('user_id', auth.user.id)
-      }else{
-        proofQuery = proofQuery.where('owner_user_id', auth.user.id)
-      }
-      
+    // if (auth.user.role === ROLE_USER) {
+    //   proofQuery = proofQuery.whereNull('owner_user_id').where('user_id', auth.user.id)
+    // } else {
+    //   proofQuery = proofQuery.where('owner_user_id', auth.user.id)
+    // }
+
     const proof = await proofQuery.first()
 
     if (!proof) {
@@ -337,17 +368,15 @@ class MemberController {
   }
 
   async confirmInviteCode({ request, response }) {
-    const { email,code } = request.all()
+    const { email, code } = request.all()
     try {
-      response.res(await MemberService.getInvitationCode(email,code))
+      response.res(await MemberService.getInvitationCode(email, code))
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
   }
 
-  async removeInviteConnection({request, auth, response}) {
-
-  }
+  async removeInviteConnection({ request, auth, response }) {}
 }
 
 module.exports = MemberController
