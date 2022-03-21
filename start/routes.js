@@ -36,20 +36,21 @@ Route.get('/', () => {
   }
 })
 
-const Estate = use('App/Models/Estate')
-Route.get('/api/v1/estate-by-hash/:hash', async ({request, response}) => {
-  const estate = await Estate.query().where('hash', request.params.hash).first()
-  return response.res(estate)
-})
-
-//'EstateController.getEstateByHash')
+Route.get('/api/v1/estate-by-hash/:hash', 'EstateViewInvitationController.getEstateByHash').middleware(['EstateFoundByHash'])
 // get pertinent information for an invitation to view estate based on code
 Route.get('/api/v1/estate-view-invitation/:code', 'EstateViewInvitationController.getByCode')
   .middleware(['ViewEstateInvitationCodeExist'])
-// signup
+
 Route.post('/api/v1/invited-signup/:code', 'AccountController.signupProspectWithViewEstateInvitation')
   .middleware([
     'ViewEstateInvitationCodeExist',
+    'valid:SignupAfterViewEstateInvitation',
+    'ProspectHasNotRegisterYet'
+  ])
+
+Route.post('/api/v1/hash-invited-signup/:hash', 'AccountController.signupProspectWithHash')
+  .middleware([
+    'EstateFoundByHash',
     'valid:SignupAfterViewEstateInvitation',
     'ProspectHasNotRegisterYet'
   ])
