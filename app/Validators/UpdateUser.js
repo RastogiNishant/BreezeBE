@@ -16,6 +16,7 @@ class UpdateUser extends Base {
         is: email => ! _.isEmpty(email),
         then: yup.string().required("Change on email requires current password.")
       }),
+      file: yup.mixed(),
       sex: yup.number().oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY]),
       phone: phoneSchema,
       birthday: yup.date(),
