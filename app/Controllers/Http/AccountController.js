@@ -392,6 +392,7 @@ class AccountController {
       .with('household')
       .with('plan')
       .with('tenantPaymentPlan')
+      .with('company')
       .firstOrFail()
 
     if (user) {
