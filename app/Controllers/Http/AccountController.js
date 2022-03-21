@@ -473,7 +473,29 @@ class AccountController {
       ? delete data.prospect_visibility
       : data
     
-    if(data.email) {
+    if(request.multipart.file) {
+      const fileSettings = { types: ['image'], size: '10mb' }
+      const filename = `${uuid.v4()}.png`
+      let avatarUrl, tmpFile
+      
+      request.multipart.file(`file`, fileSettings, async (file) => {
+        tmpFile = await ImageService.resizeAvatar(file, filename)
+        const sourceStream = fs.createReadStream(tmpFile)
+        avatarUrl = await Drive.disk('s3public').put(
+          `${moment().format('YYYYMM')}/${filename}`,
+          sourceStream,
+          { ACL: 'public-read', ContentType: 'image/png' }
+        )
+      })
+      
+      await request.multipart.process()
+      if (avatarUrl) {
+        auth.user.avatar = avatarUrl
+        await auth.user.save()
+      }
+      fs.unlink(tmpFile, () => {})
+      user = auth.user
+    } else if(data.email) {
       user = await User.find(auth.user.id)
       user.email = data.email
       await user.save()
