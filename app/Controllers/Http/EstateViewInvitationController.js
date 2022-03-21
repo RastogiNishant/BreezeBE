@@ -10,9 +10,15 @@ class EstateViewInvitationController {
     const landlord = await invite.invitedByUser().fetch()
 
     const invitation = {...invite.toJSON(), estate, invitedBy: landlord}
-    response.res(invitation)
-
+    return response.res(invitation)
   }
+
+  async getEstateByHash({request, response}) {
+    let estate = request.estate
+    let invitedBy = await estate.user().fetch()
+    return response.res({estate, invitedBy})
+  }
+  
 }
 
 module.exports = EstateViewInvitationController

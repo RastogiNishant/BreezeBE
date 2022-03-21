@@ -10,6 +10,7 @@ const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const Tenant = use('App/Models/Tenant')
+const Buddy = use('App/Models/Buddy')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -38,6 +39,7 @@ const {
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
+  BUDDY_STATUS_PENDING,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -87,7 +89,10 @@ class AccountController {
       throw e
     }
   }
-
+  
+  /**
+   * Signup prospect with code we email to him.
+   */
   async signupProspectWithViewEstateInvitation({request, response}) {
     //create user
     const {email, phone, role, password, ...userData} = request.all()
@@ -122,6 +127,87 @@ class AccountController {
             trx
           )
         })
+      )
+      //send email for confirmation
+      await UserService.sendConfirmEmail(user)
+      trx.commit()
+      return response.res(true)
+    } catch(e) {
+      console.log(e)
+      await trx.rollback()
+      throw new HttpException('Signup failed.', 412)
+    }
+  }
+
+  /**
+   * Signup user with hash
+   */
+  async signupProspectWithHash({request, response}) {
+    //create user
+    const {email, phone, role, password, ...userData} = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      //add this user
+      let user = await User.create(
+        {...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY},
+        trx
+      )
+      let tenant
+      if(role === ROLE_USER) {
+        if(userData.signupData) {
+          tenant = await Tenant.findOrCreate(
+            {user_id: user.id},
+            {
+              user_id: user.id,
+              coord: userData.signupData.address.coord,
+              dist_type: userData.signupData.transport,
+              dist_min: userData.signupData.time,
+              address: userData.signupData.address.title,
+            }
+          )
+        } else {
+          tenant = await Tenant.findOrCreate(
+          {user_id: user.id},
+          {user_id: user.id}
+          , trx)
+        }
+      }
+      //add to estate_view_invites
+      let invitation = await EstateViewInvite.findOrCreate(
+        {code: request.estate.hash},
+        {
+          invited_by: request.estate.user_id,
+          estate_id: request.estate.id,
+          code: request.estate.hash
+        },
+        trx
+      )
+      //include him on estate_view_invited_users with sticky set to true  
+      const invitedUser = new EstateViewInvitedUser
+      invitedUser.user_id = user.id
+      invitedUser.sticky = true
+      invitedUser.estate_view_invite_id = invitation.id
+      await invitedUser.save(trx)
+      //lets find other estates he's invited to view
+      const myInvitesToViewEstates = await EstateViewInvitedEmail.query().where('email', email).fetch()
+      await Promise.all(
+        myInvitesToViewEstates.toJSON().map(async invite => {
+          await EstateViewInvitedUser.findOrCreate(
+            {user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id},
+            {user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id},
+            trx
+          )
+        })
+      )
+      //add user to buddies
+      await Buddy.create(
+        {
+          user_id: invitation.invited_by,
+          email,
+          phone,
+          tenant_id: tenant.id,
+          status: BUDDY_STATUS_PENDING
+        }
       )
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
