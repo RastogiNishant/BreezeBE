@@ -7,18 +7,19 @@ module.exports = {
   options: {
     swaggerDefinition: {
       info: {
-        title: 'Breeze',
-        version: '1.0.0',
+        title: 'Breeze Backend API',
+        version: '2.0.0',
       },
-
+      openapi:'3.0.0',
       basePath: '/',
-      securityDefinitions: {
-        bearerAuth: {
-          type: 'apiKey',
-          name: 'Authorization',
-          in: 'header',
-          bearerFormat: 'JWT',
-        },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT'
+          }
+        }
       },
     },
     apis: [
