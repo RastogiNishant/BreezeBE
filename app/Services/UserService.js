@@ -20,7 +20,6 @@ const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
 
-
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 
@@ -33,7 +32,6 @@ const {
   ROLE_USER,
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
-  ROLE_HOUSEKEEPER,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
   DEFAULT_LANG,
@@ -62,7 +60,7 @@ class UserService {
           dist_min: tenant.time,
           address: tenant.address.title,
         })
-      } catch (e) {      
+      } catch (e) {
         console.log('createUser exception', e)
       }
     }
@@ -80,15 +78,12 @@ class UserService {
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     if (role) {
       roles = [role]
     }
     // Check is user same email another role is exists
-    const existingUser = await User.query()
-      .where('email', email)
-      .whereIn('role', roles)
-      .first()
+    const existingUser = await User.query().where('email', email).whereIn('role', roles).first()
     if (existingUser) {
       throw new AppException('User same email, another role exists')
     }
@@ -169,7 +164,9 @@ class UserService {
       user = await User.findByOrFail({ email })
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-      const deepLink_URL = from_web?`${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}`:`${process.env.DEEP_LINK}?type=newpassword&code=${code}`
+      const deepLink_URL = from_web
+        ? `${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}`
+        : `${process.env.DEEP_LINK}?type=newpassword&code=${code}`
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
@@ -185,9 +182,14 @@ class UserService {
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
       const data = await this.getTokenWithLocale([user.id])
-      const lang = data && data.length && data[0].lang?data[0].lang:user.lang
-      
-      await MailService.sendcodeForgotPasswordMail(user.email, shortLink, !from_web?user.role:ROLE_LANDLORD, lang)
+      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+
+      await MailService.sendcodeForgotPasswordMail(
+        user.email,
+        shortLink,
+        !from_web ? user.role : ROLE_LANDLORD,
+        lang
+      )
     } catch (error) {
       throw new HttpException(
         error.error ? error.error.message : error.message,
@@ -242,17 +244,13 @@ class UserService {
     await DataStorage.remove(code, 'reset_password')
   }
 
-  static async getHousehouseId( user_id ) {
-    try{
-      const owner = await User.query()
-      .select('owner_id')
-      .where('id', user_id)
-      .where('role', ROLE_HOUSEKEEPER)
-      .firstOrFail()
+  static async getHousehouseId(user_id) {
+    try {
+      const owner = await User.query().select('owner_id').where('id', user_id).firstOrFail()
 
-      return owner        
-    }catch(e) {
-      throw new HttpException(e.message, 400)    
+      return owner
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
   /**
@@ -268,6 +266,10 @@ class UserService {
     }
   }
 
+  static async updateDeviceToken(userId, device_token) {
+    return await User.query().where('id', userId).update({ device_token: device_token })
+  }
+
   /**
    *
    */
@@ -276,7 +278,7 @@ class UserService {
     const code = date.slice(date.length - 4, date.length)
     await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
     const data = await UserService.getTokenWithLocale([user.id])
-    const lang = data && data.length && data[0].lang?data[0].lang:user.lang;
+    const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
     await MailService.sendUserConfirmation(user.email, {
       code,
@@ -312,9 +314,8 @@ class UserService {
     user.status = STATUS_ACTIVE
     await DataStorage.remove(user.id, 'confirm_email')
 
-
     const localData = await UserService.getTokenWithLocale([user.id])
-    const lang = localData && localData.length && localData[0].lang?localData[0].lang:user.lang;
+    const lang = localData && localData.length && localData[0].lang ? localData[0].lang : user.lang
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
@@ -334,7 +335,7 @@ class UserService {
       code: shortLink,
       role: user.role,
       lang: lang,
-    })    
+    })
     return user.save()
   }
 
@@ -598,15 +599,12 @@ class UserService {
     return data
   }
 
-  static async getUserIdsByToken( devices ) {
-    if( !devices || !devices.length ) {
+  static async getUserIdsByToken(devices) {
+    if (!devices || !devices.length) {
       return []
     }
-    const deviceTokens = devices.map( d => d.identifier)
-    const ids = (await User.query()
-      .select('id')
-      .whereIn('device_token', deviceTokens )
-      .fetch()).rows
+    const deviceTokens = devices.map((d) => d.identifier)
+    const ids = (await User.query().select('id').whereIn('device_token', deviceTokens).fetch()).rows
     return ids
   }
 
@@ -684,26 +682,29 @@ class UserService {
       .fetch()
   }
 
-  static async housekeeperSignup(ownerId, email, password, phone) {
+  //TODO: update user "owner_id" if adults disconnect each other
+
+  //TODO: check
+  static async housekeeperSignup(ownerId, email, password, firstname, lang) {
     await User.query().where('id', ownerId).firstOrFail()
 
     const trx = await Database.beginTransaction()
     try {
-      const user = await User.create(
+      const user = await User.createItem(
         {
           email,
-          role: ROLE_HOUSEKEEPER,
+          role: ROLE_USER,
           password,
           owner_id: ownerId,
-          phone: phone,
+          // phone: phone,
           status: STATUS_EMAIL_VERIFY,
+          firstname,
+          lang,
         },
         trx
       )
 
-      UserService.sendSMS(user.id, phone)
-      const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
-      console.log('data=', data)
+      await UserService.sendConfirmEmail(user)
       await trx.commit()
       return user
     } catch (e) {
@@ -754,6 +755,10 @@ class UserService {
 
     await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
     return true
+  }
+
+  static async removeUserOwnerId(user_id, trx) {
+    return Database.table('users').where('id', user_id).update({ owner_id: null }, trx)
   }
 
   static async proceedBuddyInviteLink(uid, tenantId) {

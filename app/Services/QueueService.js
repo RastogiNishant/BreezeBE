@@ -1,5 +1,6 @@
 const Queue = use('Queue')
 const Logger = use('Logger')
+const MemberService = use('App/Services/MemberService')
 const NoticeService = use('App/Services/NoticeService')
 const EstateService = use('App/Services/EstateService')
 const TenantService = use('App/Services/TenantService')
@@ -16,6 +17,7 @@ const {
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
+  SCHEDULED_MONTHLY_JOB,
 } = require('../constants')
 
 /**
@@ -99,6 +101,15 @@ class QueueService {
   /**
    *
    */
+  static async sendEveryEveryMonth12AM() {
+    return Promise.all([
+      wrapException(MemberService.getIncomeProofs)
+    ])
+  }
+
+  /**
+   *
+   */
   static async processJob(job) {
     try {
       switch (job.name) {
@@ -116,6 +127,8 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
+          case SCHEDULED_MONTHLY_JOB:
+            return QueueService.sendEveryEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         default:
