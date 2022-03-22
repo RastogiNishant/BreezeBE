@@ -12,6 +12,16 @@ module.exports = {
       },
       openapi:'3.0.0',
       basePath: '/',
+      tags: [
+        {
+          name: 'Accounts',
+          description: 'All about authentication, information about Landlords, Tenants/Prospects, etc.'
+        },
+        {
+          name: 'Landlords',
+          description: 'All about the Landlord User'
+        }
+      ],
       components: {
         securitySchemes: {
           bearerAuth: {
