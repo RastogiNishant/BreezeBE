@@ -18,7 +18,6 @@ class UserCanValidlyChangeEmail {
     if (!request.body.email) {
       await next()
     } else {
-      console.log('request.body', request.body.email)
       //lets find a user having this role and email
       let user = await User.query()
         .where('email', request.body.email)
