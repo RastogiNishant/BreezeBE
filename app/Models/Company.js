@@ -32,6 +32,10 @@ class Company extends Model {
   contacts() {
     return this.hasMany('App/Models/Contact', 'id', 'company_id')
   }
+
+  company() {
+    return this.hasOne('App/Models/Company', 'company_id', 'id')
+  }
 }
 
 module.exports = Company

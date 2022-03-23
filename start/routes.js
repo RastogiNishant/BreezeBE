@@ -117,14 +117,22 @@ Route.group(() => {
 }).prefix('/api/v1/forgotPassword')
 
 Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
+Route.put('/api/v1/me', 'AccountController.updateProfile').middleware([
+  'auth:jwt,jwtLandlord',
+  'valid:UpdateUser',
+  'userCanValidlyChangeEmail'
+])
+
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
+
 Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',
   'userCanValidlyChangeEmail',
 ])
+
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
 
 Route.group(() => {
