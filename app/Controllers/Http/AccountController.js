@@ -2,6 +2,7 @@
 const fs = require('fs')
 const moment = require('moment')
 const uuid = require('uuid')
+const _ = require('lodash')
 const Promise = require('bluebird')
 
 const User = use('App/Models/User')
@@ -9,6 +10,7 @@ const Member = use('App/Models/Member')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
+const Company = use('App/Models/Company')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
 const Hash = use('Hash')
@@ -394,7 +396,6 @@ class AccountController {
       .with('household')
       .with('plan')
       .with('tenantPaymentPlan')
-      .with('company')
       .firstOrFail()
 
     if (user) {
@@ -402,6 +403,13 @@ class AccountController {
         email: user.email,
         role: user.role,
       })
+      if (!user.company_id) {
+        user.company_name = `${user.firstname} ${user.secondname}`.trim()
+      } else {
+        let company = await Company.query().where('id', user.company_id).first()
+        user.company = company
+        user.company_name = company.name
+      }
     }
 
     return response.res(user.toJSON({ isOwner: true }))
@@ -476,7 +484,9 @@ class AccountController {
       ? delete data.prospect_visibility
       : data
 
-    if (request.multipart.file) {
+    let company
+    if (request.header('content-type').match(/^multipart/)) {
+      //this is an upload
       const fileSettings = { types: ['image'], size: '10mb' }
       const filename = `${uuid.v4()}.png`
       let avatarUrl, tmpFile
@@ -490,21 +500,42 @@ class AccountController {
           { ACL: 'public-read', ContentType: 'image/png' }
         )
       })
-
       await request.multipart.process()
-      if (avatarUrl) {
+      if (!avatarUrl) {
+        throw new HttpException('No file uploaded.')
+      } else {
         auth.user.avatar = avatarUrl
         await auth.user.save()
+        fs.unlink(tmpFile, () => {})
       }
-      fs.unlink(tmpFile, () => {})
-      user = auth.user
+      user = await User.find(auth.user.id)
+      user.avatar = avatarUrl
+      await user.save()
+      user = user.toJSON({ isOwner: true })
     } else if (data.email) {
       user = await User.find(auth.user.id)
       user.email = data.email
       await user.save()
-      user = user.toJSON()
+      user = user.toJSON({ isOwner: true })
     } else {
+      if (data.company_name) {
+        let company_name = data.company_name
+        company = await Company.findOrCreate(
+          { name: company_name, user_id: auth.user.id },
+          { name: company_name, user_id: auth.user.id }
+        )
+        _.unset(data, 'company_name')
+        data.company_id = company.id
+      }
       await user.updateItem(data)
+      user = user.toJSON({ isOwner: true })
+    }
+    if (user.company_id) {
+      company = await Company.query().where('id', user.company_id).first()
+      user.company_name = company.name
+      user.company = company
+    } else {
+      user.company = `${user.firstname} ${user.secondname}`.trim()
     }
     return response.res(user)
   }
