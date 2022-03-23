@@ -13,6 +13,7 @@ class Member extends Model {
       'child',
       'sex',
       'phone',
+      'bio',
       'birthday',
       'email',
       'landlord_name',
@@ -33,7 +34,8 @@ class Member extends Model {
       'code',
       'published_at',
       'is_verified',
-      'owner_id'
+      'owner_id',
+      'owner_user_id',
     ]
   }
 
@@ -41,7 +43,7 @@ class Member extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'user_id']
+    return ['id']
   }
 
   /**
@@ -76,9 +78,11 @@ class Member extends Model {
       'landlord_email',
       'last_address',
       'published_at',
+      'is_verified',
+      'owner_id',
+      'owner_user_id',
     ]
   }
-
 }
 
 module.exports = Member

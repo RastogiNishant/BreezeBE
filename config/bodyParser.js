@@ -128,7 +128,7 @@ module.exports = {
     |
     */
 
-    processManually: ['/api/v1/users/avatar'],
+    processManually: ['/api/v1/users/avatar', '/api/v1/users'],
 
     /*
     |--------------------------------------------------------------------------
