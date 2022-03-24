@@ -398,7 +398,12 @@ class AccountController {
       .with('tenantPaymentPlan')
       .firstOrFail()
 
+    const { pushToken } = request.all()
+
     if (user) {
+      if (pushToken && user.device_token !== pushToken) {
+        await user.updateItem({ device_token: pushToken })
+      }
       logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
         email: user.email,
         role: user.role,
