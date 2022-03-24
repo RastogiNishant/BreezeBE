@@ -3,7 +3,12 @@ const constants = {
   ERROR_TERMS_CONFIRM: 10030,
   ERROR_BUDDY_EXISTS: 10110,
   ERROR_USER_INCOME_EXPIRE: 10140,
-
+  ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE: 10150,
+  ERROR_VIEW_INVITE_NOT_EXISTING: 10160,
+  ERROR_PROSPECT_HAS_ALREADY_REGISTERED: 10180,
+  ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH: 10210,
+  ERROR_ESTATE_NOT_FOUND_BY_HASH: 10220,
+  
   DEFAULT_LANG: 'en',
 
   FILE_TYPE_COVER: 'cover',
@@ -36,7 +41,6 @@ const constants = {
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,
   ROLE_PROPERTY_MANAGER: 4,
-  ROLE_HOUSEKEEPER: 5,
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
@@ -339,6 +343,7 @@ const constants = {
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
+  SCHEDULED_MONTHLY_JOB: 'scheduledStartOfEveryMonth',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE: 'notification_landlord_fill_profile',
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY: 'notification_landlord_new_property',
@@ -477,6 +482,7 @@ const constants = {
   LOG_TYPE_PUBLISHED_PROPERTY: 'published_property',
   LOG_TYPE_PROPERTIES_IMPORTED: 'properties_imported',
   LOG_TYPE_INVITED: 'invited',
+  LOG_TYPE_GOT_INVITE: 'got_invite',
   LOG_TYPE_SHOWED: 'showed',
   LOG_TYPE_FINAL_MATCH_REQUEST: 'final_match_request',
   LOG_TYPE_FINAL_MATCH_APPROVAL: 'final_match_approval',
@@ -497,13 +503,13 @@ const constants = {
   SIGN_UP_METHOD_APPLE: 'apple',
   SIGN_UP_METHOD_EMAIL: 'email',
 
-  PLAN_FEATURE_COMMON:  '',  
-  PLAN_FEATURE_NEW:  'New',
+  PLAN_FEATURE_COMMON: '',
+  PLAN_FEATURE_NEW: 'New',
 
-  VISIBLE_TO_NOBODY:1,
-  VISIBLE_TO_EVERYBODY:2,
+  VISIBLE_TO_NOBODY: 1,
+  VISIBLE_TO_EVERYBODY: 2,
   VISIBLE_TO_SPECIFIC: 3,
-  VISIBLE_TO_HOUSEHOLD:4,
+  VISIBLE_TO_HOUSEHOLD: 4,
 }
 
 module.exports = constants

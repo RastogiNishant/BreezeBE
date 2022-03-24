@@ -1,9 +1,11 @@
 const Queue = use('Queue')
 const Logger = use('Logger')
+const MemberService = use('App/Services/MemberService')
 const NoticeService = use('App/Services/NoticeService')
 const EstateService = use('App/Services/EstateService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
+const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 
 const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
@@ -15,6 +17,7 @@ const {
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
+  SCHEDULED_MONTHLY_JOB,
 } = require('../constants')
 
 /**
@@ -52,7 +55,6 @@ class QueueService {
 
   static savePropertyBulkImages(properyImages) {
     Queue.addJob(SAVE_PROPERTY_IMAGES, { properyImages }, { delay: 1 })
-    
   }
 
   /**
@@ -78,6 +80,7 @@ class QueueService {
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
       wrapException(NoticeService.sandProspectNoActivity),
+      wrapException(TenantPremiumPlanService.validateAllSubscriptions)
     ])
   }
 
@@ -93,6 +96,15 @@ class QueueService {
    */
   static async sendEveryDay9AM() {
     return Promise.all([wrapException(NoticeService.prospectProfileExpiring)])
+  }
+
+  /**
+   *
+   */
+  static async sendEveryEveryMonth12AM() {
+    return Promise.all([
+      wrapException(MemberService.getIncomeProofs)
+    ])
   }
 
   /**
@@ -115,8 +127,10 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
+          case SCHEDULED_MONTHLY_JOB:
+            return QueueService.sendEveryEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
-          return ImageService.savePropertyBulkImages(job.data.properyImages)  
+          return ImageService.savePropertyBulkImages(job.data.properyImages)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

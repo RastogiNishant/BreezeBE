@@ -41,7 +41,7 @@ class Tenant extends Model {
       'residency_shown',
       'creditscore_shown',
       'solvency_shown',
-      'profile_shown'
+      'profile_shown',
     ]
   }
 
@@ -184,7 +184,7 @@ class Tenant extends Model {
     //   .whereIn('title', AMENITIES_OPTIONS)
     //   .limit(AMENITIES_OPTIONS.length)
 
-    const options = [];
+    const options = []
 
     return super.createItem({
       ...data,

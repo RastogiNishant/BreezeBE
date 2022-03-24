@@ -6,7 +6,7 @@ const Base = require('./Base')
 class Email extends Base {
   static schema = () =>
     yup.object().shape({
-      email: yup.string().email().max('255').required(),
+      email: yup.string().email().lowercase().max('255').required(),
     })
 }
 
