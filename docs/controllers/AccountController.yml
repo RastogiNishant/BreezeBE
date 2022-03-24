@@ -94,6 +94,25 @@ paths:
                     example: success
                   data:
                     $ref: '#/components/schemas/user'
+    put:
+      summary: update information of the current user
+      description: Update information of the current user
+      tags: 
+        - Accounts
+      security:
+        - bearerAuth: []
+      name: Update Current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+          application/x-www-form-urlencoded:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
   /api/v1/logout:
     post:
       security: [bearerAuth: []]
