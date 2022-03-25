@@ -151,6 +151,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessWithoutData'
+  /api/v1/housekeeperSignup:
+    post:
+      tags: [account]
+      description: Sign up as a housekeeper to the application. *****member_id and owner_id come from '/api/v1/confirmsms *****
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: 
+          
+      produces: [application/json]
+      parameters:
+        - name: email
+          in: formData
+          type: string
+          required: true
+        - name: password
+          in: formData
+          type: string
+          required: true
+        - name: confirmPassword
+          in: formData
+          type: string
+          required: true
+        - name: member_id
+          in: formData
+          type: number
+          required: true
+        - name: owner_id
+          in: formData
+          type: number
+          required: true
+        - name: code
+          in: formData
+          type: string
+          required: true          
+        - name: phone
+          in: formData
+          type: string
+          required: true
+      responses: [200]      
+
+  
 
 
 

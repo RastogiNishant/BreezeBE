@@ -227,6 +227,9 @@ components:
           type: string
         request_full_profile:
           type: boolean
-        
+    UpdateUser:
+      type: object
+      properties:
+                
     
           
