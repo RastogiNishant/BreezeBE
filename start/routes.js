@@ -36,24 +36,33 @@ Route.get('/', () => {
   }
 })
 
-Route.get('/api/v1/estate-by-hash/:hash', 'EstateViewInvitationController.getEstateByHash').middleware(['EstateFoundByHash'])
+Route.get(
+  '/api/v1/estate-by-hash/:hash',
+  'EstateViewInvitationController.getEstateByHash'
+).middleware(['EstateFoundByHash'])
 // get pertinent information for an invitation to view estate based on code
-Route.get('/api/v1/estate-view-invitation/:code', 'EstateViewInvitationController.getByCode')
-  .middleware(['ViewEstateInvitationCodeExist'])
+Route.get(
+  '/api/v1/estate-view-invitation/:code',
+  'EstateViewInvitationController.getByCode'
+).middleware(['ViewEstateInvitationCodeExist'])
 
-Route.post('/api/v1/invited-signup/:code', 'AccountController.signupProspectWithViewEstateInvitation')
-  .middleware([
-    'ViewEstateInvitationCodeExist',
-    'valid:SignupAfterViewEstateInvitation',
-    'ProspectHasNotRegisterYet'
-  ])
+Route.post(
+  '/api/v1/invited-signup/:code',
+  'AccountController.signupProspectWithViewEstateInvitation'
+).middleware([
+  'ViewEstateInvitationCodeExist',
+  'valid:SignupAfterViewEstateInvitation',
+  'ProspectHasNotRegisterYet',
+])
 
-Route.post('/api/v1/hash-invited-signup/:hash', 'AccountController.signupProspectWithHash')
-  .middleware([
-    'EstateFoundByHash',
-    'valid:SignupAfterViewEstateInvitation',
-    'ProspectHasNotRegisterYet'
-  ])
+Route.post(
+  '/api/v1/hash-invited-signup/:hash',
+  'AccountController.signupProspectWithHash'
+).middleware([
+  'EstateFoundByHash',
+  'valid:SignupAfterViewEstateInvitation',
+  'ProspectHasNotRegisterYet',
+])
 
 Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification').middleware()
 
@@ -120,7 +129,7 @@ Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jw
 Route.put('/api/v1/me', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',
-  'userCanValidlyChangeEmail'
+  'userCanValidlyChangeEmail',
 ])
 
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
@@ -256,7 +265,10 @@ Route.group(() => {
     'RoomController.removeRoomPhoto'
   ).middleware(['valid:RoomId,Id'])
 
-  Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware(['valid:LandlordInviteToView', 'LandlordOwnsThisEstate'])
+  Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware([
+    'valid:LandlordInviteToView',
+    'LandlordOwnsThisEstate',
+  ])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
@@ -434,10 +446,13 @@ const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 
 Route.group(() => {
-  Route.get('/', async ({request, auth, response}) => {
-    const myInvites = await EstateViewInvitedUser.query().where('user_id', auth.user.id).where('sticky', true).first()
+  Route.get('/', async ({ request, auth, response }) => {
+    const myInvites = await EstateViewInvitedUser.query()
+      .where('user_id', auth.user.id)
+      .where('sticky', true)
+      .first()
 
-    response.res(myInvites)    
+    response.res(myInvites)
   })
 })
   .prefix('api/v1/view-estate-invitations')
@@ -533,8 +548,13 @@ Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary'
 Route.group(() => {
   Route.get('/visit', 'LandlordController.getLordVisits')
   Route.post('/activate', 'LandlordController.activate')
-  Route.get('/invite-to-view-estate', 'EstateController.getInviteToView').middleware(['LandlordOwnsThisEstate'])
-  Route.post('/invite-to-view-estate', 'EstateController.createInviteToViewCode').middleware(['valid:LandlordInviteToView', 'LandlordOwnsThisEstate'])
+  Route.get('/invite-to-view-estate', 'EstateController.getInviteToView').middleware([
+    'LandlordOwnsThisEstate',
+  ])
+  Route.post('/invite-to-view-estate', 'EstateController.createInviteToViewCode').middleware([
+    'valid:LandlordInviteToView',
+    'LandlordOwnsThisEstate',
+  ])
 })
   .prefix('/api/v1/landlord')
   .middleware(['auth:jwtLandlord'])
@@ -750,4 +770,77 @@ Route.list().forEach((r) => {
       r.middlewareList = [...r.middlewareList, 'agreement']
     }
   }
+})
+
+const Tenant = use('App/Models/Tenant')
+const Estate = use('App/Models/Estate')
+const { get, isNumber } = require('lodash')
+const Matchservice = use('App/Services/Matchservice')
+const Database = use('Database')
+
+Route.get('/test-match', async ({ request, response }) => {
+  const { estate_id, tenant_id } = request.all()
+
+  const tenant = await Tenant.query()
+    .select('tenants.*')
+    .where({ 'tenants.user_id': tenant_id }) //weird should be user_id
+    .first()
+
+  const estate = await Estate.query().where({ id: estate_id }).first()
+  const matchScore = await Matchservice.calculateMatchPercent(tenant, estate)
+  return response.res({ estate, tenant, matchScore })
+})
+
+const { STATUS_ACTIVE } = require('../app/constants')
+Route.get('/prospects', async ({ request, response }) => {
+  const { estate_id } = request.all()
+  const tenants = await Database.from({ _e: 'estates' })
+    .select('_t.*')
+    .crossJoin({ _t: 'tenants' })
+    .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
+    .where('_e.id', estate_id)
+    .where('_t.status', STATUS_ACTIVE)
+    .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+    .limit(100)
+
+  const estate = await Estate.query().where({ id: estate_id }).first()
+  let ret = []
+  await Promise.all(
+    tenants.map(async (tenant) => {
+      const matchScore = await Matchservice.calculateMatchPercent(tenant, estate)
+      return ret.push({
+        user: tenant.user_id,
+        estate: estate_id,
+        score: matchScore,
+      })
+    })
+  )
+  return response.res(ret.length)
+})
+
+const getCorr = (a, b, min = 0) => {
+  if (Math.max(a, b) - min === 0) {
+    return 1
+  }
+  return Math.min((Math.max(a, b) - Math.min(a, b)) / (Math.max(a, b) - min), 1)
+}
+
+const inRange = (value, start, end) => {
+  if (!isNumber(+value) || !isNumber(+start) || !isNumber(+end)) {
+    return false
+  }
+
+  return +start <= +value && +value <= +end
+}
+
+Route.get('/corr', async ({ request, response }) => {
+  const { a, b } = request.all()
+  const corr = getCorr(a, b)
+  return response.res({ a, b, corr })
+})
+
+Route.get('/in-range', ({ request, response }) => {
+  const { start, end, value } = request.all()
+
+  return response.res(inRange(value, start, end))
 })
