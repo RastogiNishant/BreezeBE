@@ -160,12 +160,13 @@ class UserService {
   static async requestSendCodeForgotPassword(email, from_web = false) {
     const code = getHash(3)
     let user = null
+    email = encodeURI(email)
     try {
       user = await User.findByOrFail({ email })
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
       const deepLink_URL = from_web
-        ? `${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}`
+        ? `${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}&email=${email}`
         : `${process.env.DEEP_LINK}?type=newpassword&code=${code}`
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {

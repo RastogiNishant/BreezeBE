@@ -89,11 +89,15 @@ class CommonController {
     if (type === 'terms') {
       if (get(terms, 'id') === id) {
         auth.user.terms_id = id
+        auth.user.terms_acceptance_date = new Date()
+        auth.user.terms_acceptance_lang = auth.user.lang
         await auth.user.save()
       }
     } else if (type === 'agreement') {
       if (get(agreement, 'id') === id) {
         auth.user.agreements_id = id
+        auth.user.agreements_acceptance_date = new Date()
+        auth.user.agreements_acceptance_lang = auth.user.lang
         await auth.user.save()
       }
     }
