@@ -11,10 +11,6 @@ const HttpException = use('App/Exceptions/HttpException')
 const { DEVICE_TYPE_ANDROID, DEVICE_TYPE_IOS } = require('../constants')
 const UserService = use('App/Services/UserService')
 
-const {
-  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-} = require('../../app/constants')
-
 const AppType = {
   ANDROID: DEVICE_TYPE_ANDROID,
   IOS: DEVICE_TYPE_IOS,
@@ -35,7 +31,7 @@ google.options({
   auth: new JWT(
     process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     null,
-    GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+    process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
     [process.env.GOOGLE_AUTH_PUBLISHER]
   ),
 })
@@ -52,7 +48,7 @@ iap.config({
 
   googleServiceAccount: {
     clientEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    privateKey: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+    privateKey: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
   },
 
   /* Configurations all platforms */
@@ -221,7 +217,7 @@ class TenantPremiumPlanService {
           TenantPremiumPlanService.processPurchase(
             purchase.user_id,
             purchase.plan_id,
-            purchase.payment_plan,            
+            purchase.payment_plan,
             purchase.app,
             JSON.parse(purchase.latestReceipt)
           )

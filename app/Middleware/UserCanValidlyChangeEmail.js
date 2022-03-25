@@ -5,7 +5,7 @@
 const User = use('App/Models/User')
 const HttpException = use('App/Exceptions/HttpException')
 const { getAuthByRole } = require('../Libs/utils')
-const {ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH} = require('../constants')
+const { ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH } = require('../constants')
 
 class UserCanValidlyChangeEmail {
   /**
@@ -13,14 +13,17 @@ class UserCanValidlyChangeEmail {
    * @param {Request} ctx.request
    * @param {Function} next
    */
-  async handle ({ request, auth}, next) {
+  async handle({ request, auth }, next) {
     //let this pass if email is not set
-    if(!request.body.email) {
+    if (!request.body.email) {
       await next()
     } else {
       //lets find a user having this role and email
-      let user = await User.query().where('email', request.body.email).where('role', auth.user.role).first()
-      if(user) {
+      let user = await User.query()
+        .where('email', request.body.email)
+        .where('role', auth.user.role)
+        .first()
+      if (user) {
         throw new HttpException('This email already exists in our users. Please use another one.')
       }
       //validate password

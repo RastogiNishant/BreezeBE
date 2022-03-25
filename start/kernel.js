@@ -48,7 +48,8 @@ const namedMiddleware = {
   userCanValidlyChangeEmail: 'App/Middleware/UserCanValidlyChangeEmail',
   ViewEstateInvitationCodeExist: 'App/Middleware/ViewEstateInvitationCodeExist',
   ProspectHasNotRegisterYet: 'App/Middleware/ProspectHasNotRegisterYet',
-  EstateFoundByHash: 'App/Middleware/EstateFoundByHash'
+  EstateFoundByHash: 'App/Middleware/EstateFoundByHash',
+  UserWithEmailExists: 'App/Middleware/UserWithEmailExist',
 }
 
 /*
