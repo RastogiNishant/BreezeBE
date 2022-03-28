@@ -682,7 +682,6 @@ class AccountController {
   async sendCodeForgotPassword({ request, response }) {
     const { email, from_web } = request.only(['email', 'from_web'])
 
-throw new HttpException('Checking Reflection ForgotPassword!!!', 400)
     try {
       await UserService.requestSendCodeForgotPassword(email, from_web)
     } catch (e) {
