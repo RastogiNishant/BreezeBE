@@ -453,6 +453,7 @@ const constants = {
     'rooms_number',
     'floor',
     'number_floors',
+    'house_number',
     'status',
     'match',
     'net_rent',

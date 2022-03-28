@@ -82,6 +82,16 @@ Route.put('/api/v1/updateDeviceToken', 'AccountController.updateDeviceToken').mi
   'valid:DeviceToken',
 ])
 
+//Payment Methods
+Route.group(() => {
+  Route.post('', 'PaymentMethodController.post')
+  Route.get('', 'PaymentMethodController.get')
+  Route.put('', 'PaymentMethodController.update')
+})
+  .prefix('/api/v1/landlord/paymentMethod')
+  .middleware(['auth:jwtLandlord'])
+
+
 //Billing Address
 Route.group(() => {
   Route.post('', 'BillingAddressController.addBillingAddress')
