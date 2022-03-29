@@ -59,7 +59,7 @@ class UserService {
       .orderBy('id', 'desc')
       .first()
     userData.terms_id = latestTerm.id
-    userData.agreement_id = latestAgreement.id
+    userData.agreements_id = latestAgreement.id
 
     const user = await User.createItem(userData)
     if (user.role === ROLE_USER) {
