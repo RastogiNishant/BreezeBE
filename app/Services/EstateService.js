@@ -70,7 +70,7 @@ class EstateService {
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
-    
+
     let estate = await Estate.createItem({
       ...data,
       user_id: userId,
@@ -78,15 +78,12 @@ class EstateService {
       status: STATUS_DRAFT,
     })
 
-    const estateHash = await Estate.query()
-      .select('hash')
-      .where('id', estate.id)
-      .firstOrFail()
+    const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
-    const estateData = await estate.toJSON({isOwner:true})    
+    const estateData = await estate.toJSON({ isOwner: true })
     return {
-      hash:estateHash.hash,
-      ...estateData
+      hash: estateHash.hash,
+      ...estateData,
     }
   }
 
@@ -526,7 +523,6 @@ class EstateService {
       })
       .with('files')
       .orderBy('_m.percent', 'DESC')
-    
   }
 
   /**
