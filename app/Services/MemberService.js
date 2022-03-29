@@ -9,12 +9,16 @@ const { isEmpty } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
+const random = require('random')
+const DataStorage = use('DataStorage')
+const SMSService = use('App/Services/SMSService')
 
 const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
   ROLE_USER,
+  SMS_MEMBER_PHONE_VERIFY_PREFIX
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -146,6 +150,48 @@ class MemberService {
       .where({ user_id: userId })
   }
 
+  static async sendSMS(memberId, phone) {
+    const code = random.int(1000, 9999)
+    await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, { ttl: 3600 })
+    await SMSService.send(phone, code)
+  }
+
+  static async confirmSMS(memberId, phone, code) {
+    const member = await Member.query()
+      .select('id')
+      .where('id', memberId)
+      .where('phone', phone)
+      .firstOrFail()
+
+    const data = await DataStorage.getItem(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+
+    if (!data) {
+      throw new HttpException('No code', 400)
+    }
+
+    if (parseInt(data.code) !== parseInt(code)) {
+      await DataStorage.remove(user.id, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+
+      if (parseInt(data.count) <= 0) {
+        throw new HttpException('Your code invalid any more', 400)
+      }
+
+      await DataStorage.setItem(
+        memberId,
+        { code: data.code, count: parseInt(data.count) - 1 },
+        SMS_MEMBER_PHONE_VERIFY_PREFIX,
+        { ttl: 3600 }
+      )
+      throw new HttpException('Not Correct', 400)
+    }
+
+    await Member.query().where({ id: memberId }).update({
+      phone_verified: true,
+    })
+
+    await DataStorage.remove(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+    return true
+  }  
   /**
    *
    */

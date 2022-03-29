@@ -40,6 +40,7 @@ const {
   LOG_TYPE_SIGN_UP,
   SIGN_IN_METHOD_GOOGLE,
 } = require('../constants')
+
 const { logEvent } = require('./TrackingService.js')
 
 class UserService {

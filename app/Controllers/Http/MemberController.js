@@ -53,6 +53,27 @@ class MemberController {
     response.res(members)
   }
 
+  async confirmBySMS({ request, response }) {
+    const { member_id, phone, code } = request.all()
+    try {
+      await MemberService.confirmSMS(member_id, phone, code)
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async sendUserConfirmBySMS({ request, response }) {
+    const { member_id, phone } = request.all()
+
+    try {
+      await MemberService.sendSMS(member_id, phone)
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   /**
    *
    */

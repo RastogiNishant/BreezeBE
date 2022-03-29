@@ -476,6 +476,7 @@ const constants = {
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
+  SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',  
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
