@@ -683,9 +683,6 @@ class UserService {
       .fetch()
   }
 
-  //TODO: update user "owner_id" if adults disconnect each other
-
-  //TODO: check
   static async housekeeperSignup(ownerId, email, password, firstname, lang) {
     await User.query().where('id', ownerId).firstOrFail()
 
@@ -704,6 +701,8 @@ class UserService {
         },
         trx
       )
+
+      await Tenant.create({ user_id: user.id }, trx)
 
       await UserService.sendConfirmEmail(user)
       await trx.commit()
@@ -759,7 +758,7 @@ class UserService {
   }
 
   static async removeUserOwnerId(user_id, trx) {
-    return Database.table('users').where('id', user_id).update({ owner_id: null }, trx)
+    return User.query().where('id', user_id).update({ owner_id: null }, trx)
   }
 
   static async proceedBuddyInviteLink(uid, tenantId) {

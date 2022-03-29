@@ -5,11 +5,12 @@ const IncomeProof = use('App/Models/IncomeProof')
 const MemberService = use('App/Services/MemberService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const UserService = use('App/Services/UserService')
+const TenantService = use('App/Services/TenantService')
 const Member = use('App/Models/Member')
-const DataStorage = use('DataStorage')
+const User = use('App/Models/User')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
-const { omit, pick } = require('lodash')
+const { omit } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
@@ -53,52 +54,83 @@ class MemberController {
     response.res(members)
   }
 
+  async initalizeTenantAdults({ request, response, auth }) {
+    const { selected_adults_count } = request.all()
+    const user_id = auth.user.id
+    const trx = await Database.beginTransaction()
+
+    try {
+      const isInitializedAlready = await TenantService.checkAdultsInitialized(user_id)
+
+      if (!isInitializedAlready) {
+        const member = await MemberService.createMember({}, user_id, trx)
+        await Promise.all([
+          MemberService.calcTenantMemberData(user_id, trx),
+          TenantService.updateSelectedAdultsCount(user_id, selected_adults_count),
+        ])
+        await trx.commit()
+        return response.res(member)
+      } else {
+        trx.rollback()
+        await TenantService.updateSelectedAdultsCount(user_id, selected_adults_count),
+          response.res(null)
+      }
+    } catch (e) {
+      trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   /**
    *
    */
   async addMember({ request, auth, response }) {
-    const data = request.all()
-
-    const files = await File.saveRequestFiles(request, [
-      { field: 'avatar', mime: imageMimes, isPublic: true },
-      { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
-      { field: 'debt_proof', mime: docMimes, isPublic: false },
-    ])
-
-    const user_id = auth.user.id
-    const trx = await Database.beginTransaction()
-    if (data.email) {
-      const member = await Member.query()
-        .select('email')
-        .where('email', data.email)
-        // .whereNotNull('owner_user_id')
-        //TODO: look the above line, I think email should be unique for member.
-        .first()
-
-      if (member) {
-        throw new HttpException('Email exists', 400)
-      }
-    }
     try {
-      const result = await MemberService.createMember({ ...data, ...files }, user_id, trx)
-      await MemberService.calcTenantMemberData(user_id, trx)
+      const data = request.all()
 
-      /**
-       * Created by YY
-       * if an adult A is going to let his profile visible to adult B who is created newly
-       *  */
+      const files = await File.saveRequestFiles(request, [
+        { field: 'avatar', mime: imageMimes, isPublic: true },
+        { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
+        { field: 'debt_proof', mime: docMimes, isPublic: false },
+      ])
 
-      if (data.visibility_to_other === VISIBLE_TO_SPECIFIC) {
-        Event.fire('memberPermission:create', result.id, user_id)
-      }
-      Event.fire('tenant::update', user_id)
-      trx.commit()
-
+      const user_id = auth.user.id
+      const trx = await Database.beginTransaction()
       if (data.email) {
-        await MemberService.sendInvitationCode(result.id, user_id)
-      }
+        const member = await Member.query().select('email').where('email', data.email).first()
 
-      response.res(result)
+        if (member) {
+          throw new HttpException('Member already exists with this email', 400)
+        }
+
+        const existingUser = await User.query()
+          .where({ email: data.email, role: ROLE_USER })
+          .first()
+
+        if (existingUser && existingUser.owner_id) {
+          throw new HttpException('This user is a household already.', 400)
+        }
+
+        const result = await MemberService.createMember({ ...data, ...files }, user_id, trx)
+        await MemberService.calcTenantMemberData(user_id, trx)
+
+        /**
+         * Created by YY
+         * if an adult A is going to let his profile visible to adult B who is created newly
+         *  */
+
+        if (data.visibility_to_other === VISIBLE_TO_SPECIFIC) {
+          Event.fire('memberPermission:create', result.id, user_id)
+        }
+        Event.fire('tenant::update', user_id)
+        trx.commit()
+
+        await MemberService.sendInvitationCode(result.id, user_id)
+
+        response.res(result)
+      } else {
+        throw new HttpException('You should specify email to add member', 400)
+      }
     } catch (e) {
       trx.rollback()
       throw new HttpException(e.message, 400)
@@ -141,12 +173,18 @@ class MemberController {
    *
    */
   async removeMember({ request, auth, response }) {
+    //TODO: add condition to prevent user delete main adult
     const { id } = request.all()
     const trx = await Database.beginTransaction()
+
     try {
-      const member = await Member.query().where('id', id).first()
+      let member = await Member.query().where('id', id).first()
       if (!member) {
         throw new HttpException('Member not exists', 400)
+      } else if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
+        //if user trying to disconnect from the tenant that invited
+        //we will process it as, tenant is trying to remove household
+        member = await Member.query().where('owner_user_id', auth.user.id).first()
       } else if (member.user_id !== auth.user.id && member.owner_user_id !== auth.user.id) {
         throw new HttpException('Permission denied', 400)
       }
@@ -157,6 +195,8 @@ class MemberController {
        * Need to confirm later with the customer
        */
 
+      /** @OsmanKanadikirik We don't need to delete the account, we should let the member continue to using app as a tenant */
+
       const owner_id = member.owner_user_id
       const user_id = member.user_id
 
@@ -164,6 +204,8 @@ class MemberController {
         await member.updateItem({
           user_id: owner_id,
           owner_user_id: null,
+          email: null,
+          code: null,
         })
         await MemberService.calcTenantMemberData(owner_id, trx)
         await UserService.removeUserOwnerId(owner_id, trx)
@@ -367,10 +409,10 @@ class MemberController {
     }
   }
 
-  async confirmInviteCode({ request, response }) {
+  async confirmInviteCode({ request, response, auth }) {
     const { email, code } = request.all()
     try {
-      response.res(await MemberService.getInvitationCode(email, code))
+      response.res(await MemberService.getInvitationCode(email, code, auth.user))
     } catch (e) {
       throw new HttpException(e.message, 400)
     }

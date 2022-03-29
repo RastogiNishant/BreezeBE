@@ -396,13 +396,15 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
 // Tenant members
 
 Route.group(() => {
+  Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
+    'valid:InitializeAdults',
+  ])
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
   Route.post('/visible', 'MemberController.showMe').middleware([
     'valid:MemberId,ProfileVisibilityToOther',
   ])
-  Route.post('/', 'MemberController.addMember').middleware(['valid:CreateMember'])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
 })
   .prefix('api/v1/tenant/members')
@@ -430,7 +432,7 @@ Route.group(() => {
 
 Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
   .prefix('api/v1/tenant/members')
-  .middleware(['valid:InvitationCode'])
+  .middleware(['auth:jwt,valid:InvitationCode'])
 
 // Add income files
 Route.group(() => {

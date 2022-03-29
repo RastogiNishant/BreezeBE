@@ -14,7 +14,6 @@ const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
-  ROLE_USER,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -277,20 +276,39 @@ class MemberService {
     }
   }
 
-  static async getInvitationCode(email, code) {
-    const member = await Member.query()
-      .select(['id', 'user_id'])
-      .where('email', email)
-      .where('code', code)
-      .firstOrFail()
+  static async getInvitationCode(email, code, user) {
+    const trx = await Database.beginTransaction()
+    try {
+      const member = await Member.query()
+        .select(['id', 'user_id'])
+        .where('email', email)
+        .where('code', code)
+        .firstOrFail()
 
-    await Member.query()
-      .where({ id: member.id, user_id: member.user_id })
-      .update({
-        is_verified: true,
-        published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-      })
-    return member
+      const updatePromises = []
+
+      user.owner_id = member.user_id
+      updatePromises.push(user.save(trx))
+
+      const existingTenantMembers = await Member.query().where('user_id', user.id).fetch().rows
+
+      for (let i = 0; i < existingTenantMembers.length; i++) {
+        const existingTenantMember = existingTenantMembers[i]
+        existingTenantMember.user_id = member.user_id
+        existingTenantMember.owner_user_id = user.id
+        existingTenantMember.is_verified = true
+        updatePromises.push(existingTenantMember.save(trx))
+      }
+
+      updatePromises.push(member.delete(trx))
+
+      await Promise.all(updatePromises)
+      await trx.commit()
+      return true
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
