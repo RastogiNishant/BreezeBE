@@ -2,6 +2,10 @@ components:
   schemas:
     login:
       type: object
+      required:
+        - email
+        - password
+        - role
       properties:
         email:
           type: string
@@ -16,9 +20,8 @@ components:
           example: 1
         device_token:
           type: string
-          nullable: true
-          example: null
-    user:
+          example: ""
+    User:
       type: object
       properties:
         id:
@@ -38,7 +41,7 @@ components:
           type: string
         phone:
           type: string
-          example: +423265455126
+          example: "+423265455126"
         birthday:
           type: string
           format: date-time
@@ -202,6 +205,7 @@ components:
           required: true
         phone:
           type: string
+          example: "+423265455126"
         firstname:
           type: string
           example: Firstname
@@ -230,6 +234,108 @@ components:
     UpdateUser:
       type: object
       properties:
-                
-    
+        email:
+          type: string
+          format: email
+          example: you@email.com
+          required: true
+        password:
+          type: string
+          example: yourpassword
+          required: true
+        role:
+          type: integer
+          enum: [1, 3]
+          example: 1
+          required: true
+        sex:
+          type: integer
+          example: 1
+          enum: [1, 2]
+          required: true
+        phone:
+          type: string
+          example: "+423265455126"
+        firstname:
+          type: string
+          example: Firstname
+        secondname:
+          type: string
+          example: Secondname
+        birthday:
+          type: string
+          format: date
+          default: '1970-01-01'
+          example: '1970-01-01'
+          required: true
+        lang:
+          type: string
+          example: en
+          enum: ['en', 'de']
+          default: 'en'
+          required: true
+        lord_size:
+          type: number
+          enum: [1, 2, 3]
+        request_full_profile:
+          type: boolean
+    UpdateProfilePicture:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+    ResendSMSInput:
+      type: object
+      required:
+        - email
+        - phone
+      properties:
+        email:
+          type: string
+          example: your@email.com
+        phone:
+          type: string
+          example: "+491234567893"
+    CreateUserResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          $ref: '#/components/schemas/User'
+    HousekeeperSignupInput:
+      type: object
+      required:
+        - email
+        - password
+        - confirmPassword
+        - member_id
+        - owner_id
+        - code
+        - phone
+      properties:
+        email:
+          type: string
+          format: email
+          example: your@email.com
+        password:
+          type: string
+          example: yourpassword
+        confirmPassword:
+          type: string
+          example: yourpassword
+        member_id:
+          type: number
+          example: 1
+        owner_id:
+          type: number
+          example: 1
+        code:
+          type: string
+          example: CODE
+        phone:
+          type: string
+          example: "+4912345678909"
           

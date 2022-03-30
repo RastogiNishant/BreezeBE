@@ -63,24 +63,11 @@ definitions:
     example: 'Need to get from /api/v1/admin/tenant/paymentplan'
 
 paths:
-  /api/v1/resendsms:
-    post:
-      tags: [account]
-      description: Resend SMS for confirming Signup
-      produces: [application/json]
-      parameters:
-        - name: email
-          in: formData
-          type: string
-          required: true
-        - name: phone
-          in: formData
-          type: string
-      responses: [200]      
-
+  
   /api/v1/confirmsms:
     post:
-      tags: [account]
+      tags: 
+        - User Account
       description: ConfimSMS for housekeeper sign up
       produces: [application/json]
       parameters:
@@ -99,7 +86,8 @@ paths:
 
   /api/v1/confirm_email:
     get:
-      tags: [account]
+      tags: 
+        - User Account
       description: Login to the application
       produces: [application/json]
       parameters:
@@ -116,7 +104,8 @@ paths:
 
   /api/v1/users/reconfirm:
     post:
-      tags: [account]
+      tags: 
+        - User Account
       description: Resend account confirmation email
       produces: [application/json]
       parameters:
@@ -125,53 +114,12 @@ paths:
           type: number
           required: true
       responses: [200]
-
-  /api/v1/users:
-    put:
-      security: [bearerAuth: []]
-      tags: [account]
-      description: Update user data
-      produces: [application/json]
-      parameters:
-        - name: firstname
-          in: formData
-          type: string
-        - name: secondname
-          in: formData
-          type: string
-        - name: sex
-          in: formData
-          type: string
-          enum: ['1', '2']
-        - name: phone
-          in: formData
-          type: string
-        - name: firstname
-          in: formData
-          type: string
-        - name: secondname
-          in: formData
-          type: string
-        - name: birthday
-          in: formData
-          type: string
-        - name: lang
-          in: formData
-          type: string
-          enum: ['en', 'de']
-        - name: avatar
-          in: formData
-          type: string
-        - $ref: '#/definitions/avatar'
-        - $ref: '#/definitions/lord_size'
-        - $ref: '#/definitions/request_full_profile'
-        - $ref: '#/definitions/notice'
-      responses: [200]
-
+  
   /api/v1/users/avatar:
     put:
       security: [bearerAuth: []]
-      tags: [account]
+      tags: 
+        - User Account
       description: Update user avatar
       produces: [application/json]
       parameters:
@@ -184,7 +132,8 @@ paths:
   /api/v1/users/password:
     put:
       security: [bearerAuth: []]
-      tags: [account]
+      tags: 
+        - User Account
       description: Update user password
       produces: [application/json]
       parameters:
@@ -200,7 +149,8 @@ paths:
 
   /api/v1/users/password/reset:
     put:
-      tags: [account]
+      tags: 
+        - User Account
       description: Send email to reset password
       produces: [application/json]
       parameters:
@@ -212,7 +162,8 @@ paths:
 
   /api/v1/users/password/confirm:
     put:
-      tags: [account]
+      tags: 
+        - User Account
       description: Send code and confirm
       produces: [application/json]
       parameters:
@@ -229,7 +180,8 @@ paths:
   /api/v1/users/switch:
     post:
       security: [bearerAuth: []]
-      tags: [account]
+      tags: 
+        - User Account
       description: Switch user to another role
       produces: [application/json]
       responses: [200]
@@ -237,7 +189,8 @@ paths:
   /api/v1/users/tenant:
     put:
       security: [bearerAuth: []]
-      tags: [account]
+      tags: 
+        - User Account
       description: Update tenant user data
       produces: [application/json]
       responses: [200]

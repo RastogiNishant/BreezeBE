@@ -3,7 +3,8 @@ paths:
     post:
       summary: login
       description: Login the user
-      tags: [Accounts]
+      tags:
+        - User Account
       name: User Login
       requestBody:
         required: true
@@ -78,8 +79,10 @@ paths:
     get:
       summary: information of the current user
       description: Get all the information of the current user
-      tags: [Accounts]
-      security: [bearerAuth: []]
+      tags: 
+        - User Account
+      security: 
+        - bearerAuth: []
       name: The Current User
       responses:
         '200':
@@ -93,12 +96,14 @@ paths:
                     type: string
                     example: success
                   data:
-                    $ref: '#/components/schemas/user'
+                    $ref: '#/components/schemas/User'
     put:
       summary: update information of the current user
-      description: Update information of the current user
+      description: Update information of the current user. If profile picture is to be updated, requestBody must be multipart/form-data.
+        If email is to be updated, you need to pass current password as application/json or www-form. everything else could be application/json
+        or www-form.
       tags: 
-        - Accounts
+        - User Account
       security:
         - bearerAuth: []
       name: Update Current user
@@ -113,10 +118,70 @@ paths:
             type: object
             schema:
               $ref: '#/components/schemas/UpdateUser'
+          multipart/form-data:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateProfilePicture'
+      responses:
+        '200':
+          description: 'OK'
+          type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/User'
+  /api/v1/users:
+    put:
+      summary: update information of the current user
+      description: Update information of the current user. If profile picture is to be updated, requestBody must be multipart/form-data.
+        If email is to be updated, you need to pass current password as application/json or www-form. everything else could be application/json
+        or www-form.
+        This is the same as PUT /api/v1/me  
+      tags: 
+        - User Account
+      security:
+        - bearerAuth: []
+      name: Update Current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+          application/x-www-form-urlencoded:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateUser'
+          multipart/form-data:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateProfilePicture'
+      responses:
+        '200':
+          description: 'OK'
+          type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    $ref: '#/components/schemas/User'
   /api/v1/logout:
     post:
       security: [bearerAuth: []]
-      tags: [Accounts]
+      tags:
+        - User Account
       summary: logout
       description: Logs the user out. This will only remove device_token from db so application must do something with the jwt token (forget) to completely log the user out.
       name: Logout
@@ -130,17 +195,18 @@ paths:
                 $ref: '#/components/schemas/SuccessWithoutData'
   /api/v1/signup:
     post:
-      tags: [Accounts]
+      tags: 
+        - User Account
       summary: sign up
       description: Sign up to the application
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               type: object
-              $ref: '#/components/schemas/CreateUser'            
-          application/json:
+              $ref: '#/components/schemas/CreateUser'
+          application/x-www-form-urlencoded:
             schema:
               type: object
               $ref: '#/components/schemas/CreateUser'
@@ -150,50 +216,53 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessWithoutData'
+                $ref: '#/components/schemas/CreateUserResponse'
+  /api/v1/resendsms:
+    post:
+      tags: 
+        - User Account
+      description: Resend SMS for confirming Signup
+      summary: Buggy, HttpException is not defined
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendSMSInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendSMSInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
   /api/v1/housekeeperSignup:
     post:
-      tags: [account]
+      tags: 
+        - User Account
       description: Sign up as a housekeeper to the application. *****member_id and owner_id come from '/api/v1/confirmsms *****
+      summary: signup as a housekeeper
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              $ref: 
-          
-      produces: [application/json]
-      parameters:
-        - name: email
-          in: formData
-          type: string
-          required: true
-        - name: password
-          in: formData
-          type: string
-          required: true
-        - name: confirmPassword
-          in: formData
-          type: string
-          required: true
-        - name: member_id
-          in: formData
-          type: number
-          required: true
-        - name: owner_id
-          in: formData
-          type: number
-          required: true
-        - name: code
-          in: formData
-          type: string
-          required: true          
-        - name: phone
-          in: formData
-          type: string
-          required: true
-      responses: [200]      
+              $ref: '#/components/schemas/HousekeeperSignupInput'
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              $ref: '#/components/schemas/HousekeeperSignupInput'
+      responses:
+        '200':
+          application/json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/HousekeeperSignupReturn'
+      
 
   
 

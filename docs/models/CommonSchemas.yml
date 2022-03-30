@@ -1,0 +1,24 @@
+components:
+  schemas:
+    CommonReturn:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+          summary: success when ok error when something's wrong
+        data:
+          type: boolean
+          example: true
+    SuccessWithoutData:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+    PreferencesReturn:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success

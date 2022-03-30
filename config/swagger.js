@@ -8,7 +8,8 @@ module.exports = {
     swaggerDefinition: {
       info: {
         title: 'Breeze Backend API',
-        description: 'Breeze backend API documentation.',
+        description:
+          'Breeze backend API documentation.\n\nNotes to Developers/Testers: Login first, copy data.token, then paste to Authorize.',
         version: '2.0.0',
       },
       openapi: '3.0.0',
@@ -33,7 +34,7 @@ module.exports = {
       ],
       tags: [
         {
-          name: 'Accounts',
+          name: 'User Account',
           description:
             'All about authentication, information about Landlords, Tenants/Prospects, etc.',
         },
