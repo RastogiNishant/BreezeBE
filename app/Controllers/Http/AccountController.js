@@ -463,7 +463,10 @@ class AccountController {
         role: user.role,
       })
       if (!user.company_id) {
-        user.company_name = `${user.firstname} ${user.secondname}`.trim()
+        console.log('company', user.firstname, user.secondname)
+        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+        user.company_name = `${company_firstname} ${company_secondname}`.trim()
       } else {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
