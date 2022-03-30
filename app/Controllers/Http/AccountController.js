@@ -463,7 +463,11 @@ class AccountController {
         role: user.role,
       })
       if (!user.company_id) {
-        user.company_name = `${user.firstname} ${user.secondname}`.trim()
+        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+        const company_name = `${company_firstname} ${company_secondname}`.trim()
+        user.company_name = company_name
+        user.company = null
       } else {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
@@ -576,8 +580,8 @@ class AccountController {
       await user.save()
       user = user.toJSON({ isOwner: true })
     } else {
-      if (data.company_name) {
-        let company_name = data.company_name
+      if (data.company_name && data.company_name.trim()) {
+        let company_name = data.company_name.trim()
         company = await Company.findOrCreate(
           { name: company_name, user_id: auth.user.id },
           { name: company_name, user_id: auth.user.id }
@@ -593,7 +597,11 @@ class AccountController {
       user.company_name = company.name
       user.company = company
     } else {
-      user.company = `${user.firstname} ${user.secondname}`.trim()
+      const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+      const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+      const company_name = `${company_firstname} ${company_secondname}`.trim()
+      user.company_name = company_name
+      user.company = null
     }
     return response.res(user)
   }
