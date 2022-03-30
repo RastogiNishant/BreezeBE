@@ -133,8 +133,14 @@ class User extends Model {
   tenant() {
     return this.hasOne('App/Models/Tenant', 'id', 'user_id')
   }
+  household() {
+    return this.hasOne('App/Models/Tenant', 'owner_id', 'user_id')
+  }
   plan() {
     return this.belongsTo('App/Models/Plan', 'plan_id', 'id')
+  }
+  tenantPaymentPlan() {
+    return this.belongsTo('App/Models/TenantPaymentPlan', 'payment_plan', 'id')
   }
   /**
    *

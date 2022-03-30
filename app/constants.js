@@ -1,9 +1,16 @@
 const constants = {
+
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY:"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDa/EMjRo5F0YRM\nMvjQ77K1tcz1HWj699mWQoEf2g36G4Oy2dum256feTsZKeJhoMkjShLNgcb7uWHY\n33Zi7MKlYpMuW3phlah7eibZuNxwrerl3Ru/S9P6vaiSEVRWgdHObsb0Nt3PPewO\nkQU33Rtt2CFFtJDgHDAvpmx1XYRQrQtjy2zFF4+lOU6UOeIW0ViqTD129DeQr85D\ndNIGUi3gbacwBO6ZqhuhrVdalZRgf9vvvsiKrhILwXZVGEgpb97ti1h1scQejpf6\nzP8PEB5qE3xNP0gb11y1gCwVMDSCkM6y0QTU+XDcf1DMPSMyvmWDOk6zjcym3cB3\n6tReshYlAgMBAAECggEAAcRvQpxfPxMruGq2j9xzX9yNq30XMQ6phU6C7hp2Kj/T\nw7CBluU8Wz32UGPCZYvPkRbtXmu5oE6fdR7ekiSmMIFXvelz7CWHTycjTkwGjsE/\nPVItbGaPWX1zhr7tjueBeuNG0fHpvzJZJ/KbLRd+Jm2MB9znHhaUJqT280kz2BZ9\nmxN6zTitRIhtUwGjLTB8Y4BF6cUio7T9OAVoqcbs4SLnQEddKxYpoWzSp/fgL/nc\nAgu8g5/RsuyM8vMZ8X6gtW1bWYSyR6J0Bs7Rs/CCwS2aftExmSXw4ED1KISXlKYm\nBwMqinw6jkdTBOjljWeAjXp3z0nf1KTMy9Mwm8wmGQKBgQD9F+nl0EHscvCZdcZm\n2VYG7DxvMI9gT3WPEJyTg7cXCi4KJFEwYQfWwhRojDBzozP3vGtuioX5GCnsgR4p\nbexqLHf6o8GhnTFo/hU3hMqTTzOwHx/N4Sd+tVaCUJPsgW47MGL7b1ODIJuHelWo\nmKZCtAsdzBuqmjstD2+yyjya6QKBgQDdgBJ4nwOfoE02n5QvNrUpLDdf5nTGtqiE\nAOPFawxaH+Hug1FF43MYGb3CQe/C347F3/U5J84Tq8wyBVJNO0Ha7xr6A3Il+aXy\n4lVb9xHxYZurjErBqBgecNsYQTO6ZWAKYGpM18itPH4Kd5OaPUy2R6bsnYulpoba\n5nNrUQ6j3QKBgH9SLWdgKhnSBLmepw2MXhujcg+ZhTc1IfWzrKEFDPE5PMn7VSCa\nX4ApKG0jwSgbPQRutDjq1NTn1AdXOR4sX1dWQZFEGh+8XWPtFi1UzzfmCyGZtr0y\nfFTg0sFB2fiLcDG0eMb2TTPVDojMARWMnW9G9aSqzmw3pHdZoZ524KApAoGBALz+\nXURccawPDDLyYG8Un+j8mFcUfUlca1cOp0o4d7aig5WOqJcYZokG1bndpuVA+UJv\nQH6/Lv/r03ROxBWv3RYgdIUk0Y4DgIxIgIrSupWaMkhikRrCAapfoyID6E4/132j\nHLBqYgkml2j49JFjgoP5iT1Vg+UYvPIkNhE4fWRlAoGAWytTAr8BEP3f5wYX5dsU\nv76wQB/GpQIx/plNWyE2E0RukcF9aNTXvyZQljSa84E9I/6P0RE3KDTYhmRA4yUm\nf1r0FltUOGWn98h73HFnOtt0Ed+X9CrZeL4XV4sdnOsLdXSVOSCJUju7xqz0E3zn\nxHC+EagA8Yxvdb8UpVAKJ6o=\n-----END PRIVATE KEY-----\n",
   ERROR_AGREEMENT_CONFIRM: 10020,
   ERROR_TERMS_CONFIRM: 10030,
   ERROR_BUDDY_EXISTS: 10110,
   ERROR_USER_INCOME_EXPIRE: 10140,
-
+  ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE: 10150,
+  ERROR_VIEW_INVITE_NOT_EXISTING: 10160,
+  ERROR_PROSPECT_HAS_ALREADY_REGISTERED: 10180,
+  ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH: 10210,
+  ERROR_ESTATE_NOT_FOUND_BY_HASH: 10220,
+  
   DEFAULT_LANG: 'en',
 
   FILE_TYPE_COVER: 'cover',
@@ -36,7 +43,6 @@ const constants = {
   ROLE_LANDLORD: 1,
   ROLE_USER: 3,
   ROLE_PROPERTY_MANAGER: 4,
-  ROLE_HOUSEHOLD: 5,
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
@@ -291,6 +297,9 @@ const constants = {
   MATCH_STATUS_COMMIT: 7,
   MATCH_STATUS_FINISH: 8,
 
+  TENANT_EMAIL_INVITE: 1,
+  TENANT_SMS_INVITE: 2,
+
   COMPANY_TYPE_PRIVATE: 'private',
   COMPANY_TYPE_PROPERTY_MANAGER: 'propMan',
   COMPANY_TYPE_PRIVATE_HOUSING: 'prHost',
@@ -336,6 +345,7 @@ const constants = {
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
+  SCHEDULED_MONTHLY_JOB: 'scheduledStartOfEveryMonth',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE: 'notification_landlord_fill_profile',
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY: 'notification_landlord_new_property',
@@ -360,6 +370,7 @@ const constants = {
   NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
   NOTICE_TYPE_PROSPECT_INVITE_IN: 'notification_prospect_invite_in',
   NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
+  NOTICE_TYPE_ZENDESK_NOTIFY: 'notification_zendesk_notify',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -384,6 +395,7 @@ const constants = {
   NOTICE_TYPE_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
   NOTICE_TYPE_VISIT_DELAY_ID: 27, // visit delayed
   NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID: 26,
+  NOTICE_TYPE_ZENDESK_NOTIFY_ID: 30,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -441,6 +453,7 @@ const constants = {
     'rooms_number',
     'floor',
     'number_floors',
+    'house_number',
     'status',
     'match',
     'net_rent',
@@ -461,6 +474,7 @@ const constants = {
     'address',
     'user_id',
     'available_date',
+    'others',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -471,6 +485,7 @@ const constants = {
   LOG_TYPE_PUBLISHED_PROPERTY: 'published_property',
   LOG_TYPE_PROPERTIES_IMPORTED: 'properties_imported',
   LOG_TYPE_INVITED: 'invited',
+  LOG_TYPE_GOT_INVITE: 'got_invite',
   LOG_TYPE_SHOWED: 'showed',
   LOG_TYPE_FINAL_MATCH_REQUEST: 'final_match_request',
   LOG_TYPE_FINAL_MATCH_APPROVAL: 'final_match_approval',
@@ -490,6 +505,14 @@ const constants = {
   SIGN_UP_METHOD_GOOGLE: 'google',
   SIGN_UP_METHOD_APPLE: 'apple',
   SIGN_UP_METHOD_EMAIL: 'email',
+
+  PLAN_FEATURE_COMMON: '',
+  PLAN_FEATURE_NEW: 'New',
+
+  VISIBLE_TO_NOBODY: 1,
+  VISIBLE_TO_EVERYBODY: 2,
+  VISIBLE_TO_SPECIFIC: 3,
+  VISIBLE_TO_HOUSEHOLD: 4,
 }
 
 module.exports = constants

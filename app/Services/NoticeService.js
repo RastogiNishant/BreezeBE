@@ -70,6 +70,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_ACTIVE,
   NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID,
+  NOTICE_TYPE_ZENDESK_NOTIFY_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -667,7 +668,7 @@ class NoticeService {
   /**
    *
    */
-  static async getUserNoticesList(userId, dateFrom, dateTo, limit = 20) {
+  static async getUserNoticesList(userId, dateFrom, dateTo, estate_id = null, limit = 20) {
     const query = Notice.query().orderBy('id', 'desc').where('user_id', userId).limit(limit)
     if (dateTo) {
       query.where('created_at', '>', moment.utc(dateTo).add(1, 'seconds').format(DATE_FORMAT))
@@ -813,6 +814,33 @@ class NoticeService {
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendChangeVisitTime([notice])
   }
+
+  /**
+   * 
+   * @param {*} userIds 
+   * @param {*} notification 
+   * 
+   * notification: {
+    "body": "Agent replied something something",
+    "title": "Agent replied",
+    "ticket_id": "5"
+    }
+   */
+  static async zendeskNotice(userIds, notification) {
+
+    const notices = userIds.map( function(id){
+      return {
+        user_id: id,
+        type: NOTICE_TYPE_ZENDESK_NOTIFY_ID,
+        data: {
+          ticket_id: notification.ticket_id?notification.ticket_id:''
+        },
+      }
+    })
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendZendeskNotification(notices, notification.title, notification.body)
+  }  
 }
 
 module.exports = NoticeService

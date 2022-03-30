@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class Image extends Model {
   static get columns() {
-    return ['id', 'room_id', 'url', 'disk']
+    return ['id', 'room_id', 'url', 'disk','order']
   }
 
   static get readonly() {

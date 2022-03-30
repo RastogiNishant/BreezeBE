@@ -14,6 +14,12 @@ const ImportService = use('App/Services/ImportService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
+const User = use('App/Models/User')
+const EstateViewInvite = use('App/Models/EstateViewInvite')
+const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
+const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
+const Database = use('Database')
+const randomstring = require('randomstring');
 
 const {
   STATUS_ACTIVE,
@@ -28,8 +34,11 @@ const {
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
   LOG_TYPE_PROPERTIES_IMPORTED,
+  ROLE_USER
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
+const { result } = require('lodash')
+const INVITE_CODE_STRING_LENGTH = 8;
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -139,7 +148,11 @@ class EstateController {
       .with('point')
       .with('files')
       .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE).with('images')
+        b.whereNot('status', STATUS_DELETE)
+          .with('images')
+          .orderBy('order', 'asc')
+          .orderBy('favorite', 'desc')
+          .orderBy('id', 'asc')
       })
       .first()
 
@@ -180,13 +193,11 @@ class EstateController {
   async extendEstate({ request, auth, response }) {
     const { estate_id, avail_duration } = request.all()
     const available_date = moment().add(avail_duration, 'hours').toDate()
-    console.log('available_date:', available_date)
     const estate = await EstateService.getQuery()
       .where('id', estate_id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .update({ available_date: available_date, status: STATUS_ACTIVE })
-    console.log(estate)
     response.res(estate)
   }
 
@@ -213,7 +224,7 @@ class EstateController {
         throw new HttpException('No excel format', 400)
       }
       const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, {}, false)
+      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
@@ -236,7 +247,7 @@ class EstateController {
         auth.user.id,
         'xls'
       )
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, {}, false)
+      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
@@ -615,6 +626,78 @@ class EstateController {
       .fetch()
     const duplicate = estate.rows.length > 0 ? false : true
     response.res(duplicate)
+  }
+
+  async getInviteToViewCode({request, auth, response}) {
+
+  }
+
+  async createInviteToViewCode({request, auth, response}) {
+    req.res(request.all())
+  }
+
+  async inviteToViewViaEmail({request, auth, response}) {
+    const estateId = request.params.estate_id || request.body.estate_id
+    const emails = request.body.emails;
+    
+    //Transaction start...
+    const trx = await Database.beginTransaction()
+    let code
+    //check if this estate already has an invite
+    const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
+    if(invitation) {
+      code = invitation.code
+    } else {
+      do {
+        //generate code
+        code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
+      } while (await EstateViewInvite.findBy('code', code))
+    }
+    
+    try {
+      let newInvite = new EstateViewInvite()
+      if( ! invitation) {
+        //this needs to be created
+        newInvite.invited_by = auth.user.id
+        newInvite.estate_id = estateId
+        newInvite.code = code
+        const result = await newInvite.save(trx)
+      } else {
+        newInvite = invitation;
+      }
+      
+      await Promise.all(
+        emails.map(async email => {
+          // see if this prospect is already a user
+          const userExists = await User.query().where('email', email).where('role', ROLE_USER).first(trx)
+          if(userExists) {
+            //we invite the user
+            await EstateViewInvitedUser.findOrCreate(
+              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
+              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
+              trx
+            )
+          } else {
+            //we add email
+            await EstateViewInvitedEmail.findOrCreate(
+              {email, estate_view_invite_id: newInvite.id},
+              {email, estate_view_invite_id: newInvite.id},
+              trx
+            )
+          }
+          //placeholder for now...          
+          console.log('sending email to ', email, 'code', code)
+        })
+      )
+      trx.commit()
+      //transaction end
+      return response.res({code})
+    } catch(e) {
+      console.log(e)
+      await trx.rollback()
+      //transaction failed
+      throw new HttpException('Failed to invite buddies to view estate.', 412)
+    }
   }
 }
 

@@ -13,6 +13,7 @@ class Member extends Model {
       'child',
       'sex',
       'phone',
+      'bio',
       'birthday',
       'email',
       'landlord_name',
@@ -32,7 +33,9 @@ class Member extends Model {
       'execution',
       'code',
       'published_at',
-      'is_verified'
+      'is_verified',
+      'owner_id',
+      'owner_user_id',
     ]
   }
 
@@ -40,7 +43,7 @@ class Member extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'user_id']
+    return ['id']
   }
 
   /**
@@ -55,6 +58,30 @@ class Member extends Model {
    */
   incomes() {
     return this.hasMany('App/Models/Income')
+  }
+
+  static get limitFieldsList() {
+    return [
+      'id',
+      'user_id',
+      'firstname',
+      'secondname',
+      'child',
+      'phone',
+      'email',
+      'birthday',
+      'sex',
+      'avatar',
+      'share',
+      'landlord_name',
+      'landlord_phone',
+      'landlord_email',
+      'last_address',
+      'published_at',
+      'is_verified',
+      'owner_id',
+      'owner_user_id',
+    ]
   }
 }
 

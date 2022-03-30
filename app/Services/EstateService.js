@@ -70,12 +70,21 @@ class EstateService {
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
-    return Estate.createItem({
+
+    let estate = await Estate.createItem({
       ...data,
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
     })
+
+    const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+
+    const estateData = await estate.toJSON({ isOwner: true })
+    return {
+      hash: estateHash.hash,
+      ...estateData,
+    }
   }
 
   /**
@@ -84,6 +93,7 @@ class EstateService {
   static getEstates(params = {}) {
     const query = Estate.query()
       .withCount('visits')
+      .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
       .withCount('inviteBuddies')
@@ -487,6 +497,9 @@ class EstateService {
 
     return Estate.query()
       .select('estates.*')
+      .withCount('knocked', function (m) {
+        m.whereNotIn('estate_id', exclude)
+      })
       .select(Database.raw(`_m.percent AS match`))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
@@ -563,6 +576,7 @@ class EstateService {
     return (
       query
         .select('estates.*')
+        .withCount('knocked')
         .with('rooms', function (b) {
           b.whereNot('status', STATUS_DELETE).with('images')
         })

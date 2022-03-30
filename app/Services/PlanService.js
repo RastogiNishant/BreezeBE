@@ -33,7 +33,9 @@ class PlanService {
   }
 
   static async getPlan(id) {
-    return await Plan.query().where('id', id).first()
+    return await Plan.query()
+      .with('planOption')
+      .where('id', id).first()
   }
 
   static async getPlanAll() {

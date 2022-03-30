@@ -6,7 +6,7 @@ const Model = require('./BaseModel')
 
 class Room extends Model {
   static get columns() {
-    return ['id', 'estate_id', 'type', 'area', 'status', 'options', 'name', 'cover']
+    return ['id', 'estate_id', 'type', 'area', 'status', 'options', 'name', 'cover', 'favorite', 'order']
   }
 
   static get readonly() {

@@ -1,5 +1,6 @@
 'use strict'
 
+const { countBy } = require('lodash')
 const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
@@ -18,6 +19,7 @@ const {
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER
 } = require('../../constants')
+const ImageService = require('../../Services/ImageService')
 class RoomController {
   /**
    *
@@ -36,6 +38,12 @@ class RoomController {
         .whereIn('user_id', userIds)
         .firstOrFail()
       
+      if( roomData.favorite ) {
+        await Room.query()
+          .where('estate_id', estate_id)
+          .where('type', roomData.type)
+          .update({'favorite':false })
+      }
       const room = await Room.createItem({
         ...roomData,
         estate_id,
@@ -66,6 +74,12 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
+    if( data.favorite ) {
+      await Room.query()
+        .where('estate_id', estate_id)
+        .where('type', data.type)        
+        .update({'favorite':false })
+    }    
     room.merge(data)
     await room.save()
     Event.fire('estate::update', estate_id)
@@ -88,6 +102,40 @@ class RoomController {
     response.res(true)
   }
 
+  async updateOrder({request, auth, response}) {
+    const {ids} = request.all()
+    const roomIds = await RoomService.getRoomIds(auth.user.id, ids)
+    if( roomIds.length != ids.length  ) {
+      throw new HttpException('Some roomids don\'t exist')
+    }
+
+    await Promise.all(
+      ids.map(async(id, index) => {
+        await Room.query()
+        .where('id', id)
+        .update({order:index+1})
+      })
+    )
+    response.res(true)
+  }
+
+  async orderRoomPhoto({request, auth, response}) {
+    const { room_id, ids } = request.all()
+    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    if (!room) {
+      throw new HttpException('Invalid room', 404)
+    }
+    try{
+      const imageIds = await ImageService.getImageIds(room_id, ids)
+      if( imageIds.length != ids.length ) {
+        throw new HttpException('Some imageIds don\'t exist')        
+      }
+      await ImageService.updateOrder(ids)
+    }catch(e){
+      throw new HttpException(e.message, 400)
+    }
+    response.res(true)
+  }
   /**
    *
    */

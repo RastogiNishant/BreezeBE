@@ -25,7 +25,8 @@ class TenantController {
   async getProtectedFile({ request, auth, response }) {
     const { user_id, file_id, file_type, member_id } = request.all()
     if (auth.user.role === ROLE_USER) {
-      if (+auth.user.id !== +user_id) {
+      //MERGED TENANT
+      if (+auth.user.id !== +user_id && +auth.user.owner_id !== +user_id) {
         throw new HttpException('No access', 403)
       }
     } else if (auth.user.role === ROLE_LANDLORD) {
@@ -43,8 +44,16 @@ class TenantController {
       }
     }
 
+    const memberUserId =
+      auth.user.role === ROLE_LANDLORD ? user_id : auth.user.owner_id || auth.user.id
+
     try {
-      const link = await TenantService.getProtectedFileLink(user_id, file_id, file_type, member_id)
+      const link = await TenantService.getProtectedFileLink(
+        memberUserId,
+        file_id,
+        file_type,
+        member_id
+      )
       return response.res(link)
     } catch (e) {
       if (e.name === 'AppException') {

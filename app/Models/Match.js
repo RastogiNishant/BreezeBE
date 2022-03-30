@@ -8,6 +8,9 @@ class Match extends Model {
     return ['estate_id', 'status', 'percentage']
   }
 
+  user() {
+    return this.belongsTo('App/Models/User', 'user_id', 'id')
+  }
 }
 
 module.exports = Match

@@ -1,5 +1,7 @@
 'use strict'
 
+const EstateFoundByHash = require('../app/Middleware/EstateFoundByHash')
+
 /** @type {import('@adonisjs/framework/src/Server')} */
 const Server = use('Server')
 
@@ -43,6 +45,11 @@ const namedMiddleware = {
   pagination: 'App/Middleware/Pagination',
   valid: 'App/Middleware/Validator',
   agreement: 'App/Middleware/Agreement',
+  userCanValidlyChangeEmail: 'App/Middleware/UserCanValidlyChangeEmail',
+  ViewEstateInvitationCodeExist: 'App/Middleware/ViewEstateInvitationCodeExist',
+  ProspectHasNotRegisterYet: 'App/Middleware/ProspectHasNotRegisterYet',
+  EstateFoundByHash: 'App/Middleware/EstateFoundByHash',
+  UserWithEmailExists: 'App/Middleware/UserWithEmailExist',
 }
 
 /*

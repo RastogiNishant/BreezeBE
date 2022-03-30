@@ -130,6 +130,7 @@ class Estate extends Model {
       'options',
       'avail_duration',
       'vacant_date',
+      'others',
     ]
   }
 
@@ -211,7 +212,7 @@ class Estate extends Model {
    *
    */
   user() {
-    return this.belongsTo('App/Models/Users', 'user_id', 'id')
+    return this.belongsTo('App/Models/User', 'user_id', 'id')
   }
 
   /**
@@ -226,6 +227,15 @@ class Estate extends Model {
    */
   rooms() {
     return this.hasMany('App/Models/Room')
+  }
+
+  /**
+   *
+   */
+   knocked() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_KNOCK,
+    ])
   }
 
   /**
@@ -322,7 +332,7 @@ class Estate extends Model {
    *
    */
   static getFinalPrice(e) {
-    return (parseFloat(e.net_rent) || 0) + (parseFloat(e.additional_costs) || 0)
+    return (parseFloat(e.net_rent) || 0) //+ (parseFloat(e.additional_costs) || 0)
   }
 
   /**
