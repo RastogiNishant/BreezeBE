@@ -16,14 +16,18 @@ module.exports = {
       servers: [
         {
           url: 'http://localhost:3000',
-          description: 'Development server',
+          description: 'Dev Local server',
         },
         {
-          url: 'https://api-dev.breeze4me.com',
+          url: 'https://api-dev.breeze4me.de',
+          description: 'Development Server',
+        },
+        {
+          url: 'https://api-staging.breeze4me.de',
           description: 'Staging Server',
         },
         {
-          url: 'https://api.breeze4me.com',
+          url: 'https://api.breeze4me.de',
           description: 'Production Server',
         },
       ],
