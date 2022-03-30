@@ -337,5 +337,33 @@ components:
           example: CODE
         phone:
           type: string
-          example: "+4912345678909"
+          example: "+491234567890"
+    ConfirmSMSForHousekeeperInput:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+          format: email
+          example: your@email.com          
+        code:
+          type: string
+          example: "1234"
+        phone:
+          type: string
+          example: "+491234567890"
+    UpdatePasswordInput:
+      type: object
+      required:
+        - current_password
+        - new_password
+      properties:
+        current_password:
+          type: string
+          example: mypassword
+        new_password:
+          type: string
+          example: mypassword
           

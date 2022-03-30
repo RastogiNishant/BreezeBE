@@ -258,18 +258,222 @@ paths:
               $ref: '#/components/schemas/HousekeeperSignupInput'
       responses:
         '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/HousekeeperSignupReturn'
+  /api/v1/confirmsms:
+    post:
+      tags: 
+        - User Account
+      description: ConfirmSMS for housekeeper sign up
+      summary: ConfirmSMS for housekeeper sign up
+      requestBody:
+        content:
           application/json:
             schema:
               type: object
-              $ref: '#/components/schemas/HousekeeperSignupReturn'
-      
-
-  
-
-
-
-                  
-
-
-
-                
+              $ref: '#/components/schemas/ConfirmSMSForHousekeeperInput'
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              $ref: '#/components/schemas/ConfirmSMSForHousekeeperInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CommonReturn'
+  /api/v1/confirm_email:
+    get:
+      tags: 
+        - User Account
+      description: Confirms user's email
+      summary: confirm user's email
+      parameters:
+        - name: code
+          in: query
+          type: string
+          description: 4 digits code
+          example: "1234"
+          required: true
+        - name: user_id
+          in: query
+          type: number
+          example: 1
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CommonReturn'
+  /api/v1/users/reconfirm:
+    post:
+      tags: 
+        - User Account
+      description: Resend account confirmation email
+      summary: resend account confirmation email
+      parameters:
+        - name: user_id
+          in: query
+          type: number
+          example: 13
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CommonReturn'
+  /api/v1/users/avatar:
+    put:
+      security:
+        - bearerAuth: []
+      tags: 
+        - User Account
+      description: Update user avatar
+      summary: update user avatar
+      requestBody:
+        content:
+          multipart/form-data:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdateProfilePicture'  
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CreateUserResponse'
+  /api/v1/users/password:
+    put:
+      security: [bearerAuth: []]
+      tags: 
+        - User Account
+      description: Update user password
+      summary: update user password
+      requestBody:
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordInput'
+          application/x-www-form-urlencoded:
+            type: object
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CommonReturn'
+        '400':
+          description: Error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: string
+                    example: Current password could not be verified! Please try again.
+                  code:
+                    type: integer
+                    example: 0
+  /api/v1/users/password/reset:
+    put:
+      tags: 
+        - User Account
+      description: Send email to reset password
+      summary: send reset link to email
+      requestBody:
+        content:
+          application/json:
+            required:
+              - email
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: your@email.com
+          application/x-www-form-urlencoded:
+            required:
+              - email
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: your@email.com
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/CommonReturn'
+  /api/v1/users/password/confirm:
+    put:
+      tags: 
+        - User Account
+      description: After requesting password reset on PUT /api/v1/users/password/reset,
+        we can open email and clicking the link there would allow us to change the current user's password.
+        We need to pass the code and new password
+      summary: change password with code
+      requestBody:
+        content:
+          application/json:
+            required:
+              - code
+              - password
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  example: P9N44CIUY9
+                password:
+                  type: string
+                  example: mypassword
+          application/x-www-form-urlencoded:
+            required:
+              - code
+              - password
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  example: P9N44CIUY9
+                password:
+                  type: string
+                  example: mypassword
+      responses: 
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/SuccessWithoutData'

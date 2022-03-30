@@ -55,7 +55,7 @@
 		"adonis-twilio-node": "^1.0.2",
 		"apple-signin-auth": "^1.5.1",
 		"aws-sdk": "^2.696.0",
-		"barudo-adonis-swagger": "github:barudo/adonis-swagger",
+		"barudo-adonis-swagger": "git+https://github.com/barudo/adonis-swagger.git",
 		"bent": "^7.3.12",
 		"bluebird": "^3.7.2",
 		"body-parser-xml": "^2.0.3",
