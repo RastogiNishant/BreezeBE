@@ -19,7 +19,7 @@ const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const Database = use('Database')
-const randomstring = require('randomstring');
+const randomstring = require('randomstring')
 
 const {
   STATUS_ACTIVE,
@@ -34,11 +34,11 @@ const {
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
   LOG_TYPE_PROPERTIES_IMPORTED,
-  ROLE_USER
+  ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { result } = require('lodash')
-const INVITE_CODE_STRING_LENGTH = 8;
+const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -628,71 +628,72 @@ class EstateController {
     response.res(duplicate)
   }
 
-  async getInviteToViewCode({request, auth, response}) {
+  async getInviteToViewCode({ request, auth, response }) {}
 
-  }
-
-  async createInviteToViewCode({request, auth, response}) {
+  async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
   }
 
-  async inviteToViewViaEmail({request, auth, response}) {
+  async inviteToViewViaEmail({ request, auth, response }) {
     const estateId = request.params.estate_id || request.body.estate_id
-    const emails = request.body.emails;
-    
+    const emails = request.body.emails
+
     //Transaction start...
     const trx = await Database.beginTransaction()
     let code
     //check if this estate already has an invite
     const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
-    if(invitation) {
+    if (invitation) {
       code = invitation.code
     } else {
       do {
         //generate code
-        code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
+        code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
       } while (await EstateViewInvite.findBy('code', code))
     }
-    
+
     try {
       let newInvite = new EstateViewInvite()
-      if( ! invitation) {
+      if (!invitation) {
         //this needs to be created
         newInvite.invited_by = auth.user.id
         newInvite.estate_id = estateId
         newInvite.code = code
         const result = await newInvite.save(trx)
       } else {
-        newInvite = invitation;
+        newInvite = invitation
       }
-      
+
       await Promise.all(
-        emails.map(async email => {
+        emails.map(async (email) => {
           // see if this prospect is already a user
-          const userExists = await User.query().where('email', email).where('role', ROLE_USER).first(trx)
-          if(userExists) {
+          const userExists = await User.query()
+            .where('email', email)
+            .where('role', ROLE_USER)
+            .first(trx)
+          if (userExists) {
             //we invite the user
             await EstateViewInvitedUser.findOrCreate(
-              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
-              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
+              { user_id: userExists.id, estate_view_invite_id: newInvite.id },
+              { user_id: userExists.id, estate_view_invite_id: newInvite.id },
               trx
             )
           } else {
             //we add email
             await EstateViewInvitedEmail.findOrCreate(
-              {email, estate_view_invite_id: newInvite.id},
-              {email, estate_view_invite_id: newInvite.id},
+              { email, estate_view_invite_id: newInvite.id },
+              { email, estate_view_invite_id: newInvite.id },
               trx
             )
           }
-          //placeholder for now...          
+          //placeholder for now...
           console.log('sending email to ', email, 'code', code)
         })
       )
       trx.commit()
       //transaction end
-      return response.res({code})
-    } catch(e) {
+      return response.res({ code })
+    } catch (e) {
       console.log(e)
       await trx.rollback()
       //transaction failed
