@@ -2,6 +2,7 @@ const xlsx = require('node-xlsx')
 const { get, has, trim, isEmpty, reduce, isString, isFunction } = require('lodash')
 const AppException = use('App/Exceptions/AppException')
 const schema = require('../Validators/CreateEstate').schema()
+const _ = require('lodash')
 
 const {
   PROPERTY_TYPE_APARTMENT,
@@ -140,6 +141,16 @@ const {
   KIDS_NO_KIDS,
   KIDS_TO_5,
   KIDS_UP_5,
+
+  ENERGY_TYPE_LOW_ENERGY,
+  ENERGY_TYPE_PASSIVE_HOUSE,
+  ENERGY_TYPE_NEW_BUILDING_STANDARD,
+  ENERGY_TYPE_KFW40,
+  ENERGY_TYPE_KFW60,
+  ENERGY_TYPE_KFW55,
+  ENERGY_TYPE_KFW70,
+  ENERGY_TYPE_MINERGIE_CONSTRUCTION,
+  ENERGY_TYPE_MINERGIE_CERTIFIED,
 } = require('../constants')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -169,7 +180,8 @@ toBool = (v) => {
 
 class ExcelReader {
   constructor() {
-    this.headerCol = 1
+    this.headerCol = 4
+    this.sheetName = 'data'
     this.columns = [
       'No.',
       'Landlord email address',
@@ -186,8 +198,10 @@ class ExcelReader {
       'Use Type',
       'occupancy',
       'Ownership Type',
-      'Sale Type',
+      'Letting Status',
+      'Deal Type',
       'Net Rent',
+      'Ancillary costs',
       'Utility Costs',
       'Parking Rent',
       'Deposit',
@@ -238,6 +252,11 @@ class ExcelReader {
       'Area 6',
       'Name 6',
       'Photos 6',
+      'Salutation',
+      'Surname',
+      'Contract End',
+      'Tel',
+      'Email',
       'Salary Burden',
       'Rent Arrears',
       'Credit Score',
@@ -247,6 +266,91 @@ class ExcelReader {
       'Smoking Allowed',
       'Kids Allowed',
     ]
+    this.columnVar = this.columns = [
+      'No.',
+      'Landlord email address',
+      'Street',
+      'House Number',
+      'Extra Address',
+      'Postcode',
+      'City',
+      'Country',
+      'Property ID',
+      'Property Type',
+      'Apartment Type',
+      'House Type',
+      'Use Type',
+      'occupancy',
+      'Ownership Type',
+      'Letting Status',
+      'Deal Type',
+      'Net Rent',
+      'Ancillary costs',
+      'Utility Costs',
+      'Parking Rent',
+      'Deposit',
+      'Available from',
+      'Visit from',
+      'Currency',
+      'Construction',
+      'Last modernization',
+      'Building Status',
+      'Number of floors',
+      'Energy Consumption Value',
+      'Energy Carrier',
+      'Heating Type',
+      'Living Space',
+      'Number_of_Rooms',
+      'Floor',
+      'Apartment Status',
+      'Amenities Type',
+      'Furnished',
+      'Parking Space Type',
+      'Room 1',
+      'Tags 1',
+      'Area 1',
+      'Name 1',
+      'Photos 1',
+      'Room 2',
+      'Tags 2',
+      'Area 2',
+      'Name 2',
+      'Photos 2',
+      'Room 3',
+      'Tags 3',
+      'Area 3',
+      'Name 3',
+      'Photos 3',
+      'Room 4',
+      'Tags 4',
+      'Area 4',
+      'Name 4',
+      'Photos 4',
+      'Room 5',
+      'Tags 5',
+      'Area 5',
+      'Name 5',
+      'Photos 5',
+      'Room 6',
+      'Tags 6',
+      'Area 6',
+      'Name 6',
+      'Photos 6',
+      'Salutation',
+      'Surname',
+      'Contract End',
+      'Tel',
+      'Email',
+      'Salary Burden',
+      'Rent Arrears',
+      'Credit Score',
+      'Tenant Age Min',
+      'Tenant Age Max',
+      'Family Status',
+      'Smoking Allowed',
+      'Kids Allowed',
+    ]
+
     this.dataMapping = {
       property_type: {
         apartment: PROPERTY_TYPE_APARTMENT,
@@ -304,6 +408,23 @@ class ExcelReader {
         leasing: MARKETING_TYPE_LEASING,
       },
       building_status: {
+        first_time_occupied: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+        part_complete_renovation_need: BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+        new: BUILDING_STATUS_NEW,
+        existing: BUILDING_STATUS_EXISTING,
+        part_fully_renovated: BUILDING_STATUS_PART_FULLY_RENOVATED,
+        partly_refurished: BUILDING_STATUS_PARTLY_REFURISHED,
+        in_need_of_renovation: BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+        ready_to_be_built: BUILDING_STATUS_READY_TO_BE_BUILT,
+        by_agreement: BUILDING_STATUS_BY_AGREEMENT,
+        modernized: BUILDING_STATUS_MODERNIZED,
+        cleaned: BUILDING_STATUS_CLEANED,
+        rough_building: BUILDING_STATUS_ROUGH_BUILDING,
+        developed: BUILDING_STATUS_DEVELOPED,
+        abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
+        projected: BUILDING_STATUS_PROJECTED,
+      },
+      apartment_status: {
         first_time_occupied: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
         part_complete_renovation_need: BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
         new: BUILDING_STATUS_NEW,
@@ -404,9 +525,10 @@ class ExcelReader {
       non_smoker: toBool,
       rent_arrears: toBool,
       furnished: toBool,
-      credit_score: (i) => parseInt(i),
-      budget: (i) => parseInt(i),
+      stp_garage: (i) => parseInt(i) || 0,
+      budget: (i) => i * 100,
       deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
+      number_floors: (i) => parseInt(i) || 1,
       floor: (i) => {
         switch (i) {
           case 'Ground floor':
@@ -423,6 +545,7 @@ class ExcelReader {
           ', '
         ).replace(/\s,/g, ',')
       },
+      energy_efficiency: (i) => 1,
     }
   }
 
@@ -444,80 +567,88 @@ class ExcelReader {
    */
   mapDataToEntity(row) {
     const [
-      num, // 'No.',
-      landlord_email, // if property manager helps adding properties on behalf of landlord,
-      street, // 'Street',
-      house_number, // 'House Number',
-      address, // 'Extra Address',
-      zip, // 'Postcode',
-      city, // 'City',
-      country, // 'Country',
-      property_id, // 'Property ID',
-      property_type, // 'Property Type',
-      apt_type, // 'Apartment Type',
-      house_type, // 'House Type',
-      use_type, // 'Use Type',
-      occupancy, // 'occupancy',
-      ownership_type, // 'Ownership Type',
-      marketing_type, // 'Sale Type',
-      net_rent, // 'Net Rent',
-      additional_costs, // 'Utility Costs',
-      stp_garage, // 'Parking Rent',
-      deposit, // 'Deposit',
-      available_date, // 'Available from',
-      from_date, // 'Visit from',
-      currency, // 'Currency',
-      construction_year, // 'Construction',
-      last_modernization, // 'Last modernization',
-      building_status, // 'Building Status',
-      number_floors, // 'Number of floors',
-      energy_efficiency, // 'Energy Consumption Value',
-      firing, // 'Energy Carrier',
-      heating_type, // 'Heating Type',
-      area, // 'Living Space',
-      rooms_number, // 'Number_of_Rooms',
-      floor, // 'Floor',
-      apartment_status, // 'Apartment Status', ----
-      equipment_standard, // 'Amenities Type',
-      furnished, // 'Furnished',
-      parking_space_type, // 'Parking Space Type',
-      room1_type, // 'Room 1',
-      room1_tags, // 'Tags 1',
-      room1_area, // 'Area 1',
-      room1_name, // 'Name 1',
-      room1_photos, // 'Photo 1',
-      room2_type, // 'Room 2',
-      room2_tags, // 'Tags 2',
-      room2_area, // 'Area 2',
-      room2_name, // 'Name 2',
-      room2_photos, // 'Photo 2',
-      room3_type, // 'Room 3',
-      room3_tags, // 'Tags 3',
-      room3_area, // 'Area 3',
-      room3_name, // 'Name 3',
-      room3_photos, // 'Photo 3',
-      room4_type, // 'Room 4',
-      room4_tags, // 'Tags 4',
-      room4_area, // 'Area 4',
-      room4_name, // 'Name 4',
-      room4_photos, // 'Photo 4',
-      room5_type, // 'Room 5',
-      room5_tags, // 'Tags 5',
-      room5_area, // 'Area 5',
-      room5_name, // 'Name 5',
-      room5_photos, // 'Photo 5',
-      room6_type, // 'Room 6',
-      room6_tags, // 'Tags 6',
-      room6_area, // 'Area 6',
-      room6_name, // 'Name 6',
-      room6_photos, // 'Photo 6',
-      budget, // 'Salary Burden',
-      rent_arrears, // 'Rent Arrears',
-      credit_score, // 'Credit Score',
-      tenant_min_age, // 'Tenant Age Min',
-      tenant_max_age, // 'Tenant Age Max',
-      family_status, // 'Family Status',
-      non_smoker, // 'Smoking Allowed',
+      num, //: 'No.',
+      landlord_email, //: if property manager helps adding properties on behalf of landlord,
+      street, //: 'Street',
+      house_number, //: 'House Number',
+      address, //: 'Extra Address',
+      zip, //: 'Postcode',
+      city, //: 'City',
+      country, //: 'Country',
+      property_id, //: 'Property ID',
+      property_type, //: 'Property Type',
+      apt_type, //: 'Apartment Type',
+      house_type, //: 'House Type',
+      use_type, //: 'Use Type',
+      occupancy, //: 'occupancy',
+      ownership_type, //: 'Ownership Type',
+      letting_status,
+      marketing_type, //: 'Deal Type',
+      net_rent, //: 'Net Rent',
+      ancillary_costs,
+      additional_costs, //: 'Utility Costs',
+      stp_garage, //: 'Parking Rent',
+      deposit, //: 'Deposit',
+      available_date, //: 'Available from',
+      from_date, //: 'Visit from',
+      currency, //: 'Currency',
+      construction_year, //: 'Construction',
+      last_modernization, //: 'Last modernization',
+      building_status, //: 'Building Status',
+      number_floors, //: 'Number of floors',
+      energy_efficiency, //: 'Energy Consumption Value',
+      firing, //: 'Energy Carrier',
+      heating_type, //: 'Heating Type',
+      area, //: 'Living Space',
+      rooms_number, //: 'Number_of_Rooms',
+      floor, //: 'Floor',
+      apartment_status, //: 'Apartment Status', ----
+      equipment_standard, //: 'Amenities Type',
+      furnished, //: 'Furnished',
+      parking_space_type, //: 'Parking Space Type',
+      room1_type, //: 'Room 1',
+      room1_tags, //: 'Tags 1',
+      room1_area, //: 'Area 1',
+      room1_name, //: 'Name 1',
+      room1_photos, //: 'Photo 1',
+      room2_type, //: 'Room 2',
+      room2_tags, //: 'Tags 2',
+      room2_area, //: 'Area 2',
+      room2_name, //: 'Name 2',
+      room2_photos, //: 'Photo 2',
+      room3_type, //: 'Room 3',
+      room3_tags, //: 'Tags 3',
+      room3_area, //: 'Area 3',
+      room3_name, //: 'Name 3',
+      room3_photos, //: 'Photo 3',
+      room4_type, //: 'Room 4',
+      room4_tags, //: 'Tags 4',
+      room4_area, //: 'Area 4',
+      room4_name, //: 'Name 4',
+      room4_photos, //: 'Photo 4',
+      room5_type, //: 'Room 5',
+      room5_tags, //: 'Tags 5',
+      room5_area, //: 'Area 5',
+      room5_name, //: 'Name 5',
+      room5_photos, //: 'Photo 5',
+      room6_type, //: 'Room 6',
+      room6_tags, //: 'Tags 6',
+      room6_area, //: 'Area 6',
+      room6_name, //: 'Name 6',
+      room6_photos, //: 'Photo 6',
+      tenant_salutation,
+      tenant_surname,
+      contract_end,
+      tenant_tel,
+      tenant_email,
+      budget, //: 'Salary Burden',
+      rent_arrears, //: 'Rent Arrears',
+      credit_score, //: 'Credit Score',
+      tenant_min_age, //: 'Tenant Age Min',
+      tenant_max_age, //: 'Tenant Age Max',
+      family_status, //: 'Family Status',
+      non_smoker, //: 'Smoking Allowed',
+      kids_allowed,
     ] = row
 
     const result = {
@@ -633,48 +764,191 @@ class ExcelReader {
     )
   }
 
+  mapToValues(row) {
+    const mapValue = (k, v, result) => {
+      if (isFunction(this.dataMapping[k])) {
+        return this.dataMapping[k](v, result)
+      } else if (isString(v)) {
+        if (has(this.dataMapping, k)) {
+          return get(this.dataMapping, `${k}.${escapeStr(v)}`)
+        }
+        return escapeStr(v)
+      }
+
+      return v
+    }
+
+    return reduce(
+      row,
+      (n, v, k) => {
+        if (v === undefined) {
+          // Address should process separately
+          if (k === 'address') {
+            return { ...n, [k]: mapValue(k, '', row) }
+          } else if (k == 'property_id') {
+            const r = Math.random().toString(36).substr(2, 8).toUpperCase()
+            return { ...n, [k]: r }
+          }
+          return n
+        } else if (Object.keys(this.dataMapping).includes(k)) {
+          return { ...n, [k]: mapValue(k, v, row) }
+        } else if (k.match(/room\d+_type/)) {
+          v = isString(v) ? escapeStr(v) : v
+          return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
+        }
+        return { ...n, [k]: v }
+      },
+      {}
+    )
+  }
   /**
    *
    */
   async readFile(filePath) {
     const data = xlsx.parse(filePath, { cellDates: true })
-    const sheet = data.find((i) => i.name === 'Import_Data')
-
+    const sheet = data.find((i) => i.name === this.sheetName)
     if (!sheet || !sheet.data) {
       throw new AppException('Invalid spreadsheet. Please use the correct template.')
     }
-
-    //await this.validateHeader(sheet)
+    await this.validateHeader(sheet)
 
     const errors = []
     const toImport = []
 
-    for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
-      if (k <= this.headerCol || isEmpty(sheet.data[k])) {
-        continue
+    if (this.sheetName === 'data') {
+      for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+        if (k <= this.headerCol || isEmpty(sheet.data[k])) {
+          continue
+        }
+
+        let itemData = this.mapDataToEntity(sheet.data[k])
+        itemData = {
+          ...itemData,
+          credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
+          floor: itemData.floor ? itemData.floor : 0,
+        }
+
+        try {
+          toImport.push({ line: k, data: await schema.validate(itemData) })
+        } catch (e) {
+          errors.push({
+            line: k,
+            error: e.errors,
+            street: itemData ? itemData.street : `no street code`,
+            postcode: itemData ? itemData.zip : `no zip code`,
+          })
+        }
       }
-
-      let itemData = this.mapDataToEntity(sheet.data[k])
-
-      itemData = {
-        ...itemData,
-        credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
-        floor: itemData.floor ? itemData.floor : 0,
+    } else {
+      const columns = sheet.data[this.headerCol]
+      const columnVars = {
+        'No.': 'num',
+        Street: 'street',
+        'House Number': 'house_number',
+        'Extra Address': 'address',
+        Postcode: 'zip',
+        City: 'city',
+        Country: 'country',
+        'Property ID': 'property_id',
+        'Property Type': 'property_type',
+        'Apartment Type': 'apt_type',
+        'House Type': 'house_type',
+        'Use Type': 'use_type',
+        occupancy: 'occupancy',
+        'Ownership Type': 'ownership_type',
+        'Letting Status': 'letting_status',
+        'Deal Type': 'marketing_type',
+        'Net Rent': 'net_rent',
+        'Ancillary costs': 'ancillary_costs',
+        'Utility Costs': 'additional_costs',
+        'Parking Rent': 'stp_garage',
+        Deposit: 'deposit',
+        'Available from': 'available_date',
+        'Visit from': 'from_date',
+        Currency: 'currency',
+        Construction: 'construction_year',
+        'Last modernization': 'last_modernization',
+        'Building Status': 'building_status',
+        'Number of floors': 'number_floors',
+        'Energy Consumption Value': 'energy_efficiency',
+        'Energy Carrier': 'firing',
+        'Heating Type': 'heating_type',
+        'Living Space': 'area',
+        Number_of_Rooms: 'rooms_number',
+        Floor: 'floor',
+        'Apartment Status': 'apartment_status',
+        'Amenities Type': 'equipment_standard',
+        Furnished: 'furnished',
+        'Parking Space Type': 'parking_space_type',
+        'Room 1': 'room1_type',
+        'Tags 1': 'room1_tags',
+        'Area 1': 'room1_area',
+        'Name 1': 'room1_name',
+        'Photo 1': 'room1_photos',
+        'Room 2': 'room2_type',
+        'Tags 2': 'room2_tags',
+        'Area 2': 'room2_area',
+        'Name 2': 'room2_name',
+        'Photo 2': 'room2_photos',
+        'Room 3': 'room3_type',
+        'Tags 3': 'room3_tags',
+        'Area 3': 'room3_area',
+        'Name 3': 'room3_name',
+        'Photo 3': 'room3_photos',
+        'Room 4': 'room4_type',
+        'Tags 4': 'room4_tags',
+        'Area 4': 'room4_area',
+        'Name 4': 'room4_name',
+        'Photo 4': 'room4_photos',
+        'Room 5': 'room5_type',
+        'Tags 5': 'room5_tags',
+        'Area 5': 'room5_area',
+        'Name 5': 'room5_name',
+        'Photo 5': 'room5_photos',
+        'Room 6': 'room6_type',
+        'Tags 6': 'room6_tags',
+        'Area 6': 'room6_area',
+        'Name 6': 'room6_name',
+        'Photo 6': 'room6_photos',
+        Salutation: 'tenant_salutation',
+        Surname: 'tenant_surname',
+        'Contract End': 'contract_end',
+        Tel: 'tenant_tel',
+        Email: 'tenant_email',
+        'Salary Burden': 'budget',
+        'Rent Arrears': 'rent_arrears',
+        'Credit Score': 'credit_score',
+        'Tenant Age Min': 'tenant_min_age',
+        'Tenant Age Max': 'tenant_max_age',
+        'Family Status': 'family_status',
+        'Smoking Allowed': 'non_smoker',
+        'Kids Allowed': 'kids_allowed',
       }
+      for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+        let row = columns.reduce(function (row, field, index) {
+          row[columnVars[columns[index]]] = sheet.data[k][index]
+          return row
+        }, {})
 
-      try {
-        toImport.push({ line: k, data: await schema.validate(itemData) })
-      } catch (e) {
-        errors.push({
-          line: k,
-          error: e.errors,
-          street: itemData ? itemData.street : `no street code`,
-          postcode: itemData ? itemData.zip : `no zip code`,
-        })
+        let itemData = this.mapToValues(row)
+        itemData = {
+          ...itemData,
+          credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
+          floor: itemData.floor ? itemData.floor : 0,
+        }
+        console.log('itemdata', itemData)
+        try {
+          toImport.push({ line: k, data: await schema.validate(itemData) })
+        } catch (e) {
+          errors.push({
+            line: k,
+            error: e.errors,
+            street: itemData ? itemData.street : `no street code`,
+            postcode: itemData ? itemData.zip : `no zip code`,
+          })
+        }
       }
     }
-    console.log(toImport)
-    throw new HttpException('justin is here to Import')
     return { errors, data: toImport }
   }
 }

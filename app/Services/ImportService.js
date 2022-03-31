@@ -28,6 +28,13 @@ class ImportService {
     return await reader.readFile(filePath)
   }
 
+  static async readFileFromWeb(filePath) {
+    const reader = new ExcelReader()
+    reader.headerCol = 1
+    reader.sheetName = 'Import_Data'
+    return await reader.readFile(filePath)
+  }
+
   static async readBuddyFile(filePath) {
     const reader = new BuddiesReader()
     return await reader.readFile(filePath)
@@ -92,9 +99,11 @@ class ImportService {
   /**
    *
    */
-  static async process(filePath, userId, type) {
-    const { errors, data } = await ImportService.readFile(filePath)
-    console.log('data', data)
+  static async process(filePath, userId, type, from_web = false) {
+    let { errors, data } = from_web
+      ? await ImportService.readFileFromWeb(filePath)
+      : ImportService.readFile(filePath)
+
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
 
