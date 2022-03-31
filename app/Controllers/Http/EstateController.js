@@ -215,7 +215,9 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
+    const { from_web } = request.all()
     const importFilePathName = request.file('file')
+
     if (importFilePathName && importFilePathName.tmpPath) {
       if (
         importFilePathName.headers['content-type'] !==
@@ -223,12 +225,16 @@ class EstateController {
       ) {
         throw new HttpException('No excel format', 400)
       }
-      const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
-      return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
+    const result = await ImportService.process(
+      importFilePathName.tmpPath,
+      auth.user.id,
+      'xls',
+      from_web == 1
+    )
+    return response.res(result)
   }
 
   //import Estate by property manager
