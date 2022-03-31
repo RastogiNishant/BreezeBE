@@ -432,7 +432,13 @@ paths:
             application/json:
               schema:
                 type: object
-                $ref: '#/components/schemas/CommonReturn'
+                $ref: '#/components/schemas/SuccessWithoutData'
+        '400':
+          description: 'Error: Bad Request'
+          content:
+            text/plain:
+              type: string
+              example: User with this email does not exist
   /api/v1/users/password/confirm:
     put:
       tags: 
