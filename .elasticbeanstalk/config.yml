@@ -1,8 +1,10 @@
 branch-defaults:
   development:
-    environment: Breeze-Backend-Staging
-  staging:
+    environment: Breeze-Backend-Dev
+  master:
     environment: Breeze-Backend-Prod
+  staging:
+    environment: Breeze-Backend-Staging
 environment-defaults:
   Breeze-Backend-Prod:
     branch: null
