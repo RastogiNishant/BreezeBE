@@ -36,6 +36,7 @@ class Member extends Model {
       'is_verified',
       'owner_id',
       'owner_user_id',
+      'phone_verified'
     ]
   }
 
