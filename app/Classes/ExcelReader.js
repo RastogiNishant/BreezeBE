@@ -3,6 +3,7 @@ const { get, has, trim, isEmpty, reduce, isString, isFunction } = require('lodas
 const AppException = use('App/Exceptions/AppException')
 const schema = require('../Validators/CreateEstate').schema()
 const _ = require('lodash')
+const l = use('Localize')
 
 const {
   PROPERTY_TYPE_APARTMENT,
@@ -176,6 +177,13 @@ toBool = (v) => {
     default:
       return null
   }
+}
+
+extractDate = (date) => {
+  if (typeof date == 'string' && (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))) {
+    return `${match[3]}-${match[2]}-${match[1]}`
+  }
+  return date
 }
 
 class ExcelReader {
@@ -525,6 +533,9 @@ class ExcelReader {
       non_smoker: toBool,
       rent_arrears: toBool,
       furnished: toBool,
+      available_date: extractDate,
+      from_date: extractDate,
+      last_modernization: extractDate,
       stp_garage: (i) => parseInt(i) || 0,
       budget: (i) => i * 100,
       deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
@@ -556,7 +567,7 @@ class ExcelReader {
     const header = get(sheet, `data.${this.headerCol}`) || []
     await header.forEach((i) => {
       if (!this.columns.includes(i)) {
-        throw new AppException('Invalid header data=' + i)
+        throw new HttpException('Invalid header data=' + i)
       }
     })
     return header
@@ -808,14 +819,94 @@ class ExcelReader {
     const data = xlsx.parse(filePath, { cellDates: true })
     const sheet = data.find((i) => i.name === this.sheetName)
     if (!sheet || !sheet.data) {
-      throw new AppException('Invalid spreadsheet. Please use the correct template.')
+      throw new HttpException('Invalid spreadsheet. Please use the correct template.')
     }
+
+    //determine language
+    const deTest = ['Nr.', 'Straße', 'Hausnummer', 'Zusatzadresse', 'PLZ', 'Stadt', 'Land']
+    const columns = sheet.data[this.headerCol]
+    let probableLang = columns
+      .slice(0, 6)
+      .map((column) => (_.indexOf(deTest, column) > -1 ? 'de' : 'en'))
+    let lang = 'en'
+    if (_.uniq(probableLang).length <= 1) {
+      lang = probableLang[0]
+    } else {
+      throw new HttpException('Cannot determine Excel language.')
+    }
+    const columnHeaders = [
+      l.get('web.letting.property.import.No.message', lang),
+      l.get('web.letting.property.import.Street.message', lang),
+      l.get('web.letting.property.import.House_Number.message', lang),
+      l.get('web.letting.property.import.Extra_Address.message', lang),
+      l.get('web.letting.property.import.Postcode.message', lang),
+      l.get('web.letting.property.import.City.message', lang),
+      l.get('web.letting.property.import.Country.message', lang),
+      l.get('web.letting.property.import.Property_ID.message', lang),
+      l.get('web.letting.property.import.Property_Type.message', lang),
+      l.get('web.letting.property.import.Apartment_Type.message', lang),
+      l.get('web.letting.property.import.House_Type.message', lang),
+      l.get('web.letting.property.import.Use_Type.message', lang),
+      l.get('web.letting.property.import.occupancy.message', lang),
+      l.get('web.letting.property.import.Ownership_Type.message', lang),
+      l.get('web.letting.property.letting_status.message', lang),
+      l.get('web.letting.property.import.Deal_Type.message', lang),
+      l.get('web.letting.property.import.Net_Rent.message', lang),
+      l.get('web.letting.property.import.Extra_Costs.message', lang),
+      l.get('web.letting.property.import.Parking_Rent.message', lang),
+      l.get('web.letting.property.import.Deposit.message', lang),
+      l.get('web.letting.property.import.Available_from.message', lang),
+      l.get('web.letting.property.import.Visit_from.message', lang),
+      l.get('web.letting.property.import.Currency.message', lang),
+      l.get('web.letting.property.import.Construction.message', lang),
+      l.get('web.letting.property.import.Last_modernization.message', lang),
+      l.get('web.letting.property.import.Building_Status.message', lang),
+      l.get('web.letting.property.import.Number_of_floors.message', lang),
+      l.get('web.letting.property.import.Energy_Consumption_Value.message', lang),
+      l.get('web.letting.property.import.Energy_Carrier.message', lang),
+      l.get('web.letting.property.import.Heating_Type.message', lang),
+      l.get('web.letting.property.import.Living_Space.message', lang),
+      l.get('web.letting.property.import.Number_of_Rooms.message', lang),
+      l.get('web.letting.property.import.Floor.message', lang),
+      l.get('web.letting.property.import.Apartment_Status.message', lang),
+      l.get('web.letting.property.import.Amenities_Type.message', lang),
+      l.get('web.letting.property.import.Furnished.message', lang),
+      l.get('web.letting.property.import.Parking_Space_Type.message', lang),
+      l.get('web.letting.property.import.Room_1.message', lang),
+      l.get('web.letting.property.import.Tags_1.message', lang),
+      l.get('web.letting.property.import.Room_2.message', lang),
+      l.get('web.letting.property.import.Tags_2.message', lang),
+      l.get('web.letting.property.import.Room_3.message', lang),
+      l.get('web.letting.property.import.Tags_3.message', lang),
+      l.get('web.letting.property.import.Room_4.message', lang),
+      l.get('web.letting.property.import.Tags_4.message', lang),
+      l.get('web.letting.property.import.Room_5.message', lang),
+      l.get('web.letting.property.import.Tags_5.message', lang),
+      l.get('web.letting.property.import.Room_6.message', lang),
+      l.get('web.letting.property.import.Tags_6.message', lang),
+      l.get('web.letting.property.import.Salary_Burden.message', lang),
+      l.get('web.letting.property.import.Rent_Arrears.message', lang),
+      l.get('web.letting.property.import.Credit_Score.message', lang),
+      l.get('web.letting.property.import.Tenant_Age_Min.message', lang),
+      l.get('web.letting.property.import.Tenant_Age_Max.message', lang),
+      l.get('web.letting.property.import.Family_Status.message', lang),
+      l.get('web.letting.property.import.Smoking_Allowed.message', lang),
+      l.get('web.letting.property.import.Kids_Allowed.message', lang),
+      l.get('web.letting.property.import.Surname.message', lang),
+      l.get('web.letting.property.import.Contract_End.message', lang),
+      l.get('prospect.settings.user_details.txt_salutation.message', lang),
+      'Tel',
+      'Tel.',
+      l.get('email_signature.email.message', lang),
+    ]
+    this.columns = columnHeaders
     await this.validateHeader(sheet)
 
     const errors = []
     const toImport = []
 
     if (this.sheetName === 'data') {
+      // old version...
       for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
         if (k <= this.headerCol || isEmpty(sheet.data[k])) {
           continue
@@ -840,103 +931,87 @@ class ExcelReader {
         }
       }
     } else {
-      const columns = sheet.data[this.headerCol]
-      const columnVars = {
-        'No.': 'num',
-        Street: 'street',
-        'House Number': 'house_number',
-        'Extra Address': 'address',
-        Postcode: 'zip',
-        City: 'city',
-        Country: 'country',
-        'Property ID': 'property_id',
-        'Property Type': 'property_type',
-        'Apartment Type': 'apt_type',
-        'House Type': 'house_type',
-        'Use Type': 'use_type',
-        occupancy: 'occupancy',
-        'Ownership Type': 'ownership_type',
-        'Letting Status': 'letting_status',
-        'Deal Type': 'marketing_type',
-        'Net Rent': 'net_rent',
-        'Ancillary costs': 'ancillary_costs',
-        'Utility Costs': 'additional_costs',
-        'Parking Rent': 'stp_garage',
-        Deposit: 'deposit',
-        'Available from': 'available_date',
-        'Visit from': 'from_date',
-        Currency: 'currency',
-        Construction: 'construction_year',
-        'Last modernization': 'last_modernization',
-        'Building Status': 'building_status',
-        'Number of floors': 'number_floors',
-        'Energy Consumption Value': 'energy_efficiency',
-        'Energy Carrier': 'firing',
-        'Heating Type': 'heating_type',
-        'Living Space': 'area',
-        Number_of_Rooms: 'rooms_number',
-        Floor: 'floor',
-        'Apartment Status': 'apartment_status',
-        'Amenities Type': 'equipment_standard',
-        Furnished: 'furnished',
-        'Parking Space Type': 'parking_space_type',
-        'Room 1': 'room1_type',
-        'Tags 1': 'room1_tags',
-        'Area 1': 'room1_area',
-        'Name 1': 'room1_name',
-        'Photo 1': 'room1_photos',
-        'Room 2': 'room2_type',
-        'Tags 2': 'room2_tags',
-        'Area 2': 'room2_area',
-        'Name 2': 'room2_name',
-        'Photo 2': 'room2_photos',
-        'Room 3': 'room3_type',
-        'Tags 3': 'room3_tags',
-        'Area 3': 'room3_area',
-        'Name 3': 'room3_name',
-        'Photo 3': 'room3_photos',
-        'Room 4': 'room4_type',
-        'Tags 4': 'room4_tags',
-        'Area 4': 'room4_area',
-        'Name 4': 'room4_name',
-        'Photo 4': 'room4_photos',
-        'Room 5': 'room5_type',
-        'Tags 5': 'room5_tags',
-        'Area 5': 'room5_area',
-        'Name 5': 'room5_name',
-        'Photo 5': 'room5_photos',
-        'Room 6': 'room6_type',
-        'Tags 6': 'room6_tags',
-        'Area 6': 'room6_area',
-        'Name 6': 'room6_name',
-        'Photo 6': 'room6_photos',
-        Salutation: 'tenant_salutation',
-        Surname: 'tenant_surname',
-        'Contract End': 'contract_end',
-        Tel: 'tenant_tel',
-        Email: 'tenant_email',
-        'Salary Burden': 'budget',
-        'Rent Arrears': 'rent_arrears',
-        'Credit Score': 'credit_score',
-        'Tenant Age Min': 'tenant_min_age',
-        'Tenant Age Max': 'tenant_max_age',
-        'Family Status': 'family_status',
-        'Smoking Allowed': 'non_smoker',
-        'Kids Allowed': 'kids_allowed',
+      const columnIdentifiers = [
+        'num',
+        'street',
+        'house_number',
+        'address',
+        'zip',
+        'city',
+        'country',
+        'property_id',
+        'property_type',
+        'apt_type',
+        'house_type',
+        'use_type',
+        'occupancy',
+        'ownership_type',
+        'letting_status',
+        'marketing_type',
+        'net_rent',
+        'ancillary_costs',
+        'stp_garage',
+        'deposit',
+        'available_date',
+        'from_date',
+        'currency',
+        'construction_year',
+        'last_modernization',
+        'building_status',
+        'number_floors',
+        'energy_efficiency',
+        'firing',
+        'heating_type',
+        'area',
+        'rooms_number',
+        'floor',
+        'apartment_status',
+        'equipment_standard',
+        'furnished',
+        'parking_space_type',
+        'room1_name',
+        'room1_tags',
+        'room2_name',
+        'room2_tags',
+        'room3_name',
+        'room3_tags',
+        'room4_name',
+        'room4_tags',
+        'room5_name',
+        'room5_tags',
+        'room6_name',
+        'room6_tags',
+        'budget',
+        'rent_arrears',
+        'credit_score',
+        'tenant_min_age',
+        'tenant_max_age',
+        'family_status',
+        'non_smoker',
+        'kids_allowed',
+        'tenant_surname',
+        'contract_end',
+        'tenant_salutation',
+        'tenant_tel',
+        'tenant_tel_de',
+        'tenant_email',
+      ]
+      let columnVars = {}
+      for (let count = 0; count < columnHeaders.length; count++) {
+        columnVars[columnHeaders[count]] = columnIdentifiers[count]
       }
       for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
         let row = columns.reduce(function (row, field, index) {
           row[columnVars[columns[index]]] = sheet.data[k][index]
           return row
         }, {})
-
         let itemData = this.mapToValues(row)
         itemData = {
           ...itemData,
           credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
           floor: itemData.floor ? itemData.floor : 0,
+          tenant_tel: itemData.tenant_tel_de || itemData.tenant_tel,
         }
-        console.log('itemdata', itemData)
         try {
           toImport.push({ line: k, data: await schema.validate(itemData) })
         } catch (e) {
