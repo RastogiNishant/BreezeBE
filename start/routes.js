@@ -271,6 +271,10 @@ Route.group(() => {
     'valid:LandlordInviteToView',
     'LandlordOwnsThisEstate',
   ])
+
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
+    'valid:EstateId,TenantId',
+  ])  
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])

@@ -110,6 +110,12 @@ class TenantService {
     return tenant.save()
   }
 
+  static async getTenant(userId) {
+    return Tenant.query()
+      .select('*')
+      .where('user_id', userId)
+      .first()
+  }
   /**
    * Get Tenant with linked point
    */

@@ -627,10 +627,10 @@ class AccountController {
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
-    const { email, from_web } = request.only(['email', 'from_web'])
+    const { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
 
     try {
-      await UserService.requestSendCodeForgotPassword(email, from_web)
+      await UserService.requestSendCodeForgotPassword(email, lang, from_web)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)

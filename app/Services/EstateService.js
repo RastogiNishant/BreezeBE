@@ -24,6 +24,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
@@ -751,6 +752,24 @@ class EstateService {
     })
 
     return result
+  }
+
+  static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
+    return Estate.query()
+    .select( 'estates.*')
+    .with('user')
+    .innerJoin({ _m: 'matches' }, function () {
+      this.on('_m.estate_id', 'estates.id')
+        .on('_m.user_id', tenant_id)
+        .on('_m.status', MATCH_STATUS_FINISH)
+    })
+    .leftJoin({ _mb: 'members' }, function () {
+      this.on('_mb.user_id', '_m.user_id')
+    })
+    .where('estates.id', estate_id)
+    .where('estates.user_id', user_id)    
+    .orderBy('_mb.id')    
+    .firstOrFail()
   }
 }
 

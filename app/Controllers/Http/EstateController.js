@@ -11,6 +11,9 @@ const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
+const TenantService = use('App/Services/TenantService')
+const MemberService = use('App/Services/MemberService')
+const CompanyService = use('App/Services/CompanyService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
@@ -38,6 +41,8 @@ const {
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { result } = require('lodash')
+
+
 const INVITE_CODE_STRING_LENGTH = 8;
 
 class EstateController {
@@ -112,6 +117,28 @@ class EstateController {
     QueueService.getEstatePoint(estate.id)
 
     response.res(estate)
+  }
+
+  async lanlordTenantDetailInfo({request, auth, response}) {
+    const {estate_id, tenant_id} = request.all()
+    try{
+      const lanlord = await EstateService.lanlordTenantDetailInfo(auth.user.id, estate_id, tenant_id)
+      const tenant =  await TenantService.getTenant(tenant_id);
+      const members = await MemberService.getMembers(tenant_id);
+      const company = await CompanyService.getUserCompany(auth.user.id)
+
+      const result = {
+        ...lanlord.toJSON({ isShort: true }),
+        company:company,
+        tenant:tenant,
+        members:members,
+      }
+      //console.log('result', result.toJSON() )
+      response.res(result)
+    }catch(e) {
+      throw new HttpException(e.message, 400)
+    }
+    
   }
 
   async getEstatesByPM({ request, auth, response }) {

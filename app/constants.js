@@ -9,8 +9,9 @@ const constants = {
   ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH: 10210,
   ERROR_ESTATE_NOT_FOUND_BY_HASH: 10220,
   
-  DEFAULT_LANG: 'en',
-
+  LANG_EN:'en',
+  LANG_DE:'de',
+  DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
   FILE_TYPE_DOC: 'doc',
@@ -454,6 +455,7 @@ const constants = {
     'house_number',
     'status',
     'match',
+    'rent_per_sqm',
     'net_rent',
     'budget',
     'updated_at',
@@ -472,6 +474,7 @@ const constants = {
     'address',
     'user_id',
     'available_date',
+    'vacant_date',
     'others',
   ],
 

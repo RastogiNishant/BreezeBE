@@ -34,10 +34,10 @@ const {
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
-  DEFAULT_LANG,
   BUDDY_STATUS_ACCEPTED,
   SMS_VERIFY_PREFIX,
   LOG_TYPE_SIGN_UP,
+  DEFAULT_LANG,
   SIGN_IN_METHOD_GOOGLE,
 } = require('../constants')
 
@@ -158,7 +158,7 @@ class UserService {
    *
    */
 
-  static async requestSendCodeForgotPassword(email, from_web = false) {
+  static async requestSendCodeForgotPassword(email, paramLang, from_web) {
     const code = getHash(3)
     let user = null
     email = encodeURI(email)
@@ -183,8 +183,8 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      const data = await this.getTokenWithLocale([user.id])
-      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+      const data = paramLang? await this.getTokenWithLocale([user.id]) : null
+      const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : user.lang?user.lang:DEFAULT_LANG
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
