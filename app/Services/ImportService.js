@@ -48,9 +48,10 @@ class ImportService {
       if (!data.address) {
         throw new AppException('Invalid address')
       }
+      const address = data.address.toLowerCase()
       const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
-        .where('address', 'LIKE', `%${data.address.toLowerCase()}%`)
+        .where('address', 'LIKE', `%${address}%`)
         .first()
 
       if (existingEstate) {

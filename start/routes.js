@@ -281,6 +281,10 @@ Route.group(() => {
     'valid:LandlordInviteToView',
     'LandlordOwnsThisEstate',
   ])
+
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
+    'valid:EstateId,TenantId',
+  ])  
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
@@ -403,8 +407,8 @@ Route.group(() => {
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
 ])
-// Tenant members
 
+// Tenant members
 Route.group(() => {
   Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
     'valid:InitializeAdults',
@@ -436,6 +440,12 @@ Route.group(() => {
     'valid:Id,IncomeId',
   ])
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
+  Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
+    'valid:MemberId,Phone',
+  ])  
+  Route.post('/confirmsms', 'MemberController.confirmBySMS').middleware([
+    'valid:MemberId,Code,Phone',
+  ])  
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt,jwtHousekeeper'])
