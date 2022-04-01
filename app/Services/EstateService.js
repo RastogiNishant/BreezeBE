@@ -24,7 +24,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
-  MATCH_STATUS_FINISH,
+  MATCH_STATUS_FINISH,  
   LOG_TYPE_PUBLISHED_PROPERTY,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
@@ -71,7 +71,7 @@ class EstateService {
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
-    
+
     let estate = await Estate.createItem({
       ...data,
       user_id: userId,
@@ -79,15 +79,12 @@ class EstateService {
       status: STATUS_DRAFT,
     })
 
-    const estateHash = await Estate.query()
-      .select('hash')
-      .where('id', estate.id)
-      .firstOrFail()
+    const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
-    const estateData = await estate.toJSON({isOwner:true})    
+    const estateData = await estate.toJSON({ isOwner: true })
     return {
-      hash:estateHash.hash,
-      ...estateData
+      hash: estateHash.hash,
+      ...estateData,
     }
   }
 
@@ -527,7 +524,6 @@ class EstateService {
       })
       .with('files')
       .orderBy('_m.percent', 'DESC')
-    
   }
 
   /**
@@ -770,7 +766,7 @@ class EstateService {
     .where('estates.user_id', user_id)    
     .orderBy('_mb.id')    
     .firstOrFail()
-  }
+  }  
 }
 
 module.exports = EstateService

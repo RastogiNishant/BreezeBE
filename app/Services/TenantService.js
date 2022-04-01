@@ -287,6 +287,23 @@ class TenantService {
       })
       .first()
   }
+
+  static async updateSelectedAdultsCount(userId, adultsCount, trx) {
+    return Tenant.query()
+      .update({ selected_adults_count: adultsCount }, trx)
+      .where({ user_id: userId })
+  }
+
+  static async checkAdultsInitialized(userId) {
+    const tenant = await Tenant.query()
+      .select('selected_adults_count')
+      .where({ user_id: userId })
+      .first()
+
+    const member = await Member.query().where({ user_id: userId }).first()
+
+    return tenant.selected_adults_count > 0 || member
+  }
 }
 
 module.exports = TenantService

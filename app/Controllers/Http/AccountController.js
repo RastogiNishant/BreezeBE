@@ -147,6 +147,114 @@ class AccountController {
   }
 
   /**
+   * Signup prospect with code we email to him.
+   */
+  async signupProspectWithViewEstateInvitation({ request, response }) {
+    //create user
+    const { email, phone, role, password, ...userData } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      //add this user
+      let user = await User.create(
+        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
+        trx
+      )
+      if (role === ROLE_USER) {
+        await Tenant.create(
+          {
+            user_id: user.id,
+          },
+          trx
+        )
+      }
+      //include him on estate_view_invited_users with sticky set to true
+      //this will add him even if he's not invited.
+      //Probably a situation where he has mail forwarded from a different email
+      const invitedUser = new EstateViewInvitedUser()
+      invitedUser.user_id = user.id
+      invitedUser.sticky = true
+      invitedUser.estate_view_invite_id = request.estate_view_invite_id
+      await invitedUser.save(trx)
+
+      //lets find other estates he's invited to view
+      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
+        .where('email', email)
+        .fetch()
+      await Promise.all(
+        myInvitesToViewEstates.toJSON().map(async (invite) => {
+          await EstateViewInvitedUser.findOrCreate(
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            trx
+          )
+        })
+      )
+      //send email for confirmation
+      await UserService.sendConfirmEmail(user)
+      trx.commit()
+      return response.res(true)
+    } catch (e) {
+      console.log(e)
+      await trx.rollback()
+      throw new HttpException('Signup failed.', 412)
+    }
+  }
+
+  /**
+   * Signup prospect with code we email to him.
+   */
+  async signupProspectWithViewEstateInvitation({ request, response }) {
+    //create user
+    const { email, phone, role, password, ...userData } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      //add this user
+      let user = await User.create(
+        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
+        trx
+      )
+      if (role === ROLE_USER) {
+        await Tenant.create(
+          {
+            user_id: user.id,
+          },
+          trx
+        )
+      }
+      //include him on estate_view_invited_users with sticky set to true
+      //this will add him even if he's not invited.
+      //Probably a situation where he has mail forwarded from a different email
+      const invitedUser = new EstateViewInvitedUser()
+      invitedUser.user_id = user.id
+      invitedUser.sticky = true
+      invitedUser.estate_view_invite_id = request.estate_view_invite_id
+      await invitedUser.save(trx)
+
+      //lets find other estates he's invited to view
+      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
+        .where('email', email)
+        .fetch()
+      await Promise.all(
+        myInvitesToViewEstates.toJSON().map(async (invite) => {
+          await EstateViewInvitedUser.findOrCreate(
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            trx
+          )
+        })
+      )
+      //send email for confirmation
+      await UserService.sendConfirmEmail(user)
+      trx.commit()
+      return response.res(true)
+    } catch (e) {
+      console.log(e)
+      await trx.rollback()
+      throw new HttpException('Signup failed.', 412)
+    }
+  }
+
+  /**
    * Signup user with hash
    */
   async signupProspectWithHash({ request, response }) {
@@ -409,7 +517,11 @@ class AccountController {
         role: user.role,
       })
       if (!user.company_id) {
-        user.company_name = `${user.firstname} ${user.secondname}`.trim()
+        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+        const company_name = `${company_firstname} ${company_secondname}`.trim()
+        user.company_name = company_name
+        user.company = null
       } else {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
@@ -482,7 +594,6 @@ class AccountController {
   async updateProfile({ request, auth, response }) {
     const data = request.all()
     let user = auth.user
-
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
@@ -523,8 +634,8 @@ class AccountController {
       await user.save()
       user = user.toJSON({ isOwner: true })
     } else {
-      if (data.company_name) {
-        let company_name = data.company_name
+      if (data.company_name && data.company_name.trim()) {
+        let company_name = data.company_name.trim()
         company = await Company.findOrCreate(
           { name: company_name, user_id: auth.user.id },
           { name: company_name, user_id: auth.user.id }
@@ -540,7 +651,11 @@ class AccountController {
       user.company_name = company.name
       user.company = company
     } else {
-      user.company = `${user.firstname} ${user.secondname}`.trim()
+      const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+      const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+      const company_name = `${company_firstname} ${company_secondname}`.trim()
+      user.company_name = company_name
+      user.company = null
     }
     return response.res(user)
   }

@@ -14,6 +14,8 @@ const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const Term = use('App/Models/Term')
+const Agreement = use('App/Models/Agreement')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
@@ -48,6 +50,18 @@ class UserService {
    * Create user flow
    */
   static async createUser(userData) {
+    //we need him to approve Terms and Privacy
+    const latestTerm = await Term.query()
+      .where('status', STATUS_ACTIVE)
+      .orderBy('id', 'desc')
+      .first()
+    const latestAgreement = await Agreement.query()
+      .where('status', STATUS_ACTIVE)
+      .orderBy('id', 'desc')
+      .first()
+    userData.terms_id = latestTerm.id
+    userData.agreements_id = latestAgreement.id
+
     const user = await User.createItem(userData)
     if (user.role === ROLE_USER) {
       try {
@@ -684,9 +698,6 @@ class UserService {
       .fetch()
   }
 
-  //TODO: update user "owner_id" if adults disconnect each other
-
-  //TODO: check
   static async housekeeperSignup(ownerId, email, password, firstname, lang) {
     await User.query().where('id', ownerId).firstOrFail()
 
@@ -705,6 +716,8 @@ class UserService {
         },
         trx
       )
+
+      await Tenant.create({ user_id: user.id }, trx)
 
       await UserService.sendConfirmEmail(user)
       await trx.commit()
@@ -760,7 +773,7 @@ class UserService {
   }
 
   static async removeUserOwnerId(user_id, trx) {
-    return Database.table('users').where('id', user_id).update({ owner_id: null }, trx)
+    return User.query().where('id', user_id).update({ owner_id: null }, trx)
   }
 
   static async proceedBuddyInviteLink(uid, tenantId) {

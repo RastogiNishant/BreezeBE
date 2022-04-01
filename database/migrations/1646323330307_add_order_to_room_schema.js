@@ -4,14 +4,14 @@
 const Schema = use('Schema')
 
 class AddOrderToRoomSchema extends Schema {
-  up () {
+  up() {
     this.table('rooms', (table) => {
       // alter table
       table.integer('order').defaultTo(100000)
     })
   }
 
-  down () {
+  down() {
     this.table('add_order_to_rooms', (table) => {
       // reverse alternations
     })

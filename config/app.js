@@ -3,6 +3,10 @@
 /** @type {import('@adonisjs/framework/src/Env')} */
 const Env = use('Env')
 
+const {
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+} = require('../app/constants')
+
 module.exports = {
   name: Env.get('APP_NAME', 'breeze'),
   appKey: Env.getOrFail('APP_KEY'),
@@ -221,7 +225,7 @@ module.exports = {
 
   product: {
     googleAccountEmail: Env.get('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
-    googleAccountPrivateKey: Env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'),
+    googleAccountPrivateKey: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
     appleShareSecret: Env.get('APPLE_SHARED_SECRET'),
     iapTestMode: Env.get('IAP_TEST_MODE'),
   },
