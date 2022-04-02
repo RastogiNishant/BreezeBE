@@ -457,6 +457,8 @@ class ExcelReader {
       throw new HttpException('Cannot determine Excel language.')
     }
     this.dataMapping = new EstateAttributeTranslations(lang)
+    console.log(this.dataMapping)
+    throw new HttpException('datamapping')
     const columnHeaders = [
       l.get('web.letting.property.import.No.message', lang),
       l.get('web.letting.property.import.Street.message', lang),
