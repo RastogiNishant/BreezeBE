@@ -478,6 +478,7 @@ const constants = {
     'available_date',
     'vacant_date',
     'others',
+    'full_address',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
