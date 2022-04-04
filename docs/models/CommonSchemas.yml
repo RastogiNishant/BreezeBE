@@ -22,3 +22,4 @@ components:
         status:
           type: string
           example: success
+    

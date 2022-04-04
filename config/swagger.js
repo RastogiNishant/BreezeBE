@@ -43,6 +43,10 @@ module.exports = {
           description: 'All about the Landlord User',
         },
         {
+          name: 'Landlord Estates',
+          description: `All about the Landlord's Estates`,
+        },
+        {
           name: 'Prospects',
           description: 'All about the prospects',
         },
