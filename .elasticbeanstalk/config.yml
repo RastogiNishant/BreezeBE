@@ -1,13 +1,20 @@
 branch-defaults:
   development:
+    environment: Breeze-Backend-Dev
+  master:
+    environment: Breeze-Backend-Prod
+  staging:
     environment: Breeze-Backend-Staging
 environment-defaults:
+  Breeze-Backend-Prod:
+    branch: null
+    repository: null
   Breeze-Backend-Staging:
     branch: null
     repository: null
 global:
   application_name: Breeze-backend
-  default_ec2_keyname: breeze-backend-staging
+  default_ec2_keyname: null
   default_platform: Node.js 14 running on 64bit Amazon Linux 2
   default_region: eu-central-1
   include_git_submodules: true

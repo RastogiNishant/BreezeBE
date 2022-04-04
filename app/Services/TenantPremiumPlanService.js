@@ -217,7 +217,7 @@ class TenantPremiumPlanService {
           TenantPremiumPlanService.processPurchase(
             purchase.user_id,
             purchase.plan_id,
-            purchase.payment_plan,            
+            purchase.payment_plan,
             purchase.app,
             JSON.parse(purchase.latestReceipt)
           )

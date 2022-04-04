@@ -28,6 +28,13 @@ class ImportService {
     return await reader.readFile(filePath)
   }
 
+  static async readFileFromWeb(filePath) {
+    const reader = new ExcelReader()
+    reader.headerCol = 1
+    reader.sheetName = 'Import_Data'
+    return await reader.readFile(filePath)
+  }
+
   static async readBuddyFile(filePath) {
     const reader = new BuddiesReader()
     return await reader.readFile(filePath)
@@ -41,9 +48,10 @@ class ImportService {
       if (!data.address) {
         throw new AppException('Invalid address')
       }
+      const address = data.address.toLowerCase()
       const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
-        .where('address', 'LIKE', `%${data.address.toLowerCase()}%`)
+        .where('address', 'LIKE', `%${address}%`)
         .first()
 
       if (existingEstate) {
@@ -92,8 +100,10 @@ class ImportService {
   /**
    *
    */
-  static async process(filePath, userId, type) {
-    const { errors, data } = await ImportService.readFile(filePath)
+  static async process(filePath, userId, type, from_web = false) {
+    let { errors, data } = from_web
+      ? await ImportService.readFileFromWeb(filePath)
+      : ImportService.readFile(filePath)
 
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
@@ -108,33 +118,48 @@ class ImportService {
 
   //import estate process by property manager
   /**
-   * 
-   * @param {*} filePath 
+   *
+   * @param {*} filePath
    * @param {*} userId : property manager Id
-   * @param {*} type 
-   * @returns 
+   * @param {*} type
+   * @returns
    */
 
   static async processByPM(filePath, userId, type) {
-
     const { errors, data } = await ImportService.readFile(filePath)
 
     const opt = { concurrency: 0 }
 
-    const result = await Promise.map(data, async (i) => {
-      
-      if( !i || !i.data || !i.data.landlord_email ) {
-        return { error: `Landlord email is not defined`, line:i.line, address: i?i.data.address:`no address here`, postcode: i?i.data.zip:`no zip code here` }
-      }
+    const result = await Promise.map(
+      data,
+      async (i) => {
+        if (!i || !i.data || !i.data.landlord_email) {
+          return {
+            error: `Landlord email is not defined`,
+            line: i.line,
+            address: i ? i.data.address : `no address here`,
+            postcode: i ? i.data.zip : `no zip code here`,
+          }
+        }
 
-      const estatePermission = await EstatePermissionService.getLandlordHasPermissionByEmail(userId, i.data.landlord_email)
+        const estatePermission = await EstatePermissionService.getLandlordHasPermissionByEmail(
+          userId,
+          i.data.landlord_email
+        )
 
-      if( !estatePermission || !estatePermission.landlord_id) {
-        return { error: `You don't have permission for that property`, line:i.line, address: i?i.data.address:`no address here`, postcode: i?i.data.zip:`no zip code here` }
-      }
+        if (!estatePermission || !estatePermission.landlord_id) {
+          return {
+            error: `You don't have permission for that property`,
+            line: i.line,
+            address: i ? i.data.address : `no address here`,
+            postcode: i ? i.data.zip : `no zip code here`,
+          }
+        }
 
-      await ImportService.createSingleEstate(i, estatePermission.landlord_id)
-    }, opt)
+        await ImportService.createSingleEstate(i, estatePermission.landlord_id)
+      },
+      opt
+    )
 
     const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
 
@@ -143,9 +168,6 @@ class ImportService {
       success: result.length - createErrors.length,
     }
   }
-
 }
-
-
 
 module.exports = ImportService
