@@ -8,190 +8,30 @@ const HttpException = use('App/Exceptions/HttpException')
 const EstateAttributeTranslations = require('./EstateAttributeTranslations')
 
 class ExcelReader {
+  warnings = []
+  validHeaders = []
   dataMapping = {}
   constructor() {
     this.headerCol = 4
     this.sheetName = 'data'
-    this.columns = [
-      'No.',
-      'Landlord email address',
-      'Street',
-      'House Number',
-      'Extra Address',
-      'Postcode',
-      'City',
-      'Country',
-      'Property ID',
-      'Property Type',
-      'Apartment Type',
-      'House Type',
-      'Use Type',
-      'occupancy',
-      'Ownership Type',
-      'Letting Status',
-      'Deal Type',
-      'Net Rent',
-      'Ancillary costs',
-      'Utility Costs',
-      'Parking Rent',
-      'Deposit',
-      'Available from',
-      'Visit from',
-      'Currency',
-      'Construction',
-      'Last modernization',
-      'Building Status',
-      'Number of floors',
-      'Energy Consumption Value',
-      'Energy Carrier',
-      'Heating Type',
-      'Living Space',
-      'Number_of_Rooms',
-      'Floor',
-      'Apartment Status',
-      'Amenities Type',
-      'Furnished',
-      'Parking Space Type',
-      'Room 1',
-      'Tags 1',
-      'Area 1',
-      'Name 1',
-      'Photos 1',
-      'Room 2',
-      'Tags 2',
-      'Area 2',
-      'Name 2',
-      'Photos 2',
-      'Room 3',
-      'Tags 3',
-      'Area 3',
-      'Name 3',
-      'Photos 3',
-      'Room 4',
-      'Tags 4',
-      'Area 4',
-      'Name 4',
-      'Photos 4',
-      'Room 5',
-      'Tags 5',
-      'Area 5',
-      'Name 5',
-      'Photos 5',
-      'Room 6',
-      'Tags 6',
-      'Area 6',
-      'Name 6',
-      'Photos 6',
-      'Salutation',
-      'Surname',
-      'Contract End',
-      'Tel',
-      'Email',
-      'Salary Burden',
-      'Rent Arrears',
-      'Credit Score',
-      'Tenant Age Min',
-      'Tenant Age Max',
-      'Family Status',
-      'Smoking Allowed',
-      'Kids Allowed',
-    ]
-    this.columnVar = this.columns = [
-      'No.',
-      'Landlord email address',
-      'Street',
-      'House Number',
-      'Extra Address',
-      'Postcode',
-      'City',
-      'Country',
-      'Property ID',
-      'Property Type',
-      'Apartment Type',
-      'House Type',
-      'Use Type',
-      'occupancy',
-      'Ownership Type',
-      'Letting Status',
-      'Deal Type',
-      'Net Rent',
-      'Ancillary costs',
-      'Utility Costs',
-      'Parking Rent',
-      'Deposit',
-      'Available from',
-      'Visit from',
-      'Currency',
-      'Construction',
-      'Last modernization',
-      'Building Status',
-      'Number of floors',
-      'Energy Consumption Value',
-      'Energy Carrier',
-      'Heating Type',
-      'Living Space',
-      'Number_of_Rooms',
-      'Floor',
-      'Apartment Status',
-      'Amenities Type',
-      'Furnished',
-      'Parking Space Type',
-      'Room 1',
-      'Tags 1',
-      'Area 1',
-      'Name 1',
-      'Photos 1',
-      'Room 2',
-      'Tags 2',
-      'Area 2',
-      'Name 2',
-      'Photos 2',
-      'Room 3',
-      'Tags 3',
-      'Area 3',
-      'Name 3',
-      'Photos 3',
-      'Room 4',
-      'Tags 4',
-      'Area 4',
-      'Name 4',
-      'Photos 4',
-      'Room 5',
-      'Tags 5',
-      'Area 5',
-      'Name 5',
-      'Photos 5',
-      'Room 6',
-      'Tags 6',
-      'Area 6',
-      'Name 6',
-      'Photos 6',
-      'Salutation',
-      'Surname',
-      'Contract End',
-      'Tel',
-      'Email',
-      'Salary Burden',
-      'Rent Arrears',
-      'Credit Score',
-      'Tenant Age Min',
-      'Tenant Age Max',
-      'Family Status',
-      'Smoking Allowed',
-      'Kids Allowed',
-    ]
   }
   /**
    *
    */
   async validateHeader(sheet) {
-    const header = get(sheet, `data.${this.headerCol}`) || []
-    /*
+    let header = get(sheet, `data.${this.headerCol}`) || []
+    header = header.slice(0, 200)
+    console.log(this.columns)
     await header.forEach((i) => {
       if (!this.columns.includes(i)) {
-        throw new HttpException('Invalid header data=' + i)
+        this.warnings.push(`Header: ${i} is NOT being tracked and saved to dB.`)
+      } else if (i) {
+        console.log(`tracked ${i}`)
+        this.validHeaders.push(i)
       }
-    })*/
+    })
+    console.log(this.validHeaders)
+    throw new HttpException('haerea')
     return header
   }
 
@@ -441,7 +281,9 @@ class ExcelReader {
     const data = xlsx.parse(filePath, { cellDates: true })
     const sheet = data.find((i) => i.name === this.sheetName)
     if (!sheet || !sheet.data) {
-      throw new HttpException('Invalid spreadsheet. Please use the correct template.')
+      throw new HttpException(
+        `Cannot find sheet: ${this.sheetName}. Please use the correct template.`
+      )
     }
 
     //determine language
@@ -457,8 +299,6 @@ class ExcelReader {
       throw new HttpException('Cannot determine Excel language.')
     }
     this.dataMapping = new EstateAttributeTranslations(lang)
-    console.log(this.dataMapping)
-    throw new HttpException('datamapping')
     const columnHeaders = [
       l.get('web.letting.property.import.No.message', lang),
       l.get('web.letting.property.import.Street.message', lang),
@@ -653,7 +493,10 @@ class ExcelReader {
         }
       }
     }
-    return { errors, data: toImport }
+    console.log('to Import: ', toImport, 'errors', errors)
+    console.log(this.warnings)
+    throw new HttpException('break!')
+    return { errors, data: toImport, warnings: this.warnings }
   }
 }
 

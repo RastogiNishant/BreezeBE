@@ -359,6 +359,12 @@ class EstateAttributeTranslations {
     available_date: extractDate,
     from_date: extractDate,
     last_modernization: extractDate,
+    pets_allowed: {
+      PETS_NO: 1,
+      PETS_SMALL: 2,
+      PETS_ANY: null,
+      PETS_BIG: 3,
+    },
     stp_garage: (i) => parseInt(i) || 0,
     budget: (i) => i * 100,
     deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
@@ -614,11 +620,11 @@ class EstateAttributeTranslations {
       //FIXME: not matching
       heating_type: {
         keys: [
+          l.get('property.attribute.HEATING_TYPE.Floor_heating.message', lang),
           l.get('property.attribute.HEATING_TYPE.Oven.message', lang),
           l.get('property.attribute.HEATING_TYPE.Floor.message', lang),
           l.get('property.attribute.HEATING_TYPE.Central.message', lang),
           l.get('property.attribute.HEATING_TYPE.Remote.message', lang),
-          l.get('property.attribute.HEATING_TYPE.Floor_heating.message', lang),
         ],
         values: [
           HEATING_TYPE_NO,
