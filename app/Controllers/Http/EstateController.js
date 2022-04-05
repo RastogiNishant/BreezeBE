@@ -117,26 +117,29 @@ class EstateController {
     response.res(estate)
   }
 
-  async lanlordTenantDetailInfo({request, auth, response}) {
-    const {estate_id, tenant_id} = request.all()
-    try{
-      const lanlord = await EstateService.lanlordTenantDetailInfo(auth.user.id, estate_id, tenant_id)
-      const tenant =  await TenantService.getTenant(tenant_id);
-      const members = await MemberService.getMembers(tenant_id);
+  async lanlordTenantDetailInfo({ request, auth, response }) {
+    const { estate_id, tenant_id } = request.all()
+    try {
+      const lanlord = await EstateService.lanlordTenantDetailInfo(
+        auth.user.id,
+        estate_id,
+        tenant_id
+      )
+      const tenant = await TenantService.getTenant(tenant_id)
+      const members = await MemberService.getMembers(tenant_id)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
       const result = {
         ...lanlord.toJSON({ isShort: true }),
-        company:company,
-        tenant:tenant,
-        members:members,
+        company: company,
+        tenant: tenant,
+        members: members,
       }
       //console.log('result', result.toJSON() )
       response.res(result)
-    }catch(e) {
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
-    
   }
 
   async getEstatesByPM({ request, auth, response }) {
@@ -153,9 +156,7 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
-
     const userIds = [auth.user.id]
-
     // Update expired estates status to unpublished
     const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     response.res(result)
