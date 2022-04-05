@@ -24,10 +24,9 @@ class ExcelReader {
    *
    */
   async validateHeader(header) {
-    header = header.slice(0, this.columnLimit)
     await header.forEach((i) => {
       i = _.toLower(i)
-      if (!this.columns.includes(i)) {
+      if (!this.columns.includes(i) && i !== '') {
         this.warnings.push(`Header: ${i} is NOT being tracked and saved to dB.`)
       } else if (i) {
         this.validHeaders.push(i)
@@ -86,17 +85,10 @@ class ExcelReader {
     }
 
     //determine language
-    const deTest = [
-      'Breeze ID',
-      'Deine ID',
-      'Straße (*)',
-      'Hausnummer (*)',
-      'Zusatzadresse',
-      'PLZ (*)',
-    ]
-    const columns = sheet.data[this.headerCol]
+    const deTest = ['Deine ID', 'Straße (*)', 'Hausnummer (*)', 'Zusatzadresse', 'PLZ (*)']
+    const columns = sheet.data[this.headerCol].slice(0, this.columnLimit)
     let probableLang = columns
-      .slice(0, 6)
+      .slice(1, 6)
       .map((column) => (_.indexOf(deTest, column) > -1 ? 'de' : 'en'))
     let lang = 'en'
 
@@ -106,25 +98,36 @@ class ExcelReader {
       throw new HttpException('Cannot determine Excel language.')
     }
     this.dataMapping = new EstateAttributeTranslations(lang)
-
     const HeaderTranslations = new EstateImportHeaderTranslations(lang)
 
     //set possible columns that we can track...
     this.columns = HeaderTranslations.getHeaderVars()
     const header = get(sheet, `data.${this.headerCol}`) || []
     await this.validateHeader(header)
-
     const errors = []
     const toImport = []
     let columnVars = HeaderTranslations.getColumnVars()
+    const validHeaders = this.validHeaders
 
     //Loop through all rows and process
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+      //get this row...
       let row = columns.reduce(function (row, field, index) {
-        if (typeof columnVars[columns[index]] !== 'undefined')
+        if (_.includes(validHeaders, _.toLower(field)))
           row[columnVars[columns[index]]] = sheet.data[k][index]
         return row
       }, {})
+
+      //test if this row are all undefined
+      let processRow = false
+      for (let key in row) {
+        if (row[key] !== undefined) {
+          processRow = true
+        }
+      }
+      if (!processRow) {
+        continue
+      }
 
       let itemData = this.mapToValues(row)
       itemData = {

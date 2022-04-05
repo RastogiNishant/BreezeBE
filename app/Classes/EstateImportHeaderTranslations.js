@@ -149,7 +149,7 @@ class EstateImportHeaderTranslations {
   constructor(lang) {
     if (lang !== 'en') {
       this.headers = [
-        _.toLower(l.get('web.letting.property.import.Breeze_ID_cap.message')),
+        _.toLower(l.get('web.letting.property.import.Breeze_ID.message')),
         _.toLower(l.get('web.letting.property.import.Your_ID.message')),
         _.toLower(l.get('web.letting.property.import.No.message', lang)),
         _.toLower(addAsterisk(l.get('web.letting.property.import.Street.message', lang))),
