@@ -487,6 +487,11 @@ paths:
           in: query
           description: 'Active: 1, Draft: 5'
           enum: ['1', '5']
+        - query:
+          name: query
+          type: string
+          in: query
+          description: Likes on Street
         - limit:
           name: limit
           type: number
@@ -497,6 +502,11 @@ paths:
           type: number
           in: query
           example: 1
+        - return_all:
+          name: return_all
+          in: query
+          example: 1
+          description: whether to return all estates at once or not (1 for return all)
       responses: 
         '200':
           content:
