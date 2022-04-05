@@ -44,6 +44,7 @@ class Estate extends Model {
       'id',
       'user_id',
       'property_type',
+      'six_char_code',
       'type',
       'apt_type',
       'house_type',
