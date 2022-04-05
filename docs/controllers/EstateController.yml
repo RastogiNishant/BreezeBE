@@ -471,13 +471,14 @@ definitions:
 paths:
   /api/v1/estates:
     get:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: Get own estates list
-      produces: [application/json]
       parameters:
         - filters:
-          name: query
+          name: filters
           in: query
           type: string
         - status:
@@ -486,10 +487,23 @@ paths:
           in: query
           description: 'Active: 1, Draft: 5'
           enum: ['1', '5']
-        - $ref: '#/definitions/limit'
-        - $ref: '#/definitions/page'
-      responses: [200]
-
+        - limit:
+          name: limit
+          type: number
+          in: query
+          example: 20
+        - page:
+          name: page
+          type: number
+          in: query
+          example: 1
+      responses: 
+        '200':
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     post:
       tags: [estate]
       security: [bearerAuth: []]

@@ -1,0 +1,369 @@
+components:
+  schemas:
+    login:
+      type: object
+      required:
+        - email
+        - password
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: your@email.com
+        password:
+          type: string
+          example: yourpassword
+        role:
+          type: integer
+          summary: 1 - Landlord, 3 - Tenant/Prospect
+          example: 1
+        device_token:
+          type: string
+          example: ""
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          summary: The user id
+          example: 13
+        uid:
+          type: string
+          example: fd19573c3f25c6355420192bdbace660
+        email:
+          type: string
+          summary: must be a valid email
+          example: your@mail.com
+        firstname:
+          type: string
+        secondname:
+          type: string
+        phone:
+          type: string
+          example: "+423265455126"
+        birthday:
+          type: string
+          format: date-time
+          example: 2021-09-01T16:00:00.000Z
+        sex:
+          type: integer
+          summary: 1 - male, 2 - female, 3 - any
+          example: 1
+        status:
+          type: integer
+          summary: See constants
+        device_token: 
+          type: string
+          summary: device token,
+        avatar:
+          type: string
+          example: https://breeze-files-dev.s3.eu-central-1.amazonaws.com/202203/9d3873b3-c586-433f-8033-b3291c5409c3.png
+        coord:
+          type: string
+        lang:
+          type: string
+          example: de
+        role:
+          type: integer
+          summary: 1 - landlord, 3 - tenant/prospect
+          example: 1
+        created_at: 
+          type: string
+          format: date-time
+          value: 2021-09-12 13:33:43
+        updated_at:
+          type: string
+          format: date-time
+          value: 2022-03-22 16:53:19
+        terms_id:
+          type: integer
+          example: 8
+        agreements_id:
+          type: integer
+          example: 3
+        company_id:
+          type: integer
+        google_id:
+          type: string
+        lord_size:
+          type: string
+        request_full_profile:
+          type: boolean
+          example: false
+        notice:
+          type: boolean
+          example: true
+        approved_landlord:
+          type: boolean
+          example: true
+        is_admin:
+          type: boolean
+          example: false
+        unread_notification_count:
+          type: integer
+          example: 1
+        payment_plan:
+          type: integer
+          nullable: true
+          example: null
+        member_plan_date:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        is_verified:
+          type: boolean
+          example: false
+        verified_by:
+          type: integer
+          nullable: true
+          example: null,
+        verified_date:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        prospect_visibility:
+          type: integer
+          example: 1
+        lanlord_visibility:
+          type: integer
+          example: 1
+        owner_id:
+          type: integer
+          nullable: true
+          example: null
+        plan_id:
+          type: integer
+          example: 1,
+        is_onboarded:
+          type: boolean
+          example: true
+        is_profile_onboarded: 
+          type: boolean
+          example: true
+        is_dashboard_onboarded: 
+          type: boolean
+          example: true
+        is_selection_onboarded: 
+          type: boolean
+          example: true
+        tenant:
+          type: integer
+          nullable: true
+          example: null
+        household:
+          type: integer
+          nullable: true
+          example: null
+        plan:
+          type: object
+          schema: 
+            id:
+              type: integer
+              example: 1
+            name":
+              type: string
+              example: Basic
+            description: 
+              type: string
+              example: This is a basic plan
+            created_at:
+              type: string
+              format: date-time
+              example: 2022-01-27T07:09:26.402Z
+            updated_at:
+              type: string
+              format: date-time
+              example: 2022-01-27T07:09:26.402Z
+        tenantPaymentPlan:
+          type: integer
+          nullable: true
+          example: null
+    CreateUser:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: you@email.com
+          required: true
+        password:
+          type: string
+          example: yourpassword
+          required: true
+        role:
+          type: integer
+          enum: [1, 3]
+          example: 1
+          required: true
+        sex:
+          type: integer
+          example: 1
+          enum: [1, 2]
+          required: true
+        phone:
+          type: string
+          example: "+423265455126"
+        firstname:
+          type: string
+          example: Firstname
+        secondname:
+          type: string
+          example: Secondname
+        birthday:
+          type: string
+          format: date
+          default: '1970-01-01'
+          example: '1970-01-01'
+          required: true
+        lang:
+          type: string
+          example: en
+          enum: ['en', 'de']
+          default: 'en'
+          required: true
+        lord_size:
+          type: number
+          enum: [1, 2, 3]
+        avatar:
+          type: string
+        request_full_profile:
+          type: boolean
+    UpdateUser:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: you@email.com
+          required: true
+        password:
+          type: string
+          example: yourpassword
+          required: true
+        role:
+          type: integer
+          enum: [1, 3]
+          example: 1
+          required: true
+        sex:
+          type: integer
+          example: 1
+          enum: [1, 2]
+          required: true
+        phone:
+          type: string
+          example: "+423265455126"
+        firstname:
+          type: string
+          example: Firstname
+        secondname:
+          type: string
+          example: Secondname
+        birthday:
+          type: string
+          format: date
+          default: '1970-01-01'
+          example: '1970-01-01'
+          required: true
+        lang:
+          type: string
+          example: en
+          enum: ['en', 'de']
+          default: 'en'
+          required: true
+        lord_size:
+          type: number
+          enum: [1, 2, 3]
+        request_full_profile:
+          type: boolean
+    UpdateProfilePicture:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+    ResendSMSInput:
+      type: object
+      required:
+        - email
+        - phone
+      properties:
+        email:
+          type: string
+          example: your@email.com
+        phone:
+          type: string
+          example: "+491234567893"
+    CreateUserResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          $ref: '#/components/schemas/User'
+    HousekeeperSignupInput:
+      type: object
+      required:
+        - email
+        - password
+        - confirmPassword
+        - member_id
+        - owner_id
+        - code
+        - phone
+      properties:
+        email:
+          type: string
+          format: email
+          example: your@email.com
+        password:
+          type: string
+          example: yourpassword
+        confirmPassword:
+          type: string
+          example: yourpassword
+        member_id:
+          type: number
+          example: 1
+        owner_id:
+          type: number
+          example: 1
+        code:
+          type: string
+          example: CODE
+        phone:
+          type: string
+          example: "+491234567890"
+    ConfirmSMSForHousekeeperInput:
+      type: object
+      required:
+        - email
+        - code
+      properties:
+        email:
+          type: string
+          format: email
+          example: your@email.com          
+        code:
+          type: string
+          example: "1234"
+        phone:
+          type: string
+          example: "+491234567890"
+    UpdatePasswordInput:
+      type: object
+      required:
+        - current_password
+        - new_password
+      properties:
+        current_password:
+          type: string
+          example: mypassword
+        new_password:
+          type: string
+          example: mypassword
+          
