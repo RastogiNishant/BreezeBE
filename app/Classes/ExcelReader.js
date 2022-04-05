@@ -7,6 +7,13 @@ const l = use('Localize')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateAttributeTranslations = require('./EstateAttributeTranslations')
 const EstateImportHeaderTranslations = require('./EstateImportHeaderTranslations')
+escapeStr = (v) => {
+  return (v || '')
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-zà-ž\u0370-\u03FF\u0400-\u04FF]/g, '_')
+}
 
 class ExcelReader {
   warnings = []
@@ -64,6 +71,7 @@ class ExcelReader {
         } else if (Object.keys(this.dataMapping).includes(k)) {
           return { ...n, [k]: mapValue(k, v, row) }
         } else if (k.match(/room\d+_type/)) {
+          console.log('roomtype', v, get(this.dataMapping, `room_type.${v}`))
           v = isString(v) ? escapeStr(v) : v
           return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
         }
@@ -113,8 +121,10 @@ class ExcelReader {
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
       //get this row...
       let row = columns.reduce(function (row, field, index) {
-        if (_.includes(validHeaders, _.toLower(field)))
+        if (_.includes(validHeaders, _.toLower(field))) {
+          //this is a valid header so we can add it to row's column
           row[columnVars[columns[index]]] = sheet.data[k][index]
+        }
         return row
       }, {})
 
@@ -128,7 +138,6 @@ class ExcelReader {
       if (!processRow) {
         continue
       }
-
       let itemData = this.mapToValues(row)
       itemData = {
         ...itemData,
@@ -147,9 +156,8 @@ class ExcelReader {
         })
       }
     }
-    console.log('to Import: ', toImport, 'errors', errors)
-    console.log(this.warnings)
-    throw new HttpException('break!')
+    //console.log('toImport', toImport)
+    throw new HttpException('hererere')
     return { errors, data: toImport, warnings: this.warnings }
   }
 }

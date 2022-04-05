@@ -385,14 +385,10 @@ class EstateAttributeTranslations {
         ', '
       ).replace(/\s,/g, ',')
     },
-    energy_efficiency: (i) => 1,
+    energy_efficiency: (i) => i,
   }
 
   constructor(lang = 'en') {
-    /*
-    if (lang === 'en') {
-      return this.dataMapping
-    }*/
     let dataMap = {
       property_type: {
         keys: [
@@ -660,6 +656,7 @@ class EstateAttributeTranslations {
           PARKING_SPACE_TYPE_GARAGE,
         ],
       },
+      /*
       room_type: {
         keys: [
           l.get('property.attribute.ROOM_TYPE.Guest_room.message', lang),
@@ -731,7 +728,7 @@ class EstateAttributeTranslations {
           ROOM_TYPE_STAIRS,
           ROOM_TYPE_PROPERTY_ENTRANCE,
         ],
-      },
+      },*/
       /*
       family_status: {
         keys: [
@@ -753,6 +750,8 @@ class EstateAttributeTranslations {
       }
       this.dataMapping[attribute] = keyValue
     }
+    //console.log('dataMapping', this.dataMapping)
+    throw new HttpException('datamapping')
     return this.dataMapping
   }
 }
