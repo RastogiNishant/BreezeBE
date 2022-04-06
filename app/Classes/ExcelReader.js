@@ -121,14 +121,14 @@ class ExcelReader {
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
       //get this row...
       let row = columns.reduce(function (row, field, index) {
-        if (_.includes(validHeaders, _.toLower(field))) {
-          //this is a valid header so we can add it to row's column
-          row[columnVars[columns[index]]] = sheet.data[k][index]
+        if (_.indexOf(validHeaders, _.toLower(field)) > -1) {
+          //this is a valid content
+          row[columnVars[_.toLower(field)]] = sheet.data[k][index]
         }
         return row
       }, {})
 
-      //test if this row are all undefined
+      //test if this row are all undefined (The hidden columns messed this up)
       let processRow = false
       for (let key in row) {
         if (row[key] !== undefined) {
@@ -143,8 +143,8 @@ class ExcelReader {
         ...itemData,
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
         floor: itemData.floor ? itemData.floor : 0,
-        tenant_tel: itemData.tenant_tel_de || itemData.tenant_tel,
       }
+      console.log('itemData', itemData)
       try {
         toImport.push({ line: k, data: await schema.validate(itemData) })
       } catch (e) {
@@ -156,8 +156,6 @@ class ExcelReader {
         })
       }
     }
-    //console.log('toImport', toImport)
-    throw new HttpException('hererere')
     return { errors, data: toImport, warnings: this.warnings }
   }
 }

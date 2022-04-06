@@ -166,8 +166,10 @@ toPercent = (i) => {
 toBool = (v) => {
   switch (escapeStr(v)) {
     case 'no':
+    case 'nein':
       return false
     case 'yes':
+    case 'ja':
       return true
     default:
       return null
@@ -656,7 +658,6 @@ class EstateAttributeTranslations {
           PARKING_SPACE_TYPE_GARAGE,
         ],
       },
-      /*
       room_type: {
         keys: [
           l.get('property.attribute.ROOM_TYPE.Guest_room.message', lang),
@@ -728,7 +729,7 @@ class EstateAttributeTranslations {
           ROOM_TYPE_STAIRS,
           ROOM_TYPE_PROPERTY_ENTRANCE,
         ],
-      },*/
+      },
       /*
       family_status: {
         keys: [
@@ -751,7 +752,7 @@ class EstateAttributeTranslations {
       this.dataMapping[attribute] = keyValue
     }
     //console.log('dataMapping', this.dataMapping)
-    throw new HttpException('datamapping')
+    //throw new HttpException('datamapping')
     return this.dataMapping
   }
 }
