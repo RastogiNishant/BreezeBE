@@ -40,7 +40,7 @@ const {
   ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { result } = require('lodash')
+const { isEmpty } = require('lodash')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -173,6 +173,7 @@ class EstateController {
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
+      .with('current_tenant')
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE)
           .with('images')
