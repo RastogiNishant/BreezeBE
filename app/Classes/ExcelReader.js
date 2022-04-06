@@ -88,7 +88,9 @@ class ExcelReader {
     const sheet = data.find((i) => i.name === this.sheetName)
     if (!sheet || !sheet.data) {
       throw new HttpException(
-        `Cannot find sheet: ${this.sheetName}. Please use the correct template.`
+        `Cannot find sheet: ${this.sheetName}. Please use the correct template.`,
+        422,
+        101100
       )
     }
 
@@ -103,7 +105,7 @@ class ExcelReader {
     if (_.uniq(probableLang).length <= 1) {
       lang = probableLang[0]
     } else {
-      throw new HttpException('Cannot determine Excel language.')
+      throw new HttpException('Cannot determine Excel language.', 422, 101101)
     }
     this.dataMapping = new EstateAttributeTranslations(lang)
     const HeaderTranslations = new EstateImportHeaderTranslations(lang)
@@ -111,6 +113,7 @@ class ExcelReader {
     //set possible columns that we can track...
     this.columns = HeaderTranslations.getHeaderVars()
     const header = get(sheet, `data.${this.headerCol}`) || []
+    //we validate the header... this adds warnings when necessary
     await this.validateHeader(header)
     const errors = []
     const toImport = []
@@ -136,15 +139,16 @@ class ExcelReader {
         }
       }
       if (!processRow) {
+        //this is unprocessable, it contains only undefined values
         continue
       }
+      //we process what to do with the values
       let itemData = this.mapToValues(row)
       itemData = {
         ...itemData,
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
         floor: itemData.floor ? itemData.floor : 0,
       }
-      console.log('itemData', itemData)
       try {
         toImport.push({ line: k, data: await schema.validate(itemData) })
       } catch (e) {
