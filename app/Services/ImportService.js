@@ -52,6 +52,9 @@ class ImportService {
     if (six_char_code) {
       //check if this is an edit...
       estate = await Estate.query().where('six_char_code', six_char_code).where('user_id', userId)
+      if (!estate) {
+        return { error: [`${six_char_code} is an invalid Breeze ID`], line, address: data.address }
+      }
     } else {
       try {
         if (!data.address) {

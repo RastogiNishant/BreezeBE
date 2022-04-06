@@ -132,6 +132,7 @@ class Estate extends Model {
       'avail_duration',
       'vacant_date',
       'others',
+      'minors',
     ]
   }
 

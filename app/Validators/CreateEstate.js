@@ -455,6 +455,7 @@ class CreateEstate extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
+      minors: yup.boolean(),
     })
 }
 

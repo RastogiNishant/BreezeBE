@@ -547,21 +547,25 @@ class EstateAttributeTranslations {
       },
       apartment_status: {
         keys: [
-          l.get('property.attribute.BUILDING_STATUS.First_time_occupied.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.New.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Existing.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Part_fully_renovated.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Partly_refurished.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.In_need_of_renovation.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Ready_to_be_built.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.By_agreement.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Modernized.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Cleaned.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Rough_building.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Developed.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Abrissobjekt.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Projected.message', lang),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.First_time_occupied.message', lang)),
+          escapeStr(
+            l.get('property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message', lang)
+          ),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.New.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Existing.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Part_fully_renovated.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Partly_refurished.message', lang)),
+          escapeStr(
+            l.get('property.attribute.BUILDING_STATUS.In_need_of_renovation.message', lang)
+          ),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Ready_to_be_built.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.By_agreement.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Modernized.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Cleaned.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Rough_building.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Developed.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Abrissobjekt.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Projected.message', lang)),
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -802,18 +806,20 @@ class EstateAttributeTranslations {
           'landlord.property.inside_view.rooms.external_corridor',
         ],
       },
-      /*
-      family_status: {
+      pets_allowed: {
         keys: [
-
+          escapeStr(l.get('yes.message', lang)),
+          escapeStr(l.get('web.letting.property.import.No_or_small_pets.message', lang)),
         ],
-        values: [
-
-        ]
-        family_no_kids: FAMILY_STATUS_NO_CHILD,
-        family_with_kids: FAMILY_STATUS_WITH_CHILD,
-        single: FAMILY_STATUS_SINGLE,
-      },*/
+        values: [null, 1],
+      },
+      minors: {
+        keys: [
+          escapeStr(l.get('web.letting.property.import.No_matter.message', lang)),
+          escapeStr(l.get('yes.message', lang)),
+        ],
+        values: [false, true],
+      },
     }
     let keyValue
     for (let attribute in dataMap) {
@@ -823,8 +829,6 @@ class EstateAttributeTranslations {
       }
       this.dataMapping[attribute] = keyValue
     }
-    //console.log('dataMapping', this.dataMapping)
-    //throw new HttpException('datamapping')
     return this.dataMapping
   }
 }
