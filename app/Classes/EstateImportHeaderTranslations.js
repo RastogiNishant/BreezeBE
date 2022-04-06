@@ -73,7 +73,6 @@ class EstateImportHeaderTranslations {
     'Salutation',
     'Minors',
     'Tel',
-    'Tel.',
     'Email',
     'Heating Costs',
   ]
