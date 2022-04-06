@@ -283,6 +283,10 @@ class Estate extends Model {
     return this.hasMany('App/Models/TimeSlot')
   }
 
+  current_tenant() {
+    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
+  }
+
   /**
    *
    */
