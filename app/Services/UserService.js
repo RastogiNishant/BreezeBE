@@ -296,6 +296,13 @@ class UserService {
     const data = await UserService.getTokenWithLocale([user.id])
     const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
+throw new HttpException({
+  code,
+  user_id: user.id,
+  role: user.role,
+  lang: lang,
+});
+
     await MailService.sendUserConfirmation(user.email, {
       code,
       user_id: user.id,
