@@ -5,6 +5,7 @@ paths:
       description: Login the user
       tags:
         - User Account
+        - Authentication
       name: User Login
       requestBody:
         required: true
@@ -182,6 +183,7 @@ paths:
       security: [bearerAuth: []]
       tags:
         - User Account
+        - Authentication
       summary: logout
       description: Logs the user out. This will only remove device_token from db so application must do something with the jwt token (forget) to completely log the user out.
       name: Logout
@@ -347,7 +349,7 @@ paths:
           multipart/form-data:
             type: object
             schema:
-              $ref: '#/components/schemas/UpdateProfilePicture'  
+              $ref: '#/components/schemas/UpdateProfilePicture'
       responses:
         '200':
           description: OK
