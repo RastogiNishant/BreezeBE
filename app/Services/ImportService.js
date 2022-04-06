@@ -101,7 +101,7 @@ class ImportService {
    *
    */
   static async process(filePath, userId, type, from_web = false) {
-    let { errors, data } = from_web
+    let { errors, data, warnings } = from_web
       ? await ImportService.readFileFromWeb(filePath)
       : ImportService.readFile(filePath)
 
@@ -113,6 +113,7 @@ class ImportService {
     return {
       errors: [...errors, ...createErrors],
       success: result.length - createErrors.length,
+      warnings,
     }
   }
 

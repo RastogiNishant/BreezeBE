@@ -44,6 +44,7 @@ class Estate extends Model {
       'id',
       'user_id',
       'property_type',
+      'six_char_code',
       'type',
       'apt_type',
       'house_type',
@@ -172,6 +173,15 @@ class Estate extends Model {
     return 'App/Serializers/EstateSerializer'
   }
 
+  static generateRandomString(length = 6) {
+    let randomString = ''
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
+    for (var i = 0; i < length; i++) {
+      randomString += characters.charAt(Math.floor(Math.random() * characters.length))
+    }
+    return randomString
+  }
+
   /**
    *
    */
@@ -205,6 +215,18 @@ class Estate extends Model {
       await Database.table('estates')
         .update({ hash: Estate.getHash(instance.id) })
         .where('id', instance.id)
+      let exists
+      let randomString
+      do {
+        randomString = this.generateRandomString(6)
+        exists = await Database.table('estates')
+          .where('six_char_code', randomString)
+          .select('id')
+          .first()
+      } while (exists)
+      await Database.table('estates')
+        .where('id', instance.id)
+        .update({ six_char_code: randomString })
     })
   }
 
@@ -232,10 +254,8 @@ class Estate extends Model {
   /**
    *
    */
-   knocked() {
-    return this.hasMany('App/Models/Match').whereIn('status', [
-      MATCH_STATUS_KNOCK,
-    ])
+  knocked() {
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_KNOCK])
   }
 
   /**
@@ -332,7 +352,7 @@ class Estate extends Model {
    *
    */
   static getFinalPrice(e) {
-    return (parseFloat(e.net_rent) || 0) //+ (parseFloat(e.additional_costs) || 0)
+    return parseFloat(e.net_rent) || 0 //+ (parseFloat(e.additional_costs) || 0)
   }
 
   /**

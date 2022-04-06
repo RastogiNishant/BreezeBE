@@ -34,17 +34,21 @@ module.exports = {
       ],
       tags: [
         {
+          name: 'Authentication',
+          description: 'All about authentication',
+        },
+        {
           name: 'User Account',
           description:
             'All about authentication, information about Landlords, Tenants/Prospects, etc.',
         },
         {
-          name: 'Landlords',
-          description: 'All about the Landlord User',
-        },
-        {
           name: 'Landlord Estates',
           description: `All about the Landlord's Estates`,
+        },
+        {
+          name: 'Landlord Estate Timeslots',
+          description: `Landlord Estate Timeslots`,
         },
         {
           name: 'Prospects',
