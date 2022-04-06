@@ -867,6 +867,12 @@ paths:
       description: Add estates by uploading an excel file to the server. Excel file must adhere to the right template.
         Template could be in English or German language.
       summary: add estates by importing an excel file
+      parameters:
+        - from_web: 
+          name: from_web
+          in: query
+          type: integer
+          example: 1
       requestBody:
         content:
           multipart/form-data:
