@@ -29,28 +29,29 @@ class RoomService {
       .select('rooms.*', '_e.cover')
       .where('rooms.id', roomId)
       .innerJoin({ _e: 'estates' }, function () {
-        if( isArray(userId)){
-          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)          
-        }else{
-          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)  
+        if (isArray(userId)) {
+          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)
+        } else {
+          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
         }
-
       })
       .first()
   }
 
-  static async getRoomIds( userId, roomIds) {
-    return (await Room.query()
-      .select('rooms.id')
-      .whereIn('rooms.id', roomIds)
-      .innerJoin({ _e: 'estates' }, function () {
-        if( isArray(userId)){
-          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)          
-        }else{
-          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)  
-        }
-      })
-      .fetch()).rows
+  static async getRoomIds(userId, roomIds) {
+    return (
+      await Room.query()
+        .select('rooms.id')
+        .whereIn('rooms.id', roomIds)
+        .innerJoin({ _e: 'estates' }, function () {
+          if (isArray(userId)) {
+            this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)
+          } else {
+            this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
+          }
+        })
+        .fetch()
+    ).rows
   }
 
   /**
@@ -67,8 +68,8 @@ class RoomService {
     return Room.query()
       .where('estate_id', estateId)
       .whereNot('status', STATUS_DELETE)
-      .orderBy('order','asc')
-      .orderBy('id','asc')
+      .orderBy('order', 'asc')
+      .orderBy('id', 'asc')
       .fetch()
   }
 
@@ -115,7 +116,7 @@ class RoomService {
       )
       // Separately run task to save images for rooms
       QueueService.savePropertyBulkImages(images)
-//ImageService.savePropertyBulkImages(images)
+      //ImageService.savePropertyBulkImages(images)
     }
   }
 

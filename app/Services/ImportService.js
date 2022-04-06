@@ -11,6 +11,8 @@ const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
+const Estate = use('App/Models/Estate')
+const Room = use('App/Models/Room')
 const schema = require('../Validators/CreateBuddy').schema()
 
 const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING } = require('../constants')
@@ -25,6 +27,8 @@ class ImportService {
    */
   static async readFile(filePath) {
     const reader = new ExcelReader()
+    reader.headerCol = 1
+    reader.sheetName = 'Import_Data'
     return await reader.readFile(filePath)
   }
 
@@ -43,33 +47,57 @@ class ImportService {
   /**
    *
    */
-  static async createSingleEstate({ data, line }, userId) {
-    try {
-      if (!data.address) {
-        throw new AppException('Invalid address')
+  static async createSingleEstate({ data, line, six_char_code }, userId) {
+    let estate
+    if (six_char_code) {
+      //check if this is an edit...
+      estate = await Estate.query().where('six_char_code', six_char_code).where('user_id', userId)
+    } else {
+      try {
+        if (!data.address) {
+          throw new AppException('Invalid address')
+        }
+        const address = data.address.toLowerCase()
+        const existingEstate = await EstateService.getQuery()
+          .where('user_id', userId)
+          .where('address', 'LIKE', `%${address}%`)
+          .first()
+
+        if (existingEstate) {
+          await EstateService.completeRemoveEstate(existingEstate.id)
+        }
+
+        data.avail_duration = 144
+        data.status = STATUS_DRAFT
+        data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        estate = await EstateService.createEstate(data, userId)
+
+        //await RoomService.createBulkRooms(estate.id, data)
+        let rooms = []
+        let found
+        for (let key in data) {
+          if ((found = key.match(/^room(\d)_type$/))) {
+            rooms.push({ ...data[key], import_sequence: found[1] })
+          }
+        }
+        if (rooms.length) {
+          await ImportService.createRoomsFromImport(estate.id, rooms)
+        }
+
+        // Run task to separate get coords and point of estate
+        QueueService.getEstateCoords(estate.id)
+        return estate
+      } catch (e) {
+        return { error: [e.message], line, address: data.address }
       }
-      const address = data.address.toLowerCase()
-      const existingEstate = await EstateService.getQuery()
-        .where('user_id', userId)
-        .where('address', 'LIKE', `%${address}%`)
-        .first()
-
-      if (existingEstate) {
-        await EstateService.completeRemoveEstate(existingEstate.id)
-      }
-
-      data.avail_duration = 144
-      data.status = STATUS_DRAFT
-      data.available_date = data.available_date || moment().format(DATE_FORMAT)
-
-      const estate = await EstateService.createEstate(data, userId)
-      await RoomService.createBulkRooms(estate.id, data)
-      // Run task to separate get coords and point of estate
-      QueueService.getEstateCoords(estate.id)
-      return estate
-    } catch (e) {
-      return { error: [e.message], line, address: data.address }
     }
+  }
+
+  static async createRoomsFromImport(estate_id, rooms) {
+    const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+      return [...roomsInfo, { ...room, estate_id }]
+    }, [])
+    await Room.createMany(roomsInfo)
   }
 
   /**

@@ -176,6 +176,7 @@ const {
 class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
+      six_char_code: yup.string().nullable(),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
@@ -366,7 +367,13 @@ class CreateEstate extends Base {
       heating_type: yup
         .number()
         // .positive()
-        .oneOf([HEATING_TYPE_NO, HEATING_TYPE_OVEN, HEATING_TYPE_FLOOR, HEATING_TYPE_CENTRAL, HEATING_TYPE_REMOTE]),
+        .oneOf([
+          HEATING_TYPE_NO,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_FLOOR,
+          HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_REMOTE,
+        ]),
       equipment: yup
         .array()
         .of(

@@ -71,9 +71,14 @@ class ExcelReader {
         } else if (Object.keys(this.dataMapping).includes(k)) {
           return { ...n, [k]: mapValue(k, v, row) }
         } else if (k.match(/room\d+_type/)) {
-          console.log('roomtype', v, get(this.dataMapping, `room_type.${v}`))
           v = isString(v) ? escapeStr(v) : v
-          return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
+          return {
+            ...n,
+            [k]: {
+              type: get(this.dataMapping, `room_type.${v}`),
+              name: get(this.dataMapping, `room_type_name.${v}`),
+            },
+          }
         }
         return { ...n, [k]: v }
       },
@@ -150,7 +155,11 @@ class ExcelReader {
         floor: itemData.floor ? itemData.floor : 0,
       }
       try {
-        toImport.push({ line: k, data: await schema.validate(itemData) })
+        toImport.push({
+          line: k,
+          data: await schema.validate(itemData),
+          six_char_code: itemData.six_char_code,
+        })
       } catch (e) {
         errors.push({
           line: k,
