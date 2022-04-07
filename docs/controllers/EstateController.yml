@@ -475,23 +475,43 @@ paths:
         - Landlord Estates
       security:
         - bearerAuth: []
-      description: Current user's estate list
+      description: |
+        This will return the current user's estate list. User must be a landlord to access this.
       summary: current user's estate list
       parameters:
-        - filters:
-          name: filters
+        - name: filters[]
           in: query
-          type: string
-        - status:
-          name: status
-          type: number
+          description: | 
+            will look in **match's status**. Possible values: 
+            - NEW: 1,
+            - KNOCK: 2,
+            - INVITE: 3,
+            - VISIT: 4,
+            - SHARE: 5,
+            - TOP: 6,
+            - COMMIT: 7,
+            - FINISH: 8,
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: status[]
+          schema:
+            type: array
+            items:
+              type: integer
           in: query
-          description: 'Active: 1, Draft: 5'
+          description: |
+            Estate statuses. Possible values:
+            - Active: 1
+            - Draft: 5
+            - Expired: 6
           enum: ['1', '5']
         - query:
           name: query
           type: string
           in: query
+          description: this will search address and property ID with the query
         - limit:
           name: limit
           type: number
@@ -505,7 +525,7 @@ paths:
         - return_all:
           name: return_all
           in: query
-          example: 1
+          example: 0
           description: whether to return all estates at once or not (1 for return all)
       responses: 
         '200':
