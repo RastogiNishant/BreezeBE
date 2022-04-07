@@ -147,6 +147,7 @@ class EstateImportHeaderTranslations {
     'heating_costs',
   ]
   constructor(lang) {
+    console.log('txt minors', l.get('landlord.profile.menu.txt_minors', lang))
     this.headers = [
       _.toLower(l.get('web.letting.property.import.Breeze_ID.message', lang)),
       _.toLower(l.get('web.letting.property.import.Your_ID.message', lang)),

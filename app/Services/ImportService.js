@@ -12,11 +12,18 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
+const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Room = use('App/Models/Room')
 const schema = require('../Validators/CreateBuddy').schema()
 
-const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING, STATUS_ACTIVE } = require('../constants')
+const {
+  STATUS_DRAFT,
+  DATE_FORMAT,
+  BUDDY_STATUS_PENDING,
+  STATUS_ACTIVE,
+  ROLE_USER,
+} = require('../constants')
 const HttpException = use('App/Exceptions/HttpException')
 
 /**
@@ -92,6 +99,12 @@ class ImportService {
 
         //add current tenant
         if (data.tenant_email) {
+          //check if a current user
+          let user = await User.query()
+            .where('email', data.tenant_email)
+            .where('role', ROLE_USER)
+            .first()
+
           let currentTenant = new EstateCurrentTenant()
           currentTenant.fill({
             estate_id: estate.id,
@@ -102,6 +115,9 @@ class ImportService {
             phone_number: data.tenant_tel,
             status: STATUS_ACTIVE,
           })
+          if (user) {
+            currentTenant.user_id = user.id
+          }
           await currentTenant.save()
         }
 
