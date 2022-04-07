@@ -13,6 +13,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 // const MatchService = use('App/Services/MatchService') # DO NOT INCLUDE, cycling dependencies
 const Estate = use('App/Models/Estate')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
@@ -157,6 +158,7 @@ class EstateService {
   }
 
   static async completeRemoveEstate(id) {
+    await EstateCurrentTenant.query().where('estate_id', id).delete()
     return await Estate.query().where('id', id).delete()
   }
 

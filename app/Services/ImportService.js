@@ -12,10 +12,11 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Room = use('App/Models/Room')
 const schema = require('../Validators/CreateBuddy').schema()
 
-const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING } = require('../constants')
+const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING, STATUS_ACTIVE } = require('../constants')
 const HttpException = use('App/Exceptions/HttpException')
 
 /**
@@ -69,7 +70,6 @@ class ImportService {
         if (existingEstate) {
           await EstateService.completeRemoveEstate(existingEstate.id)
         }
-
         data.avail_duration = 144
         data.status = STATUS_DRAFT
         data.available_date = data.available_date || moment().format(DATE_FORMAT)
@@ -89,6 +89,22 @@ class ImportService {
 
         // Run task to separate get coords and point of estate
         QueueService.getEstateCoords(estate.id)
+
+        //add current tenant
+        if (data.tenant_email) {
+          let currentTenant = new EstateCurrentTenant()
+          currentTenant.fill({
+            estate_id: estate.id,
+            salutation: data.txt_salutation || '',
+            surname: data.surname || '',
+            email: data.tenant_email,
+            contract_end: data.contract_end,
+            phone_number: data.tenant_tel,
+            status: STATUS_ACTIVE,
+          })
+          await currentTenant.save()
+        }
+
         return estate
       } catch (e) {
         return { error: [e.message], line, address: data.address }
