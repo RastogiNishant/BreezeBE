@@ -366,7 +366,13 @@ class CreateEstate extends Base {
       heating_type: yup
         .number()
         // .positive()
-        .oneOf([HEATING_TYPE_NO, HEATING_TYPE_OVEN, HEATING_TYPE_FLOOR, HEATING_TYPE_CENTRAL, HEATING_TYPE_REMOTE]),
+        .oneOf([
+          HEATING_TYPE_NO,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_FLOOR,
+          HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_REMOTE,
+        ]),
       equipment: yup
         .array()
         .of(
@@ -448,6 +454,7 @@ class CreateEstate extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
+      extra_costs: yup.number().min(0).max(1000000),
     })
 }
 

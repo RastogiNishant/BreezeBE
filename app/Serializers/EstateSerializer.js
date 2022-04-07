@@ -34,8 +34,6 @@ class EstateSerializer extends BaseSerializer {
 
     isShort && this.filterFields(item, extraFields)
 
-    item.extra_costs = (Number(item.additional_costs) + Number(item.heating_costs)).toFixed(2)
-
     return this._getRowJSON(item)
   }
 }
