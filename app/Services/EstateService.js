@@ -99,6 +99,9 @@ class EstateService {
       .withCount('decided')
       .withCount('invite')
       .withCount('inviteBuddies')
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -684,6 +687,7 @@ class EstateService {
         .whereIn('user_id', ids)
         .whereNot('status', STATUS_DELETE)
         .whereNot('area', 0)
+        .with('esta')
         .fetch()
     } else {
       return await EstateService.getEstates(params)

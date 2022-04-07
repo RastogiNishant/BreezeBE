@@ -2,6 +2,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
+const { STATUS_ACTIVE } = require('../constants')
 
 class EstateCurrentTenant extends Model {
   static get columns() {
@@ -10,6 +11,10 @@ class EstateCurrentTenant extends Model {
 
   static get Serializer() {
     return 'App/Serializers/EstateCurrentTenantSerializer'
+  }
+
+  user() {
+    return this.hasOne('App/Models/User', 'user_id', 'id').where('status', STATUS_ACTIVE)
   }
 }
 

@@ -163,10 +163,8 @@ class ImportService {
   /**
    *
    */
-  static async process(filePath, userId, type, from_web = false) {
-    let { errors, data, warnings } = from_web
-      ? await ImportService.readFileFromWeb(filePath)
-      : ImportService.readFile(filePath)
+  static async process(filePath, userId, type) {
+    let { errors, data, warnings } = await ImportService.readFileFromWeb(filePath)
 
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
