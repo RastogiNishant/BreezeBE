@@ -206,14 +206,6 @@ class Estate extends Model {
           ', '
         ).toLowerCase()
       }
-      console.log(
-        'heating costs',
-        instance.dirty.heating_costs,
-        'additional_costs',
-        instance.dirty.additional_costs,
-        'extra',
-        instance.dirty.extra_costs
-      )
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
