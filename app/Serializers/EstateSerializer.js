@@ -9,7 +9,7 @@ const Drive = use('Drive')
  */
 class EstateSerializer extends BaseSerializer {
   mergeData(item, options = {}) {
-    const { isOwner = false, isShort = false, extraFields = [] } = options
+    const { isOwner = false, isShort = false, extraFields = [], role = null } = options
     if (!isOwner) {
       item.hash = undefined
     }
@@ -35,6 +35,14 @@ class EstateSerializer extends BaseSerializer {
     isShort && this.filterFields(item, extraFields)
 
     item.extra_costs = (Number(item.additional_costs) + Number(item.heating_costs)).toFixed(2)
+
+    if( role !=null && role === 3 ) {
+      if( item.full_address === false ) {
+        item.coord = undefined
+        item.street = undefined
+        item.house_number = undefined
+      }
+    }
 
     return this._getRowJSON(item)
   }

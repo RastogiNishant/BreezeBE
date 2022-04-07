@@ -471,13 +471,13 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true }))
+    response.res(estates.toJSON({ isShort: true, role:user.role }))
   }
 
   /**
    *
    */
-  async getTenantEstate({ request, response }) {
+  async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
 
     const estate = await EstateService.getQuery()
@@ -493,7 +493,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    response.res(estate)
+    response.res(estate.toJSON({ isShort: true, role:auth.user.role }))
   }
 
   /**
