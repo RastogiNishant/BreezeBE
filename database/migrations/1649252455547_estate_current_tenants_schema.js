@@ -15,6 +15,7 @@ class EstateCurrentTenantsSchema extends Schema {
       table.integer('estate_id').unsigned().references('id').inTable('estates')
       table.date('contract_end')
       table.integer('status').unsigned().defaultTo(STATUS_ACTIVE)
+      table.integer('user_id').unsigned().nullable().references('id').inTable('users')
       table.timestamps()
     })
   }
