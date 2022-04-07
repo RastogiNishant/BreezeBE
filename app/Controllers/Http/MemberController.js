@@ -181,6 +181,11 @@ class MemberController {
     ])
 
     const newData = member.owner_user_id ? omit(data, ['email']) : data
+
+    if (data?.phone !== member.phone) {
+      newData.phone_verified = false
+    }
+
     await member.updateItem({ ...newData, ...files })
     await MemberService.calcTenantMemberData(member.user_id)
 
