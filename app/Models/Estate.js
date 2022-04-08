@@ -133,6 +133,8 @@ class Estate extends Model {
       'vacant_date',
       'others',
       'minors',
+      'letting_status',
+      'letting_type',
     ]
   }
 
