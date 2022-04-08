@@ -88,7 +88,7 @@ class ExcelReader {
   /**
    *
    */
-  async readFile(filePath) {
+  async readFileEstateImport(filePath) {
     const data = xlsx.parse(filePath, { cellDates: true })
     const sheet = data.find((i) => i.name === this.sheetName)
     if (!sheet || !sheet.data) {
@@ -170,6 +170,48 @@ class ExcelReader {
       }
     }
     return { errors, data: toImport, warnings: this.warnings }
+  }
+
+  async readFile(filePath) {
+    const data = xlsx.parse(filePath, { cellDates: true })
+
+    const sheet = data.find((i) => i.name === 'data')
+
+    if (!sheet || !sheet.data) {
+      throw new AppException('Invalid spreadsheet')
+    }
+
+    await this.validateHeader(sheet)
+
+    const errors = []
+    const toImport = []
+
+    for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+      if (k <= this.headerCol || isEmpty(sheet.data[k])) {
+        continue
+      }
+
+      let itemData = this.mapDataToEntity(sheet.data[k])
+
+      itemData = {
+        ...itemData,
+        credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
+        floor: itemData.floor ? itemData.floor : 0,
+      }
+
+      try {
+        toImport.push({ line: k, data: await schema.validate(itemData) })
+      } catch (e) {
+        errors.push({
+          line: k,
+          error: e.errors,
+          street: itemData ? itemData.street : `no street code`,
+          postcode: itemData ? itemData.zip : `no zip code`,
+        })
+      }
+    }
+
+    return { errors, data: toImport }
   }
 }
 

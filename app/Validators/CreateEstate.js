@@ -171,12 +171,24 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_WITH_CHILD,
+  //Letting Status
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+
+  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_CONSTRUCTION_WORKS,
+  LETTING_STATUS_STRUCTURAL_VACANCY,
+  LETTING_STATUS_FIRST_TIME_USE,
+  LETTING_STATUS_VACANCY,
 } = require('../constants')
 
 class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
-      six_char_code: yup.string().nullable(),
+      breeze_id: yup.string().nullable(),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
@@ -456,6 +468,26 @@ class CreateEstate extends Base {
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
       minors: yup.boolean(),
+      letting_status: yup.object().shape({
+        type: yup
+          .number()
+          .integer()
+          .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
+          .nullable(),
+        status: yup
+          .number()
+          .integer()
+          .oneOf([
+            LETTING_STATUS_DEFECTED,
+            LETTING_STATUS_TERMINATED,
+            LETTING_STATUS_NORMAL,
+            LETTING_STATUS_CONSTRUCTION_WORKS,
+            LETTING_STATUS_STRUCTURAL_VACANCY,
+            LETTING_STATUS_FIRST_TIME_USE,
+            LETTING_STATUS_VACANCY,
+          ])
+          .nullable(),
+      }),
     })
 }
 

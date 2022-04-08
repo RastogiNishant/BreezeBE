@@ -35,8 +35,6 @@ class ImportService {
    */
   static async readFile(filePath) {
     const reader = new ExcelReader()
-    reader.headerCol = 1
-    reader.sheetName = 'Import_Data'
     return await reader.readFile(filePath)
   }
 
@@ -44,7 +42,7 @@ class ImportService {
     const reader = new ExcelReader()
     reader.headerCol = 1
     reader.sheetName = 'Import_Data'
-    return await reader.readFile(filePath)
+    return await reader.readFileEstateImport(filePath)
   }
 
   static async readBuddyFile(filePath) {
@@ -63,6 +61,7 @@ class ImportService {
       if (!estate) {
         return { error: [`${six_char_code} is an invalid Breeze ID`], line, address: data.address }
       }
+      //TODO: update Estate...
     } else {
       try {
         if (!data.address) {
@@ -80,6 +79,10 @@ class ImportService {
         data.avail_duration = 144
         data.status = STATUS_DRAFT
         data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        if (data.letting_status) {
+          data.letting_type = data.letting_status.type
+          data.letting_status = data.letting_status.status || null
+        }
         estate = await EstateService.createEstate(data, userId)
 
         //await RoomService.createBulkRooms(estate.id, data)

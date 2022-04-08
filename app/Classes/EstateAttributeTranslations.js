@@ -1,6 +1,5 @@
 const l = use('Localize')
-const HttpException = use('App/Exceptions/HttpException')
-const { trim, toLower } = require('lodash')
+const { trim } = require('lodash')
 const {
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
@@ -401,9 +400,10 @@ class EstateAttributeTranslations {
         letting_type = i
         letting_status = null
       }
+
       return {
-        type: this.dataMapping.let_type[letting_type],
-        status: this.dataMapping.let_status[letting_status],
+        type: this.dataMapping.let_type[escapeStr(letting_type)],
+        status: this.dataMapping.let_status[escapeStr(letting_status)],
       }
     },
   }
@@ -866,6 +866,7 @@ class EstateAttributeTranslations {
         ],
       },
     }
+    this.dataMap = dataMap
     let keyValue
     for (let attribute in dataMap) {
       keyValue = {}

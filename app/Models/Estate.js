@@ -142,7 +142,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash']
+    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash', 'six_char_code']
   }
 
   /**
