@@ -13,3 +13,5 @@ public/docs/*
 public/uploads
 public/avatars
 #client/build
+
+package-lock.json

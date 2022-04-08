@@ -471,13 +471,15 @@ definitions:
 paths:
   /api/v1/estates:
     get:
-      tags: [estate]
-      security: [bearerAuth: []]
-      description: Get own estates list
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Current user's estate list
+      summary: current user's estate list
       parameters:
         - filters:
-          name: query
+          name: filters
           in: query
           type: string
         - status:
@@ -486,15 +488,39 @@ paths:
           in: query
           description: 'Active: 1, Draft: 5'
           enum: ['1', '5']
-        - $ref: '#/definitions/limit'
-        - $ref: '#/definitions/page'
-      responses: [200]
-
+        - query:
+          name: query
+          type: string
+          in: query
+        - limit:
+          name: limit
+          type: number
+          in: query
+          example: 20
+        - page:
+          name: page
+          type: number
+          in: query
+          example: 1
+        - return_all:
+          name: return_all
+          in: query
+          example: 1
+          description: whether to return all estates at once or not (1 for return all)
+      responses: 
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     post:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: Create new estate
-      produces: [application/json]
       parameters:
         - $ref: '#/definitions/property_id'
         - $ref: '#/definitions/property_type'
@@ -576,14 +602,22 @@ paths:
         - $ref: '#/definitions/apt_options'
         - $ref: '#/definitions/min_age'
         - $ref: '#/definitions/max_age'
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{id}:
     get:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: Get single estate with POI
-      produces: [application/json]
       parameters:
         - id:
           name: id
@@ -591,13 +625,21 @@ paths:
           type: number
           default: '1'
           required: true
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
     put:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: update existing estate
-      produces: [application/json]
       parameters:
         - id:
           name: id
@@ -686,48 +728,97 @@ paths:
         - $ref: '#/definitions/apt_options'
         - $ref: '#/definitions/min_age'
         - $ref: '#/definitions/max_age'
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
     delete:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags: 
+        - Landlord Estates
+      security: 
+        - bearerAuth: []
       description: update existing estate
-      produces: [application/json]
       parameters:
         - id:
           name: id
           in: path
           type: number
           required: true
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{id}/publish:
     put:
-      tags: [estate]
-      security: [bearerAuth: []]
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Publish or Unpublish a given Estate
+      summary: publish or unpublish a given estate
       parameters:
         - id:
           name: id
           in: path
           type: number
+          description: The id of the estate
           default: '1'
           required: true
-        - action:
-          name: action
-          in: formData
-          type: string
-          enum: ['publish', 'unpublish']
-          default: 'publish'
-          required: true
-      responses: [200]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            required:
+              - action
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  description: whether to publish or unpublish the given estate
+                  enum:
+                    - publish
+                    - unpublish
+                  default: publish
+          application/json:
+            required:
+              - action
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  description: whether to publish or unpublish the given estate
+                  enum:
+                    - publish
+                    - unpublish
+                  default: publish
+          
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{estate_id}/files:
     post:
-      tags: [estate]
-      security: [bearerAuth: []]
-      description: update existing estate
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: add/update attachments to an estate
       parameters:
         - $ref: '#/definitions/estate_id'
         - name: type
@@ -739,46 +830,85 @@ paths:
           in: formData
           type: file
           required: true
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{estate_id}/files/{id}:
     delete:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: delete existing estate file
-      produces: [application/json]
       parameters:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/import:
     post:
-      tags: [estate]
-      security: [bearerAuth: []]
-      description: update existing estate
-      produces: [application/json]
-      parameters:
-        - name: file
-          in: formData
-          type: file
-          required: true
-      responses: [200]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Add estates by uploading an excel file to the server. Excel file must adhere to the right template.
+        Template could be in English or German language.
+      summary: add estates by importing an excel file
+      requestBody:
+        content:
+          multipart/form-data:
+            type: object
+            schema:
+              $ref: '#/components/schemas/ImportEstate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{estate_id}/slots:
     get:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Get etstate timeslots
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
+      description: Get estate timeslots
+      summary: get estate timeslots
       parameters:
         - $ref: '#/definitions/estate_id'
-      responses: [200]
-
+      responses: 
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     post:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Create new estate
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security: 
+        - bearerAuth: []
+      description: Create new estate timeslot
+      summary: create new estate timeslot
       parameters:
         - $ref: '#/definitions/estate_id'
         - name: slot_length
@@ -787,38 +917,71 @@ paths:
           allOf: [$ref: '#/definitions/start_at', required: true]
         - name: end_at
           allOf: [$ref: '#/definitions/end_at', required: true]
-      responses: [200]
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
   /api/v1/estates/{estate_id}/slots/{slot_id}:
     put:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Create new estate
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
+      description: Update an Estate Timeslot
+      summary: update an estate timeslot
       parameters:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/slot_id'
         - $ref: '#/definitions/slot_length'
         - $ref: '#/definitions/start_at'
         - $ref: '#/definitions/end_at'
-      responses: [200]
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     delete:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Delete existing slot
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
+      description: Delete existing estate timeslot
+      summary: delete existing estate timeslot
       parameters:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/slot_id'
-      responses: [200]
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
   /api/v1/estates/{estate_id}/slots/free:
     get:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
       description: Get free for booking timeslots
-      produces: [application/json]
       parameters:
         - $ref: '#/definitions/estate_id'
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'

@@ -62,6 +62,7 @@ class Tenant extends Model {
       'minors_count',
       'percent',
       'share',
+      'selected_adults_count',
     ]
   }
 

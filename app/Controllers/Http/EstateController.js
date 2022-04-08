@@ -11,6 +11,9 @@ const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
+const TenantService = use('App/Services/TenantService')
+const MemberService = use('App/Services/MemberService')
+const CompanyService = use('App/Services/CompanyService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
@@ -19,7 +22,7 @@ const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const Database = use('Database')
-const randomstring = require('randomstring');
+const randomstring = require('randomstring')
 
 const {
   STATUS_ACTIVE,
@@ -34,11 +37,11 @@ const {
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
   LOG_TYPE_PROPERTIES_IMPORTED,
-  ROLE_USER
+  ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { result } = require('lodash')
-const INVITE_CODE_STRING_LENGTH = 8;
+const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -114,6 +117,31 @@ class EstateController {
     response.res(estate)
   }
 
+  async lanlordTenantDetailInfo({ request, auth, response }) {
+    const { estate_id, tenant_id } = request.all()
+    try {
+      const lanlord = await EstateService.lanlordTenantDetailInfo(
+        auth.user.id,
+        estate_id,
+        tenant_id
+      )
+      const tenant = await TenantService.getTenant(tenant_id)
+      const members = await MemberService.getMembers(tenant_id)
+      const company = await CompanyService.getUserCompany(auth.user.id)
+
+      const result = {
+        ...lanlord.toJSON({ isShort: true }),
+        company: company,
+        tenant: tenant,
+        members: members,
+      }
+      //console.log('result', result.toJSON() )
+      response.res(result)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   async getEstatesByPM({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
     const landlordIds = await EstatePermissionService.getLandlordIds(
@@ -128,9 +156,7 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
-
     const userIds = [auth.user.id]
-
     // Update expired estates status to unpublished
     const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     response.res(result)
@@ -215,7 +241,9 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
+    const { from_web } = request.all()
     const importFilePathName = request.file('file')
+
     if (importFilePathName && importFilePathName.tmpPath) {
       if (
         importFilePathName.headers['content-type'] !==
@@ -223,12 +251,16 @@ class EstateController {
       ) {
         throw new HttpException('No excel format', 400)
       }
-      const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
-      return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
+    const result = await ImportService.process(
+      importFilePathName.tmpPath,
+      auth.user.id,
+      'xls',
+      from_web == 1
+    )
+    return response.res(result)
   }
 
   //import Estate by property manager
@@ -438,13 +470,13 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true }))
+    response.res(estates.toJSON({ isShort: true, role:user.role }))
   }
 
   /**
    *
    */
-  async getTenantEstate({ request, response }) {
+  async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
 
     const estate = await EstateService.getQuery()
@@ -460,7 +492,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    response.res(estate)
+    response.res(estate.toJSON({ isShort: true, role:auth.user.role }))
   }
 
   /**
@@ -628,71 +660,72 @@ class EstateController {
     response.res(duplicate)
   }
 
-  async getInviteToViewCode({request, auth, response}) {
+  async getInviteToViewCode({ request, auth, response }) {}
 
-  }
-
-  async createInviteToViewCode({request, auth, response}) {
+  async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
   }
 
-  async inviteToViewViaEmail({request, auth, response}) {
+  async inviteToViewViaEmail({ request, auth, response }) {
     const estateId = request.params.estate_id || request.body.estate_id
-    const emails = request.body.emails;
-    
+    const emails = request.body.emails
+
     //Transaction start...
     const trx = await Database.beginTransaction()
     let code
     //check if this estate already has an invite
     const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
-    if(invitation) {
+    if (invitation) {
       code = invitation.code
     } else {
       do {
         //generate code
-        code = randomstring.generate(INVITE_CODE_STRING_LENGTH);
+        code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
       } while (await EstateViewInvite.findBy('code', code))
     }
-    
+
     try {
       let newInvite = new EstateViewInvite()
-      if( ! invitation) {
+      if (!invitation) {
         //this needs to be created
         newInvite.invited_by = auth.user.id
         newInvite.estate_id = estateId
         newInvite.code = code
         const result = await newInvite.save(trx)
       } else {
-        newInvite = invitation;
+        newInvite = invitation
       }
-      
+
       await Promise.all(
-        emails.map(async email => {
+        emails.map(async (email) => {
           // see if this prospect is already a user
-          const userExists = await User.query().where('email', email).where('role', ROLE_USER).first(trx)
-          if(userExists) {
+          const userExists = await User.query()
+            .where('email', email)
+            .where('role', ROLE_USER)
+            .first(trx)
+          if (userExists) {
             //we invite the user
             await EstateViewInvitedUser.findOrCreate(
-              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
-              {user_id: userExists.id, estate_view_invite_id: newInvite.id},
+              { user_id: userExists.id, estate_view_invite_id: newInvite.id },
+              { user_id: userExists.id, estate_view_invite_id: newInvite.id },
               trx
             )
           } else {
             //we add email
             await EstateViewInvitedEmail.findOrCreate(
-              {email, estate_view_invite_id: newInvite.id},
-              {email, estate_view_invite_id: newInvite.id},
+              { email, estate_view_invite_id: newInvite.id },
+              { email, estate_view_invite_id: newInvite.id },
               trx
             )
           }
-          //placeholder for now...          
+          //placeholder for now...
           console.log('sending email to ', email, 'code', code)
         })
       )
       trx.commit()
       //transaction end
-      return response.res({code})
-    } catch(e) {
+      return response.res({ code })
+    } catch (e) {
       console.log(e)
       await trx.rollback()
       //transaction failed

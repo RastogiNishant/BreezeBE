@@ -9,12 +9,16 @@ const { isEmpty } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
+const random = require('random')
+const DataStorage = use('DataStorage')
+const SMSService = use('App/Services/SMSService')
 
 const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
   ROLE_USER,
+  SMS_MEMBER_PHONE_VERIFY_PREFIX
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -146,6 +150,48 @@ class MemberService {
       .where({ user_id: userId })
   }
 
+  static async sendSMS(memberId, phone) {
+    const code = random.int(1000, 9999)
+    await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, { ttl: 3600 })
+    await SMSService.send(phone, code)
+  }
+
+  static async confirmSMS(memberId, phone, code) {
+    const member = await Member.query()
+      .select('id')
+      .where('id', memberId)
+      .where('phone', phone)
+      .firstOrFail()
+
+    const data = await DataStorage.getItem(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+
+    if (!data) {
+      throw new HttpException('No code', 400)
+    }
+
+    if (parseInt(data.code) !== parseInt(code)) {
+      await DataStorage.remove(user.id, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+
+      if (parseInt(data.count) <= 0) {
+        throw new HttpException('Your code invalid any more', 400)
+      }
+
+      await DataStorage.setItem(
+        memberId,
+        { code: data.code, count: parseInt(data.count) - 1 },
+        SMS_MEMBER_PHONE_VERIFY_PREFIX,
+        { ttl: 3600 }
+      )
+      throw new HttpException('Not Correct', 400)
+    }
+
+    await Member.query().where({ id: memberId }).update({
+      phone_verified: true,
+    })
+
+    await DataStorage.remove(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+    return true
+  }  
   /**
    *
    */
@@ -277,20 +323,39 @@ class MemberService {
     }
   }
 
-  static async getInvitationCode(email, code) {
-    const member = await Member.query()
-      .select(['id', 'user_id'])
-      .where('email', email)
-      .where('code', code)
-      .firstOrFail()
+  static async getInvitationCode(email, code, user) {
+    const trx = await Database.beginTransaction()
+    try {
+      const member = await Member.query()
+        .select(['id', 'user_id'])
+        .where('email', email)
+        .where('code', code)
+        .firstOrFail()
 
-    await Member.query()
-      .where({ id: member.id, user_id: member.user_id })
-      .update({
-        is_verified: true,
-        published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-      })
-    return member
+      const updatePromises = []
+
+      user.owner_id = member.user_id
+      updatePromises.push(user.save(trx))
+
+      const existingTenantMembers = await Member.query().where('user_id', user.id).fetch().rows
+
+      for (let i = 0; i < existingTenantMembers.length; i++) {
+        const existingTenantMember = existingTenantMembers[i]
+        existingTenantMember.user_id = member.user_id
+        existingTenantMember.owner_user_id = user.id
+        existingTenantMember.is_verified = true
+        updatePromises.push(existingTenantMember.save(trx))
+      }
+
+      updatePromises.push(member.delete(trx))
+
+      await Promise.all(updatePromises)
+      await trx.commit()
+      return true
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
