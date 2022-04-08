@@ -147,7 +147,6 @@ class EstateImportHeaderTranslations {
     'heating_costs',
   ]
   constructor(lang) {
-    console.log('txt minors', l.get('landlord.profile.menu.txt_minors', lang))
     this.headers = [
       _.toLower(l.get('web.letting.property.import.Breeze_ID.message', lang)),
       _.toLower(l.get('web.letting.property.import.Your_ID.message', lang)),
@@ -212,10 +211,10 @@ class EstateImportHeaderTranslations {
       _.toLower(l.get('web.letting.property.import.Surname.message', lang)),
       _.toLower(l.get('web.letting.property.import.Contract_End.message', lang)),
       _.toLower(l.get('web.letting.property.import.Pets_Allowed.message', lang)),
-      _.toLower(l.get('prospect.settings.user_details.txt_salutation.message', lang)),
-      _.toLower(l.get('landlord.profile.menu.txt_minors', lang)),
+      _.toLower(l.get('web.letting.property.import.txt_salutation.message', lang)),
+      _.toLower(l.get('web.letting.property.import.txt_minors.message', lang)),
       _.toLower(l.get('web.letting.property.import.Tel.message', lang)),
-      _.toLower(l.get('email_signature.email.message', lang)),
+      _.toLower(l.get('web.letting.property.import.txt_email.message', lang)),
       _.toLower(l.get('web.letting.property.import.Heating_Costs.message', lang)),
     ]
   }
