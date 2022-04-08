@@ -173,6 +173,16 @@ const {
   FAMILY_STATUS_WITH_CHILD,
 } = require('../constants')
 
+yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
+  return this.test({
+    message: 'Must not be set when heating_costs and/or additional_costs are set.',
+    name: 'mustNotBeSet',
+    test: (value) => {
+      return value === undefined
+    },
+  })
+})
+
 class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
@@ -366,7 +376,13 @@ class CreateEstate extends Base {
       heating_type: yup
         .number()
         // .positive()
-        .oneOf([HEATING_TYPE_NO, HEATING_TYPE_OVEN, HEATING_TYPE_FLOOR, HEATING_TYPE_CENTRAL, HEATING_TYPE_REMOTE]),
+        .oneOf([
+          HEATING_TYPE_NO,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_FLOOR,
+          HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_REMOTE,
+        ]),
       equipment: yup
         .array()
         .of(
@@ -448,6 +464,13 @@ class CreateEstate extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
+      extra_costs: yup.number().when(['additional_costs', 'heating_costs'], {
+        is: (additional_costs, heating_costs) => {
+          return additional_costs || heating_costs
+        },
+        then: yup.number().mustNotBeSet(),
+        otherwise: yup.number().min(0).max(1000000),
+      }),
     })
 }
 
