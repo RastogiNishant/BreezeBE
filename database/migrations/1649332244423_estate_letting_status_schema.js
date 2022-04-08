@@ -8,6 +8,7 @@ class EstateLettingStatusSchema extends Schema {
     this.table('estates', (table) => {
       // alter table
       table.integer('letting_status').unsigned()
+      table.integer('letting_type').unsigned()
     })
   }
 
@@ -15,6 +16,7 @@ class EstateLettingStatusSchema extends Schema {
     this.table('estates', (table) => {
       // reverse alternations
       table.dropColumn('letting_status')
+      table.dropColumn('letting_type')
     })
   }
 }
