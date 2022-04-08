@@ -290,10 +290,10 @@ class UserService {
    *
    */
   static async sendConfirmEmail(user) {
-    throw new HttpException({
-      user_id: user.id,
-      role: user.role,
-    });
+    // throw new HttpException({
+    //   user_id: user.id,
+    //   role: user.role,
+    // });
     
     const date = String(new Date().getTime())
     const code = date.slice(date.length - 4, date.length)
