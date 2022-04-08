@@ -114,7 +114,6 @@ class ExcelReader {
     }
     this.dataMapping = new EstateAttributeTranslations(lang)
     const HeaderTranslations = new EstateImportHeaderTranslations(lang)
-
     //set possible columns that we can track...
     this.columns = HeaderTranslations.getHeaderVars()
     const header = get(sheet, `data.${this.headerCol}`) || []
@@ -124,7 +123,6 @@ class ExcelReader {
     const toImport = []
     let columnVars = HeaderTranslations.getColumnVars()
     const validHeaders = this.validHeaders
-
     //Loop through all rows and process
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
       //get this row...

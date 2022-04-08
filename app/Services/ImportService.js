@@ -191,7 +191,7 @@ class ImportService {
    */
 
   static async processByPM(filePath, userId, type) {
-    const { errors, data } = await ImportService.readFile(filePath)
+    const { errors, data } = await ImportService.readFileFromWeb(filePath)
 
     const opt = { concurrency: 0 }
 

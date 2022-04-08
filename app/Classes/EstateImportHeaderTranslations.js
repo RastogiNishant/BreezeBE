@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const l = use('Localize')
+const HttpException = use('App/Exceptions/HttpException')
 const addAsterisk = (string) => {
   return `${string} (*)`
 }
@@ -75,6 +76,7 @@ class EstateImportHeaderTranslations {
     'Tel',
     'Email',
     'Heating Costs',
+    'Landlord Email',
   ]
   columnIdentifiers = [
     'six_char_code',
@@ -145,6 +147,7 @@ class EstateImportHeaderTranslations {
     'tenant_tel',
     'tenant_email',
     'heating_costs',
+    'landlord_email',
   ]
   constructor(lang) {
     this.headers = [
@@ -216,7 +219,11 @@ class EstateImportHeaderTranslations {
       _.toLower(l.get('web.letting.property.import.Tel.message', lang)),
       _.toLower(l.get('web.letting.property.import.txt_email.message', lang)),
       _.toLower(l.get('web.letting.property.import.Heating_Costs.message', lang)),
+      _.toLower('Landlord Email'),
     ]
+    if (this.headers.length !== this.columnIdentifiers.length) {
+      throw new HttpException('Settings Error. Please contact administrator.', 500, 110190)
+    }
   }
   getHeaderVars(toLower = true) {
     let headers = []
