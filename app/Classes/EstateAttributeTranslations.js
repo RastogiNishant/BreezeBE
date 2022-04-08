@@ -140,15 +140,17 @@ const {
   KIDS_TO_5,
   KIDS_UP_5,
 
-  ENERGY_TYPE_LOW_ENERGY,
-  ENERGY_TYPE_PASSIVE_HOUSE,
-  ENERGY_TYPE_NEW_BUILDING_STANDARD,
-  ENERGY_TYPE_KFW40,
-  ENERGY_TYPE_KFW60,
-  ENERGY_TYPE_KFW55,
-  ENERGY_TYPE_KFW70,
-  ENERGY_TYPE_MINERGIE_CONSTRUCTION,
-  ENERGY_TYPE_MINERGIE_CERTIFIED,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+
+  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_CONSTRUCTION_WORKS,
+  LETTING_STATUS_STRUCTURAL_VACANCY,
+  LETTING_STATUS_FIRST_TIME_USE,
+  LETTING_STATUS_VACANCY,
 } = require('../constants')
 
 escapeStr = (v) => {
@@ -389,6 +391,21 @@ class EstateAttributeTranslations {
       ).replace(/\s,/g, ',')
     },
     energy_efficiency: (i) => i,
+    letting_status: (i) => {
+      let whole
+      let letting_type
+      let letting_status
+      if (i.match(/(.*) \- (.*)/)) {
+        ;[whole, letting_type, letting_status] = i.match(/(.*) \- (.*)/)
+      } else {
+        letting_type = i
+        letting_status = null
+      }
+      return {
+        type: this.dataMapping.let_type[letting_type],
+        status: this.dataMapping.let_status[letting_status],
+      }
+    },
   }
 
   constructor(lang = 'en') {
@@ -819,6 +836,34 @@ class EstateAttributeTranslations {
           escapeStr(l.get('yes.message', lang)),
         ],
         values: [false, true],
+      },
+      let_type: {
+        keys: [
+          escapeStr(l.get('property.attribute.LETTING_TYPE.Let.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_TYPE.Void.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_TYPE.NA.message', lang)),
+        ],
+        values: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      },
+      let_status: {
+        keys: [
+          escapeStr(l.get('property.attribute.LETTING_STATUS.Defected.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_STATUS.Terminated.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_STATUS.Normal.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_STATUS.Construction works.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_STATUS.Structural vacancy.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_STATUS.First-time use.message', lang)),
+          escapeStr(l.get('property.attribute.LETTING_STATUS.Vacancy.message', lang)),
+        ],
+        values: [
+          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_TERMINATED,
+          LETTING_STATUS_NORMAL,
+          LETTING_STATUS_CONSTRUCTION_WORKS,
+          LETTING_STATUS_STRUCTURAL_VACANCY,
+          LETTING_STATUS_FIRST_TIME_USE,
+          LETTING_STATUS_VACANCY,
+        ],
       },
     }
     let keyValue
