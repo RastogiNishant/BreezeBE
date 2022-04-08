@@ -291,10 +291,8 @@ class UserService {
    */
   static async sendConfirmEmail(user) {
     throw new HttpException({
-      code,
       user_id: user.id,
       role: user.role,
-      lang: lang,
     });
     
     const date = String(new Date().getTime())
