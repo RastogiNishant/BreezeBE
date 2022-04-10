@@ -5,6 +5,7 @@ const { isString, isArray, pick, trim, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
+const HttpException = use('App/Exceptions/HttpException')
 
 const Model = require('./BaseModel')
 const {
@@ -138,6 +139,7 @@ class Estate extends Model {
       'family_size_max',
       'pets_allowed',
       'apartment_status',
+      'extra_costs',
     ]
   }
 
@@ -209,11 +211,32 @@ class Estate extends Model {
           ', '
         ).toLowerCase()
       }
-
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
         } catch (e) {}
+      }
+
+      if (
+        instance.dirty.extra_costs &&
+        (instance.dirty.heating_costs || instance.dirty.additional_costs)
+      ) {
+        throw new HttpException(
+          'Cannot update extra_costs with heating and/or additional_costs',
+          422
+        )
+      } else if (instance.dirty.heating_costs || instance.dirty.additional_costs) {
+        instance.extra_costs =
+          (Number(instance.dirty.additional_costs) || Number(instance.additional_costs) || 0) +
+          (Number(instance.dirty.heating_costs) || Number(instance.heating_costs) || 0)
+      } else if (
+        instance.dirty.extra_costs &&
+        !(instance.dirty.heating_costs || instance.dirty.additional_costs)
+      ) {
+        instance.extra_costs = Number(instance.dirty.extra_costs)
+        //need confirmation...
+        instance.additional_costs = 0
+        instance.heating_costs = 0
       }
     })
 

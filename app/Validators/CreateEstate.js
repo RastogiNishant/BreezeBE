@@ -185,6 +185,16 @@ const {
   LETTING_STATUS_VACANCY,
 } = require('../constants')
 
+yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
+  return this.test({
+    message: 'Must not be set when heating_costs and/or additional_costs are set.',
+    name: 'mustNotBeSet',
+    test: (value) => {
+      return value === undefined
+    },
+  })
+})
+
 class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
@@ -509,6 +519,13 @@ class CreateEstate extends Base {
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
         ]),
+      extra_costs: yup.number().when(['additional_costs', 'heating_costs'], {
+        is: (additional_costs, heating_costs) => {
+          return additional_costs || heating_costs
+        },
+        then: yup.number().mustNotBeSet(),
+        otherwise: yup.number().min(0).max(1000000),
+      }),
     })
 }
 

@@ -475,43 +475,23 @@ paths:
         - Landlord Estates
       security:
         - bearerAuth: []
-      description: |
-        This will return the current user's estate list. User must be a landlord to access this.
+      description: Current user's estate list
       summary: current user's estate list
       parameters:
-        - name: filters[]
+        - filters:
+          name: filters
           in: query
-          description: | 
-            will look in **match's status**. Possible values: 
-            - NEW: 1,
-            - KNOCK: 2,
-            - INVITE: 3,
-            - VISIT: 4,
-            - SHARE: 5,
-            - TOP: 6,
-            - COMMIT: 7,
-            - FINISH: 8,
-          schema:
-            type: array
-            items:
-              type: integer
-        - name: status[]
-          schema:
-            type: array
-            items:
-              type: integer
+          type: string
+        - status:
+          name: status
+          type: number
           in: query
-          description: |
-            Estate statuses. Possible values:
-            - Active: 1
-            - Draft: 5
-            - Expired: 6
+          description: 'Active: 1, Draft: 5'
           enum: ['1', '5']
         - query:
           name: query
           type: string
           in: query
-          description: this will search address and property ID with the query
         - limit:
           name: limit
           type: number
@@ -525,7 +505,7 @@ paths:
         - return_all:
           name: return_all
           in: query
-          example: 0
+          example: 1
           description: whether to return all estates at once or not (1 for return all)
       responses: 
         '200':
@@ -541,87 +521,16 @@ paths:
       security:
         - bearerAuth: []
       description: Create new estate
-      parameters:
-        - $ref: '#/definitions/property_id'
-        - $ref: '#/definitions/property_type'
-        - $ref: '#/definitions/coord'
-        - $ref: '#/definitions/apt_type_2'
-        - $ref: '#/definitions/house_type_2'
-        - $ref: '#/definitions/description'
-        - $ref: '#/definitions/category'
-        - $ref: '#/definitions/rooms'
-        - $ref: '#/definitions/street'
-        - $ref: '#/definitions/house_number'
-        - $ref: '#/definitions/country'
-        - $ref: '#/definitions/floor'
-        - $ref: '#/definitions/number_floors'
-        - $ref: '#/definitions/prices'
-        - $ref: '#/definitions/net_rent'
-        - $ref: '#/definitions/cold_rent'
-        - $ref: '#/definitions/rent_including_heating'
-        - $ref: '#/definitions/additional_costs'
-        - $ref: '#/definitions/heating_costs_included'
-        - $ref: '#/definitions/heating_costs'
-        - $ref: '#/definitions/rent_per_sqm'
-        - $ref: '#/definitions/deposit'
-        - $ref: '#/definitions/stp_garage'
-        - $ref: '#/definitions/stp_parkhaus'
-        - $ref: '#/definitions/stp_tiefgarage'
-        - $ref: '#/definitions/currency'
-        - $ref: '#/definitions/area'
-        - $ref: '#/definitions/living_space'
-        - $ref: '#/definitions/usable_area'
-        - $ref: '#/definitions/rooms_number'
-        - $ref: '#/definitions/bedrooms_number'
-        - $ref: '#/definitions/bathrooms_number'
-        - $ref: '#/definitions/kitchen_options'
-        - $ref: '#/definitions/bath_options'
-        - $ref: '#/definitions/wc_number'
-        - $ref: '#/definitions/balconies_number'
-        - $ref: '#/definitions/terraces_number'
-        - $ref: '#/definitions/occupancy'
-        - $ref: '#/definitions/use_type'
-        - $ref: '#/definitions/ownership_type'
-        - $ref: '#/definitions/marketing_type'
-        - $ref: '#/definitions/energy_type'
-        - $ref: '#/definitions/avail_duration'
-        - $ref: '#/definitions/vacant_date'
-        - $ref: '#/definitions/from_date'
-        - $ref: '#/definitions/to_date'
-        - $ref: '#/definitions/min_lease_duration'
-        - $ref: '#/definitions/max_lease_duration'
-        - $ref: '#/definitions/non_smoker'
-        - $ref: '#/definitions/pets'
-        - $ref: '#/definitions/gender'
-        - $ref: '#/definitions/monumental_protection'
-        - $ref: '#/definitions/parking_space_type'
-        - $ref: '#/definitions/parking_space'
-        - $ref: '#/definitions/construction_year'
-        - $ref: '#/definitions/last_modernization'
-        - $ref: '#/definitions/building_status'
-        - $ref: '#/definitions/building_age'
-        - $ref: '#/definitions/firing'
-        - $ref: '#/definitions/heating_type'
-        - $ref: '#/definitions/equipment'
-        - $ref: '#/definitions/equipment_standard'
-        - $ref: '#/definitions/ground'
-        - $ref: '#/definitions/energy_efficiency'
-        - $ref: '#/definitions/repair_need'
-        - $ref: '#/definitions/cover'
-        - $ref: '#/definitions/city'
-        - $ref: '#/definitions/zip'
-        - $ref: '#/definitions/budget'
-        - $ref: '#/definitions/credit_score'
-        - $ref: '#/definitions/rent_arrears'
-        - $ref: '#/definitions/full_address'
-        - $ref: '#/definitions/kids_type'
-        - $ref: '#/definitions/photo_require'
-        - $ref: '#/definitions/furnished'
-        - $ref: '#/definitions/source_person'
-        - $ref: '#/definitions/family_status'
-        - $ref: '#/definitions/apt_options'
-        - $ref: '#/definitions/min_age'
-        - $ref: '#/definitions/max_age'
+      requestBody:
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/CreateEstateSchema'
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              $ref: '#/components/schemas/CreateEstateSchema'
       responses:
         '200':
           description: OK
@@ -667,87 +576,12 @@ paths:
           type: number
           default: '1'
           required: true
-        - $ref: '#/definitions/property_id'
-        - $ref: '#/definitions/property_type'
-        - $ref: '#/definitions/coord'
-        - $ref: '#/definitions/apt_type_2'
-        - $ref: '#/definitions/house_type_2'
-        - $ref: '#/definitions/description'
-        - $ref: '#/definitions/category'
-        - $ref: '#/definitions/rooms'
-        - $ref: '#/definitions/street'
-        - $ref: '#/definitions/house_number'
-        - $ref: '#/definitions/country'
-        - $ref: '#/definitions/floor'
-        - $ref: '#/definitions/number_floors'
-        - $ref: '#/definitions/prices'
-        - $ref: '#/definitions/net_rent'
-        - $ref: '#/definitions/cold_rent'
-        - $ref: '#/definitions/rent_including_heating'
-        - $ref: '#/definitions/additional_costs'
-        - $ref: '#/definitions/heating_costs_included'
-        - $ref: '#/definitions/heating_costs'
-        - $ref: '#/definitions/rent_per_sqm'
-        - $ref: '#/definitions/deposit'
-        - $ref: '#/definitions/stp_garage'
-        - $ref: '#/definitions/stp_parkhaus'
-        - $ref: '#/definitions/stp_tiefgarage'
-        - $ref: '#/definitions/currency'
-        - $ref: '#/definitions/area'
-        - $ref: '#/definitions/living_space'
-        - $ref: '#/definitions/usable_area'
-        - $ref: '#/definitions/rooms_number'
-        - $ref: '#/definitions/bedrooms_number'
-        - $ref: '#/definitions/bathrooms_number'
-        - $ref: '#/definitions/kitchen_options'
-        - $ref: '#/definitions/bath_options'
-        - $ref: '#/definitions/wc_number'
-        - $ref: '#/definitions/balconies_number'
-        - $ref: '#/definitions/terraces_number'
-        - $ref: '#/definitions/occupancy'
-        - $ref: '#/definitions/use_type'
-        - $ref: '#/definitions/ownership_type'
-        - $ref: '#/definitions/marketing_type'
-        - $ref: '#/definitions/energy_type'
-        - $ref: '#/definitions/avail_duration'
-        - $ref: '#/definitions/vacant_date'
-        - $ref: '#/definitions/from_date'
-        - $ref: '#/definitions/to_date'
-        - $ref: '#/definitions/min_lease_duration'
-        - $ref: '#/definitions/max_lease_duration'
-        - $ref: '#/definitions/non_smoker'
-        - $ref: '#/definitions/pets'
-        - $ref: '#/definitions/gender'
-        - $ref: '#/definitions/monumental_protection'
-        - $ref: '#/definitions/parking_space_type'
-        - $ref: '#/definitions/parking_space'
-        - $ref: '#/definitions/construction_year'
-        - $ref: '#/definitions/last_modernization'
-        - $ref: '#/definitions/building_status'
-        - $ref: '#/definitions/building_age'
-        - $ref: '#/definitions/firing'
-        - $ref: '#/definitions/heating_type'
-        - $ref: '#/definitions/equipment'
-        - $ref: '#/definitions/equipment_standard'
-        - $ref: '#/definitions/ground'
-        - $ref: '#/definitions/energy_efficiency'
-        - $ref: '#/definitions/energy_pass'
-        - $ref: '#/definitions/repair_need'
-        - $ref: '#/definitions/cover'
-        - $ref: '#/definitions/city'
-        - $ref: '#/definitions/zip'
-        - $ref: '#/definitions/budget'
-        - $ref: '#/definitions/credit_score'
-        - $ref: '#/definitions/rent_arrears'
-        - $ref: '#/definitions/full_address'
-        - $ref: '#/definitions/kids_type'
-        - $ref: '#/definitions/photo_require'
-        - $ref: '#/definitions/furnished'
-        - $ref: '#/definitions/source_person'
-        - $ref: '#/definitions/family_status'
-        - $ref: '#/definitions/apt_options'
-        - $ref: '#/definitions/min_age'
-        - $ref: '#/definitions/max_age'
+      requestBody:
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/CreateEstateSchema'
       responses:
         '200':
           description: OK
@@ -755,8 +589,7 @@ paths:
             application/json:
               type: object
               schema:
-                $ref: '#/components/schemas/CommonReturn'
-
+                $ref: '#/components/schemas/UpdateEstateSchemaReturn'
     delete:
       tags: 
         - Landlord Estates
@@ -887,12 +720,6 @@ paths:
       description: Add estates by uploading an excel file to the server. Excel file must adhere to the right template.
         Template could be in English or German language.
       summary: add estates by importing an excel file
-      parameters:
-        - from_web: 
-          name: from_web
-          in: query
-          type: integer
-          example: 1
       requestBody:
         content:
           multipart/form-data:
