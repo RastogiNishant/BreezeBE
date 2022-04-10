@@ -15,9 +15,10 @@ const {
   omit,
   pick,
   assign,
+  pull,
 } = require('lodash')
 const Event = use('Event')
-const { STATUS_DELETE } = require('../constants')
+const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
 
@@ -162,9 +163,38 @@ class RoomService {
   }
 
   static async updateRoomsFromImport(estate_id, rooms) {
-    await Promise.map(rooms, (room) => {
-      console.log('room', room, 'estate_id', estate_id)
-    })
+    let roomSequences = [1, 2, 3, 4, 5, 6]
+    await Promise.all(
+      rooms.map(async (room) => {
+        let dRoom
+        dRoom = await Room.query()
+          .where('estate_id', estate_id)
+          .where('import_sequence', room.import_sequence)
+          .first()
+        if (dRoom) {
+          //update
+          room.id = dRoom.id
+          dRoom.fill(room)
+          dRoom.status = STATUS_ACTIVE
+          await dRoom.save()
+          pull(roomSequences, parseInt(dRoom.import_sequence))
+        } else {
+          //create
+          const newRoom = new Room()
+          newRoom.fill(room)
+          newRoom.estate_id = estate_id
+          newRoom.status = STATUS_ACTIVE
+          await newRoom.save()
+          pull(roomSequences, parseInt(newRoom.import_sequence))
+        }
+      })
+    )
+    //we remove rooms that are not anymore on the import
+    console.log('deleting', roomSequences)
+    await Room.query()
+      .whereIn('import_sequence', roomSequences)
+      .where('estate_id', estate_id)
+      .update({ status: STATUS_DELETE })
   }
 }
 
