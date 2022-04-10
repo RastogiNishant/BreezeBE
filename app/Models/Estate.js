@@ -244,7 +244,8 @@ class Estate extends Model {
         isEmpty(instance.dirty.letting_status.type)
       ) {
         console.log('letting status is empty')
-        instance.letting_status = null
+        instance.letting_status = instance.letting_status || null
+        instance.letting_type = instance.letting_type || null
       }
     })
 
