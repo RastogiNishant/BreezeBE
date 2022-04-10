@@ -478,26 +478,30 @@ class CreateEstate extends Base {
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
       minors: yup.boolean(),
-      letting_status: yup.object().shape({
-        type: yup
-          .number()
-          .integer()
-          .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
-          .nullable(),
-        status: yup
-          .number()
-          .integer()
-          .oneOf([
-            LETTING_STATUS_DEFECTED,
-            LETTING_STATUS_TERMINATED,
-            LETTING_STATUS_NORMAL,
-            LETTING_STATUS_CONSTRUCTION_WORKS,
-            LETTING_STATUS_STRUCTURAL_VACANCY,
-            LETTING_STATUS_FIRST_TIME_USE,
-            LETTING_STATUS_VACANCY,
-          ])
-          .nullable(),
-      }),
+      letting_status: yup
+        .object()
+        .shape({
+          type: yup
+            .number()
+            .integer()
+            .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
+            .nullable(),
+          status: yup
+            .number()
+            .integer()
+            .oneOf([
+              LETTING_STATUS_DEFECTED,
+              LETTING_STATUS_TERMINATED,
+              LETTING_STATUS_NORMAL,
+              LETTING_STATUS_CONSTRUCTION_WORKS,
+              LETTING_STATUS_STRUCTURAL_VACANCY,
+              LETTING_STATUS_FIRST_TIME_USE,
+              LETTING_STATUS_VACANCY,
+            ])
+            .nullable(),
+        })
+        .nullable()
+        .default(null),
       family_size_max: yup.number().integer().min(1).max(100),
       apartment_status: yup
         .number()

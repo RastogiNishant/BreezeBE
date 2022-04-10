@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty, unset } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
@@ -237,15 +237,6 @@ class Estate extends Model {
         //need confirmation...
         instance.additional_costs = 0
         instance.heating_costs = 0
-      }
-
-      if (
-        isEmpty(instance.dirty.letting_status.status) &&
-        isEmpty(instance.dirty.letting_status.type)
-      ) {
-        console.log('letting status is empty')
-        instance.letting_status = instance.letting_status || null
-        instance.letting_type = instance.letting_type || null
       }
     })
 
