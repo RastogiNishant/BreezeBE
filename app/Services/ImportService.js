@@ -14,7 +14,6 @@ const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
-const Room = use('App/Models/Room')
 const schema = require('../Validators/CreateBuddy').schema()
 
 const {
@@ -24,6 +23,7 @@ const {
   STATUS_ACTIVE,
   ROLE_USER,
 } = require('../constants')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
 
 /**
@@ -57,11 +57,15 @@ class ImportService {
     let estate
     if (six_char_code) {
       //check if this is an edit...
-      estate = await Estate.query().where('six_char_code', six_char_code).where('user_id', userId)
+      estate = await Estate.query()
+        .where('six_char_code', six_char_code)
+        .where('user_id', userId)
+        .first()
       if (!estate) {
         return { error: [`${six_char_code} is an invalid Breeze ID`], line, address: data.address }
       }
       //TODO: update Estate...
+      await EstateService.updateImportBySixCharCode(six_char_code, data)
     } else {
       try {
         if (!data.address) {
@@ -72,9 +76,10 @@ class ImportService {
           .where('user_id', userId)
           .where('address', 'LIKE', `%${address}%`)
           .first()
-
+        let warning
         if (existingEstate) {
-          await EstateService.completeRemoveEstate(existingEstate.id)
+          //await EstateService.completeRemoveEstate(existingEstate.id)
+          warning = `Probable duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
         }
         data.avail_duration = 144
         data.status = STATUS_DRAFT
@@ -85,7 +90,6 @@ class ImportService {
         }
         estate = await EstateService.createEstate(data, userId)
 
-        //await RoomService.createBulkRooms(estate.id, data)
         let rooms = []
         let found
         for (let key in data) {
@@ -94,7 +98,7 @@ class ImportService {
           }
         }
         if (rooms.length) {
-          await ImportService.createRoomsFromImport(estate.id, rooms)
+          await RoomService.createRoomsFromImport(estate.id, rooms)
         }
 
         // Run task to separate get coords and point of estate
@@ -102,40 +106,16 @@ class ImportService {
 
         //add current tenant
         if (data.tenant_email) {
-          //check if a current user
-          let user = await User.query()
-            .where('email', data.tenant_email)
-            .where('role', ROLE_USER)
-            .first()
-
-          let currentTenant = new EstateCurrentTenant()
-          currentTenant.fill({
-            estate_id: estate.id,
-            salutation: data.txt_salutation || '',
-            surname: data.surname || '',
-            email: data.tenant_email,
-            contract_end: data.contract_end,
-            phone_number: data.tenant_tel,
-            status: STATUS_ACTIVE,
-          })
-          if (user) {
-            currentTenant.user_id = user.id
-          }
-          await currentTenant.save()
+          await EstateCurrentTenantService.addCurrentTenant(data, estate.id)
         }
-
+        if (warning) {
+          return { warning, line, address: data.address }
+        }
         return estate
       } catch (e) {
         return { error: [e.message], line, address: data.address }
       }
     }
-  }
-
-  static async createRoomsFromImport(estate_id, rooms) {
-    const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
-      return [...roomsInfo, { ...room, estate_id }]
-    }, [])
-    await Room.createMany(roomsInfo)
   }
 
   /**
@@ -173,11 +153,16 @@ class ImportService {
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
 
     const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
+    result.map((row) => {
+      if (has(row, 'warning')) {
+        warnings.push(row.warning)
+      }
+    })
 
     return {
       errors: [...errors, ...createErrors],
       success: result.length - createErrors.length,
-      warnings,
+      warnings: [...warnings],
     }
   }
 

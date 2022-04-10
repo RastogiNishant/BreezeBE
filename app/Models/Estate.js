@@ -135,6 +135,9 @@ class Estate extends Model {
       'minors',
       'letting_status',
       'letting_type',
+      'family_size_max',
+      'pets_allowed',
+      'apartment_status',
     ]
   }
 

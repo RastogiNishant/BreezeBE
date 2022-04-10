@@ -19,6 +19,7 @@ const {
 const Event = use('Event')
 const { STATUS_DELETE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
+const Promise = require('bluebird')
 
 class RoomService {
   /**
@@ -151,6 +152,19 @@ class RoomService {
       }
     }
     return rooms
+  }
+
+  static async createRoomsFromImport(estate_id, rooms) {
+    const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+      return [...roomsInfo, { ...room, estate_id }]
+    }, [])
+    await Room.createMany(roomsInfo)
+  }
+
+  static async updateRoomsFromImport(estate_id, rooms) {
+    await Promise.map(rooms, (room) => {
+      console.log('room', room, 'estate_id', estate_id)
+    })
   }
 }
 

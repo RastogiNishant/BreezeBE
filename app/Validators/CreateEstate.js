@@ -488,6 +488,27 @@ class CreateEstate extends Base {
           ])
           .nullable(),
       }),
+      family_size_max: yup.number().integer().min(1).max(100),
+      apartment_status: yup
+        .number()
+        .integer()
+        .oneOf([
+          BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+          BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+          BUILDING_STATUS_NEW,
+          BUILDING_STATUS_EXISTING,
+          BUILDING_STATUS_PART_FULLY_RENOVATED,
+          BUILDING_STATUS_PARTLY_REFURISHED,
+          BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+          BUILDING_STATUS_READY_TO_BE_BUILT,
+          BUILDING_STATUS_BY_AGREEMENT,
+          BUILDING_STATUS_MODERNIZED,
+          BUILDING_STATUS_CLEANED,
+          BUILDING_STATUS_ROUGH_BUILDING,
+          BUILDING_STATUS_DEVELOPED,
+          BUILDING_STATUS_ABRISSOBJEKT,
+          BUILDING_STATUS_PROJECTED,
+        ]),
     })
 }
 

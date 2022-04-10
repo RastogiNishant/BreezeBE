@@ -829,7 +829,7 @@ class EstateAttributeTranslations {
           escapeStr(l.get('yes.message', lang)),
           escapeStr(l.get('web.letting.property.import.No_or_small_pets.message', lang)),
         ],
-        values: [null, 1],
+        values: [true, false],
       },
       minors: {
         keys: [

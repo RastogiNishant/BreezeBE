@@ -1,5 +1,6 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+
 const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
 
 class EstateCurrentTenantService {
@@ -63,7 +64,7 @@ class EstateCurrentTenantService {
         currentTenant.user_id = user.id
       }
       await currentTenant.save()
-      return currenTenant
+      return currentTenant
     }
   }
 }
