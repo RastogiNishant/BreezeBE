@@ -83,7 +83,7 @@ class AccountController {
       })
 
       await UserService.sendConfirmEmail(user)
-      return response.res(user)
+      response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException('User already exists', 400)
