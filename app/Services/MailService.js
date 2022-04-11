@@ -277,8 +277,11 @@ console.log('SendCodeForMember Email', email )
       console.log('Email delivery successfully')
     }, error => {
       console.log('Email delivery failed', error);
-        if (error.response) {
+      if (error.response) {
         console.error(error.response.body)
+        throw new HttpException(error.response.body);        
+      }else {
+        throw new HttpException(error);
       }
     });
   }
