@@ -77,10 +77,10 @@ class AccountController {
         status: STATUS_EMAIL_VERIFY,
       })
 
-      // logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
-      //   role: user.role,
-      //   email: user.email,
-      // })
+      logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
+        role: user.role,
+        email: user.email,
+      })
 
       await UserService.sendConfirmEmail(user)
       return response.res(user)
