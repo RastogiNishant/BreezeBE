@@ -46,6 +46,9 @@ const {
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
   USE_TYPE_WAZ,
+  USE_TYPE_PLANT,
+  USE_TYPE_OTHER,
+
   // ownership_type
   OWNERSHIP_TYPE_FREEHOLDER,
   OWNERSHIP_TYPE_DIRECT_PROPERTY,
@@ -289,7 +292,14 @@ class CreateEstate extends Base {
       use_type: yup
         .number()
         .positive()
-        .oneOf([USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_CONSTRUCT, USE_TYPE_WAZ]),
+        .oneOf([
+          USE_TYPE_RESIDENTIAL,
+          USE_TYPE_COMMERCIAL,
+          USE_TYPE_CONSTRUCT,
+          USE_TYPE_WAZ,
+          USE_TYPE_PLANT,
+          USE_TYPE_OTHER,
+        ]),
       ownership_type: yup
         .number()
         .positive()

@@ -79,6 +79,8 @@ const {
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
   USE_TYPE_WAZ,
+  USE_TYPE_PLANT,
+  USE_TYPE_OTHER,
 
   HEATING_TYPE_NO,
   HEATING_TYPE_OVEN,
@@ -475,21 +477,25 @@ class EstateAttributeTranslations {
       },
       use_type: {
         keys: [
-          l.get('property.attribute.USE_TYPE.Residential.message', lang),
-          l.get('property.attribute.USE_TYPE.Commercial.message', lang),
-          l.get('property.attribute.USE_TYPE.Plant.message', lang),
-          l.get('property.attribute.USE_TYPE.Other.message', lang),
+          escapeStr(l.get('property.attribute.USE_TYPE.Residential.message', lang)),
+          escapeStr(l.get('property.attribute.USE_TYPE.Commercial.message', lang)),
+          escapeStr(l.get('property.attribute.USE_TYPE.Plant.message', lang)),
+          escapeStr(l.get('property.attribute.USE_TYPE.Other.message', lang)),
         ],
-        values: [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_CONSTRUCT, USE_TYPE_WAZ],
+        values: [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_PLANT, USE_TYPE_OTHER],
       },
       occupancy: {
         keys: [
-          l.get('property.attribute.OCCUPATION_TYPE.Private_Use.message', lang),
-          l.get('property.attribute.OCCUPATION_TYPE.Occupied_by_tenant.message', lang),
-          l.get('property.attribute.OCCUPATION_TYPE.Write_off.message', lang),
-          l.get('property.attribute.OCCUPATION_TYPE.Vacancy.message', lang),
-          l.get('property.attribute.OCCUPATION_TYPE.Not_rent_not_occupied.message', lang),
-          l.get('property.attribute.OCCUPATION_TYPE.Rent_but_not_occupied.message', lang),
+          escapeStr(l.get('property.attribute.OCCUPATION_TYPE.Private_Use.message', lang)),
+          escapeStr(l.get('property.attribute.OCCUPATION_TYPE.Occupied_by_tenant.message', lang)),
+          escapeStr(l.get('property.attribute.OCCUPATION_TYPE.Write_off.message', lang)),
+          escapeStr(l.get('property.attribute.OCCUPATION_TYPE.Vacancy.message', lang)),
+          escapeStr(
+            l.get('property.attribute.OCCUPATION_TYPE.Not_rent_not_occupied.message', lang)
+          ),
+          escapeStr(
+            l.get('property.attribute.OCCUPATION_TYPE.Rent_but_not_occupied.message', lang)
+          ),
         ],
         values: [
           OCCUPATION_TYPE_OCCUPIED_OWN,
@@ -502,10 +508,10 @@ class EstateAttributeTranslations {
       },
       ownership_type: {
         keys: [
-          l.get('property.attribute.USE_TYPE.Residential.message', lang),
-          l.get('property.attribute.USE_TYPE.Commercial.message', lang),
-          l.get('property.attribute.USE_TYPE.Plant.message', lang),
-          l.get('property.attribute.USE_TYPE.Other.message', lang),
+          escapeStr(l.get('property.attribute.USE_TYPE.Residential.message', lang)),
+          escapeStr(l.get('property.attribute.USE_TYPE.Commercial.message', lang)),
+          escapeStr(l.get('property.attribute.USE_TYPE.Plant.message', lang)),
+          escapeStr(l.get('property.attribute.USE_TYPE.Other.message', lang)),
         ],
         values: [
           OWNERSHIP_TYPE_FREEHOLDER,
@@ -516,10 +522,10 @@ class EstateAttributeTranslations {
       },
       marketing_type: {
         keys: [
-          l.get('property.attribute.DEAL_TYPE.Purchase.message', lang),
-          l.get('property.attribute.DEAL_TYPE.Rent_lease.message', lang),
-          l.get('property.attribute.DEAL_TYPE.Leasehold.message', lang),
-          l.get('property.attribute.DEAL_TYPE.Leasing.message', lang),
+          escapeStr(l.get('property.attribute.DEAL_TYPE.Purchase.message', lang)),
+          escapeStr(l.get('property.attribute.DEAL_TYPE.Rent_lease.message', lang)),
+          escapeStr(l.get('property.attribute.DEAL_TYPE.Leasehold.message', lang)),
+          escapeStr(l.get('property.attribute.DEAL_TYPE.Leasing.message', lang)),
         ],
         values: [
           MARKETING_TYPE_PURCHASE,
@@ -530,21 +536,25 @@ class EstateAttributeTranslations {
       },
       building_status: {
         keys: [
-          l.get('property.attribute.BUILDING_STATUS.First_time_occupied.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.New.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Existing.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Part_fully_renovated.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Partly_refurished.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.In_need_of_renovation.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Ready_to_be_built.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.By_agreement.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Modernized.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Cleaned.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Rough_building.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Developed.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Abrissobjekt.message', lang),
-          l.get('property.attribute.BUILDING_STATUS.Projected.message', lang),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.First_time_occupied.message', lang)),
+          escapeStr(
+            l.get('property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message', lang)
+          ),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.New.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Existing.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Part_fully_renovated.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Partly_refurished.message', lang)),
+          escapeStr(
+            l.get('property.attribute.BUILDING_STATUS.In_need_of_renovation.message', lang)
+          ),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Ready_to_be_built.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.By_agreement.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Modernized.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Cleaned.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Rough_building.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Developed.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Abrissobjekt.message', lang)),
+          escapeStr(l.get('property.attribute.BUILDING_STATUS.Projected.message', lang)),
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
