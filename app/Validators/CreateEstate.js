@@ -523,6 +523,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
         ]),
+      extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup.number().when(['additional_costs', 'heating_costs'], {
         is: (additional_costs, heating_costs) => {
           return additional_costs || heating_costs

@@ -85,7 +85,7 @@ class EstateImportHeaderTranslations {
     'num',
     'street',
     'house_number',
-    'address',
+    'extra_address',
     'zip',
     'city',
     'country',

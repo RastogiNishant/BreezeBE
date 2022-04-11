@@ -145,8 +145,10 @@ class ExcelReader {
         //this is unprocessable, it contains only undefined values
         continue
       }
+      row.address = ''
       //we process what to do with the values
       let itemData = this.mapToValues(row)
+      console.log('row', row, 'itemData', itemData)
       itemData = {
         ...itemData,
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,

@@ -140,6 +140,7 @@ class Estate extends Model {
       'pets_allowed',
       'apartment_status',
       'extra_costs',
+      'extra_address',
     ]
   }
 
