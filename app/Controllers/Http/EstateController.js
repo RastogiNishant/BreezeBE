@@ -743,26 +743,24 @@ class EstateController {
       result.toJSON().map(async (row) => {
         for (let attribute in row) {
           if (reverseMap[attribute]) {
-            /*let val = row.attribute
-            console.log(
-              attribute,
-              row[attribute],
-              'val',
-              reverseMap[attribute][
-                isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
-              ]
-            )*/
             if (isFunction(reverseMap[attribute])) {
-              row.attribute = reverseMap[attribute](row[attribute])
+              row[attribute] = reverseMap[attribute](row[attribute])
             } else if (reverseMap[attribute][row[attribute]]) {
               //key value pairs
-              row.attribute =
+              row[attribute] =
                 reverseMap[attribute][
                   isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                 ]
-            } else if (attribute == 'six_char_code') {
-              row.breeze_id = row.attribute
             }
+            const letting_status = reverseMap.let_status[row.letting_status]
+            console.log('letting_status', row.letting_status)
+            const letting_type = reverseMap.let_type[row.letting_type]
+            if (letting_status) {
+              row.letting_status = `${letting_type} - ${letting_status}`
+            } else {
+              row.letting_status = `${letting_type}`
+            }
+            row.breeze_id = row.six_char_code
           }
         }
         rows.push(row)

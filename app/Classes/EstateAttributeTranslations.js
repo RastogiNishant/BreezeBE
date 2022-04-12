@@ -535,10 +535,10 @@ class EstateAttributeTranslations {
       },
       ownership_type: {
         keys: [
-          'property.attribute.USE_TYPE.Residential.message',
-          'property.attribute.USE_TYPE.Commercial.message',
-          'property.attribute.USE_TYPE.Plant.message',
-          'property.attribute.USE_TYPE.Other.message',
+          'property.attribute.OWNERSHIP_TYPE.Freeholder.message',
+          'property.attribute.OWNERSHIP_TYPE.Direct_property.message',
+          'property.attribute.OWNERSHIP_TYPE.Leasehold.message',
+          'property.attribute.OWNERSHIP_TYPE.Other.message',
         ],
         values: [
           OWNERSHIP_TYPE_FREEHOLDER,
