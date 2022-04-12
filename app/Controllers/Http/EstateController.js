@@ -41,6 +41,7 @@ const {
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty } = require('lodash')
+const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -729,6 +730,13 @@ class EstateController {
       //transaction failed
       throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
+  }
+
+  async export({ request, auth, response }) {
+    const { lang } = request.all()
+    const EstateAttributeTranslations = new EstateAttributeTranslations(lang)
+
+    return response.res(lang)
   }
 }
 

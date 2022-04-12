@@ -412,6 +412,7 @@ class EstateAttributeTranslations {
   }
 
   constructor(lang = 'en') {
+    this.setLang(lang)
     let dataMap = {
       property_type: {
         keys: [
@@ -890,6 +891,41 @@ class EstateAttributeTranslations {
       this.dataMapping[attribute] = keyValue
     }
     return this.dataMapping
+  }
+
+  setLang(lang) {
+    this.lang = lang
+  }
+  getMap() {
+    dataMap = this.dataMap
+    let keyValue
+    for (let attribute in dataMap) {
+      keyValue = {}
+      if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
+        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
+      }
+      for (let k = 0; k < dataMap[attribute].keys.length; k++) {
+        keyValue[dataMap[attribute].keys[k]] = dataMap[attribute].values[k]
+      }
+      this.dataMapping[attribute] = keyValue
+    }
+    return this.dataMapping
+  }
+  getReverseDataMap() {
+    dataMap = this.dataMap
+    let keyValue
+    reverseDataMapping = {}
+    for (let attribute in dataMap) {
+      keyValue = {}
+      if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
+        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
+      }
+      for (let k = 0; k < dataMap[attribute].keys.length; k++) {
+        keyValue[dataMap[attribute].keys[k]] = dataMap[attribute].values[k]
+      }
+      reverseDataMapping[keyValue] = attribute
+    }
+    return reverseDataMapping
   }
 }
 
