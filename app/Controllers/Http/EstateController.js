@@ -131,7 +131,7 @@ class EstateController {
       const company = await CompanyService.getUserCompany(auth.user.id)
 
       const result = {
-        ...lanlord.toJSON({ isShort: true }),
+        ...lanlord.toJSON(),
         company: company,
         tenant: tenant,
         members: members,
