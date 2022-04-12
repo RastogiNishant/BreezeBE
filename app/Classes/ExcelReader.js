@@ -7,6 +7,7 @@ const l = use('Localize')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateAttributeTranslations = require('./EstateAttributeTranslations')
 const EstateImportHeaderTranslations = require('./EstateImportHeaderTranslations')
+
 escapeStr = (v) => {
   return (v || '')
     .toString()
@@ -112,7 +113,8 @@ class ExcelReader {
     } else {
       throw new HttpException('Cannot determine Excel language.', 422, 101101)
     }
-    this.dataMapping = new EstateAttributeTranslations(lang)
+    const AttributeTranslations = new EstateAttributeTranslations(lang)
+    this.dataMapping = AttributeTranslations.getMap()
     const HeaderTranslations = new EstateImportHeaderTranslations(lang)
     //set possible columns that we can track...
     this.columns = HeaderTranslations.getHeaderVars()
