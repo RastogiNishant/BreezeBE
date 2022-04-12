@@ -761,7 +761,7 @@ class EstateController {
         return row
       })
     )
-    return response.res(rows.slice(1, 10))
+    return response.res(rows)
   }
 }
 
