@@ -691,7 +691,8 @@ class EstateService {
         .whereIn('user_id', ids)
         .whereNot('status', STATUS_DELETE)
         .whereNot('area', 0)
-        .with('esta')
+        .with('rooms')
+        .with('current_tenant')
         .fetch()
     } else {
       return await EstateService.getEstates(params)
