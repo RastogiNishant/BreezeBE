@@ -181,6 +181,17 @@ toBool = (v) => {
   }
 }
 
+reverseBool = (value) => {
+  switch (value) {
+    case true:
+      return l.get('yes.message', this.lang)
+    case false:
+      return l.get('no.message', this.lang)
+    default:
+      return ''
+  }
+}
+
 extractDate = (date) => {
   if (typeof date == 'string' && (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))) {
     return `${match[3]}-${match[2]}-${match[1]}`
@@ -188,7 +199,26 @@ extractDate = (date) => {
   return date
 }
 
+reverseExtractDate = (date) => {
+  if (
+    typeof date == 'string' &&
+    (match = date.match(/^([0-9]{4})\-([0-9]{2})\-([0-9]{2})/)) &&
+    this.lang === 'de'
+  ) {
+    return `${match[2]}.${match[1]}-${match[3]}`
+  }
+  return date
+}
+
 class EstateAttributeTranslations {
+  reverseDataMapping = {
+    non_smoker: reverseBool,
+    rent_arrears: reverseBool,
+    furnished: reverseBool,
+    available_date: reverseExtractDate,
+    from_date: reverseExtractDate,
+    last_modernization: reverseExtractDate,
+  }
   dataMapping = {
     property_type: {
       apartment: PROPERTY_TYPE_APARTMENT,
@@ -884,21 +914,24 @@ class EstateAttributeTranslations {
     return this.dataMapping
   }
 
+  /**
+   * keys are numeric values are translations
+   * @returns key value pair of reverse mapped attributes
+   */
   getReverseDataMap() {
-    dataMap = this.dataMap
+    const dataMap = this.dataMap
     let keyValue
-    reverseDataMapping = {}
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
+        throw new HttpException('Settings Error. Please contact administrator.', 500, 110176)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
-        keyValue[dataMap[attribute].keys[k]] = dataMap[attribute].values[k]
+        keyValue[dataMap[attribute].values[k]] = l.get(dataMap[attribute].keys[k], this.lang)
       }
-      reverseDataMapping[keyValue] = attribute
+      this.reverseDataMapping[attribute] = keyValue
     }
-    return reverseDataMapping
+    return this.reverseDataMapping
   }
 }
 

@@ -40,7 +40,7 @@ const {
   ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty } = require('lodash')
+const { isEmpty, isFunction, isNumber } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -733,10 +733,43 @@ class EstateController {
   }
 
   async export({ request, auth, response }) {
-    const { lang } = request.all()
-    const EstateAttributeTranslations = new EstateAttributeTranslations(lang)
+    const { lang } = request.params
+    const AttributeTranslations = new EstateAttributeTranslations(lang)
+    const reverseMap = AttributeTranslations.getReverseDataMap()
 
-    return response.res(lang)
+    let result = await EstateService.getEstatesByUserId([auth.user.id], 0, 0, { return_all: 1 })
+    let rows = []
+    await Promise.all(
+      result.toJSON().map(async (row) => {
+        for (let attribute in row) {
+          if (reverseMap[attribute]) {
+            /*let val = row.attribute
+            console.log(
+              attribute,
+              row[attribute],
+              'val',
+              reverseMap[attribute][
+                isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+              ]
+            )*/
+            if (isFunction(reverseMap[attribute])) {
+              row.attribute = reverseMap[attribute](row[attribute])
+            } else if (reverseMap[attribute][row[attribute]]) {
+              //key value pairs
+              row.attribute =
+                reverseMap[attribute][
+                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                ]
+            } else if (attribute == 'six_char_code') {
+              row.breeze_id = row.attribute
+            }
+          }
+        }
+        rows.push(row)
+        return row
+      })
+    )
+    return response.res(rows.slice(1, 10))
   }
 }
 
