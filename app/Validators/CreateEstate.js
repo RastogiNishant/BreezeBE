@@ -46,6 +46,9 @@ const {
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
   USE_TYPE_WAZ,
+  USE_TYPE_PLANT,
+  USE_TYPE_OTHER,
+
   // ownership_type
   OWNERSHIP_TYPE_FREEHOLDER,
   OWNERSHIP_TYPE_DIRECT_PROPERTY,
@@ -171,6 +174,18 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_WITH_CHILD,
+  //Letting Status
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+
+  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_CONSTRUCTION_WORKS,
+  LETTING_STATUS_STRUCTURAL_VACANCY,
+  LETTING_STATUS_FIRST_TIME_USE,
+  LETTING_STATUS_VACANCY,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -186,6 +201,7 @@ yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
 class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
+      breeze_id: yup.string().nullable(),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
@@ -276,7 +292,14 @@ class CreateEstate extends Base {
       use_type: yup
         .number()
         .positive()
-        .oneOf([USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_CONSTRUCT, USE_TYPE_WAZ]),
+        .oneOf([
+          USE_TYPE_RESIDENTIAL,
+          USE_TYPE_COMMERCIAL,
+          USE_TYPE_CONSTRUCT,
+          USE_TYPE_WAZ,
+          USE_TYPE_PLANT,
+          USE_TYPE_OTHER,
+        ]),
       ownership_type: yup
         .number()
         .positive()
@@ -464,6 +487,53 @@ class CreateEstate extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
+      minors: yup.boolean(),
+      letting_status: yup
+        .object()
+        .shape({
+          type: yup
+            .number()
+            .integer()
+            .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
+            .nullable(),
+          status: yup
+            .number()
+            .integer()
+            .oneOf([
+              LETTING_STATUS_DEFECTED,
+              LETTING_STATUS_TERMINATED,
+              LETTING_STATUS_NORMAL,
+              LETTING_STATUS_CONSTRUCTION_WORKS,
+              LETTING_STATUS_STRUCTURAL_VACANCY,
+              LETTING_STATUS_FIRST_TIME_USE,
+              LETTING_STATUS_VACANCY,
+            ])
+            .nullable(),
+        })
+        .nullable()
+        .default(null),
+      family_size_max: yup.number().integer().min(1).max(100),
+      apartment_status: yup
+        .number()
+        .integer()
+        .oneOf([
+          BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+          BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+          BUILDING_STATUS_NEW,
+          BUILDING_STATUS_EXISTING,
+          BUILDING_STATUS_PART_FULLY_RENOVATED,
+          BUILDING_STATUS_PARTLY_REFURISHED,
+          BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+          BUILDING_STATUS_READY_TO_BE_BUILT,
+          BUILDING_STATUS_BY_AGREEMENT,
+          BUILDING_STATUS_MODERNIZED,
+          BUILDING_STATUS_CLEANED,
+          BUILDING_STATUS_ROUGH_BUILDING,
+          BUILDING_STATUS_DEVELOPED,
+          BUILDING_STATUS_ABRISSOBJEKT,
+          BUILDING_STATUS_PROJECTED,
+        ]),
+      extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup.number().when(['additional_costs', 'heating_costs'], {
         is: (additional_costs, heating_costs) => {
           return additional_costs || heating_costs
