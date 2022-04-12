@@ -752,14 +752,8 @@ class EstateController {
                   isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                 ]
             }
-            const letting_status = reverseMap.let_status[row.letting_status]
-            console.log('letting_status', row.letting_status)
-            const letting_type = reverseMap.let_type[row.letting_type]
-            if (letting_status) {
-              row.letting_status = `${letting_type} - ${letting_status}`
-            } else {
-              row.letting_status = `${letting_type}`
-            }
+            row.letting_status = reverseMap.let_status[row.letting_status]
+            row.letting_type = reverseMap.let_type[row.letting_type]
             row.breeze_id = row.six_char_code
           }
         }
