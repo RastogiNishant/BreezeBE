@@ -1,6 +1,6 @@
 const l = use('Localize')
-const { trim } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
+const { trim } = require('lodash')
 const {
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
@@ -79,15 +79,12 @@ const {
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
   USE_TYPE_WAZ,
-  USE_TYPE_PLANT,
-  USE_TYPE_OTHER,
 
   HEATING_TYPE_NO,
   HEATING_TYPE_OVEN,
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  HEATING_TYPE_FLOOR_HEATING,
 
   EQUIPMENT_STANDARD_SIMPLE,
   EQUIPMENT_STANDARD_NORMAL,
@@ -142,17 +139,15 @@ const {
   KIDS_TO_5,
   KIDS_UP_5,
 
-  LETTING_TYPE_LET,
-  LETTING_TYPE_VOID,
-  LETTING_TYPE_NA,
-
-  LETTING_STATUS_DEFECTED,
-  LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
-  LETTING_STATUS_VACANCY,
+  ENERGY_TYPE_LOW_ENERGY,
+  ENERGY_TYPE_PASSIVE_HOUSE,
+  ENERGY_TYPE_NEW_BUILDING_STANDARD,
+  ENERGY_TYPE_KFW40,
+  ENERGY_TYPE_KFW60,
+  ENERGY_TYPE_KFW55,
+  ENERGY_TYPE_KFW70,
+  ENERGY_TYPE_MINERGIE_CONSTRUCTION,
+  ENERGY_TYPE_MINERGIE_CERTIFIED,
 } = require('../constants')
 
 escapeStr = (v) => {
@@ -393,33 +388,16 @@ class EstateAttributeTranslations {
       ).replace(/\s,/g, ',')
     },
     energy_efficiency: (i) => i,
-    letting_status: (i) => {
-      let whole
-      let letting_type
-      let letting_status
-      if (i.match(/(.*) \- (.*)/)) {
-        ;[whole, letting_type, letting_status] = i.match(/(.*) \- (.*)/)
-      } else {
-        letting_type = i
-        letting_status = null
-      }
-
-      return {
-        type: this.dataMapping.let_type[escapeStr(letting_type)],
-        status: this.dataMapping.let_status[escapeStr(letting_status)],
-      }
-    },
   }
 
   constructor(lang = 'en') {
-    this.setLang(lang)
     let dataMap = {
       property_type: {
         keys: [
-          'property.attribute.PROPERTY_TYPE.Apartment.message',
-          'property.attribute.PROPERTY_TYPE.Room.message',
-          'property.attribute.PROPERTY_TYPE.House.message',
-          'property.attribute.PROPERTY_TYPE.Site.message',
+          l.get('property.attribute.PROPERTY_TYPE.Apartment.message', lang),
+          l.get('property.attribute.PROPERTY_TYPE.Room.message', lang),
+          l.get('property.attribute.PROPERTY_TYPE.House.message', lang),
+          l.get('property.attribute.PROPERTY_TYPE.Site.message', lang),
         ],
         values: [
           PROPERTY_TYPE_APARTMENT,
@@ -430,14 +408,14 @@ class EstateAttributeTranslations {
       },
       apt_type: {
         keys: [
-          'property.attribute.APARTMENT_TYPE.Flat.message',
-          'property.attribute.APARTMENT_TYPE.Ground_floor.message',
-          'property.attribute.APARTMENT_TYPE.Roof_floor.message',
-          'property.attribute.APARTMENT_TYPE.Maisonette.message',
-          'property.attribute.APARTMENT_TYPE.Loft_studio_atelier.message',
-          'property.attribute.APARTMENT_TYPE.Social.message',
-          'property.attribute.APARTMENT_TYPE.Souterrain.message',
-          'property.attribute.APARTMENT_TYPE.Penthouse.message',
+          l.get('property.attribute.APARTMENT_TYPE.Flat.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Roof_floor.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Maisonette.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Loft_studio_atelier.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Social.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Souterrain.message', lang),
+          l.get('property.attribute.APARTMENT_TYPE.Penthouse.message', lang),
         ],
         values: [
           APARTMENT_TYPE_FLAT,
@@ -452,16 +430,16 @@ class EstateAttributeTranslations {
       },
       house_type: {
         keys: [
-          'property.attribute.HOUSE_TYPE.Multi-family_house.message',
-          'property.attribute.HOUSE_TYPE.High_rise.message',
-          'property.attribute.HOUSE_TYPE.Series.message',
-          'property.attribute.HOUSE_TYPE.Semidetached_house.message',
-          'property.attribute.HOUSE_TYPE.Two_family_house.message',
-          'property.attribute.HOUSE_TYPE.Detached_house.message',
-          'property.attribute.HOUSE_TYPE.Country.message',
-          'property.attribute.HOUSE_TYPE.Bungalow.message',
-          'property.attribute.HOUSE_TYPE.Villa.message',
-          'property.attribute.HOUSE_TYPE.Gardenhouse.message',
+          l.get('property.attribute.HOUSE_TYPE.Multi-family_house.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.High_rise.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Series.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Semidetached_house.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Two_family_house.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Detached_house.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Country.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Bungalow.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Villa.message', lang),
+          l.get('property.attribute.HOUSE_TYPE.Gardenhouse.message', lang),
         ],
         values: [
           HOUSE_TYPE_MULTIFAMILY_HOUSE,
@@ -478,21 +456,21 @@ class EstateAttributeTranslations {
       },
       use_type: {
         keys: [
-          'property.attribute.USE_TYPE.Residential.message',
-          'property.attribute.USE_TYPE.Commercial.message',
-          'property.attribute.USE_TYPE.Plant.message',
-          'property.attribute.USE_TYPE.Other.message',
+          l.get('property.attribute.USE_TYPE.Residential.message', lang),
+          l.get('property.attribute.USE_TYPE.Commercial.message', lang),
+          l.get('property.attribute.USE_TYPE.Plant.message', lang),
+          l.get('property.attribute.USE_TYPE.Other.message', lang),
         ],
-        values: [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_PLANT, USE_TYPE_OTHER],
+        values: [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_CONSTRUCT, USE_TYPE_WAZ],
       },
       occupancy: {
         keys: [
-          'property.attribute.OCCUPATION_TYPE.Private_Use.message',
-          'property.attribute.OCCUPATION_TYPE.Occupied_by_tenant.message',
-          'property.attribute.OCCUPATION_TYPE.Write_off.message',
-          'property.attribute.OCCUPATION_TYPE.Vacancy.message',
-          'property.attribute.OCCUPATION_TYPE.Not_rent_not_occupied.message',
-          'property.attribute.OCCUPATION_TYPE.Rent_but_not_occupied.message',
+          l.get('property.attribute.OCCUPATION_TYPE.Private_Use.message', lang),
+          l.get('property.attribute.OCCUPATION_TYPE.Occupied_by_tenant.message', lang),
+          l.get('property.attribute.OCCUPATION_TYPE.Write_off.message', lang),
+          l.get('property.attribute.OCCUPATION_TYPE.Vacancy.message', lang),
+          l.get('property.attribute.OCCUPATION_TYPE.Not_rent_not_occupied.message', lang),
+          l.get('property.attribute.OCCUPATION_TYPE.Rent_but_not_occupied.message', lang),
         ],
         values: [
           OCCUPATION_TYPE_OCCUPIED_OWN,
@@ -505,10 +483,10 @@ class EstateAttributeTranslations {
       },
       ownership_type: {
         keys: [
-          'property.attribute.USE_TYPE.Residential.message',
-          'property.attribute.USE_TYPE.Commercial.message',
-          'property.attribute.USE_TYPE.Plant.message',
-          'property.attribute.USE_TYPE.Other.message',
+          l.get('property.attribute.USE_TYPE.Residential.message', lang),
+          l.get('property.attribute.USE_TYPE.Commercial.message', lang),
+          l.get('property.attribute.USE_TYPE.Plant.message', lang),
+          l.get('property.attribute.USE_TYPE.Other.message', lang),
         ],
         values: [
           OWNERSHIP_TYPE_FREEHOLDER,
@@ -519,10 +497,10 @@ class EstateAttributeTranslations {
       },
       marketing_type: {
         keys: [
-          'property.attribute.DEAL_TYPE.Purchase.message',
-          'property.attribute.DEAL_TYPE.Rent_lease.message',
-          'property.attribute.DEAL_TYPE.Leasehold.message',
-          'property.attribute.DEAL_TYPE.Leasing.message',
+          l.get('property.attribute.DEAL_TYPE.Purchase.message', lang),
+          l.get('property.attribute.DEAL_TYPE.Rent_lease.message', lang),
+          l.get('property.attribute.DEAL_TYPE.Leasehold.message', lang),
+          l.get('property.attribute.DEAL_TYPE.Leasing.message', lang),
         ],
         values: [
           MARKETING_TYPE_PURCHASE,
@@ -533,21 +511,21 @@ class EstateAttributeTranslations {
       },
       building_status: {
         keys: [
-          'property.attribute.BUILDING_STATUS.First_time_occupied.message',
-          'property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message',
-          'property.attribute.BUILDING_STATUS.New.message',
-          'property.attribute.BUILDING_STATUS.Existing.message',
-          'property.attribute.BUILDING_STATUS.Part_fully_renovated.message',
-          'property.attribute.BUILDING_STATUS.Partly_refurished.message',
-          'property.attribute.BUILDING_STATUS.In_need_of_renovation.message',
-          'property.attribute.BUILDING_STATUS.Ready_to_be_built.message',
-          'property.attribute.BUILDING_STATUS.By_agreement.message',
-          'property.attribute.BUILDING_STATUS.Modernized.message',
-          'property.attribute.BUILDING_STATUS.Cleaned.message',
-          'property.attribute.BUILDING_STATUS.Rough_building.message',
-          'property.attribute.BUILDING_STATUS.Developed.message',
-          'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
-          'property.attribute.BUILDING_STATUS.Projected.message',
+          l.get('property.attribute.BUILDING_STATUS.First_time_occupied.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.New.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Existing.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Part_fully_renovated.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Partly_refurished.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.In_need_of_renovation.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Ready_to_be_built.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.By_agreement.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Modernized.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Cleaned.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Rough_building.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Developed.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Abrissobjekt.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Projected.message', lang),
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -569,21 +547,21 @@ class EstateAttributeTranslations {
       },
       apartment_status: {
         keys: [
-          'property.attribute.BUILDING_STATUS.First_time_occupied.message',
-          'property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message',
-          'property.attribute.BUILDING_STATUS.New.message',
-          'property.attribute.BUILDING_STATUS.Existing.message',
-          'property.attribute.BUILDING_STATUS.Part_fully_renovated.message',
-          'property.attribute.BUILDING_STATUS.Partly_refurished.message',
-          'property.attribute.BUILDING_STATUS.In_need_of_renovation.message',
-          'property.attribute.BUILDING_STATUS.Ready_to_be_built.message',
-          'property.attribute.BUILDING_STATUS.By_agreement.message',
-          'property.attribute.BUILDING_STATUS.Modernized.message',
-          'property.attribute.BUILDING_STATUS.Cleaned.message',
-          'property.attribute.BUILDING_STATUS.Rough_building.message',
-          'property.attribute.BUILDING_STATUS.Developed.message',
-          'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
-          'property.attribute.BUILDING_STATUS.Projected.message',
+          l.get('property.attribute.BUILDING_STATUS.First_time_occupied.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Part_complete_renovation_need.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.New.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Existing.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Part_fully_renovated.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Partly_refurished.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.In_need_of_renovation.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Ready_to_be_built.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.By_agreement.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Modernized.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Cleaned.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Rough_building.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Developed.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Abrissobjekt.message', lang),
+          l.get('property.attribute.BUILDING_STATUS.Projected.message', lang),
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -605,20 +583,20 @@ class EstateAttributeTranslations {
       },
       firing: {
         keys: [
-          'property.attribute.FIRING.Oel.message',
-          'property.attribute.FIRING.Gas.message',
-          'property.attribute.FIRING.Electric.message',
-          'property.attribute.FIRING.Alternative.message',
-          'property.attribute.FIRING.Solar.message',
-          'property.attribute.FIRING.Ground_heat.message',
-          'property.attribute.FIRING.Airwp.message',
-          'property.attribute.FIRING.District_heating.message',
-          'property.attribute.FIRING.Block.message',
-          'property.attribute.FIRING.Water_electric.message',
-          'property.attribute.FIRING.Pellet.message',
-          'property.attribute.FIRING.Coal.message',
-          'property.attribute.FIRING.Wood.message',
-          'property.attribute.FIRING.Liquid_gas.message',
+          l.get('property.attribute.FIRING.Oel.message', lang),
+          l.get('property.attribute.FIRING.Gas.message', lang),
+          l.get('property.attribute.FIRING.Electric.message', lang),
+          l.get('property.attribute.FIRING.Alternative.message', lang),
+          l.get('property.attribute.FIRING.Solar.message', lang),
+          l.get('property.attribute.FIRING.Ground_heat.message', lang),
+          l.get('property.attribute.FIRING.Airwp.message', lang),
+          l.get('property.attribute.FIRING.District_heating.message', lang),
+          l.get('property.attribute.FIRING.Block.message', lang),
+          l.get('property.attribute.FIRING.Water_electric.message', lang),
+          l.get('property.attribute.FIRING.Pellet.message', lang),
+          l.get('property.attribute.FIRING.Coal.message', lang),
+          l.get('property.attribute.FIRING.Wood.message', lang),
+          l.get('property.attribute.FIRING.Liquid_gas.message', lang),
         ],
         values: [
           FIRING_OEL,
@@ -637,16 +615,17 @@ class EstateAttributeTranslations {
           FIRING_LIQUID_GAS,
         ],
       },
+      //FIXME: not matching
       heating_type: {
         keys: [
-          'property.attribute.HEATING_TYPE.Floor_heating.message',
-          'property.attribute.HEATING_TYPE.Oven.message',
-          'property.attribute.HEATING_TYPE.Floor.message',
-          'property.attribute.HEATING_TYPE.Central.message',
-          'property.attribute.HEATING_TYPE.Remote.message',
+          l.get('property.attribute.HEATING_TYPE.Floor_heating.message', lang),
+          l.get('property.attribute.HEATING_TYPE.Oven.message', lang),
+          l.get('property.attribute.HEATING_TYPE.Floor.message', lang),
+          l.get('property.attribute.HEATING_TYPE.Central.message', lang),
+          l.get('property.attribute.HEATING_TYPE.Remote.message', lang),
         ],
         values: [
-          HEATING_TYPE_FLOOR_HEATING,
+          HEATING_TYPE_NO,
           HEATING_TYPE_OVEN,
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
@@ -655,20 +634,20 @@ class EstateAttributeTranslations {
       },
       equipment_standard: {
         keys: [
-          'property.attribute.EQUIPMENT_STANDARD.Simple.message',
-          'property.attribute.EQUIPMENT_STANDARD.Normal.message',
-          'property.attribute.EQUIPMENT_STANDARD.Enhanced.message',
+          l.get('property.attribute.EQUIPMENT_STANDARD.Simple.message', lang),
+          l.get('property.attribute.EQUIPMENT_STANDARD.Normal.message', lang),
+          l.get('property.attribute.EQUIPMENT_STANDARD.Enhanced.message', lang),
         ],
         values: [EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED],
       },
       parking_space_type: {
         keys: [
-          'property.attribute.PARKING_SPACE_TYPE.Underground.message',
-          'property.attribute.PARKING_SPACE_TYPE.Carport.message',
-          'property.attribute.PARKING_SPACE_TYPE.Outdoor.message',
-          'property.attribute.PARKING_SPACE_TYPE.Car_park.message',
-          'property.attribute.PARKING_SPACE_TYPE.Duplex.message',
-          'property.attribute.PARKING_SPACE_TYPE.Garage.message',
+          l.get('property.attribute.PARKING_SPACE_TYPE.Underground.message', lang),
+          l.get('property.attribute.PARKING_SPACE_TYPE.Carport.message', lang),
+          l.get('property.attribute.PARKING_SPACE_TYPE.Outdoor.message', lang),
+          l.get('property.attribute.PARKING_SPACE_TYPE.Car_park.message', lang),
+          l.get('property.attribute.PARKING_SPACE_TYPE.Duplex.message', lang),
+          l.get('property.attribute.PARKING_SPACE_TYPE.Garage.message', lang),
         ],
         values: [
           PARKING_SPACE_TYPE_UNDERGROUND,
@@ -681,44 +660,42 @@ class EstateAttributeTranslations {
       },
       room_type: {
         keys: [
-          'apartment.amenities.room_type.living_room.message',
-          'landlord.property.inside_view.rooms.guest_room.message',
-          'landlord.property.inside_view.rooms.stairs.message',
-          'apartment.amenities.room_type.bedroom.message',
-          'apartment.amenities.room_type.kitchen.message',
-          'apartment.amenities.room_type.bath.message',
-          "apartment.amenities.room_type.children's_room.message",
-          'landlord.property.inside_view.rooms.corridor.message',
-          'landlord.property.inside_view.rooms.wc.message',
-          'apartment.amenities.room_type.balcony.message',
-          'apartment.amenities.room_type.pantry.message',
-          'landlord.property.inside_view.rooms.other_space.message',
-          'landlord.property.inside_view.rooms.office.message',
-          'landlord.property.inside_view.rooms.garden.message',
-          'landlord.property.inside_view.rooms.loggia.message',
-          'landlord.property.inside_view.rooms.checkroom.message',
-          'apartment.amenities.room_type.dining_room.message',
-          'apartment.amenities.room_type.entrance_hall.message',
-          'apartment.amenities.room_type.gym.message',
-          'landlord.property.inside_view.rooms.ironing_room.message',
-          'landlord.property.inside_view.rooms.staff_room.message',
-          'apartment.amenities.room_type.lobby.message',
-          'apartment.amenities.room_type.massage_room.message',
-          'room_storage_room.message',
-          'apartment.amenities.room_type.place_for_games.message',
-          'apartment.amenities.room_type.sauna.message',
-          'apartment.amenities.room_type.shower.message',
-          'landlord.property.inside_view.rooms.property_entrance.message',
-          'apartment.amenities.room_type.swimming_pool.message',
-          'apartment.amenities.room_type.technical_room.message',
-          'landlord.property.inside_view.rooms.terrace.message',
-          'landlord.property.inside_view.rooms.washing_room.message',
-          'landlord.property.inside_view.rooms.external_corridor.message',
+          l.get('property.attribute.ROOM_TYPE.Guest_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Bedroom.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Kitchen.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Bath.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Children_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Corridor.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Wc.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Balcony.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Pantry.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Other_space.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Office.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Garden.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Loggia.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Checkroom.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Dining_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Entrance_hall.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Gym.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Ironing_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Living_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Lobby.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Massage_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Storage_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Place_for_games.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Sauna.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Shower.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Staff_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Swimming_pool.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Technical_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Terrace.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Washing_room.message', lang),
+          l.get('property.attribute.ROOM_TYPE.External_corridor.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Stairs.message', lang),
+          l.get('property.attribute.ROOM_TYPE.Property_entrance.message', lang),
         ],
         values: [
-          ROOM_TYPE_LIVING_ROOM,
           ROOM_TYPE_GUEST_ROOM,
-          ROOM_TYPE_STAIRS,
           ROOM_TYPE_BEDROOM,
           ROOM_TYPE_KITCHEN,
           ROOM_TYPE_BATH,
@@ -736,169 +713,47 @@ class EstateAttributeTranslations {
           ROOM_TYPE_ENTRANCE_HALL,
           ROOM_TYPE_GYM,
           ROOM_TYPE_IRONING_ROOM,
-          ROOM_TYPE_STAFF_ROOM,
+          ROOM_TYPE_LIVING_ROOM,
           ROOM_TYPE_LOBBY,
           ROOM_TYPE_MASSAGE_ROOM,
           ROOM_TYPE_STORAGE_ROOM,
           ROOM_TYPE_PLACE_FOR_GAMES,
           ROOM_TYPE_SAUNA,
           ROOM_TYPE_SHOWER,
-          ROOM_TYPE_PROPERTY_ENTRANCE,
+          ROOM_TYPE_STAFF_ROOM,
           ROOM_TYPE_SWIMMING_POOL,
           ROOM_TYPE_TECHNICAL_ROOM,
           ROOM_TYPE_TERRACE,
           ROOM_TYPE_WASHING_ROOM,
           ROOM_TYPE_EXTERNAL_CORRIDOR,
+          ROOM_TYPE_STAIRS,
+          ROOM_TYPE_PROPERTY_ENTRANCE,
         ],
       },
-      room_type_name: {
+      /*
+      family_status: {
         keys: [
-          'apartment.amenities.room_type.living_room.message',
-          'landlord.property.inside_view.rooms.guest_room.message',
-          'landlord.property.inside_view.rooms.stairs.message',
-          'apartment.amenities.room_type.bedroom.message',
-          'apartment.amenities.room_type.kitchen.message',
-          'apartment.amenities.room_type.bath.message',
-          "apartment.amenities.room_type.children's_room.message",
-          'landlord.property.inside_view.rooms.corridor.message',
-          'landlord.property.inside_view.rooms.wc.message',
-          'apartment.amenities.room_type.balcony.message',
-          'apartment.amenities.room_type.pantry.message',
-          'landlord.property.inside_view.rooms.other_space.message',
-          'landlord.property.inside_view.rooms.office.message',
-          'landlord.property.inside_view.rooms.garden.message',
-          'landlord.property.inside_view.rooms.loggia.message',
-          'landlord.property.inside_view.rooms.checkroom.message',
-          'apartment.amenities.room_type.dining_room.message',
-          'apartment.amenities.room_type.entrance_hall.message',
-          'apartment.amenities.room_type.gym.message',
-          'landlord.property.inside_view.rooms.ironing_room.message',
-          'landlord.property.inside_view.rooms.staff_room.message',
-          'apartment.amenities.room_type.lobby.message',
-          'apartment.amenities.room_type.massage_room.message',
-          'room_storage_room.message',
-          'apartment.amenities.room_type.place_for_games.message',
-          'apartment.amenities.room_type.sauna.message',
-          'apartment.amenities.room_type.shower.message',
-          'landlord.property.inside_view.rooms.property_entrance.message',
-          'apartment.amenities.room_type.swimming_pool.message',
-          'apartment.amenities.room_type.technical_room.message',
-          'landlord.property.inside_view.rooms.terrace.message',
-          'landlord.property.inside_view.rooms.washing_room.message',
-          'landlord.property.inside_view.rooms.external_corridor.message',
+
         ],
         values: [
-          'apartment.amenities.room_type.living_room',
-          'landlord.property.inside_view.rooms.guest_room',
-          'landlord.property.inside_view.rooms.stairs',
-          'apartment.amenities.room_type.bedroom',
-          'apartment.amenities.room_type.kitchen',
-          'apartment.amenities.room_type.bath',
-          "apartment.amenities.room_type.children's_room",
-          'landlord.property.inside_view.rooms.corridor',
-          'landlord.property.inside_view.rooms.wc',
-          'apartment.amenities.room_type.balcony',
-          'apartment.amenities.room_type.pantry',
-          'landlord.property.inside_view.rooms.other_space',
-          'landlord.property.inside_view.rooms.office',
-          'landlord.property.inside_view.rooms.garden',
-          'landlord.property.inside_view.rooms.loggia',
-          'landlord.property.inside_view.rooms.checkroom',
-          'apartment.amenities.room_type.dining_room',
-          'apartment.amenities.room_type.entrance_hall',
-          'apartment.amenities.room_type.gym',
-          'landlord.property.inside_view.rooms.ironing_room',
-          'landlord.property.inside_view.rooms.staff_room',
-          'apartment.amenities.room_type.lobby',
-          'apartment.amenities.room_type.massage_room',
-          'room_storage_room',
-          'apartment.amenities.room_type.place_for_games',
-          'apartment.amenities.room_type.sauna',
-          'apartment.amenities.room_type.shower',
-          'landlord.property.inside_view.rooms.property_entrance',
-          'apartment.amenities.room_type.swimming_pool',
-          'apartment.amenities.room_type.technical_room',
-          'landlord.property.inside_view.rooms.terrace',
-          'landlord.property.inside_view.rooms.washing_room',
-          'landlord.property.inside_view.rooms.external_corridor',
-        ],
-      },
-      pets_allowed: {
-        keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
-        values: [true, false],
-      },
-      minors: {
-        keys: ['web.letting.property.import.No_matter.message', 'yes.message'],
-        values: [false, true],
-      },
-      let_type: {
-        keys: [
-          'property.attribute.LETTING_TYPE.Let.message',
-          'property.attribute.LETTING_TYPE.Void.message',
-          'property.attribute.LETTING_TYPE.NA.message',
-        ],
-        values: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      },
-      let_status: {
-        keys: [
-          'property.attribute.LETTING_STATUS.Defected.message',
-          'property.attribute.LETTING_STATUS.Terminated.message',
-          'property.attribute.LETTING_STATUS.Normal.message',
-          'property.attribute.LETTING_STATUS.Construction works.message',
-          'property.attribute.LETTING_STATUS.Structural vacancy.message',
-          'property.attribute.LETTING_STATUS.First-time use.message',
-          'property.attribute.LETTING_STATUS.Vacancy.message',
-        ],
-        values: [
-          LETTING_STATUS_DEFECTED,
-          LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
-          LETTING_STATUS_VACANCY,
-        ],
-      },
+
+        ]
+        family_no_kids: FAMILY_STATUS_NO_CHILD,
+        family_with_kids: FAMILY_STATUS_WITH_CHILD,
+        single: FAMILY_STATUS_SINGLE,
+      },*/
     }
-    this.dataMap = dataMap
-  }
-
-  setLang(lang) {
-    this.lang = lang
-  }
-
-  getMap() {
-    const dataMap = this.dataMap
     let keyValue
     for (let attribute in dataMap) {
       keyValue = {}
-      if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
-      }
-      for (let k = 0; k < dataMap[attribute].keys.length; k++) {
-        keyValue[escapeStr(l.get(dataMap[attribute].keys[k], this.lang))] =
-          dataMap[attribute].values[k]
-      }
-      this.dataMapping[attribute] = keyValue
-    }
-    return this.dataMapping
-  }
-
-  getReverseDataMap() {
-    dataMap = this.dataMap
-    let keyValue
-    reverseDataMapping = {}
-    for (let attribute in dataMap) {
-      keyValue = {}
-      if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
-      }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
         keyValue[dataMap[attribute].keys[k]] = dataMap[attribute].values[k]
       }
-      reverseDataMapping[keyValue] = attribute
+      this.dataMapping[attribute] = keyValue
     }
-    return reverseDataMapping
+    //console.log('dataMapping', this.dataMapping)
+    //throw new HttpException('datamapping')
+    return this.dataMapping
   }
 }
 

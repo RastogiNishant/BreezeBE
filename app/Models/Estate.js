@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
@@ -133,14 +133,7 @@ class Estate extends Model {
       'avail_duration',
       'vacant_date',
       'others',
-      'minors',
-      'letting_status',
-      'letting_type',
-      'family_size_max',
-      'pets_allowed',
-      'apartment_status',
       'extra_costs',
-      'extra_address',
     ]
   }
 
@@ -148,7 +141,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash', 'six_char_code']
+    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash']
   }
 
   /**
@@ -198,6 +191,7 @@ class Estate extends Model {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
     this.addHook('beforeSave', async (instance) => {
+      //console.log('instance', instance)
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord
@@ -238,10 +232,6 @@ class Estate extends Model {
         //need confirmation...
         instance.additional_costs = 0
         instance.heating_costs = 0
-      }
-      if (instance.dirty.letting_status && isObject(instance.dirty.letting_status)) {
-        instance.letting_status = instance.dirty.letting_status.status
-        instance.letting_type = instance.dirty.letting_status.type
       }
     })
 
@@ -314,10 +304,6 @@ class Estate extends Model {
    */
   slots() {
     return this.hasMany('App/Models/TimeSlot')
-  }
-
-  current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
   }
 
   /**

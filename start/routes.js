@@ -91,6 +91,7 @@ Route.group(() => {
   .prefix('/api/v1/landlord/paymentMethod')
   .middleware(['auth:jwtLandlord'])
 
+
 //Billing Address
 Route.group(() => {
   Route.post('', 'BillingAddressController.addBillingAddress')
@@ -283,9 +284,7 @@ Route.group(() => {
 
   Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
     'valid:EstateId,TenantId',
-  ])
-
-  Route.get('/export/:lang', 'EstateController.export')
+  ])  
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])
@@ -443,10 +442,10 @@ Route.group(() => {
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
   Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
     'valid:MemberId,Phone',
-  ])
+  ])  
   Route.post('/confirmsms', 'MemberController.confirmBySMS').middleware([
     'valid:MemberId,Code,Phone',
-  ])
+  ])  
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt,jwtHousekeeper'])

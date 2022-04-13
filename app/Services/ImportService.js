@@ -11,19 +11,9 @@ const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
-const Estate = use('App/Models/Estate')
-const User = use('App/Models/User')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const schema = require('../Validators/CreateBuddy').schema()
 
-const {
-  STATUS_DRAFT,
-  DATE_FORMAT,
-  BUDDY_STATUS_PENDING,
-  STATUS_ACTIVE,
-  ROLE_USER,
-} = require('../constants')
-const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING } = require('../constants')
 const HttpException = use('App/Exceptions/HttpException')
 
 /**
@@ -42,7 +32,7 @@ class ImportService {
     const reader = new ExcelReader()
     reader.headerCol = 1
     reader.sheetName = 'Import_Data'
-    return await reader.readFileEstateImport(filePath)
+    return await reader.readFile(filePath)
   }
 
   static async readBuddyFile(filePath) {
@@ -53,68 +43,32 @@ class ImportService {
   /**
    *
    */
-  static async createSingleEstate({ data, line, six_char_code }, userId) {
-    let estate
-    if (six_char_code) {
-      //check if this is an edit...
-      estate = await Estate.query()
-        .where('six_char_code', six_char_code)
+  static async createSingleEstate({ data, line }, userId) {
+    try {
+      if (!data.address) {
+        throw new AppException('Invalid address')
+      }
+      const address = data.address.toLowerCase()
+      const existingEstate = await EstateService.getQuery()
         .where('user_id', userId)
+        .where('address', 'LIKE', `%${address}%`)
         .first()
-      if (!estate) {
-        return { error: [`${six_char_code} is an invalid Breeze ID`], line, address: data.address }
+
+      if (existingEstate) {
+        await EstateService.completeRemoveEstate(existingEstate.id)
       }
-      //TODO: update Estate...
-      await EstateService.updateImportBySixCharCode(six_char_code, data)
-    } else {
-      try {
-        if (!data.address) {
-          throw new AppException('Invalid address')
-        }
-        const address = data.address.toLowerCase()
-        const existingEstate = await EstateService.getQuery()
-          .where('user_id', userId)
-          .where('address', 'LIKE', `%${address}%`)
-          .first()
-        let warning
-        if (existingEstate) {
-          //await EstateService.completeRemoveEstate(existingEstate.id)
-          warning = `Probable duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
-        }
-        data.avail_duration = 144
-        data.status = STATUS_DRAFT
-        data.available_date = data.available_date || moment().format(DATE_FORMAT)
-        if (data.letting_status) {
-          data.letting_type = data.letting_status.type
-          data.letting_status = data.letting_status.status || null
-        }
-        estate = await EstateService.createEstate(data, userId)
 
-        let rooms = []
-        let found
-        for (let key in data) {
-          if ((found = key.match(/^room(\d)_type$/))) {
-            rooms.push({ ...data[key], import_sequence: found[1] })
-          }
-        }
-        if (rooms.length) {
-          await RoomService.createRoomsFromImport(estate.id, rooms)
-        }
+      data.avail_duration = 144
+      data.status = STATUS_DRAFT
+      data.available_date = data.available_date || moment().format(DATE_FORMAT)
 
-        // Run task to separate get coords and point of estate
-        QueueService.getEstateCoords(estate.id)
-
-        //add current tenant
-        if (data.tenant_email) {
-          await EstateCurrentTenantService.addCurrentTenant(data, estate.id)
-        }
-        if (warning) {
-          return { warning, line, address: data.address }
-        }
-        return estate
-      } catch (e) {
-        return { error: [e.message], line, address: data.address }
-      }
+      const estate = await EstateService.createEstate(data, userId)
+      await RoomService.createBulkRooms(estate.id, data)
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estate.id)
+      return estate
+    } catch (e) {
+      return { error: [e.message], line, address: data.address }
     }
   }
 
@@ -146,23 +100,20 @@ class ImportService {
   /**
    *
    */
-  static async process(filePath, userId, type) {
-    let { errors, data, warnings } = await ImportService.readFileFromWeb(filePath)
+  static async process(filePath, userId, type, from_web = false) {
+    let { errors, data, warnings } = from_web
+      ? await ImportService.readFileFromWeb(filePath)
+      : ImportService.readFile(filePath)
 
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
 
     const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
-    result.map((row) => {
-      if (has(row, 'warning')) {
-        warnings.push(row.warning)
-      }
-    })
 
     return {
       errors: [...errors, ...createErrors],
       success: result.length - createErrors.length,
-      warnings: [...warnings],
+      warnings,
     }
   }
 
@@ -176,7 +127,7 @@ class ImportService {
    */
 
   static async processByPM(filePath, userId, type) {
-    const { errors, data } = await ImportService.readFileFromWeb(filePath)
+    const { errors, data } = await ImportService.readFile(filePath)
 
     const opt = { concurrency: 0 }
 
