@@ -95,7 +95,7 @@ class EstateImportHeaderTranslations {
     'use_type',
     'occupancy',
     'ownership_type',
-    'letting_status',
+    'letting',
     'marketing_type',
     'net_rent',
     'ancillary_costs',

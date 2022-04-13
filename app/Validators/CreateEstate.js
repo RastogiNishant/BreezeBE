@@ -489,29 +489,21 @@ class CreateEstate extends Base {
       max_age: yup.number().integer().min(0).max(120),
       minors: yup.boolean(),
       letting_status: yup
-        .object()
-        .shape({
-          type: yup
-            .number()
-            .integer()
-            .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
-            .nullable(),
-          status: yup
-            .number()
-            .integer()
-            .oneOf([
-              LETTING_STATUS_DEFECTED,
-              LETTING_STATUS_TERMINATED,
-              LETTING_STATUS_NORMAL,
-              LETTING_STATUS_CONSTRUCTION_WORKS,
-              LETTING_STATUS_STRUCTURAL_VACANCY,
-              LETTING_STATUS_FIRST_TIME_USE,
-              LETTING_STATUS_VACANCY,
-            ])
-            .nullable(),
-        })
-        .nullable()
-        .default(null),
+        .number()
+        .oneOf([
+          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_TERMINATED,
+          LETTING_STATUS_NORMAL,
+          LETTING_STATUS_CONSTRUCTION_WORKS,
+          LETTING_STATUS_STRUCTURAL_VACANCY,
+          LETTING_STATUS_FIRST_TIME_USE,
+          LETTING_STATUS_VACANCY,
+        ])
+        .nullable(),
+      letting_type: yup
+        .number()
+        .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
+        .nullable(),
       family_size_max: yup.number().integer().min(1).max(100),
       apartment_status: yup
         .number()
@@ -534,13 +526,16 @@ class CreateEstate extends Base {
           BUILDING_STATUS_PROJECTED,
         ]),
       extra_address: yup.string().min(0).max(255).nullable(),
-      extra_costs: yup.number().when(['additional_costs', 'heating_costs'], {
-        is: (additional_costs, heating_costs) => {
-          return additional_costs || heating_costs
-        },
-        then: yup.number().mustNotBeSet(),
-        otherwise: yup.number().min(0).max(1000000),
-      }),
+      extra_costs: yup
+        .number()
+        .when(['additional_costs', 'heating_costs'], {
+          is: (additional_costs, heating_costs) => {
+            return additional_costs || heating_costs
+          },
+          then: yup.number().mustNotBeSet(),
+          otherwise: yup.number().min(0).max(1000000),
+        })
+        .nullable(),
     })
 }
 

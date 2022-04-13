@@ -71,6 +71,17 @@ class ExcelReader {
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
           return { ...n, [k]: mapValue(k, v, row) }
+        } else if (k == 'letting') {
+          let matches
+          let letting_status
+          let letting_type
+          if ((matches = v.match(/^(.*?) \- (.*?)$/))) {
+            letting_status = get(this.dataMapping, `let_status.${escapeStr(matches[2])}`)
+            letting_type = get(this.dataMapping, `let_type.${escapeStr(matches[1])}`)
+          } else {
+            letting_type = get(this.dataMapping, `let_type.${escapeStr(v)}`)
+          }
+          return { ...n, letting_status, letting_type }
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return {
@@ -193,7 +204,6 @@ class ExcelReader {
       }
 
       let itemData = this.mapDataToEntity(sheet.data[k])
-
       itemData = {
         ...itemData,
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,

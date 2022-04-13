@@ -423,22 +423,6 @@ class EstateAttributeTranslations {
       ).replace(/\s,/g, ',')
     },
     energy_efficiency: (i) => i,
-    letting_status: (i) => {
-      let whole
-      let letting_type
-      let letting_status
-      if (i.match(/(.*) \- (.*)/)) {
-        ;[whole, letting_type, letting_status] = i.match(/(.*) \- (.*)/)
-      } else {
-        letting_type = i
-        letting_status = null
-      }
-
-      return {
-        type: this.dataMapping.let_type[escapeStr(letting_type)],
-        status: this.dataMapping.let_status[escapeStr(letting_status)],
-      }
-    },
   }
 
   constructor(lang = 'en') {

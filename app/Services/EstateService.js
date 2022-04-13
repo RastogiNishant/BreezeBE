@@ -788,11 +788,6 @@ class EstateService {
   }
 
   static async updateImportBySixCharCode(six_char_code, data) {
-    if (data.letting_status) {
-      data.letting_type = data.letting_status.type
-      data.letting_status = data.letting_status.status || null
-    }
-
     let estate_data = omit(data, [
       'room1_type',
       'room2_type',
