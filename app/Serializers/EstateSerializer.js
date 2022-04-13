@@ -23,7 +23,7 @@ class EstateSerializer extends BaseSerializer {
     }
 
     if (isDate(item.construction_year)) {
-      item.construction_year = moment(item.construction_year).format('YYYY-MM-DD')
+      item.construction_year = moment(item.construction_year).format('YYYY')
     }
     if (isDate(item.last_modernization)) {
       item.last_modernization = moment(item.last_modernization).format('YYYY-MM-DD')

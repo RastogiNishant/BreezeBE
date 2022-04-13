@@ -13,6 +13,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const Company = use('App/Models/Company')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -82,6 +83,14 @@ class AccountController {
         email: user.email,
       })
 
+      if (user.role === ROLE_USER) {
+        //If user we look for his email on estate_current_tenant and make corresponding corrections
+        const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
+        if (currentTenant) {
+          currentTenant.user_id = user.id
+          await currentTenant.save()
+        }
+      }
       await UserService.sendConfirmEmail(user)
       response.res(user)
     } catch (e) {
