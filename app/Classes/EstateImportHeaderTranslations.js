@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const l = use('Localize')
+const HttpException = use('App/Exceptions/HttpException')
 const addAsterisk = (string) => {
   return `${string} (*)`
 }
@@ -35,6 +36,7 @@ class EstateImportHeaderTranslations {
     'Construction',
     'Last modernization',
     'Building Status',
+    'Apartment Status',
     'Number of floors',
     'Energy Consumption Value',
     'Energy Carrier',
@@ -75,6 +77,7 @@ class EstateImportHeaderTranslations {
     'Tel',
     'Email',
     'Heating Costs',
+    'Landlord Email',
   ]
   columnIdentifiers = [
     'six_char_code',
@@ -82,7 +85,7 @@ class EstateImportHeaderTranslations {
     'num',
     'street',
     'house_number',
-    'address',
+    'extra_address',
     'zip',
     'city',
     'country',
@@ -105,6 +108,7 @@ class EstateImportHeaderTranslations {
     'construction_year',
     'last_modernization',
     'building_status',
+    'apartment_status',
     'number_floors',
     'energy_efficiency',
     'firing',
@@ -112,7 +116,6 @@ class EstateImportHeaderTranslations {
     'area',
     'rooms_number',
     'floor',
-    'apartment_status',
     'equipment_standard',
     'furnished',
     'parking_space_type',
@@ -131,9 +134,9 @@ class EstateImportHeaderTranslations {
     'budget',
     'rent_arrears',
     'credit_score',
-    'tenant_min_age',
-    'tenant_max_age',
-    'family_size',
+    'min_age',
+    'max_age',
+    'family_size_max',
     'family_status',
     'non_smoker',
     'kids_allowed',
@@ -145,6 +148,7 @@ class EstateImportHeaderTranslations {
     'tenant_tel',
     'tenant_email',
     'heating_costs',
+    'landlord_email',
   ]
   constructor(lang) {
     this.headers = [
@@ -176,6 +180,7 @@ class EstateImportHeaderTranslations {
       _.toLower(l.get('web.letting.property.import.Construction.message', lang)),
       _.toLower(l.get('web.letting.property.import.Last_modernization.message', lang)),
       _.toLower(l.get('web.letting.property.import.Building_Status.message', lang)),
+      _.toLower(l.get('web.letting.property.import.Apartment_Status.message', lang)),
       _.toLower(l.get('web.letting.property.import.Number_of_floors.message', lang)),
       _.toLower(l.get('web.letting.property.import.Energy_Consumption_Value.message', lang)),
       _.toLower(l.get('web.letting.property.import.Energy_Carrier.message', lang)),
@@ -183,7 +188,6 @@ class EstateImportHeaderTranslations {
       _.toLower(l.get('web.letting.property.import.Living_Space.message', lang)),
       _.toLower(l.get('web.letting.property.import.Number_of_Rooms.message', lang)),
       _.toLower(l.get('web.letting.property.import.Floor.message', lang)),
-      _.toLower(l.get('web.letting.property.import.Apartment_Status.message', lang)),
       _.toLower(l.get('web.letting.property.import.Amenities_Type.message', lang)),
       _.toLower(l.get('web.letting.property.import.Furnished.message', lang)),
       _.toLower(l.get('web.letting.property.import.Parking_Space_Type.message', lang)),
@@ -211,12 +215,16 @@ class EstateImportHeaderTranslations {
       _.toLower(l.get('web.letting.property.import.Surname.message', lang)),
       _.toLower(l.get('web.letting.property.import.Contract_End.message', lang)),
       _.toLower(l.get('web.letting.property.import.Pets_Allowed.message', lang)),
-      _.toLower(l.get('prospect.settings.user_details.txt_salutation.message', lang)),
-      _.toLower(l.get('landlord.profile.menu.txt_minors', lang)),
+      _.toLower(l.get('web.letting.property.import.txt_salutation.message', lang)),
+      _.toLower(l.get('web.letting.property.import.txt_minors.message', lang)),
       _.toLower(l.get('web.letting.property.import.Tel.message', lang)),
-      _.toLower(l.get('email_signature.email.message', lang)),
+      _.toLower(l.get('web.letting.property.import.txt_email.message', lang)),
       _.toLower(l.get('web.letting.property.import.Heating_Costs.message', lang)),
+      _.toLower('Landlord Email'),
     ]
+    if (this.headers.length !== this.columnIdentifiers.length) {
+      throw new HttpException('Settings Error. Please contact administrator.', 500, 110190)
+    }
   }
   getHeaderVars(toLower = true) {
     let headers = []
