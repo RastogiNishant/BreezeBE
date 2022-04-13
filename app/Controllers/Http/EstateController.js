@@ -40,8 +40,7 @@ const {
   ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty } = require('lodash')
-const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
+const { result } = require('lodash')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -174,9 +173,6 @@ class EstateController {
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
-      .with('current_tenant', function (q) {
-        q.with('user')
-      })
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE)
           .with('images')
@@ -258,7 +254,12 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+    const result = await ImportService.process(
+      importFilePathName.tmpPath,
+      auth.user.id,
+      'xls',
+      from_web == 1
+    )
     return response.res(result)
   }
 
@@ -469,7 +470,7 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true, role: user.role }))
+    response.res(estates.toJSON({ isShort: true, role:user.role }))
   }
 
   /**
@@ -491,7 +492,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    response.res(estate.toJSON({ isShort: true, role: auth.user.role }))
+    response.res(estate.toJSON({ isShort: true, role:auth.user.role }))
   }
 
   /**
@@ -730,13 +731,6 @@ class EstateController {
       //transaction failed
       throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
-  }
-
-  async export({ request, auth, response }) {
-    const { lang } = request.all()
-    const EstateAttributeTranslations = new EstateAttributeTranslations(lang)
-
-    return response.res(lang)
   }
 }
 

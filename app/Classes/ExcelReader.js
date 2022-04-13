@@ -7,7 +7,6 @@ const l = use('Localize')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateAttributeTranslations = require('./EstateAttributeTranslations')
 const EstateImportHeaderTranslations = require('./EstateImportHeaderTranslations')
-
 escapeStr = (v) => {
   return (v || '')
     .toString()
@@ -72,14 +71,9 @@ class ExcelReader {
         } else if (Object.keys(this.dataMapping).includes(k)) {
           return { ...n, [k]: mapValue(k, v, row) }
         } else if (k.match(/room\d+_type/)) {
+          console.log('roomtype', v, get(this.dataMapping, `room_type.${v}`))
           v = isString(v) ? escapeStr(v) : v
-          return {
-            ...n,
-            [k]: {
-              type: get(this.dataMapping, `room_type.${v}`),
-              name: get(this.dataMapping, `room_type_name.${v}`),
-            },
-          }
+          return { ...n, [k]: get(this.dataMapping, `room_type.${v}`) }
         }
         return { ...n, [k]: v }
       },
@@ -89,7 +83,7 @@ class ExcelReader {
   /**
    *
    */
-  async readFileEstateImport(filePath) {
+  async readFile(filePath) {
     const data = xlsx.parse(filePath, { cellDates: true })
     const sheet = data.find((i) => i.name === this.sheetName)
     if (!sheet || !sheet.data) {
@@ -113,9 +107,9 @@ class ExcelReader {
     } else {
       throw new HttpException('Cannot determine Excel language.', 422, 101101)
     }
-    const AttributeTranslations = new EstateAttributeTranslations(lang)
-    this.dataMapping = AttributeTranslations.getMap()
+    this.dataMapping = new EstateAttributeTranslations(lang)
     const HeaderTranslations = new EstateImportHeaderTranslations(lang)
+
     //set possible columns that we can track...
     this.columns = HeaderTranslations.getHeaderVars()
     const header = get(sheet, `data.${this.headerCol}`) || []
@@ -125,6 +119,7 @@ class ExcelReader {
     const toImport = []
     let columnVars = HeaderTranslations.getColumnVars()
     const validHeaders = this.validHeaders
+
     //Loop through all rows and process
     for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
       //get this row...
@@ -147,7 +142,6 @@ class ExcelReader {
         //this is unprocessable, it contains only undefined values
         continue
       }
-      row.address = ''
       //we process what to do with the values
       let itemData = this.mapToValues(row)
       itemData = {
@@ -155,51 +149,6 @@ class ExcelReader {
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
         floor: itemData.floor ? itemData.floor : 0,
       }
-      try {
-        toImport.push({
-          line: k,
-          data: await schema.validate(itemData),
-          six_char_code: itemData.six_char_code,
-        })
-      } catch (e) {
-        errors.push({
-          line: k,
-          error: e.errors,
-          street: itemData ? itemData.street : `no street code`,
-          postcode: itemData ? itemData.zip : `no zip code`,
-        })
-      }
-    }
-    return { errors, data: toImport, warnings: this.warnings }
-  }
-
-  async readFile(filePath) {
-    const data = xlsx.parse(filePath, { cellDates: true })
-
-    const sheet = data.find((i) => i.name === 'data')
-
-    if (!sheet || !sheet.data) {
-      throw new AppException('Invalid spreadsheet')
-    }
-
-    await this.validateHeader(sheet)
-
-    const errors = []
-    const toImport = []
-
-    for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
-      if (k <= this.headerCol || isEmpty(sheet.data[k])) {
-        continue
-      }
-
-      let itemData = this.mapDataToEntity(sheet.data[k])
-
-      itemData = {
-        ...itemData,
-        credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
-        floor: itemData.floor ? itemData.floor : 0,
-      }
-
       try {
         toImport.push({ line: k, data: await schema.validate(itemData) })
       } catch (e) {
@@ -211,8 +160,7 @@ class ExcelReader {
         })
       }
     }
-
-    return { errors, data: toImport }
+    return { errors, data: toImport, warnings: this.warnings }
   }
 }
 
