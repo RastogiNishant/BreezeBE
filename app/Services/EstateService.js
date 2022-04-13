@@ -823,7 +823,7 @@ class EstateService {
     }
 
     // Run task to separate get coords and point of estate
-    QueueService.getEstateCoords(estate.id)
+    //QueueService.getEstateCoords(estate.id)
     if (data.tenant_email) {
       await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
     }
