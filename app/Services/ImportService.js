@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { has } = require('lodash')
+const { has, omit } = require('lodash')
 const moment = require('moment')
 const xlsx = require('node-xlsx')
 const Excel = require('exceljs')
@@ -64,8 +64,7 @@ class ImportService {
       if (!estate) {
         return { error: [`${six_char_code} is an invalid Breeze ID`], line, address: data.address }
       }
-      //TODO: update Estate...
-      await EstateService.updateImportBySixCharCode(six_char_code, data)
+      await ImportService.updateImportBySixCharCode(six_char_code, data)
     } else {
       try {
         if (!data.address) {
@@ -213,6 +212,48 @@ class ImportService {
       errors: [...errors, ...createErrors],
       success: result.length - createErrors.length,
     }
+  }
+
+  static async updateImportBySixCharCode(six_char_code, data) {
+    let estate_data = omit(data, [
+      'room1_type',
+      'room2_type',
+      'room3_type',
+      'room4_type',
+      'room5_type',
+      'room6_type',
+      'txt_salutation',
+      'surname',
+      'contract_end',
+      'tenant_tel',
+      'tenant_email',
+    ])
+    let estate = await Estate.query().where('six_char_code', six_char_code).first()
+    estate_data.id = estate.id
+    estate.fill(estate_data)
+    await estate.save()
+
+    if (data.tenant_email) {
+      await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
+    }
+    //update Rooms
+    let rooms = []
+    let found
+    for (let key in data) {
+      if ((found = key.match(/^room(\d)_type$/))) {
+        rooms.push({ ...data[key], import_sequence: found[1] })
+      }
+    }
+    if (rooms.length) {
+      await RoomService.updateRoomsFromImport(estate.id, rooms)
+    }
+
+    // Run task to separate get coords and point of estate
+    QueueService.getEstateCoords(estate.id)
+    if (data.tenant_email) {
+      await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
+    }
+    return estate
   }
 }
 
