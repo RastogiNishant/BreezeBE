@@ -275,7 +275,6 @@ console.log('SendCodeForMember Email', email )
     .send(msg)
     .then(() => {
       console.log('Email delivery successfully')
-      throw new HttpException('Email delivery successfully')
     }, error => {
       console.log('Email delivery failed', error)
       if (error.response) {
