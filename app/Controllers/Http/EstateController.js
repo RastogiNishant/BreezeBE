@@ -773,6 +773,7 @@ class EstateController {
             }
           })
           row.rooms_parsed = rooms_parsed
+          row.deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
           rows.push(row)
           return row
         })
@@ -788,6 +789,7 @@ class EstateController {
             }
           })
           rows[index].rooms_parsed = rooms_parsed
+          rows[index].deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
         })
       )
     }
