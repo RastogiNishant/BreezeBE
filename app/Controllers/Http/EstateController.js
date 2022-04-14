@@ -41,7 +41,7 @@ const {
   ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber } = require('lodash')
+const { isEmpty, isFunction, isNumber, toString } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -774,6 +774,9 @@ class EstateController {
           })
           row.rooms_parsed = rooms_parsed
           row.deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
+          row.letting_status_merged = row.letting_status
+            ? `${row.letting_type}.${row.letting_status}`
+            : `${row.letting_type}`
           rows.push(row)
           return row
         })
@@ -790,6 +793,9 @@ class EstateController {
           })
           rows[index].rooms_parsed = rooms_parsed
           rows[index].deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
+          rows[index].letting_status_merged = row.letting_status
+            ? `${row.letting_type}.${row.letting_status}`
+            : `${row.letting_type}`
         })
       )
     }
