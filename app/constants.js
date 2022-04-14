@@ -19,6 +19,8 @@ const constants = {
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
 
+  MAX_MINOR_COUNT: 5,
+
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
