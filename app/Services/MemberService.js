@@ -17,8 +17,7 @@ const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
-  ROLE_USER,
-  SMS_MEMBER_PHONE_VERIFY_PREFIX
+  SMS_MEMBER_PHONE_VERIFY_PREFIX,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -100,44 +99,49 @@ class MemberService {
     const tenantData = await Database.query()
       .from('members')
       .select(
-        Database.raw(`SUM(CASE WHEN child IS TRUE THEN 1 ELSE 0 END) AS minors_count`),
-        Database.raw(`SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) AS members_count`),
+        Database.raw(`COUNT(*) AS members_count`),
         Database.raw(
           `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
         ),
         Database.raw(
-          `(CASE WHEN (SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END)) = 0 THEN NULL
+          `(CASE WHEN (COUNT(*)) = 0 THEN NULL
              ELSE
-               SUM(CASE WHEN child IS TRUE THEN 0 ELSE COALESCE(credit_score, 0) END) /
-               SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END)
+               SUM(COALESCE(credit_score, 0)) /
+               COUNT(*)
              END) AS credit_score`
-        ),
-        Database.raw(
-          `
-          CASE WHEN SUM(CASE WHEN child IS TRUE THEN 1 ELSE 0 END) > 0 THEN ?
-            WHEN SUM(CASE WHEN child IS TRUE THEN 0 ELSE 1 END) < 2 THEN ?
-            ELSE ? END AS family_status
-        `,
-          [FAMILY_STATUS_WITH_CHILD, FAMILY_STATUS_SINGLE, FAMILY_STATUS_NO_CHILD]
         )
       )
       .where({ user_id: userId })
       .groupBy('user_id')
 
-    const toUpdate = isEmpty(tenantData)
-      ? {
-          family_status: FAMILY_STATUS_SINGLE,
-          minors_count: 0,
-          members_count: 0,
-          unpaid_rental: null,
-          insolvency_proceed: null,
-          arrest_warranty: null,
-          clean_procedure: null,
-          income_seizure: null,
-          members_age: null,
-          credit_score: 0,
-        }
-      : tenantData[0]
+    let toUpdate = {}
+    if (isEmpty(tenantData)) {
+      toUpdate = {
+        family_status: FAMILY_STATUS_SINGLE,
+        minors_count: 0,
+        members_count: 0,
+        unpaid_rental: null,
+        insolvency_proceed: null,
+        arrest_warranty: null,
+        clean_procedure: null,
+        income_seizure: null,
+        members_age: null,
+        credit_score: 0,
+      }
+    } else {
+      const { minors_count } = await Tenant.query()
+        .select('minors_count')
+        .where({ user_id: userId })
+        .firstOrFail()
+      const { members_count } = tenantData[0]
+
+      toUpdate.family_status =
+        minors_count > 0
+          ? FAMILY_STATUS_WITH_CHILD
+          : members_count < 2
+          ? FAMILY_STATUS_SINGLE
+          : FAMILY_STATUS_NO_CHILD
+    }
 
     await Tenant.query()
       .update(
@@ -152,7 +156,9 @@ class MemberService {
 
   static async sendSMS(memberId, phone) {
     const code = random.int(1000, 9999)
-    await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, { ttl: 3600 })
+    await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, {
+      ttl: 3600,
+    })
     await SMSService.send(phone, code)
   }
 
@@ -191,7 +197,7 @@ class MemberService {
 
     await DataStorage.remove(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
     return true
-  }  
+  }
   /**
    *
    */
