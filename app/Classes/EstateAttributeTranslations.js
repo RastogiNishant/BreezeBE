@@ -153,6 +153,10 @@ const {
   LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
+
+  SALUTATION_MR,
+  SALUTATION_MS,
+  SALUTATION_SIR_OR_MADAM,
 } = require('../constants')
 
 escapeStr = (v) => {
@@ -872,6 +876,14 @@ class EstateAttributeTranslations {
           LETTING_STATUS_FIRST_TIME_USE,
           LETTING_STATUS_VACANCY,
         ],
+      },
+      salutation: {
+        keys: [
+          'landlord.profile.user_details.salut.mr.message',
+          'landlord.profile.user_details.salut.ms.message',
+          'landlord.profile.user_details.salut.sir_madam.message',
+        ],
+        values: [SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM],
       },
     }
     this.dataMap = dataMap

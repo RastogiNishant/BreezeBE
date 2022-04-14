@@ -227,6 +227,7 @@ class ImportService {
       'contract_end',
       'tenant_tel',
       'tenant_email',
+      'salutation_int',
     ])
     let estate = await Estate.query().where('six_char_code', six_char_code).first()
     estate_data.id = estate.id

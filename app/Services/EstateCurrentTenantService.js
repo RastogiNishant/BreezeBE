@@ -1,5 +1,6 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const Database = use('Database')
 
 const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
 
@@ -16,6 +17,7 @@ class EstateCurrentTenantService {
       contract_end: data.contract_end,
       phone_number: data.tenant_tel,
       status: STATUS_ACTIVE,
+      salutation_int: data.salutation_int,
     })
     if (user) {
       currentTenant.user_id = user.id
@@ -33,11 +35,11 @@ class EstateCurrentTenantService {
       .first()
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
-      let currentTenants = await EstateCurrentTenant.query().where('estate_id', estate_id).fetch()
-      currentTenants.status = STATUS_EXPIRE
-      currentTenants.save()
+      await Database.table('estate_current_tenants')
+        .where('estate_id', estate_id)
+        .update({ status: STATUS_EXPIRE })
 
-      newCurrentTenant = await EstateCurrentTenant()
+      let newCurrentTenant = new EstateCurrentTenant()
       newCurrentTenant.fill({
         estate_id,
         salutation: data.txt_salutation || '',
@@ -46,6 +48,7 @@ class EstateCurrentTenantService {
         contract_end: data.contract_end,
         phone_number: data.tenant_tel,
         status: STATUS_ACTIVE,
+        salutation_int: data.salutation_int,
       })
       if (user) {
         newCurrentTenant.user_id = user.id
@@ -55,10 +58,12 @@ class EstateCurrentTenantService {
     } else {
       //update values except email...
       currentTenant.fill({
+        id: currentTenant.id,
         salutation: data.txt_salutation,
         surname: data.surname,
         contract_end: data.contract_end,
         phone_number: data.tenant_tel,
+        salutation_int: data.salutation_int,
       })
       if (user) {
         currentTenant.user_id = user.id
