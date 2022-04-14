@@ -16,7 +16,6 @@ class TenantReportAbuseController {
       }
       
       const params = {
-        lanlord_id: user.id,
         estate_id: estate_id,
         tenant_id: tenant_id,
         abuse: abuse
@@ -35,7 +34,9 @@ class TenantReportAbuseController {
    */
   async deleteAbuse({ request, auth, response }) {
     const user = auth.user
-    const { tenant_id } = request.all()
+    const { id } = request.all()
+    const result = await TenantReportAbuseService.deleteTenantAbuse(id)
+    return response.res(result)
   }
 }
 

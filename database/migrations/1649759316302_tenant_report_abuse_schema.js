@@ -8,7 +8,6 @@ class TenantReportAbuseSchema extends Schema {
   up () {
     this.create('tenant_report_abuses', (table) => {
       table.increments()
-      table.integer('landlord_id').unsigned().references('id').inTable('users')
       table.integer('tenant_id').unsigned().references('id').inTable('users')
       table.integer('estate_id').unsigned().references('id').inTable('estates')      
       table.text('abuse')

@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class TenantReportAbuse extends Model {
   static get columns() {
-    return ['id', 'landlord_id', 'estate_id', 'tenant_id', 'abuse']
+    return ['id', 'estate_id', 'tenant_id', 'abuse']
   }
 
   /**

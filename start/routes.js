@@ -722,6 +722,12 @@ Route.group(() => {
     'auth:jwtLandlord',
     'valid:CreateEstateAbuse,TenantId',
   ])
+
+  Route.delete('/:id', 'TenantReportAbuseController.deleteAbuse').middleware([
+    'auth:jwtAdmin', 'is:admin',
+    'valid:Id',
+  ])
+
 }).prefix('api/v1/tenantReportAbuse')
 
 
