@@ -22,6 +22,7 @@ class ExcelReader {
   dataMapping = {}
   //we need to limit number of columns
   columnLimit = 200
+  dataRowStart = 4
 
   constructor() {
     this.headerCol = 4
@@ -137,7 +138,8 @@ class ExcelReader {
     let columnVars = HeaderTranslations.getColumnVars()
     const validHeaders = this.validHeaders
     //Loop through all rows and process
-    for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+
+    for (let k = this.dataRowStart; k < sheet.data.length; k++) {
       //get this row...
       let row = columns.reduce(function (row, field, index) {
         if (_.indexOf(validHeaders, _.toLower(field)) > -1) {
@@ -146,7 +148,6 @@ class ExcelReader {
         }
         return row
       }, {})
-
       //test if this row are all undefined (The hidden columns messed this up)
       let processRow = false
       for (let key in row) {
