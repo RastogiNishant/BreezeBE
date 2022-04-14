@@ -1,10 +1,11 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
+const HttpException = use('App/Exceptions/HttpException')
 
 const Model = require('./BaseModel')
 const {
@@ -44,6 +45,7 @@ class Estate extends Model {
       'id',
       'user_id',
       'property_type',
+      'six_char_code',
       'type',
       'apt_type',
       'house_type',
@@ -131,6 +133,14 @@ class Estate extends Model {
       'avail_duration',
       'vacant_date',
       'others',
+      'minors',
+      'letting_status',
+      'letting_type',
+      'family_size_max',
+      'pets_allowed',
+      'apartment_status',
+      'extra_costs',
+      'extra_address',
     ]
   }
 
@@ -138,7 +148,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash']
+    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash', 'six_char_code']
   }
 
   /**
@@ -172,6 +182,15 @@ class Estate extends Model {
     return 'App/Serializers/EstateSerializer'
   }
 
+  static generateRandomString(length = 6) {
+    let randomString = ''
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
+    for (var i = 0; i < length; i++) {
+      randomString += characters.charAt(Math.floor(Math.random() * characters.length))
+    }
+    return randomString
+  }
+
   /**
    *
    */
@@ -193,11 +212,36 @@ class Estate extends Model {
           ', '
         ).toLowerCase()
       }
-
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
         } catch (e) {}
+      }
+
+      if (
+        instance.dirty.extra_costs &&
+        (instance.dirty.heating_costs || instance.dirty.additional_costs)
+      ) {
+        throw new HttpException(
+          'Cannot update extra_costs with heating and/or additional_costs',
+          422
+        )
+      } else if (instance.dirty.heating_costs || instance.dirty.additional_costs) {
+        instance.extra_costs =
+          (Number(instance.dirty.additional_costs) || Number(instance.additional_costs) || 0) +
+          (Number(instance.dirty.heating_costs) || Number(instance.heating_costs) || 0)
+      } else if (
+        instance.dirty.extra_costs &&
+        !(instance.dirty.heating_costs || instance.dirty.additional_costs)
+      ) {
+        instance.extra_costs = Number(instance.dirty.extra_costs)
+        //need confirmation...
+        instance.additional_costs = 0
+        instance.heating_costs = 0
+      }
+      if (instance.dirty.letting_status && isObject(instance.dirty.letting_status)) {
+        instance.letting_status = instance.dirty.letting_status.status
+        instance.letting_type = instance.dirty.letting_status.type
       }
     })
 
@@ -205,6 +249,18 @@ class Estate extends Model {
       await Database.table('estates')
         .update({ hash: Estate.getHash(instance.id) })
         .where('id', instance.id)
+      let exists
+      let randomString
+      do {
+        randomString = this.generateRandomString(6)
+        exists = await Database.table('estates')
+          .where('six_char_code', randomString)
+          .select('id')
+          .first()
+      } while (exists)
+      await Database.table('estates')
+        .where('id', instance.id)
+        .update({ six_char_code: randomString })
     })
   }
 
@@ -232,10 +288,8 @@ class Estate extends Model {
   /**
    *
    */
-   knocked() {
-    return this.hasMany('App/Models/Match').whereIn('status', [
-      MATCH_STATUS_KNOCK,
-    ])
+  knocked() {
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_KNOCK])
   }
 
   /**
@@ -260,6 +314,10 @@ class Estate extends Model {
    */
   slots() {
     return this.hasMany('App/Models/TimeSlot')
+  }
+
+  current_tenant() {
+    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
   }
 
   /**
@@ -332,7 +390,7 @@ class Estate extends Model {
    *
    */
   static getFinalPrice(e) {
-    return (parseFloat(e.net_rent) || 0) //+ (parseFloat(e.additional_costs) || 0)
+    return parseFloat(e.net_rent) || 0 //+ (parseFloat(e.additional_costs) || 0)
   }
 
   /**

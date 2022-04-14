@@ -1,0 +1,594 @@
+components:
+  schemas:
+    ImportEstate:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+    CreateEstateSchema:
+      type: object
+      properties:
+        property_id:
+          type: string
+          example: WXY98
+        property_type:
+          description: |
+            Values could either be:
+            - APARTMENT: 1
+            - ROOM: 2
+            - HOUSE: 3
+            - SITE: 4
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+          type: integer
+          example: 1
+        coord:
+          type: string
+          example: POINT (13.067694 52.539406)
+        apt_type:
+          type: integer
+          description: |
+            Possible values:
+            - FLAT: 1
+            - GROUND: 2
+            - ROOF: 3
+            - MAISONETTE: 4
+            - LOFT: 5
+            - SOCIAL: 6
+            - SOUTERRAIN: 7
+            - PENTHOUSE: 8
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+          example: 1
+        house_type:
+          type: integer
+          description: |
+            Possible values:
+            - MULTIFAMILY_HOUSE: 1
+            - HIGH_RISE: 2
+            - SERIES: 3
+            - SEMIDETACHED_HOUSE: 4
+            - 2FAMILY_HOUSE: 5
+            - DETACHED_HOUSE: 6
+            - COUNTRY: 7
+            - BUNGALOW: 8
+            - VILLA: 9
+            - GARDENHOUSE: 10
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+          example: 1
+        description:
+          type: string
+          example: This is a house
+        category:
+          type: string
+          example: Category 1
+        rooms:
+          type: integer
+          description: number of rooms
+          example: 1
+        street:
+          type: string 
+          example: Boxhagener Str.
+        house_number:
+          type: string
+          example: 10
+        country:
+          type: string
+          example: Germany
+        floor:
+          type: integer
+          example: 1
+        number_floors:
+          type: integer
+          description: number of floors
+          example: 3
+        prices:
+          type: number
+          description:
+          example: 100
+        net_rent:
+          type: number
+          example: 500
+        cold_rent:
+          type: number
+          example: 300
+        rent_including_heating:
+          type: number
+          example: 200
+        additional_costs:
+          type: number
+          description: On frontends this is considered as Utility Costs
+          example: 500
+        heating_costs_included:
+          type: number
+          example: 10
+        heating_costs:
+          type: number
+          example: 300
+        rent_per_sqm:
+          type: number
+          example: 10
+        deposit:
+          type: number
+          description: The amount of deposit
+          example: 1600
+        stp_garage:
+          type: number
+          example: 100
+        stp_parkhaus:
+          type: number
+          example: 100
+        stp_tiefgarage:
+          type: number
+          example: 100
+        currency:
+          type: string
+          description: |
+            Possible values:
+            - EUR
+            - USD
+            - UAH
+          enum:
+            - EUR
+            - USD
+            - UAH
+          example: EUR
+        area:
+          type: number
+          example: 120
+        living_space:
+          type: number
+          example: 100
+        usable_area:
+          type: number
+          example: 50
+        rooms_number:
+          type: number
+          description: number of rooms
+          example: 3
+        bedrooms_number:
+          type: number
+          example: 3
+        bathrooms_number:
+          type: number
+          example: 1
+        kitchen_options:
+          schema:
+            type: array
+            items: integer
+          example:
+        bath_options:
+          schema:
+            type: array
+            items: integer
+            enum:
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+          description: |
+            Could be an array containing
+            - BATH_TUB: 1,
+            - BATH_WINDOW: 2,
+            - BATH_BIDET: 3,
+            - BATH_URINAL: 4,
+            - BATH_SHOWER: 5,
+          example:
+            - 1
+            - 2
+        wc_number:
+          description: water closets?
+          type: integer
+          example:  1
+        balconies_number:
+          type: integer
+          example: 1
+        terraces_number:
+          type: integer
+          example: 1
+        occupancy:
+          description: |
+            - OCCUPIED_OWN: 1
+            - OCCUPIED_TENANT: 2
+            - WRITE_OFF: 3
+            - VACANCY: 4
+            - NOT_RENT: 5
+            - NOT_OCCUPIED: 6
+          type: integer
+          example: 1
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+        use_type:
+          description: |
+            - RESIDENTIAL: 1
+            - COMMERCIAL: 2
+            - CONSTRUCT: 3
+            - WAZ: 4
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+          example: 1
+        ownership_type:
+          description: |
+            - FREEHOLDER: 1
+            - DIRECT_PROPERTY: 2
+            - LEASEHOLD: 3
+            - OTHER: 4
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+          example: 1
+        marketing_type:
+          description: |
+            Could be any of:
+            - PURCHASE: 1
+            - RENT_LEASE: 2
+            - LEASEHOLD: 3
+            - LEASING: 4
+          type: integer
+          enum: 
+            - 1
+            - 2
+            - 3
+            - 4
+          example: 1
+        energy_type:
+          description: |
+            Could be any of:
+            - LOW_ENERGY: 1,
+            - PASSIVE_HOUSE: 2,
+            - NEW_BUILDING_STANDARD: 3,
+            - KFW40: 4,
+            - KFW60: 5,
+            - KFW55: 6,
+            - KFW70: 7,
+            - MINERGIE_CONSTRUCTION: 8,
+            - MINERGIE_CERTIFIED: 9,
+          type: integer
+          enum: 
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+          example: 1
+        avail_duration:
+          type: integer
+          example: 1000
+        vacant_date: 
+          type: string
+          format: date
+          example: '2022-04-25'
+        from_date:
+          type: string
+          format: date
+          example: '2022-04-25'
+        to_date:
+          type: string
+          format: date
+          example: '2022-04-25'
+        min_lease_duration:
+          type: integer
+          example: 0
+        max_lease_duration:
+          type: integer
+          example: 0
+        non_smoker:
+          type: boolean
+          example: true
+        pets:
+          description: |
+            could be any of:
+            - NO: 1,
+            - SMALL: 2,
+            - ANY: null,
+            - BIG: 3,
+          type: integer
+          example: 1
+        gender:
+          descripton: |
+            could be any of:
+            - MALE: 1,
+            - FEMALE: 2,
+            - ANY: 3,
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+          example: 3
+        monumental_protection:
+          type: boolean
+          example: true
+        parking_space_type:
+          description: |
+            could be any of:
+            - UNDERGROUND: 1
+            - CARPORT: 2
+            - OUTDOOR: 3
+            - CAR_PARK: 4
+            - DUPLEX: 5
+            - GARAGE: 6
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+          example: 1
+        parking_space:
+          type: integer
+          example: 0
+        construction_year:
+          type: string
+          format: date-fullyear
+          example: 2005
+        last_modernization:
+          type: string
+          format: date
+          example: '2009-04-23'
+        building_status:
+          description: |
+            could be any of:
+            - FIRST_TIME_OCCUPIED: 1
+            - PART_COMPLETE_RENOVATION_NEED: 2
+            - NEW: 3
+            - EXISTING: 4
+            - PART_FULLY_RENOVATED: 5
+            - PARTLY_REFURISHED: 6
+            - IN_NEED_OF_RENOVATION: 7
+            - READY_TO_BE_BUILT: 8
+            - BY_AGREEMENT: 9
+            - MODERNIZED: 10
+            - CLEANED: 11
+            - ROUGH_BUILDING: 12
+            - DEVELOPED: 13
+            - ABRISSOBJEKT: 14
+            - PROJECTED: 15
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+            - 11
+            - 12
+            - 13
+            - 14
+            - 15
+          example: 1
+        building_age:
+          type: integer
+          example: 0
+        firing: 
+          description: |
+            could be any of:
+            - OEL: 1
+            - GAS: 2
+            - ELECTRIC: 3
+            - ALTERNATIVE: 4
+            - SOLAR: 5
+            - GROUND_HEAT: 6
+            - AIRWP: 7
+            - REMOTE: 8
+            - BLOCK: 9
+            - WATER_ELECTRIC: 10
+            - PELLET: 11
+            - COAL: 12
+            - WOOD: 13
+            - LIQUID_GAS: 14
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+            - 11
+            - 12
+            - 13
+            - 14
+          example: 1
+        heating_type:
+          description: |
+            could be any of:
+            - NO: 0
+            - OVEN: 1
+            - FLOOR: 2
+            - CENTRAL: 3
+            - REMOTE: 4
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+          example: 0
+        equipment: 
+          description:
+          type: integer
+          example: 0
+        equipment_standard:
+          description: |
+            could be any of:
+            EQUIPMENT_STANDARD_SIMPLE: 1,
+            EQUIPMENT_STANDARD_NORMAL: 2,
+            EQUIPMENT_STANDARD_ENHANCED: 3,
+          type: integer
+          enum:
+            - 1
+            - 2
+            - 3
+          example: 1
+        ground:
+          description: |
+            could be any of:
+              - TILES: 1
+              - STONE: 2
+              - CARPET: 3
+              - PARQUET: 4
+              - FINISHED_PARQUET: 5
+              - LAMINATE: 6
+              - DIELEN: 7
+              - PLASTIC: 8
+              - ESTRICH: 9
+              - DOUBLE_FLOOR: 10
+              - LINOLEUM: 11
+              - MARMOR: 12
+              - TERRAKOTTA: 13
+              - GRANITE: 14
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+            - 11
+            - 12
+            - 13
+            - 14
+          type: integer
+          example: 1
+        energy_efficiency:
+          type: integer
+          example: 100
+        repair_need:
+          type: boolean
+          example: false
+        cover:
+          type: integer
+          example: 0
+        city:
+          type: string
+          example: Berlin
+        zip:
+          type: string
+          example: '10245'
+        budget:
+          type: integer
+          min: 1
+          max: 100
+          example: 30
+        credit_score:
+          type: integer
+          min: 0
+          max: 100
+          example: 95 
+        rent_arrears:
+          type: boolean
+          example: false
+        full_address:
+          type: boolean
+          example: false
+        kids_type:
+          description: |
+            could be any of:
+            - NO_KIDS: 1
+            - TO_5: 2
+            - UP_5: 3
+          type: integer
+          example: 1
+        photo_require:
+          type: boolean
+          example: false
+        furnished:
+          type: boolean
+          example: true
+        source_person:
+          description: |
+            could be any of:
+            - BUDDY: 1
+            - MATCHED: 2
+          enum:
+            - 1
+            - 2
+          type: integer 
+          example:
+        family_status:
+          description: |
+            could be any of:
+            - SINGLE: 1
+            - WITH_CHILD: 3
+            - NO_CHILD: 2
+          enum:
+            - 1
+            - 2
+            - 3
+          type: integer
+          example: 1
+        min_age:
+          type: integer
+          example: 18
+          default: 15
+        max_age:
+          type: integer
+          example: 65
+        extra_costs:
+          type: integer
+          description: must not be set when either or both additional_costs and heating costs are set.
+          example: 1200
+    UpdateEstateSchemaReturn:
+      allOf:
+        - $ref: '#/components/schemas/SuccessWithoutData'
+        - type: object
+          properties:
+            data:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CreateEstateSchema'

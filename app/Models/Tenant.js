@@ -42,6 +42,7 @@ class Tenant extends Model {
       'creditscore_shown',
       'solvency_shown',
       'profile_shown',
+      'minors_count',
     ]
   }
 

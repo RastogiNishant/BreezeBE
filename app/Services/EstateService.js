@@ -1,7 +1,8 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray, size } = require('lodash')
+const { get, isEmpty, findIndex, range, isArray, size, omit } = require('lodash')
 const { props } = require('bluebird')
+const HttpException = use('App/Exceptions/HttpException')
 
 const Database = use('Database')
 const Drive = use('Drive')
@@ -11,8 +12,12 @@ const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const RoomService = use('App/Services/RoomService')
+const QueueService = use('App/Services/QueueService')
 // const MatchService = use('App/Services/MatchService') # DO NOT INCLUDE, cycling dependencies
 const Estate = use('App/Models/Estate')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
@@ -24,7 +29,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
-  MATCH_STATUS_FINISH,  
+  MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
@@ -98,6 +103,9 @@ class EstateService {
       .withCount('decided')
       .withCount('invite')
       .withCount('inviteBuddies')
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -157,6 +165,7 @@ class EstateService {
   }
 
   static async completeRemoveEstate(id) {
+    await EstateCurrentTenant.query().where('estate_id', id).delete()
     return await Estate.query().where('id', id).delete()
   }
 
@@ -677,11 +686,21 @@ class EstateService {
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
-    return await EstateService.getEstates(params)
-      .whereIn('user_id', ids)
-      .whereNot('status', STATUS_DELETE)
-      .whereNot('area', 0)
-      .paginate(page, limit)
+    if (params.return_all && params.return_all == 1) {
+      return await EstateService.getEstates(params)
+        .whereIn('user_id', ids)
+        .whereNot('status', STATUS_DELETE)
+        .whereNot('area', 0)
+        .with('rooms')
+        .with('current_tenant')
+        .fetch()
+    } else {
+      return await EstateService.getEstates(params)
+        .whereIn('user_id', ids)
+        .whereNot('status', STATUS_DELETE)
+        .whereNot('area', 0)
+        .paginate(page, limit)
+    }
   }
 
   /**
@@ -752,21 +771,69 @@ class EstateService {
 
   static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
-    .select( 'estates.*')
-    .with('user')
-    .innerJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id')
-        .on('_m.user_id', tenant_id)
-        .on('_m.status', MATCH_STATUS_FINISH)
-    })
-    .leftJoin({ _mb: 'members' }, function () {
-      this.on('_mb.user_id', '_m.user_id')
-    })
-    .where('estates.id', estate_id)
-    .where('estates.user_id', user_id)    
-    .orderBy('_mb.id')    
-    .firstOrFail()
-  }  
+      .select('estates.*')
+      .with('user')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id')
+          .on('_m.user_id', tenant_id)
+          .on('_m.status', MATCH_STATUS_FINISH)
+      })
+      .leftJoin({ _mb: 'members' }, function () {
+        this.on('_mb.user_id', '_m.user_id')
+      })
+      .where('estates.id', estate_id)
+      .where('estates.user_id', user_id)
+      .orderBy('_mb.id')
+      .firstOrFail()
+  }
+
+  static async updateImportBySixCharCode(six_char_code, data) {
+    if (data.letting_status) {
+      data.letting_type = data.letting_status.type
+      data.letting_status = data.letting_status.status || null
+    }
+
+    let estate_data = omit(data, [
+      'room1_type',
+      'room2_type',
+      'room3_type',
+      'room4_type',
+      'room5_type',
+      'room6_type',
+      'txt_salutation',
+      'surname',
+      'contract_end',
+      'tenant_tel',
+      'tenant_email',
+    ])
+    let estate = await Estate.query().where('six_char_code', six_char_code).first()
+    estate_data.id = estate.id
+    estate.fill(estate_data)
+    await estate.save()
+
+    if (data.tenant_email) {
+      await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
+    }
+
+    //update Rooms
+    let rooms = []
+    let found
+    for (let key in data) {
+      if ((found = key.match(/^room(\d)_type$/))) {
+        rooms.push({ ...data[key], import_sequence: found[1] })
+      }
+    }
+    if (rooms.length) {
+      await RoomService.updateRoomsFromImport(estate.id, rooms)
+    }
+
+    // Run task to separate get coords and point of estate
+    QueueService.getEstateCoords(estate.id)
+    if (data.tenant_email) {
+      await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
+    }
+    return estate
+  }
 }
 
 module.exports = EstateService
