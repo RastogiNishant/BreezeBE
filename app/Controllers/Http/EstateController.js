@@ -23,6 +23,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const Database = use('Database')
 const randomstring = require('randomstring')
+const l = use('Localize')
 
 const {
   STATUS_ACTIVE,
@@ -734,39 +735,62 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-    const AttributeTranslations = new EstateAttributeTranslations(lang)
-    const reverseMap = AttributeTranslations.getReverseDataMap()
 
     let result = await EstateService.getEstatesByUserId([auth.user.id], 0, 0, { return_all: 1 })
     let rows = []
-    await Promise.all(
-      result.toJSON().map(async (row) => {
-        for (let attribute in row) {
-          if (reverseMap[attribute]) {
-            if (isFunction(reverseMap[attribute])) {
-              row[attribute] = reverseMap[attribute](row[attribute])
-            } else if (reverseMap[attribute][row[attribute]]) {
-              //key value pairs
-              row[attribute] =
-                reverseMap[attribute][
-                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
-                ]
+
+    if (lang) {
+      const AttributeTranslations = new EstateAttributeTranslations(lang)
+      const reverseMap = AttributeTranslations.getReverseDataMap()
+      await Promise.all(
+        result.toJSON().map(async (row) => {
+          for (let attribute in row) {
+            if (reverseMap[attribute]) {
+              if (isFunction(reverseMap[attribute])) {
+                row[attribute] = reverseMap[attribute](row[attribute])
+              } else if (reverseMap[attribute][row[attribute]]) {
+                //key value pairs
+                row[attribute] =
+                  reverseMap[attribute][
+                    isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                  ]
+              }
             }
           }
-        }
-        const letting_type = reverseMap['let_type'][row.letting_type]
-        const letting_status = reverseMap['let_status'][row.letting_status]
+          const letting_type = reverseMap['let_type'][row.letting_type]
+          const letting_status = reverseMap['let_status'][row.letting_status]
 
-        if (reverseMap['let_status'][row.letting_status]) {
-          row.parsed_letting_status = `${letting_type} - ${letting_status}`
-        } else {
-          row.parsed_letting_status = `${letting_type}`
-        }
-        row.breeze_id = row.six_char_code
-        rows.push(row)
-        return row
-      })
-    )
+          if (reverseMap['let_status'][row.letting_status]) {
+            row.parsed_letting_status = `${letting_type} - ${letting_status}`
+          } else {
+            row.parsed_letting_status = `${letting_type}`
+          }
+          row.breeze_id = row.six_char_code
+          let rooms_parsed = {}
+          await row.rooms.map((room) => {
+            if (room.import_sequence) {
+              rooms_parsed[`room_${room.import_sequence}`] = l.get(`${room.name}.message`, lang)
+            }
+          })
+          row.rooms_parsed = rooms_parsed
+          rows.push(row)
+          return row
+        })
+      )
+    } else {
+      rows = result.toJSON()
+      await Promise.all(
+        rows.map(async (row, index) => {
+          let rooms_parsed = {}
+          await row.rooms.map((room) => {
+            if (room.import_sequence) {
+              rooms_parsed[`room_${room.import_sequence}`] = room.type
+            }
+          })
+          rows[index].rooms_parsed = rooms_parsed
+        })
+      )
+    }
     return response.res(rows)
   }
 }
