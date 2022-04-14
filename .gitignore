@@ -15,3 +15,7 @@ public/avatars
 #client/build
 
 package-lock.json
+.env.dev
+.env.local
+.env.production
+.env.staging
