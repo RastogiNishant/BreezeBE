@@ -719,6 +719,20 @@ Route.group(() => {
 }).prefix('api/v1/estateReportAbuse')
 
 Route.group(() => {
+  Route.post('/', 'TenantReportAbuseController.reportTenantAbuse').middleware([
+    'auth:jwtLandlord',
+    'valid:CreateEstateAbuse,TenantId',
+  ])
+
+  Route.delete('/:id', 'TenantReportAbuseController.deleteAbuse').middleware([
+    'auth:jwtAdmin', 'is:admin',
+    'valid:Id',
+  ])
+
+}).prefix('api/v1/tenantReportAbuse')
+
+
+Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([
     'auth:jwtPropertyManager',
     'valid:Ids',
