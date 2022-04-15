@@ -6,7 +6,15 @@ const { STATUS_ACTIVE } = require('../constants')
 
 class EstateCurrentTenant extends Model {
   static get columns() {
-    return ['salutation', 'email', 'surname', 'phone_number', 'contract_end', 'status']
+    return [
+      'salutation',
+      'email',
+      'surname',
+      'phone_number',
+      'contract_end',
+      'status',
+      'salutation_int',
+    ]
   }
 
   static get Serializer() {

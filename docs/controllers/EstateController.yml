@@ -838,3 +838,26 @@ paths:
               type: object
               schema:
                 $ref: '#/components/schemas/CommonReturn'
+  /api/v1/estates/export/{lang}:
+    get:
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: |
+        Export all estate/property information and values are mapped to translation
+
+        **lang** - language for now is either en (English) or de (German)
+      parameters:
+        - name: lang
+          in: path
+          example: en
+          description: the language - for now is either en (English) or de (German)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'

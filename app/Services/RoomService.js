@@ -190,7 +190,6 @@ class RoomService {
       })
     )
     //we remove rooms that are not anymore on the import
-    console.log('deleting', roomSequences)
     await Room.query()
       .whereIn('import_sequence', roomSequences)
       .where('estate_id', estate_id)

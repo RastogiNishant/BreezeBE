@@ -464,6 +464,7 @@ const constants = {
     'match',
     'rent_per_sqm',
     'net_rent',
+    'extra_costs',
     'budget',
     'updated_at',
     'share',
@@ -535,6 +536,10 @@ const constants = {
   LETTING_STATUS_STRUCTURAL_VACANCY: 5,
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
+
+  SALUTATION_MR: 1,
+  SALUTATION_MS: 2,
+  SALUTATION_SIR_OR_MADAM: 3,
 }
 
 module.exports = constants
