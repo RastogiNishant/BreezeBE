@@ -1,10 +1,11 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
+const HttpException = use('App/Exceptions/HttpException')
 
 const Model = require('./BaseModel')
 const {
@@ -132,6 +133,14 @@ class Estate extends Model {
       'avail_duration',
       'vacant_date',
       'others',
+      'minors',
+      'letting_status',
+      'letting_type',
+      'family_size_max',
+      'pets_allowed',
+      'apartment_status',
+      'extra_costs',
+      'extra_address',
     ]
   }
 
@@ -139,7 +148,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash']
+    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash', 'six_char_code']
   }
 
   /**
@@ -203,11 +212,32 @@ class Estate extends Model {
           ', '
         ).toLowerCase()
       }
-
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
         } catch (e) {}
+      }
+
+      if (
+        instance.dirty.extra_costs &&
+        (instance.dirty.heating_costs || instance.dirty.additional_costs)
+      ) {
+        throw new HttpException(
+          'Cannot update extra_costs with heating and/or additional_costs',
+          422
+        )
+      } else if (instance.dirty.heating_costs || instance.dirty.additional_costs) {
+        instance.extra_costs =
+          (Number(instance.dirty.additional_costs) || Number(instance.additional_costs) || 0) +
+          (Number(instance.dirty.heating_costs) || Number(instance.heating_costs) || 0)
+      } else if (
+        instance.dirty.extra_costs &&
+        !(instance.dirty.heating_costs || instance.dirty.additional_costs)
+      ) {
+        instance.extra_costs = Number(instance.dirty.extra_costs)
+        //need confirmation...
+        instance.additional_costs = 0
+        instance.heating_costs = 0
       }
     })
 
@@ -280,6 +310,10 @@ class Estate extends Model {
    */
   slots() {
     return this.hasMany('App/Models/TimeSlot')
+  }
+
+  current_tenant() {
+    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
   }
 
   /**

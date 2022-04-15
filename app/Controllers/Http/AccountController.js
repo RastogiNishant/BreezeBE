@@ -13,6 +13,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const Company = use('App/Models/Company')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -76,13 +77,22 @@ class AccountController {
         firstname,
         status: STATUS_EMAIL_VERIFY,
       })
+
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
 
+      if (user.role === ROLE_USER) {
+        //If user we look for his email on estate_current_tenant and make corresponding corrections
+        const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
+        if (currentTenant) {
+          currentTenant.user_id = user.id
+          await currentTenant.save()
+        }
+      }
       await UserService.sendConfirmEmail(user)
-      return response.res(user)
+      response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException('User already exists', 400)

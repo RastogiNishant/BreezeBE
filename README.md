@@ -48,6 +48,8 @@ npm run setup-env:dev
 
 this will setup the local to the dev environment. Update values for the key DB_PASSWORD to the one you used to setup postgis.
 
+
+
 ## Install
 
 Install the node packages:

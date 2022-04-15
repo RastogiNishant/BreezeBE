@@ -290,23 +290,23 @@ class UserService {
    *
    */
   static async sendConfirmEmail(user) {
-    // throw new HttpException({
-    //   user_id: user.id,
-    //   role: user.role,
-    // });
     
-    const date = String(new Date().getTime())
-    const code = date.slice(date.length - 4, date.length)
-    await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
-    const data = await UserService.getTokenWithLocale([user.id])
-    const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+    try{
+      const date = String(new Date().getTime())
+      const code = date.slice(date.length - 4, date.length)
+      await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+      const data = await UserService.getTokenWithLocale([user.id])
+      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
-    await MailService.sendUserConfirmation(user.email, {
-      code,
-      user_id: user.id,
-      role: user.role,
-      lang: lang,
-    })
+      await MailService.sendUserConfirmation(user.email, {
+        code,
+        user_id: user.id,
+        role: user.role,
+        lang: lang,
+      })
+    }catch(e) {
+      throw new HttpException(e)
+    }
   }
 
   /**

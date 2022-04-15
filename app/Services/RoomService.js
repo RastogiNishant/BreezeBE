@@ -15,10 +15,12 @@ const {
   omit,
   pick,
   assign,
+  pull,
 } = require('lodash')
 const Event = use('Event')
-const { STATUS_DELETE } = require('../constants')
+const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
+const Promise = require('bluebird')
 
 class RoomService {
   /**
@@ -29,28 +31,29 @@ class RoomService {
       .select('rooms.*', '_e.cover')
       .where('rooms.id', roomId)
       .innerJoin({ _e: 'estates' }, function () {
-        if( isArray(userId)){
-          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)          
-        }else{
-          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)  
+        if (isArray(userId)) {
+          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)
+        } else {
+          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
         }
-
       })
       .first()
   }
 
-  static async getRoomIds( userId, roomIds) {
-    return (await Room.query()
-      .select('rooms.id')
-      .whereIn('rooms.id', roomIds)
-      .innerJoin({ _e: 'estates' }, function () {
-        if( isArray(userId)){
-          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)          
-        }else{
-          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)  
-        }
-      })
-      .fetch()).rows
+  static async getRoomIds(userId, roomIds) {
+    return (
+      await Room.query()
+        .select('rooms.id')
+        .whereIn('rooms.id', roomIds)
+        .innerJoin({ _e: 'estates' }, function () {
+          if (isArray(userId)) {
+            this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)
+          } else {
+            this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
+          }
+        })
+        .fetch()
+    ).rows
   }
 
   /**
@@ -67,8 +70,8 @@ class RoomService {
     return Room.query()
       .where('estate_id', estateId)
       .whereNot('status', STATUS_DELETE)
-      .orderBy('order','asc')
-      .orderBy('id','asc')
+      .orderBy('order', 'asc')
+      .orderBy('id', 'asc')
       .fetch()
   }
 
@@ -115,7 +118,7 @@ class RoomService {
       )
       // Separately run task to save images for rooms
       QueueService.savePropertyBulkImages(images)
-//ImageService.savePropertyBulkImages(images)
+      //ImageService.savePropertyBulkImages(images)
     }
   }
 
@@ -150,6 +153,47 @@ class RoomService {
       }
     }
     return rooms
+  }
+
+  static async createRoomsFromImport(estate_id, rooms) {
+    const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+      return [...roomsInfo, { ...room, estate_id }]
+    }, [])
+    await Room.createMany(roomsInfo)
+  }
+
+  static async updateRoomsFromImport(estate_id, rooms) {
+    let roomSequences = [1, 2, 3, 4, 5, 6]
+    await Promise.all(
+      rooms.map(async (room) => {
+        let dRoom
+        dRoom = await Room.query()
+          .where('estate_id', estate_id)
+          .where('import_sequence', room.import_sequence)
+          .first()
+        if (dRoom) {
+          //update
+          room.id = dRoom.id
+          dRoom.fill(room)
+          dRoom.status = STATUS_ACTIVE
+          await dRoom.save()
+          pull(roomSequences, parseInt(dRoom.import_sequence))
+        } else {
+          //create
+          const newRoom = new Room()
+          newRoom.fill(room)
+          newRoom.estate_id = estate_id
+          newRoom.status = STATUS_ACTIVE
+          await newRoom.save()
+          pull(roomSequences, parseInt(newRoom.import_sequence))
+        }
+      })
+    )
+    //we remove rooms that are not anymore on the import
+    await Room.query()
+      .whereIn('import_sequence', roomSequences)
+      .where('estate_id', estate_id)
+      .update({ status: STATUS_DELETE })
   }
 }
 
