@@ -221,6 +221,8 @@ Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  Route.get('/export/:lang', 'EstateController.export')
+  Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
     'valid:PropertyId',
   ])
@@ -284,8 +286,6 @@ Route.group(() => {
   Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
     'valid:EstateId,TenantId',
   ])
-
-  Route.get('/export/:lang', 'EstateController.export')
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord'])

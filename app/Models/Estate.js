@@ -239,10 +239,6 @@ class Estate extends Model {
         instance.additional_costs = 0
         instance.heating_costs = 0
       }
-      if (instance.dirty.letting_status && isObject(instance.dirty.letting_status)) {
-        instance.letting_status = instance.dirty.letting_status.status
-        instance.letting_type = instance.dirty.letting_status.type
-      }
     })
 
     this.addHook('afterCreate', async (instance) => {

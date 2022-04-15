@@ -22,6 +22,7 @@ class ExcelReader {
   dataMapping = {}
   //we need to limit number of columns
   columnLimit = 200
+  dataRowStart = 4
 
   constructor() {
     this.headerCol = 4
@@ -71,6 +72,17 @@ class ExcelReader {
           return n
         } else if (Object.keys(this.dataMapping).includes(k)) {
           return { ...n, [k]: mapValue(k, v, row) }
+        } else if (k == 'letting') {
+          let matches
+          let letting_status
+          let letting_type
+          if ((matches = v.match(/^(.*?) \- (.*?)$/))) {
+            letting_status = get(this.dataMapping, `let_status.${escapeStr(matches[2])}`)
+            letting_type = get(this.dataMapping, `let_type.${escapeStr(matches[1])}`)
+          } else {
+            letting_type = get(this.dataMapping, `let_type.${escapeStr(v)}`)
+          }
+          return { ...n, letting_status, letting_type }
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
           return {
@@ -79,6 +91,12 @@ class ExcelReader {
               type: get(this.dataMapping, `room_type.${v}`),
               name: get(this.dataMapping, `room_type_name.${v}`),
             },
+          }
+        } else if (k == 'txt_salutation') {
+          return {
+            ...n,
+            [k]: v,
+            salutation_int: get(this.dataMapping, `salutation.${escapeStr(v)}`),
           }
         }
         return { ...n, [k]: v }
@@ -126,7 +144,8 @@ class ExcelReader {
     let columnVars = HeaderTranslations.getColumnVars()
     const validHeaders = this.validHeaders
     //Loop through all rows and process
-    for (let k = this.headerCol + 1; k < sheet.data.length; k++) {
+
+    for (let k = this.dataRowStart; k < sheet.data.length; k++) {
       //get this row...
       let row = columns.reduce(function (row, field, index) {
         if (_.indexOf(validHeaders, _.toLower(field)) > -1) {
@@ -135,7 +154,6 @@ class ExcelReader {
         }
         return row
       }, {})
-
       //test if this row are all undefined (The hidden columns messed this up)
       let processRow = false
       for (let key in row) {
@@ -193,7 +211,6 @@ class ExcelReader {
       }
 
       let itemData = this.mapDataToEntity(sheet.data[k])
-
       itemData = {
         ...itemData,
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
