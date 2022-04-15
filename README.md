@@ -43,6 +43,3 @@ adonis migration:run
 Docs
 ---
 ```/docs```
-
-
-
