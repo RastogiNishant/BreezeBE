@@ -552,7 +552,7 @@ paths:
           name: id
           in: path
           type: number
-          default: '1'
+          example: 345
           required: true
       responses:
         '200':
@@ -561,7 +561,7 @@ paths:
             application/json:
               type: object
               schema:
-                $ref: '#/components/schemas/CommonReturn'
+                $ref: '#/components/schemas/GetEstateSchemaReturn'
 
     put:
       tags:
@@ -574,7 +574,7 @@ paths:
           name: id
           in: path
           type: number
-          default: '1'
+          example: 345
           required: true
       requestBody:
         content:
@@ -851,6 +851,9 @@ paths:
       parameters:
         - name: lang
           in: path
+          enum:
+            - en
+            - de
           example: en
           description: the language - for now is either en (English) or de (German)
       responses:
@@ -863,6 +866,7 @@ paths:
                 $ref: '#/components/schemas/CommonReturn'
   /api/v1/estates/export:
     get:
+      summary: export estate/property information
       tags:
         - Landlord Estates
       security:

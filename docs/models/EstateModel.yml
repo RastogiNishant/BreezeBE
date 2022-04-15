@@ -671,6 +671,17 @@ components:
         - type: object
           properties:
             data:
-              type: object
-              schema:
-                $ref: '#/components/schemas/CreateEstateSchema'
+              $ref: '#/components/schemas/CreateEstateSchema'
+    GetEstateSchemaReturn:
+      allOf:
+        - $ref: '#/components/schemas/SuccessWithoutData'
+        - type: object
+          properties:
+            data:
+              allOf:
+                - type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 345
+                - $ref: '#/components/schemas/CreateEstateSchema'
