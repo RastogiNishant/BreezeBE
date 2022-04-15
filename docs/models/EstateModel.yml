@@ -323,7 +323,7 @@ components:
           type: integer
           example: 1
         gender:
-          descripton: |
+          description: |
             could be any of:
             - MALE: 1,
             - FEMALE: 2,
@@ -462,9 +462,9 @@ components:
         equipment_standard:
           description: |
             could be any of:
-            EQUIPMENT_STANDARD_SIMPLE: 1,
-            EQUIPMENT_STANDARD_NORMAL: 2,
-            EQUIPMENT_STANDARD_ENHANCED: 3,
+            - EQUIPMENT_STANDARD_SIMPLE: 1,
+            - EQUIPMENT_STANDARD_NORMAL: 2,
+            - EQUIPMENT_STANDARD_ENHANCED: 3,
           type: integer
           enum:
             - 1
@@ -579,10 +579,92 @@ components:
         max_age:
           type: integer
           example: 65
+        family_size_max:
+          description: The maximum number of persons in the family
+          example: 5
+          type: integer
         extra_costs:
           type: integer
-          description: must not be set when either or both additional_costs and heating costs are set.
+          description: |
+            Must not be set when either or both additional_costs and heating costs are set. Usually this is the
+            sum of additional_costs (Utility costs) and heating_costs
           example: 1200
+        letting_type:
+          description: |
+            could be any of:
+            - LETTING_TYPE_LET: 1
+            - LETTING_TYPE_VOID: 2
+            - LETTING_TYPE_NA: 3
+          type: integer
+          example: 1
+          enum:
+            - 1
+            - 2
+            - 3
+        letting_status:
+          type: integer
+          description: |
+            could be any of:
+            - LETTING_STATUS_DEFECTED: 1
+            - LETTING_STATUS_TERMINATED: 2
+            - LETTING_STATUS_NORMAL: 3
+            - LETTING_STATUS_CONSTRUCTION_WORKS: 4
+            - LETTING_STATUS_STRUCTURAL_VACANCY: 5
+            - LETTING_STATUS_FIRST_TIME_USE: 6
+            - LETTING_STATUS_VACANCY: 7
+          example: 3
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+        apartment_status:
+          type: integer
+          description: |
+            could be any of:
+            - BUILDING_STATUS_FIRST_TIME_OCCUPIED: 1
+            - BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED: 2
+            - BUILDING_STATUS_NEW: 3
+            - BUILDING_STATUS_EXISTING: 4
+            - BUILDING_STATUS_PART_FULLY_RENOVATED: 5
+            - BUILDING_STATUS_PARTLY_REFURISHED: 6
+            - BUILDING_STATUS_IN_NEED_OF_RENOVATION: 7
+            - BUILDING_STATUS_READY_TO_BE_BUILT: 8
+            - BUILDING_STATUS_BY_AGREEMENT: 9
+            - BUILDING_STATUS_MODERNIZED: 10
+            - BUILDING_STATUS_CLEANED: 11
+            - BUILDING_STATUS_ROUGH_BUILDING: 12
+            - BUILDING_STATUS_DEVELOPED: 13
+            - BUILDING_STATUS_ABRISSOBJEKT: 14
+            - BUILDING_STATUS_PROJECTED: 15
+          enum:
+            - 1
+            - 2
+            - 3
+            - 4
+            - 5
+            - 6
+            - 7
+            - 8
+            - 9
+            - 10
+            - 11
+            - 12
+            - 13
+            - 14
+            - 15
+          example: 1
+        extra_address:
+          type: string
+          example: Apartment 1
+        minors:
+          description: whether property accepts children or not
+          type: boolean
+          example: true
+        
     UpdateEstateSchemaReturn:
       allOf:
         - $ref: '#/components/schemas/SuccessWithoutData'

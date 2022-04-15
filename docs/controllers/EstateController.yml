@@ -861,3 +861,19 @@ paths:
               type: object
               schema:
                 $ref: '#/components/schemas/CommonReturn'
+  /api/v1/estates/export:
+    get:
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: |
+        Export all estate/property information. Values are not mapped with mostly numeric
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
