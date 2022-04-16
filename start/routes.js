@@ -219,6 +219,7 @@ Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.delete('/', 'EstateController.deleteMultiple')
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
   Route.get('/export/:lang', 'EstateController.export')
@@ -725,12 +726,11 @@ Route.group(() => {
   ])
 
   Route.delete('/:id', 'TenantReportAbuseController.deleteAbuse').middleware([
-    'auth:jwtAdmin', 'is:admin',
+    'auth:jwtAdmin',
+    'is:admin',
     'valid:Id',
   ])
-
 }).prefix('api/v1/tenantReportAbuse')
-
 
 Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([
