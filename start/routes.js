@@ -219,7 +219,7 @@ Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
-  Route.delete('/', 'EstateController.deleteMultiple')
+  Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
   Route.get('/export/:lang', 'EstateController.export')
