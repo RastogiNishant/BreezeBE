@@ -575,6 +575,23 @@ paths:
                         type: integer
                         description: number of estates deleted
                         example: 3
+        '422':
+          description: Error found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: error
+                  data:
+                    type: string
+                    example: '1101230: Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
+                  code:
+                    type: string
+                    description: Error trace code
+                    example: '1101230'
   /api/v1/estates/{id}:
     get:
       tags:
