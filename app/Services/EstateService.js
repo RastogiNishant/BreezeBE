@@ -782,6 +782,22 @@ class EstateService {
       .orderBy('_mb.id')
       .firstOrFail()
   }
+
+  /**
+   * Soft deletes of estates
+   */
+  static async deleteEstates(ids, user_id, trx) {
+    const affectedRows = await Estate.query(trx)
+      .where('user_id', user_id)
+      .whereIn('id', ids)
+      .update({ status: STATUS_DELETE })
+    if (affectedRows !== ids.length) {
+      throw new AppException(
+        'Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
+      )
+    }
+    return affectedRows
+  }
 }
 
 module.exports = EstateService
