@@ -181,8 +181,10 @@ class ExcelReader {
         })
       } catch (e) {
         errors.push({
-          line: k,
+          line: k + 1,
           error: e.errors,
+          breeze_id: itemData.breeze_id || null,
+          property_id: itemData ? itemData.property_id : `no property id`,
           street: itemData ? itemData.street : `no street code`,
           postcode: itemData ? itemData.zip : `no zip code`,
         })
