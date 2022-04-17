@@ -20,7 +20,7 @@ module.exports = {
           description: 'Dev Local server',
         },
         {
-          url: 'http://13.213.41.87:3000/',
+          url: 'https://breeze-api-dev.txtsier.com',
           description: 'Temporary api dev for import export excel',
         },
         {
