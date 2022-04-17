@@ -183,7 +183,7 @@ class ExcelReader {
         errors.push({
           line: k + 1,
           error: e.errors,
-          breeze_id: itemData.breeze_id || null,
+          breeze_id: itemData.six_char_code || null,
           property_id: itemData ? itemData.property_id : `no property id`,
           street: itemData ? itemData.street : `no street code`,
           postcode: itemData ? itemData.zip : `no zip code`,
