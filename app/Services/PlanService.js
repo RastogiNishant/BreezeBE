@@ -39,7 +39,7 @@ class PlanService {
   }
 
   static async getPlanAll() {
-    return await Plan.query().fetch()
+    return await Plan.query().orderBy('id', 'asc').fetch()
   }
 }
 

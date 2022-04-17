@@ -8,6 +8,9 @@ class Plan extends Model {
       'id',
       'name',
       'description',
+      'price',
+      'lettings',
+      'discount',
     ]
   }
 
