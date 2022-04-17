@@ -801,6 +801,20 @@ class EstateController {
     }
     return response.res(rows)
   }
+
+  async deleteMultiple({ auth, request, response }) {
+    const { id } = request.all()
+    const trx = await Database.beginTransaction()
+    let affectedRows
+    try {
+      affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+    } catch (error) {
+      trx.rollback()
+      throw new HttpException(error.message, 422, 1101230)
+    }
+    trx.commit()
+    return response.res({ deleted: affectedRows })
+  }
 }
 
 module.exports = EstateController

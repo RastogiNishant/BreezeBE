@@ -539,7 +539,59 @@ paths:
               type: object
               schema:
                 $ref: '#/components/schemas/CommonReturn'
-
+    delete:
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Delete multiple estates. This will only do a soft delete by editing status to STATUS_DELETE.
+      summary: delete multiple estates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: array
+                  items: integer
+                  description: Array of estates.id to be deleted.
+                  example: '[1,2,3]'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: success
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: integer
+                        description: number of estates deleted
+                        example: 3
+        '422':
+          description: Error found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: error
+                  data:
+                    type: string
+                    example: '1101230: Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
+                  code:
+                    type: string
+                    description: Error trace code
+                    example: '1101230'
   /api/v1/estates/{id}:
     get:
       tags:
