@@ -409,7 +409,7 @@ class EstateAttributeTranslations {
       PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: (i) => i * 100,
+    budget: (i) => parseInt(i * 100),
     deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
