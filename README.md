@@ -104,10 +104,10 @@ Code review is the process of having one developer (or more) review another
 developer's code before release.
 
 Code reviews have two main goals:
-	1. Improve the quality — of code before being released
-	    Better quality translates into fewer failures and less maintenance down the line.
-	2. Share knowledge — across the team
-	    Sharing knowledge makes teams more resilient and engineers grow faster.
+1. Improve the quality — of code before being released
+		Better quality translates into fewer failures and less maintenance down the line.
+2. Share knowledge — across the team
+		Sharing knowledge makes teams more resilient and engineers grow faster.
 
 We have 2 checklists for code reviews. One is for before you create a pull request and the other one is for during code review.
 
