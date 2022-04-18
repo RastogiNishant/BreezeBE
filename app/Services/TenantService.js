@@ -49,6 +49,7 @@ const {
   YES_INCOME_SEIZURE,
   NO_ANSWER_INCOME_SEIZURE,
 } = require('../constants')
+const { getOrCreateTenant } = require('./UserService')
 
 class TenantService {
   /**
@@ -111,10 +112,7 @@ class TenantService {
   }
 
   static async getTenant(userId) {
-    return Tenant.query()
-      .select('*')
-      .where('user_id', userId)
-      .first()
+    return Tenant.query().select('*').where('user_id', userId).first()
   }
   /**
    * Get Tenant with linked point
@@ -288,10 +286,10 @@ class TenantService {
       .first()
   }
 
-  static async updateSelectedAdultsCount(userId, adultsCount, trx) {
-    return Tenant.query()
-      .update({ selected_adults_count: adultsCount }, trx)
-      .where({ user_id: userId })
+  static async updateSelectedAdultsCount(user, adultsCount, trx) {
+    const tenant = await getOrCreateTenant(user)
+    tenant.selected_adults_count = adultsCount
+    return tenant.save(trx)
   }
 
   static async checkAdultsInitialized(userId) {
@@ -302,7 +300,7 @@ class TenantService {
 
     const member = await Member.query().where({ user_id: userId }).first()
 
-    return tenant.selected_adults_count > 0 || member
+    return tenant?.selected_adults_count > 0 || member
   }
 }
 
