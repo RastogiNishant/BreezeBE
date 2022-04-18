@@ -298,9 +298,9 @@ class TenantService {
       .where({ user_id: userId })
       .first()
 
-    const member = await Member.query().where({ user_id: userId }).first()
+    const member = await Member.query().where({ user_id: userId, child: false }).first()
 
-    return tenant?.selected_adults_count > 0 || member
+    return tenant?.selected_adults_count && member
   }
 }
 

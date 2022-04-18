@@ -20,6 +20,10 @@ module.exports = {
           description: 'Dev Local server',
         },
         {
+          url: 'http://13.213.41.87:3000/',
+          description: 'Temporary api dev for import export excel',
+        },
+        {
           url: 'https://api-dev.breeze4me.de',
           description: 'Development Server',
         },
