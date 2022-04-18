@@ -12,7 +12,9 @@ class Payment extends Model {
       'published_at',
       'payment_method_response',
       'amount',
-      'lettings'
+      'lettings',
+      'plan_id',
+      'plan_response'
     ]
   }
 
@@ -28,7 +30,9 @@ class Payment extends Model {
       'published_at',
       'payment_method_response',
       'amount',
-      'lettings'
+      'lettings',
+      'plan_id',
+      'plan_response'
     ]
   }
 
