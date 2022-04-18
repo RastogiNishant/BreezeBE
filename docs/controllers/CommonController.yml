@@ -1,25 +1,41 @@
 paths:
   /ping:
     get:
-      tags: [common]
-      description: Check app live
-      produces: [application/json]
-      responses: [200]
-
+      tags: 
+        - Common
+      description: Check if api is live. Should respond with pong
+      summary: check if api is live
+      responses: 
+        "200":
+          content:
+            text/plain:
+              type: string
+              example: pong
   /import.xlsx:
     get:
-      tags: [common]
+      tags:
+        - Common
       description: Get import document example
-      produces: [application/vnd.ms-excel, application/json]
-      responses: [200]
-
+      summary: get import document example
+      responses: 
+        "200":
+          content:
+            application/vnd.ms-excel:
+              schema:
+                type: string
+                format: binary
   /api/v1/references:
     get:
-      tags: [references]
-      description: Get app references
-      produces: [application/json]
-      responses: [200]
-
+      tags: 
+        - Common
+      description: Get API constants and values
+      summary: get API constants and values
+      responses: 
+        "200"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferencesReturn'
   /api/v1/terms:
     get:
       tags: [terms]

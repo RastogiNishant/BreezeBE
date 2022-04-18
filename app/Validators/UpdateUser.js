@@ -6,7 +6,16 @@ const Base = require('./Base')
 
 const { phoneSchema } = require('../Libs/schemas.js')
 const _ = require('lodash')
-const { GENDER_MALE, GENDER_FEMALE, GENDER_ANY, IS_PUBLIC, IS_PRIVATE } = require('../constants')
+const {
+  GENDER_MALE,
+  GENDER_FEMALE,
+  GENDER_ANY,
+  IS_PUBLIC,
+  IS_PRIVATE,
+  LANDLORD_SIZE_SMALL,
+  LANDLORD_SIZE_MID,
+  LANDLORD_SIZE_LARGE,
+} = require('../constants')
 
 class UpdateUser extends Base {
   static schema = () =>
@@ -33,6 +42,7 @@ class UpdateUser extends Base {
       prospect_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
       landlord_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
       company_name: yup.string().min(1).max(255),
+      lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
     })
 }
 

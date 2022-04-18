@@ -1,4 +1,6 @@
 const constants = {
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY:
+    '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDa/EMjRo5F0YRM\nMvjQ77K1tcz1HWj699mWQoEf2g36G4Oy2dum256feTsZKeJhoMkjShLNgcb7uWHY\n33Zi7MKlYpMuW3phlah7eibZuNxwrerl3Ru/S9P6vaiSEVRWgdHObsb0Nt3PPewO\nkQU33Rtt2CFFtJDgHDAvpmx1XYRQrQtjy2zFF4+lOU6UOeIW0ViqTD129DeQr85D\ndNIGUi3gbacwBO6ZqhuhrVdalZRgf9vvvsiKrhILwXZVGEgpb97ti1h1scQejpf6\nzP8PEB5qE3xNP0gb11y1gCwVMDSCkM6y0QTU+XDcf1DMPSMyvmWDOk6zjcym3cB3\n6tReshYlAgMBAAECggEAAcRvQpxfPxMruGq2j9xzX9yNq30XMQ6phU6C7hp2Kj/T\nw7CBluU8Wz32UGPCZYvPkRbtXmu5oE6fdR7ekiSmMIFXvelz7CWHTycjTkwGjsE/\nPVItbGaPWX1zhr7tjueBeuNG0fHpvzJZJ/KbLRd+Jm2MB9znHhaUJqT280kz2BZ9\nmxN6zTitRIhtUwGjLTB8Y4BF6cUio7T9OAVoqcbs4SLnQEddKxYpoWzSp/fgL/nc\nAgu8g5/RsuyM8vMZ8X6gtW1bWYSyR6J0Bs7Rs/CCwS2aftExmSXw4ED1KISXlKYm\nBwMqinw6jkdTBOjljWeAjXp3z0nf1KTMy9Mwm8wmGQKBgQD9F+nl0EHscvCZdcZm\n2VYG7DxvMI9gT3WPEJyTg7cXCi4KJFEwYQfWwhRojDBzozP3vGtuioX5GCnsgR4p\nbexqLHf6o8GhnTFo/hU3hMqTTzOwHx/N4Sd+tVaCUJPsgW47MGL7b1ODIJuHelWo\nmKZCtAsdzBuqmjstD2+yyjya6QKBgQDdgBJ4nwOfoE02n5QvNrUpLDdf5nTGtqiE\nAOPFawxaH+Hug1FF43MYGb3CQe/C347F3/U5J84Tq8wyBVJNO0Ha7xr6A3Il+aXy\n4lVb9xHxYZurjErBqBgecNsYQTO6ZWAKYGpM18itPH4Kd5OaPUy2R6bsnYulpoba\n5nNrUQ6j3QKBgH9SLWdgKhnSBLmepw2MXhujcg+ZhTc1IfWzrKEFDPE5PMn7VSCa\nX4ApKG0jwSgbPQRutDjq1NTn1AdXOR4sX1dWQZFEGh+8XWPtFi1UzzfmCyGZtr0y\nfFTg0sFB2fiLcDG0eMb2TTPVDojMARWMnW9G9aSqzmw3pHdZoZ524KApAoGBALz+\nXURccawPDDLyYG8Un+j8mFcUfUlca1cOp0o4d7aig5WOqJcYZokG1bndpuVA+UJv\nQH6/Lv/r03ROxBWv3RYgdIUk0Y4DgIxIgIrSupWaMkhikRrCAapfoyID6E4/132j\nHLBqYgkml2j49JFjgoP5iT1Vg+UYvPIkNhE4fWRlAoGAWytTAr8BEP3f5wYX5dsU\nv76wQB/GpQIx/plNWyE2E0RukcF9aNTXvyZQljSa84E9I/6P0RE3KDTYhmRA4yUm\nf1r0FltUOGWn98h73HFnOtt0Ed+X9CrZeL4XV4sdnOsLdXSVOSCJUju7xqz0E3zn\nxHC+EagA8Yxvdb8UpVAKJ6o=\n-----END PRIVATE KEY-----\n',
   ERROR_AGREEMENT_CONFIRM: 10020,
   ERROR_TERMS_CONFIRM: 10030,
   ERROR_BUDDY_EXISTS: 10110,
@@ -8,13 +10,16 @@ const constants = {
   ERROR_PROSPECT_HAS_ALREADY_REGISTERED: 10180,
   ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH: 10210,
   ERROR_ESTATE_NOT_FOUND_BY_HASH: 10220,
-  
-  DEFAULT_LANG: 'en',
 
+  LANG_EN: 'en',
+  LANG_DE: 'de',
+  DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
+
+  MAX_MINOR_COUNT: 5,
 
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
@@ -57,6 +62,8 @@ const constants = {
   USE_TYPE_COMMERCIAL: 2,
   USE_TYPE_CONSTRUCT: 3,
   USE_TYPE_WAZ: 4,
+  USE_TYPE_PLANT: 5,
+  USE_TYPE_OTHER: 6,
 
   OWNERSHIP_TYPE_FREEHOLDER: 1,
   OWNERSHIP_TYPE_DIRECT_PROPERTY: 2,
@@ -183,6 +190,7 @@ const constants = {
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_CENTRAL: 3,
   HEATING_TYPE_REMOTE: 4,
+  HEATING_TYPE_FLOOR_HEATING: 5,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -451,9 +459,12 @@ const constants = {
     'rooms_number',
     'floor',
     'number_floors',
+    'house_number',
     'status',
     'match',
+    'rent_per_sqm',
     'net_rent',
+    'extra_costs',
     'budget',
     'updated_at',
     'share',
@@ -471,10 +482,13 @@ const constants = {
     'address',
     'user_id',
     'available_date',
+    'vacant_date',
     'others',
+    'full_address',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
+  SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -510,6 +524,22 @@ const constants = {
   VISIBLE_TO_EVERYBODY: 2,
   VISIBLE_TO_SPECIFIC: 3,
   VISIBLE_TO_HOUSEHOLD: 4,
+
+  LETTING_TYPE_LET: 1,
+  LETTING_TYPE_VOID: 2,
+  LETTING_TYPE_NA: 3,
+
+  LETTING_STATUS_DEFECTED: 1,
+  LETTING_STATUS_TERMINATED: 2,
+  LETTING_STATUS_NORMAL: 3,
+  LETTING_STATUS_CONSTRUCTION_WORKS: 4,
+  LETTING_STATUS_STRUCTURAL_VACANCY: 5,
+  LETTING_STATUS_FIRST_TIME_USE: 6,
+  LETTING_STATUS_VACANCY: 7,
+
+  SALUTATION_MR: 1,
+  SALUTATION_MS: 2,
+  SALUTATION_SIR_OR_MADAM: 3,
 }
 
 module.exports = constants

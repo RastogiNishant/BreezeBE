@@ -110,6 +110,12 @@ class TenantService {
     return tenant.save()
   }
 
+  static async getTenant(userId) {
+    return Tenant.query()
+      .select('*')
+      .where('user_id', userId)
+      .first()
+  }
   /**
    * Get Tenant with linked point
    */
@@ -280,6 +286,23 @@ class TenantService {
         this.select('point_id').from('tenants').where({ user_id: userId })
       })
       .first()
+  }
+
+  static async updateSelectedAdultsCount(userId, adultsCount, trx) {
+    return Tenant.query()
+      .update({ selected_adults_count: adultsCount }, trx)
+      .where({ user_id: userId })
+  }
+
+  static async checkAdultsInitialized(userId) {
+    const tenant = await Tenant.query()
+      .select('selected_adults_count')
+      .where({ user_id: userId })
+      .first()
+
+    const member = await Member.query().where({ user_id: userId }).first()
+
+    return tenant.selected_adults_count > 0 || member
   }
 }
 

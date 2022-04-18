@@ -13,6 +13,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const Company = use('App/Models/Company')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -76,19 +77,136 @@ class AccountController {
         firstname,
         status: STATUS_EMAIL_VERIFY,
       })
+
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
 
+      if (user.role === ROLE_USER) {
+        //If user we look for his email on estate_current_tenant and make corresponding corrections
+        const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
+        if (currentTenant) {
+          currentTenant.user_id = user.id
+          await currentTenant.save()
+        }
+      }
       await UserService.sendConfirmEmail(user)
-      return response.res(user)
+      response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException('User already exists', 400)
       }
 
       throw e
+    }
+  }
+
+  /**
+   * Signup prospect with code we email to him.
+   */
+  async signupProspectWithViewEstateInvitation({ request, response }) {
+    //create user
+    const { email, phone, role, password, ...userData } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      //add this user
+      let user = await User.create(
+        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
+        trx
+      )
+      if (role === ROLE_USER) {
+        await Tenant.create(
+          {
+            user_id: user.id,
+          },
+          trx
+        )
+      }
+      //include him on estate_view_invited_users with sticky set to true
+      //this will add him even if he's not invited.
+      //Probably a situation where he has mail forwarded from a different email
+      const invitedUser = new EstateViewInvitedUser()
+      invitedUser.user_id = user.id
+      invitedUser.sticky = true
+      invitedUser.estate_view_invite_id = request.estate_view_invite_id
+      await invitedUser.save(trx)
+
+      //lets find other estates he's invited to view
+      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
+        .where('email', email)
+        .fetch()
+      await Promise.all(
+        myInvitesToViewEstates.toJSON().map(async (invite) => {
+          await EstateViewInvitedUser.findOrCreate(
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            trx
+          )
+        })
+      )
+      //send email for confirmation
+      await UserService.sendConfirmEmail(user)
+      trx.commit()
+      return response.res(true)
+    } catch (e) {
+      console.log(e)
+      await trx.rollback()
+      throw new HttpException('Signup failed.', 412)
+    }
+  }
+
+  /**
+   * Signup prospect with code we email to him.
+   */
+  async signupProspectWithViewEstateInvitation({ request, response }) {
+    //create user
+    const { email, phone, role, password, ...userData } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      //add this user
+      let user = await User.create(
+        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
+        trx
+      )
+      if (role === ROLE_USER) {
+        await Tenant.create(
+          {
+            user_id: user.id,
+          },
+          trx
+        )
+      }
+      //include him on estate_view_invited_users with sticky set to true
+      //this will add him even if he's not invited.
+      //Probably a situation where he has mail forwarded from a different email
+      const invitedUser = new EstateViewInvitedUser()
+      invitedUser.user_id = user.id
+      invitedUser.sticky = true
+      invitedUser.estate_view_invite_id = request.estate_view_invite_id
+      await invitedUser.save(trx)
+
+      //lets find other estates he's invited to view
+      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
+        .where('email', email)
+        .fetch()
+      await Promise.all(
+        myInvitesToViewEstates.toJSON().map(async (invite) => {
+          await EstateViewInvitedUser.findOrCreate(
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
+            trx
+          )
+        })
+      )
+      //send email for confirmation
+      await UserService.sendConfirmEmail(user)
+      trx.commit()
+      return response.res(true)
+    } catch (e) {
+      console.log(e)
+      await trx.rollback()
+      throw new HttpException('Signup failed.', 412)
     }
   }
 
@@ -398,13 +516,22 @@ class AccountController {
       .with('tenantPaymentPlan')
       .firstOrFail()
 
+    const { pushToken } = request.all()
+
     if (user) {
+      if (pushToken && user.device_token !== pushToken) {
+        await user.updateItem({ device_token: pushToken })
+      }
       logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
         email: user.email,
         role: user.role,
       })
       if (!user.company_id) {
-        user.company_name = `${user.firstname} ${user.secondname}`.trim()
+        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+        const company_name = `${company_firstname} ${company_secondname}`.trim()
+        user.company_name = company_name
+        user.company = null
       } else {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
@@ -477,7 +604,6 @@ class AccountController {
   async updateProfile({ request, auth, response }) {
     const data = request.all()
     let user = auth.user
-
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
@@ -518,8 +644,8 @@ class AccountController {
       await user.save()
       user = user.toJSON({ isOwner: true })
     } else {
-      if (data.company_name) {
-        let company_name = data.company_name
+      if (data.company_name && data.company_name.trim()) {
+        let company_name = data.company_name.trim()
         company = await Company.findOrCreate(
           { name: company_name, user_id: auth.user.id },
           { name: company_name, user_id: auth.user.id }
@@ -535,7 +661,11 @@ class AccountController {
       user.company_name = company.name
       user.company = company
     } else {
-      user.company = `${user.firstname} ${user.secondname}`.trim()
+      const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+      const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+      const company_name = `${company_firstname} ${company_secondname}`.trim()
+      user.company_name = company_name
+      user.company = null
     }
     return response.res(user)
   }
@@ -608,13 +738,13 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    const { email, from_web } = request.only(['email', 'from_web'])
+    let { email, from_web } = request.only(['email', 'from_web'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
     if (from_web === undefined) {
       from_web = false
     }
-    await UserService.requestSendCodeForgotPassword(email)
+    await UserService.requestSendCodeForgotPassword(email, from_web)
     return response.res()
   }
 
@@ -622,10 +752,10 @@ class AccountController {
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
-    const { email, from_web } = request.only(['email', 'from_web'])
+    const { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
 
     try {
-      await UserService.requestSendCodeForgotPassword(email, from_web)
+      await UserService.requestSendCodeForgotPassword(email, lang, from_web)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
