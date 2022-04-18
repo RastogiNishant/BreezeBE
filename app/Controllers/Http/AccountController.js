@@ -738,13 +738,13 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    let { email, from_web } = request.only(['email', 'from_web'])
+    let { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
     if (from_web === undefined) {
       from_web = false
     }
-    await UserService.requestSendCodeForgotPassword(email, from_web)
+    await UserService.requestSendCodeForgotPassword(email, lang, from_web)
     return response.res()
   }
 
