@@ -464,6 +464,7 @@ const constants = {
     'match',
     'rent_per_sqm',
     'net_rent',
+    'extra_costs',
     'budget',
     'updated_at',
     'share',

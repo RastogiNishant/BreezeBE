@@ -137,4 +137,3 @@ Don't hesitate to ask questions from dev. Contact them via slack on the #dev-hub
 We have a swagger documentation (currently under development) which could guide you.
 
 ```/docs```
-
