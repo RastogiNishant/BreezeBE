@@ -43,6 +43,7 @@ const {
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
   BUDDY_STATUS_PENDING,
+  STATUS_ACTIVE
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -460,6 +461,9 @@ class AccountController {
       .first()
     if (!user) {
       throw new HttpException('User not found', 404)
+    }
+    if( user.status !== STATUS_ACTIVE ) {
+      throw new HttpException('User has not been verified yet', 400)      
     }
     role = user.role
 
