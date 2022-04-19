@@ -3,10 +3,6 @@
 /** @type {import('@adonisjs/framework/src/Env')} */
 const Env = use('Env')
 
-const {
-  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
-} = require('../app/constants')
-
 module.exports = {
   name: Env.get('APP_NAME', 'breeze'),
   appKey: Env.getOrFail('APP_KEY'),
@@ -193,9 +189,8 @@ module.exports = {
   firebase: {
     type: 'service_account',
     project_id: 'breeze-87b50',
-    private_key_id: '8bb7a990f0f71ef9bce7102ce3bf3800318b9023',
-    private_key:
-      '-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC1YYKlcues4tke\n2IoApVlnmtxpmsq01k3bxA2eoTbfH0eMkmijuFqGeuP0pQyWbTEd0ppvEyCgTn2k\nADC1QZxKxZ+0UYOQx+lOI6b4X99sy8Lb2PdYOf7KZR1MjS+FID620sM/KsfAL0iC\nnamN6vXXPTx6Uwtv74Lr/TzJZKfxpbsj5Mih8lfnBpWThPLkzQEI/+NDmb/1X85R\nm9witijuwF3DsYCpa0aKDAwH6sTKodk3uFkQ5MaD7Z00A9s5OcZSarw7jQRAczJ3\nliJoLxg9WiPcf6Idy/JP1v4Wrds3nlxgDkVYy75o+OJ4ka4t0vWnyEgRU3x6ueRn\naz8OCbLjAgMBAAECggEAAK4bhEcoPDs4edDGwfrcvb6LRCDeAZIbGGS996o7a5tI\nHArNvFsKZM7vA1xG+jXlOS5I6Kw8tjNDntD5FKPEXVTWtDOyI8Mx2X8WAyrVn80S\njdsx6anNDgnANq7pgnDsP9lK/Tj0lL2XH5vHyAx4qOVPAT6zqU0AZThG4+gMjE49\nXcliwC7ABtjLLlot9JY9EXhIOaZ07ef4FyMPV0BXFXQeGwHLf8kmMxoRu2EVQnul\no7cFFutJ3/FYPg/icCweapWL3OgtjFtuluSpwOW+N7TyqqZOHwe394GO7czx+UPN\nSE9aE2jWsSt/XkVl9JvzZpmRqgiJXu1FJvb2Opjl+QKBgQD1rYEDOs/KI4uPQzW5\nb9XzS2spxdGYt0SrRj+yY39s6tkWep2XvnIEMzxTdr1+NyvZ77xdIMARNCAX4syx\ndUgq742kYN3P7pr/iFD13wnP0t0eTnUjQXk43l1bQ42gV8F/k4BOFUhrtqYD9Ia1\nfLMGU0cfjvJbZXJHzJaivKLIewKBgQC9AG7ee5KMTGLciniGUbcYwnMV+xMgcLy2\nZHjotaZAHKVv7t7ygd/NB0h9fQ4mqL2TzSOAeo0yug6P1P1lFiJBCaiQcwlQSWHX\nXhQbp9s5EKZzrmohMw4lIWg3kj8MWNEOY6sOQeQAadkRTpX74kJtNMmCN5wptA0E\naYA/6XDWuQKBgQDtaHwqhdO0j8LWb2lkSDllQXVOSbZwsHFwXZNCLLo/o3ajLVxK\n/iOqAWUDdtRJOsFqeiv5hqN0PH3i9y09M4vIyfODbIQM4pPv6WfrIVyW8zrwhXrW\n1fdxyBhJEC+1SfhX807ipdh1Fmy5l7vxd458x08MpRN41MCpt3+9xTI9LwKBgGqF\nuPcJ/KG4V6vnG2DQ43o/9e84kCIjiCjgXckCwE24F4ILxno1urZq2W9osTYWuqp3\n3v+Fktk5RgXIzHxRykKPuAKZ43DtuwhQTNL9ezAhcz8V2VkW1m0U9BEGCyThVgpf\nIESr3F5jSeVYPm41qqy0KLKMtyZGBWQsNg1Pe7p5AoGBAO6edyrFOx20bYXjLyhp\ne/bjdaYmfEmk9g6wFrkEZ1OgAiZ0UNJa0LVwt6nvxQbNzU2bufxtZ5XDNONJKB6M\nmLahQVY1Byt8qFaobmf/6z2YuyaWmC9NZUm3mtejBwGT8j+vBdKiuWeJBZcvKS/J\nw9toD8DrWZsKTR4IHc2nkUW3\n-----END PRIVATE KEY-----\n',
+    private_key_id: 'e620fab0d799b8ff4e0af199b1f7bdc0e6974e6a',
+    private_key: Env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'),
     client_email: 'firebase-adminsdk-i7t6y@breeze-87b50.iam.gserviceaccount.com',
     client_id: '104542712974222505249',
     auth_uri: 'https://accounts.google.com/o/oauth2/auth',
@@ -225,7 +220,7 @@ module.exports = {
 
   product: {
     googleAccountEmail: Env.get('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
-    googleAccountPrivateKey: GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+    googleAccountPrivateKey: Env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'),
     appleShareSecret: Env.get('APPLE_SHARED_SECRET'),
     iapTestMode: Env.get('IAP_TEST_MODE'),
   },
