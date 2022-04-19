@@ -819,15 +819,33 @@ const Database = use('Database')
 
 Route.get('/test-match', async ({ request, response }) => {
   const { estate_id, tenant_id } = request.all()
+  prospect = {
+    income: 1000,
+    budget_max: 200,
+    credit_score: 0.95,
+    unpaid_rental: true,
+    family_status: true,
+    non_smoker: true,
+    members_age: [1, 20],
+    pets: true,
+    space_min: true,
+    space_max: true,
+    rooms_min: true,
+    rooms_max: true,
+    floor_min: true,
+    floor_max: true,
+    apt_type: true,
+    house_type: true,
+    rent_start: true,
+  }
 
-  const tenant = await Tenant.query()
-    .select('tenants.*')
-    .where({ 'tenants.user_id': tenant_id }) //weird should be user_id
-    .first()
+  estate = {
+    budget: 30,
+    net_rent: 200,
+  }
 
-  const estate = await Estate.query().where({ id: estate_id }).first()
-  const matchScore = await Matchservice.calculateMatchPercent(tenant, estate)
-  return response.res({ estate, tenant, matchScore })
+  const score = MatchService.calculateMatchPercent(prospect, estate)
+  return response.res({ estate, tenant, score })
 })
 
 const { STATUS_ACTIVE } = require('../app/constants')
