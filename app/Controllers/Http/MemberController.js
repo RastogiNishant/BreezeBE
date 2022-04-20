@@ -86,13 +86,13 @@ class MemberController {
         const member = await MemberService.createMember({}, user_id, trx)
         await Promise.all([
           MemberService.calcTenantMemberData(user_id, trx),
-          TenantService.updateSelectedAdultsCount(user_id, selected_adults_count),
+          TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count),
         ])
         await trx.commit()
         return response.res(member)
       } else {
         trx.rollback()
-        await TenantService.updateSelectedAdultsCount(user_id, selected_adults_count),
+        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count),
           response.res(null)
       }
     } catch (e) {
@@ -207,6 +207,7 @@ class MemberController {
       if (!member) {
         throw new HttpException('Member not exists', 400)
       } else if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
+        //TODO: add one more condition to check if this member is belong to authenticated user by "owner_user_id"
         //if user trying to disconnect from the tenant that invited
         //we will process it as, tenant is trying to remove household
         member = await Member.query().where('owner_user_id', auth.user.id).first()
