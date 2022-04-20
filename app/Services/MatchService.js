@@ -130,7 +130,7 @@ class MatchService {
       log({ landlordBudgetPoints })
       scoreL += landlordBudgetPoints
     }
-
+    return scoreL
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequireCredit = estate.credit_score || 0
@@ -1650,19 +1650,17 @@ class MatchService {
       .firstOrFail()
   }
 
-  static async isExist( user_id, estate_id, tenant_id ) {
-    try{
+  static async isExist(user_id, estate_id, tenant_id) {
+    try {
       return await Match.query()
         .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'matches.estate_id')
-            .on('_e.user_id', user_id)
-            .on('_e.id', estate_id)
+          this.on('_e.id', 'matches.estate_id').on('_e.user_id', user_id).on('_e.id', estate_id)
         })
         .where('estate_id', estate_id)
         .where('matches.user_id', tenant_id)
         .firstOrFail()
-    }catch(e){
-      return null;
+    } catch (e) {
+      return null
     }
   }
 

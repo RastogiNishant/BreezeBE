@@ -819,8 +819,9 @@ const Database = use('Database')
 
 Route.get('/test-match', async ({ request, response }) => {
   const { estate_id, tenant_id } = request.all()
-  prospect = {
-    income: 1000,
+
+  let prospect = {
+    income: 0,
     budget_max: 200,
     credit_score: 0.95,
     unpaid_rental: true,
@@ -834,18 +835,25 @@ Route.get('/test-match', async ({ request, response }) => {
     rooms_max: true,
     floor_min: true,
     floor_max: true,
-    apt_type: true,
-    house_type: true,
+    apt_type: [],
+    house_type: [],
     rent_start: true,
   }
 
-  estate = {
+  const estate = {
     budget: 30,
-    net_rent: 200,
+    net_rent: 300,
   }
 
-  const score = MatchService.calculateMatchPercent(prospect, estate)
-  return response.res({ estate, tenant, score })
+  let scores = []
+  for (let k = 10; k <= 5000; k += 10) {
+    prospect.income = k
+    scores.push({
+      income: prospect.income,
+      score: Matchservice.calculateMatchPercent(prospect, estate),
+    })
+  }
+  return response.res({ scores })
 })
 
 const { STATUS_ACTIVE } = require('../app/constants')
