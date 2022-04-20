@@ -52,6 +52,7 @@ const {
 } = require('../constants')
 const { logger } = require('../../config/app')
 
+
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
 const MAX_SEARCH_ITEMS = 1000
@@ -68,14 +69,9 @@ const inRange = (value, start, end) => {
 }
 
 const log = (data) => {
-  //return false
+  return false
   //Logger.info('LOG', data)
-  const fs = require('fs')
-
-  fs.appendFile('log.txt', JSON.stringify(data) + '\n', function (err) {
-    if (err) throw err
-  })
-  //console.log(data)
+  //console.log(data);
 }
 
 class MatchService {
@@ -119,9 +115,7 @@ class MatchService {
       prospectBudget,
     })
     const realBudget = estatePrice / userIncome
-    if (realBudget > 1) {
-      //This means estatePrice is bigger than prospect's income. Prospect can't afford it
-      log("Prospect can't afford.")
+    if(realBudget > 1) {
       return 0
     }
     log({ realBudget })
@@ -130,7 +124,7 @@ class MatchService {
       log({ landlordBudgetPoints })
       scoreL += landlordBudgetPoints
     }
-    return scoreL
+
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequireCredit = estate.credit_score || 0
@@ -192,7 +186,6 @@ class MatchService {
     log({ scoreLandlordPercent: scoreLPer })
     // Check is need calculation next step
     if (scoreLPer < 0.5) {
-      log('landlord score fails.')
       return 0
     }
 
@@ -271,10 +264,9 @@ class MatchService {
     log({ scoreProspectPercent: scoreTPer })
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
-      log('prospect score fails')
       return 0
     }
-    log('\n\n')
+
     return ((scoreTPer + scoreLPer) / 2) * 100
   }
 
@@ -1619,7 +1611,7 @@ class MatchService {
     await NoticeService.inviteUserToCome(estateId, userId)
   }
 
-  static async findCurrentTenant(estateId, userId) {
+  static async findCurrentTenant( estateId, userId ) {
     const finalMatch = await Match.query()
       .select(['estate_id', 'user_id', 'email', 'phone'])
       .innerJoin({ _u: 'users' }, function () {
@@ -1627,21 +1619,21 @@ class MatchService {
       })
       .where('estate_id', estateId)
       .where('matches.user_id', userId)
-      .where('matches.status', MATCH_STATUS_FINISH)
+      .where('matches.status', MATCH_STATUS_FINISH )
       // .with('user')
       .firstOrFail()
 
     return finalMatch
   }
 
-  static async invitedTenant(estateId, userId, inviteTo) {
+  static async invitedTenant( estateId, userId, inviteTo ) {
     return await Match.query()
       .where('estate_id', estateId)
-      .where('user_id', userId)
-      .update({ inviteToEdit: inviteTo })
+      .where('user_id', userId )
+      .update({inviteToEdit: inviteTo})
   }
 
-  static async hasPermissionToEditProperty(estateId, userId) {
+  static async hasPermissionToEditProperty( estateId, userId ) {
     return await Match.query()
       .where('estate_id', estateId)
       .where('user_id', userId)
@@ -1650,25 +1642,27 @@ class MatchService {
       .firstOrFail()
   }
 
-  static async isExist(user_id, estate_id, tenant_id) {
-    try {
+  static async isExist( user_id, estate_id, tenant_id ) {
+    try{
       return await Match.query()
         .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'matches.estate_id').on('_e.user_id', user_id).on('_e.id', estate_id)
+          this.on('_e.id', 'matches.estate_id')
+            .on('_e.user_id', user_id)
+            .on('_e.id', estate_id)
         })
         .where('estate_id', estate_id)
         .where('matches.user_id', tenant_id)
         .firstOrFail()
-    } catch (e) {
-      return null
+    }catch(e){
+      return null;
     }
   }
 
   static async addTenantProperty(data) {
     return await Match.query()
       .where('estate_id', data.estate_id)
-      .where('user_id', data.user_id)
-      .update({ properties: data.properties, prices: data.prices })
+      .where('user_id', data.user_id )
+      .update({properties: data.properties, prices: data.prices})
   }
 }
 
