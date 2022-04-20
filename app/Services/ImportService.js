@@ -74,6 +74,7 @@ class ImportService {
         const existingEstate = await EstateService.getQuery()
           .where('user_id', userId)
           .where('address', 'LIKE', `%${address}%`)
+          .where('status', STATUS_ACTIVE)
           .first()
         let warning
         if (existingEstate) {
