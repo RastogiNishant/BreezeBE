@@ -262,7 +262,10 @@ class CreateEstate extends Base {
       stp_garage: yup.number().min(0),
       stp_parkhaus: yup.number().min(0),
       stp_tiefgarage: yup.number().min(0),
-      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH]),
+      currency: yup
+        .string()
+        .oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH])
+        .default(CURRENCY_EUR),
       area: yup.number().min(0),
       living_space: yup.number().min(0),
       usable_area: yup.number().min(0),
@@ -334,7 +337,7 @@ class CreateEstate extends Base {
         ]),
       vacant_date: yup.date(),
       avail_duration: yup.number().integer().positive().max(5000),
-      from_date: yup.date(),
+      from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
@@ -354,8 +357,8 @@ class CreateEstate extends Base {
           PARKING_SPACE_TYPE_DUPLEX,
           PARKING_SPACE_TYPE_GARAGE,
         ]),
-      construction_year: yup.date(),
-      last_modernization: yup.date(),
+      construction_year: yup.date().nullable(),
+      last_modernization: yup.date().nullable(),
       building_status: yup
         .number()
         .positive()
@@ -448,7 +451,7 @@ class CreateEstate extends Base {
           null,
         ])
         .nullable(),
-      energy_efficiency: yup.number().positive(),
+      energy_efficiency: yup.number().positive().nullable(),
       energy_pass: yup
         .mixed()
         .oneOf([
@@ -468,7 +471,7 @@ class CreateEstate extends Base {
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
-      furnished: yup.boolean(),
+      furnished: yup.boolean().nullable(),
       kids_type: yup
         .number()
         .integer()

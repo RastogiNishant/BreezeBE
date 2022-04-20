@@ -85,12 +85,14 @@ class ExcelReader {
           return { ...n, letting_status, letting_type }
         } else if (k.match(/room\d+_type/)) {
           v = isString(v) ? escapeStr(v) : v
-          return {
-            ...n,
-            [k]: {
-              type: get(this.dataMapping, `room_type.${v}`),
-              name: get(this.dataMapping, `room_type_name.${v}`),
-            },
+          if (get(this.dataMapping, `room_type.${v}`)) {
+            return {
+              ...n,
+              [k]: {
+                type: get(this.dataMapping, `room_type.${v}`),
+                name: get(this.dataMapping, `room_type_name.${v}`),
+              },
+            }
           }
         } else if (k == 'txt_salutation') {
           return {
