@@ -22,4 +22,6 @@ components:
         status:
           type: string
           example: success
-    
+    MissingJWTReturn:
+      type: string
+      example: 'E_INVALID_JWT_TOKEN: jwt must be provided'

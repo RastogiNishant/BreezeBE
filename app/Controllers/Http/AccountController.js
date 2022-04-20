@@ -43,6 +43,7 @@ const {
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
   BUDDY_STATUS_PENDING,
+  STATUS_ACTIVE
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -461,6 +462,9 @@ class AccountController {
     if (!user) {
       throw new HttpException('User not found', 404)
     }
+    if( user.status !== STATUS_ACTIVE ) {
+      throw new HttpException('User has not been verified yet', 400)      
+    }
     role = user.role
 
     let authenticator
@@ -738,13 +742,13 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    let { email, from_web } = request.only(['email', 'from_web'])
+    let { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
     if (from_web === undefined) {
       from_web = false
     }
-    await UserService.requestSendCodeForgotPassword(email, from_web)
+    await UserService.requestSendCodeForgotPassword(email, lang, from_web)
     return response.res()
   }
 

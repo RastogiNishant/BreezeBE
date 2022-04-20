@@ -222,6 +222,7 @@ class EstateAttributeTranslations {
     available_date: reverseExtractDate,
     from_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
+    contract_end: reverseExtractDate,
   }
   dataMapping = {
     property_type: {
@@ -400,6 +401,7 @@ class EstateAttributeTranslations {
     available_date: extractDate,
     from_date: extractDate,
     last_modernization: extractDate,
+    contract_end: extractDate,
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2,
@@ -407,7 +409,7 @@ class EstateAttributeTranslations {
       PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: (i) => i * 100,
+    budget: (i) => parseInt(i * 100),
     deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
