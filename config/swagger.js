@@ -20,10 +20,6 @@ module.exports = {
           description: 'Dev Local server',
         },
         {
-          url: 'https://breeze-api-dev.txtsier.com',
-          description: 'Temporary api dev for import export excel',
-        },
-        {
           url: 'https://api-dev.breeze4me.de',
           description: 'Development Server',
         },
