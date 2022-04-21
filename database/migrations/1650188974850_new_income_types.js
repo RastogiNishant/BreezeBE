@@ -1,8 +1,6 @@
 'use strict'
 
-const yup = require('yup')
-const Base = require('./Base')
-
+const Schema = use('Schema')
 const {
   HIRING_TYPE_FULL_TIME,
   HIRING_TYPE_PART_TIME,
@@ -15,20 +13,15 @@ const {
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
-} = require('../constants')
+} = require('../../app/constants')
 
-class CreateIncome extends Base {
-  static schema = () => {
-    return yup.object().shape({
-      company: yup.string().max(255),
-      profession: yup.string().max(120),
-      position: yup.string().max(120),
-      hiring_date: yup.date(),
-      work_exp: yup.number().integer().min(0).max(100),
-      employment_type: yup.string().oneOf([HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME]),
-      income_type: yup
-        .string()
-        .oneOf([
+class NewIncomeTypes extends Schema {
+  up() {
+    this.table('incomes', (table) => {
+      table
+        .enum('income_type', [
+          HIRING_TYPE_FULL_TIME,
+          HIRING_TYPE_PART_TIME,
           INCOME_TYPE_EMPLOYEE,
           INCOME_TYPE_WORKER,
           INCOME_TYPE_UNEMPLOYED,
@@ -38,10 +31,16 @@ class CreateIncome extends Base {
           INCOME_TYPE_PENSIONER,
           INCOME_TYPE_SELF_EMPLOYED,
           INCOME_TYPE_TRAINEE,
-        ]),
-      income: yup.number().min(0),
+        ])
+        .alter()
+    })
+  }
+
+  down() {
+    this.table('incomes', (table) => {
+      table.dropColumn('income_type')
     })
   }
 }
 
-module.exports = CreateIncome
+module.exports = NewIncomeTypes

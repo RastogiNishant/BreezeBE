@@ -23,10 +23,8 @@ const {
   PETS_NO,
 
   INCOME_TYPE_EMPLOYEE,
-  INCOME_TYPE_PENSION,
-  INCOME_TYPE_PRIVATE,
+
   INCOME_TYPE_SELF_EMPLOYED,
-  INCOME_TYPE_STUDENT_TRAINEE,
   INCOME_TYPE_UNEMPLOYED,
 
   STATUS_ACTIVE,
@@ -237,17 +235,10 @@ class TenantService {
       hiring_date: yup.date().required(),
       income_type: yup
         .string()
-        .oneOf([
-          INCOME_TYPE_EMPLOYEE,
-          INCOME_TYPE_PENSION,
-          INCOME_TYPE_PRIVATE,
-          INCOME_TYPE_SELF_EMPLOYED,
-          INCOME_TYPE_STUDENT_TRAINEE,
-          INCOME_TYPE_UNEMPLOYED,
-        ])
+        .oneOf([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_SELF_EMPLOYED, INCOME_TYPE_UNEMPLOYED])
         .required(),
       income: yup.number().min(0).required(),
-      position: getConditionRule([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_STUDENT_TRAINEE]),
+      position: getConditionRule([INCOME_TYPE_EMPLOYEE]),
       company: getConditionRule([INCOME_TYPE_EMPLOYEE]),
       employment_type: getConditionRule([INCOME_TYPE_EMPLOYEE]),
     })
