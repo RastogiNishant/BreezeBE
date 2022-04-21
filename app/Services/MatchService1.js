@@ -78,7 +78,7 @@ const log = (data) => {
   //console.log(data)
 }
 
-class MatchService {
+class MatchService1 {
   /**
    * Get matches percent between estate/prospect
    */
@@ -125,8 +125,9 @@ class MatchService {
       return 0
     }
     log({ realBudget })
+    let landlordBudgetPoints = 0
     if (realBudget <= estateBudget / 100) {
-      const landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
+      landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
       log({ landlordBudgetPoints })
       scoreL += landlordBudgetPoints
     }
@@ -135,30 +136,37 @@ class MatchService {
     const userCurrentCredit = prospect.credit_score || 0
     const userRequireCredit = estate.credit_score || 0
     log({ userCurrentCredit, userRequireCredit })
+    let creditScorePoints = 0
     if (userCurrentCredit >= userRequireCredit) {
-      const creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit, 0) * 0.1
+      creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit, 0) * 0.1
       log({ creditScorePoints })
       scoreL += creditScorePoints
     }
-    return {
-      landlordBudgetPoints: typeof landlordBudgetPoints !== 'undefined' ? landlordBudgetPoints : 0,
-      creditScorePoints: typeof creditScorePoints !== 'undefined' ? creditScorePoints : 0,
-    }
+
     // Get rent arrears score
     const rentArrearsWeight = 1
+    let rentArrearsScore = 0
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
     if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
+      rentArrearsScore = 1
     }
 
     // Check family status
+    let familyStatusScore = 0
     log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
     if (!estate.family_status || +prospect.family_status === +estate.family_status) {
       log({ familyStatusPoints: familyStatusWeight })
       scoreL += familyStatusWeight
+      familyStatusScore += familyStatusWeight
     }
-
+    return {
+      landlordBudgetPoints,
+      creditScorePoints,
+      rentArrearsScore,
+      familyStatusScore,
+    }
     // prospect smoke ask
     log({ prospectNonSmoker: prospect.non_smoker, estateNonSmoker: estate.non_smoker })
     if (prospect.non_smoker || !estate.non_smoker) {
@@ -1675,4 +1683,4 @@ class MatchService {
   }
 }
 
-module.exports = MatchService
+module.exports = MatchService1

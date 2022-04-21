@@ -814,7 +814,7 @@ Route.list().forEach((r) => {
 const Tenant = use('App/Models/Tenant')
 const Estate = use('App/Models/Estate')
 const { get, isNumber } = require('lodash')
-const Matchservice = use('App/Services/Matchservice')
+const Matchservice = use('App/Services/Matchservice1')
 const Database = use('Database')
 
 Route.get('/test-match', async ({ request, response }) => {
@@ -824,7 +824,7 @@ Route.get('/test-match', async ({ request, response }) => {
     income: 0,
     budget_max: 200,
     credit_score: 0.95,
-    unpaid_rental: true,
+    unpaid_rental: 1,
     family_status: true,
     non_smoker: true,
     members_age: [1, 20],
@@ -842,6 +842,7 @@ Route.get('/test-match', async ({ request, response }) => {
 
   const estate = {
     budget: 30,
+    credit_score: 0.8,
     net_rent: 300,
   }
 
@@ -850,7 +851,7 @@ Route.get('/test-match', async ({ request, response }) => {
     prospect.income = k
     scores.push({
       income: prospect.income,
-      score: Matchservice.calculateMatchPercent(prospect, estate),
+      scores: Matchservice.calculateMatchPercent(prospect, estate),
     })
   }
   return response.res({ scores })
