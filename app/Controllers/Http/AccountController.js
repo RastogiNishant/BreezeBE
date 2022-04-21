@@ -465,6 +465,9 @@ class AccountController {
     }
     if (user.status !== STATUS_ACTIVE) {
       await UserService.sendConfirmEmail(user)
+      /* @description */
+      // Merge error code and user id and send as a response
+      // Because client needs user id to call verify code endpoint
       throw new HttpException(
         'User has not been verified yet',
         400,
