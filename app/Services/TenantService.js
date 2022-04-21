@@ -300,7 +300,7 @@ class TenantService {
 
     const member = await Member.query().where({ user_id: userId, child: false }).first()
 
-    return tenant?.selected_adults_count && member
+    return tenant && tenant.selected_adults_count ? tenant.selected_adults_count: member
   }
 }
 

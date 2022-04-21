@@ -483,6 +483,7 @@ const constants = {
     'vacant_date',
     'others',
     'full_address',
+    'deposit',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
