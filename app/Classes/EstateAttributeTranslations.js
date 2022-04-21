@@ -1,5 +1,5 @@
 const l = use('Localize')
-const { trim } = require('lodash')
+const { trim, isEmpty } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
 const {
   PROPERTY_TYPE_APARTMENT,
@@ -197,7 +197,12 @@ reverseBool = (value) => {
 }
 
 extractDate = (date) => {
-  if (typeof date == 'string' && (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))) {
+  if (isEmpty(date)) {
+    return null
+  } else if (
+    typeof date == 'string' &&
+    (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))
+  ) {
     return `${match[3]}-${match[2]}-${match[1]}`
   }
   return date
@@ -422,13 +427,23 @@ class EstateAttributeTranslations {
           return parseInt(i)
       }
     },
+    family_size_max: (i) => (isEmpty(i) ? null : parseInt(i)),
+    construction_year: (i) => (isEmpty(i) ? null : parseInt(i)),
     address: (i, o) => {
       return trim(
         `${o.street || ''} ${o.house_number || ''}, ${o.zip || ''} ${o.city || ''}`,
         ', '
       ).replace(/\s,/g, ',')
     },
-    energy_efficiency: (i) => i,
+    energy_efficiency: (i) => (isEmpty(i) ? null : Number(i)),
+    area: (i) => Number(i),
+    rooms_number: (i) => Number(i),
+    net_rent: (i) => Number(i),
+    additional_costs: (i) => Number(i),
+    heating_costs: (i) => Number(i),
+    min_age: (i) => (isEmpty(i) ? 0 : parseInt(i)),
+    max_age: (i) => (isEmpty(i) ? 0 : parseInt(i)),
+    currency: (i) => (isEmpty(i) ? 'EUR' : i),
   }
 
   constructor(lang = 'en') {
