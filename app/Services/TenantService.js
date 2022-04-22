@@ -46,6 +46,12 @@ const {
   NO_INCOME_SEIZURE,
   YES_INCOME_SEIZURE,
   NO_ANSWER_INCOME_SEIZURE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_TRAINEE,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 
@@ -235,12 +241,40 @@ class TenantService {
       hiring_date: yup.date().required(),
       income_type: yup
         .string()
-        .oneOf([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_SELF_EMPLOYED, INCOME_TYPE_UNEMPLOYED])
+        .oneOf([
+          INCOME_TYPE_EMPLOYEE,
+          INCOME_TYPE_WORKER,
+          INCOME_TYPE_UNEMPLOYED,
+          INCOME_TYPE_CIVIL_SERVANT,
+          INCOME_TYPE_FREELANCER,
+          INCOME_TYPE_HOUSE_WORK,
+          INCOME_TYPE_PENSIONER,
+          INCOME_TYPE_SELF_EMPLOYED,
+          INCOME_TYPE_TRAINEE,
+        ])
         .required(),
       income: yup.number().min(0).required(),
-      position: getConditionRule([INCOME_TYPE_EMPLOYEE]),
-      company: getConditionRule([INCOME_TYPE_EMPLOYEE]),
-      employment_type: getConditionRule([INCOME_TYPE_EMPLOYEE]),
+      position: getConditionRule([
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_WORKER,
+      ]),
+      company: getConditionRule([
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_WORKER,
+      ]),
+      employment_type: getConditionRule([
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_WORKER,
+      ]),
     })
 
     try {
