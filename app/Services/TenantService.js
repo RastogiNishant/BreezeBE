@@ -179,6 +179,7 @@ class TenantService {
           '_m.debt_proof',
           '_m.execution',
           '_m.credit_score',
+          '_m.phone_verified',
           '_i.position',
           '_i.company',
           '_i.income_type',
