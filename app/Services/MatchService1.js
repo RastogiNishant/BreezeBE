@@ -119,13 +119,26 @@ class MatchService1 {
       prospectBudget,
     })
     const realBudget = estatePrice / userIncome
+
+    let landlordBudgetPoints = 0
+    let rentArrearsScore = 0
+    let familyStatusScore = 0
+    let creditScorePoints = 0
+    let smokerScore = 0
+    let ageInRangeScore = 0
+
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       log("Prospect can't afford.")
-      return 0
+      return {
+        landlordBudgetPoints,
+        creditScorePoints,
+        rentArrearsScore,
+        familyStatusScore,
+      }
     }
     log({ realBudget })
-    let landlordBudgetPoints = 0
+
     if (realBudget <= estateBudget / 100) {
       landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
       log({ landlordBudgetPoints })
@@ -136,7 +149,7 @@ class MatchService1 {
     const userCurrentCredit = prospect.credit_score || 0
     const userRequireCredit = estate.credit_score || 0
     log({ userCurrentCredit, userRequireCredit })
-    let creditScorePoints = 0
+
     if (userCurrentCredit >= userRequireCredit) {
       creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit, 0) * 0.1
       log({ creditScorePoints })
@@ -145,7 +158,6 @@ class MatchService1 {
 
     // Get rent arrears score
     const rentArrearsWeight = 1
-    let rentArrearsScore = 0
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
     if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
@@ -154,23 +166,18 @@ class MatchService1 {
     }
 
     // Check family status
-    let familyStatusScore = 0
     log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
     if (!estate.family_status || +prospect.family_status === +estate.family_status) {
       log({ familyStatusPoints: familyStatusWeight })
       scoreL += familyStatusWeight
       familyStatusScore += familyStatusWeight
     }
-    return {
-      landlordBudgetPoints,
-      creditScorePoints,
-      rentArrearsScore,
-      familyStatusScore,
-    }
+
     // prospect smoke ask
     log({ prospectNonSmoker: prospect.non_smoker, estateNonSmoker: estate.non_smoker })
     if (prospect.non_smoker || !estate.non_smoker) {
       log({ smokePoints: smokeWeight })
+      smokerScore = smokeWeight
       scoreL += smokeWeight
     }
 
@@ -184,9 +191,20 @@ class MatchService1 {
       const isInRange = (prospect.members_age || []).reduce((n, v) => {
         return n ? true : inRange(v, estate.min_age, estate.max_age)
       }, false)
-
       isInRange && log({ ageWeight })
-      isInRange && (scoreL += ageWeight)
+      if (isInRange) {
+        scoreL += ageWeight
+        ageInRangeScore = ageWeight
+      }
+    }
+
+    return {
+      landlordBudgetPoints,
+      creditScorePoints,
+      rentArrearsScore,
+      familyStatusScore,
+      smokerScore,
+      ageInRangeScore,
     }
 
     // Pets

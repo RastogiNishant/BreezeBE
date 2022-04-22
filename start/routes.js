@@ -827,7 +827,7 @@ Route.get('/test-match', async ({ request, response }) => {
     unpaid_rental: 1,
     family_status: true,
     non_smoker: true,
-    members_age: [1, 20],
+    members_age: [10, 20],
     pets: true,
     space_min: true,
     space_max: true,
@@ -844,6 +844,9 @@ Route.get('/test-match', async ({ request, response }) => {
     budget: 30,
     credit_score: 0.8,
     net_rent: 300,
+    min_age: 1,
+    max_age: 65,
+    non_smoker: true,
   }
 
   let scores = []
