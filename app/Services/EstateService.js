@@ -27,6 +27,8 @@ const {
   DATE_FORMAT,
   MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_KNOCK,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
@@ -623,9 +625,9 @@ class EstateService {
     const estateIds = (
       await Estate.query()
         .select('id')
-        .where('status', STATUS_ACTIVE)
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .where('available_date', '<=', moment().format(DATE_FORMAT))
-        .limit(100)
+// .limit(100)
         .fetch()
     ).rows.map((i) => i.id)
 
@@ -643,10 +645,11 @@ class EstateService {
 
       // Remove estates from - matches / likes / dislikes
       await Database.table('matches')
-        .where('status', MATCH_STATUS_NEW)
+        .whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK, MATCH_STATUS_INVITE])
         .whereIn('estate_id', estateIds)
         .delete()
         .transacting(trx)
+
       await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
       await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
 
