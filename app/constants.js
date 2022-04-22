@@ -283,11 +283,14 @@ const constants = {
   POINT_TYPE_POI: 'poi',
 
   INCOME_TYPE_EMPLOYEE: 'employee',
+  INCOME_TYPE_WORKER: 'worker',
   INCOME_TYPE_UNEMPLOYED: 'unemployed',
-  INCOME_TYPE_PENSION: 'pension',
+  INCOME_TYPE_CIVIL_SERVANT: 'civil_servant',
+  INCOME_TYPE_FREELANCER: 'freelancer',
+  INCOME_TYPE_HOUSE_WORK: 'housewife_husband',
+  INCOME_TYPE_PENSIONER: 'pensioner',
   INCOME_TYPE_SELF_EMPLOYED: 'self',
-  INCOME_TYPE_STUDENT_TRAINEE: 'student',
-  INCOME_TYPE_PRIVATE: 'private',
+  INCOME_TYPE_TRAINEE: 'trainee',
 
   FAMILY_STATUS_SINGLE: 1,
   FAMILY_STATUS_WITH_CHILD: 3,
