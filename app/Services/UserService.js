@@ -197,8 +197,14 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      const data = paramLang? await this.getTokenWithLocale([user.id]) : null
-      const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : user.lang?user.lang:DEFAULT_LANG
+      const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
+      const lang = paramLang
+        ? paramLang
+        : data && data.length && data[0].lang
+        ? data[0].lang
+        : user.lang
+        ? user.lang
+        : DEFAULT_LANG
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -290,8 +296,7 @@ class UserService {
    *
    */
   static async sendConfirmEmail(user) {
-    
-    try{
+    try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
@@ -304,7 +309,7 @@ class UserService {
         role: user.role,
         lang: lang,
       })
-    }catch(e) {
+    } catch (e) {
       throw new HttpException(e)
     }
   }

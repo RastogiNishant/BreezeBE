@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { has, omit } = require('lodash')
+const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
 const xlsx = require('node-xlsx')
 const Excel = require('exceljs')
@@ -74,6 +74,7 @@ class ImportService {
         const existingEstate = await EstateService.getQuery()
           .where('user_id', userId)
           .where('address', 'LIKE', `%${address}%`)
+          .where('status', STATUS_ACTIVE)
           .first()
         let warning
         if (existingEstate) {
@@ -88,7 +89,7 @@ class ImportService {
         let rooms = []
         let found
         for (let key in data) {
-          if ((found = key.match(/^room(\d)_type$/))) {
+          if ((found = key.match(/^room(\d)_type$/)) && !isEmpty(data[key])) {
             rooms.push({ ...data[key], import_sequence: found[1] })
           }
         }

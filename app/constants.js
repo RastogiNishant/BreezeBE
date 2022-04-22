@@ -1,6 +1,7 @@
 const constants = {
   ERROR_AGREEMENT_CONFIRM: 10020,
   ERROR_TERMS_CONFIRM: 10030,
+  ERROR_USER_NOT_VERIFIED_LOGIN: 10040,
   ERROR_BUDDY_EXISTS: 10110,
   ERROR_USER_INCOME_EXPIRE: 10140,
   ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE: 10150,
@@ -483,6 +484,7 @@ const constants = {
     'vacant_date',
     'others',
     'full_address',
+    'deposit',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

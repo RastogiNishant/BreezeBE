@@ -43,7 +43,8 @@ const {
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
   BUDDY_STATUS_PENDING,
-  STATUS_ACTIVE
+  STATUS_ACTIVE,
+  ERROR_USER_NOT_VERIFIED_LOGIN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -462,8 +463,16 @@ class AccountController {
     if (!user) {
       throw new HttpException('User not found', 404)
     }
-    if( user.status !== STATUS_ACTIVE ) {
-      throw new HttpException('User has not been verified yet', 400)      
+    if (user.status !== STATUS_ACTIVE) {
+      await UserService.sendConfirmEmail(user)
+      /* @description */
+      // Merge error code and user id and send as a response
+      // Because client needs user id to call verify code endpoint
+      throw new HttpException(
+        'User has not been verified yet',
+        400,
+        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
+      )
     }
     role = user.role
 
