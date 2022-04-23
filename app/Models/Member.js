@@ -25,7 +25,6 @@ class Member extends Model {
       'debt_proof',
       'unpaid_rental',
       'insolvency_proceed',
-      'arrest_warranty',
       'clean_procedure',
       'income_seizure',
       'external_duties',

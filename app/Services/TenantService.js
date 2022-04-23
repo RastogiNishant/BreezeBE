@@ -37,9 +37,6 @@ const {
   NO_INSOLVENCY,
   YES_INSOLVENCY,
   NO_ANSWER_INSOLVENCY,
-  NO_ARREST_WARRANTY,
-  YES_ARREST_WARRANTY,
-  NO_ANSWER_WARRANTY,
   NO_CLEAN_PROCEDURE,
   YES_CLEAN_PROCEDURE,
   NO_ANSWER_CLEAN_PROCEDURE,
@@ -173,7 +170,6 @@ class TenantService {
           '_m.landlord_name',
           '_m.unpaid_rental',
           '_m.insolvency_proceed',
-          '_m.arrest_warranty',
           '_m.clean_procedure',
           '_m.income_seizure',
           '_m.debt_proof',
@@ -222,10 +218,6 @@ class TenantService {
         .number()
         .positive()
         .oneOf([NO_INSOLVENCY, YES_INSOLVENCY, NO_ANSWER_INSOLVENCY])
-        .required(),
-      arrest_warranty: yup
-        .number()
-        .oneOf([NO_ARREST_WARRANTY, YES_ARREST_WARRANTY, NO_ANSWER_WARRANTY])
         .required(),
       clean_procedure: yup
         .number()
