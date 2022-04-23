@@ -1,6 +1,7 @@
 const constants = {
   ERROR_AGREEMENT_CONFIRM: 10020,
   ERROR_TERMS_CONFIRM: 10030,
+  ERROR_USER_NOT_VERIFIED_LOGIN: 10040,
   ERROR_BUDDY_EXISTS: 10110,
   ERROR_USER_INCOME_EXPIRE: 10140,
   ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE: 10150,
@@ -282,11 +283,14 @@ const constants = {
   POINT_TYPE_POI: 'poi',
 
   INCOME_TYPE_EMPLOYEE: 'employee',
+  INCOME_TYPE_WORKER: 'worker',
   INCOME_TYPE_UNEMPLOYED: 'unemployed',
-  INCOME_TYPE_PENSION: 'pension',
+  INCOME_TYPE_CIVIL_SERVANT: 'civil_servant',
+  INCOME_TYPE_FREELANCER: 'freelancer',
+  INCOME_TYPE_HOUSE_WORK: 'housewife_husband',
+  INCOME_TYPE_PENSIONER: 'pensioner',
   INCOME_TYPE_SELF_EMPLOYED: 'self',
-  INCOME_TYPE_STUDENT_TRAINEE: 'student',
-  INCOME_TYPE_PRIVATE: 'private',
+  INCOME_TYPE_TRAINEE: 'trainee',
 
   FAMILY_STATUS_SINGLE: 1,
   FAMILY_STATUS_WITH_CHILD: 3,
@@ -416,10 +420,6 @@ const constants = {
   YES_INSOLVENCY: 2,
   NO_ANSWER_INSOLVENCY: 3,
 
-  NO_ARREST_WARRANTY: 1,
-  YES_ARREST_WARRANTY: 2,
-  NO_ANSWER_WARRANTY: 3,
-
   NO_CLEAN_PROCEDURE: 1,
   YES_CLEAN_PROCEDURE: 2,
   NO_ANSWER_CLEAN_PROCEDURE: 3,
@@ -483,6 +483,7 @@ const constants = {
     'vacant_date',
     'others',
     'full_address',
+    'deposit',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

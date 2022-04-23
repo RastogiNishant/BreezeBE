@@ -182,7 +182,6 @@ Factory.blueprint('App/Models/Member', async (faker, i, { user_id, child, doc })
     debt_proof: doc,
     unpaid_rental: faker.pickone([1, 2, 3, 1, 2, 1]),
     insolvency_proceed: faker.pickone([1, 2, 3, 1, 2, 1]),
-    arrest_warranty: faker.pickone([1, 2, 3, 1, 2, 1]),
     clean_procedure: faker.pickone([1, 2, 3, 1, 2, 1]),
     income_seizure: faker.pickone([1, 2, 3, 1, 2, 1]),
 
