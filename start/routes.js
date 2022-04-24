@@ -418,7 +418,12 @@ Route.group(() => {
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
-  Route.post('/visible', 'MemberController.showMe').middleware([
+  Route.get('/invitation', 'MemberController.prepareHouseholdInvitationDetails')
+  Route.put('/invitation/accept', 'MemberController.acceptInvitation').middleware([
+    'valid:ProfileVisibilityToOther',
+  ])
+  Route.get('/visible', 'MemberController.checkVisibilitySetting').middleware(['valid:MemberId'])
+  Route.put('/visible', 'MemberController.showMe').middleware([
     'valid:MemberId,ProfileVisibilityToOther',
   ])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
@@ -451,10 +456,6 @@ Route.group(() => {
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt,jwtHousekeeper'])
-
-Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
-  .prefix('api/v1/tenant/members')
-  .middleware(['auth:jwt,valid:InvitationCode'])
 
 // Add income files
 Route.group(() => {

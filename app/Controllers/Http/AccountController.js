@@ -367,10 +367,6 @@ class AccountController {
         throw new HttpException('User already exists, can be switched', 400)
       }
 
-      // if (password !== confirmPassword) {
-      //   throw new HttpException('Password not matched', 400)
-      // }
-
       const user = await UserService.housekeeperSignup(
         member.user_id,
         email,

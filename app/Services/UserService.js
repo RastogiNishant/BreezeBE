@@ -714,10 +714,11 @@ class UserService {
           role: ROLE_USER,
           password,
           owner_id: ownerId,
-          // phone: phone,
           status: STATUS_EMAIL_VERIFY,
           firstname,
           lang,
+          is_household_invitation_onboarded: false,
+          is_profile_onboarded: true,
         },
         trx
       )
