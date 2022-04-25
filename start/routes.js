@@ -817,40 +817,51 @@ const { get, isNumber } = require('lodash')
 const Matchservice = use('App/Services/Matchservice1')
 const Database = use('Database')
 
-Route.get('/test-match', async ({ request, response }) => {
+Route.get('/debug/test-match', async ({ request, response }) => {
   const { estate_id, tenant_id } = request.all()
 
   let prospect = {
     income: 0,
-    budget_max: 200,
-    credit_score: 0.95,
+    budget_max: 30,
+    credit_score: 950,
     unpaid_rental: 1,
     family_status: true,
     non_smoker: true,
     members_age: [10, 20],
-    pets: true,
-    space_min: true,
-    space_max: true,
-    rooms_min: true,
-    rooms_max: true,
-    floor_min: true,
-    floor_max: true,
-    apt_type: [],
-    house_type: [],
-    rent_start: true,
+    pets: 1,
+    space_min: 100,
+    space_max: 200,
+    rooms_min: 1,
+    rooms_max: 3,
+    floor_min: 1,
+    floor_max: 2,
+    apt_type: [1, 2],
+    house_type: [1, 2],
+    rent_start: '2022-04-20',
+    options: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   }
 
   const estate = {
     budget: 30,
-    credit_score: 0.8,
+    credit_score: 900,
     net_rent: 300,
+    area: 200,
     min_age: 1,
     max_age: 65,
     non_smoker: true,
+    pets: 1,
+    rooms_number: 3,
+    floor: 2,
+    house_type: 1,
+    apt_type: 1,
+    options: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    vacant_date: '2022-04-25',
   }
 
   let scores = []
-  for (let k = 10; k <= 5000; k += 10) {
+  for (let k = 250; k <= 20000; k += 10) {
+    //for (let k = 800; k <= 10000; k += 10) {
+    //prospect.credit_score = k
     prospect.income = k
     scores.push({
       income: prospect.income,

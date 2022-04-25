@@ -101,6 +101,7 @@
 	"devDependencies": {
 		"@adonisjs/cli": "^4.0.13",
 		"concurrently": "^6.0.0",
+		"csv-writer": "^1.6.0",
 		"jsonwebtoken": "^8.5.1"
 	}
 }

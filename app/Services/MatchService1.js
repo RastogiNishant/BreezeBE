@@ -69,13 +69,15 @@ const inRange = (value, start, end) => {
 
 const log = (data) => {
   //return false
+  /*
   //Logger.info('LOG', data)
   const fs = require('fs')
 
   fs.appendFile('log.txt', JSON.stringify(data) + '\n', function (err) {
     if (err) throw err
-  })
+  })*/
   //console.log(data)
+  return false
 }
 
 class MatchService1 {
@@ -121,23 +123,51 @@ class MatchService1 {
     const realBudget = estatePrice / userIncome
 
     let landlordBudgetPoints = 0
+    let creditScorePoints = 0
     let rentArrearsScore = 0
     let familyStatusScore = 0
-    let creditScorePoints = 0
     let smokerScore = 0
     let ageInRangeScore = 0
+    let petsScore = 0
+    let roomsPoints = 0
+    let floorScore = 0
+    let prospectBudgetPoints = 0
+    let aptTypeScore = 0
+    let houseTypeScore = 0
+    let spacePoints = 0
+    let amenitiesScore = 0
+    let rentStartPoints = 0
 
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       log("Prospect can't afford.")
       return {
-        landlordBudgetPoints,
-        creditScorePoints,
-        rentArrearsScore,
-        familyStatusScore,
+        scoreLandlord: {
+          landlordBudgetPoints,
+          creditScorePoints,
+          rentArrearsScore,
+          familyStatusScore,
+          smokerScore,
+          ageInRangeScore,
+          petsScore,
+          landlordScore: 0,
+        },
+        scoreProspect: {
+          prospectBudgetPoints,
+          spacePoints,
+          roomsPoints,
+          floorScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          rentStartPoints,
+          prospectScore: 0,
+        },
+        matchScore: 0,
       }
     }
-    log({ realBudget })
+
+    //console.log({ realBudget, dEstateBudget: estateBudget / 100 })
 
     if (realBudget <= estateBudget / 100) {
       landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
@@ -198,27 +228,21 @@ class MatchService1 {
       }
     }
 
-    return {
-      landlordBudgetPoints,
-      creditScorePoints,
-      rentArrearsScore,
-      familyStatusScore,
-      smokerScore,
-      ageInRangeScore,
-    }
-
     // Pets
     log({ prospectPets: prospect.pets, estatePets: estate.pets })
     if (prospect.pets === PETS_NO || estate.pets === PETS_ANY) {
       scoreL += petsWeight
       log({ petsWeight })
+      petsScore = petsWeight
     } else if (prospect.pets === PETS_SMALL && estate.pets === PETS_SMALL) {
       scoreL += petsWeight
       log({ petsWeight })
+      petsScore = petsWeight
     }
 
     const scoreLPer = scoreL / maxScoreL
     log({ scoreLandlordPercent: scoreLPer })
+
     // Check is need calculation next step
     if (scoreLPer < 0.5) {
       log('landlord score fails.')
@@ -228,8 +252,9 @@ class MatchService1 {
     // -----------------------
     // prospect calculation part
     // -----------------------
+    console.log({ realBudget, prospectBudget })
     if (estatePrice / userIncome < prospectBudget) {
-      const prospectBudgetPoints = 1 + getCorr(prospectBudget, realBudget * 100, 0) * 0.1
+      prospectBudgetPoints = 1 + getCorr(prospectBudget, realBudget * 100, 0) * 0.1
       log({ prospectBudgetPoints })
       scoreT += prospectBudgetPoints
     }
@@ -240,8 +265,7 @@ class MatchService1 {
       prospectSpaceMax: prospect.space_max,
     })
     if (inRange(estate.area, prospect.space_min, prospect.space_max)) {
-      const spacePoints =
-        1 + (1 - getCorr(prospect.space_max, estate.area, prospect.space_min)) * 0.1
+      spacePoints = 1 + (1 - getCorr(prospect.space_max, estate.area, prospect.space_min)) * 0.1
       log({ spacePoints })
       scoreT += spacePoints
     }
@@ -251,6 +275,7 @@ class MatchService1 {
     if (inRange(estate.floor, prospect.floor_min, prospect.floor_max)) {
       log({ floorWeight })
       scoreT += floorWeight
+      floorScore = floorWeight
     }
 
     log({
@@ -259,17 +284,17 @@ class MatchService1 {
       roomsMax: prospect.rooms_max,
     })
     if (inRange(estate.rooms_number, prospect.rooms_min, prospect.rooms_max)) {
-      const roomsPoints =
+      roomsPoints =
         1 + (1 - getCorr(prospect.rooms_max, estate.rooms_number, prospect.rooms_min) || 1) * 0.1
       log({ roomsPoints })
       scoreT += roomsPoints
     }
-
     // Apartment type is equal
     log({ prospectAptType: prospect.apt_type, estateAptType: estate.apt_type })
     if ((prospect.apt_type || []).includes(estate.apt_type)) {
       log({ aptTypeWeight })
       scoreT += aptTypeWeight
+      aptTypeScore = aptTypeWeight
     }
 
     // House type is equal
@@ -277,21 +302,23 @@ class MatchService1 {
     if ((prospect.house_type || []).includes(estate.house_type)) {
       log({ houseTypeWeight })
       scoreT += houseTypeWeight
+      houseTypeScore = houseTypeWeight
     }
 
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     const passAmenities = intersection(estate.options, prospect.options).length
-    const amenitiesScore = passAmenities * amenitiesWeight
+    amenitiesScore = passAmenities * amenitiesWeight
     log({ amenitiesScore })
     scoreT += amenitiesScore
 
     const rentStart = parseInt(moment(prospect.rent_start).startOf('day').format('X'))
     const vacantFrom = parseInt(moment(estate.vacant_date).startOf('day').format('X'))
+    //console.log(prospect.rent_start, moment(prospect.rent_start).startOf('day').format())
     log({ rentStart, vacantFrom })
     if (rentStart <= vacantFrom) {
       const daysDiff = (vacantFrom - rentStart) / 86400
       const MAX_DAYS = 730
-      const rentStartPoints = 1 + (1 - Math.min(daysDiff, MAX_DAYS) / MAX_DAYS) * 0.1
+      rentStartPoints = 1 + (1 - Math.min(daysDiff, MAX_DAYS) / MAX_DAYS) * 0.1
       scoreT += rentStartPoints
       log({ rentStartPoints })
     }
@@ -302,6 +329,31 @@ class MatchService1 {
     if (scoreTPer < 0.5) {
       log('prospect score fails')
       return 0
+    }
+    return {
+      scoreLandlord: {
+        landlordBudgetPoints,
+        userCurrentCredit,
+        creditScorePoints,
+        rentArrearsScore,
+        familyStatusScore,
+        smokerScore,
+        ageInRangeScore,
+        petsScore,
+        landlordScore: scoreLPer,
+      },
+      scoreProspect: {
+        prospectBudgetPoints,
+        spacePoints,
+        floorScore,
+        roomsPoints,
+        aptTypeScore,
+        houseTypeScore,
+        amenitiesScore,
+        rentStartPoints,
+        prospectScore: scoreTPer,
+      },
+      matchScore: ((scoreTPer + scoreLPer) / 2) * 100,
     }
     log('\n\n')
     return ((scoreTPer + scoreLPer) / 2) * 100
