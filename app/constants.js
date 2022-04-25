@@ -374,11 +374,14 @@ const constants = {
   NOTICE_TYPE_LANDLORD_VISIT90M: 'notification_landlord_visit_90m',
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE: 'notification_prospect_profile_expire',
   NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
-  NOTICE_TYPE_PROSPECT_KNOCK: 'notification_prospect_knock',
   NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
   NOTICE_TYPE_PROSPECT_INVITE_IN: 'notification_prospect_invite_in',
   NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
   NOTICE_TYPE_ZENDESK_NOTIFY: 'notification_zendesk_notify',
+  NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN: 'notification_user_verification_by_admin',
+  NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER: 'notification_estate_show_time_is_over',
+  NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED: 'notification_prospect_is_not_interested',
+  NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP: 'notification_landlord_moved_prospect_to_top',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -399,11 +402,15 @@ const constants = {
   NOTICE_TYPE_PROSPECT_REJECT_ID: 22,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID: 23,
   NOTICE_TYPE_PROSPECT_COME_ID: 24,
-  NOTICE_TYPE_PROSPECT_KNOCK_ID: 25,
+
   NOTICE_TYPE_CANCEL_VISIT_ID: 26, // prospect sets timeslot to visit
   NOTICE_TYPE_VISIT_DELAY_ID: 27, // visit delayed
   NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID: 26,
   NOTICE_TYPE_ZENDESK_NOTIFY_ID: 30,
+  NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID: 31,
+  NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID: 32,
+  NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED_ID: 33,
+  NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID: 34,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
