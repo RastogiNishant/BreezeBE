@@ -167,8 +167,6 @@ class MatchService1 {
       }
     }
 
-    //console.log({ realBudget, dEstateBudget: estateBudget / 100 })
-
     if (realBudget <= estateBudget / 100) {
       landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
       log({ landlordBudgetPoints })
