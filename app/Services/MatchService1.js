@@ -1,6 +1,6 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection, isSet } = require('lodash')
+const { get, isNumber, isEmpty, intersection, isSet, max, min, uniq } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -90,10 +90,9 @@ class MatchService1 {
     const aptTypeWeight = 0.1
     const floorWeight = 0.2
     const houseTypeWeight = 0.1
-    const ageWeight = 0.35
+    const ageWeight = 0.3
     const familyStatusWeight = 0.35
     const petsWeight = 0.1
-    const smokeWeight = 0.1
     const amenitiesWeight = 0.5 / amenitiesCount
 
     const userIncome = parseFloat(prospect.income) || 0
@@ -120,6 +119,11 @@ class MatchService1 {
       estateBudget,
       prospectBudget,
     })
+
+    if (!userIncome) {
+      //added to prevent division by zero on calculation for realBudget
+      return 0
+    }
     const realBudget = estatePrice / userIncome
 
     let landlordBudgetPoints = 0
@@ -147,7 +151,6 @@ class MatchService1 {
           creditScorePoints,
           rentArrearsScore,
           familyStatusScore,
-          smokerScore,
           ageInRangeScore,
           petsScore,
           landlordScore: 0,
@@ -166,24 +169,26 @@ class MatchService1 {
         matchScore: 0,
       }
     }
-
-    if (realBudget <= estateBudget / 100) {
-      landlordBudgetPoints = 1 + getCorr(estateBudget, realBudget * 100, 0) * 0.1
-      log({ landlordBudgetPoints })
-      scoreL += landlordBudgetPoints
+    let estateBudgetRel = estateBudget / 100
+    if (estateBudgetRel >= realBudget) {
+      landlordBudgetPoints = 0.9 + (1 - (estateBudgetRel - realBudget) / estateBudgetRel) * 0.1
+    } else {
+      landlordBudgetPoints = 0.9 + (1 - (realBudget - estateBudgetRel) / realBudget) * 0.1
     }
-
+    scoreL += landlordBudgetPoints
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
-    const userRequireCredit = estate.credit_score || 0
-    log({ userCurrentCredit, userRequireCredit })
+    const userRequiredCredit = estate.credit_score || 0
+    log({ userCurrentCredit, userRequiredCredit })
 
-    if (userCurrentCredit >= userRequireCredit) {
-      creditScorePoints = 1 + getCorr(userCurrentCredit, userRequireCredit, 0) * 0.1
-      log({ creditScorePoints })
+    if (userCurrentCredit >= userRequiredCredit) {
+      creditScorePoints =
+        0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
       scoreL += creditScorePoints
+    } else {
+      creditScorePoints = (0.9 * userCurrentCredit) / userRequiredCredit
     }
-
+    log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
     // Get rent arrears score
     const rentArrearsWeight = 1
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
@@ -201,13 +206,14 @@ class MatchService1 {
       familyStatusScore += familyStatusWeight
     }
 
+    /*
     // prospect smoke ask
     log({ prospectNonSmoker: prospect.non_smoker, estateNonSmoker: estate.non_smoker })
     if (prospect.non_smoker || !estate.non_smoker) {
       log({ smokePoints: smokeWeight })
       smokerScore = smokeWeight
       scoreL += smokeWeight
-    }
+    }*/
 
     // Get is members with age
     log({
@@ -216,13 +222,23 @@ class MatchService1 {
       prospectMembersAge: prospect.members_age,
     })
     if (estate.min_age && estate.max_age && prospect.members_age) {
-      const isInRange = (prospect.members_age || []).reduce((n, v) => {
-        return n ? true : inRange(v, estate.min_age, estate.max_age)
-      }, false)
-      isInRange && log({ ageWeight })
-      if (isInRange) {
+      const isInRangeArray = (prospect.members_age || []).map((age) => {
+        return inRange(age, estate.min_age, estate.max_age)
+      })
+      if (isInRangeArray.every((val, i, arr) => val === arr[0]) && isInRangeArray[0] === true) {
+        //all ages are within the age range of the estate
         scoreL += ageWeight
         ageInRangeScore = ageWeight
+      } else {
+        //some ages are outside range...
+        if (max(prospect.members_age) > estate.max_age) {
+          ageInRangeScore =
+            ageWeight * (1 - (max(prospect.members_age) - estate.max_age) / estate.max_age)
+        } else if (min(prospect.members_age) < estate.min_age) {
+          ageInRangeScore =
+            ageWeight * (1 - (estate.min_age - min(prospect.members_age)) / estate.min_age)
+        }
+        scoreL += ageInRangeScore
       }
     }
 
@@ -250,8 +266,9 @@ class MatchService1 {
     // -----------------------
     // prospect calculation part
     // -----------------------
-    console.log({ realBudget, prospectBudget })
-    if (estatePrice / userIncome < prospectBudget) {
+    //console.log({ realBudget, prospectBudget: prospectBudget / 100 })
+    if (estatePrice / userIncome < prospectBudget / 100) {
+      //prospectBudgetPoints = 0.9 + get
       prospectBudgetPoints = 1 + getCorr(prospectBudget, realBudget * 100, 0) * 0.1
       log({ prospectBudgetPoints })
       scoreT += prospectBudgetPoints
@@ -335,7 +352,6 @@ class MatchService1 {
         creditScorePoints,
         rentArrearsScore,
         familyStatusScore,
-        smokerScore,
         ageInRangeScore,
         petsScore,
         landlordScore: scoreLPer,
