@@ -96,6 +96,8 @@ class MatchService1 {
     const petsWeight = 0.1
     const amenitiesWeight = 0.5 / amenitiesCount
 
+    const areaWeight = 0.5
+
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
     let prospectHouseholdSize = parseInt(prospect.members_count) || 1
@@ -212,7 +214,7 @@ class MatchService1 {
     }
 
     /*
-    // prospect smoke ask
+    // prospect smoke ask (NOT INCLUDED ANYMORE IN THE SCORING)
     log({ prospectNonSmoker: prospect.non_smoker, estateNonSmoker: estate.non_smoker })
     if (prospect.non_smoker || !estate.non_smoker) {
       log({ smokePoints: smokeWeight })
@@ -308,11 +310,26 @@ class MatchService1 {
       prospectSpaceMin: prospect.space_min,
       prospectSpaceMax: prospect.space_max,
     })
-    if (inRange(estate.area, prospect.space_min, prospect.space_max)) {
-      spacePoints = 1 + (1 - getCorr(prospect.space_max, estate.area, prospect.space_min)) * 0.1
-      log({ spacePoints })
+
+    const estateArea = Number(estate.area) || 0
+    if (estateArea >= prospect.space_min && estateArea <= prospect.space_max) {
+      spacePoints = areaWeight
+      scoreT += spacePoints
+    } else {
+      if (estateArea > prospect.space_max) {
+        spacePoints = areaWeight * (0.9 + (estateArea - prospect.space_max) / estateArea) * 0.1
+      } else if (estateArea < prospect.space_min) {
+        spacePoints =
+          areaWeight * (0.9 + (prospect.space_min - estateArea) / prospect.space_min) * 0.1
+      }
       scoreT += spacePoints
     }
+    log({
+      estateArea,
+      prospectMin: prospect.space_min,
+      prospectMax: prospect.space_max,
+      spacePoints,
+    })
 
     // Apt floor in range
     log({ floor: estate.floor, floorMin: prospect.floor_min, floorMax: prospect.floor_max })
