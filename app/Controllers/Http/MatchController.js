@@ -14,6 +14,7 @@ const SMSService = use('App/Services/SMSService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty } = require('lodash')
 const moment = require('moment')
+const Event = use('Event')
 
 const {
   ROLE_LANDLORD,
@@ -87,6 +88,7 @@ class MatchController {
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
+      Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
       return response.res(result)
     } catch (e) {
       Logger.error(e)
@@ -137,6 +139,7 @@ class MatchController {
         { estate_id, estate_id, role: ROLE_USER },
         false
       )
+      Event.fire('mautic:syncContact', auth.user.id, { invited_count: 1 })
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -376,6 +379,7 @@ class MatchController {
         { tenant_id: tenantId, estate_id, role: ROLE_LANDLORD },
         false
       )
+      Event.fire('mautic:syncContact', auth.user.id, { showedproperty_count: 1 })
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -467,6 +471,7 @@ class MatchController {
       { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
       false
     )
+    Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
     response.res(true)
   }
 
@@ -491,6 +496,7 @@ class MatchController {
       contact.avatar = File.getPublicUrl(contact.avatar)
     }
     logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id, role: ROLE_USER }, false)
+    Event.fire('mautic:syncContact', userId, { finalmatchapproval_count: 1 })
     response.res({ estate, contact })
   }
 

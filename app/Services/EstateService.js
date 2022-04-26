@@ -679,6 +679,7 @@ class EstateService {
     logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
     // Run match estate
     Event.fire('match::estate', estate.id)
+    Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
