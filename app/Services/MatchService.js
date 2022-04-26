@@ -418,10 +418,6 @@ class MatchService {
           user_id: userId,
           estate_id: estateId,
         })
-
-        // TODO: send landlord knock notification
-
-        NoticeService.knockToLandlord(estateId)
         return true
       }
 
@@ -679,6 +675,7 @@ class MatchService {
       user_id,
       estate_id: estateId,
     })
+    NoticeService.prospectIsNotInterested(estateId)
   }
 
   static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
@@ -783,6 +780,7 @@ class MatchService {
       estate_id: estateId,
       status: MATCH_STATUS_COMMIT,
     })
+    NoticeService.prospectIsNotInterested(estateId)
   }
 
   /**

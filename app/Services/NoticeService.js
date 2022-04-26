@@ -37,7 +37,6 @@ const {
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
   NOTICE_TYPE_PROSPECT_COME_ID,
-  NOTICE_TYPE_PROSPECT_KNOCK_ID,
   NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
 
@@ -60,7 +59,6 @@ const {
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_COME,
-  NOTICE_TYPE_PROSPECT_KNOCK,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_PROSPECT_INVITE_IN,
@@ -71,6 +69,10 @@ const {
   STATUS_ACTIVE,
   NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID,
   NOTICE_TYPE_ZENDESK_NOTIFY_ID,
+  NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID,
+  NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
+  NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED_ID,
+  NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -400,31 +402,6 @@ class NoticeService {
   }
 
   /**
-   *
-   */
-  static async knockToLandlord(estateId) {
-    const estate = await Database.table({ _e: 'estates' })
-      .select('address', 'id', 'cover', 'user_id')
-      .where('id', estateId)
-      .first()
-    if (!estate || !estate.user_id) {
-      Logger.error('knockToLandloard', `there is no estate for${estateId}`)
-      throw new HttpException('there is no estate', 400)
-    }
-    const notice = {
-      user_id: estate.user_id,
-      type: NOTICE_TYPE_PROSPECT_KNOCK_ID,
-      data: {
-        estate_id: estate.id,
-        estate_address: estate.address,
-      },
-      image: File.getPublicUrl(estate.cover),
-    }
-    await NoticeService.insertNotices([notice])
-    await NotificationsService.sendProspectNewKnock(notice)
-  }
-
-  /**
    * Notify landlord or prospect that visit has been canceled
    * parameters
    * userId : null => prospect cancel his visit
@@ -736,9 +713,6 @@ class NoticeService {
         return NotificationsService.sendProspectProfileExpiring([notice])
       case NOTICE_TYPE_PROSPECT_COME:
         return NotificationsService.sendProspectProfileExpiring([notice])
-      case NOTICE_TYPE_PROSPECT_KNOCK:
-        notice.user_id = estate.user_id
-        return NotificationsService.sendProspectNewKnock([notice])
       case NOTICE_TYPE_CANCEL_VISIT:
         notice.user_id = estate.user_id
         return NotificationsService.sendProspectCancelVisit([notice])
@@ -773,28 +747,6 @@ class NoticeService {
   /**
    *
    */
-  static async userKnock(estateId, userId) {
-    const estate = await Database.table({ _e: 'estates' })
-      .select('address', 'id', 'cover')
-      .where('id', estateId)
-      .first()
-
-    const notice = {
-      user_id: userId,
-      type: NOTICE_TYPE_PROSPECT_KNOCK_ID,
-      data: {
-        estate_id: estate.id,
-        estate_address: estate.address,
-      },
-      image: File.getPublicUrl(estate.cover),
-    }
-    await NoticeService.insertNotices([notice])
-    await NotificationsService.sendProspectNewKnock(notice)
-  }
-
-  /**
-   *
-   */
   static async changeVisitTime(estateId, userId, delay) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover')
@@ -815,6 +767,78 @@ class NoticeService {
     await NotificationsService.sendChangeVisitTime([notice])
   }
 
+  static async verifyUserByAdmin(userIds = []) {
+    const notices = userIds.map((id) => ({
+      user_id: id,
+      type: NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID,
+    }))
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendLandlordIsVerifiedByAdmin(notices)
+  }
+
+  static async detectShowDateIsEndedEstates() {
+    const start = moment().startOf('minute').subtract(5, 'minutes')
+    const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
+
+    const showedEstates = await Estate.query()
+      .whereIn('status', [STATUS_ACTIVE])
+      .whereHas('slots', (estateQuery) => {
+        estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
+        estateQuery.where('end_at', '>=', end.format(DATE_FORMAT))
+      })
+      .fetch()
+
+    const notices = showedEstates.rows.map(({ user_id, address, cover }) => ({
+      user_id,
+      type: NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
+      data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendLandlordEstateShowDateIsEnded(notices)
+  }
+
+  /**
+   *
+   */
+  static async prospectIsNotInterested(estateId) {
+    const estate = await Estate.query().where('id', estateId).first()
+    if (estate) {
+      const notice = {
+        user_id: estate.user_id,
+        type: NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED_ID,
+        data: {
+          estate_id: estateId,
+          estate_address: estate.address,
+          params: estate.getAptParams(),
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+      await NoticeService.insertNotices([notice])
+      await NotificationsService.sendProspectIsNotInterested([notice])
+    }
+  }
+
+  static async landlordMovedProspectToTop(estateId, userId) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover')
+      .where('id', estateId)
+      .first()
+
+    const notice = {
+      user_id: userId,
+      type: NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
+      data: {
+        estate_id: estate.id,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendLandlordMovedProspectToTop([notice])
+  }
+
   /**
    * 
    * @param {*} userIds 
@@ -827,20 +851,23 @@ class NoticeService {
     }
    */
   static async zendeskNotice(userIds, notification) {
-
-    const notices = userIds.map( function(id){
+    const notices = userIds.map(function (id) {
       return {
         user_id: id,
         type: NOTICE_TYPE_ZENDESK_NOTIFY_ID,
         data: {
-          ticket_id: notification.ticket_id?notification.ticket_id:''
+          ticket_id: notification.ticket_id ? notification.ticket_id : '',
         },
       }
     })
 
     await NoticeService.insertNotices(notices)
-    await NotificationsService.sendZendeskNotification(notices, notification.title, notification.body)
-  }  
+    await NotificationsService.sendZendeskNotification(
+      notices,
+      notification.title,
+      notification.body
+    )
+  }
 }
 
 module.exports = NoticeService
