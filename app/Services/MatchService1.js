@@ -281,7 +281,7 @@ class MatchService1 {
     }
 
     const scoreLPer = scoreL / maxScoreL
-    console.log({ scoreLandlordPercent: scoreLPer })
+    log({ scoreLandlordPercent: scoreLPer })
 
     // Check is need calculation next step
     if (scoreLPer < 0.5) {
@@ -292,13 +292,16 @@ class MatchService1 {
     // -----------------------
     // prospect calculation part
     // -----------------------
-    //console.log({ realBudget, prospectBudget: prospectBudget / 100 })
-    if (estatePrice / userIncome < prospectBudget / 100) {
-      //prospectBudgetPoints = 0.9 + get
-      prospectBudgetPoints = 1 + getCorr(prospectBudget, realBudget * 100, 0) * 0.1
-      log({ prospectBudgetPoints })
-      scoreT += prospectBudgetPoints
+    log({ realBudget, prospectBudget: prospectBudget / 100 })
+    const prospectBudgetRel = prospectBudget / 100
+    if (prospectBudgetRel >= realBudget) {
+      prospectBudgetPoints = 0.9 + (1 - (prospectBudgetRel - realBudget) / prospectBudgetRel) * 0.1
+    } else {
+      prospectBudgetPoints = 0.9 + (1 - (realBudget - prospectBudgetRel) / realBudget) * 0.1
     }
+    log({ prospectBudgetPoints })
+    //FIXME: at cases where prospect's income equals prospectBudget, this will have a value of 0.93
+    scoreT = prospectBudgetPoints
 
     log({
       estateArea: estate.area,
