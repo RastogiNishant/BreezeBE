@@ -815,9 +815,11 @@ const Tenant = use('App/Models/Tenant')
 const Estate = use('App/Models/Estate')
 const { get, isNumber } = require('lodash')
 const Matchservice = use('App/Services/Matchservice1')
-const Database = use('Database')
 
 Route.get('/debug/test-match', async ({ request, response }) => {
+  if (!process.env.DEV) {
+    response.res(false)
+  }
   let prospect = {
     income: 0,
     budget_max: 30,
@@ -870,58 +872,4 @@ Route.get('/debug/test-match', async ({ request, response }) => {
     })
   }
   return response.res({ scores })
-})
-
-const { STATUS_ACTIVE } = require('../app/constants')
-Route.get('/prospects', async ({ request, response }) => {
-  const { estate_id } = request.all()
-  const tenants = await Database.from({ _e: 'estates' })
-    .select('_t.*')
-    .crossJoin({ _t: 'tenants' })
-    .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
-    .where('_e.id', estate_id)
-    .where('_t.status', STATUS_ACTIVE)
-    .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-    .limit(100)
-
-  const estate = await Estate.query().where({ id: estate_id }).first()
-  let ret = []
-  await Promise.all(
-    tenants.map(async (tenant) => {
-      const matchScore = await Matchservice.calculateMatchPercent(tenant, estate)
-      return ret.push({
-        user: tenant.user_id,
-        estate: estate_id,
-        score: matchScore,
-      })
-    })
-  )
-  return response.res(ret.length)
-})
-
-const getCorr = (a, b, min = 0) => {
-  if (Math.max(a, b) - min === 0) {
-    return 1
-  }
-  return Math.min((Math.max(a, b) - Math.min(a, b)) / (Math.max(a, b) - min), 1)
-}
-
-const inRange = (value, start, end) => {
-  if (!isNumber(+value) || !isNumber(+start) || !isNumber(+end)) {
-    return false
-  }
-
-  return +start <= +value && +value <= +end
-}
-
-Route.get('/corr', async ({ request, response }) => {
-  const { a, b } = request.all()
-  const corr = getCorr(a, b)
-  return response.res({ a, b, corr })
-})
-
-Route.get('/in-range', ({ request, response }) => {
-  const { start, end, value } = request.all()
-
-  return response.res(inRange(value, start, end))
 })
