@@ -467,12 +467,7 @@ class UserService {
       let extraFields = Tenant.columns
       if (!tenant.personal_shown) {
         extraFields = Object.values(
-          omit(extraFields, [
-            'unpaid_rental',
-            'insolvency_proceed',
-            'arrest_warranty',
-            'clean_procedure',
-          ])
+          omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
         )
       }
 

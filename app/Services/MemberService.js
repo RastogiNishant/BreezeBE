@@ -122,7 +122,6 @@ class MemberService {
         members_count: 0,
         unpaid_rental: null,
         insolvency_proceed: null,
-        arrest_warranty: null,
         clean_procedure: null,
         income_seizure: null,
         members_age: null,
