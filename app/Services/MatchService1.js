@@ -109,9 +109,9 @@ class MatchService1 {
 
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
-    let prospectHouseholdSize = parseInt(prospect.members_count) || 1
+    let prospectHouseholdSize = parseInt(prospect.members_count) || 1 //adult count
     let estateFamilySizeMax = parseInt(estate.family_size_max) || 1
-    let estateFamilySizeMin = 1 //not yet tracked on db
+    let estateFamilySizeMin = parseInt(estate.family_size_min) || 1
     let scoreL = 0
     let scoreT = 0
 
@@ -183,13 +183,16 @@ class MatchService1 {
         },
         matchScore: 0,
       }
+      return 0
     }
     let estateBudgetRel = estateBudget / 100
-    console.log({ estateBudgetRel, realBudget })
+    log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
       landlordBudgetPoints = 0.9 + (1 - (estateBudgetRel - realBudget) / estateBudgetRel) * 0.1
     } else {
-      landlordBudgetPoints = 0.9 + (1 - (realBudget - estateBudgetRel) / realBudget) * 0.1
+      //linear equation with values from 0 to 1
+      landlordBudgetPoints =
+        (userIncome - estatePrice) / (estatePrice / estateBudgetRel - estatePrice)
     }
     scoreL += landlordBudgetPoints
     // Get credit score income
@@ -222,16 +225,7 @@ class MatchService1 {
       familyStatusScore += familyStatusWeight
     }
 
-    /*
-    // prospect smoke ask (NOT INCLUDED ANYMORE IN THE SCORING)
-    log({ prospectNonSmoker: prospect.non_smoker, estateNonSmoker: estate.non_smoker })
-    if (prospect.non_smoker || !estate.non_smoker) {
-      log({ smokePoints: smokeWeight })
-      smokerScore = smokeWeight
-      scoreL += smokeWeight
-    }*/
-
-    // Get is members with age
+    // prospect's age
     log({
       estateMinAge: estate.min_age,
       estateMaxAge: estate.max_age,
@@ -303,15 +297,14 @@ class MatchService1 {
     // -----------------------
     // prospect calculation part
     // -----------------------
-    log({ realBudget, prospectBudget: prospectBudget / 100 })
     const prospectBudgetRel = prospectBudget / 100
     if (prospectBudgetRel >= realBudget) {
       prospectBudgetPoints = 0.9 + (1 - (prospectBudgetRel - realBudget) / prospectBudgetRel) * 0.1
     } else {
-      prospectBudgetPoints = 0.9 + (1 - (realBudget - prospectBudgetRel) / realBudget) * 0.1
+      prospectBudgetPoints =
+        (userIncome - estatePrice) / (estatePrice / prospectBudgetRel - estatePrice)
     }
-    log({ prospectBudgetPoints })
-    //FIXME: at cases where prospect's income equals prospectBudget, this will have a value greater than 0.9
+    log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
 
     log({
@@ -352,6 +345,7 @@ class MatchService1 {
         floorScore =
           floorWeight * (0.9 + (prospect.floor_min - estateFloors) / prospect.floor_min) * 0.1
       }
+      scoreT += floorScore
     }
     log({
       floor: estate.number_floors,
@@ -362,12 +356,10 @@ class MatchService1 {
 
     // Rooms
     if (estate.rooms_number >= prospect.rooms_min && estate.rooms_number <= prospect.rooms_max) {
-      console.log('in range')
       roomsPoints = roomsWeight
       scoreT += roomsPoints
     } else {
       if (estate.rooms_number > prospect.rooms_max) {
-        console.log('out of range')
         roomsPoints =
           roomsWeight *
           (0.9 + (estate.rooms_number - prospect.rooms_max) / estate.rooms_number) *

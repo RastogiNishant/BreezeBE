@@ -841,9 +841,9 @@ Route.get('/debug/test-match', async ({ request, response }) => {
   }
 
   const estate = {
-    budget: 20,
+    budget: 25,
     credit_score: 90,
-    net_rent: 50,
+    net_rent: 300,
     area: 50,
     min_age: 10,
     max_age: 65,
@@ -859,16 +859,16 @@ Route.get('/debug/test-match', async ({ request, response }) => {
   }
 
   let scores = []
-  //for (let k = 250; k <= 20000; k += 10) {
-  //for (let k = 10; k <= 100; k += 5) {
-  //prospect.credit_score = k
-  prospect.income = 300
-  //prospect.income = k
-  scores.push({
-    income: prospect.income,
-    scores: Matchservice.calculateMatchPercent(prospect, estate),
-  })
-  //}
+  for (let k = 250; k <= 5000; k += 10) {
+    //for (let k = 10; k <= 100; k += 5) {
+    //prospect.credit_score = k
+    //prospect.income = 300
+    prospect.income = k
+    scores.push({
+      income: prospect.income,
+      scores: Matchservice.calculateMatchPercent(prospect, estate),
+    })
+  }
   return response.res({ scores })
 })
 
