@@ -399,7 +399,9 @@ class MemberService {
       const existingTenantMembers = existingTenantMembersQuery.rows
       if (existingTenantMembers.length > 0) {
         // Current owner member is won't be owner anymore because invited by another owner
-        const ownerMember = existingTenantMembers.find(({ owner_user_id }) => !owner_user_id)
+        const ownerMember = existingTenantMembers.find(
+          ({ owner_user_id, email }) => !owner_user_id && !email
+        )
         if (ownerMember) {
           invitedMemberId = ownerMember.id
           ownerMember.owner_user_id = user.id
@@ -429,7 +431,6 @@ class MemberService {
           member.id,
           invitorUserId
         )
-        console.log({ existingPermission, invitedMemberId, invitorUserId })
         if (existingPermission) {
           await MemberPermissionService.deletePermission(member.id, trx)
           Event.fire('memberPermission:create', invitedMemberId, invitorUserId)
