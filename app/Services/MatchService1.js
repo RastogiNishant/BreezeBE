@@ -91,16 +91,20 @@ class MatchService1 {
     const floorWeight = 0.2
     const houseTypeWeight = 0.1
     const ageWeight = 0.3
-    const familyStatusWeight = 0.35
+    const familyStatusWeight = 0.3
+    const householdSizeWeight = 0.3
     const petsWeight = 0.1
     const amenitiesWeight = 0.5 / amenitiesCount
 
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
+    let prospectHouseholdSize = parseInt(prospect.members_count) || 1
+    let estateFamilySizeMax = parseInt(estate.family_size_max) || 1
+    let estateFamilySizeMin = 1 //not yet tracked on db
     let scoreL = 0
     let scoreT = 0
     const maxScoreT = 5.3
-    const maxScoreL = 4.1
+    const maxScoreL = 4
     const estateBudget = estate.budget || 0
     const prospectBudget = prospect.budget_max || 0
 
@@ -130,8 +134,8 @@ class MatchService1 {
     let creditScorePoints = 0
     let rentArrearsScore = 0
     let familyStatusScore = 0
-    let smokerScore = 0
     let ageInRangeScore = 0
+    let householdSizeScore = 0
     let petsScore = 0
     let roomsPoints = 0
     let floorScore = 0
@@ -152,6 +156,7 @@ class MatchService1 {
           rentArrearsScore,
           familyStatusScore,
           ageInRangeScore,
+          householdSizeScore,
           petsScore,
           landlordScore: 0,
         },
@@ -242,6 +247,27 @@ class MatchService1 {
       }
     }
 
+    //Household size
+    log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax })
+    if (
+      prospectHouseholdSize >= estateFamilySizeMin &&
+      prospectHouseholdSize <= estateFamilySizeMax
+    ) {
+      // Prospect Household Size is within the range of the estate's family size
+      householdSizeScore = householdSizeWeight
+      scoreL += householdSizeWeight
+    } else {
+      if (prospectHouseholdSize > estateFamilySizeMax) {
+        householdSizeScore =
+          householdSizeWeight *
+          (1 - (prospectHouseholdSize - estateFamilySizeMax) / estateFamilySizeMax)
+      } else if (prospectHouseholdSize < estateFamilySizeMin) {
+        householdSizeScore =
+          householdSizeWeight *
+          (1 - (estateFamilySizeMin - prospectHouseholdSize) / estateFamilySizeMin)
+      }
+      scoreL += householdSizeScore
+    }
     // Pets
     log({ prospectPets: prospect.pets, estatePets: estate.pets })
     if (prospect.pets === PETS_NO || estate.pets === PETS_ANY) {
@@ -255,7 +281,7 @@ class MatchService1 {
     }
 
     const scoreLPer = scoreL / maxScoreL
-    log({ scoreLandlordPercent: scoreLPer })
+    console.log({ scoreLandlordPercent: scoreLPer })
 
     // Check is need calculation next step
     if (scoreLPer < 0.5) {
@@ -348,11 +374,11 @@ class MatchService1 {
     return {
       scoreLandlord: {
         landlordBudgetPoints,
-        userCurrentCredit,
         creditScorePoints,
         rentArrearsScore,
         familyStatusScore,
         ageInRangeScore,
+        householdSizeScore,
         petsScore,
         landlordScore: scoreLPer,
       },
