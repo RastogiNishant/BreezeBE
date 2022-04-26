@@ -137,6 +137,7 @@ class Estate extends Model {
       'letting_status',
       'letting_type',
       'family_size_max',
+      'family_size_min',
       'pets_allowed',
       'apartment_status',
       'extra_costs',
