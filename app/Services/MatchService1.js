@@ -199,10 +199,10 @@ class MatchService1 {
     if (userCurrentCredit >= userRequiredCredit) {
       creditScorePoints =
         0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
-      scoreL += creditScorePoints
     } else {
-      creditScorePoints = (0.9 * userCurrentCredit) / userRequiredCredit
+      creditScorePoints = (1 - (userRequiredCredit - userCurrentCredit) / userRequiredCredit) * 0.9
     }
+    scoreL += creditScorePoints
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
     // Get rent arrears score
     const rentArrearsWeight = 1
