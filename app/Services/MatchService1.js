@@ -86,17 +86,18 @@ class MatchService1 {
    */
   static calculateMatchPercent(prospect, estate) {
     // Props weight
-    const amenitiesCount = 7
     const aptTypeWeight = 0.1
-    const floorWeight = 0.2
     const houseTypeWeight = 0.1
     const ageWeight = 0.3
     const familyStatusWeight = 0.3
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
-    const amenitiesWeight = 0.5 / amenitiesCount
 
+    const amenitiesCount = 7
+    const amenitiesWeight = 0.5 / amenitiesCount
     const areaWeight = 0.5
+    const floorWeight = 0.3
+    const roomsWeight = 0.5
 
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
@@ -302,7 +303,7 @@ class MatchService1 {
       prospectBudgetPoints = 0.9 + (1 - (realBudget - prospectBudgetRel) / realBudget) * 0.1
     }
     log({ prospectBudgetPoints })
-    //FIXME: at cases where prospect's income equals prospectBudget, this will have a value of 0.93
+    //FIXME: at cases where prospect's income equals prospectBudget, this will have a value greater than 0.9
     scoreT = prospectBudgetPoints
 
     log({
@@ -332,24 +333,52 @@ class MatchService1 {
     })
 
     // Apt floor in range
-    log({ floor: estate.floor, floorMin: prospect.floor_min, floorMax: prospect.floor_max })
-    if (inRange(estate.floor, prospect.floor_min, prospect.floor_max)) {
-      log({ floorWeight })
+    const estateFloors = parseInt(estate.number_floors) || 0
+    if (estateFloors >= prospect.floor_min && estateFloors <= prospect.floor_max) {
       scoreT += floorWeight
       floorScore = floorWeight
+    } else {
+      if (estateFloors > prospect.floor_max) {
+        floorScore = floorWeight * (0.9 + (estateFloors - prospect.floor_max) / estateFloors) * 0.1
+      } else if (estateFloors < prospect.floor_min) {
+        floorScore =
+          floorWeight * (0.9 + (prospect.floor_min - estateFloors) / prospect.floor_min) * 0.1
+      }
     }
+    log({
+      floor: estate.number_floors,
+      floorMin: prospect.floor_min,
+      floorMax: prospect.floor_max,
+      floorScore,
+    })
 
+    // Rooms
+    if (estate.rooms_number >= prospect.rooms_min && estate.rooms_number <= prospect.rooms_max) {
+      console.log('in range')
+      roomsPoints = roomsWeight
+      scoreT += roomsPoints
+    } else {
+      if (estate.rooms_number > prospect.rooms_max) {
+        console.log('out of range')
+        roomsPoints =
+          roomsWeight *
+          (0.9 + (estate.rooms_number - prospect.rooms_max) / estate.rooms_number) *
+          0.1
+      } else if (estate.rooms_number < prospect.rooms_min) {
+        roomsPoints =
+          roomsWeight *
+          (0.9 + (prospect.rooms_min - estate.rooms_number) / prospect.rooms_min) *
+          0.1
+      }
+      scoreT += roomsPoints
+    }
     log({
       roomsNumber: estate.rooms_number,
       roomsMin: prospect.rooms_min,
       roomsMax: prospect.rooms_max,
+      roomsPoints,
     })
-    if (inRange(estate.rooms_number, prospect.rooms_min, prospect.rooms_max)) {
-      roomsPoints =
-        1 + (1 - getCorr(prospect.rooms_max, estate.rooms_number, prospect.rooms_min) || 1) * 0.1
-      log({ roomsPoints })
-      scoreT += roomsPoints
-    }
+
     // Apartment type is equal
     log({ prospectAptType: prospect.apt_type, estateAptType: estate.apt_type })
     if ((prospect.apt_type || []).includes(estate.apt_type)) {
