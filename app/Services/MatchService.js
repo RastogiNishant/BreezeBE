@@ -52,7 +52,6 @@ const {
 } = require('../constants')
 const { logger } = require('../../config/app')
 
-
 const MATCH_PERCENT_PASS = 40
 const MAX_DIST = 10000
 const MAX_SEARCH_ITEMS = 1000
@@ -115,7 +114,7 @@ class MatchService {
       prospectBudget,
     })
     const realBudget = estatePrice / userIncome
-    if(realBudget > 1) {
+    if (realBudget > 1) {
       return 0
     }
     log({ realBudget })
@@ -419,10 +418,6 @@ class MatchService {
           user_id: userId,
           estate_id: estateId,
         })
-
-        // TODO: send landlord knock notification
-
-        NoticeService.knockToLandlord(estateId)
         return true
       }
 
@@ -680,6 +675,7 @@ class MatchService {
       user_id,
       estate_id: estateId,
     })
+    NoticeService.prospectIsNotInterested(estateId)
   }
 
   static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
@@ -784,6 +780,7 @@ class MatchService {
       estate_id: estateId,
       status: MATCH_STATUS_COMMIT,
     })
+    NoticeService.prospectIsNotInterested(estateId)
   }
 
   /**
@@ -1333,6 +1330,7 @@ class MatchService {
       '_mb.birthday',
       '_mb.avatar',
       '_mb.last_address',
+      '_mb.phone_verified',
       '_v.date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
@@ -1611,7 +1609,7 @@ class MatchService {
     await NoticeService.inviteUserToCome(estateId, userId)
   }
 
-  static async findCurrentTenant( estateId, userId ) {
+  static async findCurrentTenant(estateId, userId) {
     const finalMatch = await Match.query()
       .select(['estate_id', 'user_id', 'email', 'phone'])
       .innerJoin({ _u: 'users' }, function () {
@@ -1619,21 +1617,21 @@ class MatchService {
       })
       .where('estate_id', estateId)
       .where('matches.user_id', userId)
-      .where('matches.status', MATCH_STATUS_FINISH )
+      .where('matches.status', MATCH_STATUS_FINISH)
       // .with('user')
       .firstOrFail()
 
     return finalMatch
   }
 
-  static async invitedTenant( estateId, userId, inviteTo ) {
+  static async invitedTenant(estateId, userId, inviteTo) {
     return await Match.query()
       .where('estate_id', estateId)
-      .where('user_id', userId )
-      .update({inviteToEdit: inviteTo})
+      .where('user_id', userId)
+      .update({ inviteToEdit: inviteTo })
   }
 
-  static async hasPermissionToEditProperty( estateId, userId ) {
+  static async hasPermissionToEditProperty(estateId, userId) {
     return await Match.query()
       .where('estate_id', estateId)
       .where('user_id', userId)
@@ -1642,27 +1640,25 @@ class MatchService {
       .firstOrFail()
   }
 
-  static async isExist( user_id, estate_id, tenant_id ) {
-    try{
+  static async isExist(user_id, estate_id, tenant_id) {
+    try {
       return await Match.query()
         .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'matches.estate_id')
-            .on('_e.user_id', user_id)
-            .on('_e.id', estate_id)
+          this.on('_e.id', 'matches.estate_id').on('_e.user_id', user_id).on('_e.id', estate_id)
         })
         .where('estate_id', estate_id)
         .where('matches.user_id', tenant_id)
         .firstOrFail()
-    }catch(e){
-      return null;
+    } catch (e) {
+      return null
     }
   }
 
   static async addTenantProperty(data) {
     return await Match.query()
       .where('estate_id', data.estate_id)
-      .where('user_id', data.user_id )
-      .update({properties: data.properties, prices: data.prices})
+      .where('user_id', data.user_id)
+      .update({ properties: data.properties, prices: data.prices })
   }
 }
 

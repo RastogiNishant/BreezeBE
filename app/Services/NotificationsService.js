@@ -27,7 +27,6 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT30M,
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_COME,
-  NOTICE_TYPE_PROSPECT_KNOCK,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_ZENDESK_NOTIFY,
@@ -57,11 +56,11 @@ const {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
   NOTICE_TYPE_PROSPECT_COME_ID,
-  NOTICE_TYPE_PROSPECT_KNOCK_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
   NOTICE_TYPE_CANCEL_VISIT_ID,
-  NOTICE_TYPE_ZENDESK_NOTIFY_ID
+  NOTICE_TYPE_ZENDESK_NOTIFY_ID,
 } = require('../constants')
+const { lang } = require('moment')
 
 const mapping = [
   [NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID, NOTICE_TYPE_LANDLORD_FILL_PROFILE],
@@ -83,10 +82,9 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_REJECT_ID, NOTICE_TYPE_PROSPECT_REJECT],
   [NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID, NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE],
   [NOTICE_TYPE_PROSPECT_COME_ID, NOTICE_TYPE_PROSPECT_COME],
-  [NOTICE_TYPE_PROSPECT_KNOCK_ID, NOTICE_TYPE_PROSPECT_KNOCK],
   [NOTICE_TYPE_CANCEL_VISIT_ID, NOTICE_TYPE_CANCEL_VISIT],
   [NOTICE_TYPE_VISIT_DELAY_ID, NOTICE_TYPE_VISIT_DELAY],
-  [NOTICE_TYPE_ZENDESK_NOTIFY_ID, NOTICE_TYPE_ZENDESK_NOTIFY],  
+  [NOTICE_TYPE_ZENDESK_NOTIFY_ID, NOTICE_TYPE_ZENDESK_NOTIFY],
 ]
 
 class NotificationsService {
@@ -164,9 +162,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        l.get('landlord.notification.tip.no_prop_profile', lang) +
+        l.get('landlord.notification.tip.no_prop_profile.message', lang) +
         ' \n' +
-        l.get('landlord.notification.next.no_prop_profile', lang)
+        l.get('landlord.notification.next.no_prop_profile.message', lang)
       )
     })
   }
@@ -179,9 +177,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        l.get('landlord.notification.tip.no_ll_profile', lang) +
+        l.get('landlord.notification.tip.no_ll_profile.message', lang) +
         ' \n' +
-        l.get('landlord.notification.next.no_ll_profile', lang)
+        l.get('landlord.notification.next.no_ll_profile.message', lang)
       )
     })
   }
@@ -194,9 +192,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        l.get('landlord.notification.tip.no_prop_profile', lang) +
+        l.get('landlord.notification.tip.no_prop_profile.message', lang) +
         ' \n' +
-        l.get('landlord.notification.next.no_prop_profile', lang)
+        l.get('landlord.notification.next.no_prop_profile.message', lang)
       )
     })
   }
@@ -209,7 +207,7 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
-      return address + ' \n' + l.get('landlord.notification.next.limit_expired', lang)
+      return address + ' \n' + l.get('landlord.notification.next.limit_expired.message', lang)
     })
   }
 
@@ -217,18 +215,19 @@ class NotificationsService {
    *
    */
   static async sendLandlordSlotsSelected(notices) {
-    const title = 'landlord.notification.event.slots_selected'
-    const subBody = 'landlord.notification.next.slots_selected'
+    let title = 'landlord.notification.event.slots_selected'
+    let subBody = 'landlord.notification.next.slots_selected'
 
     return NotificationsService.sendNotes(
       notices,
       (data, lang) => {
         const total = get(data, 'total', '10')
+        title = `${title}.message`
         return `${total}/${total} ${l.get(title, lang)}`
       },
       (data, lang) => {
         const address = capitalize(get(data, 'estate_address', ''))
-        return address + ' \n' + l.get(subBody, lang)
+        return address + ' \n' + l.get(`${subBody}.message`, lang)
       }
     )
   }
@@ -248,7 +247,7 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notes, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
-      return address + ' \n' + l.get('landlord.notification.next.final_match', lang)
+      return address + ' \n' + l.get('landlord.notification.next.final_match.message', lang)
     })
   }
 
@@ -260,7 +259,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
-      return address + ' \n' + l.get('landlord.notification.next.final_match_rejected', lang)
+      return (
+        address + ' \n' + l.get('landlord.notification.next.final_match_rejected.message', lang)
+      )
     })
   }
 
@@ -275,7 +276,6 @@ class NotificationsService {
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
-
     notes = notes.reduce((n, i) => {
       const token = langTokens.find(({ id, lang, device_token }) => +id === +i.user_id)
       if (!token) {
@@ -304,8 +304,8 @@ class NotificationsService {
           tokens,
           NotificationsService.getTypeById(typeId),
           {
-            title: isFunction(title) ? title(data, lang) : l.get(title, lang),
-            body: isFunction(body) ? body(data, lang) : l.get(body, lang),
+            title: isFunction(title) ? title(data, lang) : l.get(`${title}.message`, lang),
+            body: isFunction(body) ? body(data, lang) : l.get(`${body}.message`, lang),
             data,
           },
           image
@@ -324,9 +324,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        l.get('prospect.notification.tip.no_activity', lang) +
+        l.get('prospect.notification.tip.no_activity.message', lang) +
         ' \n' +
-        l.get('prospect.notification.next.no_activity', lang)
+        l.get('prospect.notification.next.no_activity.message', lang)
       )
     })
   }
@@ -339,12 +339,12 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(
       notices,
-      (data, lang) => `${data.match_count} ${l.get(title, lang)}`,
+      (data, lang) => `${data.match_count} ${l.get(`${title}.message`, lang)}`,
       (data, lang) => {
         return (
-          l.get('prospect.notification.tip.new_match', lang) +
+          l.get('prospect.notification.tip.new_match.message', lang) +
           ' \n' +
-          l.get('prospect.notification.next.new_match', lang)
+          l.get('prospect.notification.next.new_match.message', lang)
         )
       }
     )
@@ -360,7 +360,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.knock_limit_expiring', lang)
+        l.get('prospect.notification.next.knock_limit_expiring.message', lang)
       )
     })
   }
@@ -375,21 +375,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.new_invite', lang)
-      )
-    })
-  }
-
-  /**
-   *
-   */
-  static async sendProspectNewKnock(notice) {
-    const title = 'prospect.notification.event.new_knock'
-    return NotificationsService.sendNotes(notice, title, (data, lang) => {
-      return (
-        capitalize(data.estate_address) +
-        ' \n' +
-        l.get('prospect.notification.next.new_knock', lang)
+        l.get('prospect.notification.next.new_invite.message', lang)
       )
     })
   }
@@ -403,12 +389,12 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        rc(l.get('notification.next.visit_delay', lang), [{ '^min': data.delay }])
+        rc(l.get('notification.next.visit_delay.message', lang), [{ '^min': data.delay }])
       )
     })
   }
 
-    /**
+  /**
    *  Notify " Are you sure you want to invite this prospect in? " landlord or prospect according to user_id
    */
   static async sendInviteIn(notice) {
@@ -417,7 +403,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('notification.event.invite_in', lang)
+        l.get('notification.event.invite_in.message', lang)
       )
     })
   }
@@ -431,7 +417,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.cancel_visit', lang)
+        l.get('prospect.notification.next.cancel_visit.message', lang)
       )
     })
   }
@@ -443,7 +429,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.cancel_visit', lang)
+        l.get('prospect.notification.next.cancel_visit.message', lang)
       )
     })
   }
@@ -469,7 +455,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.confirm_visit_in', lang)
+        l.get('prospect.notification.next.confirm_visit_in.message', lang)
       )
     })
   }
@@ -482,7 +468,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        capitalize(data.estate_address) + ' \n' + l.get('prospect.notification.next.visit_in', lang)
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.visit_in.message', lang)
       )
     })
   }
@@ -497,7 +485,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('landlord.notification.next.visit_starting_in', lang)
+        l.get('landlord.notification.next.visit_starting_in.message', lang)
       )
     })
   }
@@ -510,7 +498,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes([notice], title, (data, lang) => {
       return (
-        capitalize(data.estate_address) + ' \n' + l.get('prospect.notification.next.commit', lang)
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.commit.message', lang)
       )
     })
   }
@@ -525,7 +515,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.prospect_rejected', lang)
+        l.get('prospect.notification.next.prospect_rejected.message', lang)
       )
     })
   }
@@ -538,9 +528,9 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        l.get('prospect.notification.tip.profile_expiring', lang) +
+        l.get('prospect.notification.tip.profile_expiring.message', lang) +
         ' \n' +
-        l.get('prospect.notification.next.profile_expiring', lang)
+        l.get('prospect.notification.next.profile_expiring.message', lang)
       )
     })
   }
@@ -555,7 +545,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.tip.visit_status', lang)
+        l.get('prospect.notification.tip.visit_status.message', lang)
       )
     })
   }
@@ -570,7 +560,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('landlord.notification.next.visit_status', lang)
+        l.get('landlord.notification.next.visit_status.message', lang)
       )
     })
   }
@@ -583,15 +573,62 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
-        capitalize(data.estate_address) + ' \n' + l.get('prospect.notification.next.come', lang)
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.come.message', lang)
       )
     })
   }
 
-  static async sendZendeskNotification(notices, title, body ) {
-    return NotificationsService.sendNotes(notices, title, body)
-  }  
+  static async sendLandlordIsVerifiedByAdmin(notices) {
+    const title = 'landlord.notification.event.profile_activated'
 
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        l.get('landlord.notification.address.profile_activated', lang) +
+        ' \n' +
+        l.get('landlord.notification.tip.profile_activated', lang)
+      )
+    })
+  }
+
+  static async sendLandlordEstateShowDateIsEnded(notices) {
+    const title = 'landlord.notification.event.show_over'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) + ' \n' + l.get('landlord.notification.tip.show_over', lang)
+      )
+    })
+  }
+
+  static async sendProspectIsNotInterested(notices) {
+    const title = 'landlord.notification.event.prospect_no_interest'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('landlord.notification.tip.prospect_no_interest', lang)
+      )
+    })
+  }
+
+  static async sendLandlordMovedProspectToTop(notices) {
+    const title = 'prospect.notification.event.moved_to_top'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.tip.moved_to_top', lang)
+      )
+    })
+  }
+
+  static async sendZendeskNotification(notices, title, body) {
+    return NotificationsService.sendNotes(notices, title, body)
+  }
 }
 
 module.exports = NotificationsService

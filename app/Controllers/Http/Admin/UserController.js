@@ -4,6 +4,7 @@ const User = use('App/Models/User')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
+const NoticeService = use('App/Services/NoticeService')
 
 const { isEmpty, find, get } = require('lodash')
 const { ROLE_ADMIN } = require('../../../constants')
@@ -61,6 +62,7 @@ class UserController {
     const { ...data } = request.all()
     const userId = auth.user.id
     await UserService.verifyUsers(userId, data.ids, data.is_verify)
+    NoticeService.verifyUserByAdmin(data.ids)
     response.res(data)
   }
 }

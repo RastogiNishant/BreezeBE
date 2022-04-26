@@ -25,7 +25,6 @@ class Member extends Model {
       'debt_proof',
       'unpaid_rental',
       'insolvency_proceed',
-      'arrest_warranty',
       'clean_procedure',
       'income_seizure',
       'external_duties',
@@ -36,7 +35,7 @@ class Member extends Model {
       'is_verified',
       'owner_id',
       'owner_user_id',
-      'phone_verified'
+      'phone_verified',
     ]
   }
 
@@ -82,6 +81,7 @@ class Member extends Model {
       'is_verified',
       'owner_id',
       'owner_user_id',
+      'phone_verified',
     ]
   }
 }
