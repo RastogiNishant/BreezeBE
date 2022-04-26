@@ -185,6 +185,7 @@ class MatchService1 {
       }
     }
     let estateBudgetRel = estateBudget / 100
+    console.log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
       landlordBudgetPoints = 0.9 + (1 - (estateBudgetRel - realBudget) / estateBudgetRel) * 0.1
     } else {
@@ -413,7 +414,7 @@ class MatchService1 {
     const now = parseInt(moment().startOf('day').format('X'))
     const nextYear = parseInt(moment().add(1, 'y').format('X'))
 
-    console.log({ rentStart, vacantFrom, now, nextYear })
+    log({ rentStart, vacantFrom, now, nextYear })
     //vacantFrom (i) rentStart (min)
     // we check outlyers first now and nextYear
     if (vacantFrom < now || vacantFrom > nextYear) {
