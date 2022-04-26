@@ -11,7 +11,7 @@ const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
-const { omit, pick } = require('lodash')
+const { omit } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
@@ -19,6 +19,7 @@ const {
   VISIBLE_TO_SPECIFIC,
   ROLE_USER,
   ERROR_WRONG_HOUSEHOLD_INVITATION_DATA,
+  VISIBLE_TO_NOBODY,
 } = require('../../constants')
 /**
  *
@@ -40,22 +41,6 @@ class MemberController {
     let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
     userIds.push(auth.user.id)
 
-    // NOTE: We need all data to show adults fields completed or not.
-
-    // if (members) {
-    //   members[0].owner_user_id = userId // first member will be household in default
-    //   members = members.map((m) => {
-    //     if (auth.user.owner_id) {
-    //       return userIds.includes(m.owner_user_id) ? m : pick(m, Member.limitFieldsList)
-    //     } else {
-    //       //if housekeeper updates his/her profile
-    //       if (m.owner_user_id) {
-    //         return userIds.includes(m.owner_user_id) ? m : pick(m, Member.limitFieldsList)
-    //       }
-    //       return m
-    //     }
-    //   })
-    // }
     response.res({ members, permittedUserIds: userIds })
   }
 
@@ -172,14 +157,7 @@ class MemberController {
   async updateMember({ request, auth, response }) {
     const { id, ...data } = request.all()
 
-    const member = await MemberService.getMember(id, auth.user.id, auth.user.owner_id)
-    if (!member) {
-      throw new HttpException('Member not exists or permission denied', 400)
-    }
-
-    // if (auth.user.owner_id) {
-    //   user_id = member.owner_user_id
-    // }
+    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
 
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
@@ -286,14 +264,7 @@ class MemberController {
     const { id, field } = request.all()
 
     const user_id = auth.user.owner_id || auth.user.id
-    const member = await MemberService.getMemberQuery()
-      .where('id', id)
-      .where('user_id', user_id)
-      .first()
-
-    if (!member) {
-      throw new HttpException('Invalid member', 400)
-    }
+    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
 
     if (!member[field]) {
       return response.res(false)
@@ -314,11 +285,8 @@ class MemberController {
   async addMemberIncome({ request, auth, response }) {
     const { id, ...data } = request.all()
 
-    const member = await MemberService.getMember(id, auth.user.id, auth.user.owner_id)
+    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
 
-    if (!member) {
-      throw new HttpException('Member not exists or permission denied', 400)
-    }
     const files = await File.saveRequestFiles(request, [
       { field: 'company_logo', mime: imageMimes, isPublic: true },
     ])
@@ -337,10 +305,7 @@ class MemberController {
   async editIncome({ request, auth, response }) {
     const { income_id, id, ...rest } = request.all()
 
-    const member = await MemberService.getMember(id, auth.user.id, auth.user.owner_id)
-    if (!member) {
-      throw new HttpException('Member not exists or permission denied', 400)
-    }
+    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
 
     const income = await Income.query()
       .where('id', income_id)
@@ -406,23 +371,17 @@ class MemberController {
   async removeMemberIncomeProof({ request, auth, response }) {
     const { id } = request.all()
 
-    // get proof
     let proofQuery = IncomeProof.query()
       .select('income_proofs.*')
       .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+      .select('_i.member_id')
       .where('income_proofs.id', id)
-      .where('user_id', auth.user.owner_id || auth.user.id)
-
-    // if (auth.user.role === ROLE_USER) {
-    //   proofQuery = proofQuery.whereNull('owner_user_id').where('user_id', auth.user.id)
-    // } else {
-    //   proofQuery = proofQuery.where('owner_user_id', auth.user.id)
-    // }
 
     const proof = await proofQuery.first()
-
-    if (!proof) {
+    if (proof) {
+      await MemberService.allowEditMemberByPermission(auth.user, proof.member_id)
+    } else {
       throw new HttpException('Invalid income proof', 400)
     }
     await IncomeProof.query().where('id', proof.id).delete()
@@ -449,6 +408,15 @@ class MemberController {
     const { visibility_to_other } = request.all()
     try {
       response.res(await MemberService.mergeTenantAccounts(auth.user, visibility_to_other))
+    } catch (e) {
+      console.log({ e })
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async refuseInvitation({ response, auth }) {
+    try {
+      response.res(await MemberService.refuseHouseholdInvitation(auth.user))
     } catch (e) {
       console.log({ e })
       throw new HttpException(e.message, 400)

@@ -419,6 +419,7 @@ Route.group(() => {
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
   Route.get('/invitation', 'MemberController.prepareHouseholdInvitationDetails')
+  Route.put('/invitation/refuse', 'MemberController.refuseInvitation')
   Route.put('/invitation/accept', 'MemberController.acceptInvitation').middleware([
     'valid:ProfileVisibilityToOther',
   ])

@@ -64,7 +64,6 @@ class MemberService {
     //owner_user_id means you only can see your profile, not visible to household and the others
     let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
-    //TODO: check
     if (!member) {
       if (hasOwnerId) {
         throw new HttpException('You are not the member anymore', 400)
@@ -245,6 +244,28 @@ class MemberService {
     }
     return member
   }
+
+  static async allowEditMemberByPermission(user, memberId) {
+    const member = await Member.query().where('id', memberId).firstOrFail()
+    const isEditingOwnMember = user.owner_id
+      ? member.owner_user_id === user.id
+      : member.user_id === user.id
+
+    if (isEditingOwnMember) {
+      return member
+    } else {
+      const myMemberId = await this.getMemberIdByOwnerId(user.id, user.owner_id)
+      const permission = await MemberPermissionService.isExistPermission(
+        myMemberId,
+        member.owner_user_id ?? member.user_id
+      )
+      if (!permission) {
+        throw new HttpException('Member not exists or permission denied', 400)
+      }
+      return member
+    }
+  }
+
   /**
    *
    */
@@ -266,9 +287,11 @@ class MemberService {
    *
    */
   static async getIncomeByIdAndUser(id, user) {
-    const memberIds = await this.getMemberIdsByOwnerId(user.id, user.owner_id)
-    console.log('MemberId', memberIds)
-    return Income.query().where('id', id).whereIn('member_id', memberIds).first()
+    const income = await Income.query().where('id', id).first()
+    const member = await MemberService.allowEditMemberByPermission(user, income.member_id)
+    if (member) {
+      return income
+    }
   }
 
   /**
@@ -374,7 +397,6 @@ class MemberService {
 
       const existingTenantMembersQuery = await Member.query().where('user_id', user.id).fetch()
       const existingTenantMembers = existingTenantMembersQuery.rows
-      console.log({ existingTenantMembers })
       if (existingTenantMembers.length > 0) {
         // Current owner member is won't be owner anymore because invited by another owner
         const ownerMember = existingTenantMembers.find(({ owner_user_id }) => !owner_user_id)
@@ -390,13 +412,15 @@ class MemberService {
           updatePromises.push(existingMember.save(trx))
         })
         // Update invited user's already existing members' users' owners
-        const existingMembersOwners = existingTenantMembers.map(
-          ({ owner_user_id }) => owner_user_id
+        const existingMembersOwners = []
+        existingTenantMembers.map(({ owner_user_id }) =>
+          owner_user_id && owner_user_id !== user.id
+            ? existingMembersOwners.push(owner_user_id)
+            : null
         )
-        //TODO: This query doesn't finish. Could you please check guys?
-        // await User.query()
-        //   .whereIn('id', existingMembersOwners)
-        //   .update({ owner_id: member.user_id }, trx)
+        await User.query()
+          .whereIn('id', existingMembersOwners)
+          .update({ owner_id: member.user_id }, trx)
 
         // Delete member that created for invitation
         // Because this function is for already registered users and
@@ -418,6 +442,8 @@ class MemberService {
         updatePromises.push(member.save(trx))
       }
 
+      updatePromises.push(this.calcTenantMemberData(invitorUserId, trx))
+
       await Promise.all(updatePromises)
       if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
         const invitorMember = await Member.query()
@@ -431,6 +457,63 @@ class MemberService {
           Event.fire('memberPermission:create', invitorMember.id, user.id)
         }
       }
+      await trx.commit()
+      return true
+    } catch (e) {
+      console.log({ e })
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async refuseHouseholdInvitation(user) {
+    const trx = await Database.beginTransaction()
+    try {
+      const member = await Member.query()
+        .select(['id', 'user_id'])
+        .where('email', user.email)
+        .where('is_verified', false)
+        .whereNotNull('code')
+        .firstOrFail()
+
+      const updatePromises = []
+      const invitorUserId = member.user_id
+
+      user.owner_id = null
+      user.is_household_invitation_onboarded = true
+
+      updatePromises.push(user.save(trx))
+
+      const userMainMember = await Member.query()
+        .where({
+          user_id: user.id,
+          email: null,
+          owner_user_id: null,
+        })
+        .first()
+
+      if (userMainMember) {
+        updatePromises.push(Member.query().where('id', member.id).delete(trx))
+      } else {
+        member.user_id = user.id
+        member.email = null
+        member.owner_user_id = null
+        member.is_verified = true
+        member.code = null
+        updatePromises.push(member.save(trx))
+      }
+
+      const existingPermission = await MemberPermissionService.isExistPermission(
+        member.id,
+        invitorUserId
+      )
+      if (existingPermission) {
+        await MemberPermissionService.deletePermission(member.id, trx)
+      }
+
+      await Promise.all(updatePromises)
+      await this.calcTenantMemberData(invitorUserId, trx)
+      await this.calcTenantMemberData(user.id, trx)
       await trx.commit()
       return true
     } catch (e) {
