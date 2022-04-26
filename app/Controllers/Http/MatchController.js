@@ -12,11 +12,8 @@ const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty } = require('lodash')
 const moment = require('moment')
-<<<<<<< HEAD
 const Event = use('Event')
-=======
 const NoticeService = use('App/Services/NoticeService')
->>>>>>> development
 
 const {
   ROLE_LANDLORD,
