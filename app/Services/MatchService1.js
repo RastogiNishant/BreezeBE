@@ -85,19 +85,27 @@ class MatchService1 {
    * Get matches percent between estate/prospect
    */
   static calculateMatchPercent(prospect, estate) {
-    // Props weight
-    const aptTypeWeight = 0.1
-    const houseTypeWeight = 0.1
+    // Property Score weight
+    // landlordBudgetWeight = 1
+    // creditScoreWeight = 1
+    // rentArrearsWeight = 1
     const ageWeight = 0.3
     const familyStatusWeight = 0.3
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
+    const maxScoreL = 4
 
     const amenitiesCount = 7
+    // Prospect Score Weights
+    // ProspectBudgetWeight = 1
+    // rentStartWeight = 1
     const amenitiesWeight = 0.5 / amenitiesCount
     const areaWeight = 0.5
     const floorWeight = 0.3
     const roomsWeight = 0.5
+    const aptTypeWeight = 0.1
+    const houseTypeWeight = 0.1
+    const maxScoreT = 4
 
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
@@ -106,8 +114,7 @@ class MatchService1 {
     let estateFamilySizeMin = 1 //not yet tracked on db
     let scoreL = 0
     let scoreT = 0
-    const maxScoreT = 5.3
-    const maxScoreL = 4
+
     const estateBudget = estate.budget || 0
     const prospectBudget = prospect.budget_max || 0
 
@@ -286,7 +293,7 @@ class MatchService1 {
     const scoreLPer = scoreL / maxScoreL
     log({ scoreLandlordPercent: scoreLPer })
 
-    // Check is need calculation next step
+    // Check if we need to proceed
     if (scoreLPer < 0.5) {
       log('landlord score fails.')
       return 0
@@ -403,15 +410,20 @@ class MatchService1 {
 
     const rentStart = parseInt(moment(prospect.rent_start).startOf('day').format('X'))
     const vacantFrom = parseInt(moment(estate.vacant_date).startOf('day').format('X'))
-    //console.log(prospect.rent_start, moment(prospect.rent_start).startOf('day').format())
-    log({ rentStart, vacantFrom })
-    if (rentStart <= vacantFrom) {
-      const daysDiff = (vacantFrom - rentStart) / 86400
-      const MAX_DAYS = 730
-      rentStartPoints = 1 + (1 - Math.min(daysDiff, MAX_DAYS) / MAX_DAYS) * 0.1
-      scoreT += rentStartPoints
-      log({ rentStartPoints })
+    const now = parseInt(moment().startOf('day').format('X'))
+    const nextYear = parseInt(moment().add(1, 'y').format('X'))
+
+    console.log({ rentStart, vacantFrom, now, nextYear })
+    //vacantFrom (i) rentStart (min)
+    // we check outlyers first now and nextYear
+    if (vacantFrom < now || vacantFrom > nextYear) {
+      rentStartPoints = 0
+    } else if (vacantFrom >= rentStart) {
+      rentStartPoints = 0.9 + (0.1 * (vacantFrom - rentStart)) / vacantFrom
+    } else if (vacantFrom < rentStart) {
+      rentStartPoints = 1 - (rentStart - vacantFrom) / rentStart
     }
+    scoreT += rentStartPoints
 
     const scoreTPer = scoreT / maxScoreT
     log({ scoreProspectPercent: scoreTPer })
