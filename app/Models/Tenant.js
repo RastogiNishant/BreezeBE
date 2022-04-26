@@ -65,6 +65,7 @@ class Tenant extends Model {
       'share',
       'selected_adults_count',
       'phone_verified',
+      'updated_at',
     ]
   }
 
