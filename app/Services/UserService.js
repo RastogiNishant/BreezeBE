@@ -70,10 +70,10 @@ class UserService {
         console.log('tenanttenant', tenant)
         await Tenant.createItem({
           user_id: user.id,
-          coord: tenant.address.coord,
-          dist_type: tenant.transport,
-          dist_min: tenant.time,
-          address: tenant.address.title,
+          coord: tenant?.address?.coord,
+          dist_type: tenant?.transport,
+          dist_min: tenant?.time,
+          address: tenant?.address.title,
         })
       } catch (e) {
         console.log('createUser exception', e)
@@ -111,7 +111,7 @@ class UserService {
       password,
       role,
       google_id,
-      status: STATUS_NEED_VERIFY,
+      status: STATUS_ACTIVE,
     }
 
     const { user } = await UserService.createUser(userData)
@@ -714,10 +714,11 @@ class UserService {
           role: ROLE_USER,
           password,
           owner_id: ownerId,
-          // phone: phone,
           status: STATUS_EMAIL_VERIFY,
           firstname,
           lang,
+          is_household_invitation_onboarded: false,
+          is_profile_onboarded: true,
         },
         trx
       )
