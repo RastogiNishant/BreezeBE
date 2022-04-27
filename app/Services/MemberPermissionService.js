@@ -38,6 +38,15 @@ class MemberPermissionService {
       return e
     }
   }
+
+  static async deletePermissionByUser(user_id, trans = null) {
+    try {
+      await MemberPermission.query().where('user_id', user_id).delete(trans)
+      return true
+    } catch (e) {
+      return e
+    }
+  }
 }
 
 module.exports = MemberPermissionService

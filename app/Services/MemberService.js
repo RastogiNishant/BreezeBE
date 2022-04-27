@@ -60,31 +60,23 @@ class MemberService {
     }
   }
 
-  static async getMemberIdByOwnerId(owner_id, hasOwnerId) {
-    //owner_user_id means you only can see your profile, not visible to household and the others
-    let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
-
-    if (!member) {
-      if (hasOwnerId) {
-        throw new HttpException('You are not the member anymore', 400)
-      }
-
-      //Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
-      member = await Member.query()
-        .select('id')
-        .where('user_id', owner_id)
-        .orderBy('id', 'asc')
-        .first()
-
-      if (!member) {
-        throw new HttpException('No member exists', 400)
-      }
+  static async getMemberIdByOwnerId(user) {
+    const memberConditions = {}
+    if (user.owner_id) {
+      memberConditions.owner_user_id = user.id
+      memberConditions.user_id = user.owner_id
+      memberConditions.email = user.email
+    } else {
+      memberConditions.user_id = user.id
+      memberConditions.email = null
+      memberConditions.owner_user_id = null
     }
+    const member = await Member.query().where(memberConditions).firstOrFail()
     return member.id
   }
 
   static async limitMemberDataByPermission(user, members) {
-    const myMemberId = await this.getMemberIdByOwnerId(user.id, user.owner_id)
+    const myMemberId = await this.getMemberIdByOwnerId(user)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
     let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
     userIds.push(user.id)
@@ -254,7 +246,7 @@ class MemberService {
     if (isEditingOwnMember) {
       return member
     } else {
-      const myMemberId = await this.getMemberIdByOwnerId(user.id, user.owner_id)
+      const myMemberId = await this.getMemberIdByOwnerId(user)
       const permission = await MemberPermissionService.isExistPermission(
         myMemberId,
         member.owner_user_id ?? member.user_id

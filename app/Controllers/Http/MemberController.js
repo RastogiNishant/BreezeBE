@@ -36,11 +36,10 @@ class MemberController {
     }
 
     let members = (await MemberService.getMembers(userId)).toJSON()
-    const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user.id, auth.user.owner_id)
+    const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
     let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
     userIds.push(auth.user.id)
-
     response.res({ members, permittedUserIds: userIds })
   }
 
@@ -203,6 +202,9 @@ class MemberController {
       const owner_id = member.owner_user_id
       const user_id = member.user_id
 
+      if (owner_id) {
+        MemberPermissionService.deletePermissionByUser(owner_id, trx)
+      }
       await MemberPermissionService.deletePermission(member.id, trx)
 
       if (owner_id) {
