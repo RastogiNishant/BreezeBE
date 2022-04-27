@@ -783,7 +783,7 @@ class AccountController {
    */
   async setPasswordForgotPassword({ request, response }) {
     const { email, password, code } = request.only(['email', 'password', 'code'])
-    return response.res({ email, password, code })
+
     try {
       await UserService.requestSetPasswordForgotPassword(email, password, code)
     } catch (e) {
