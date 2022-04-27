@@ -42,6 +42,7 @@ class SignUp extends Base {
       request_full_profile: yup.boolean(),
       landlord_email: yup.string().email().lowercase(),
       landlord_confirm_email:yup.string().email().lowercase(),
+      from_web: yup.boolean(),      
     })
 }
 

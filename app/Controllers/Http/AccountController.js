@@ -53,7 +53,7 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, firstname, ...userData } = request.all()
+    const { email, firstname, from_web, ...userData } = request.all()
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {
@@ -93,7 +93,7 @@ class AccountController {
           await currentTenant.save()
         }
       }
-      await UserService.sendConfirmEmail(user)
+      await UserService.sendConfirmEmail(user,from_web)
       response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
