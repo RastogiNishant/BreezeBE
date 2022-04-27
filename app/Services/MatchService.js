@@ -270,10 +270,13 @@ class MatchService {
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
     if (prospectBudgetRel >= realBudget) {
-      prospectBudgetPoints = 0.9 + (1 - (prospectBudgetRel - realBudget) / prospectBudgetRel) * 0.1
-    } else {
-      prospectBudgetPoints =
-        (userIncome - estatePrice) / (estatePrice / prospectBudgetRel - estatePrice)
+      prospectBudgetPoints = 1 - (prospectBudgetRel - realBudget) / prospectBudgetRel
+    } else if (
+      realBudget < 1 &&
+      realBudget > prospectBudgetRel &&
+      0 < 1 - (realBudget - prospectBudgetRel) / prospectBudgetRel
+    ) {
+      prospectBudgetPoints = 1 - (realBudget - prospectBudgetRel) / prospectBudgetRel
     }
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
