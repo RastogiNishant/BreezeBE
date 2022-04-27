@@ -1290,11 +1290,23 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query.where({ '_m.status': MATCH_STATUS_KNOCK })
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', '_m.estate_id')
+          .on('_e.status', STATUS_ACTIVE)
+      })
+      .where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query.where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', '_m.estate_id')
+          .on('_e.status', STATUS_ACTIVE)
+      })
+      .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
-      query.whereIn('_m.status', [MATCH_STATUS_INVITE])
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', '_m.estate_id')
+          .on('_e.status', STATUS_ACTIVE)
+      })
+      .whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
       query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
