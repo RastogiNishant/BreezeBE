@@ -111,13 +111,6 @@ class MatchService {
     const estateBudget = estate.budget || 0
     const prospectBudget = prospect.budget_max || 0
 
-    const getCorr = (a, b, min = 0) => {
-      if (Math.max(a, b) - min === 0) {
-        return 1
-      }
-      return Math.min((Math.max(a, b) - Math.min(a, b)) / (Math.max(a, b) - min), 1)
-    }
-
     // LANDLORD calculation part
     // Get landlord income score
     log({
@@ -157,15 +150,16 @@ class MatchService {
     let estateBudgetRel = estateBudget / 100
     log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
-      landlordBudgetPoints = 1 - (estateBudgetRel - realBudget) / estateBudgetRel
+      landlordBudgetPoints = realBudget / estateBudgetRel
     } else if (
       realBudget < 1 &&
       realBudget > estateBudgetRel &&
-      0 < 1 - (realBudget - estateBudgetRel) / estateBudgetRel
+      0 < 2 - realBudget / estateBudgetRel
     ) {
-      landlordBudgetPoints = 1 - (realBudget - estateBudgetRel) / estateBudgetRel
+      landlordBudgetPoints = 2 - realBudget / estateBudgetRel
     }
     scoreL += landlordBudgetPoints
+
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequiredCredit = estate.credit_score || 0
@@ -179,14 +173,15 @@ class MatchService {
     }
     scoreL += creditScorePoints
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
+
     // Get rent arrears score
     const rentArrearsWeight = 1
-    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
     if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
       rentArrearsScore = 1
     }
+    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
 
     // Check family status
     log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
@@ -270,22 +265,16 @@ class MatchService {
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
     if (prospectBudgetRel >= realBudget) {
-      prospectBudgetPoints = 1 - (prospectBudgetRel - realBudget) / prospectBudgetRel
+      prospectBudgetPoints = realBudget / prospectBudgetRel
     } else if (
       realBudget < 1 &&
       realBudget > prospectBudgetRel &&
-      0 < 1 - (realBudget - prospectBudgetRel) / prospectBudgetRel
+      0 < 2 - realBudget / prospectBudgetRel
     ) {
-      prospectBudgetPoints = 1 - (realBudget - prospectBudgetRel) / prospectBudgetRel
+      prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
     }
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
-
-    log({
-      estateArea: estate.area,
-      prospectSpaceMin: prospect.space_min,
-      prospectSpaceMax: prospect.space_max,
-    })
 
     const estateArea = Number(estate.area) || 0
     if (estateArea >= prospect.space_min && estateArea <= prospect.space_max) {

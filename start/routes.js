@@ -845,7 +845,7 @@ Route.get('/debug/test-match', async ({ request, response }) => {
   }
 
   const estate = {
-    budget: 25,
+    budget: 50,
     credit_score: 90,
     net_rent: 300,
     area: 50,
