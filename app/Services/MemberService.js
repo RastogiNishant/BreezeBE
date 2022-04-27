@@ -1,3 +1,4 @@
+const Event = use('Event')
 const Database = use('Database')
 const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
@@ -5,19 +6,22 @@ const User = use('App/Models/User')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
 const { getHash } = require('../Libs/utils.js')
-const { isEmpty } = require('lodash')
+const { isEmpty, pick } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const random = require('random')
 const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
+const MemberPermissionService = use('App/Services/MemberPermissionService')
 
 const {
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_WITH_CHILD,
   SMS_MEMBER_PHONE_VERIFY_PREFIX,
+  ROLE_USER,
+  VISIBLE_TO_SPECIFIC,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -56,28 +60,35 @@ class MemberService {
     }
   }
 
-  static async getMemberIdByOwnerId(owner_id, hasOwnerId) {
-    //owner_user_id means you only can see your profile, not visible to household and the others
-    let member = await Member.query().select('id').where('owner_user_id', owner_id).first()
-
-    //TODO: check
-    if (!member) {
-      if (hasOwnerId) {
-        throw new HttpException('You are not the member anymore', 400)
-      }
-
-      //Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
-      member = await Member.query()
-        .select('id')
-        .where('user_id', owner_id)
-        .orderBy('id', 'asc')
-        .first()
-
-      if (!member) {
-        throw new HttpException('No member exists', 400)
-      }
+  static async getMemberIdByOwnerId(user) {
+    const memberConditions = {}
+    if (user.owner_id) {
+      memberConditions.owner_user_id = user.id
+      memberConditions.user_id = user.owner_id
+      memberConditions.email = user.email
+    } else {
+      memberConditions.user_id = user.id
+      memberConditions.email = null
+      memberConditions.owner_user_id = null
     }
+    const member = await Member.query().where(memberConditions).firstOrFail()
     return member.id
+  }
+
+  static async limitMemberDataByPermission(user, members) {
+    const myMemberId = await this.getMemberIdByOwnerId(user)
+    const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
+    let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
+    userIds.push(user.id)
+
+    members = members.map((member) => {
+      const hasPermission = member.owner_user_id
+        ? userIds.includes(member.owner_user_id)
+        : userIds.includes(member.user_id)
+      return hasPermission ? member : pick(member.toJSON(), Member.limitFieldsList)
+    })
+
+    return members
   }
 
   static async getMembers(householdId) {
@@ -205,15 +216,10 @@ class MemberService {
   }
 
   static async setMemberOwner(member_id, owner_id) {
-    console.log({ member_id, owner_id })
     if (member_id == null) {
       return
     }
-    await Member.query()
-      .update({
-        owner_user_id: owner_id,
-      })
-      .where({ id: member_id })
+    await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
   }
 
   static async getMember(id, user_id, owner_id) {
@@ -230,6 +236,28 @@ class MemberService {
     }
     return member
   }
+
+  static async allowEditMemberByPermission(user, memberId) {
+    const member = await Member.query().where('id', memberId).firstOrFail()
+    const isEditingOwnMember = user.owner_id
+      ? member.owner_user_id === user.id
+      : member.user_id === user.id
+
+    if (isEditingOwnMember) {
+      return member
+    } else {
+      const myMemberId = await this.getMemberIdByOwnerId(user)
+      const permission = await MemberPermissionService.isExistPermission(
+        myMemberId,
+        member.owner_user_id ?? member.user_id
+      )
+      if (!permission) {
+        throw new HttpException('Member not exists or permission denied', 400)
+      }
+      return member
+    }
+  }
+
   /**
    *
    */
@@ -251,9 +279,11 @@ class MemberService {
    *
    */
   static async getIncomeByIdAndUser(id, user) {
-    const memberIds = await this.getMemberIdsByOwnerId(user.id, user.owner_id)
-    console.log('MemberId', memberIds)
-    return Income.query().where('id', id).whereIn('member_id', memberIds).first()
+    const income = await Income.query().where('id', id).first()
+    const member = await MemberService.allowEditMemberByPermission(user, income.member_id)
+    if (member) {
+      return income
+    }
   }
 
   /**
@@ -288,7 +318,6 @@ class MemberService {
     try {
       const member = await Member.findByOrFail({ id: id, user_id: userId })
       const code = getHash(3)
-      //const user = await User.query().select('email').where('id', userId).firstOrFail()
       if (member && member.email) {
         await Member.query()
           .where({ id: id })
@@ -299,6 +328,15 @@ class MemberService {
             },
             trx
           )
+
+        const invitedUser = await User.query()
+          .where({ email: member.email, role: ROLE_USER })
+          .first()
+        if (invitedUser) {
+          invitedUser.is_household_invitation_onboarded = false
+          invitedUser.is_profile_onboarded = true
+          await invitedUser.save(trx)
+        }
 
         const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
         const { shortLink } = await firebaseDynamicLinks.createLink({
@@ -328,36 +366,151 @@ class MemberService {
     }
   }
 
-  static async getInvitationCode(email, code, user) {
+  static async mergeTenantAccounts(user, visibility_to_other) {
     const trx = await Database.beginTransaction()
     try {
       const member = await Member.query()
         .select(['id', 'user_id'])
-        .where('email', email)
-        .where('code', code)
+        .where('email', user.email)
+        .where('is_verified', false)
+        .whereNotNull('code')
         .firstOrFail()
 
       const updatePromises = []
 
-      user.owner_id = member.user_id
+      const invitorUserId = member.user_id
+
+      // Update invited user owner id
+      user.owner_id = invitorUserId
+      user.is_household_invitation_onboarded = true
       updatePromises.push(user.save(trx))
 
-      const existingTenantMembers = await Member.query().where('user_id', user.id).fetch().rows
+      let invitedMemberId = member.id
 
-      for (let i = 0; i < existingTenantMembers.length; i++) {
-        const existingTenantMember = existingTenantMembers[i]
-        existingTenantMember.user_id = member.user_id
-        existingTenantMember.owner_user_id = user.id
-        existingTenantMember.is_verified = true
-        updatePromises.push(existingTenantMember.save(trx))
+      const existingTenantMembersQuery = await Member.query().where('user_id', user.id).fetch()
+      const existingTenantMembers = existingTenantMembersQuery.rows
+      if (existingTenantMembers.length > 0) {
+        // Current owner member is won't be owner anymore because invited by another owner
+        const ownerMember = existingTenantMembers.find(
+          ({ owner_user_id, email }) => !owner_user_id && !email
+        )
+        if (ownerMember) {
+          invitedMemberId = ownerMember.id
+          ownerMember.owner_user_id = user.id
+          ownerMember.email = user.email
+          updatePromises.push(ownerMember.save(trx))
+        }
+        // Update invited user's already existing members' user ids
+        existingTenantMembers.map((existingMember) => {
+          existingMember.user_id = invitorUserId
+          updatePromises.push(existingMember.save(trx))
+        })
+        // Update invited user's already existing members' users' owners
+        const existingMembersOwners = []
+        existingTenantMembers.map(({ owner_user_id }) =>
+          owner_user_id && owner_user_id !== user.id
+            ? existingMembersOwners.push(owner_user_id)
+            : null
+        )
+        await User.query()
+          .whereIn('id', existingMembersOwners)
+          .update({ owner_id: member.user_id }, trx)
+
+        // Delete member that created for invitation
+        // Because this function is for already registered users and
+        // Already registered user has a member already, so we don't need this automatically created member
+        const existingPermission = await MemberPermissionService.isExistPermission(
+          member.id,
+          invitorUserId
+        )
+        if (existingPermission) {
+          await MemberPermissionService.deletePermission(member.id, trx)
+          Event.fire('memberPermission:create', invitedMemberId, invitorUserId)
+        }
+        await member.delete(trx)
+      } else {
+        member.is_verified = true
+        member.owner_user_id = user.id
+        member.email = user.email
+        updatePromises.push(member.save(trx))
       }
 
-      updatePromises.push(member.delete(trx))
+      updatePromises.push(this.calcTenantMemberData(invitorUserId, trx))
 
       await Promise.all(updatePromises)
+      if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
+        const invitorMember = await Member.query()
+          .where({
+            user_id: invitorUserId,
+            email: null,
+            owner_user_id: null,
+          })
+          .first()
+        if (invitorMember) {
+          Event.fire('memberPermission:create', invitorMember.id, user.id)
+        }
+      }
       await trx.commit()
       return true
     } catch (e) {
+      console.log({ e })
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async refuseHouseholdInvitation(user) {
+    const trx = await Database.beginTransaction()
+    try {
+      const member = await Member.query()
+        .select(['id', 'user_id'])
+        .where('email', user.email)
+        .where('is_verified', false)
+        .whereNotNull('code')
+        .firstOrFail()
+
+      const updatePromises = []
+      const invitorUserId = member.user_id
+
+      user.owner_id = null
+      user.is_household_invitation_onboarded = true
+
+      updatePromises.push(user.save(trx))
+
+      const userMainMember = await Member.query()
+        .where({
+          user_id: user.id,
+          email: null,
+          owner_user_id: null,
+        })
+        .first()
+
+      if (userMainMember) {
+        updatePromises.push(Member.query().where('id', member.id).delete(trx))
+      } else {
+        member.user_id = user.id
+        member.email = null
+        member.owner_user_id = null
+        member.is_verified = true
+        member.code = null
+        updatePromises.push(member.save(trx))
+      }
+
+      const existingPermission = await MemberPermissionService.isExistPermission(
+        member.id,
+        invitorUserId
+      )
+      if (existingPermission) {
+        await MemberPermissionService.deletePermission(member.id, trx)
+      }
+
+      await Promise.all(updatePromises)
+      await this.calcTenantMemberData(invitorUserId, trx)
+      await this.calcTenantMemberData(user.id, trx)
+      await trx.commit()
+      return true
+    } catch (e) {
+      console.log({ e })
       await trx.rollback()
       throw new HttpException(e.message, 400)
     }

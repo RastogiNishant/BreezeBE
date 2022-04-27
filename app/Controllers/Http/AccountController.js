@@ -27,7 +27,7 @@ const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { assign, upperCase, pick } = require('lodash')
+const { pick } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -367,10 +367,6 @@ class AccountController {
         throw new HttpException('User already exists, can be switched', 400)
       }
 
-      // if (password !== confirmPassword) {
-      //   throw new HttpException('Password not matched', 400)
-      // }
-
       const user = await UserService.housekeeperSignup(
         member.user_id,
         email,
@@ -523,11 +519,14 @@ class AccountController {
   async me({ auth, response, request }) {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
-      .with('tenant')
       .with('household')
       .with('plan')
       .with('tenantPaymentPlan')
       .firstOrFail()
+
+    user.tenant = await Tenant.query()
+      .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
+      .first()
 
     const { pushToken } = request.all()
 
