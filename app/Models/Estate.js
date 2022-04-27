@@ -286,18 +286,15 @@ class Estate extends Model {
    *
    */
   knocked() {
-    return this.hasMany('App/Models/Match').whereIn('matches.status', [MATCH_STATUS_KNOCK])
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id').on('_e.status', STATUS_ACTIVE)
-      })    
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_KNOCK])
   }
 
   /**
    *
    */
   visits() {
-    return this.hasMany('App/Models/Match').whereIn('matches.status', [
-      //MATCH_STATUS_INVITE,
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_INVITE,
       MATCH_STATUS_VISIT,
     ])
   }
@@ -324,13 +321,13 @@ class Estate extends Model {
    *
    */
   decided() {
-    return this.hasMany('App/Models/Match').whereIn('matches.status', [
+    return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_TOP,
       MATCH_STATUS_COMMIT,
     ])
   }
   final() {
-    return this.hasMany('App/Models/Match').whereIn('matches.status', [
+    return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_FINISH,
     ])
   }
@@ -339,19 +336,13 @@ class Estate extends Model {
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').where({ 'matches.status': MATCH_STATUS_KNOCK })
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id').on('_e.status', STATUS_ACTIVE)
-      })
+    return this.hasMany('App/Models/Match').where({ 'status': MATCH_STATUS_KNOCK })
   }
   /**
    *
    */
   inviteBuddies() {
-    return this.hasMany('App/Models/Match').where({ 'matches.status': MATCH_STATUS_NEW, buddy: true })
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id').on('_e.status', STATUS_ACTIVE)
-      })
+    return this.hasMany('App/Models/Match').where({ 'status': MATCH_STATUS_NEW, buddy: true })
   }
 
   /**
