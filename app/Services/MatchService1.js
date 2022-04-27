@@ -118,13 +118,6 @@ class MatchService1 {
     const estateBudget = estate.budget || 0
     const prospectBudget = prospect.budget_max || 0
 
-    const getCorr = (a, b, min = 0) => {
-      if (Math.max(a, b) - min === 0) {
-        return 1
-      }
-      return Math.min((Math.max(a, b) - Math.min(a, b)) / (Math.max(a, b) - min), 1)
-    }
-
     // LANDLORD calculation part
     // Get landlord income score
     log({
@@ -188,15 +181,13 @@ class MatchService1 {
     let estateBudgetRel = estateBudget / 100
     log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
-      //(1-(D2-E2)/D2)*1
-      landlordBudgetPoints = 1 - (estateBudgetRel - realBudget) / estateBudgetRel
+      landlordBudgetPoints = realBudget / estateBudgetRel
     } else if (
       realBudget < 1 &&
       realBudget > estateBudgetRel &&
-      0 < 1 - (realBudget - estateBudgetRel) / estateBudgetRel
+      0 < 2 - realBudget / estateBudgetRel
     ) {
-      //1-(E2-D2)/D2
-      landlordBudgetPoints = 1 - (realBudget - estateBudgetRel) / estateBudgetRel
+      landlordBudgetPoints = 2 - realBudget / estateBudgetRel
     }
     scoreL += landlordBudgetPoints
     // Get credit score income
@@ -303,22 +294,16 @@ class MatchService1 {
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
     if (prospectBudgetRel >= realBudget) {
-      prospectBudgetPoints = 1 - (prospectBudgetRel - realBudget) / prospectBudgetRel
+      prospectBudgetPoints = realBudget / prospectBudgetRel
     } else if (
       realBudget < 1 &&
       realBudget > prospectBudgetRel &&
-      0 < 1 - (realBudget - prospectBudgetRel) / prospectBudgetRel
+      0 < 2 - realBudget / prospectBudgetRel
     ) {
-      prospectBudgetPoints = 1 - (realBudget - prospectBudgetRel) / prospectBudgetRel
+      prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
     }
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
-
-    log({
-      estateArea: estate.area,
-      prospectSpaceMin: prospect.space_min,
-      prospectSpaceMax: prospect.space_max,
-    })
 
     const estateArea = Number(estate.area) || 0
     if (estateArea >= prospect.space_min && estateArea <= prospect.space_max) {
