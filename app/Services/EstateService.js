@@ -100,6 +100,7 @@ class EstateService {
       .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
+      .withCount('final')
       .withCount('inviteBuddies')
       .with('current_tenant', function (q) {
         q.with('user')
@@ -625,7 +626,7 @@ class EstateService {
     const estateIds = (
       await Estate.query()
         .select('id')
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .where('status', STATUS_ACTIVE)
         .where('available_date', '<=', moment().format(DATE_FORMAT))
 // .limit(100)
         .fetch()
@@ -645,7 +646,7 @@ class EstateService {
 
       // Remove estates from - matches / likes / dislikes
       await Database.table('matches')
-        .whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK, MATCH_STATUS_INVITE])
+        .where('status', MATCH_STATUS_NEW)
         .whereIn('estate_id', estateIds)
         .delete()
         .transacting(trx)
@@ -688,7 +689,7 @@ class EstateService {
     if (params.return_all && params.return_all == 1) {
       return await EstateService.getEstates(params)
         .whereIn('user_id', ids)
-        .whereNot('status', STATUS_DELETE)
+        .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)
         .with('rooms')
         .with('current_tenant')
@@ -696,7 +697,7 @@ class EstateService {
     } else {
       return await EstateService.getEstates(params)
         .whereIn('user_id', ids)
-        .whereNot('status', STATUS_DELETE)
+        .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)
         .paginate(page, limit)
     }
