@@ -813,11 +813,7 @@ Route.list().forEach((r) => {
   }
 })
 
-const Tenant = use('App/Models/Tenant')
-const Estate = use('App/Models/Estate')
-const { get, isNumber } = require('lodash')
 const Matchservice = use('App/Services/Matchservice1')
-
 Route.get('/debug/test-match', async ({ request, response }) => {
   if (!process.env.DEV) {
     response.res(false)
@@ -845,15 +841,15 @@ Route.get('/debug/test-match', async ({ request, response }) => {
   }
 
   const estate = {
-    budget: 50,
+    budget: 30,
     credit_score: 90,
     net_rent: 300,
-    area: 50,
+    area: 150,
     min_age: 10,
     max_age: 65,
     non_smoker: true,
     pets: 1,
-    rooms_number: 1,
+    rooms_number: 2,
     number_floors: 2,
     house_type: 1,
     apt_type: 1,
