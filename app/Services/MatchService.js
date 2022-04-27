@@ -157,11 +157,13 @@ class MatchService {
     let estateBudgetRel = estateBudget / 100
     log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
-      landlordBudgetPoints = 0.9 + (1 - (estateBudgetRel - realBudget) / estateBudgetRel) * 0.1
-    } else {
-      //linear equation with values from 0 to 1
-      landlordBudgetPoints =
-        (userIncome - estatePrice) / (estatePrice / estateBudgetRel - estatePrice)
+      landlordBudgetPoints = 1 - (estateBudgetRel - realBudget) / estateBudgetRel
+    } else if (
+      realBudget < 1 &&
+      realBudget > estateBudgetRel &&
+      0 < 1 - (realBudget - estateBudgetRel) / estateBudgetRel
+    ) {
+      landlordBudgetPoints = 1 - (realBudget - estateBudgetRel) / estateBudgetRel
     }
     scoreL += landlordBudgetPoints
     // Get credit score income
