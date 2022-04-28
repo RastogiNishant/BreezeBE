@@ -14,6 +14,7 @@ const random = require('random')
 const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
+const NoticeService = use('App/Services/NoticeService')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -451,6 +452,7 @@ class MemberService {
         }
       }
       await trx.commit()
+      await NoticeService.prospectHouseholdInvitationAccepted(invitorUserId)
       return true
     } catch (e) {
       console.log({ e })
