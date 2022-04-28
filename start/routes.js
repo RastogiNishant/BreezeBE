@@ -813,61 +813,61 @@ Route.list().forEach((r) => {
   }
 })
 
-const Matchservice = use('App/Services/Matchservice1')
-Route.get('/debug/test-match', async ({ request, response }) => {
-  if (!process.env.DEV) {
-    response.res(false)
-  }
-  let prospect = {
-    income: 0,
-    budget_max: 30,
-    credit_score: 90,
-    unpaid_rental: 1,
-    family_status: true,
-    non_smoker: true,
-    members_age: [10, 65],
-    members_count: 7,
-    pets: 1,
-    space_min: 100,
-    space_max: 200,
-    rooms_min: 2,
-    rooms_max: 3,
-    floor_min: 1,
-    floor_max: 2,
-    apt_type: [1, 2],
-    house_type: [1, 2],
-    rent_start: '2022-05-20',
-    options: [1, 2, 3, 4, 5, 6, 7],
-  }
+// const Matchservice = use('App/Services/Matchservice1')
+// Route.get('/debug/test-match', async ({ request, response }) => {
+//   if (!process.env.DEV) {
+//     response.res(false)
+//   }
+//   let prospect = {
+//     income: 0,
+//     budget_max: 30,
+//     credit_score: 90,
+//     unpaid_rental: 1,
+//     family_status: true,
+//     non_smoker: true,
+//     members_age: [10, 65],
+//     members_count: 7,
+//     pets: 1,
+//     space_min: 100,
+//     space_max: 200,
+//     rooms_min: 2,
+//     rooms_max: 3,
+//     floor_min: 1,
+//     floor_max: 2,
+//     apt_type: [1, 2],
+//     house_type: [1, 2],
+//     rent_start: '2022-05-20',
+//     options: [1, 2, 3, 4, 5, 6, 7],
+//   }
 
-  const estate = {
-    budget: 30,
-    credit_score: 90,
-    net_rent: 300,
-    area: 150,
-    min_age: 10,
-    max_age: 65,
-    non_smoker: true,
-    pets: 1,
-    rooms_number: 2,
-    number_floors: 2,
-    house_type: 1,
-    apt_type: 1,
-    options: [1, 2, 3, 4, 5, 6, 7],
-    vacant_date: '2022-05-20',
-    family_size_max: 6,
-  }
+//   const estate = {
+//     budget: 30,
+//     credit_score: 90,
+//     net_rent: 300,
+//     area: 150,
+//     min_age: 10,
+//     max_age: 65,
+//     non_smoker: true,
+//     pets: 1,
+//     rooms_number: 2,
+//     number_floors: 2,
+//     house_type: 1,
+//     apt_type: 1,
+//     options: [1, 2, 3, 4, 5, 6, 7],
+//     vacant_date: '2022-05-20',
+//     family_size_max: 6,
+//   }
 
-  let scores = []
-  for (let k = 250; k <= 5000; k += 10) {
-    //for (let k = 10; k <= 100; k += 5) {
-    //prospect.credit_score = k
-    //prospect.income = 300
-    prospect.income = k
-    scores.push({
-      income: prospect.income,
-      scores: Matchservice.calculateMatchPercent(prospect, estate),
-    })
-  }
-  return response.res({ scores })
-})
+//   let scores = []
+//   for (let k = 250; k <= 5000; k += 10) {
+//     //for (let k = 10; k <= 100; k += 5) {
+//     //prospect.credit_score = k
+//     //prospect.income = 300
+//     prospect.income = k
+//     scores.push({
+//       income: prospect.income,
+//       scores: Matchservice.calculateMatchPercent(prospect, estate),
+//     })
+//   }
+//   return response.res({ scores })
+// })
