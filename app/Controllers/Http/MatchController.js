@@ -841,10 +841,6 @@ class MatchController {
 
     const matchesCount = await Database.table('matches')
       .count('*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
       .whereIn('matches.status', [MATCH_STATUS_KNOCK])
       .whereIn('estate_id', estatesId)
 
@@ -860,10 +856,6 @@ class MatchController {
 
     const buddiesCount = await Database.table('matches')
       .count('*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
       .whereIn('matches.status', [MATCH_STATUS_NEW])
       .where('buddy', true)
       .whereIn('estate_id', estatesId)
@@ -879,10 +871,6 @@ class MatchController {
 
     const invitesCount = await Database.table('matches')
       .count('*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
       .whereIn('matches.status', [MATCH_STATUS_INVITE])
       .whereIn('estate_id', estatesId)
 
