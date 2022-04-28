@@ -93,6 +93,10 @@ class ExcelReader {
                 name: get(this.dataMapping, `room_type_name.${v}`),
               },
             }
+          } else {
+            return {
+              ...n,
+            }
           }
         } else if (k == 'txt_salutation') {
           return {

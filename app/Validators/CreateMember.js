@@ -16,10 +16,6 @@ const {
   YES_INSOLVENCY,
   NO_ANSWER_INSOLVENCY,
 
-  NO_ARREST_WARRANTY,
-  YES_ARREST_WARRANTY,
-  NO_ANSWER_WARRANTY,
-
   NO_CLEAN_PROCEDURE,
   YES_CLEAN_PROCEDURE,
   NO_ANSWER_CLEAN_PROCEDURE,
@@ -49,9 +45,6 @@ class CreateMember extends Base {
         .number()
         .oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL]),
       insolvency_proceed: yup.number().oneOf([NO_INSOLVENCY, YES_INSOLVENCY, NO_ANSWER_INSOLVENCY]),
-      arrest_warranty: yup
-        .number()
-        .oneOf([NO_ARREST_WARRANTY, YES_ARREST_WARRANTY, NO_ANSWER_WARRANTY]),
       clean_procedure: yup
         .number()
         .oneOf([NO_CLEAN_PROCEDURE, YES_CLEAN_PROCEDURE, NO_ANSWER_CLEAN_PROCEDURE]),

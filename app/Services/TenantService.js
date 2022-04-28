@@ -23,10 +23,8 @@ const {
   PETS_NO,
 
   INCOME_TYPE_EMPLOYEE,
-  INCOME_TYPE_PENSION,
-  INCOME_TYPE_PRIVATE,
+
   INCOME_TYPE_SELF_EMPLOYED,
-  INCOME_TYPE_STUDENT_TRAINEE,
   INCOME_TYPE_UNEMPLOYED,
 
   STATUS_ACTIVE,
@@ -39,15 +37,18 @@ const {
   NO_INSOLVENCY,
   YES_INSOLVENCY,
   NO_ANSWER_INSOLVENCY,
-  NO_ARREST_WARRANTY,
-  YES_ARREST_WARRANTY,
-  NO_ANSWER_WARRANTY,
   NO_CLEAN_PROCEDURE,
   YES_CLEAN_PROCEDURE,
   NO_ANSWER_CLEAN_PROCEDURE,
   NO_INCOME_SEIZURE,
   YES_INCOME_SEIZURE,
   NO_ANSWER_INCOME_SEIZURE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_TRAINEE,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 
@@ -169,12 +170,12 @@ class TenantService {
           '_m.landlord_name',
           '_m.unpaid_rental',
           '_m.insolvency_proceed',
-          '_m.arrest_warranty',
           '_m.clean_procedure',
           '_m.income_seizure',
           '_m.debt_proof',
           '_m.execution',
           '_m.credit_score',
+          '_m.phone_verified',
           '_i.position',
           '_i.company',
           '_i.income_type',
@@ -218,10 +219,6 @@ class TenantService {
         .positive()
         .oneOf([NO_INSOLVENCY, YES_INSOLVENCY, NO_ANSWER_INSOLVENCY])
         .required(),
-      arrest_warranty: yup
-        .number()
-        .oneOf([NO_ARREST_WARRANTY, YES_ARREST_WARRANTY, NO_ANSWER_WARRANTY])
-        .required(),
       clean_procedure: yup
         .number()
         .oneOf([NO_CLEAN_PROCEDURE, YES_CLEAN_PROCEDURE, NO_ANSWER_CLEAN_PROCEDURE])
@@ -239,17 +236,38 @@ class TenantService {
         .string()
         .oneOf([
           INCOME_TYPE_EMPLOYEE,
-          INCOME_TYPE_PENSION,
-          INCOME_TYPE_PRIVATE,
-          INCOME_TYPE_SELF_EMPLOYED,
-          INCOME_TYPE_STUDENT_TRAINEE,
+          INCOME_TYPE_WORKER,
           INCOME_TYPE_UNEMPLOYED,
+          INCOME_TYPE_CIVIL_SERVANT,
+          INCOME_TYPE_FREELANCER,
+          INCOME_TYPE_HOUSE_WORK,
+          INCOME_TYPE_PENSIONER,
+          INCOME_TYPE_SELF_EMPLOYED,
+          INCOME_TYPE_TRAINEE,
         ])
         .required(),
       income: yup.number().min(0).required(),
-      position: getConditionRule([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_STUDENT_TRAINEE]),
-      company: getConditionRule([INCOME_TYPE_EMPLOYEE]),
-      employment_type: getConditionRule([INCOME_TYPE_EMPLOYEE]),
+      position: getConditionRule([
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_WORKER,
+      ]),
+      company: getConditionRule([
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_WORKER,
+      ]),
+      employment_type: getConditionRule([
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_WORKER,
+      ]),
     })
 
     try {
@@ -300,7 +318,7 @@ class TenantService {
 
     const member = await Member.query().where({ user_id: userId, child: false }).first()
 
-    return tenant?.selected_adults_count && member
+    return tenant && tenant.selected_adults_count && member
   }
 }
 

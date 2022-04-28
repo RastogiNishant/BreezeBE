@@ -37,6 +37,7 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
   TENANT_MATCH_FIELDS,
+  MATCH_STATUS_FINISH,
 } = require('../constants')
 
 class Estate extends Model {
@@ -137,6 +138,7 @@ class Estate extends Model {
       'letting_status',
       'letting_type',
       'family_size_max',
+      'family_size_min',
       'pets_allowed',
       'apartment_status',
       'extra_costs',
@@ -325,18 +327,23 @@ class Estate extends Model {
       MATCH_STATUS_COMMIT,
     ])
   }
+  final() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_FINISH,
+    ])
+  }
 
   /**
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_KNOCK })
+    return this.hasMany('App/Models/Match').where({ 'status': MATCH_STATUS_KNOCK })
   }
   /**
    *
    */
   inviteBuddies() {
-    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
+    return this.hasMany('App/Models/Match').where({ 'status': MATCH_STATUS_NEW, buddy: true })
   }
 
   /**

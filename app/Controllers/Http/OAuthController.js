@@ -117,6 +117,8 @@ class OAuthController {
 
     let owner_id
     let member_id
+    let is_household_invitation_onboarded = true
+    let is_profile_onboarded = false
 
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
@@ -129,6 +131,8 @@ class OAuthController {
 
           owner_id = member.user_id
           member_id = member.id
+          is_household_invitation_onboarded = false
+          is_profile_onboarded = true
 
           // Check user not exists
           const availableUser = await User.query()
@@ -146,6 +150,8 @@ class OAuthController {
           device_token,
           role,
           owner_id,
+          is_household_invitation_onboarded,
+          is_profile_onboarded,
         })
       } catch (e) {
         throw new HttpException(e.message, 400)
@@ -187,6 +193,8 @@ class OAuthController {
 
     let owner_id
     let member_id
+    let is_household_invitation_onboarded = true
+    let is_profile_onboarded = false
 
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
@@ -199,6 +207,8 @@ class OAuthController {
 
           owner_id = member.user_id
           member_id = member.id
+          is_household_invitation_onboarded = false
+          is_profile_onboarded = true
 
           // Check user not exists
           const availableUser = await User.query()
@@ -218,6 +228,8 @@ class OAuthController {
             owner_id,
             role,
             name: 'Apple User',
+            is_household_invitation_onboarded,
+            is_profile_onboarded,
           },
           SIGN_IN_METHOD_APPLE
         )

@@ -45,6 +45,7 @@ class User extends Model {
       'is_profile_onboarded',
       'is_dashboard_onboarded',
       'is_selection_onboarded',
+      'is_household_invitation_onboarded',
     ]
   }
 

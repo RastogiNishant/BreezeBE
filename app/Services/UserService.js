@@ -70,10 +70,10 @@ class UserService {
         console.log('tenanttenant', tenant)
         await Tenant.createItem({
           user_id: user.id,
-          coord: tenant.address.coord,
-          dist_type: tenant.transport,
-          dist_min: tenant.time,
-          address: tenant.address.title,
+          coord: tenant?.address?.coord,
+          dist_type: tenant?.transport,
+          dist_min: tenant?.time,
+          address: tenant?.address.title,
         })
       } catch (e) {
         console.log('createUser exception', e)
@@ -111,7 +111,7 @@ class UserService {
       password,
       role,
       google_id,
-      status: STATUS_NEED_VERIFY,
+      status: STATUS_ACTIVE,
     }
 
     const { user } = await UserService.createUser(userData)
@@ -197,8 +197,14 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      const data = paramLang? await this.getTokenWithLocale([user.id]) : null
-      const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : user.lang?user.lang:DEFAULT_LANG
+      const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
+      const lang = paramLang
+        ? paramLang
+        : data && data.length && data[0].lang
+        ? data[0].lang
+        : user.lang
+        ? user.lang
+        : DEFAULT_LANG
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -290,8 +296,7 @@ class UserService {
    *
    */
   static async sendConfirmEmail(user) {
-    
-    try{
+    try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
@@ -304,7 +309,7 @@ class UserService {
         role: user.role,
         lang: lang,
       })
-    }catch(e) {
+    } catch (e) {
       throw new HttpException(e)
     }
   }
@@ -462,12 +467,7 @@ class UserService {
       let extraFields = Tenant.columns
       if (!tenant.personal_shown) {
         extraFields = Object.values(
-          omit(extraFields, [
-            'unpaid_rental',
-            'insolvency_proceed',
-            'arrest_warranty',
-            'clean_procedure',
-          ])
+          omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
         )
       }
 
@@ -714,10 +714,11 @@ class UserService {
           role: ROLE_USER,
           password,
           owner_id: ownerId,
-          // phone: phone,
           status: STATUS_EMAIL_VERIFY,
           firstname,
           lang,
+          is_household_invitation_onboarded: false,
+          is_profile_onboarded: true,
         },
         trx
       )

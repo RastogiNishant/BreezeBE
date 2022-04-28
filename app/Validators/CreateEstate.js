@@ -508,6 +508,7 @@ class CreateEstate extends Base {
         .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
         .nullable(),
       family_size_max: yup.number().integer().min(1).max(100).nullable(),
+      family_size_min: yup.number().integer(),
       apartment_status: yup
         .number()
         .integer()

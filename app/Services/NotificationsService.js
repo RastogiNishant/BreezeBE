@@ -27,7 +27,6 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT30M,
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_COME,
-  NOTICE_TYPE_PROSPECT_KNOCK,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_ZENDESK_NOTIFY,
@@ -57,10 +56,21 @@ const {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE,
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
   NOTICE_TYPE_PROSPECT_COME_ID,
-  NOTICE_TYPE_PROSPECT_KNOCK_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
   NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_ZENDESK_NOTIFY_ID,
+  NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID,
+  NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN,
+  NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED_ID,
+  NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED,
+  NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
+  NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP,
+  NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED,
+  NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
+  NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED,
+  NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
+  NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER,
+  NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
 } = require('../constants')
 const { lang } = require('moment')
 
@@ -84,8 +94,16 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_REJECT_ID, NOTICE_TYPE_PROSPECT_REJECT],
   [NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID, NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE],
   [NOTICE_TYPE_PROSPECT_COME_ID, NOTICE_TYPE_PROSPECT_COME],
-  [NOTICE_TYPE_PROSPECT_KNOCK_ID, NOTICE_TYPE_PROSPECT_KNOCK],
   [NOTICE_TYPE_CANCEL_VISIT_ID, NOTICE_TYPE_CANCEL_VISIT],
+  [NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID, NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN],
+  [NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID, NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER],
+  [NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED_ID, NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED],
+  [NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID, NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP],
+  [
+    NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
+    NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED,
+  ],
+  [NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID, NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED],
   [NOTICE_TYPE_VISIT_DELAY_ID, NOTICE_TYPE_VISIT_DELAY],
   [NOTICE_TYPE_ZENDESK_NOTIFY_ID, NOTICE_TYPE_ZENDESK_NOTIFY],
 ]
@@ -384,20 +402,6 @@ class NotificationsService {
   }
 
   /**
-   *
-   */
-  static async sendProspectNewKnock(notice) {
-    const title = 'prospect.notification.event.new_knock'
-    return NotificationsService.sendNotes(notice, title, (data, lang) => {
-      return (
-        capitalize(data.estate_address) +
-        ' \n' +
-        l.get('prospect.notification.next.new_knock.message', lang)
-      )
-    })
-  }
-
-  /**
    *  Notify visit time delayed to landlord or prospect according to user_id
    */
   static async sendChangeVisitTime(notice) {
@@ -594,6 +598,68 @@ class NotificationsService {
         ' \n' +
         l.get('prospect.notification.next.come.message', lang)
       )
+    })
+  }
+
+  static async sendLandlordIsVerifiedByAdmin(notices) {
+    const title = 'landlord.notification.event.profile_activated'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        l.get('landlord.notification.address.profile_activated', lang) +
+        ' \n' +
+        l.get('landlord.notification.tip.profile_activated', lang)
+      )
+    })
+  }
+
+  static async sendLandlordEstateShowDateIsEnded(notices) {
+    const title = 'landlord.notification.event.show_over'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) + ' \n' + l.get('landlord.notification.tip.show_over', lang)
+      )
+    })
+  }
+
+  static async sendProspectIsNotInterested(notices) {
+    const title = 'landlord.notification.event.prospect_no_interest'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('landlord.notification.tip.prospect_no_interest', lang)
+      )
+    })
+  }
+
+  static async sendLandlordMovedProspectToTop(notices) {
+    const title = 'prospect.notification.event.moved_to_top'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.tip.moved_to_top', lang)
+      )
+    })
+  }
+
+  static async sendProspectHouseholdInvitationAccepted(notices) {
+    const title = 'prospect.notification.event.fellow_accepted'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return l.get('prospect.notification.next.fellow_accepted.message', lang)
+    })
+  }
+
+  static async sendProspectHouseholdDisconnected(notices) {
+    const title = 'prospect.notification.event.fellow_disconnected'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return l.get('prospect.notification.next.fellow_disconnected.message', lang)
     })
   }
 

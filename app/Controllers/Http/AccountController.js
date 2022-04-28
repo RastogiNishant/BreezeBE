@@ -27,7 +27,7 @@ const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { assign, upperCase, pick } = require('lodash')
+const { pick } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -43,7 +43,8 @@ const {
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
   BUDDY_STATUS_PENDING,
-  STATUS_ACTIVE
+  STATUS_ACTIVE,
+  ERROR_USER_NOT_VERIFIED_LOGIN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -366,10 +367,6 @@ class AccountController {
         throw new HttpException('User already exists, can be switched', 400)
       }
 
-      // if (password !== confirmPassword) {
-      //   throw new HttpException('Password not matched', 400)
-      // }
-
       const user = await UserService.housekeeperSignup(
         member.user_id,
         email,
@@ -462,8 +459,16 @@ class AccountController {
     if (!user) {
       throw new HttpException('User not found', 404)
     }
-    if( user.status !== STATUS_ACTIVE ) {
-      throw new HttpException('User has not been verified yet', 400)      
+    if (user.status !== STATUS_ACTIVE) {
+      await UserService.sendConfirmEmail(user)
+      /* @description */
+      // Merge error code and user id and send as a response
+      // Because client needs user id to call verify code endpoint
+      throw new HttpException(
+        'User has not been verified yet',
+        400,
+        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
+      )
     }
     role = user.role
 
@@ -514,11 +519,14 @@ class AccountController {
   async me({ auth, response, request }) {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
-      .with('tenant')
       .with('household')
       .with('plan')
       .with('tenantPaymentPlan')
       .firstOrFail()
+
+    user.tenant = await Tenant.query()
+      .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
+      .first()
 
     const { pushToken } = request.all()
 
