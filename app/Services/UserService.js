@@ -819,6 +819,8 @@ class UserService {
 
     return true
   }
+
+  activateLandlords(landlordIds) {}
 }
 
 module.exports = UserService

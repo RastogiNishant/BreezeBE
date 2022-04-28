@@ -65,6 +65,10 @@ class UserController {
     NoticeService.verifyUserByAdmin(data.ids)
     response.res(data)
   }
+
+  activateLandlords({ request, auth, response }) {
+    return response.res(true)
+  }
 }
 
 module.exports = UserController
