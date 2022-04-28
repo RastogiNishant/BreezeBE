@@ -103,12 +103,12 @@ class MauticService {
     const user = await User.query().where('id', userId).first()
     try {
       const mauticPrevData = await getMauticContact(user.mautic_id)
-      console.log(mauticPrevData)
       const userData = await getUserData(user)
       const body = {
         ...mauticPrevData,
         ...userData,
         ...payload,
+        overwriteWithBlank: false,
       }
       if (payload.invited_count) {
         body.invited_count = mauticPrevData.invited_count ? mauticPrevData.invited_count + 1 : 1
