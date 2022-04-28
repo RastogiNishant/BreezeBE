@@ -6,6 +6,8 @@ paths:
       tags:
         - Administration
       name: User Activation
+      security: 
+        - bearerAuth: []
       requestBody:
         required: true
         content:
