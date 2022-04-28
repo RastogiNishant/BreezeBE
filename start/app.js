@@ -38,7 +38,7 @@ providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
 
 providers.push(path.join(__dirname, '..', 'providers', 'Zendesk/Provider'))
 
-providers.push('adonis-swagger/providers/SwaggerProvider')
+providers.push('barudo-adonis-swagger/providers/SwaggerProvider')
 
 const aceProviders = [
 	'@adonisjs/lucid/providers/MigrationsProvider',

@@ -4,16 +4,15 @@ const Logger = use('Logger')
 const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
-const CompanyService = use('App/Services/CompanyService')
 const Estate = use('App/Models/Estate')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const SMSService = use('App/Services/SMSService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty } = require('lodash')
 const moment = require('moment')
+const NoticeService = use('App/Services/NoticeService')
 
 const {
   ROLE_LANDLORD,
@@ -412,7 +411,7 @@ class MatchController {
     if (!success) {
       throw new HttpException('Cant move to top', 400)
     }
-
+    NoticeService.landlordMovedProspectToTop(estate_id, user_id)
     response.res(true)
   }
 
@@ -471,9 +470,17 @@ class MatchController {
   }
 
   async tenantCancelCommit({ request, auth, response }) {
-    const { estate_id } = request.all()
-    await MatchService.tenantCancelCommit(estate_id, auth.user.id)
-    response.res(true)
+    try {
+      const { estate_id } = request.all()
+      await MatchService.tenantCancelCommit(estate_id, auth.user.id)
+      response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
   }
 
   /**
@@ -834,7 +841,11 @@ class MatchController {
 
     const matchesCount = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_KNOCK])
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id')
+          .on('_e.status', STATUS_ACTIVE)
+      })
+      .whereIn('matches.status', [MATCH_STATUS_KNOCK])
       .whereIn('estate_id', estatesId)
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
@@ -849,7 +860,11 @@ class MatchController {
 
     const buddiesCount = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_NEW])
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id')
+          .on('_e.status', STATUS_ACTIVE)
+      })
+      .whereIn('matches.status', [MATCH_STATUS_NEW])
       .where('buddy', true)
       .whereIn('estate_id', estatesId)
 
@@ -864,7 +879,11 @@ class MatchController {
 
     const invitesCount = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_INVITE])
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id')
+          .on('_e.status', STATUS_ACTIVE)
+      })
+      .whereIn('matches.status', [MATCH_STATUS_INVITE])
       .whereIn('estate_id', estatesId)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(

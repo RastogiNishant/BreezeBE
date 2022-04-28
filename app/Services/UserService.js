@@ -14,6 +14,8 @@ const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const Term = use('App/Models/Term')
+const Agreement = use('App/Models/Agreement')
 const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
@@ -34,12 +36,13 @@ const {
   ROLE_PROPERTY_MANAGER,
   MATCH_STATUS_FINISH,
   DATE_FORMAT,
-  DEFAULT_LANG,
   BUDDY_STATUS_ACCEPTED,
   SMS_VERIFY_PREFIX,
   LOG_TYPE_SIGN_UP,
+  DEFAULT_LANG,
   SIGN_IN_METHOD_GOOGLE,
 } = require('../constants')
+
 const { logEvent } = require('./TrackingService.js')
 
 class UserService {
@@ -47,6 +50,18 @@ class UserService {
    * Create user flow
    */
   static async createUser(userData) {
+    //we need him to approve Terms and Privacy
+    const latestTerm = await Term.query()
+      .where('status', STATUS_ACTIVE)
+      .orderBy('id', 'desc')
+      .first()
+    const latestAgreement = await Agreement.query()
+      .where('status', STATUS_ACTIVE)
+      .orderBy('id', 'desc')
+      .first()
+    userData.terms_id = latestTerm.id
+    userData.agreements_id = latestAgreement.id
+
     const user = await User.createItem(userData)
     if (user.role === ROLE_USER) {
       try {
@@ -55,10 +70,10 @@ class UserService {
         console.log('tenanttenant', tenant)
         await Tenant.createItem({
           user_id: user.id,
-          coord: tenant.address.coord,
-          dist_type: tenant.transport,
-          dist_min: tenant.time,
-          address: tenant.address.title,
+          coord: tenant?.address?.coord,
+          dist_type: tenant?.transport,
+          dist_min: tenant?.time,
+          address: tenant?.address.title,
         })
       } catch (e) {
         console.log('createUser exception', e)
@@ -96,7 +111,7 @@ class UserService {
       password,
       role,
       google_id,
-      status: STATUS_NEED_VERIFY,
+      status: STATUS_ACTIVE,
     }
 
     const { user } = await UserService.createUser(userData)
@@ -157,7 +172,7 @@ class UserService {
    *
    */
 
-  static async requestSendCodeForgotPassword(email, from_web = false) {
+  static async requestSendCodeForgotPassword(email, paramLang, from_web) {
     const code = getHash(3)
     let user = null
     email = encodeURI(email)
@@ -182,8 +197,14 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
 
-      const data = await this.getTokenWithLocale([user.id])
-      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+      const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
+      const lang = paramLang
+        ? paramLang
+        : data && data.length && data[0].lang
+        ? data[0].lang
+        : user.lang
+        ? user.lang
+        : DEFAULT_LANG
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -275,18 +296,22 @@ class UserService {
    *
    */
   static async sendConfirmEmail(user) {
-    const date = String(new Date().getTime())
-    const code = date.slice(date.length - 4, date.length)
-    await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
-    const data = await UserService.getTokenWithLocale([user.id])
-    const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+    try {
+      const date = String(new Date().getTime())
+      const code = date.slice(date.length - 4, date.length)
+      await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+      const data = await UserService.getTokenWithLocale([user.id])
+      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
-    await MailService.sendUserConfirmation(user.email, {
-      code,
-      user_id: user.id,
-      role: user.role,
-      lang: lang,
-    })
+      await MailService.sendUserConfirmation(user.email, {
+        code,
+        user_id: user.id,
+        role: user.role,
+        lang: lang,
+      })
+    } catch (e) {
+      throw new HttpException(e)
+    }
   }
 
   /**
@@ -442,12 +467,7 @@ class UserService {
       let extraFields = Tenant.columns
       if (!tenant.personal_shown) {
         extraFields = Object.values(
-          omit(extraFields, [
-            'unpaid_rental',
-            'insolvency_proceed',
-            'arrest_warranty',
-            'clean_procedure',
-          ])
+          omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
         )
       }
 
@@ -694,10 +714,11 @@ class UserService {
           role: ROLE_USER,
           password,
           owner_id: ownerId,
-          // phone: phone,
           status: STATUS_EMAIL_VERIFY,
           firstname,
           lang,
+          is_household_invitation_onboarded: false,
+          is_profile_onboarded: true,
         },
         trx
       )

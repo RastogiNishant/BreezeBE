@@ -46,6 +46,9 @@ const {
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
   USE_TYPE_WAZ,
+  USE_TYPE_PLANT,
+  USE_TYPE_OTHER,
+
   // ownership_type
   OWNERSHIP_TYPE_FREEHOLDER,
   OWNERSHIP_TYPE_DIRECT_PROPERTY,
@@ -171,11 +174,34 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_WITH_CHILD,
+  //Letting Status
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+
+  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_CONSTRUCTION_WORKS,
+  LETTING_STATUS_STRUCTURAL_VACANCY,
+  LETTING_STATUS_FIRST_TIME_USE,
+  LETTING_STATUS_VACANCY,
 } = require('../constants')
+
+yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
+  return this.test({
+    message: 'Must not be set when heating_costs and/or additional_costs are set.',
+    name: 'mustNotBeSet',
+    test: (value) => {
+      return value === undefined
+    },
+  })
+})
 
 class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
+      breeze_id: yup.string().nullable(),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
@@ -236,7 +262,10 @@ class CreateEstate extends Base {
       stp_garage: yup.number().min(0),
       stp_parkhaus: yup.number().min(0),
       stp_tiefgarage: yup.number().min(0),
-      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH]),
+      currency: yup
+        .string()
+        .oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH])
+        .default(CURRENCY_EUR),
       area: yup.number().min(0),
       living_space: yup.number().min(0),
       usable_area: yup.number().min(0),
@@ -266,7 +295,14 @@ class CreateEstate extends Base {
       use_type: yup
         .number()
         .positive()
-        .oneOf([USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_CONSTRUCT, USE_TYPE_WAZ]),
+        .oneOf([
+          USE_TYPE_RESIDENTIAL,
+          USE_TYPE_COMMERCIAL,
+          USE_TYPE_CONSTRUCT,
+          USE_TYPE_WAZ,
+          USE_TYPE_PLANT,
+          USE_TYPE_OTHER,
+        ]),
       ownership_type: yup
         .number()
         .positive()
@@ -301,7 +337,7 @@ class CreateEstate extends Base {
         ]),
       vacant_date: yup.date(),
       avail_duration: yup.number().integer().positive().max(5000),
-      from_date: yup.date(),
+      from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
@@ -321,8 +357,8 @@ class CreateEstate extends Base {
           PARKING_SPACE_TYPE_DUPLEX,
           PARKING_SPACE_TYPE_GARAGE,
         ]),
-      construction_year: yup.date(),
-      last_modernization: yup.date(),
+      construction_year: yup.date().nullable(),
+      last_modernization: yup.date().nullable(),
       building_status: yup
         .number()
         .positive()
@@ -366,7 +402,13 @@ class CreateEstate extends Base {
       heating_type: yup
         .number()
         // .positive()
-        .oneOf([HEATING_TYPE_NO, HEATING_TYPE_OVEN, HEATING_TYPE_FLOOR, HEATING_TYPE_CENTRAL, HEATING_TYPE_REMOTE]),
+        .oneOf([
+          HEATING_TYPE_NO,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_FLOOR,
+          HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_REMOTE,
+        ]),
       equipment: yup
         .array()
         .of(
@@ -409,7 +451,7 @@ class CreateEstate extends Base {
           null,
         ])
         .nullable(),
-      energy_efficiency: yup.number().positive(),
+      energy_efficiency: yup.number().positive().nullable(),
       energy_pass: yup
         .mixed()
         .oneOf([
@@ -429,7 +471,7 @@ class CreateEstate extends Base {
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
-      furnished: yup.boolean(),
+      furnished: yup.boolean().nullable(),
       kids_type: yup
         .number()
         .integer()
@@ -448,6 +490,56 @@ class CreateEstate extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       min_age: yup.number().integer().min(0).max(120),
       max_age: yup.number().integer().min(0).max(120),
+      minors: yup.boolean(),
+      letting_status: yup
+        .number()
+        .oneOf([
+          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_TERMINATED,
+          LETTING_STATUS_NORMAL,
+          LETTING_STATUS_CONSTRUCTION_WORKS,
+          LETTING_STATUS_STRUCTURAL_VACANCY,
+          LETTING_STATUS_FIRST_TIME_USE,
+          LETTING_STATUS_VACANCY,
+        ])
+        .nullable(),
+      letting_type: yup
+        .number()
+        .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
+        .nullable(),
+      family_size_max: yup.number().integer().min(1).max(100).nullable(),
+      family_size_min: yup.number().integer(),
+      apartment_status: yup
+        .number()
+        .integer()
+        .oneOf([
+          BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+          BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+          BUILDING_STATUS_NEW,
+          BUILDING_STATUS_EXISTING,
+          BUILDING_STATUS_PART_FULLY_RENOVATED,
+          BUILDING_STATUS_PARTLY_REFURISHED,
+          BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+          BUILDING_STATUS_READY_TO_BE_BUILT,
+          BUILDING_STATUS_BY_AGREEMENT,
+          BUILDING_STATUS_MODERNIZED,
+          BUILDING_STATUS_CLEANED,
+          BUILDING_STATUS_ROUGH_BUILDING,
+          BUILDING_STATUS_DEVELOPED,
+          BUILDING_STATUS_ABRISSOBJEKT,
+          BUILDING_STATUS_PROJECTED,
+        ]),
+      extra_address: yup.string().min(0).max(255).nullable(),
+      extra_costs: yup
+        .number()
+        .when(['additional_costs', 'heating_costs'], {
+          is: (additional_costs, heating_costs) => {
+            return additional_costs || heating_costs
+          },
+          then: yup.number().mustNotBeSet(),
+          otherwise: yup.number().min(0).max(1000000),
+        })
+        .nullable(),
     })
 }
 

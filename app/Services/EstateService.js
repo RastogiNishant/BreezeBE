@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray, size } = require('lodash')
+const { get, isEmpty, findIndex, range, isArray, size, omit } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -11,8 +11,9 @@ const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
-// const MatchService = use('App/Services/MatchService') # DO NOT INCLUDE, cycling dependencies
+
 const Estate = use('App/Models/Estate')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
@@ -24,7 +25,10 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_KNOCK,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
@@ -96,7 +100,11 @@ class EstateService {
       .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
+      .withCount('final')
       .withCount('inviteBuddies')
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -156,6 +164,7 @@ class EstateService {
   }
 
   static async completeRemoveEstate(id) {
+    await EstateCurrentTenant.query().where('estate_id', id).delete()
     return await Estate.query().where('id', id).delete()
   }
 
@@ -619,7 +628,7 @@ class EstateService {
         .select('id')
         .where('status', STATUS_ACTIVE)
         .where('available_date', '<=', moment().format(DATE_FORMAT))
-        .limit(100)
+        // .limit(100)
         .fetch()
     ).rows.map((i) => i.id)
 
@@ -641,6 +650,7 @@ class EstateService {
         .whereIn('estate_id', estateIds)
         .delete()
         .transacting(trx)
+
       await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
       await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
 
@@ -676,11 +686,21 @@ class EstateService {
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
-    return await EstateService.getEstates(params)
-      .whereIn('user_id', ids)
-      .whereNot('status', STATUS_DELETE)
-      .whereNot('area', 0)
-      .paginate(page, limit)
+    if (params.return_all && params.return_all == 1) {
+      return await EstateService.getEstates(params)
+        .whereIn('user_id', ids)
+        .whereNot('estates.status', STATUS_DELETE)
+        .whereNot('area', 0)
+        .with('rooms')
+        .with('current_tenant')
+        .fetch()
+    } else {
+      return await EstateService.getEstates(params)
+        .whereIn('user_id', ids)
+        .whereNot('estates.status', STATUS_DELETE)
+        .whereNot('area', 0)
+        .paginate(page, limit)
+    }
   }
 
   /**
@@ -747,6 +767,40 @@ class EstateService {
     })
 
     return result
+  }
+
+  static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
+    return Estate.query()
+      .select('estates.*')
+      .with('user')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id')
+          .on('_m.user_id', tenant_id)
+          .on('_m.status', MATCH_STATUS_FINISH)
+      })
+      .leftJoin({ _mb: 'members' }, function () {
+        this.on('_mb.user_id', '_m.user_id')
+      })
+      .where('estates.id', estate_id)
+      .where('estates.user_id', user_id)
+      .orderBy('_mb.id')
+      .firstOrFail()
+  }
+
+  /**
+   * Soft deletes of estates
+   */
+  static async deleteEstates(ids, user_id, trx) {
+    const affectedRows = await Estate.query(trx)
+      .where('user_id', user_id)
+      .whereIn('id', ids)
+      .update({ status: STATUS_DELETE })
+    if (affectedRows !== ids.length) {
+      throw new AppException(
+        'Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
+      )
+    }
+    return affectedRows
   }
 }
 
