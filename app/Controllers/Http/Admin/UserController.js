@@ -66,8 +66,9 @@ class UserController {
     response.res(data)
   }
 
-  activateLandlords({ request, auth, response }) {
-    return response.res(true)
+  updateActivationStatus({ request, auth, response }) {
+    const { ids, action } = request.all()
+    return response.res({ ids, action })
   }
 }
 

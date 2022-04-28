@@ -342,9 +342,10 @@ Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middl
   'valid:Ids,UserVerify',
 ])
 
-Route.post('api/v1/admin/activate-landlords', 'Admin/UserController.activateLandlords').middleware([
+Route.put('api/v1/admin/activation', 'Admin/UserController.updateActivationStatus').middleware([
   'auth:jwtAdmin',
   'is:admin',
+  'valid:UpdateUserValidationStatus',
 ])
 
 Route.group(() => {
