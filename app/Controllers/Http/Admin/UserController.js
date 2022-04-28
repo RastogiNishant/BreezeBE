@@ -7,7 +7,11 @@ const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 
 const { isEmpty, find, get } = require('lodash')
-const { ROLE_ADMIN } = require('../../../constants')
+const {
+  ROLE_ADMIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
+} = require('../../../constants')
 
 class UserController {
   /**
@@ -66,9 +70,22 @@ class UserController {
     response.res(data)
   }
 
-  updateActivationStatus({ request, auth, response }) {
+  async updateActivationStatus({ request, auth, response }) {
     const { ids, action } = request.all()
-    return response.res({ ids, action })
+    let affectedRows = 0
+    switch (action) {
+      case 'activate':
+        affectedRows = await User.query()
+          .whereIn('id', ids)
+          .update({ activation_status: USER_ACTIVATION_STATUS_ACTIVATED })
+        break
+      case 'deactivate':
+        affectedRows = await User.query()
+          .whereIn('id', ids)
+          .update({ activation_status: USER_ACTIVATION_STATUS_DEACTIVATED })
+        break
+    }
+    return response.res({ affectedRows })
   }
 }
 
