@@ -14,6 +14,7 @@ const Database = use('Database')
 const { omit } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
+const NoticeService = use('App/Services/NoticeService')
 
 const {
   VISIBLE_TO_SPECIFIC,
@@ -224,6 +225,9 @@ class MemberController {
 
       Event.fire('tenant::update', user_id)
       trx.commit()
+      if (auth.user.owner_id) {
+        await NoticeService.prospectHouseholdDisconnected(user_id)
+      }
       response.res(true)
     } catch (e) {
       await trx.rollback()
