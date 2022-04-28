@@ -93,6 +93,7 @@ const {
   EQUIPMENT_STANDARD_NORMAL,
   EQUIPMENT_STANDARD_ENHANCED,
 
+  PARKING_SPACE_TYPE_NO_PARKING,
   PARKING_SPACE_TYPE_UNDERGROUND,
   PARKING_SPACE_TYPE_CARPORT,
   PARKING_SPACE_TYPE_OUTDOOR,
@@ -348,6 +349,7 @@ class EstateAttributeTranslations {
       enhanced: EQUIPMENT_STANDARD_ENHANCED,
     },
     parking_space_type: {
+      no_parking: PARKING_SPACE_TYPE_NO_PARKING,
       underground: PARKING_SPACE_TYPE_UNDERGROUND,
       carport: PARKING_SPACE_TYPE_CARPORT,
       outdoor: PARKING_SPACE_TYPE_OUTDOOR,
@@ -418,31 +420,37 @@ class EstateAttributeTranslations {
     deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
-      switch (i) {
-        case 'Ground floor':
+      switch (escapeStr(i)) {
+        case escapeStr(l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', this.lang)): //'Ground floor':
           return 0
-        case 'Roof':
+        case escapeStr(l.get('apt_roof_floor.message', this.lang)):
           return 21
         default:
           return parseInt(i)
       }
     },
-    family_size_max: (i) => (isEmpty(i) ? null : parseInt(i)),
-    construction_year: (i) => (isEmpty(i) ? null : parseInt(i)),
+    family_size_max: (i) => {
+      i = i.toString()
+      return isEmpty(i) ? null : parseInt(i)
+    },
+    construction_year: (i) => {
+      i = i.toString()
+      return isEmpty(i) ? null : i
+    },
     address: (i, o) => {
       return trim(
         `${o.street || ''} ${o.house_number || ''}, ${o.zip || ''} ${o.city || ''}`,
         ', '
       ).replace(/\s,/g, ',')
     },
-    energy_efficiency: (i) => (isEmpty(i) ? null : Number(i)),
+    energy_efficiency: (i) => Number(i),
     area: (i) => Number(i),
     rooms_number: (i) => Number(i),
     net_rent: (i) => Number(i),
     additional_costs: (i) => Number(i),
     heating_costs: (i) => Number(i),
-    min_age: (i) => (isEmpty(i) ? 0 : parseInt(i)),
-    max_age: (i) => (isEmpty(i) ? 0 : parseInt(i)),
+    min_age: (i) => parseInt(i),
+    max_age: (i) => parseInt(i),
     currency: (i) => (isEmpty(i) ? 'EUR' : i),
   }
 
@@ -698,6 +706,7 @@ class EstateAttributeTranslations {
       },
       parking_space_type: {
         keys: [
+          'web.letting.property.import.No_Parking.message',
           'property.attribute.PARKING_SPACE_TYPE.Underground.message',
           'property.attribute.PARKING_SPACE_TYPE.Carport.message',
           'property.attribute.PARKING_SPACE_TYPE.Outdoor.message',
@@ -706,6 +715,7 @@ class EstateAttributeTranslations {
           'property.attribute.PARKING_SPACE_TYPE.Garage.message',
         ],
         values: [
+          PARKING_SPACE_TYPE_NO_PARKING,
           PARKING_SPACE_TYPE_UNDERGROUND,
           PARKING_SPACE_TYPE_CARPORT,
           PARKING_SPACE_TYPE_OUTDOOR,
