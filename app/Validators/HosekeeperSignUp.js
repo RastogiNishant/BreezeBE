@@ -15,7 +15,7 @@ class HosekeeperSignUp extends Base {
       // confirmPassword: yup.string().trim().min(6).max(36).required(),
       // owner_id:id.required(),
       // member_id:id.required(),
-      code: yup.string().min(3).max(10).required(),
+      code: yup.string().min(3).required(),
       lang: yup.string().oneOf(['en', 'de']).default('en').required(),
       // phone: phoneSchema.required(),
     })

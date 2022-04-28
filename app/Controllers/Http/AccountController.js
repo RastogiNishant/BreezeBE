@@ -13,6 +13,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const Company = use('App/Models/Company')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Hash = use('Hash')
 const Drive = use('Drive')
 
@@ -26,7 +27,7 @@ const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { assign, upperCase, pick } = require('lodash')
+const { pick } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -42,6 +43,8 @@ const {
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
   BUDDY_STATUS_PENDING,
+  STATUS_ACTIVE,
+  ERROR_USER_NOT_VERIFIED_LOGIN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -76,13 +79,22 @@ class AccountController {
         firstname,
         status: STATUS_EMAIL_VERIFY,
       })
+
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
 
+      if (user.role === ROLE_USER) {
+        //If user we look for his email on estate_current_tenant and make corresponding corrections
+        const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
+        if (currentTenant) {
+          currentTenant.user_id = user.id
+          await currentTenant.save()
+        }
+      }
       await UserService.sendConfirmEmail(user)
-      return response.res(user)
+      response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException('User already exists', 400)
@@ -355,10 +367,6 @@ class AccountController {
         throw new HttpException('User already exists, can be switched', 400)
       }
 
-      // if (password !== confirmPassword) {
-      //   throw new HttpException('Password not matched', 400)
-      // }
-
       const user = await UserService.housekeeperSignup(
         member.user_id,
         email,
@@ -451,6 +459,17 @@ class AccountController {
     if (!user) {
       throw new HttpException('User not found', 404)
     }
+    if (user.status !== STATUS_ACTIVE) {
+      await UserService.sendConfirmEmail(user)
+      /* @description */
+      // Merge error code and user id and send as a response
+      // Because client needs user id to call verify code endpoint
+      throw new HttpException(
+        'User has not been verified yet',
+        400,
+        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
+      )
+    }
     role = user.role
 
     let authenticator
@@ -500,11 +519,14 @@ class AccountController {
   async me({ auth, response, request }) {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
-      .with('tenant')
       .with('household')
       .with('plan')
       .with('tenantPaymentPlan')
       .firstOrFail()
+
+    user.tenant = await Tenant.query()
+      .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
+      .first()
 
     const { pushToken } = request.all()
 
@@ -517,7 +539,11 @@ class AccountController {
         role: user.role,
       })
       if (!user.company_id) {
-        user.company_name = `${user.firstname} ${user.secondname}`.trim()
+        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+        const company_name = `${company_firstname} ${company_secondname}`.trim()
+        user.company_name = company_name
+        user.company = null
       } else {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
@@ -630,8 +656,8 @@ class AccountController {
       await user.save()
       user = user.toJSON({ isOwner: true })
     } else {
-      if (data.company_name) {
-        let company_name = data.company_name
+      if (data.company_name && data.company_name.trim()) {
+        let company_name = data.company_name.trim()
         company = await Company.findOrCreate(
           { name: company_name, user_id: auth.user.id },
           { name: company_name, user_id: auth.user.id }
@@ -647,7 +673,11 @@ class AccountController {
       user.company_name = company.name
       user.company = company
     } else {
-      user.company = `${user.firstname} ${user.secondname}`.trim()
+      const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+      const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+      const company_name = `${company_firstname} ${company_secondname}`.trim()
+      user.company_name = company_name
+      user.company = null
     }
     return response.res(user)
   }
@@ -720,13 +750,13 @@ class AccountController {
    * Password recover send email with code
    */
   async passwordReset({ request, response }) {
-    let { email, from_web } = request.only(['email', 'from_web'])
+    let { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
     // Send email with reset password code
     //await UserService.requestPasswordReset(email)
     if (from_web === undefined) {
       from_web = false
     }
-    await UserService.requestSendCodeForgotPassword(email, from_web)
+    await UserService.requestSendCodeForgotPassword(email, lang, from_web)
     return response.res()
   }
 
@@ -734,10 +764,10 @@ class AccountController {
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
-    const { email, from_web } = request.only(['email', 'from_web'])
+    const { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
 
     try {
-      await UserService.requestSendCodeForgotPassword(email, from_web)
+      await UserService.requestSendCodeForgotPassword(email, lang, from_web)
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)

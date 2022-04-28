@@ -30,6 +30,8 @@ const {
   HOUSE_TYPE_BUNGALOW,
   HOUSE_TYPE_VILLA,
   HOUSE_TYPE_GARDENHOUSE,
+  //Minor
+  MAX_MINOR_COUNT,
 } = require('../constants')
 
 class UpdateTenant extends Base {
@@ -40,6 +42,7 @@ class UpdateTenant extends Base {
       pets_species: yup.string().max(255),
       non_smoker: yup.boolean(),
       parking_space: yup.number().min(0),
+      minors_count: yup.number().min(0).max(MAX_MINOR_COUNT),
       coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
       address: yup
         .string()

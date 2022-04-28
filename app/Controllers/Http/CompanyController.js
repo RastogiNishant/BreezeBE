@@ -92,6 +92,10 @@ class CompanyController {
       data.avatar = files.avatar
     }
 
+    const currentContacts = await CompanyService.getContacts(auth.user.id)
+    if (currentContacts?.rows?.length > 0) {
+      throw new HttpException('only 1 contact can be added', 400)
+    }
     const contacts = await CompanyService.createContact(data, auth.user.id)
 
     return response.res(contacts)

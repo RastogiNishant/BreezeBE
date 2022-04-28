@@ -1,4 +1,5 @@
 'use strict'
+const HttpException = use('App/Exceptions/HttpException')
 
 const Twilio = use('Twilio')
 const Env = use('Env')

@@ -471,13 +471,15 @@ definitions:
 paths:
   /api/v1/estates:
     get:
-      tags: [estate]
-      security: [bearerAuth: []]
-      description: Get own estates list
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Current user's estate list
+      summary: current user's estate list
       parameters:
         - filters:
-          name: query
+          name: filters
           in: query
           type: string
         - status:
@@ -486,248 +488,242 @@ paths:
           in: query
           description: 'Active: 1, Draft: 5'
           enum: ['1', '5']
-        - $ref: '#/definitions/limit'
-        - $ref: '#/definitions/page'
-      responses: [200]
-
+        - query:
+          name: query
+          type: string
+          in: query
+        - limit:
+          name: limit
+          type: number
+          in: query
+          example: 20
+        - page:
+          name: page
+          type: number
+          in: query
+          example: 1
+        - return_all:
+          name: return_all
+          in: query
+          example: 1
+          description: whether to return all estates at once or not (1 for return all)
+      responses: 
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     post:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: Create new estate
-      produces: [application/json]
-      parameters:
-        - $ref: '#/definitions/property_id'
-        - $ref: '#/definitions/property_type'
-        - $ref: '#/definitions/coord'
-        - $ref: '#/definitions/apt_type_2'
-        - $ref: '#/definitions/house_type_2'
-        - $ref: '#/definitions/description'
-        - $ref: '#/definitions/category'
-        - $ref: '#/definitions/rooms'
-        - $ref: '#/definitions/street'
-        - $ref: '#/definitions/house_number'
-        - $ref: '#/definitions/country'
-        - $ref: '#/definitions/floor'
-        - $ref: '#/definitions/number_floors'
-        - $ref: '#/definitions/prices'
-        - $ref: '#/definitions/net_rent'
-        - $ref: '#/definitions/cold_rent'
-        - $ref: '#/definitions/rent_including_heating'
-        - $ref: '#/definitions/additional_costs'
-        - $ref: '#/definitions/heating_costs_included'
-        - $ref: '#/definitions/heating_costs'
-        - $ref: '#/definitions/rent_per_sqm'
-        - $ref: '#/definitions/deposit'
-        - $ref: '#/definitions/stp_garage'
-        - $ref: '#/definitions/stp_parkhaus'
-        - $ref: '#/definitions/stp_tiefgarage'
-        - $ref: '#/definitions/currency'
-        - $ref: '#/definitions/area'
-        - $ref: '#/definitions/living_space'
-        - $ref: '#/definitions/usable_area'
-        - $ref: '#/definitions/rooms_number'
-        - $ref: '#/definitions/bedrooms_number'
-        - $ref: '#/definitions/bathrooms_number'
-        - $ref: '#/definitions/kitchen_options'
-        - $ref: '#/definitions/bath_options'
-        - $ref: '#/definitions/wc_number'
-        - $ref: '#/definitions/balconies_number'
-        - $ref: '#/definitions/terraces_number'
-        - $ref: '#/definitions/occupancy'
-        - $ref: '#/definitions/use_type'
-        - $ref: '#/definitions/ownership_type'
-        - $ref: '#/definitions/marketing_type'
-        - $ref: '#/definitions/energy_type'
-        - $ref: '#/definitions/avail_duration'
-        - $ref: '#/definitions/vacant_date'
-        - $ref: '#/definitions/from_date'
-        - $ref: '#/definitions/to_date'
-        - $ref: '#/definitions/min_lease_duration'
-        - $ref: '#/definitions/max_lease_duration'
-        - $ref: '#/definitions/non_smoker'
-        - $ref: '#/definitions/pets'
-        - $ref: '#/definitions/gender'
-        - $ref: '#/definitions/monumental_protection'
-        - $ref: '#/definitions/parking_space_type'
-        - $ref: '#/definitions/parking_space'
-        - $ref: '#/definitions/construction_year'
-        - $ref: '#/definitions/last_modernization'
-        - $ref: '#/definitions/building_status'
-        - $ref: '#/definitions/building_age'
-        - $ref: '#/definitions/firing'
-        - $ref: '#/definitions/heating_type'
-        - $ref: '#/definitions/equipment'
-        - $ref: '#/definitions/equipment_standard'
-        - $ref: '#/definitions/ground'
-        - $ref: '#/definitions/energy_efficiency'
-        - $ref: '#/definitions/repair_need'
-        - $ref: '#/definitions/cover'
-        - $ref: '#/definitions/city'
-        - $ref: '#/definitions/zip'
-        - $ref: '#/definitions/budget'
-        - $ref: '#/definitions/credit_score'
-        - $ref: '#/definitions/rent_arrears'
-        - $ref: '#/definitions/full_address'
-        - $ref: '#/definitions/kids_type'
-        - $ref: '#/definitions/photo_require'
-        - $ref: '#/definitions/furnished'
-        - $ref: '#/definitions/source_person'
-        - $ref: '#/definitions/family_status'
-        - $ref: '#/definitions/apt_options'
-        - $ref: '#/definitions/min_age'
-        - $ref: '#/definitions/max_age'
-      responses: [200]
-
+      requestBody:
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/CreateEstateSchema'
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              $ref: '#/components/schemas/CreateEstateSchema'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
+    delete:
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Delete multiple estates. This will only do a soft delete by editing status to STATUS_DELETE.
+      summary: delete multiple estates
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: array
+                  items: integer
+                  description: Array of estates.id to be deleted.
+                  example: '[1,2,3]'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: success
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: integer
+                        description: number of estates deleted
+                        example: 3
+        '422':
+          description: Error found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: error
+                  data:
+                    type: string
+                    example: '1101230: Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
+                  code:
+                    type: string
+                    description: Error trace code
+                    example: '1101230'
   /api/v1/estates/{id}:
     get:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: Get single estate with POI
-      produces: [application/json]
       parameters:
         - id:
           name: id
           in: path
           type: number
-          default: '1'
+          example: 345
           required: true
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/GetEstateSchemaReturn'
 
     put:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: update existing estate
-      produces: [application/json]
       parameters:
         - id:
           name: id
           in: path
           type: number
-          default: '1'
+          example: 345
           required: true
-        - $ref: '#/definitions/property_id'
-        - $ref: '#/definitions/property_type'
-        - $ref: '#/definitions/coord'
-        - $ref: '#/definitions/apt_type_2'
-        - $ref: '#/definitions/house_type_2'
-        - $ref: '#/definitions/description'
-        - $ref: '#/definitions/category'
-        - $ref: '#/definitions/rooms'
-        - $ref: '#/definitions/street'
-        - $ref: '#/definitions/house_number'
-        - $ref: '#/definitions/country'
-        - $ref: '#/definitions/floor'
-        - $ref: '#/definitions/number_floors'
-        - $ref: '#/definitions/prices'
-        - $ref: '#/definitions/net_rent'
-        - $ref: '#/definitions/cold_rent'
-        - $ref: '#/definitions/rent_including_heating'
-        - $ref: '#/definitions/additional_costs'
-        - $ref: '#/definitions/heating_costs_included'
-        - $ref: '#/definitions/heating_costs'
-        - $ref: '#/definitions/rent_per_sqm'
-        - $ref: '#/definitions/deposit'
-        - $ref: '#/definitions/stp_garage'
-        - $ref: '#/definitions/stp_parkhaus'
-        - $ref: '#/definitions/stp_tiefgarage'
-        - $ref: '#/definitions/currency'
-        - $ref: '#/definitions/area'
-        - $ref: '#/definitions/living_space'
-        - $ref: '#/definitions/usable_area'
-        - $ref: '#/definitions/rooms_number'
-        - $ref: '#/definitions/bedrooms_number'
-        - $ref: '#/definitions/bathrooms_number'
-        - $ref: '#/definitions/kitchen_options'
-        - $ref: '#/definitions/bath_options'
-        - $ref: '#/definitions/wc_number'
-        - $ref: '#/definitions/balconies_number'
-        - $ref: '#/definitions/terraces_number'
-        - $ref: '#/definitions/occupancy'
-        - $ref: '#/definitions/use_type'
-        - $ref: '#/definitions/ownership_type'
-        - $ref: '#/definitions/marketing_type'
-        - $ref: '#/definitions/energy_type'
-        - $ref: '#/definitions/avail_duration'
-        - $ref: '#/definitions/vacant_date'
-        - $ref: '#/definitions/from_date'
-        - $ref: '#/definitions/to_date'
-        - $ref: '#/definitions/min_lease_duration'
-        - $ref: '#/definitions/max_lease_duration'
-        - $ref: '#/definitions/non_smoker'
-        - $ref: '#/definitions/pets'
-        - $ref: '#/definitions/gender'
-        - $ref: '#/definitions/monumental_protection'
-        - $ref: '#/definitions/parking_space_type'
-        - $ref: '#/definitions/parking_space'
-        - $ref: '#/definitions/construction_year'
-        - $ref: '#/definitions/last_modernization'
-        - $ref: '#/definitions/building_status'
-        - $ref: '#/definitions/building_age'
-        - $ref: '#/definitions/firing'
-        - $ref: '#/definitions/heating_type'
-        - $ref: '#/definitions/equipment'
-        - $ref: '#/definitions/equipment_standard'
-        - $ref: '#/definitions/ground'
-        - $ref: '#/definitions/energy_efficiency'
-        - $ref: '#/definitions/energy_pass'
-        - $ref: '#/definitions/repair_need'
-        - $ref: '#/definitions/cover'
-        - $ref: '#/definitions/city'
-        - $ref: '#/definitions/zip'
-        - $ref: '#/definitions/budget'
-        - $ref: '#/definitions/credit_score'
-        - $ref: '#/definitions/rent_arrears'
-        - $ref: '#/definitions/full_address'
-        - $ref: '#/definitions/kids_type'
-        - $ref: '#/definitions/photo_require'
-        - $ref: '#/definitions/furnished'
-        - $ref: '#/definitions/source_person'
-        - $ref: '#/definitions/family_status'
-        - $ref: '#/definitions/apt_options'
-        - $ref: '#/definitions/min_age'
-        - $ref: '#/definitions/max_age'
-      responses: [200]
-
+      requestBody:
+        content:
+          application/json:
+            type: object
+            schema:
+              $ref: '#/components/schemas/CreateEstateSchema'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/UpdateEstateSchemaReturn'
     delete:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags: 
+        - Landlord Estates
+      security: 
+        - bearerAuth: []
       description: update existing estate
-      produces: [application/json]
       parameters:
         - id:
           name: id
           in: path
           type: number
           required: true
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{id}/publish:
     put:
-      tags: [estate]
-      security: [bearerAuth: []]
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Publish or Unpublish a given Estate
+      summary: publish or unpublish a given estate
       parameters:
         - id:
           name: id
           in: path
           type: number
+          description: The id of the estate
           default: '1'
           required: true
-        - action:
-          name: action
-          in: formData
-          type: string
-          enum: ['publish', 'unpublish']
-          default: 'publish'
-          required: true
-      responses: [200]
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            required:
+              - action
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  description: whether to publish or unpublish the given estate
+                  enum:
+                    - publish
+                    - unpublish
+                  default: publish
+          application/json:
+            required:
+              - action
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  description: whether to publish or unpublish the given estate
+                  enum:
+                    - publish
+                    - unpublish
+                  default: publish
+          
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{estate_id}/files:
     post:
-      tags: [estate]
-      security: [bearerAuth: []]
-      description: update existing estate
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: add/update attachments to an estate
       parameters:
         - $ref: '#/definitions/estate_id'
         - name: type
@@ -739,46 +735,85 @@ paths:
           in: formData
           type: file
           required: true
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{estate_id}/files/{id}:
     delete:
-      tags: [estate]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
       description: delete existing estate file
-      produces: [application/json]
       parameters:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/import:
     post:
-      tags: [estate]
-      security: [bearerAuth: []]
-      description: update existing estate
-      produces: [application/json]
-      parameters:
-        - name: file
-          in: formData
-          type: file
-          required: true
-      responses: [200]
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: Add estates by uploading an excel file to the server. Excel file must adhere to the right template.
+        Template could be in English or German language.
+      summary: add estates by importing an excel file
+      requestBody:
+        content:
+          multipart/form-data:
+            type: object
+            schema:
+              $ref: '#/components/schemas/ImportEstate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
 
   /api/v1/estates/{estate_id}/slots:
     get:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Get etstate timeslots
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
+      description: Get estate timeslots
+      summary: get estate timeslots
       parameters:
         - $ref: '#/definitions/estate_id'
-      responses: [200]
-
+      responses: 
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     post:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Create new estate
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security: 
+        - bearerAuth: []
+      description: Create new estate timeslot
+      summary: create new estate timeslot
       parameters:
         - $ref: '#/definitions/estate_id'
         - name: slot_length
@@ -787,38 +822,114 @@ paths:
           allOf: [$ref: '#/definitions/start_at', required: true]
         - name: end_at
           allOf: [$ref: '#/definitions/end_at', required: true]
-      responses: [200]
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
   /api/v1/estates/{estate_id}/slots/{slot_id}:
     put:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Create new estate
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
+      description: Update an Estate Timeslot
+      summary: update an estate timeslot
       parameters:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/slot_id'
         - $ref: '#/definitions/slot_length'
         - $ref: '#/definitions/start_at'
         - $ref: '#/definitions/end_at'
-      responses: [200]
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
     delete:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
-      description: Delete existing slot
-      produces: [application/json]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
+      description: Delete existing estate timeslot
+      summary: delete existing estate timeslot
       parameters:
         - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/slot_id'
-      responses: [200]
-
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
   /api/v1/estates/{estate_id}/slots/free:
     get:
-      tags: [estate, timeslot]
-      security: [bearerAuth: []]
+      tags:
+        - Landlord Estates
+        - Landlord Estate Timeslots
+      security:
+        - bearerAuth: []
       description: Get free for booking timeslots
-      produces: [application/json]
       parameters:
         - $ref: '#/definitions/estate_id'
-      responses: [200]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
+  /api/v1/estates/export/{lang}:
+    get:
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: |
+        Export all estate/property information and values are mapped to translation
+
+        **lang** - language for now is either en (English) or de (German)
+      parameters:
+        - name: lang
+          in: path
+          enum:
+            - en
+            - de
+          example: en
+          description: the language - for now is either en (English) or de (German)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
+  /api/v1/estates/export:
+    get:
+      summary: export estate/property information
+      tags:
+        - Landlord Estates
+      security:
+        - bearerAuth: []
+      description: |
+        Export all estate/property information. Values are not mapped with mostly numeric
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              type: object
+              schema:
+                $ref: '#/components/schemas/CommonReturn'

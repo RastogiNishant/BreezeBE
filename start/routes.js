@@ -91,7 +91,6 @@ Route.group(() => {
   .prefix('/api/v1/landlord/paymentMethod')
   .middleware(['auth:jwtLandlord'])
 
-
 //Billing Address
 Route.group(() => {
   Route.post('', 'BillingAddressController.addBillingAddress')
@@ -220,8 +219,11 @@ Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  Route.get('/export/:lang', 'EstateController.export')
+  Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
     'valid:PropertyId',
   ])
@@ -280,6 +282,10 @@ Route.group(() => {
   Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware([
     'valid:LandlordInviteToView',
     'LandlordOwnsThisEstate',
+  ])
+
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
+    'valid:EstateId,TenantId',
   ])
 })
   .prefix('/api/v1/estates')
@@ -403,8 +409,8 @@ Route.group(() => {
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
 ])
-// Tenant members
 
+// Tenant members
 Route.group(() => {
   Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
     'valid:InitializeAdults',
@@ -412,7 +418,13 @@ Route.group(() => {
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
-  Route.post('/visible', 'MemberController.showMe').middleware([
+  Route.get('/invitation', 'MemberController.prepareHouseholdInvitationDetails')
+  Route.put('/invitation/refuse', 'MemberController.refuseInvitation')
+  Route.put('/invitation/accept', 'MemberController.acceptInvitation').middleware([
+    'valid:ProfileVisibilityToOther',
+  ])
+  Route.get('/visible', 'MemberController.checkVisibilitySetting').middleware(['valid:MemberId'])
+  Route.put('/visible', 'MemberController.showMe').middleware([
     'valid:MemberId,ProfileVisibilityToOther',
   ])
   Route.delete('/:id', 'MemberController.removeMember').middleware(['valid:Id'])
@@ -436,13 +448,15 @@ Route.group(() => {
     'valid:Id,IncomeId',
   ])
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
+  Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
+    'valid:MemberId,Phone',
+  ])
+  Route.post('/confirmsms', 'MemberController.confirmBySMS').middleware([
+    'valid:MemberId,Code,Phone',
+  ])
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt,jwtHousekeeper'])
-
-Route.post('/confirmInvite', 'MemberController.confirmInviteCode')
-  .prefix('api/v1/tenant/members')
-  .middleware(['auth:jwt,valid:InvitationCode'])
 
 // Add income files
 Route.group(() => {
@@ -708,6 +722,19 @@ Route.group(() => {
 }).prefix('api/v1/estateReportAbuse')
 
 Route.group(() => {
+  Route.post('/', 'TenantReportAbuseController.reportTenantAbuse').middleware([
+    'auth:jwtLandlord',
+    'valid:CreateEstateAbuse,TenantId',
+  ])
+
+  Route.delete('/:id', 'TenantReportAbuseController.deleteAbuse').middleware([
+    'auth:jwtAdmin',
+    'is:admin',
+    'valid:Id',
+  ])
+}).prefix('api/v1/tenantReportAbuse')
+
+Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([
     'auth:jwtPropertyManager',
     'valid:Ids',
@@ -784,4 +811,63 @@ Route.list().forEach((r) => {
       r.middlewareList = [...r.middlewareList, 'agreement']
     }
   }
+})
+
+const Matchservice = use('App/Services/Matchservice1')
+Route.get('/debug/test-match', async ({ request, response }) => {
+  if (!process.env.DEV) {
+    response.res(false)
+  }
+  let prospect = {
+    income: 0,
+    budget_max: 30,
+    credit_score: 90,
+    unpaid_rental: 1,
+    family_status: true,
+    non_smoker: true,
+    members_age: [10, 65],
+    members_count: 7,
+    pets: 1,
+    space_min: 100,
+    space_max: 200,
+    rooms_min: 2,
+    rooms_max: 3,
+    floor_min: 1,
+    floor_max: 2,
+    apt_type: [1, 2],
+    house_type: [1, 2],
+    rent_start: '2022-05-20',
+    options: [1, 2, 3, 4, 5, 6, 7],
+  }
+
+  const estate = {
+    budget: 30,
+    credit_score: 90,
+    net_rent: 300,
+    area: 150,
+    min_age: 10,
+    max_age: 65,
+    non_smoker: true,
+    pets: 1,
+    rooms_number: 2,
+    number_floors: 2,
+    house_type: 1,
+    apt_type: 1,
+    options: [1, 2, 3, 4, 5, 6, 7],
+    vacant_date: '2022-05-20',
+    family_size_max: 6,
+  }
+
+  let scores = []
+  for (let k = 250; k <= 5000; k += 10) {
+    //for (let k = 10; k <= 100; k += 5) {
+    //prospect.credit_score = k
+    //prospect.income = 300
+    prospect.income = k
+    scores.push({
+      income: prospect.income,
+      scores: Matchservice.calculateMatchPercent(prospect, estate),
+    })
+  }
+  return response.res({ scores })
 })

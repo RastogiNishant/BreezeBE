@@ -69,6 +69,7 @@ class QueueService {
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(NoticeService.detectShowDateIsEndedEstates),
     ])
   }
 
@@ -80,7 +81,7 @@ class QueueService {
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
       wrapException(NoticeService.sandProspectNoActivity),
-      wrapException(TenantPremiumPlanService.validateAllSubscriptions)
+      wrapException(TenantPremiumPlanService.validateAllSubscriptions),
     ])
   }
 
@@ -102,9 +103,7 @@ class QueueService {
    *
    */
   static async sendEveryEveryMonth12AM() {
-    return Promise.all([
-      wrapException(MemberService.getIncomeProofs)
-    ])
+    return Promise.all([wrapException(MemberService.getIncomeProofs)])
   }
 
   /**
@@ -127,8 +126,8 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
-          case SCHEDULED_MONTHLY_JOB:
-            return QueueService.sendEveryEveryMonth12AM()
+        case SCHEDULED_MONTHLY_JOB:
+          return QueueService.sendEveryEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         default:

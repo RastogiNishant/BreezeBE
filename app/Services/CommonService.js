@@ -5,7 +5,7 @@ class CommonService {
    *
    */
   static async searchProfession(query) {
-    const MAX_ITEMS = 20
+    const MAX_ITEMS = 5
     const subquery = Database.from('professions')
       .select('type')
       .where('title_en', 'ILIKE', `${query}%`)

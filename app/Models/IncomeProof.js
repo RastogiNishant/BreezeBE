@@ -10,6 +10,9 @@ class IncomeProof extends Model {
   static get readonly() {
     return ['id', 'income_id']
   }
+  static get Serializer() {
+    return 'App/Serializers/IncomeProofSerializer'
+  }
 
   static get traits() {
     return ['NoTimestamp']
