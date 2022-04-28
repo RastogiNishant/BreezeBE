@@ -302,12 +302,15 @@ class UserService {
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+
+      const forgotLink = await UserService.getForgotShortLink(from_web)
+
       await MailService.sendUserConfirmation(user.email, {
         code,
         user: user,
         role: user.role,
         lang: lang,
-        from_web
+        forgotLink: forgotLink
       })
     } catch (e) {
       throw new HttpException(e)
@@ -377,11 +380,14 @@ class UserService {
         },
       },
     })
+
+    const forgotLink = await UserService.getForgotShortLink(from_web)
+
     await MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
-      from_web
+      forgotLink:forgotLink
     })
     return user.save()
   }

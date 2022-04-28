@@ -1,7 +1,6 @@
 'use strict'
 
 const Mail = use('Mail')
-const UserService =  use('App/Services/UserService')
 const Config = use('Config')
 const { trim } = require('lodash')
 const l = use('Localize')
@@ -39,13 +38,12 @@ class MailService {
     )
   }
 
-  static async sendWelcomeMail( user, {code, role, lang, from_web=false} ) {
+  static async sendWelcomeMail( user, {code, role, lang, forgotLink=''} ) {
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
-    const forgotLink = await UserService.getForgotShortLink(from_web)        
     const msg = {
       to: trim(user.email, ' '),
       from: FromEmail,
@@ -72,14 +70,14 @@ class MailService {
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
 
-
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
         username_val:user.email,
         forgot_link:forgotLink,
-        forgot_label: l.get('prospect.settings.user_details.txt_type_username', lang),
-        forgot_prefix: l.get('prospect.settings.user_details.txt_type_username', lang),
-        forgot_link_txt: l.get('prospect.settings.user_details.txt_type_username', lang),
-        forgot_suffix: l.get('prospect.settings.user_details.txt_type_username', lang),
+        password_forbidden:l.get('prospect.email_forgot.password.security.message', lang),
+        forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
+        forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
+        forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
+        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang),
       },
     }
 
@@ -246,13 +244,11 @@ console.log('SendCodeForMember Email', email )
   /**
    *
    */
-  static async sendUserConfirmation(email, { code, user, role, lang = 'de', from_web = false }) {
+  static async sendUserConfirmation(email, { code, user, role, lang = 'de', forgotLink = '' }) {
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
-
-    const forgotLink = await UserService.getForgotShortLink(from_web)
 
     const msg = {
       to: trim(email),
@@ -284,13 +280,15 @@ console.log('SendCodeForMember Email', email )
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
         username_val:user.email,
         forgot_link:forgotLink,
-        forgot_label: l.get('prospect.settings.user_details.txt_type_username', lang),
-        forgot_prefix: l.get('prospect.settings.user_details.txt_type_username', lang),
-        forgot_link_txt: l.get('prospect.settings.user_details.txt_type_username', lang),
-        forgot_suffix: l.get('prospect.settings.user_details.txt_type_username', lang),
+        password_forbidden:l.get('prospect.email_forgot.password.security.message', lang),
+        forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
+        forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
+        forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
+        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang),
       },
     }
 
+console.log('Mail body', msg )    
     return sgMail
     .send(msg)
     .then(() => {
