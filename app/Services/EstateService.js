@@ -27,6 +27,8 @@ const {
   DATE_FORMAT,
   MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_KNOCK,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
@@ -98,6 +100,7 @@ class EstateService {
       .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
+      .withCount('final')
       .withCount('inviteBuddies')
       .with('current_tenant', function (q) {
         q.with('user')
@@ -625,7 +628,7 @@ class EstateService {
         .select('id')
         .where('status', STATUS_ACTIVE)
         .where('available_date', '<=', moment().format(DATE_FORMAT))
-        .limit(100)
+// .limit(100)
         .fetch()
     ).rows.map((i) => i.id)
 
@@ -647,6 +650,7 @@ class EstateService {
         .whereIn('estate_id', estateIds)
         .delete()
         .transacting(trx)
+
       await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
       await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
 
@@ -685,7 +689,7 @@ class EstateService {
     if (params.return_all && params.return_all == 1) {
       return await EstateService.getEstates(params)
         .whereIn('user_id', ids)
-        .whereNot('status', STATUS_DELETE)
+        .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)
         .with('rooms')
         .with('current_tenant')
@@ -693,7 +697,7 @@ class EstateService {
     } else {
       return await EstateService.getEstates(params)
         .whereIn('user_id', ids)
-        .whereNot('status', STATUS_DELETE)
+        .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)
         .paginate(page, limit)
     }

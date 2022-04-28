@@ -1,6 +1,6 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection } = require('lodash')
+const { get, isNumber, isEmpty, intersection, isSet, max, min, uniq } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -68,12 +68,19 @@ const inRange = (value, start, end) => {
 }
 
 const log = (data) => {
-  return false
+  //return false
+  /*
   //Logger.info('LOG', data)
-  //console.log(data);
+  const fs = require('fs')
+
+  fs.appendFile('log.txt', JSON.stringify(data) + '\n', function (err) {
+    if (err) throw err
+  })*/
+  //console.log(data)
+  return false
 }
 
-class MatchService {
+class MatchService1 {
   /**
    * Get matches percent between estate/prospect
    */
@@ -145,6 +152,30 @@ class MatchService {
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       log("Prospect can't afford.")
+      return {
+        scoreLandlord: {
+          landlordBudgetPoints,
+          creditScorePoints,
+          rentArrearsScore,
+          familyStatusScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          landlordScore: 0,
+        },
+        scoreProspect: {
+          prospectBudgetPoints,
+          spacePoints,
+          roomsPoints,
+          floorScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          rentStartPoints,
+          prospectScore: 0,
+        },
+        matchScore: 0,
+      }
       return 0
     }
     let estateBudgetRel = estateBudget / 100
@@ -159,7 +190,6 @@ class MatchService {
       landlordBudgetPoints = 2 - realBudget / estateBudgetRel
     }
     scoreL += landlordBudgetPoints
-
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequiredCredit = estate.credit_score || 0
@@ -173,15 +203,14 @@ class MatchService {
     }
     scoreL += creditScorePoints
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
-
     // Get rent arrears score
     const rentArrearsWeight = 1
+    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
     if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
       rentArrearsScore = 1
     }
-    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
 
     // Check family status
     log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
@@ -388,6 +417,30 @@ class MatchService {
       log('prospect score fails')
       return 0
     }
+    return {
+      scoreLandlord: {
+        landlordBudgetPoints,
+        creditScorePoints,
+        rentArrearsScore,
+        familyStatusScore,
+        ageInRangeScore,
+        householdSizeScore,
+        petsScore,
+        landlordScore: scoreLPer,
+      },
+      scoreProspect: {
+        prospectBudgetPoints,
+        spacePoints,
+        floorScore,
+        roomsPoints,
+        aptTypeScore,
+        houseTypeScore,
+        amenitiesScore,
+        rentStartPoints,
+        prospectScore: scoreTPer,
+      },
+      matchScore: ((scoreTPer + scoreLPer) / 2) * 100,
+    }
     log('\n\n')
     return ((scoreTPer + scoreLPer) / 2) * 100
   }
@@ -541,6 +594,10 @@ class MatchService {
           user_id: userId,
           estate_id: estateId,
         })
+
+        // TODO: send landlord knock notification
+
+        NoticeService.knockToLandlord(estateId)
         return true
       }
 
@@ -798,7 +855,6 @@ class MatchService {
       user_id,
       estate_id: estateId,
     })
-    NoticeService.prospectIsNotInterested(estateId)
   }
 
   static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
@@ -903,7 +959,6 @@ class MatchService {
       estate_id: estateId,
       status: MATCH_STATUS_COMMIT,
     })
-    NoticeService.prospectIsNotInterested(estateId)
   }
 
   /**
@@ -1413,23 +1468,11 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_KNOCK })
+      query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+      query.where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .whereIn('_m.status', [MATCH_STATUS_INVITE])
+      query.whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
       query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
@@ -1465,7 +1508,6 @@ class MatchService {
       '_mb.birthday',
       '_mb.avatar',
       '_mb.last_address',
-      '_mb.phone_verified',
       '_v.date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
@@ -1797,4 +1839,4 @@ class MatchService {
   }
 }
 
-module.exports = MatchService
+module.exports = MatchService1
