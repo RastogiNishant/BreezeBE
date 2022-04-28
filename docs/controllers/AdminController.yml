@@ -1,0 +1,52 @@
+paths:
+  /api/v1/admin/activation:
+    put:
+      summary: update activation status of users
+      description: Admin role specific action to update activation status of users
+      tags:
+        - Administration
+      name: User Activation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: |
+                what to do with the user. Could either be: activate/deactivate
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - activate
+                    - deactivate
+                  example: activate
+                ids:
+                  type: array
+                  description: User id's to update activation status
+                  items:
+                    type: number
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              description: |
+                what to do with the user. Could either be: activate/deactivate
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - activate
+                    - deactivate
+                  example: activate
+                ids:
+                  type: array
+                  description: User id's to update activation status
+                  items:
+                    type: number
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommonReturn'
