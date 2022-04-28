@@ -136,7 +136,7 @@ class MailService {
       from: FromEmail, // Use the email address or domain you verified above
       subject: `You got the link for invitation for your household`,
       text: `Here is the link is ${shortLink}`,
-      html: `<h3> Code for invitation is is <b>${shortLink}</b></h3>`,
+      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
     }
 console.log('SendCodeForMember Email', email )
     return sgMail.send(msg).then(
@@ -162,7 +162,7 @@ console.log('SendCodeForMember Email', email )
       from: FromEmail, // Use the email address or domain you verified above
       subject: `Invitation to add your properties to this estate`,
       text: `Here is the link is ${shortLink}`,
-      html: `<h3> Code for invitation is is <b>${shortLink}</b></h3>`,
+      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
     }
     return sgMail.send(msg).then(
       () => {
@@ -183,7 +183,7 @@ console.log('SendCodeForMember Email', email )
       from: FromEmail, // Use the email address or domain you verified above
       subject: `Invitation to add your properties to this estate`,
       text: `Here is the link is ${shortLink}`,
-      html: `<h3> Code for invitation is is <b>${shortLink}</b></h3>`,
+      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
     }
     
     return sgMail.send(msg).then(
