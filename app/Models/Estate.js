@@ -220,6 +220,10 @@ class Estate extends Model {
         } catch (e) {}
       }
 
+      if (instance.dirty?.parking_space === 0) {
+        instance.stp_garage = 0
+      }
+
       if (
         instance.dirty.extra_costs &&
         (instance.dirty.heating_costs || instance.dirty.additional_costs)
@@ -328,22 +332,20 @@ class Estate extends Model {
     ])
   }
   final() {
-    return this.hasMany('App/Models/Match').whereIn('status', [
-      MATCH_STATUS_FINISH,
-    ])
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_FINISH])
   }
 
   /**
    *
    */
   invite() {
-    return this.hasMany('App/Models/Match').where({ 'status': MATCH_STATUS_KNOCK })
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_KNOCK })
   }
   /**
    *
    */
   inviteBuddies() {
-    return this.hasMany('App/Models/Match').where({ 'status': MATCH_STATUS_NEW, buddy: true })
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
   /**
