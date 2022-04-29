@@ -77,7 +77,13 @@ class UserController {
       case 'activate':
         affectedRows = await User.query()
           .whereIn('id', ids)
-          .update({ activation_status: USER_ACTIVATION_STATUS_ACTIVATED })
+          .update({
+            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+            is_verified: true,
+            verified_by: auth.user.id,
+            verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+          })
+        NoticeService.verifyUserByAdmin(ids)
         break
       case 'deactivate':
         affectedRows = await User.query()
