@@ -87,6 +87,8 @@ class Tenant extends Model {
       'garden',
       'options',
       'rent_start',
+      'address',
+      'coord'      
     ]
   }
 
