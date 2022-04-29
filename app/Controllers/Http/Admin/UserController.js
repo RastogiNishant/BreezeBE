@@ -5,9 +5,14 @@ const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
+const moment = require('moment')
 
 const { isEmpty, find, get } = require('lodash')
-const { ROLE_ADMIN } = require('../../../constants')
+const {
+  ROLE_ADMIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
+} = require('../../../constants')
 
 class UserController {
   /**
@@ -64,6 +69,30 @@ class UserController {
     await UserService.verifyUsers(userId, data.ids, data.is_verify)
     NoticeService.verifyUserByAdmin(data.ids)
     response.res(data)
+  }
+
+  async updateActivationStatus({ request, auth, response }) {
+    const { ids, action } = request.all()
+    let affectedRows = 0
+    switch (action) {
+      case 'activate':
+        affectedRows = await User.query()
+          .whereIn('id', ids)
+          .update({
+            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+            is_verified: true,
+            verified_by: auth.user.id,
+            verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+          })
+        NoticeService.verifyUserByAdmin(ids)
+        break
+      case 'deactivate':
+        affectedRows = await User.query()
+          .whereIn('id', ids)
+          .update({ activation_status: USER_ACTIVATION_STATUS_DEACTIVATED })
+        break
+    }
+    return response.res({ affectedRows })
   }
 }
 

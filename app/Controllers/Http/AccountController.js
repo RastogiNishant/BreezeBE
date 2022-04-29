@@ -45,6 +45,7 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -560,6 +561,9 @@ class AccountController {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
         user.company_name = company.name
+      }
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
       }
     }
 

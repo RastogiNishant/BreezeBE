@@ -342,6 +342,12 @@ Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middl
   'valid:Ids,UserVerify',
 ])
 
+Route.put('api/v1/admin/activation', 'Admin/UserController.updateActivationStatus').middleware([
+  'auth:jwtAdmin',
+  'is:admin',
+  'valid:UpdateUserValidationStatus',
+])
+
 Route.group(() => {
   Route.post('/', 'FeatureController.createFeature').middleware(['valid:CreateFeature'])
   Route.put('/', 'FeatureController.updateFeature').middleware(['valid:CreateFeature,Id'])
