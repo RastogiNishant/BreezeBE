@@ -4,7 +4,14 @@ const yup = require('yup')
 const { isArray } = require('lodash')
 const Base = require('./Base')
 
-const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE } = require('../constants')
+const {
+  STATUS_ACTIVE,
+  STATUS_DRAFT,
+  STATUS_EXPIRE,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+} = require('../constants')
 
 class EstateFilter extends Base {
   static schema = () =>
@@ -21,6 +28,7 @@ class EstateFilter extends Base {
           return yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE])
         }
       }),
+      letting_type: yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]),
     })
 }
 
