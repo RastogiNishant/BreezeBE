@@ -29,6 +29,9 @@ const {
   LOG_TYPE_PUBLISHED_PROPERTY,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
@@ -628,7 +631,7 @@ class EstateService {
         .select('id')
         .where('status', STATUS_ACTIVE)
         .where('available_date', '<=', moment().format(DATE_FORMAT))
-// .limit(100)
+        // .limit(100)
         .fetch()
     ).rows.map((i) => i.id)
 
@@ -801,6 +804,26 @@ class EstateService {
       )
     }
     return affectedRows
+  }
+
+  static async getLettingTypeCounts(userId) {
+    let lettingTypeCounts = await Estate.query()
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let`))
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void`))
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na`))
+      .whereNot('estates.status', STATUS_DELETE)
+      .whereNot('area', 0)
+      .where('user_id', parseInt(userId))
+      .first()
+    lettingTypeCounts = omit(lettingTypeCounts.toJSON(), [
+      'hash',
+      'coord',
+      'coord_raw',
+      'bath_options',
+      'kitchen_options',
+      'equipment',
+    ])
+    return lettingTypeCounts
   }
 }
 
