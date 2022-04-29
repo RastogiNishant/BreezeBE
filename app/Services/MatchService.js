@@ -15,6 +15,7 @@ const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
+const { max, min } = require('lodash')
 
 const {
   MATCH_STATUS_NEW,
@@ -163,6 +164,7 @@ class MatchService {
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequiredCredit = estate.credit_score || 0
+
     log({ userCurrentCredit, userRequiredCredit })
 
     if (userCurrentCredit >= userRequiredCredit) {
@@ -264,6 +266,7 @@ class MatchService {
     // prospect calculation part
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
+
     if (prospectBudgetRel >= realBudget) {
       prospectBudgetPoints = realBudget / prospectBudgetRel
     } else if (
@@ -405,6 +408,7 @@ class MatchService {
     if (!tenant || !polygon) {
       throw new AppException('Invalid tenant filters')
     }
+
 
     let maxLat = -90,
       maxLon = -180,
