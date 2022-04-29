@@ -159,6 +159,9 @@ Route.group(() => {
   Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt,jwtLandlord'])
   Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt,jwtLandlord'])
   Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/verification', 'AccountController.onboardLandlordVerification').middleware([
+    'auth:jwt,jwtLandlord',
+  ])
 }).prefix('/api/v1/onboarding')
 
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([

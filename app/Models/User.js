@@ -47,6 +47,7 @@ class User extends Model {
       'is_dashboard_onboarded',
       'is_selection_onboarded',
       'is_household_invitation_onboarded',
+      'is_landlord_verification_onboarded',
       'activation_status',
     ]
   }
