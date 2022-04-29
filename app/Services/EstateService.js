@@ -806,14 +806,14 @@ class EstateService {
     return affectedRows
   }
 
-  static async getLettingTypeCounts(userId) {
+  static async getLettingTypeCounts(userIds) {
     let lettingTypeCounts = await Estate.query()
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let`))
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void`))
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na`))
       .whereNot('estates.status', STATUS_DELETE)
       .whereNot('area', 0)
-      .where('user_id', parseInt(userId))
+      .whereIn('user_id', userIds)
       .first()
     lettingTypeCounts = omit(lettingTypeCounts.toJSON(), [
       'hash',

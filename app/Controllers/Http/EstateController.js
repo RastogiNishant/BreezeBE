@@ -160,7 +160,11 @@ class EstateController {
     const { limit, page, ...params } = request.all()
     const userIds = [auth.user.id]
     // Update expired estates status to unpublished
-    const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
+    let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
+    result = result.toJSON()
+    //
+    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id])
+    result = { ...result, ...lettingTypeCounts }
     response.res(result)
   }
 
