@@ -426,17 +426,29 @@ class AccountController {
   /**
    *
    */
-  async confirmEmail({ request, response }) {
-    const { code, user_id } = request.all()
-    const user = await User.findOrFail(user_id)
+  async confirmEmail({ request, auth, response }) {
+    const { code, user_id, from_web } = request.all()
+    let user
     try {
+      user = await User.findOrFail(user_id)
       await UserService.confirmEmail(user, code)
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
 
-    return response.res(true)
+    if (!from_web) {
+      return response.res(true)
+    }
+
+    let authenticator
+    try {
+      authenticator = getAuthByRole(auth, user.role)
+    } catch (e) {
+      throw new HttpException(e.message, 403)
+    }
+    const token = await authenticator.generate(user)
+    return response.res(token)
   }
 
   /**
