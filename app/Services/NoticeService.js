@@ -787,7 +787,7 @@ class NoticeService {
       .whereIn('status', [STATUS_ACTIVE])
       .whereHas('slots', (estateQuery) => {
         estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
-        estateQuery.where('end_at', '>=', end.format(DATE_FORMAT))
+        estateQuery.where('end_at', '<=', end.format(DATE_FORMAT))
       })
       .fetch()
 
