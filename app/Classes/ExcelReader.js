@@ -179,7 +179,6 @@ class ExcelReader {
         credit_score: itemData.credit_score ? parseFloat(itemData.credit_score) * 100 : 0,
         floor: itemData.floor ? itemData.floor : 0,
       }
-      console.log(itemData)
       try {
         toImport.push({
           line: k,
