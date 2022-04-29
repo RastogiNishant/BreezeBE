@@ -625,6 +625,14 @@ class AccountController {
     await user.save()
     return response.res(true)
   }
+  
+  
+  async onboardLandlordVerification({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_landlord_verification_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
 
   /**
    *
