@@ -409,7 +409,6 @@ class MatchService {
       throw new AppException('Invalid tenant filters')
     }
 
-
     let maxLat = -90,
       maxLon = -180,
       minLat = 90,
@@ -1417,23 +1416,23 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_KNOCK })
+      query
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', '_m.estate_id').on('_e.status', STATUS_ACTIVE)
+        })
+        .where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+      query
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', '_m.estate_id').on('_e.status', STATUS_ACTIVE)
+        })
+        .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .whereIn('_m.status', [MATCH_STATUS_INVITE])
+      query
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', '_m.estate_id').on('_e.status', STATUS_ACTIVE)
+        })
+        .whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
       query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
@@ -1667,6 +1666,16 @@ class MatchService {
    *
    */
   static async getEstateSlotsStat(estateId) {
+    const slotWithoutLength = await Database.table('time_slots')
+      .select('slot_length')
+      .whereNull('slot_length')
+      .first()
+
+    // It means there is unlimited slot, if there is at least 1 time_slot that slot_length = 0
+    if (slotWithoutLength) {
+      return { total: 1, booked: 0 }
+    }
+
     // All available slots for estate
     const getAvailableSlots = () => {
       return Database.select('slot_length', 'start_at', 'end_at')
