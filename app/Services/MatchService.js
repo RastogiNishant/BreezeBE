@@ -410,7 +410,6 @@ class MatchService {
       throw new AppException('Invalid tenant filters')
     }
 
-
     let maxLat = -90,
       maxLon = -180,
       minLat = 90,
@@ -1407,7 +1406,14 @@ class MatchService {
     { knock, buddy, invite, visit, top, commit, final }
   ) {
     const query = Tenant.query()
-      .select(['tenants.*', '_u.firstname', '_u.secondname', '_u.birthday', '_u.email', '_u.avatar'])
+      .select([
+        'tenants.*',
+        '_u.firstname',
+        '_u.secondname',
+        '_u.birthday',
+        '_u.email',
+        '_u.avatar',
+      ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
@@ -1656,6 +1662,16 @@ class MatchService {
    *
    */
   static async getEstateSlotsStat(estateId) {
+    const slotWithoutLength = await Database.table('time_slots')
+      .select('slot_length')
+      .whereNull('slot_length')
+      .first()
+
+    // It means there is unlimited slot, if there is at least 1 time_slot that slot_length = 0
+    if (slotWithoutLength) {
+      return { total: 1, booked: 0 }
+    }
+
     // All available slots for estate
     const getAvailableSlots = () => {
       return Database.select('slot_length', 'start_at', 'end_at')

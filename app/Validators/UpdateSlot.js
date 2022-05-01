@@ -37,7 +37,7 @@ class UpdateSlot extends Base {
 
           return schema
         }),
-      slot_length: yup.number().oneOf([5, 10, 15]),
+      slot_length: yup.number().oneOf([5, 10, 15, null]).nullable(true).notRequired(),
     })
 }
 
