@@ -45,6 +45,7 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -561,6 +562,9 @@ class AccountController {
         user.company = company
         user.company_name = company.name
       }
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
+      }
     }
 
     return response.res(user.toJSON({ isOwner: true }))
@@ -618,6 +622,14 @@ class AccountController {
   async onboardSelection({ auth, response }) {
     const user = await User.query().where('id', auth.user.id).first()
     user.is_selection_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+  
+  
+  async onboardLandlordVerification({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_landlord_verification_onboarded = true
     await user.save()
     return response.res(true)
   }

@@ -15,6 +15,7 @@ const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
+const { max, min } = require('lodash')
 
 const {
   MATCH_STATUS_NEW,
@@ -163,6 +164,7 @@ class MatchService {
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequiredCredit = estate.credit_score || 0
+
     log({ userCurrentCredit, userRequiredCredit })
 
     if (userCurrentCredit >= userRequiredCredit) {
@@ -264,6 +266,7 @@ class MatchService {
     // prospect calculation part
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
+
     if (prospectBudgetRel >= realBudget) {
       prospectBudgetPoints = realBudget / prospectBudgetRel
     } else if (
@@ -383,6 +386,7 @@ class MatchService {
 
     const scoreTPer = scoreT / maxScoreT
     log({ scoreProspectPercent: scoreTPer })
+
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
       log('prospect score fails')
@@ -405,6 +409,7 @@ class MatchService {
     if (!tenant || !polygon) {
       throw new AppException('Invalid tenant filters')
     }
+
 
     let maxLat = -90,
       maxLon = -180,
@@ -1413,23 +1418,11 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_KNOCK })
+      query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+      query.where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .whereIn('_m.status', [MATCH_STATUS_INVITE])
+      query.whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
       query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
