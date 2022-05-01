@@ -1407,7 +1407,7 @@ class MatchService {
     { knock, buddy, invite, visit, top, commit, final }
   ) {
     const query = Tenant.query()
-      .select('tenants.*')
+      .select(['tenants.*', '_u.firstname', '_u.secondname', '_u.birthday', '_u.email', '_u.avatar'])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
