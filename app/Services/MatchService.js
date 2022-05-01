@@ -386,6 +386,7 @@ class MatchService {
 
     const scoreTPer = scoreT / maxScoreT
     log({ scoreProspectPercent: scoreTPer })
+
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
       log('prospect score fails')
@@ -1405,7 +1406,14 @@ class MatchService {
     { knock, buddy, invite, visit, top, commit, final }
   ) {
     const query = Tenant.query()
-      .select('tenants.*')
+      .select([
+        'tenants.*',
+        '_u.firstname',
+        '_u.secondname',
+        '_u.birthday',
+        '_u.email',
+        '_u.avatar',
+      ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
@@ -1416,23 +1424,11 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', '_m.estate_id').on('_e.status', STATUS_ACTIVE)
-        })
-        .where({ '_m.status': MATCH_STATUS_KNOCK })
+      query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', '_m.estate_id').on('_e.status', STATUS_ACTIVE)
-        })
-        .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+      query.where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
-      query
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', '_m.estate_id').on('_e.status', STATUS_ACTIVE)
-        })
-        .whereIn('_m.status', [MATCH_STATUS_INVITE])
+      query.whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
       query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
