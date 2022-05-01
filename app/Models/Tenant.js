@@ -65,6 +65,7 @@ class Tenant extends Model {
       'share',
       'selected_adults_count',
       'phone_verified',
+      'updated_at',
     ]
   }
 
@@ -86,6 +87,8 @@ class Tenant extends Model {
       'garden',
       'options',
       'rent_start',
+      'address',
+      'coord'      
     ]
   }
 

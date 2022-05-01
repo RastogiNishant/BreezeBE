@@ -54,6 +54,10 @@ module.exports = {
           name: 'Prospects',
           description: 'All about the prospects',
         },
+        {
+          name: 'Administration',
+          description: 'All about the administrator actions.',
+        },
       ],
       components: {
         securitySchemes: {

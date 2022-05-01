@@ -27,7 +27,7 @@ const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { assign, upperCase, pick } = require('lodash')
+const { pick } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -45,6 +45,7 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -372,10 +373,6 @@ class AccountController {
         throw new HttpException('User already exists, can be switched', 400)
       }
 
-      // if (password !== confirmPassword) {
-      //   throw new HttpException('Password not matched', 400)
-      // }
-
       const user = await UserService.housekeeperSignup(
         member.user_id,
         email,
@@ -436,17 +433,29 @@ class AccountController {
   /**
    *
    */
-  async confirmEmail({ request, response }) {
-    const { code, user_id } = request.all()
-    const user = await User.findOrFail(user_id)
+  async confirmEmail({ request, auth, response }) {
+    const { code, user_id, from_web } = request.all()
+    let user
     try {
+      user = await User.findOrFail(user_id)
       await UserService.confirmEmail(user, code)
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
 
-    return response.res(true)
+    if (!from_web) {
+      return response.res(true)
+    }
+
+    let authenticator
+    try {
+      authenticator = getAuthByRole(auth, user.role)
+    } catch (e) {
+      throw new HttpException(e.message, 403)
+    }
+    const token = await authenticator.generate(user)
+    return response.res(token)
   }
 
   /**
@@ -530,11 +539,14 @@ class AccountController {
   async me({ auth, response, request }) {
     const user = await User.query()
       .where('users.id', auth.current.user.id)
-      .with('tenant')
       .with('household')
       .with('plan')
       .with('tenantPaymentPlan')
       .firstOrFail()
+
+    user.tenant = await Tenant.query()
+      .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
+      .first()
 
     const { pushToken } = request.all()
 
@@ -557,6 +569,9 @@ class AccountController {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
         user.company_name = company.name
+      }
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
       }
     }
 
@@ -615,6 +630,14 @@ class AccountController {
   async onboardSelection({ auth, response }) {
     const user = await User.query().where('id', auth.user.id).first()
     user.is_selection_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+  
+  
+  async onboardLandlordVerification({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_landlord_verification_onboarded = true
     await user.save()
     return response.res(true)
   }

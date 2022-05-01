@@ -37,6 +37,7 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_COMMIT,
   TENANT_MATCH_FIELDS,
+  MATCH_STATUS_FINISH,
 } = require('../constants')
 
 class Estate extends Model {
@@ -219,6 +220,10 @@ class Estate extends Model {
         } catch (e) {}
       }
 
+      if (instance.dirty?.parking_space === 0) {
+        instance.stp_garage = 0
+      }
+
       if (
         instance.dirty.extra_costs &&
         (instance.dirty.heating_costs || instance.dirty.additional_costs)
@@ -325,6 +330,9 @@ class Estate extends Model {
       MATCH_STATUS_TOP,
       MATCH_STATUS_COMMIT,
     ])
+  }
+  final() {
+    return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_FINISH])
   }
 
   /**

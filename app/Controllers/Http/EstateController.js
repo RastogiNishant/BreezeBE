@@ -356,7 +356,7 @@ class EstateController {
     } else if (filter == 3) {
       estates = await Estate.query()
         .where({ user_id: userId })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('status', [STATUS_ACTIVE])
         .with('matches')
         .whereHas('matches', (estateQuery) => {
           estateQuery.whereIn('status', [MATCH_STATUS_NEW]).where('buddy', true)

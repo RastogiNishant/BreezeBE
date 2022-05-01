@@ -73,6 +73,8 @@ const {
   NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
   NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED_ID,
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
+  NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
+  NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -97,6 +99,7 @@ class NoticeService {
         }))
       )
     )
+    console.log(data)
     return Promise.all(promises)
   }
 
@@ -784,7 +787,7 @@ class NoticeService {
       .whereIn('status', [STATUS_ACTIVE])
       .whereHas('slots', (estateQuery) => {
         estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
-        estateQuery.where('end_at', '>=', end.format(DATE_FORMAT))
+        estateQuery.where('end_at', '<=', end.format(DATE_FORMAT))
       })
       .fetch()
 
@@ -837,6 +840,24 @@ class NoticeService {
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendLandlordMovedProspectToTop([notice])
+  }
+
+  static async prospectHouseholdInvitationAccepted(userId) {
+    const notice = {
+      user_id: userId,
+      type: NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendProspectHouseholdInvitationAccepted([notice])
+  }
+
+  static async prospectHouseholdDisconnected(userId) {
+    const notice = {
+      user_id: userId,
+      type: NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendProspectHouseholdDisconnected([notice])
   }
 
   /**
