@@ -120,7 +120,7 @@ class EstateService {
     }
 
     if (params.letting_type) {
-      query.where('estates.letting_type', params.letting_type)
+      query.whereIn('estates.letting_type', params.letting_type)
     }
 
     // if(params.filter && params.filter.includes(1)) {

@@ -28,7 +28,9 @@ class EstateFilter extends Base {
           return yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE])
         }
       }),
-      letting_type: yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]),
+      letting_type: yup
+        .array()
+        .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])),
     })
 }
 

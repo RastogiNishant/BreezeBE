@@ -164,6 +164,7 @@ class EstateController {
     //
     const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id])
     result = { ...result, ...lettingTypeCounts }
+    result.total_filtered_properties = result.total
     response.res(result)
   }
 
