@@ -269,11 +269,11 @@ class MemberService {
   /**
    *
    */
-  static async addIncome(data, member) {
+  static async addIncome(data, member,trx=null) {
     return Income.createItem({
       ...data,
       member_id: member.id,
-    })
+    },trx)
   }
 
   /**
@@ -300,7 +300,7 @@ class MemberService {
   /**
    *
    */
-  static async updateUserIncome(userId) {
+  static async updateUserIncome(userId, trx) {
     await Database.raw(
       `
       UPDATE tenants SET income = (
@@ -311,7 +311,7 @@ class MemberService {
       ) WHERE user_id = ?
     `,
       [userId, userId]
-    )
+    ).transacting(trx)
   }
 
   static async sendInvitationCode(id, userId) {
