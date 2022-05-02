@@ -46,6 +46,7 @@ class User extends Model {
       'is_profile_onboarded',
       'is_dashboard_onboarded',
       'is_selection_onboarded',
+      'mautic_id',
       'is_household_invitation_onboarded',
       'is_landlord_verification_onboarded',
       'activation_status',

@@ -81,6 +81,7 @@ class AccountController {
         status: STATUS_EMAIL_VERIFY,
       })
 
+      Event.fire('mautic:createContact', user.id)
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
@@ -151,6 +152,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -205,6 +207,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -259,6 +262,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -337,6 +341,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -379,6 +384,7 @@ class AccountController {
       if (user) {
         await MemberService.setMemberOwner(member_id, user.id)
       }
+      Event.fire('mautic:createContact', user.id)
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -509,6 +515,7 @@ class AccountController {
       role,
       email: user.email,
     })
+    Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
     return response.res(token)
   }
 
@@ -551,6 +558,7 @@ class AccountController {
         email: user.email,
         role: user.role,
       })
+      Event.fireEvent('mautic:syncContact', user.id, { last_openapp_date: new Date() })
       if (!user.company_id) {
         const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
         const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
@@ -703,6 +711,7 @@ class AccountController {
       user.company_name = company_name
       user.company = null
     }
+    Event.fire('mautic:syncContact', user.id)
     return response.res(user)
   }
 

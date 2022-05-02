@@ -812,6 +812,7 @@ Route.group(() => {
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
 
+Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {

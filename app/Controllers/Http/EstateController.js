@@ -280,6 +280,7 @@ class EstateController {
         'xls'
       )
       logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
+      Event.fire('mautic:syncContact', auth.user.id, { propertiesimported_count: 1 })
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
