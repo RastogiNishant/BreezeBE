@@ -4,7 +4,7 @@ const moment = require('moment')
 const uuid = require('uuid')
 const _ = require('lodash')
 const Promise = require('bluebird')
-
+const Event = use('Event')
 const User = use('App/Models/User')
 const Member = use('App/Models/Member')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
@@ -633,8 +633,7 @@ class AccountController {
     await user.save()
     return response.res(true)
   }
-  
-  
+
   async onboardLandlordVerification({ auth, response }) {
     const user = await User.query().where('id', auth.user.id).first()
     user.is_landlord_verification_onboarded = true
