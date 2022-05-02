@@ -478,34 +478,78 @@ paths:
       description: Current user's estate list
       summary: current user's estate list
       parameters:
-        - filters:
-          name: filters
+        - name: filters[]
           in: query
+          description: |
+            where it has matches with status as set in the array. Values of the statuse are the following
+            - MATCH_STATUS_NEW: 1,
+            - MATCH_STATUS_KNOCK: 2,
+            - MATCH_STATUS_INVITE: 3,
+            - MATCH_STATUS_VISIT: 4,
+            - MATCH_STATUS_SHARE: 5,
+            - MATCH_STATUS_TOP: 6,
+            - MATCH_STATUS_COMMIT: 7,
+            - MATCH_STATUS_FINISH: 8,
+          schema:
+            type: array
+            items:
+              enum:
+                - 1
+                - 2
+                - 3
+                - 4
+                - 5
+                - 6
+                - 7
+                - 8
+        - name: status[]
+          in: query
+          description: |
+            An array of Statuses of the estate. Possible values
+            - STATUS_ACTIVE: 1,
+            - STATUS_DRAFT: 5,
+            - STATUS_EXPIRE: 6,
+          schema:
+            type: array
+            enum:
+              - 1
+              - 5
+              - 6
+        - name: query
           type: string
-        - status:
-          name: status
-          type: number
           in: query
-          description: 'Active: 1, Draft: 5'
-          enum: ['1', '5']
-        - query:
-          name: query
-          type: string
+          description: |
+            This will query the **property street** or the **property id** based on the value of query
+          example: 
+        - name: letting_type[]
           in: query
-        - limit:
-          name: limit
+          description: |
+            This will return the properties that have the letting_type as set here:
+            - LETTING_TYPE_LET: 1,
+            - LETTING_TYPE_VOID: 2,
+            - LETTING_TYPE_NA: 3,
+          schema:
+            type: array
+            enum: 
+             - 1
+             - 2
+             - 3
+          example: [1,2]
+        - name: limit
           type: number
           in: query
           example: 20
-        - page:
-          name: page
+        - name: page
           type: number
           in: query
           example: 1
         - return_all:
           name: return_all
           in: query
-          example: 1
+          enum: 
+            -
+            - 1
+          example:
           description: whether to return all estates at once or not (1 for return all)
       responses: 
         '200':
