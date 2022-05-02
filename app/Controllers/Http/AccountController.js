@@ -45,6 +45,7 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -426,17 +427,29 @@ class AccountController {
   /**
    *
    */
-  async confirmEmail({ request, response }) {
-    const { code, user_id } = request.all()
-    const user = await User.findOrFail(user_id)
+  async confirmEmail({ request, auth, response }) {
+    const { code, user_id, from_web } = request.all()
+    let user
     try {
+      user = await User.findOrFail(user_id)
       await UserService.confirmEmail(user, code)
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
 
-    return response.res(true)
+    if (!from_web) {
+      return response.res(true)
+    }
+
+    let authenticator
+    try {
+      authenticator = getAuthByRole(auth, user.role)
+    } catch (e) {
+      throw new HttpException(e.message, 403)
+    }
+    const token = await authenticator.generate(user)
+    return response.res(token)
   }
 
   /**
@@ -549,6 +562,9 @@ class AccountController {
         user.company = company
         user.company_name = company.name
       }
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
+      }
     }
 
     return response.res(user.toJSON({ isOwner: true }))
@@ -606,6 +622,14 @@ class AccountController {
   async onboardSelection({ auth, response }) {
     const user = await User.query().where('id', auth.user.id).first()
     user.is_selection_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+  
+  
+  async onboardLandlordVerification({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_landlord_verification_onboarded = true
     await user.save()
     return response.res(true)
   }

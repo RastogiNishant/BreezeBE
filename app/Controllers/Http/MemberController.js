@@ -297,11 +297,17 @@ class MemberController {
       { field: 'company_logo', mime: imageMimes, isPublic: true },
     ])
 
-    const income = await MemberService.addIncome({ ...data, ...files }, member)
-    await MemberService.updateUserIncome(member.user_id)
-
-    Event.fire('tenant::update', member.user_id)
-    response.res(income)
+    const trx = await Database.beginTransaction()
+    try{
+      const income = await MemberService.addIncome({ ...data, ...files }, member,trx)
+      await MemberService.updateUserIncome(member.user_id,trx)
+      Event.fire('tenant::update', member.user_id)
+      await trx.commit()
+      response.res(income)
+    }catch(e) {
+      await trx.rollback()      
+      throw new HttpException(e.message,400)
+    }
   }
 
   /**
@@ -325,11 +331,17 @@ class MemberController {
       { field: 'company_logo', mime: imageMimes, isPublic: true },
     ])
 
-    await income.updateItem({ ...rest, ...files })
-    await MemberService.updateUserIncome(member.user_id)
-
-    Event.fire('tenant::update', member.user_id)
-    response.res(income)
+    const trx = await Database.beginTransaction()
+    try{
+      await income.updateItem({ ...rest, ...files },trx)
+      await MemberService.updateUserIncome(member.user_id,trx)
+      await trx.commit()      
+      Event.fire('tenant::update', member.user_id)
+      response.res(income)
+    }catch(e) {
+      await trx.rollback()      
+      throw new HttpException(e.message,400)
+    }
   }
 
   /**

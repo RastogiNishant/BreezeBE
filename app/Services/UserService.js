@@ -41,6 +41,7 @@ const {
   LOG_TYPE_SIGN_UP,
   DEFAULT_LANG,
   SIGN_IN_METHOD_GOOGLE,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -685,6 +686,7 @@ class UserService {
     return await User.query()
       .whereIn('id', userIds)
       .update({
+        activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
         is_verified: is_verify,
         verified_by: adminId,
         verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),

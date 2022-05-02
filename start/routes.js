@@ -159,6 +159,9 @@ Route.group(() => {
   Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt,jwtLandlord'])
   Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt,jwtLandlord'])
   Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/verification', 'AccountController.onboardLandlordVerification').middleware([
+    'auth:jwt,jwtLandlord',
+  ])
 }).prefix('/api/v1/onboarding')
 
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
@@ -340,6 +343,12 @@ Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middl
   'auth:jwtAdmin',
   'is:admin',
   'valid:Ids,UserVerify',
+])
+
+Route.put('api/v1/admin/activation', 'Admin/UserController.updateActivationStatus').middleware([
+  'auth:jwtAdmin',
+  'is:admin',
+  'valid:UpdateUserValidationStatus',
 ])
 
 Route.group(() => {
