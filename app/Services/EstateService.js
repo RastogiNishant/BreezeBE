@@ -812,7 +812,11 @@ class EstateService {
 
   static async getLettingTypeCounts(userIds) {
     let lettingTypeCounts = await Estate.query()
-      .select(Database.raw(`count(*) as total_estate_count`))
+      .select(
+        Database.raw(
+          `count(*) filter(where status not in (${STATUS_DELETE})) as total_estate_count`
+        )
+      )
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let`))
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void`))
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na`))
