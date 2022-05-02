@@ -558,7 +558,7 @@ class AccountController {
         email: user.email,
         role: user.role,
       })
-      Event.fireEvent('mautic:syncContact', user.id, { last_openapp_date: new Date() })
+      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
       if (!user.company_id) {
         const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
         const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
