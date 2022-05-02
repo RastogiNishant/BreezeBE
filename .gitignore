@@ -19,3 +19,5 @@ package-lock.json
 .env.local
 .env.production
 .env.staging
+
+.DS_Store

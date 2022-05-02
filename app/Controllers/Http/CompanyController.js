@@ -1,7 +1,7 @@
 const File = use('App/Classes/File')
 const CompanyService = use('App/Services/CompanyService')
 const HttpException = use('App/Exceptions/HttpException')
-
+const Event = use('Event')
 class CompanyController {
   /**
    *
@@ -27,6 +27,7 @@ class CompanyController {
 
     try {
       const company = await CompanyService.createCompany(data, auth.user.id)
+      Event.fire('mautic:syncContact', auth.user.id)
       return response.res(company)
     } catch (e) {
       if (e.name === 'AppException') {
@@ -51,6 +52,7 @@ class CompanyController {
 
     try {
       const company = await CompanyService.updateCompany(id, auth.user.id, data)
+      Event.fire('mautic:syncContact', auth.user.id)
       return response.res(company)
     } catch (e) {
       if (e.name === 'AppException') {
@@ -66,7 +68,7 @@ class CompanyController {
   async removeCompany({ request, auth, response }) {
     const { id } = request.all()
     await CompanyService.removeCompany(id, auth.user.id)
-
+    Event.fire('mautic:syncContact', auth.user.id)
     return response.res(true)
   }
 
