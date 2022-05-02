@@ -9,6 +9,10 @@ if (!Helpers.isAceCommand()) {
 
   Event.on('memberPermission:create', 'MemberPermissionListener.createMemberPermission')
   Event.on('tenant::update', 'TenantListener.updateTenant')
+
+  // Mautic Events
+  Event.on('mautic:createContact', 'MauticListener.createContact')
+  Event.on('mautic:syncContact', 'MauticListener.syncContact')
 }
 
 /**

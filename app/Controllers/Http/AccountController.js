@@ -4,7 +4,7 @@ const moment = require('moment')
 const uuid = require('uuid')
 const _ = require('lodash')
 const Promise = require('bluebird')
-
+const Event = use('Event')
 const User = use('App/Models/User')
 const Member = use('App/Models/Member')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
@@ -45,6 +45,7 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -80,6 +81,7 @@ class AccountController {
         status: STATUS_EMAIL_VERIFY,
       })
 
+      Event.fire('mautic:createContact', user.id)
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
@@ -150,6 +152,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -204,6 +207,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -258,6 +262,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -336,6 +341,7 @@ class AccountController {
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
       trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
       console.log(e)
@@ -378,6 +384,7 @@ class AccountController {
       if (user) {
         await MemberService.setMemberOwner(member_id, user.id)
       }
+      Event.fire('mautic:createContact', user.id)
       return response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -426,17 +433,29 @@ class AccountController {
   /**
    *
    */
-  async confirmEmail({ request, response }) {
-    const { code, user_id } = request.all()
-    const user = await User.findOrFail(user_id)
+  async confirmEmail({ request, auth, response }) {
+    const { code, user_id, from_web } = request.all()
+    let user
     try {
+      user = await User.findOrFail(user_id)
       await UserService.confirmEmail(user, code)
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
 
-    return response.res(true)
+    if (!from_web) {
+      return response.res(true)
+    }
+
+    let authenticator
+    try {
+      authenticator = getAuthByRole(auth, user.role)
+    } catch (e) {
+      throw new HttpException(e.message, 403)
+    }
+    const token = await authenticator.generate(user)
+    return response.res(token)
   }
 
   /**
@@ -496,6 +515,7 @@ class AccountController {
       role,
       email: user.email,
     })
+    Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
     return response.res(token)
   }
 
@@ -538,6 +558,7 @@ class AccountController {
         email: user.email,
         role: user.role,
       })
+      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
       if (!user.company_id) {
         const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
         const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
@@ -548,6 +569,9 @@ class AccountController {
         let company = await Company.query().where('id', user.company_id).first()
         user.company = company
         user.company_name = company.name
+      }
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
       }
     }
 
@@ -606,6 +630,13 @@ class AccountController {
   async onboardSelection({ auth, response }) {
     const user = await User.query().where('id', auth.user.id).first()
     user.is_selection_onboarded = true
+    await user.save()
+    return response.res(true)
+  }
+
+  async onboardLandlordVerification({ auth, response }) {
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_landlord_verification_onboarded = true
     await user.save()
     return response.res(true)
   }
@@ -679,6 +710,7 @@ class AccountController {
       user.company_name = company_name
       user.company = null
     }
+    Event.fire('mautic:syncContact', user.id)
     return response.res(user)
   }
 

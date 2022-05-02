@@ -12,6 +12,7 @@ const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty } = require('lodash')
 const moment = require('moment')
+const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
 
 const {
@@ -86,6 +87,7 @@ class MatchController {
     try {
       const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
+      Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
       return response.res(result)
     } catch (e) {
       Logger.error(e)
@@ -136,6 +138,7 @@ class MatchController {
         { estate_id, estate_id, role: ROLE_USER },
         false
       )
+      Event.fire('mautic:syncContact', auth.user.id, { invited_count: 1 })
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -375,6 +378,7 @@ class MatchController {
         { tenant_id: tenantId, estate_id, role: ROLE_LANDLORD },
         false
       )
+      Event.fire('mautic:syncContact', auth.user.id, { showedproperty_count: 1 })
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -466,6 +470,7 @@ class MatchController {
       { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
       false
     )
+    Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
     response.res(true)
   }
 
@@ -498,6 +503,7 @@ class MatchController {
       contact.avatar = File.getPublicUrl(contact.avatar)
     }
     logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id, role: ROLE_USER }, false)
+    Event.fire('mautic:syncContact', userId, { finalmatchapproval_count: 1 })
     response.res({ estate, contact })
   }
 
@@ -841,10 +847,6 @@ class MatchController {
 
     const matchesCount = await Database.table('matches')
       .count('*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
       .whereIn('matches.status', [MATCH_STATUS_KNOCK])
       .whereIn('estate_id', estatesId)
 
@@ -860,10 +862,6 @@ class MatchController {
 
     const buddiesCount = await Database.table('matches')
       .count('*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
       .whereIn('matches.status', [MATCH_STATUS_NEW])
       .where('buddy', true)
       .whereIn('estate_id', estatesId)
@@ -879,10 +877,6 @@ class MatchController {
 
     const invitesCount = await Database.table('matches')
       .count('*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
       .whereIn('matches.status', [MATCH_STATUS_INVITE])
       .whereIn('estate_id', estatesId)
 

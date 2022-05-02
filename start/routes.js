@@ -159,6 +159,9 @@ Route.group(() => {
   Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt,jwtLandlord'])
   Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt,jwtLandlord'])
   Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt,jwtLandlord'])
+  Route.get('/verification', 'AccountController.onboardLandlordVerification').middleware([
+    'auth:jwt,jwtLandlord',
+  ])
 }).prefix('/api/v1/onboarding')
 
 Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
@@ -340,6 +343,12 @@ Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middl
   'auth:jwtAdmin',
   'is:admin',
   'valid:Ids,UserVerify',
+])
+
+Route.put('api/v1/admin/activation', 'Admin/UserController.updateActivationStatus').middleware([
+  'auth:jwtAdmin',
+  'is:admin',
+  'valid:UpdateUserValidationStatus',
 ])
 
 Route.group(() => {
@@ -803,6 +812,7 @@ Route.group(() => {
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
 
+Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
