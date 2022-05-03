@@ -443,14 +443,16 @@ class EstateAttributeTranslations {
         ', '
       ).replace(/\s,/g, ',')
     },
-    energy_efficiency: (i) => Number(i),
+    energy_efficiency: (i) => {
+      return Number(i) === 0 ? null : Number(i)
+    },
     area: (i) => Number(i),
     rooms_number: (i) => Number(i),
     net_rent: (i) => Number(i),
     additional_costs: (i) => Number(i),
     heating_costs: (i) => Number(i),
-    min_age: (i) => parseInt(i),
-    max_age: (i) => parseInt(i),
+    min_age: (i) => parseInt(i) || 0,
+    max_age: (i) => parseInt(i) || 0,
     currency: (i) => (isEmpty(i) ? 'EUR' : i),
   }
 
@@ -687,6 +689,7 @@ class EstateAttributeTranslations {
           'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Central.message',
           'property.attribute.HEATING_TYPE.Remote.message',
+          'property.attribute.HEATING_TYPE.Floor_heating.message',
         ],
         values: [
           HEATING_TYPE_FLOOR_HEATING,
@@ -694,6 +697,7 @@ class EstateAttributeTranslations {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
+          HEATING_TYPE_FLOOR_HEATING,
         ],
       },
       equipment_standard: {
