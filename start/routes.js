@@ -346,8 +346,7 @@ Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middl
 ])
 
 Route.put('api/v1/admin/activation', 'Admin/UserController.updateActivationStatus').middleware([
-  'auth:jwtAdmin',
-  'is:admin',
+  'auth:jwtLandlord',
   'valid:UpdateUserValidationStatus',
 ])
 
