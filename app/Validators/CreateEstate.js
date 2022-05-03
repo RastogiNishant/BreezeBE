@@ -117,6 +117,7 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
+  HEATING_TYPE_FLOOR_HEATING,
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -409,6 +410,7 @@ class CreateEstate extends Base {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
+          HEATING_TYPE_FLOOR_HEATING,
         ]),
       equipment: yup
         .array()
