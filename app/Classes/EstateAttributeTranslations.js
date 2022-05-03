@@ -689,7 +689,6 @@ class EstateAttributeTranslations {
           'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Central.message',
           'property.attribute.HEATING_TYPE.Remote.message',
-          'property.attribute.HEATING_TYPE.Floor_heating.message',
         ],
         values: [
           HEATING_TYPE_FLOOR_HEATING,
@@ -697,7 +696,6 @@ class EstateAttributeTranslations {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
-          HEATING_TYPE_FLOOR_HEATING,
         ],
       },
       equipment_standard: {
