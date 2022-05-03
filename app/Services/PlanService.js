@@ -2,25 +2,34 @@
 
 const Plan = use('App/Models/Plan')
 const HttpException = use('App/Exceptions/HttpException')
+const { isArray } = require('lodash')
+const {
+  ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER
+} = require('../constants')
 
 class PlanService {
-  static async createPlan(data) {
-    return Plan.createItem({
-      ...data,
-    })
+  static async createPlan(data, trx) {
+    return Plan.createItem(
+      {
+        ...data,
+      },
+      trx
+    )
   }
-  static async updatePlan(data) {
+  static async updatePlan(data, trx) {
     const oldPlan = await Plan.query().where({ id: data.id }).first()
-
     if (!oldPlan) {
       throw new HttpException('Plan does not exist')
     }
 
     return await Plan.query()
       .where({ id: data.id })
-      .update({
-        ...data,
-      })
+      .update(
+        {
+          ...data,
+        },
+        trx
+      )
   }
 
   static async deletePlan(ids) {
@@ -33,13 +42,31 @@ class PlanService {
   }
 
   static async getPlan(id) {
-    return await Plan.query()
-      .with('planOption')
-      .where('id', id).first()
+    if (isArray(id)){
+      return (await Plan.query().with('planOption').whereIn('id', id).fetch()).rows
+    }else {
+      return await Plan.query().with('planOption').where('id', id).first()
+    }
+     
   }
 
-  static async getPlanAll() {
-    return await Plan.query().orderBy('id', 'asc').fetch()
+  static async getProspectDefaultPlan() {
+    return await Plan.query().where('prospect_free_plan', true).first()
+  }
+
+  static async getLandlordDefaultPlan() {
+    return await Plan.query().where('landlord_free_plan', true).first()
+  }
+
+  static async getPlanAll(role) {
+    if( role === ROLE_ADMIN ) {
+      return await Plan.query().orderBy('role', 'asc').orderBy('id', 'asc').fetch()
+    }else {
+      if( role === ROLE_PROPERTY_MANAGER) {
+        role = ROLE_USER
+      }
+      return  await Plan.query().where('role', role).orderBy('id', 'asc').fetch()
+    }
   }
 }
 

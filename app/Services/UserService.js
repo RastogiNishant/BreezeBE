@@ -821,6 +821,10 @@ class UserService {
 
     return true
   }
+
+  static async updateFreePlan(old_plan_id, plan_id, trx) {
+    await User.query().where('plan_id', old_plan_id).update({ plan_id: plan_id }, trx)
+  }
 }
 
 module.exports = UserService
