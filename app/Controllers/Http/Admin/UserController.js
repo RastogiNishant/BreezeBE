@@ -92,7 +92,12 @@ class UserController {
         case 'deactivate':
           affectedRows = await User.query()
             .whereIn('id', ids)
-            .update({ activation_status: USER_ACTIVATION_STATUS_DEACTIVATED })
+            .update({
+              activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+              is_verified: false,
+              verified_by: null,
+              verified_date: null,
+            })
           break
       }
       return response.res({ affectedRows })
