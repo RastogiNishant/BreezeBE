@@ -114,9 +114,13 @@ class PlanController {
       const free_plans = plans.filter((plan) => plan.prospect_free_plan || plan.landlord_free_plan)
 
       if (free_plans && free_plans.length) {
-        throw new HttpException("Free plans can'be deleted")
+        throw new HttpException('Free plans can\'be deleted')
       }
 
+      const users = await UserService.getUserByPaymentPlan(ids)
+      if( users && users.length ) {
+        throw new HttpException('Some users are in this plan, can\'t be deleted' )
+      }
       return response.res(await PlanService.deletePlan(ids))
     } catch (e) {
       throw new HttpException(e.message, 400)
