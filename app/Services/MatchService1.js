@@ -89,8 +89,7 @@ class MatchService1 {
     // landlordBudgetWeight = 1
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
-    const ageWeight = 0.3
-    const familyStatusWeight = 0.3
+    const ageWeight = 0.6
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
     const maxScoreL = 4
@@ -136,7 +135,6 @@ class MatchService1 {
     let landlordBudgetPoints = 0
     let creditScorePoints = 0
     let rentArrearsScore = 0
-    let familyStatusScore = 0
     let ageInRangeScore = 0
     let householdSizeScore = 0
     let petsScore = 0
@@ -157,7 +155,6 @@ class MatchService1 {
           landlordBudgetPoints,
           creditScorePoints,
           rentArrearsScore,
-          familyStatusScore,
           ageInRangeScore,
           householdSizeScore,
           petsScore,
@@ -210,14 +207,6 @@ class MatchService1 {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
       rentArrearsScore = 1
-    }
-
-    // Check family status
-    log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
-    if (!estate.family_status || +prospect.family_status === +estate.family_status) {
-      log({ familyStatusPoints: familyStatusWeight })
-      scoreL += familyStatusWeight
-      familyStatusScore += familyStatusWeight
     }
 
     // prospect's age
@@ -422,7 +411,6 @@ class MatchService1 {
         landlordBudgetPoints,
         creditScorePoints,
         rentArrearsScore,
-        familyStatusScore,
         ageInRangeScore,
         householdSizeScore,
         petsScore,
