@@ -72,27 +72,36 @@ class UserController {
   }
 
   async updateActivationStatus({ request, auth, response }) {
-    const { ids, action } = request.all()
-    let affectedRows = 0
-    switch (action) {
-      case 'activate':
-        affectedRows = await User.query()
-          .whereIn('id', ids)
-          .update({
-            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-            is_verified: true,
-            verified_by: auth.user.id,
-            verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+    const user_id = auth.user.id
+    const adminUser = await User.query().where({ id: user_id, is_admin: true }).first()
+    if (adminUser) {
+      const { ids, action } = request.all()
+      let affectedRows = 0
+      switch (action) {
+        case 'activate':
+          affectedRows = await User.query()
+            .whereIn('id', ids)
+            .update({
+              activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+              is_verified: true,
+              verified_by: auth.user.id,
+              verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+            })
+          NoticeService.verifyUserByAdmin(ids)
+          break
+        case 'deactivate':
+          affectedRows = await User.query().whereIn('id', ids).update({
+            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+            is_verified: false,
+            verified_by: null,
+            verified_date: null,
           })
-        NoticeService.verifyUserByAdmin(ids)
-        break
-      case 'deactivate':
-        affectedRows = await User.query()
-          .whereIn('id', ids)
-          .update({ activation_status: USER_ACTIVATION_STATUS_DEACTIVATED })
-        break
+          break
+      }
+      return response.res({ affectedRows })
+    } else {
+      throw new HttpException('You are not authorized to do this.', 401)
     }
-    return response.res({ affectedRows })
   }
 }
 

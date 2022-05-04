@@ -443,14 +443,16 @@ class EstateAttributeTranslations {
         ', '
       ).replace(/\s,/g, ',')
     },
-    energy_efficiency: (i) => Number(i),
+    energy_efficiency: (i) => {
+      return Number(i) === 0 ? null : Number(i)
+    },
     area: (i) => Number(i),
     rooms_number: (i) => Number(i),
     net_rent: (i) => Number(i),
     additional_costs: (i) => Number(i),
     heating_costs: (i) => Number(i),
-    min_age: (i) => parseInt(i),
-    max_age: (i) => parseInt(i),
+    min_age: (i) => parseInt(i) || 0,
+    max_age: (i) => parseInt(i) || 0,
     currency: (i) => (isEmpty(i) ? 'EUR' : i),
   }
 
