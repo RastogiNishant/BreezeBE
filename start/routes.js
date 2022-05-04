@@ -832,7 +832,6 @@ Route.list().forEach((r) => {
 //     budget_max: 30,
 //     credit_score: 90,
 //     unpaid_rental: 1,
-//     family_status: true,
 //     non_smoker: true,
 //     members_age: [10, 65],
 //     members_count: 7,
