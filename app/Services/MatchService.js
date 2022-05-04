@@ -83,23 +83,22 @@ class MatchService {
     // landlordBudgetWeight = 1
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
-    const ageWeight = 0.3
-    const familyStatusWeight = 0.3
+    const ageWeight = 0.6
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
     const maxScoreL = 4
 
     const amenitiesCount = 7
     // Prospect Score Weights
-    // ProspectBudgetWeight = 1
-    // rentStartWeight = 1
-    const amenitiesWeight = 0.5 / amenitiesCount
-    const areaWeight = 0.5
+    const prospectBudgetWeight = 2
+    const rentStartWeight = 0.5
+    const amenitiesWeight = 0.4 / amenitiesCount
+    const areaWeight = 0.4
     const floorWeight = 0.3
-    const roomsWeight = 0.5
+    const roomsWeight = 0.2
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
-    const maxScoreT = 4
+    const maxScoreT = 5
 
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
@@ -185,14 +184,6 @@ class MatchService {
     }
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
 
-    // Check family status
-    log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
-    if (!estate.family_status || +prospect.family_status === +estate.family_status) {
-      log({ familyStatusPoints: familyStatusWeight })
-      scoreL += familyStatusWeight
-      familyStatusScore += familyStatusWeight
-    }
-
     // prospect's age
     log({
       estateMinAge: estate.min_age,
@@ -276,6 +267,7 @@ class MatchService {
     ) {
       prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
     }
+    prospectBudgetPoints = prospectBudgetWeight * prospectBudgetPoints
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
 
@@ -373,15 +365,16 @@ class MatchService {
     const nextYear = parseInt(moment().add(1, 'y').format('X'))
 
     log({ rentStart, vacantFrom, now, nextYear })
-    //vacantFrom (i) rentStart (min)
+    //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
-    if (vacantFrom < now || vacantFrom > nextYear) {
+    if (rentStart < now || rentStart > nextYear) {
       rentStartPoints = 0
-    } else if (vacantFrom >= rentStart) {
-      rentStartPoints = 0.9 + (0.1 * (vacantFrom - rentStart)) / vacantFrom
-    } else if (vacantFrom < rentStart) {
-      rentStartPoints = 1 - (rentStart - vacantFrom) / rentStart
+    } else if (rentStart >= vacantFrom) {
+      rentStartPoints = 0.9 + (0.1 * (rentStart - vacantFrom)) / rentStart
+    } else if (rentStart < vacantFrom) {
+      rentStartPoints = 1 - (vacantFrom - rentStart) / vacantFrom
     }
+    rentStartPoints = rentStartPoints * rentStartWeight
     scoreT += rentStartPoints
 
     const scoreTPer = scoreT / maxScoreT
