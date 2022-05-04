@@ -83,8 +83,7 @@ class MatchService {
     // landlordBudgetWeight = 1
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
-    const ageWeight = 0.3
-    const familyStatusWeight = 0.3
+    const ageWeight = 0.6
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
     const maxScoreL = 4
@@ -184,14 +183,6 @@ class MatchService {
       rentArrearsScore = 1
     }
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
-
-    // Check family status
-    log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
-    if (!estate.family_status || +prospect.family_status === +estate.family_status) {
-      log({ familyStatusPoints: familyStatusWeight })
-      scoreL += familyStatusWeight
-      familyStatusScore += familyStatusWeight
-    }
 
     // prospect's age
     log({
