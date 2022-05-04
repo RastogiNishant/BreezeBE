@@ -98,7 +98,7 @@ class MatchService {
     const roomsWeight = 0.2
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
-    const maxScoreT = 5
+    const maxScoreT = 4
 
     const userIncome = parseFloat(prospect.income) || 0
     const estatePrice = Estate.getFinalPrice(estate)
@@ -372,7 +372,7 @@ class MatchService {
     } else if (rentStart >= vacantFrom) {
       rentStartPoints = 0.9 + (0.1 * (rentStart - vacantFrom)) / rentStart
     } else if (rentStart < vacantFrom) {
-      rentStartPoints = 1 - (vacantFrom - rentStart) / vacantFrom
+      rentStartPoints = 0.9 * (1 - (vacantFrom - rentStart) / vacantFrom)
     }
     rentStartPoints = rentStartPoints * rentStartWeight
     scoreT += rentStartPoints

@@ -96,12 +96,12 @@ class MatchService1 {
 
     const amenitiesCount = 7
     // Prospect Score Weights
-    // ProspectBudgetWeight = 1
-    // rentStartWeight = 1
-    const amenitiesWeight = 0.5 / amenitiesCount
-    const areaWeight = 0.5
+    const prospectBudgetWeight = 2
+    const rentStartWeight = 0.5
+    const amenitiesWeight = 0.4 / amenitiesCount
+    const areaWeight = 0.4
     const floorWeight = 0.3
-    const roomsWeight = 0.5
+    const roomsWeight = 0.2
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
     const maxScoreT = 4
@@ -291,6 +291,7 @@ class MatchService1 {
     ) {
       prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
     }
+    prospectBudgetPoints = prospectBudgetWeight * prospectBudgetPoints
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
 
@@ -388,15 +389,16 @@ class MatchService1 {
     const nextYear = parseInt(moment().add(1, 'y').format('X'))
 
     log({ rentStart, vacantFrom, now, nextYear })
-    //vacantFrom (i) rentStart (min)
+    //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
-    if (vacantFrom < now || vacantFrom > nextYear) {
+    if (rentStart < now || rentStart > nextYear) {
       rentStartPoints = 0
-    } else if (vacantFrom >= rentStart) {
-      rentStartPoints = 0.9 + (0.1 * (vacantFrom - rentStart)) / vacantFrom
-    } else if (vacantFrom < rentStart) {
-      rentStartPoints = 1 - (rentStart - vacantFrom) / rentStart
+    } else if (rentStart >= vacantFrom) {
+      rentStartPoints = 0.9 + (0.1 * (rentStart - vacantFrom)) / rentStart
+    } else if (rentStart < vacantFrom) {
+      rentStartPoints = 0.9 * (1 - (vacantFrom - rentStart) / vacantFrom)
     }
+    rentStartPoints = rentStartPoints * rentStartWeight
     scoreT += rentStartPoints
 
     const scoreTPer = scoreT / maxScoreT
@@ -404,7 +406,29 @@ class MatchService1 {
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
       log('prospect score fails')
-      return 0
+      return {
+        scoreLandlord: {
+          landlordBudgetPoints,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          landlordScore: scoreLPer,
+        },
+        scoreProspect: {
+          prospectBudgetPoints,
+          spacePoints,
+          floorScore,
+          roomsPoints,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          rentStartPoints,
+          prospectScore: scoreTPer,
+        },
+        matchScore: 0,
+      }
     }
     return {
       scoreLandlord: {
