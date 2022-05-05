@@ -262,6 +262,11 @@ Route.group(() => {
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
   ])
+  Route.get('/:estate_id/rooms/:room_id', 'RoomController.getRoomById').middleware([
+    'valid:EstateId,RoomId',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
   Route.put('/:estate_id/rooms/order', 'RoomController.updateOrder').middleware(['valid:Ids'])
 
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
@@ -505,6 +510,14 @@ Route.group(() => {
 })
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
+
+//Room Custom Amenities
+Route.group(() => {
+  Route.get('/', 'CustomAmenityController.getAll')
+  Route.post('/', 'CustomAmenityController.add').middleware(['valid:CreateCustomRoomAmenities'])
+})
+  .prefix('/api/v1/estates/:estate_id/rooms/:room_id/custom-amenities')
+  .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
   Route.get('/', 'LandlordController.landlords')
