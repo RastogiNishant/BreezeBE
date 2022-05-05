@@ -658,6 +658,8 @@ class EstateController {
     const { property_id, estate_id } = request.all()
     const estate = await Estate.query()
       .where({ property_id })
+      .where('user_id', auth.user.id)
+      .whereNotIn('status', [STATUS_DELETE])
       .whereNot({ id: estate_id || null })
       .orderBy('id')
       .fetch()
