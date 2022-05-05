@@ -657,14 +657,14 @@ class EstateController {
   async verifyPropertyId({ request, auth, response }) {
     const { property_id, estate_id } = request.all()
     const estate = await Estate.query()
+      .select(Database.raw('count(*) as row_count'))
       .where({ property_id })
       .where('user_id', auth.user.id)
       .whereNotIn('status', [STATUS_DELETE])
       .whereNot({ id: estate_id || null })
-      .orderBy('id')
-      .fetch()
-    const duplicate = estate.rows.length > 0 ? false : true
-    response.res(duplicate)
+      .first()
+
+    response.res(estate.row_count > 0)
   }
 
   async getInviteToViewCode({ request, auth, response }) {}
