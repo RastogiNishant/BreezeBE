@@ -13,6 +13,8 @@ class RoomCustomAmenitiesSchema extends Schema {
       table.integer('room_id').references('id').inTable('rooms')
       table.integer('status').defaultTo(STATUS_ACTIVE)
       table.string('amenity', 22)
+      table.integer('sequence_order')
+      table.integer('added_by').references('id').inTable('users')
     })
   }
 
