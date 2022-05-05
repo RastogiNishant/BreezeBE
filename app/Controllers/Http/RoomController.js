@@ -222,7 +222,11 @@ class RoomController {
     const { estate_id, room_id } = request.all()
     const room = await Room.query()
       .select(Database.raw('rooms.*'))
-      .select(Database.raw('json_agg (room_custom_amenities) as custom_amenities'))
+      .select(
+        Database.raw(
+          'json_agg (room_custom_amenities order by sequence_order desc) as custom_amenities'
+        )
+      )
       .leftJoin('room_custom_amenities', function () {
         this.on('room_custom_amenities.room_id', 'rooms.id').on(
           'room_custom_amenities.room_id',
