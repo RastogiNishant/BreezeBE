@@ -249,6 +249,10 @@ class EstateService {
     return Estate.query().update({ cover: filePathName }).where('id', estateId)
   }
 
+  static async removeCover(estateId, filePathName) {
+    return Estate.query().update({ cover: null }).where('id', estateId).where('cover', filePathName)
+  }
+
   /**
    *
    */

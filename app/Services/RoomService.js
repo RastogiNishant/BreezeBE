@@ -29,6 +29,7 @@ class RoomService {
   static async getRoomByUser(userId, roomId) {
     return Room.query()
       .select('rooms.*', '_e.cover')
+      .with('images')
       .where('rooms.id', roomId)
       .innerJoin({ _e: 'estates' }, function () {
         if (isArray(userId)) {
@@ -91,8 +92,10 @@ class RoomService {
       await Drive.disk(image.disk).delete(image.url)
     } catch (e) {
       Logger.error(e.message)
+      return null
     }
     await image.delete()
+    return image
   }
 
   /**
