@@ -10,6 +10,7 @@ const Drive = use('Drive')
 const Event = use('Event')
 const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
+const Option = use('App/Models/Option')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
@@ -218,9 +219,9 @@ class RoomController {
     response.res(rooms)
   }
 
-  async getRoomById({ request, auth, response }) {
+  async getRoomById({ request, response }) {
     const { estate_id, room_id } = request.all()
-    const room = await Room.query()
+    let room = await Room.query()
       .select(Database.raw('rooms.*'))
       .select(
         Database.raw(
@@ -236,9 +237,19 @@ class RoomController {
       .where('rooms.id', room_id)
       .where('estate_id', estate_id)
       .groupBy('rooms.id')
+      .limit(3)
       .first()
-
-    response.res(room)
+    room = room.toJSON()
+    if (room.options.length > 0) {
+      const amenities = await Option.query()
+        .whereIn('id', room.options)
+        .where('type', 'room')
+        .fetch()
+      room.amenities = amenities
+    } else {
+      room.amenities = []
+    }
+    return response.res(room)
   }
 }
 
