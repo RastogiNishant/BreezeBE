@@ -958,6 +958,7 @@ class MatchController {
       topCount: topCount[0].count,
       finalMatchesCount: finalMatchesCount[0].count,
 
+      estate:estate.toJSON(),
       matches: matches,
       buddies: buddies,
       invites: invites,
