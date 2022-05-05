@@ -664,7 +664,7 @@ class EstateController {
       .whereNot({ id: estate_id || null })
       .first()
 
-    response.res(estate.row_count > 0)
+    response.res(!(estate.row_count > 0))
   }
 
   async getInviteToViewCode({ request, auth, response }) {}
