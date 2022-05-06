@@ -18,7 +18,7 @@ const {
   PROPERTY_MANAGE_ALLOWED,
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
-  SUPPORTED_IMAGE_SIZE,
+  SUPPORTED_IMAGE_FORMAT,
 } = require('../../constants')
 const ImageService = require('../../Services/ImageService')
 class RoomController {
@@ -155,7 +155,7 @@ class RoomController {
     try {
       const image = request.file('file', {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: SUPPORTED_IMAGE_SIZE,
+        extnames: SUPPORTED_IMAGE_FORMAT,
       })
       if (image.hasErrors) {
         throw new HttpException(image.errors, 400)

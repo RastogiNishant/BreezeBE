@@ -803,6 +803,12 @@ Route.group(() => {
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
 
+Route.group(() => {
+  Route.post('/', 'ImageController.compressImage')
+})
+  .prefix('/api/v1/image/compress')
+  .middleware(['auth:jwtLandlord,jwt'])
+
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
@@ -812,6 +818,7 @@ Route.list().forEach((r) => {
     }
   }
 })
+
 
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {

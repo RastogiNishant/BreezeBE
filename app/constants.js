@@ -553,7 +553,7 @@ const constants = {
   SALUTATION_MS: 2,
   SALUTATION_SIR_OR_MADAM: 3,
 
-  SUPPORTED_IMAGE_SIZE: ['jpg', 'png', 'gif'],  
+  SUPPORTED_IMAGE_FORMAT: ['jpg', 'png', 'gif'],  
 }
 
 module.exports = constants
