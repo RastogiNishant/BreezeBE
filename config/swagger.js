@@ -55,6 +55,10 @@ module.exports = {
           description: 'All about the prospects',
         },
         {
+          name: 'Custom Room Amenities',
+          description: 'All about custom room amenities',
+        },
+        {
           name: 'Administration',
           description: 'All about the administrator actions.',
         },
