@@ -98,7 +98,7 @@ class ImportService {
         }
 
         // Run task to separate get coords and point of estate
-        //QueueService.getEstateCoords(estate.id)
+        QueueService.getEstateCoords(estate.id)
 
         //add current tenant
         if (data.tenant_email) {
