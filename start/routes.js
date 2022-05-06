@@ -232,6 +232,18 @@ Route.group(() => {
     'LandlordOwnsThisEstate',
     'RoomBelongsToEstate',
   ])
+
+  Route.delete('/custom-amenities', 'CustomAmenityController.delete').middleware([
+    'valid:EstateId,RoomId,Id',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+
+  Route.put('/custom-amenities', 'CustomAmenityController.add').middleware([
+    'valid:EstateId,RoomId,CreateCustomRoomAmenity',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
 })
   .prefix('/api/v1/estates/:estate_id/rooms/:room_id')
   .middleware(['auth:jwtLandlord'])

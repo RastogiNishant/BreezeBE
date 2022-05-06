@@ -38,7 +38,16 @@ class CustomAmenityController {
     response.res(result)
   }
 
-  async getAll({ request, auth, response }) {
+  async delete({ request, response }) {
+    const { id, room_id } = request.all()
+    const affectedRows = await CustomAmenity.query()
+      .where('id', id)
+      .where('room_id', room_id)
+      .update({ status: STATUS_DELETE })
+    response.res({ deleted: affectedRows })
+  }
+
+  async getAll({ request, response }) {
     const { room_id } = request.all()
     const amenities = await CustomAmenity.query()
       .where('room_id', room_id)
