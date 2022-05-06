@@ -219,6 +219,23 @@ Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
   'valid:SignInAppleMobile',
 ])
 
+//Room Custom Amenities
+Route.group(() => {
+  Route.get('/custom-amenities', 'CustomAmenityController.getAll').middleware([
+    'valid:EstateId,RoomId',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+
+  Route.post('/custom-amenities', 'CustomAmenityController.add').middleware([
+    'valid:EstateId,RoomId,CreateCustomRoomAmenity',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+})
+  .prefix('/api/v1/estates/:estate_id/rooms/:room_id')
+  .middleware(['auth:jwtLandlord'])
+
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
@@ -510,14 +527,6 @@ Route.group(() => {
 })
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
-
-//Room Custom Amenities
-Route.group(() => {
-  Route.get('/', 'CustomAmenityController.getAll')
-  Route.post('/', 'CustomAmenityController.add').middleware(['valid:CreateCustomRoomAmenities'])
-})
-  .prefix('/api/v1/estates/:estate_id/rooms/:room_id/custom-amenities')
-  .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
   Route.get('/', 'LandlordController.landlords')
