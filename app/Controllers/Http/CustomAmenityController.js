@@ -4,8 +4,10 @@ const {
   STATUS_DELETE,
   ROOM_CUSTOM_AMENITIES_MAX_COUNT,
   ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR,
+  ROOM_CUSTOM_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH,
 } = require('../../constants')
 const HttpException = use('App/Exceptions/HttpException')
+const { reverse } = require('lodash')
 
 const CustomAmenity = use('App/Models/CustomAmenity')
 
@@ -45,6 +47,39 @@ class CustomAmenityController {
       .where('room_id', room_id)
       .update({ status: STATUS_DELETE })
     response.res({ deleted: affectedRows })
+  }
+
+  async update({ request, response }) {
+    const { action, id, amenity, amenity_ids, room_id } = request.all()
+    let affectedRows = 0
+    switch (action) {
+      case 'update':
+        affectedRows = await CustomAmenity.query().where('id', id).update({ amenity })
+        break
+      case 'reorder':
+        const currentCustomAmenities = await CustomAmenity.query()
+          .whereIn('id', amenity_ids)
+          .where('room_id', room_id)
+          .whereNotIN('status', [STATUS_DELETE])
+          .fetch()
+        if (currentCustomAmenities.rows.length !== amenity_ids.length) {
+          throw new HttpException(
+            'Error found while validating amenity ids',
+            422,
+            ROOM_CUSTOM_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH
+          )
+        }
+        Promise.all(
+          await reverse(amenity_ids).map(async (id, index) => {
+            await CustomAmenity.query()
+              .where('id', id)
+              .update({ sequence_order: index + 1 })
+          })
+        )
+        affectedRows = 1
+        break
+    }
+    response.res(affectedRows > 0)
   }
 
   async getAll({ request, response }) {

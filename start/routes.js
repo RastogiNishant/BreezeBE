@@ -239,8 +239,8 @@ Route.group(() => {
     'RoomBelongsToEstate',
   ])
 
-  Route.put('/custom-amenities', 'CustomAmenityController.add').middleware([
-    'valid:EstateId,RoomId,CreateCustomRoomAmenity',
+  Route.put('/custom-amenities', 'CustomAmenityController.update').middleware([
+    'valid:EstateId,RoomId,UpdateCustomRoomAmenity',
     'LandlordOwnsThisEstate',
     'RoomBelongsToEstate',
   ])
