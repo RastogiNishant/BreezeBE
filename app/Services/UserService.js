@@ -296,7 +296,7 @@ class UserService {
   /**
    *
    */
-  static async sendConfirmEmail(user) {
+  static async sendConfirmEmail(user, from_web=false) {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
@@ -304,17 +304,40 @@ class UserService {
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
+      const forgotLink = await UserService.getForgotShortLink(from_web)
+
       await MailService.sendUserConfirmation(user.email, {
         code,
-        user_id: user.id,
+        user: user,
         role: user.role,
         lang: lang,
+        forgotLink: forgotLink
       })
     } catch (e) {
       throw new HttpException(e)
     }
   }
 
+  static async getForgotShortLink(from_web=false) {
+    const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+    const deepLink_URL = from_web
+      ? `${process.env.SITE_URL}/forgotPassword`
+      : `${process.env.DEEP_LINK}?type=forgotPassword`
+    const { shortLink } = await firebaseDynamicLinks.createLink({
+      dynamicLinkInfo: {
+        domainUriPrefix: process.env.DOMAIN_PREFIX,
+        link: deepLink_URL,
+        androidInfo: {
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+        },
+        iosInfo: {
+          iosBundleId: process.env.IOS_BUNDLE_ID,
+        },
+      },
+    })
+    return shortLink
+  }
   /**
    *
    */
@@ -331,7 +354,7 @@ class UserService {
   /**
    *
    */
-  static async confirmEmail(user, userCode) {
+  static async confirmEmail(user, userCode, from_web=false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
@@ -358,10 +381,14 @@ class UserService {
         },
       },
     })
-    await MailService.sendWelcomeMail(user.email, {
+
+    const forgotLink = await UserService.getForgotShortLink(from_web)
+
+    await MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
+      forgotLink:forgotLink
     })
     return user.save()
   }
