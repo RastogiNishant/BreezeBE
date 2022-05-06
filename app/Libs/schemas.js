@@ -2,7 +2,7 @@
 
 const yup = require('yup')
 
-const phoneSchema = yup.string().matches(/^\+[0-9]{10,12}$/, 'Phone number format is wrong')
+const phoneSchema = yup.string().matches(/^\+[1-9]{1,2}[0-9]{9,11}$/, 'Phone number format is wrong')
 
 const verificationCodeSchema = yup.string().matches(/^\d{6}$/)
 
