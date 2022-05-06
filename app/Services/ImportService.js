@@ -99,7 +99,7 @@ class ImportService {
 
         // Run task to separate get coords and point of estate
         QueueService.getEstateCoords(estate.id)
-
+        //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.tenant_email) {
           await EstateCurrentTenantService.addCurrentTenant(data, estate.id)
@@ -252,6 +252,7 @@ class ImportService {
 
     // Run task to separate get coords and point of estate
     QueueService.getEstateCoords(estate.id)
+    //await EstateService.updateEstateCoord(estate.id)
     if (data.tenant_email) {
       await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
     }
