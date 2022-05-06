@@ -822,16 +822,14 @@ class UserService {
     return true
   }
 
-  static async updateFreePlan(old_plan_id, plan_id, trx) {
-    await User.query().where('plan_id', old_plan_id).update({ plan_id: plan_id }, trx)
+  static async updateFreeUserPlans(old_plan_id, plan_id, trx) {
+    await User.query().where('plan_id', old_plan_id).update({ plan_id: plan_id }).transacting(trx)
   }
 
   static async getUserByPaymentPlan(plan_ids) {
-    if( isArray(plan_ids)) {
-      return (await User.query()
-      .whereIn('plan_id', plan_ids)    
-      .fetch()).rows
-    }else{
+    if (isArray(plan_ids)) {
+      return (await User.query().whereIn('plan_id', plan_ids).fetch()).rows
+    } else {
       return await User.query().where('plan_id', plan_id).first()
     }
   }

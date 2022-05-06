@@ -45,63 +45,82 @@ class PlanController {
     }
   }
 
-  async updateFreePlan(data) {
+  async updateFreePlan(data, trx = null) {
     //prospect
     let old_free_plan
     if (data.prospect_free_plan && data.role === ROLE_USER) {
+      if (data.status === false) {
+        throw new HttpException("Default plan can't be disabled")
+      }
+
       old_free_plan = await PlanService.getProspectDefaultPlan()
+
       if (old_free_plan) {
         await PlanService.updatePlan(
           {
             ...old_free_plan.toJSON(),
             prospect_free_plan: false,
-          }
+          },
+          trx
         )
       }
     }
 
     //landlord
     if (data.landlord_free_plan && data.role === ROLE_LANDLORD) {
+      if (data.status === false) {
+        throw new HttpException("Default plan can't be disabled")
+      }
+
       old_free_plan = await PlanService.getLandlordDefaultPlan()
+
       if (old_free_plan) {
         await PlanService.updatePlan(
           {
             ...old_free_plan.toJSON(),
             landlord_free_plan: false,
-          }
+          },
+          trx
         )
       }
     }
     return old_free_plan
   }
+
   async createPlan({ request, response }) {
     const { ...data } = request.all()
+
+    const trx = await Database.beginTransaction()
+
     try {
-      const old_free_plan = await this.updateFreePlan(data)
-      const plan = await PlanService.createPlan(data)
-
+      const old_free_plan = await this.updateFreePlan(data, trx)
+      const plan = await PlanService.createPlan(data, trx)
       if (old_free_plan && plan) {
-        await UserService.updateFreePlan(old_free_plan.id, plan.id)
+        await UserService.updateFreeUserPlans(old_free_plan.id, plan.id, trx)
       }
-
+      await trx.commit()
       return response.res(plan)
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
 
   async updatePlan({ request, response }) {
+    const trx = await Database.beginTransaction()
     try {
       const { ...data } = request.all()
-      const old_free_plan = await this.updateFreePlan(data)
-      const ret = await PlanService.updatePlan(data)
+      const old_free_plan = await this.updateFreePlan(data, trx)
+      const ret = await PlanService.updatePlan(data, trx)
 
       if (old_free_plan) {
-        await UserService.updateFreePlan(old_free_plan.id, data.id)
+        await UserService.updateFreeUserPlans(old_free_plan.id, data.id, trx)
       }
 
+      await trx.commit()
       return response.res(ret)
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -114,12 +133,12 @@ class PlanController {
       const free_plans = plans.filter((plan) => plan.prospect_free_plan || plan.landlord_free_plan)
 
       if (free_plans && free_plans.length) {
-        throw new HttpException('Free plans can\'be deleted')
+        throw new HttpException("Free plans can'be deleted", 400)
       }
 
       const users = await UserService.getUserByPaymentPlan(ids)
-      if( users && users.length ) {
-        throw new HttpException('Some users are in this plan, can\'t be deleted' )
+      if (users && users.length) {
+        throw new HttpException("Some users are in this plan, can't be deleted", 400)
       }
       return response.res(await PlanService.deletePlan(ids))
     } catch (e) {

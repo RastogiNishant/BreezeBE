@@ -9,7 +9,7 @@ const {
 
 class PlanService {
   static async createPlan(data, trx) {
-    return Plan.createItem(
+    return await Plan.createItem(
       {
         ...data,
       },
@@ -17,8 +17,8 @@ class PlanService {
     )
   }
   static async updatePlan(data, trx) {
-    const oldPlan = await Plan.query().where({ id: data.id }).first()
-    if (!oldPlan) {
+    let plan = await Plan.query().where({ id: data.id }).first()
+    if (!plan) {
       throw new HttpException('Plan does not exist')
     }
 
@@ -27,9 +27,8 @@ class PlanService {
       .update(
         {
           ...data,
-        },
-        trx
-      )
+        }
+      ).transacting(trx)
   }
 
   static async deletePlan(ids) {
