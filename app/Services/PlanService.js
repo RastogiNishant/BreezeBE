@@ -3,9 +3,7 @@
 const Plan = use('App/Models/Plan')
 const HttpException = use('App/Exceptions/HttpException')
 const { isArray } = require('lodash')
-const {
-  ROLE_ADMIN, ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER
-} = require('../constants')
+const { ROLE_ADMIN, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER } = require('../constants')
 
 class PlanService {
   static async createPlan(data, trx) {
@@ -24,11 +22,10 @@ class PlanService {
 
     return await Plan.query()
       .where({ id: data.id })
-      .update(
-        {
-          ...data,
-        }
-      ).transacting(trx)
+      .update({
+        ...data,
+      })
+      .transacting(trx)
   }
 
   static async deletePlan(ids) {
@@ -41,12 +38,11 @@ class PlanService {
   }
 
   static async getPlan(id) {
-    if (isArray(id)){
+    if (isArray(id)) {
       return (await Plan.query().with('planOption').whereIn('id', id).fetch()).rows
-    }else {
+    } else {
       return await Plan.query().with('planOption').where('id', id).first()
     }
-     
   }
 
   static async getProspectDefaultPlan() {
@@ -58,13 +54,13 @@ class PlanService {
   }
 
   static async getPlanAll(role) {
-    if( role === ROLE_ADMIN ) {
+    if (role === ROLE_ADMIN) {
       return await Plan.query().orderBy('role', 'asc').orderBy('id', 'asc').fetch()
-    }else {
-      if( role === ROLE_PROPERTY_MANAGER) {
-        role = ROLE_USER
+    } else {
+      if (role === ROLE_PROPERTY_MANAGER) {
+        role = ROLE_LANDLORD
       }
-      return  await Plan.query().where('role', role).orderBy('id', 'asc').fetch()
+      return await Plan.query().where('role', role).orderBy('id', 'asc').fetch()
     }
   }
 }
