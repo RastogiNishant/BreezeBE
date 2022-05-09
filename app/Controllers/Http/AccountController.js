@@ -544,7 +544,7 @@ class AccountController {
       .with('tenantPaymentPlan')
       .firstOrFail()
 
-    user.tenant = await Tenant.query()
+    const tenant = await Tenant.query()
       .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
       .first()
 
@@ -573,6 +573,10 @@ class AccountController {
       if (user.role == ROLE_LANDLORD) {
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
       }
+    }
+
+    if (tenant) {
+      user.tenant = tenant
     }
 
     return response.res(user.toJSON({ isOwner: true }))
