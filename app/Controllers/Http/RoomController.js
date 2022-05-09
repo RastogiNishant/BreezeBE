@@ -139,12 +139,12 @@ class RoomController {
   /**
    *
    */
-  async addRoomPhoto({ request, auth, response }) {
+   async addRoomPhoto({ request, auth, response }) {
     const { room_id } = request.all()
 
     let userIds = [auth.user.id]
-    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
+		if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)            
     }
 
     const room = await RoomService.getRoomByUser(userIds, room_id)
@@ -152,46 +152,27 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
-    try {
-      const image = request.file('file', {
-        size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: SUPPORTED_IMAGE_FORMAT,
-      })
-      if (image.hasErrors) {
-        throw new HttpException(image.errors, 400)
-      }
-      const imagemin = (await import('imagemin')).default
-      const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
-      const imageminPngquant = require('imagemin-pngquant')
-
-      let img_data = Drive.getStream(image.tmpPath)
-      if (image.size > 20000) {
-        // image size is bigger than 2M, it's only for test, we need to change it later
-        img_data = (
-          await imagemin([image.tmpPath], {
-            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
-          })
-        )[0].data
-      }
-
+    try{
+      const image = request.file('file')
       const ext = image.extname
         ? image.extname
         : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
       const filename = `${uuid.v4()}.${ext}`
       const filePathName = `${moment().format('YYYYMM')}/${filename}`
-      await Drive.disk('s3public').put(filePathName, img_data, {
+  
+      await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
         ACL: 'public-read',
         ContentType: image.headers['content-type'],
       })
       const imageObj = await RoomService.addImage(filePathName, room, 's3public')
+
       if (!room.cover) {
         await EstateService.setCover(room.estate_id, filePathName)
       }
       Event.fire('estate::update', room.estate_id)
       response.res(imageObj)
-    } catch (e) {
-      console.log('RoomController Add Image', e)
-      throw new HttpException('Uploading image failure')
+    }catch(e){
+      throw new HttpException(e.message, 400)
     }
   }
 
