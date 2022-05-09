@@ -221,26 +221,26 @@ Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
 
 //Room Custom Amenities
 Route.group(() => {
-  Route.get('/custom-amenities', 'CustomAmenityController.getAll').middleware([
+  Route.get('/amenities', 'RoomAmenityController.getAll').middleware([
     'valid:EstateId,RoomId',
     'LandlordOwnsThisEstate',
     'RoomBelongsToEstate',
   ])
 
-  Route.post('/custom-amenities', 'CustomAmenityController.add').middleware([
-    'valid:EstateId,RoomId,CreateCustomRoomAmenity',
+  Route.post('/amenities', 'RoomAmenityController.add').middleware([
+    'valid:EstateId,RoomId,CreateRoomAmenity',
     'LandlordOwnsThisEstate',
     'RoomBelongsToEstate',
   ])
 
-  Route.delete('/custom-amenities', 'CustomAmenityController.delete').middleware([
+  Route.delete('/amenities', 'RoomAmenityController.delete').middleware([
     'valid:EstateId,RoomId,Id',
     'LandlordOwnsThisEstate',
     'RoomBelongsToEstate',
   ])
 
-  Route.put('/custom-amenities', 'CustomAmenityController.update').middleware([
-    'valid:EstateId,RoomId,UpdateCustomRoomAmenity',
+  Route.put('/amenities', 'RoomAmenityController.update').middleware([
+    'valid:EstateId,RoomId,UpdateRoomAmenity',
     'LandlordOwnsThisEstate',
     'RoomBelongsToEstate',
   ])
