@@ -139,12 +139,12 @@ class RoomController {
   /**
    *
    */
-   async addRoomPhoto({ request, auth, response }) {
+  async addRoomPhoto({ request, auth, response }) {
     const { room_id } = request.all()
 
     let userIds = [auth.user.id]
-		if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)            
+    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
     const room = await RoomService.getRoomByUser(userIds, room_id)
@@ -152,14 +152,14 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
-    try{
+    try {
       const image = request.file('file')
       const ext = image.extname
         ? image.extname
         : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
       const filename = `${uuid.v4()}.${ext}`
       const filePathName = `${moment().format('YYYYMM')}/${filename}`
-  
+
       await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
         ACL: 'public-read',
         ContentType: image.headers['content-type'],
@@ -171,7 +171,7 @@ class RoomController {
       }
       Event.fire('estate::update', room.estate_id)
       response.res(imageObj)
-    }catch(e){
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
   }
