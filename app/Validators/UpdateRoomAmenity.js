@@ -3,7 +3,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const { id } = require('../Libs/schemas')
 
-class UpdateCustomRoomAmenity extends Base {
+class UpdateRoomAmenity extends Base {
   static schema = () =>
     yup.object().shape({
       action: yup
@@ -29,4 +29,4 @@ class UpdateCustomRoomAmenity extends Base {
     })
 }
 
-module.exports = UpdateCustomRoomAmenity
+module.exports = UpdateRoomAmenity
