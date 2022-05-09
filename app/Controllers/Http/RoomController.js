@@ -15,7 +15,12 @@ const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
-const { PROPERTY_MANAGE_ALLOWED, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER } = require('../../constants')
+const {
+  PROPERTY_MANAGE_ALLOWED,
+  ROLE_LANDLORD,
+  ROLE_PROPERTY_MANAGER,
+  STATUS_DELETE,
+} = require('../../constants')
 const ImageService = require('../../Services/ImageService')
 class RoomController {
   /**
@@ -225,7 +230,9 @@ class RoomController {
       .select(Database.raw('rooms.*'))
       .select(Database.raw('json_agg (room_amenities order by sequence_order desc) as amenities'))
       .leftJoin('room_amenities', function () {
-        this.on('room_amenities.room_id', 'rooms.id').on('room_amenities.room_id', room_id)
+        this.on('room_amenities.room_id', 'rooms.id')
+          .on('room_amenities.room_id', room_id)
+          .on(Database.raw(`"room_amenities"."status" != ${STATUS_DELETE}`))
       })
       .where('rooms.id', room_id)
       .where('estate_id', estate_id)

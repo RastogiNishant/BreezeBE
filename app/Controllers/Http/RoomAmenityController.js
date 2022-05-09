@@ -101,7 +101,7 @@ class RoomAmenityController {
 
   async delete({ request, response }) {
     const { id, room_id } = request.all()
-    const affectedRows = await CustomAmenity.query()
+    const affectedRows = await RoomAmenity.query()
       .where('id', id)
       .where('room_id', room_id)
       .update({ status: STATUS_DELETE })
@@ -113,13 +113,17 @@ class RoomAmenityController {
     let affectedRows = 0
     switch (action) {
       case 'update':
-        affectedRows = await CustomAmenity.query().where('id', id).update({ amenity })
+        //we can only update a custom_amenity. If you want to update an amenity. Just delete.
+        affectedRows = await RoomAmenity.query()
+          .where('id', id)
+          .where('type', 'custom_amenity')
+          .update({ amenity })
         break
       case 'reorder':
-        const currentCustomAmenities = await CustomAmenity.query()
+        const currentCustomAmenities = await RoomAmenity.query()
           .whereIn('id', amenity_ids)
           .where('room_id', room_id)
-          .whereNotIN('status', [STATUS_DELETE])
+          .whereNotIn('status', [STATUS_DELETE])
           .fetch()
         if (currentCustomAmenities.rows.length !== amenity_ids.length) {
           throw new HttpException(
@@ -130,7 +134,7 @@ class RoomAmenityController {
         }
         Promise.all(
           await reverse(amenity_ids).map(async (id, index) => {
-            await CustomAmenity.query()
+            await RoomAmenity.query()
               .where('id', id)
               .update({ sequence_order: index + 1 })
           })
