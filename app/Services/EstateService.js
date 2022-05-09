@@ -809,9 +809,8 @@ class EstateService {
       .select('estates.*')
       .with('user')
       .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id')
-          .on('_m.user_id', tenant_id)
-          //.on('_m.status', MATCH_STATUS_FINISH)
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', tenant_id)
+        //.on('_m.status', MATCH_STATUS_FINISH)
       })
       .leftJoin({ _mb: 'members' }, function () {
         this.on('_mb.user_id', '_m.user_id')
