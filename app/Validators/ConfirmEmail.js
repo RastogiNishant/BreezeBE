@@ -7,6 +7,7 @@ class ConfirmEmail extends Base {
   static schema = () =>
     yup.object().shape({
       user_id: yup.number().positive().required(),
+      from_web: yup.number(),
       code: yup
         .string()
         .trim()

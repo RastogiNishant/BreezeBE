@@ -39,7 +39,7 @@ class CreateIncome extends Base {
           INCOME_TYPE_SELF_EMPLOYED,
           INCOME_TYPE_TRAINEE,
         ]),
-      income: yup.number().min(0),
+      income: yup.number().min(0).required(),
     })
   }
 }

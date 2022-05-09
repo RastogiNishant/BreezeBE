@@ -15,6 +15,7 @@ const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
+const { max, min } = require('lodash')
 
 const {
   MATCH_STATUS_NEW,
@@ -82,20 +83,19 @@ class MatchService {
     // landlordBudgetWeight = 1
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
-    const ageWeight = 0.3
-    const familyStatusWeight = 0.3
+    const ageWeight = 0.6
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
     const maxScoreL = 4
 
     const amenitiesCount = 7
     // Prospect Score Weights
-    // ProspectBudgetWeight = 1
-    // rentStartWeight = 1
-    const amenitiesWeight = 0.5 / amenitiesCount
-    const areaWeight = 0.5
+    const prospectBudgetWeight = 2
+    const rentStartWeight = 0.5
+    const amenitiesWeight = 0.4 / amenitiesCount
+    const areaWeight = 0.4
     const floorWeight = 0.3
-    const roomsWeight = 0.5
+    const roomsWeight = 0.2
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
     const maxScoreT = 4
@@ -163,6 +163,7 @@ class MatchService {
     // Get credit score income
     const userCurrentCredit = prospect.credit_score || 0
     const userRequiredCredit = estate.credit_score || 0
+
     log({ userCurrentCredit, userRequiredCredit })
 
     if (userCurrentCredit >= userRequiredCredit) {
@@ -182,14 +183,6 @@ class MatchService {
       rentArrearsScore = 1
     }
     log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
-
-    // Check family status
-    log({ estateFamilyStatus: estate.family_status, prospectFamilyStatus: prospect.family_status })
-    if (!estate.family_status || +prospect.family_status === +estate.family_status) {
-      log({ familyStatusPoints: familyStatusWeight })
-      scoreL += familyStatusWeight
-      familyStatusScore += familyStatusWeight
-    }
 
     // prospect's age
     log({
@@ -264,6 +257,7 @@ class MatchService {
     // prospect calculation part
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
+
     if (prospectBudgetRel >= realBudget) {
       prospectBudgetPoints = realBudget / prospectBudgetRel
     } else if (
@@ -273,6 +267,7 @@ class MatchService {
     ) {
       prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
     }
+    prospectBudgetPoints = prospectBudgetWeight * prospectBudgetPoints
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
     scoreT = prospectBudgetPoints
 
@@ -370,19 +365,21 @@ class MatchService {
     const nextYear = parseInt(moment().add(1, 'y').format('X'))
 
     log({ rentStart, vacantFrom, now, nextYear })
-    //vacantFrom (i) rentStart (min)
+    //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
-    if (vacantFrom < now || vacantFrom > nextYear) {
+    if (rentStart < now || rentStart > nextYear) {
       rentStartPoints = 0
-    } else if (vacantFrom >= rentStart) {
-      rentStartPoints = 0.9 + (0.1 * (vacantFrom - rentStart)) / vacantFrom
-    } else if (vacantFrom < rentStart) {
-      rentStartPoints = 1 - (rentStart - vacantFrom) / rentStart
+    } else if (rentStart >= vacantFrom) {
+      rentStartPoints = 0.9 + (0.1 * (rentStart - vacantFrom)) / rentStart
+    } else if (rentStart < vacantFrom) {
+      rentStartPoints = 0.9 * (1 - (vacantFrom - rentStart) / vacantFrom)
     }
+    rentStartPoints = rentStartPoints * rentStartWeight
     scoreT += rentStartPoints
 
     const scoreTPer = scoreT / maxScoreT
     log({ scoreProspectPercent: scoreTPer })
+
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
       log('prospect score fails')
@@ -1402,7 +1399,14 @@ class MatchService {
     { knock, buddy, invite, visit, top, commit, final }
   ) {
     const query = Tenant.query()
-      .select('tenants.*')
+      .select([
+        'tenants.*',
+        '_u.firstname',
+        '_u.secondname',
+        '_u.birthday',
+        '_u.email',
+        '_u.avatar',
+      ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
@@ -1413,23 +1417,11 @@ class MatchService {
       .orderBy('_m.updated_at', 'DESC')
 
     if (knock) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_KNOCK })
+      query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+      query.where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (invite) {
-      query.innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', '_m.estate_id')
-          .on('_e.status', STATUS_ACTIVE)
-      })
-      .whereIn('_m.status', [MATCH_STATUS_INVITE])
+      query.whereIn('_m.status', [MATCH_STATUS_INVITE])
     } else if (visit) {
       query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
     } else if (top) {
@@ -1663,6 +1655,16 @@ class MatchService {
    *
    */
   static async getEstateSlotsStat(estateId) {
+    const slotWithoutLength = await Database.table('time_slots')
+      .select('slot_length')
+      .whereNull('slot_length')
+      .first()
+
+    // It means there is unlimited slot, if there is at least 1 time_slot that slot_length = 0
+    if (slotWithoutLength) {
+      return { total: 1, booked: 0 }
+    }
+
     // All available slots for estate
     const getAvailableSlots = () => {
       return Database.select('slot_length', 'start_at', 'end_at')

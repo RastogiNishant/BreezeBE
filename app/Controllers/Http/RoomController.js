@@ -1,6 +1,6 @@
 'use strict'
 
-const { countBy } = require('lodash')
+const { countBy, includes } = require('lodash')
 const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
@@ -96,10 +96,24 @@ class RoomController {
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-    await RoomService.removeRoom(room_id)
-    Event.fire('estate::update', room.estate_id)
 
-    response.res(true)
+    try {
+      // need to remove corresponding cover if room's image has to be used as cover of estate
+      const images = room.toJSON().images
+      if (room.cover && images && images.length) {
+        const cover_images = images.filter((image) => includes(image.url, room.cover))
+        if (cover_images && cover_images.length) {
+          await EstateService.removeCover(room.estate_id, room.cover)
+        }
+      }
+
+      await RoomService.removeRoom(room_id)
+      Event.fire('estate::update', room.estate_id)
+
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   async updateOrder({ request, auth, response }) {
@@ -159,7 +173,6 @@ class RoomController {
         : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
       const filename = `${uuid.v4()}.${ext}`
       const filePathName = `${moment().format('YYYYMM')}/${filename}`
-
       await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
         ACL: 'public-read',
         ContentType: image.headers['content-type'],
@@ -185,10 +198,18 @@ class RoomController {
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-    await RoomService.removeImage(id)
-    Event.fire('estate::update', room.estate_id)
 
-    response.res(true)
+    try {
+      //need to remove if this image is used as the esate's cover
+      const image = await RoomService.removeImage(id)
+      if (image) {
+        await EstateService.removeCover(room.estate_id, image.url)
+      }
+      Event.fire('estate::update', room.estate_id)
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

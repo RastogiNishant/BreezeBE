@@ -16,7 +16,11 @@ components:
           example: yourpassword
         role:
           type: integer
-          summary: 1 - Landlord, 3 - Tenant/Prospect
+          enum:
+            - 1
+            - 2
+            - 3
+          description: 1 - Landlord, 2 - Admin, 3 - Tenant/Prospect
           example: 1
         device_token:
           type: string

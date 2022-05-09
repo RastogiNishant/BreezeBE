@@ -117,6 +117,7 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
+  HEATING_TYPE_FLOOR_HEATING,
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -186,6 +187,7 @@ const {
   LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
+  PARKING_SPACE_TYPE_NO_PARKING,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -348,8 +350,8 @@ class CreateEstate extends Base {
       parking_space: yup.number().min(0).max(10),
       parking_space_type: yup
         .number()
-        .positive()
         .oneOf([
+          PARKING_SPACE_TYPE_NO_PARKING,
           PARKING_SPACE_TYPE_UNDERGROUND,
           PARKING_SPACE_TYPE_CARPORT,
           PARKING_SPACE_TYPE_OUTDOOR,
@@ -408,6 +410,7 @@ class CreateEstate extends Base {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
+          HEATING_TYPE_FLOOR_HEATING,
         ]),
       equipment: yup
         .array()

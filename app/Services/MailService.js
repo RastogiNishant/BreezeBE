@@ -11,7 +11,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 const FromEmail = process.env.FROM_EMAIL
 const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
-
+const SITE_URL = process.env.SITE_URL
 const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -38,14 +38,14 @@ class MailService {
     )
   }
 
-  static async sendWelcomeMail( email, {code, role, lang} ) {
+  static async sendWelcomeMail( user, {code, role, lang, forgotLink=''} ) {
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
         : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
-      to: trim(email, ' '),
+      to: trim(user.email, ' '),
       from: FromEmail,
       templateId: templateId,
       dynamic_template_data: {
@@ -69,6 +69,15 @@ class MailService {
         team: l.get('email_signature.team.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
+
+        username: l.get('prospect.settings.user_details.txt_type_username', lang),
+        username_val:user.email,
+        forgot_link:forgotLink,
+        password_forbidden:l.get('prospect.email_forgot.password.hidden.message', lang),
+        forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
+        forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
+        forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
+        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang),
       },
     }
 
@@ -235,7 +244,7 @@ console.log('SendCodeForMember Email', email )
   /**
    *
    */
-  static async sendUserConfirmation(email, { code, user_id, role, lang = 'de' }) {
+  static async sendUserConfirmation(email, { code, user, role, lang = 'de', forgotLink = '' }) {
     const templateId =
       role === ROLE_LANDLORD
         ? LANDLORD_EMAIL_TEMPLATE
@@ -250,7 +259,7 @@ console.log('SendCodeForMember Email', email )
         salutation: l.get('email_signature.salutation.message', lang),
         intro: l.get('landlord.email_verification.intro.message', lang),
         code:l.get('email_signature.code.message', lang),
-        code_val: code,        
+        code_val: code,
         final: l.get('landlord.email_verification.final.message', lang),
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
@@ -268,9 +277,18 @@ console.log('SendCodeForMember Email', email )
         enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
         display:'none',
 
+        username: l.get('prospect.settings.user_details.txt_type_username', lang),
+        username_val:user.email,
+        forgot_link:forgotLink,
+        password_forbidden:l.get('prospect.email_forgot.password.hidden.message', lang),
+        forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
+        forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
+        forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
+        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang),
       },
     }
 
+console.log('Mail body', msg )    
     return sgMail
     .send(msg)
     .then(() => {

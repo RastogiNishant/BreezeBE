@@ -9,14 +9,18 @@ class Plan extends Model {
       'name',
       'description',
       'price',
+      'role',
+      'prospect_free_plan',
+      'landlord_free_plan',
       'lettings',
       'discount',
+      'status'
     ]
   }
 
   static get traits() {
     return ['NoTimestamp']
-  }  
+  }
 
   features() {
     return this.hasMany('App/Models/PremiumFeature')

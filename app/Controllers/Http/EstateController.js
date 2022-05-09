@@ -158,9 +158,13 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     const { limit, page, ...params } = request.all()
-    const userIds = [auth.user.id]
     // Update expired estates status to unpublished
-    const result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
+    let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
+    result = result.toJSON()
+    //
+    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id])
+    result = { ...result, ...lettingTypeCounts }
+    result.total_filtered_properties = result.total
     response.res(result)
   }
 
@@ -280,6 +284,7 @@ class EstateController {
         'xls'
       )
       logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
+      Event.fire('mautic:syncContact', auth.user.id, { propertiesimported_count: 1 })
       return response.res(result)
     } else {
       throw new HttpException('There is no excel data to import', 400)
@@ -652,12 +657,14 @@ class EstateController {
   async verifyPropertyId({ request, auth, response }) {
     const { property_id, estate_id } = request.all()
     const estate = await Estate.query()
+      .select(Database.raw('count(*) as row_count'))
       .where({ property_id })
+      .where('user_id', auth.user.id)
+      .whereNotIn('status', [STATUS_DELETE])
       .whereNot({ id: estate_id || null })
-      .orderBy('id')
-      .fetch()
-    const duplicate = estate.rows.length > 0 ? false : true
-    response.res(duplicate)
+      .first()
+
+    response.res(!(estate.row_count > 0))
   }
 
   async getInviteToViewCode({ request, auth, response }) {}

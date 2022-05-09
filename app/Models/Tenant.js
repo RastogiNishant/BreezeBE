@@ -58,7 +58,6 @@ class Tenant extends Model {
       'secondname',
       'birthday',
       'avatar',
-      'income',
       'members_count',
       'minors_count',
       'percent',
@@ -87,6 +86,8 @@ class Tenant extends Model {
       'garden',
       'options',
       'rent_start',
+      'address',
+      'coord'
     ]
   }
 

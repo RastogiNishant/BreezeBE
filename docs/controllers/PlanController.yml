@@ -23,11 +23,23 @@ definitions:
     name: description
     in: path
     type: string
-  # prices:
-  #   name: prices
-  #   in: path
-  #   type: number
-
+  role:
+    name: role
+    in: path
+    type: number
+    example: '1 or 3'
+  prospect_free_plan:
+    name: prospect_free_plan
+    in: path
+    type: boolean
+  landlord_free_plan:
+    name: landlord_free_plan
+    in: path
+    type: boolean
+  status:
+    name: landlord_free_plan
+    in: path
+    type: boolean
 # Routes list
 /api/v1/plan:
   get:
@@ -47,8 +59,10 @@ definitions:
     parameters:
       - $ref: '#/definitions/name'
       - $ref: '#/definitions/description'
-      # - $ref: '#/definitions/prices'
-      - $ref: '#/definitions/status'            
+      - $ref: '#/definitions/role'
+      - $ref: '#/definitions/status'
+      - $ref: '#/definitions/prospect_free_plan'      
+      - $ref: '#/definitions/landlord_free_plan'      
     responses: [200]
 
   put:
@@ -59,8 +73,10 @@ definitions:
       - $ref: '#/definitions/planId'
       - $ref: '#/definitions/name'
       - $ref: '#/definitions/description'
-      - $ref: '#/definitions/prices'
-      - $ref: '#/definitions/status'             
+      - $ref: '#/definitions/role'
+      - $ref: '#/definitions/status'
+      - $ref: '#/definitions/prospect_free_plan'      
+      - $ref: '#/definitions/landlord_free_plan'      
     produces: [application/json]
     responses: [200]
 

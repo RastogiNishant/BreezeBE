@@ -29,6 +29,9 @@ const {
   LOG_TYPE_PUBLISHED_PROPERTY,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
@@ -114,6 +117,10 @@ class EstateService {
 
     if (params.status) {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
+    }
+
+    if (params.letting_type) {
+      query.whereIn('estates.letting_type', params.letting_type)
     }
 
     // if(params.filter && params.filter.includes(1)) {
@@ -242,6 +249,10 @@ class EstateService {
     return Estate.query().update({ cover: filePathName }).where('id', estateId)
   }
 
+  static async removeCover(estateId, filePathName) {
+    return Estate.query().update({ cover: null }).where('id', estateId).where('cover', filePathName)
+  }
+
   /**
    *
    */
@@ -288,9 +299,11 @@ class EstateService {
    *
    */
   static async createSlot({ end_at, start_at, slot_length }, estate) {
-    const minDiff = moment.utc(end_at).diff(moment.utc(start_at), 'minutes')
-    if (minDiff % slot_length !== 0) {
-      throw new AppException('Invalid time range')
+    if (slot_length) {
+      const minDiff = moment.utc(end_at).diff(moment.utc(start_at), 'minutes')
+      if (minDiff % slot_length !== 0) {
+        throw new AppException('Invalid time range')
+      }
     }
 
     // Checks is time slot crossing existing
@@ -323,9 +336,11 @@ class EstateService {
    */
   static async updateSlot(slot, data) {
     slot.merge(data)
-    const minDiff = moment.utc(slot.end_at).diff(moment.utc(slot.start_at), 'minutes')
-    if (minDiff % slot.slot_length !== 0) {
-      throw new AppException('Invalid time range')
+    if (slot.slot_length) {
+      const minDiff = moment.utc(slot.end_at).diff(moment.utc(slot.start_at), 'minutes')
+      if (minDiff % slot.slot_length !== 0) {
+        throw new AppException('Invalid time range')
+      }
     }
     const estate = await Estate.find(slot.estate_id)
     const crossingSlot = await EstateService.getCrossTimeslotQuery(
@@ -628,7 +643,7 @@ class EstateService {
         .select('id')
         .where('status', STATUS_ACTIVE)
         .where('available_date', '<=', moment().format(DATE_FORMAT))
-// .limit(100)
+        // .limit(100)
         .fetch()
     ).rows.map((i) => i.id)
 
@@ -683,6 +698,7 @@ class EstateService {
     logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
     // Run match estate
     Event.fire('match::estate', estate.id)
+    Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
@@ -711,9 +727,9 @@ class EstateService {
     // Get estate available slots
     const getSlots = async () => {
       return Database.table('time_slots')
-        .select('slot_length as sl')
-        .select(Database.raw('extract(epoch from start_at) as b'))
-        .select(Database.raw('extract(epoch from end_at) as e'))
+        .select('slot_length')
+        .select(Database.raw('extract(epoch from start_at) as start_at'))
+        .select(Database.raw('extract(epoch from end_at) as end_at'))
         .where({ estate_id: estateId })
         .where('start_at', '>=', dateFrom)
         .orderBy('start_at')
@@ -723,7 +739,7 @@ class EstateService {
     // Get estate visits (booked time units)
     const getVisits = async () => {
       return Database.table('visits')
-        .select(Database.raw('extract(epoch from date) as d'))
+        .select(Database.raw('extract(epoch from date) as visit_date'))
         .where({ estate_id: estateId })
         .where('date', '>=', dateFrom)
         .orderBy('date')
@@ -735,31 +751,50 @@ class EstateService {
       visits: getVisits(),
     })
 
+    // If slot_length is zero, so users are able to book unlimited slot
+    const slotsWithoutLength = slots.filter(({ slot_length }) => slot_length === null)
+    slots = slots.filter(({ slot_length }) => slot_length)
+
     // Split existing time ranges by booked time units
-    visits.forEach(({ d }) => {
-      let index = findIndex(slots, ({ b, e }) => d >= b && d < e)
+    visits.forEach(({ visit_date }) => {
+      let index = findIndex(
+        slots,
+        ({ start_at, end_at }) => visit_date >= start_at && visit_date < end_at
+      )
       // If found time range, split in
       if (index !== -1) {
         const slot = slots[index]
         slots.splice(index, 1)
-        if (slot.b < d) {
-          const newItem = { b: slot.b, e: d, sl: slot.sl }
+        if (slot.start_at < visit_date) {
+          const newItem = {
+            start_at: slot.start_at,
+            end_at: visit_date,
+            slot_length: slot.slot_length,
+          }
           slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
           index += 1
         }
-        if (d + slot.sl * 60 < slot.e) {
-          const newItem = { b: d + slot.sl * 60, e: slot.e, sl: slot.sl }
+        if (visit_date + slot.slot_length * 60 < slot.end_at) {
+          const newItem = {
+            start_at: visit_date + slot.slot_length * 60,
+            end_at: slot.end_at,
+            slot_length: slot.slot_length,
+          }
           slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
         }
       }
     })
 
+    const combinedSlots = [...slots, ...slotsWithoutLength]
+
     // Split slot ranges by slot units
     let result = {}
-    slots.forEach((s) => {
-      const day = moment.utc(s.b, 'X').startOf('day').format('X')
-      const step = s.sl * 60
-      const items = range(s.b, s.e, step)
+    combinedSlots.forEach((s) => {
+      const day = moment.utc(s.start_at, 'X').startOf('day').format('X')
+      // if slot_length is null, so show only 1 slot for date range
+      const step = s.slot_length ? s.slot_length * 60 : s.end_at - s.start_at
+      const items = range(s.start_at, s.end_at, step)
+      console.log({ items })
       items.forEach((i) => {
         const items = [...get(result, day, []), { from: i, to: i + step }]
         result = { ...result, [day]: items }
@@ -776,7 +811,7 @@ class EstateService {
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
           .on('_m.user_id', tenant_id)
-          .on('_m.status', MATCH_STATUS_FINISH)
+          //.on('_m.status', MATCH_STATUS_FINISH)
       })
       .leftJoin({ _mb: 'members' }, function () {
         this.on('_mb.user_id', '_m.user_id')
@@ -801,6 +836,31 @@ class EstateService {
       )
     }
     return affectedRows
+  }
+
+  static async getLettingTypeCounts(userIds) {
+    let lettingTypeCounts = await Estate.query()
+      .select(
+        Database.raw(
+          `count(*) filter(where status not in (${STATUS_DELETE})) as total_estate_count`
+        )
+      )
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let`))
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void`))
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na`))
+      .whereNot('estates.status', STATUS_DELETE)
+      .whereNot('area', 0)
+      .whereIn('user_id', userIds)
+      .first()
+    lettingTypeCounts = omit(lettingTypeCounts.toJSON(), [
+      'hash',
+      'coord',
+      'coord_raw',
+      'bath_options',
+      'kitchen_options',
+      'equipment',
+    ])
+    return lettingTypeCounts
   }
 }
 

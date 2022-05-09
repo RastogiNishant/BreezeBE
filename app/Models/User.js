@@ -2,6 +2,7 @@
 
 const { toString } = require('lodash')
 const md5 = require('md5')
+const { ROLE_LANDLORD, USER_ACTIVATION_STATUS_NOT_ACTIVATED } = require('../constants')
 
 const Model = require('./BaseModel')
 const UserFilter = use('App/ModelFilters/UserFilter')
@@ -45,7 +46,10 @@ class User extends Model {
       'is_profile_onboarded',
       'is_dashboard_onboarded',
       'is_selection_onboarded',
+      'mautic_id',
       'is_household_invitation_onboarded',
+      'is_landlord_verification_onboarded',
+      'activation_status',
     ]
   }
 
@@ -75,6 +79,12 @@ class User extends Model {
     this.addTrait('@provider:SerializerExtender')
     this.addTrait('@provider:Filterable', UserFilter)
     this.addTrait('Sort', this.columns)
+
+    this.addHook('beforeCreate', async (userInstance) => {
+      if (userInstance.role == ROLE_LANDLORD) {
+        userInstance.activation_status = USER_ACTIVATION_STATUS_NOT_ACTIVATED
+      }
+    })
 
     this.addHook('beforeSave', async (userInstance) => {
       if (userInstance.dirty.password) {
