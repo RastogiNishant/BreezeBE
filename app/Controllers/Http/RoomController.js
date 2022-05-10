@@ -1,6 +1,6 @@
 'use strict'
 
-const { countBy } = require('lodash')
+const { countBy, includes } = require('lodash')
 const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
@@ -17,7 +17,8 @@ const EstateService = use('App/Services/EstateService')
 const {
   PROPERTY_MANAGE_ALLOWED,
   ROLE_LANDLORD,
-  ROLE_PROPERTY_MANAGER
+  ROLE_PROPERTY_MANAGER,
+  SUPPORTED_IMAGE_FORMAT,
 } = require('../../constants')
 const ImageService = require('../../Services/ImageService')
 class RoomController {
@@ -26,33 +27,32 @@ class RoomController {
    */
   async createRoom({ request, auth, response }) {
     const { estate_id, ...roomData } = request.all()
-    try{
-
+    try {
       let userIds = [auth.user.id]
-      if( auth.user.role === ROLE_PROPERTY_MANAGER ) {
-        userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)      
+      if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+        userIds = await EstatePermissionService.getLandlordIds(
+          auth.user.id,
+          PROPERTY_MANAGE_ALLOWED
+        )
       }
 
-      await Estate.query()
-        .where('id', estate_id)
-        .whereIn('user_id', userIds)
-        .firstOrFail()
-      
-      if( roomData.favorite ) {
+      await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
+
+      if (roomData.favorite) {
         await Room.query()
           .where('estate_id', estate_id)
           .where('type', roomData.type)
-          .update({'favorite':false })
+          .update({ favorite: false })
       }
       const room = await Room.createItem({
         ...roomData,
         estate_id,
       })
       Event.fire('estate::update', estate_id)
-  
+
       response.res(room)
-    }catch(e) {
-      Logger.error('Create Room error', e);
+    } catch (e) {
+      Logger.error('Create Room error', e)
       throw new HttpException(e.message, 400)
     }
   }
@@ -65,8 +65,8 @@ class RoomController {
     // Get room and check estate owner
 
     let userIds = [auth.user.id]
-    if( auth.user.role === ROLE_PROPERTY_MANAGER ) {
-      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)      
+    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
     const room = await RoomService.getRoomByUser(userIds, room_id)
@@ -74,12 +74,12 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
-    if( data.favorite ) {
+    if (data.favorite) {
       await Room.query()
         .where('estate_id', estate_id)
-        .where('type', data.type)        
-        .update({'favorite':false })
-    }    
+        .where('type', data.type)
+        .update({ favorite: false })
+    }
     room.merge(data)
     await room.save()
     Event.fire('estate::update', estate_id)
@@ -96,42 +96,56 @@ class RoomController {
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-    await RoomService.removeRoom(room_id)
-    Event.fire('estate::update', room.estate_id)
 
-    response.res(true)
+    try {
+      // need to remove corresponding cover if room's image has to be used as cover of estate
+      const images = room.toJSON().images
+      if (room.cover && images && images.length) {
+        const cover_images = images.filter((image) => includes(image.url, room.cover))
+        if (cover_images && cover_images.length) {
+          await EstateService.removeCover(room.estate_id, room.cover)
+        }
+      }
+
+      await RoomService.removeRoom(room_id)
+      Event.fire('estate::update', room.estate_id)
+
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
-  async updateOrder({request, auth, response}) {
-    const {ids} = request.all()
+  async updateOrder({ request, auth, response }) {
+    const { ids } = request.all()
     const roomIds = await RoomService.getRoomIds(auth.user.id, ids)
-    if( roomIds.length != ids.length  ) {
-      throw new HttpException('Some roomids don\'t exist')
+    if (roomIds.length != ids.length) {
+      throw new HttpException("Some roomids don't exist")
     }
 
     await Promise.all(
-      ids.map(async(id, index) => {
+      ids.map(async (id, index) => {
         await Room.query()
-        .where('id', id)
-        .update({order:index+1})
+          .where('id', id)
+          .update({ order: index + 1 })
       })
     )
     response.res(true)
   }
 
-  async orderRoomPhoto({request, auth, response}) {
+  async orderRoomPhoto({ request, auth, response }) {
     const { room_id, ids } = request.all()
     const room = await RoomService.getRoomByUser(auth.user.id, room_id)
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-    try{
+    try {
       const imageIds = await ImageService.getImageIds(room_id, ids)
-      if( imageIds.length != ids.length ) {
-        throw new HttpException('Some imageIds don\'t exist')        
+      if (imageIds.length != ids.length) {
+        throw new HttpException("Some imageIds don't exist")
       }
       await ImageService.updateOrder(ids)
-    }catch(e){
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
     response.res(true)
@@ -143,8 +157,8 @@ class RoomController {
     const { room_id } = request.all()
 
     let userIds = [auth.user.id]
-		if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)            
+    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
     const room = await RoomService.getRoomByUser(userIds, room_id)
@@ -152,25 +166,27 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
-    const image = request.file('file')
+    try {
+      const image = request.file('file')
+      const ext = image.extname
+        ? image.extname
+        : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
+      const filename = `${uuid.v4()}.${ext}`
+      const filePathName = `${moment().format('YYYYMM')}/${filename}`
+      await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
+        ACL: 'public-read',
+        ContentType: image.headers['content-type'],
+      })
+      const imageObj = await RoomService.addImage(filePathName, room, 's3public')
 
-
-    const ext = image.extname
-      ? image.extname
-      : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
-    const filename = `${uuid.v4()}.${ext}`
-    const filePathName = `${moment().format('YYYYMM')}/${filename}`
-
-    await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
-      ACL: 'public-read',
-      ContentType: image.headers['content-type'],
-    })
-    const imageObj = await RoomService.addImage(filePathName, room, 's3public')
-    if (!room.cover) {
-      await EstateService.setCover(room.estate_id, filePathName)
+      if (!room.cover) {
+        await EstateService.setCover(room.estate_id, filePathName)
+      }
+      Event.fire('estate::update', room.estate_id)
+      response.res(imageObj)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
-    Event.fire('estate::update', room.estate_id)
-    response.res(imageObj)
   }
 
   /**
@@ -182,10 +198,18 @@ class RoomController {
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-    await RoomService.removeImage(id)
-    Event.fire('estate::update', room.estate_id)
 
-    response.res(true)
+    try {
+      //need to remove if this image is used as the esate's cover
+      const image = await RoomService.removeImage(id)
+      if (image) {
+        await EstateService.removeCover(room.estate_id, image.url)
+      }
+      Event.fire('estate::update', room.estate_id)
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
