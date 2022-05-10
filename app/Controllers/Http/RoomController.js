@@ -20,6 +20,7 @@ const {
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
   STATUS_DELETE,
+  SUPPORTED_IMAGE_FORMAT,
 } = require('../../constants')
 const ImageService = require('../../Services/ImageService')
 class RoomController {
@@ -174,7 +175,6 @@ class RoomController {
         : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
       const filename = `${uuid.v4()}.${ext}`
       const filePathName = `${moment().format('YYYYMM')}/${filename}`
-
       await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
         ACL: 'public-read',
         ContentType: image.headers['content-type'],
