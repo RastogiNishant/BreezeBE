@@ -557,6 +557,8 @@ const constants = {
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
   SALUTATION_SIR_OR_MADAM: 3,
+
+  MINIMUM_SHOW_PERIOD: 5,
 }
 
 module.exports = constants
