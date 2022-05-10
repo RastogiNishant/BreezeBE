@@ -5,11 +5,12 @@ const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
 const Logger = use('Logger')
-
+const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
 const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
+const Option = use('App/Models/Option')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
@@ -18,6 +19,7 @@ const {
   PROPERTY_MANAGE_ALLOWED,
   ROLE_LANDLORD,
   ROLE_PROPERTY_MANAGER,
+  STATUS_DELETE,
   SUPPORTED_IMAGE_FORMAT,
 } = require('../../constants')
 const ImageService = require('../../Services/ImageService')
@@ -220,6 +222,24 @@ class RoomController {
     const rooms = await RoomService.getRoomsByEstate(estate_id)
 
     response.res(rooms)
+  }
+
+  async getRoomById({ request, response }) {
+    const { estate_id, room_id } = request.all()
+    let room = await Room.query()
+      .select(Database.raw('rooms.*'))
+      .select(Database.raw('json_agg (room_amenities order by sequence_order desc) as amenities'))
+      .leftJoin('room_amenities', function () {
+        this.on('room_amenities.room_id', 'rooms.id')
+          .on('room_amenities.room_id', room_id)
+          .on(Database.raw(`"room_amenities"."status" != ${STATUS_DELETE}`))
+      })
+      .where('rooms.id', room_id)
+      .where('estate_id', estate_id)
+      .groupBy('rooms.id')
+      .first()
+    room = room.toJSON()
+    return response.res(room)
   }
 }
 

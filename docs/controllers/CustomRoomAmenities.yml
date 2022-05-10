@@ -1,0 +1,60 @@
+paths:
+  /api/v1/estates/{estateId}/rooms/{roomId}/custom-amenities:
+    get:
+      description: Get all the custom amenities of a room identified by {roomId}
+      summary: get all custom amenities
+      tags: 
+        - Custom Room Amenities
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estateId
+          in: path
+          description: identifies the estate/property. The estate must be owned by the current landlord.
+          schema:
+            type: integer
+          example: 543
+        - name: roomId
+          in: path
+          description: identifies the room. This room must belong to the estate specified in estateId
+          schema:
+            type: integer
+          example: 350
+      responses:
+        '200':
+          description: OK
+    post:
+      description: Add a custom amenity to a room identified by {roomId}
+      summary: add a custom room amenity
+      tags:
+        - Custom Room Amenities
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estateId
+          in: path
+          description: identifies the estate/property. The estate must be owned by the current landlord.
+          schema:
+            type: integer
+          example: 543
+        - name: roomId
+          in: path
+          description: identifies the room. This room must belong to the estate specified in estateId
+          schema:
+            type: integer
+          example: 350
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: '#/components/schemas/CreateCustomAmenitiesSchema'
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              $ref: '#/components/schemas/CreateCustomAmenitiesSchema'
+      responses:
+        '200':
+          description: OK
+    put:
+    delete:
