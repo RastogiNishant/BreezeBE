@@ -21,7 +21,7 @@ class ImageController {
       const imagemin = (await import('imagemin')).default
       //const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
       const imageminJpegoptim = (await import('imagemin-jpegoptim')).default
-      const imageminJpegtran = require('imagemin-jpegtran');
+      const imageminJpegtran = require('imagemin-jpegtran')
       const imageminPngquant = require('imagemin-pngquant')
 
       let img_data = Drive.getStream(image.tmpPath)
@@ -29,7 +29,7 @@ class ImageController {
         // image size is bigger than 2M, it's only for test, we need to change it later
         img_data = (
           await imagemin([image.tmpPath], {
-            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminJpegoptim({max: 80})],
+            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminJpegoptim({ max: 80 })],
           })
         )[0].data
       }
