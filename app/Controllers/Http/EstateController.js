@@ -189,7 +189,7 @@ class EstateController {
           .orderBy('favorite', 'desc')
           .orderBy('id', 'asc')
           .with('room_amenities', function (q) {
-            q.whereNotIn('status', [STATUS_ACTIVE])
+            q.whereNot('status', STATUS_DELETE)
             q.orderBy('sequence_order', 'desc')
           })
       })
