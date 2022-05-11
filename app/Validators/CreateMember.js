@@ -33,7 +33,7 @@ class CreateMember extends Base {
       secondname: yup.string().max(254),
       child: yup.boolean().default(false),
       sex: yup.number().positive().oneOf([GENDER_ANY, GENDER_FEMALE, GENDER_MALE]),
-      phone: phoneSchema,
+      phone: phoneSchema.nullable(),
       bio: yup.string().max(100).nullable(),
       birthday: yup.date(),
       email: yup.string().email().lowercase().max('255'),
