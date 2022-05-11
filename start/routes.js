@@ -219,6 +219,35 @@ Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
   'valid:SignInAppleMobile',
 ])
 
+//Room Custom Amenities
+Route.group(() => {
+  Route.get('/amenities', 'RoomAmenityController.getAll').middleware([
+    'valid:EstateId,RoomId',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+
+  Route.post('/amenities', 'RoomAmenityController.add').middleware([
+    'valid:EstateId,RoomId,CreateRoomAmenity',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+
+  Route.delete('/amenities', 'RoomAmenityController.delete').middleware([
+    'valid:EstateId,RoomId,Id',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+
+  Route.put('/amenities', 'RoomAmenityController.update').middleware([
+    'valid:EstateId,RoomId,UpdateRoomAmenity',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
+  ])
+})
+  .prefix('/api/v1/estates/:estate_id/rooms/:room_id')
+  .middleware(['auth:jwtLandlord'])
+
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
@@ -261,6 +290,11 @@ Route.group(() => {
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
+  ])
+  Route.get('/:estate_id/rooms/:room_id', 'RoomController.getRoomById').middleware([
+    'valid:EstateId,RoomId',
+    'LandlordOwnsThisEstate',
+    'RoomBelongsToEstate',
   ])
   Route.put('/:estate_id/rooms/order', 'RoomController.updateOrder').middleware(['valid:Ids'])
 
