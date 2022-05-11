@@ -949,7 +949,6 @@ class MatchController {
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const finalMatches = data
-
     return response.res({
       matchesCount: matchesCount[0].count,
       buddiesCount: buddiesCount[0].count,
@@ -958,7 +957,7 @@ class MatchController {
       topCount: topCount[0].count,
       finalMatchesCount: finalMatchesCount[0].count,
 
-      estate:estate.toJSON(),
+      estate: estate.toJSON(),
       matches: matches,
       buddies: buddies,
       invites: invites,
