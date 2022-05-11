@@ -11,7 +11,7 @@
 	"scripts": {
 		"start": "nodemon server.js",
 		"dev": "DEBUG=query DEV=true adonis serve --dev",
-		"dev:win10": "set DEBUG=query && set DEV=true && adonis serve --dev",
+		"dev:win10": "set NO_LOCALIZATION_PULL=true && set DEBUG=query && set DEV=true && adonis serve --dev",
 		"test": "node ace test",
 		"ace": "node ace",
 		"clear": "node ace app:clear",
