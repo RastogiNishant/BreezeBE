@@ -296,7 +296,7 @@ class UserService {
   /**
    *
    */
-  static async sendConfirmEmail(user, from_web=false) {
+  static async sendConfirmEmail(user, from_web = false) {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
@@ -311,14 +311,14 @@ class UserService {
         user: user,
         role: user.role,
         lang: lang,
-        forgotLink: forgotLink
+        forgotLink: forgotLink,
       })
     } catch (e) {
       throw new HttpException(e)
     }
   }
 
-  static async getForgotShortLink(from_web=false) {
+  static async getForgotShortLink(from_web = false) {
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
     const deepLink_URL = from_web
@@ -354,7 +354,7 @@ class UserService {
   /**
    *
    */
-  static async confirmEmail(user, userCode, from_web=false) {
+  static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
@@ -388,7 +388,7 @@ class UserService {
       code: shortLink,
       role: user.role,
       lang: lang,
-      forgotLink:forgotLink
+      forgotLink: forgotLink,
     })
     return user.save()
   }
@@ -730,6 +730,10 @@ class UserService {
       .whereIn('email', emails)
       .where({ role: role })
       .fetch()
+  }
+
+  static async getByRole(role) {
+    return (await User.query().select('id').where('role', role).fetch()).rows
   }
 
   static async housekeeperSignup(ownerId, email, password, firstname, lang) {

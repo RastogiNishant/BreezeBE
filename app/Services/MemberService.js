@@ -244,6 +244,8 @@ class MemberService {
       ? member.owner_user_id === user.id
       : member.user_id === user.id
 
+console.log('Member Id', member.user_id)
+console.log('Member Id', user.id)
     if (isEditingOwnMember) {
       return member
     } else {
