@@ -392,7 +392,7 @@ class MatchService {
   /**
    *
    */
-  static async matchByUser(userId) {
+  static async matchByUser(userId, ignoreNullFields = false) {
     const tenant = await Tenant.query()
       .select('tenants.*', '_p.data as polygon')
       .where({ 'tenants.user_id': userId })
@@ -400,7 +400,11 @@ class MatchService {
       .first()
     const polygon = get(tenant, 'polygon.data.0.0')
     if (!tenant || !polygon) {
-      throw new AppException('Invalid tenant filters')
+      if (ignoreNullFields) {
+        return
+      } else {
+        throw new AppException('Invalid tenant filters')
+      }
     }
 
     let maxLat = -90,
