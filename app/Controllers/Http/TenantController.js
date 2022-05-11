@@ -104,7 +104,7 @@ class TenantController {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)
     }
-    await MatchService.matchByUser(auth.user.id)
+    await MatchService.matchByUser(auth.user.id, true)
 
     response.res(true)
   }
