@@ -153,12 +153,9 @@ class Tenant extends Model {
     return toCoord(this.coord_raw, false)
   }
 
-  primaryMember() {
-    //the actual logic is that a primaryMember is a member with members.user_id
-    //is set and equal to the tenant's user_id and email is NULL
-    return this.hasOne('App/Models/Member', 'user_id', 'user_id')
-  }
-
+  /**
+   *
+   */
   members() {
     return this.hasMany('App/Models/Member', 'user_id', 'user_id')
   }
