@@ -173,7 +173,7 @@ class EstateController {
    */
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
-    const estate = await EstateService.getQuery()
+    let estate = await EstateService.getQuery()
       .where('id', id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
@@ -188,14 +188,33 @@ class EstateController {
           .orderBy('order', 'asc')
           .orderBy('favorite', 'desc')
           .orderBy('id', 'asc')
+          .with('room_amenities', function (q) {
+            q.select(
+              Database.raw(
+                `room_amenities.*,
+              case
+                when
+                  room_amenities.type='amenity'
+                then
+                  "options"."title"
+                else
+                  "room_amenities"."amenity"
+              end as amenity`
+              )
+            )
+              .from('room_amenities')
+              .leftJoin('options', 'options.id', 'room_amenities.option_id')
+              .whereNot('status', STATUS_DELETE)
+              .orderBy('sequence_order', 'desc')
+          })
       })
       .first()
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
-
-    response.res(estate.toJSON({ isOwner: true }))
+    estate = estate.toJSON({ isOwner: true })
+    response.res(estate)
   }
 
   async getEstateByPM({ request, auth, response }) {

@@ -20,6 +20,10 @@ class RoomAmenity extends Model {
   added_by() {
     return this.belongsTo('App/Models/User', 'added_by', 'id')
   }
+
+  room() {
+    return this.belongsTo('App/Models/Room', 'room_id', 'id')
+  }
 }
 
 module.exports = RoomAmenity
