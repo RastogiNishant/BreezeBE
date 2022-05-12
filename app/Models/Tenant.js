@@ -159,6 +159,10 @@ class Tenant extends Model {
     return this.hasOne('App/Models/Member', 'user_id', 'user_id')
   }
 
+  members() {
+    return this.hasMany('App/Models/Member', 'user_id', 'user_id')
+  }
+
   /**
    *
    */
