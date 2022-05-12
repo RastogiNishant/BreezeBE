@@ -493,45 +493,45 @@ class UserService {
       }
 
       let extraFields = Tenant.columns
-      if (!tenant.personal_shown) {
+      if (!user.share) {
         extraFields = Object.values(
           omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
         )
       }
 
-      if (!tenant.income_shown) {
+      if (!user.share) {
         extraFields = Object.values(omit(extraFields, ['income']))
       }
 
-      if (!tenant.residency_shown) {
+      if (!user.share) {
         extraFields = Object.values(omit(extraFields, ['address', 'coord']))
       }
 
-      if (!tenant.creditscore_shown) {
+      if (!user.share) {
         extraFields = Object.values(omit(extraFields, ['credit_score']))
       }
 
-      if (!tenant.solvency_shown) {
+      if (!user.share) {
         extraFields = Object.values(omit(extraFields, ['income_seizure']))
       }
 
       /** End by Yong*/
       userData.tenant = tenant.toJSON({ isShort: true, extraFields: extraFields })
 
-      if (!tenant.income_shown) {
+      if (!user.share) {
         const members =
           userData.tenant.members &&
           userData.tenant.members.map((m) => {
-            if (!tenant.income_shown) {
+            if (!user.share) {
               delete m.incomes
             }
-            if (!tenant.residency_shown) {
+            if (!user.share) {
               delete m.last_address
             }
-            if (!tenant.creditscore_shown) {
+            if (!user.share) {
               delete m.credit_score
             }
-            if (!tenant.solvency_shown) {
+            if (!user.share) {
               delete m.income_seizure
             }
           })
@@ -541,7 +541,7 @@ class UserService {
         }
       }
 
-      if (!tenant.profile_shown || !tenant.personal_shown) {
+      if (!user.share || !user.share) {
         delete userData.tenant.members
       }
     }
