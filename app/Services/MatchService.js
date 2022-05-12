@@ -683,7 +683,7 @@ class MatchService {
       date: slotDate.format(DATE_FORMAT),
       start_date: slotDate.format(DATE_FORMAT),
       end_date: currentTimeslot.slot_length
-        ? endDate
+        ? endDate.format(DATE_FORMAT)
         : currentTimeslot.end_at,
     })
     // Move match status to next
