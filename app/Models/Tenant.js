@@ -57,6 +57,7 @@ class Tenant extends Model {
       'firstname',
       'secondname',
       'birthday',
+      'income',
       'avatar',
       'members_count',
       'minors_count',
@@ -87,7 +88,7 @@ class Tenant extends Model {
       'options',
       'rent_start',
       'address',
-      'coord'
+      'coord',
     ]
   }
 
