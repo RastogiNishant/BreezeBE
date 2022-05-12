@@ -1413,24 +1413,7 @@ class MatchService {
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
-      .with('primaryMember', function (pm) {
-        pm.select(
-          Database.raw(
-            `
-            (array_agg(members.user_id))[1] as user_id,
-            incomes.member_id,
-            (array_agg(incomes.profession order by incomes.income desc))[1] as profession,
-            max(incomes.income) as max_income
-            `
-          )
-        )
-          .from('members')
-          .leftJoin('incomes', function () {
-            this.on('incomes.member_id', 'members.id')
-          })
-          .whereNull('members.email')
-          .groupBy('incomes.member_id')
-      })
+      .select(`primaryMemberIncome.profession`, `primaryMemberIncome.total_income`)
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1473,6 +1456,33 @@ class MatchService {
             .limit(1)
         })
       })
+      .leftJoin(
+        Database.raw(`
+        (select
+          (array_agg(primaryMember.user_id))[1] as user_id,
+          incomes.member_id,
+          (array_agg(incomes.profession order by incomes.income desc))[1] as profession,
+          max(incomes.income) as max_income,
+          sum(incomes.income) as tenant_total_income
+        from
+          members as primaryMember
+        left join
+          incomes
+        on
+          primaryMember.id=incomes.member_id
+        and
+          primaryMember.email is null
+        and
+          primaryMember.owner_user_id is null
+        group by
+          incomes.member_id
+        ) as primaryMemberIncome
+      `),
+        function () {
+          this.on('primaryMemberIncome.user_id', 'tenants.user_id')
+        }
+      )
+
     query.select(
       '_mb.firstname',
       '_mb.secondname',
