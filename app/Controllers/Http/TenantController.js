@@ -6,6 +6,7 @@ const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
 const Tenant = use('App/Models/Tenant')
+const User = use('App/Models/User')
 
 const { without } = require('lodash')
 
@@ -30,7 +31,13 @@ class TenantController {
         throw new HttpException('No access', 403)
       }
     } else if (auth.user.role === ROLE_LANDLORD) {
-      const hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
+      let hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
+      if (!hasAccess) {
+        const fileOwner = await User.query().where('id', user_id).first()
+        if (fileOwner && fileOwner.owner_id) {
+          hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, fileOwner.owner_id)
+        }
+      }
       if (!hasAccess) {
         throw new HttpException('No access', 403)
       }
