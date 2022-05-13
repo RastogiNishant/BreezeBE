@@ -1413,7 +1413,7 @@ class MatchService {
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
-      .select(`_pm.profession`, `_pm.total_income`, `_pm.max_income`)
+      .select(`_pm.profession`)
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1461,9 +1461,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.profession order by incomes.income desc))[1] as profession,
-          max(incomes.income) as max_income,
-          sum(incomes.income) as total_income
+          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
         from
           members as primaryMember
         left join
