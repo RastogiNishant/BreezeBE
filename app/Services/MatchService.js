@@ -1491,7 +1491,7 @@ class MatchService {
         }
       )
       .leftJoin({ _bd: 'buddies' }, function () {
-        this.on('tenants.user_id', '_bd.tenant_id')
+        this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
       })
 
     query.select(
