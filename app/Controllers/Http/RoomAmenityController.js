@@ -23,31 +23,38 @@ class RoomAmenityController {
       .where('room_id', room_id)
       .orderBy('sequence_order', 'desc')
       .fetch()
-    currentRoomAmenities = currentRoomAmenities.toJSON()
+    let sequence_order = 1
+    if (currentRoomAmenities) {
+      currentRoomAmenities = currentRoomAmenities.toJSON()
+      sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
+    }
     let newRoomAmenity = new RoomAmenity()
     let newRoomAmenityId
 
     if (type === 'custom_amenity') {
+      //we check if addition of custom amenities could be possible...
       let currentRoomCustomAmenities = await RoomAmenity.query()
         .whereNotIn('status', [STATUS_DELETE])
         .where('type', 'custom_amenity')
         .where('room_id', room_id)
         .orderBy('sequence_order', 'desc')
         .fetch()
-      currentRoomCustomAmenities = currentRoomCustomAmenities.toJSON()
-      if (currentRoomCustomAmenities.length >= ROOM_CUSTOM_AMENITIES_MAX_COUNT) {
-        throw new HttpException(
-          `You can only have at most ${ROOM_CUSTOM_AMENITIES_MAX_COUNT} custom amenities for each room.`,
-          422,
-          ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR
-        )
+      if (currentRoomCustomAmenities) {
+        currentRoomCustomAmenities = currentRoomCustomAmenities.toJSON()
+        if (currentRoomCustomAmenities.length >= ROOM_CUSTOM_AMENITIES_MAX_COUNT) {
+          throw new HttpException(
+            `You can only have at most ${ROOM_CUSTOM_AMENITIES_MAX_COUNT} custom amenities for each room.`,
+            422,
+            ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR
+          )
+        }
       }
       newRoomAmenity.amenity = amenity
       newRoomAmenity.added_by = auth.user.id
       newRoomAmenity.type = 'custom_amenity'
       newRoomAmenity.room_id = room_id
       newRoomAmenity.status = STATUS_ACTIVE
-      newRoomAmenity.sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
+      newRoomAmenity.sequence_order = sequence_order
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
     } else if (type === 'amenity') {
