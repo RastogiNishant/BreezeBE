@@ -67,6 +67,7 @@ class Tenant extends Model {
       'phone_verified',
       'updated_at',
       'profession',
+      'match_type',
     ]
   }
 
