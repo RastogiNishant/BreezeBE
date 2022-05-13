@@ -24,10 +24,7 @@ class RoomAmenityController {
       .orderBy('sequence_order', 'desc')
       .fetch()
     let sequence_order = 1
-    if (currentRoomAmenities) {
-      currentRoomAmenities = currentRoomAmenities.toJSON()
-      sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
-    }
+    currentRoomAmenities = currentRoomAmenities.toJSON()
     let newRoomAmenity = new RoomAmenity()
     let newRoomAmenityId
 
@@ -39,15 +36,18 @@ class RoomAmenityController {
         .where('room_id', room_id)
         .orderBy('sequence_order', 'desc')
         .fetch()
-      if (currentRoomCustomAmenities) {
-        currentRoomCustomAmenities = currentRoomCustomAmenities.toJSON()
-        if (currentRoomCustomAmenities.length >= ROOM_CUSTOM_AMENITIES_MAX_COUNT) {
-          throw new HttpException(
-            `You can only have at most ${ROOM_CUSTOM_AMENITIES_MAX_COUNT} custom amenities for each room.`,
-            422,
-            ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR
-          )
-        }
+      currentRoomCustomAmenities = currentRoomCustomAmenities.toJSON()
+      if (currentRoomCustomAmenities.length >= ROOM_CUSTOM_AMENITIES_MAX_COUNT) {
+        throw new HttpException(
+          `You can only have at most ${ROOM_CUSTOM_AMENITIES_MAX_COUNT} custom amenities for each room.`,
+          422,
+          ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR
+        )
+      }
+
+      if (currentRoomAmenities.length) {
+        //we place this custom_amenity at the top
+        sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
       }
       newRoomAmenity.amenity = amenity
       newRoomAmenity.added_by = auth.user.id
@@ -67,7 +67,7 @@ class RoomAmenityController {
       )
       newRoomAmenity.fill({
         added_by: auth.user.id,
-        sequence_order: 1,
+        sequence_order: 1, //we place an amenity type at the bottom of the list.
         type: 'amenity',
         room_id: room_id,
         option_id,
