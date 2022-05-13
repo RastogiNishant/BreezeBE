@@ -42,6 +42,10 @@ class Income extends Model {
   proofs() {
     return this.hasMany('App/Models/IncomeProof')
   }
+
+  member() {
+    return this.belongsTo('App/Models/Member', 'member_id', 'id')
+  }
 }
 
 module.exports = Income
