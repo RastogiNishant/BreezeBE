@@ -300,7 +300,8 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       const income = await MemberService.addIncome({ ...data, ...files }, member, trx)
-      await MemberService.updateUserIncome(member.user_id, trx)
+      await MemberService.updateUserIncome(member.user_id, member.owner_user_id, trx)
+
       Event.fire('tenant::update', member.user_id)
       await trx.commit()
       response.res(income)
@@ -340,7 +341,8 @@ class MemberController {
         .update({ ...rest, ...files })
         .transacting(trx)
 
-      await MemberService.updateUserIncome(member.user_id, trx)
+      await MemberService.updateUserIncome(member.user_id, member.owner_user_id, trx)
+
       await trx.commit()
       Event.fire('tenant::update', member.user_id)
       response.res(income)
@@ -366,8 +368,9 @@ class MemberController {
         })
         .delete()
         .transacting(trx)
+      console.log('userId', user_id)
+      await MemberService.updateUserIncome(user_id, auth.user.owner_id ? auth.user.id : null, trx)
 
-      await MemberService.updateUserIncome(user_id, trx)  
       await trx.commit()
       Event.fire('tenant::update', user_id)
       response.res(true)

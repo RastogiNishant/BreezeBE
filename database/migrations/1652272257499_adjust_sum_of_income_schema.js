@@ -15,7 +15,11 @@ class AdjustSumOfIncomeSchema extends Schema {
     try {
       await Promise.all(
         prospects.map(async (prospect) => {
-          await MemberService.updateUserIncome(prospect.id, trx)
+          await MemberService.updateUserIncome(
+            prospect.owner_id || prospect.id,
+            prospect.owner_id ? prospect.id : null,
+            trx
+          )
         })
       )
       await trx.commit()

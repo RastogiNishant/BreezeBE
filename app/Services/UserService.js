@@ -733,7 +733,7 @@ class UserService {
   }
 
   static async getByRole(role) {
-    return (await User.query().select('id').where('role', role).fetch()).rows
+    return (await User.query().select('*').where('role', role).fetch()).rows
   }
 
   static async housekeeperSignup(ownerId, email, password, firstname, lang) {
