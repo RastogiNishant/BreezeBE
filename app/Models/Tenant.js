@@ -66,6 +66,8 @@ class Tenant extends Model {
       'selected_adults_count',
       'phone_verified',
       'updated_at',
+      'profession',
+      'total_income',
     ]
   }
 
