@@ -2,39 +2,33 @@
 
 const { Command } = require('@adonisjs/ace')
 
-const User = use('App/Models/User')
-const UserService = use('App/Services/UserService')
-
-const { ROLE_ADMIN } = require('../constants')
+const Admin = use('App/Models/Admin')
 
 class CreateAdmin extends Command {
   static get signature() {
-    return 'create:admin {email:Admin email} {pass:Password}'
+    return 'create:admin {email:Admin Email} {password:Password} {fullname:Full Name}'
   }
 
   static get description() {
-    return 'Will create new user with full admin access'
+    return 'Will create new Administrator.'
   }
 
-  async process({ email, pass }) {
-    const user = new User()
-    user.merge({
-      password: pass,
+  async process({ email, password, fullname }) {
+    const admin = new Admin()
+    admin.merge({
+      password,
       email,
-      role: ROLE_ADMIN,
+      fullname,
     })
-
-    await user.save()
-    await UserService.updateUserRoles(user, ['admin'])
+    await admin.save()
   }
 
-  async handle({ email, pass }, options) {
+  async handle({ email, password, fullname }, options) {
     try {
-      await this.process({ email, pass })
-      this.info('Create user success')
+      await this.process({ email, password, fullname })
+      this.info('Admin created successfully.')
     } catch (e) {
-      this.error('Create user error')
-      console.log(e)
+      this.error(e.detail)
     }
 
     process.exit(0)
