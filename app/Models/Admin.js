@@ -20,13 +20,13 @@ class Admin extends Model {
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
       }
-      if (userInstance.dirty.email || userInstance.dirty.role) {
-        userInstance.uid = Admin.getHash(userInstance.email, userInstance.role)
+      if (userInstance.dirty.email) {
+        userInstance.uid = Admin.getHash(userInstance.email)
       }
     })
   }
 
-  static getHash(email, role) {
+  static getHash(email) {
     return md5(`${email}-admin`)
   }
 }
