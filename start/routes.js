@@ -403,6 +403,10 @@ Route.group(() => {
   .middleware(['auth:jwtAdmin', 'is:admin'])
 
 Route.group(() => {
+  Route.post('/auth/login', 'Admin/AuthController.login').middleware(['valid:AdminLogin'])
+}).prefix('api/v1/admin')
+
+Route.group(() => {
   Route.get('/:id', 'TenantPaymentPlanController.getTenantPaymentPlanById').middleware(['valid:Id'])
   Route.get('/', 'TenantPaymentPlanController.getTenantPaymentPlan').middleware(['valid:PlanId'])
   Route.post('/', 'TenantPaymentPlanController.createTenantPaymentPlan').middleware([
@@ -861,7 +865,6 @@ Route.list().forEach((r) => {
     }
   }
 })
-
 
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {
