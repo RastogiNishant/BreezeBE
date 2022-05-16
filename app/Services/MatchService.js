@@ -1413,6 +1413,17 @@ class MatchService {
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
+      .select(`_pm.profession`)
+      .select(
+        Database.raw(`
+        (case when _bd.user_id is null
+          then
+            'match'
+          else
+            'buddy'
+          end
+        ) as match_type`)
+      )
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1455,6 +1466,34 @@ class MatchService {
             .limit(1)
         })
       })
+      .leftJoin(
+        Database.raw(`
+        (select
+          (array_agg(primaryMember.user_id))[1] as user_id,
+          incomes.member_id,
+          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
+        from
+          members as primaryMember
+        left join
+          incomes
+        on
+          primaryMember.id=incomes.member_id
+        and
+          primaryMember.email is null
+        and
+          primaryMember.owner_user_id is null
+        group by
+          incomes.member_id)
+        as _pm
+      `),
+        function () {
+          this.on('tenants.user_id', '_pm.user_id')
+        }
+      )
+      .leftJoin({ _bd: 'buddies' }, function () {
+        this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
+      })
+
     query.select(
       '_mb.firstname',
       '_mb.secondname',

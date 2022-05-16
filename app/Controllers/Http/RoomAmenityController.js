@@ -23,11 +23,13 @@ class RoomAmenityController {
       .where('room_id', room_id)
       .orderBy('sequence_order', 'desc')
       .fetch()
+    let sequence_order = 1
     currentRoomAmenities = currentRoomAmenities.toJSON()
     let newRoomAmenity = new RoomAmenity()
     let newRoomAmenityId
 
     if (type === 'custom_amenity') {
+      //we check if addition of custom amenities could be possible...
       let currentRoomCustomAmenities = await RoomAmenity.query()
         .whereNotIn('status', [STATUS_DELETE])
         .where('type', 'custom_amenity')
@@ -42,12 +44,17 @@ class RoomAmenityController {
           ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR
         )
       }
+
+      if (currentRoomAmenities.length) {
+        //we place this custom_amenity at the top
+        sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
+      }
       newRoomAmenity.amenity = amenity
       newRoomAmenity.added_by = auth.user.id
       newRoomAmenity.type = 'custom_amenity'
       newRoomAmenity.room_id = room_id
       newRoomAmenity.status = STATUS_ACTIVE
-      newRoomAmenity.sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
+      newRoomAmenity.sequence_order = sequence_order
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
     } else if (type === 'amenity') {
@@ -60,7 +67,7 @@ class RoomAmenityController {
       )
       newRoomAmenity.fill({
         added_by: auth.user.id,
-        sequence_order: 1,
+        sequence_order: 1, //we place an amenity type at the bottom of the list.
         type: 'amenity',
         room_id: room_id,
         option_id,
