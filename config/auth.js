@@ -37,7 +37,7 @@ module.exports = {
       secret: Env.get('PROPERTY_MANAGER_APP_KEY'),
       expiresIn: 2592000, // 30 days lifetime
     },
-  },  
+  },
 
   jwtHousekeeper: {
     serializer: 'lucid',
@@ -49,7 +49,7 @@ module.exports = {
       secret: Env.get('HOUSEKEEPER_APP_KEY'),
       expiresIn: 2592000, // 30 days lifetime
     },
-  },  
+  },
   jwtAdmin: {
     serializer: 'lucid',
     model: 'App/Models/User',
@@ -59,6 +59,17 @@ module.exports = {
     options: {
       secret: Env.get('ADMIN_APP_KEY'),
       expiresIn: 7200, // 2 Hours lifetime
+    },
+  },
+  jwtAdministrator: {
+    serializer: 'lucid',
+    model: 'App/Models/Admin',
+    scheme: 'jwt',
+    uid: 'uid',
+    password: 'password',
+    options: {
+      secret: Env.get('ADMIN_APP_KEY'),
+      expiresIn: 3 * 24 * 60 * 60,
     },
   },
 }

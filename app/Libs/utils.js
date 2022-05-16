@@ -65,8 +65,6 @@ const getAuthByRole = (auth, role) => {
       return auth.authenticator('jwtAdmin')
     case ROLE_PROPERTY_MANAGER:
       return auth.authenticator('jwtPropertyManager')
-    case 'admin':
-      return auth.authenticator('jwtAdmin')
     default:
       throw new Error('Invalid role')
   }
