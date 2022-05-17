@@ -36,6 +36,66 @@ Route.get('/', () => {
   }
 })
 
+/** New Administrator Endpoints */
+Route.group(() => {
+  //acivation
+  Route.put('/activation', 'Admin/UserController.updateActivationStatus').middleware([
+    'auth:jwtAdministrator',
+    'valid:UpdateUserValidationStatus',
+  ])
+
+  //verify users
+  Route.post('/verifyUsers', 'Admin/UserController.verifyUsers').middleware([
+    'auth:jwtAdministrator',
+    'valid:Ids,UserVerify',
+  ])
+
+  //users
+  Route.get('/users/', 'Admin/UserController.getUsers').middleware([
+    'auth:jwtAdministrator',
+    'pagination',
+  ])
+  Route.get('/users/:user_id', 'Admin/UserController.getUser').middleware(['auth:jwtAdministrator'])
+  Route.post('/users/:user_id', 'Admin/UserController.updateUser').middleware([
+    'auth:jwtAdministrator',
+  ])
+
+  //feature
+  Route.post('/feature/', 'FeatureController.createFeature').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreateFeature',
+  ])
+  Route.put('/feature/', 'FeatureController.updateFeature').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreateFeature,Id',
+  ])
+  Route.delete('/feature/', 'FeatureController.removeFeature').middleware([
+    'auth:jwtAdministrator',
+    'valid:Ids',
+  ])
+
+  //admin plan
+  Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
+  Route.get('/plan/', 'PlanController.getPlanAll').middleware(['auth:jwtAdministrator'])
+  Route.post('/plan/', 'PlanController.createPlan').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreatePlan',
+  ])
+  Route.put('/plan/:id', 'PlanController.updatePlan').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreatePlan,Id',
+  ])
+  Route.delete('/plan/', 'PlanController.deletePlan').middleware([
+    'auth:jwtAdministrator',
+    'valid:Ids',
+  ])
+
+  //admin authentication
+  Route.post('/auth/login', 'Admin/AuthController.login').middleware(['guest', 'valid:AdminLogin'])
+}).prefix('api/v1/administration')
+
+/** End administration */
+
 Route.get(
   '/api/v1/estate-by-hash/:hash',
   'EstateViewInvitationController.getEstateByHash'
