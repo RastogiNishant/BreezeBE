@@ -4,7 +4,7 @@ const path = require('path')
 const uuid = require('uuid')
 const moment = require('moment')
 const Promise = require('bluebird')
-const { nth, isEmpty, isString, trim } = require('lodash')
+const { nth, isEmpty, isString } = require('lodash')
 
 const Logger = use('Logger')
 const Drive = use('Drive')
@@ -59,10 +59,7 @@ class File {
    * Get file protected url 15 min lifetime
    */
   static async getProtectedUrl(filePathName, expiry = 900, params) {
-    if (!filePathName || trim(filePathName).length === 0) {
-      return null
-    }
-    return await Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
+    return Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
   }
 
   /**

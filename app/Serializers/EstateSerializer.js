@@ -3,7 +3,7 @@ const moment = require('moment')
 const { isString, each, get, isDate } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
 const Drive = use('Drive')
-const File = require('../Classes/File')
+
 /**
  *
  */
@@ -19,8 +19,8 @@ class EstateSerializer extends BaseSerializer {
     item.verified_address = item.coord !== null
 
     // Get cover url
-    if (isString(item.cover) && !item.cover.includes('http')) {
-      item.cover = File.getPublicUrl(item.cover)
+    if (isString(item.cover)) {
+      item.cover = Drive.disk('s3public').getUrl(item.cover)
     }
 
     if (isDate(item.construction_year)) {

@@ -6,9 +6,7 @@ const moment = require('moment')
 const Event = use('Event')
 const Logger = use('Logger')
 const Estate = use('App/Models/Estate')
-const Member = use('App/Models/Member')
 const File = use('App/Models/File')
-const FileBucket = use('App/Classes/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
 const QueueService = use('App/Services/QueueService')
@@ -43,7 +41,7 @@ const {
   ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick } = require('lodash')
+const { isEmpty, isFunction, isNumber, toString } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -129,42 +127,9 @@ class EstateController {
         estate_id,
         tenant_id
       )
-      let tenant = await TenantService.getTenant(tenant_id)
-      let members = await MemberService.getMembers(tenant_id)
+      const tenant = await TenantService.getTenant(tenant_id)
+      const members = await MemberService.getMembers(tenant_id)
       const company = await CompanyService.getUserCompany(auth.user.id)
-      if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
-        members = members.toJSON().map((member) => pick(member, Member.limitFieldsList))
-        tenant = tenant.toJSON({ isShort: true })
-      } else {
-        members = await Promise.all(
-          members.toJSON().map(async (member) => {
-            const incomes = await Promise.all(
-              member.incomes.map(async (income) => {
-                const proofs = await Promise.all(
-                  income.proofs.map(async (proof) => {
-                    if (!proof.file) return proof
-                    proof.file = await FileBucket.getProtectedUrl(proof.file)
-                    return proof
-                  })
-                )
-                income = {
-                  ...income,
-                  proofs: proofs,
-                }
-                return income
-              })
-            )
-
-            member = {
-              ...member,
-              rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-              debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-              incomes: incomes,
-            }
-            return member
-          })
-        )
-      }
 
       const result = {
         ...lanlord.toJSON(),
