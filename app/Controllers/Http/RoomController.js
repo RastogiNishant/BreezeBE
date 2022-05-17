@@ -29,6 +29,9 @@ class RoomController {
    */
   async createRoom({ request, auth, response }) {
     const { estate_id, ...roomData } = request.all()
+
+    const trx = await Database.beginTransaction()
+
     try {
       let userIds = [auth.user.id]
       if (auth.user.role === ROLE_PROPERTY_MANAGER) {
@@ -45,16 +48,23 @@ class RoomController {
           .where('estate_id', estate_id)
           .where('type', roomData.type)
           .update({ favorite: false })
+          .transacting(trx)
       }
-      const room = await Room.createItem({
-        ...roomData,
-        estate_id,
-      })
+      const room = await Room.createItem(
+        {
+          ...roomData,
+          estate_id,
+        },
+        trx
+      )
+
       Event.fire('estate::update', estate_id)
+      await trx.commit()
 
       response.res(room)
     } catch (e) {
       Logger.error('Create Room error', e)
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -75,20 +85,27 @@ class RoomController {
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.favorite) {
+        await Room.query()
+          .where('estate_id', estate_id)
+          .where('type', data.type)
+          .update({ favorite: false })
+          .transacting(trx)
+      }
+      room.merge(data)
+      await room.save(trx)
 
-    if (data.favorite) {
-      await Room.query()
-        .where('estate_id', estate_id)
-        .where('type', data.type)
-        .update({ favorite: false })
+      Event.fire('estate::update', estate_id)
+      await trx.commit()
+
+      response.res(room)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
     }
-    room.merge(data)
-    await room.save()
-    Event.fire('estate::update', estate_id)
-
-    response.res(room)
   }
-
   /**
    *
    */
@@ -99,21 +116,24 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
+    const trx = await Database.beginTransaction()
     try {
       // need to remove corresponding cover if room's image has to be used as cover of estate
       const images = room.toJSON().images
       if (room.cover && images && images.length) {
         const cover_images = images.filter((image) => includes(image.url, room.cover))
         if (cover_images && cover_images.length) {
-          await EstateService.removeCover(room.estate_id, room.cover)
+          await EstateService.removeCover(room.estate_id, room.cover, trx)
         }
       }
 
-      await RoomService.removeRoom(room_id)
+      await RoomService.removeRoom(room_id, trx)
       Event.fire('estate::update', room.estate_id)
+      await trx.commit()
 
       response.res(true)
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -132,6 +152,7 @@ class RoomController {
           .update({ order: index + 1 })
       })
     )
+
     response.res(true)
   }
 
@@ -168,6 +189,7 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
+    const trx = await Database.beginTransaction()
     try {
       const image = request.file('file')
       const ext = image.extname
@@ -182,11 +204,14 @@ class RoomController {
       const imageObj = await RoomService.addImage(filePathName, room, 's3public')
 
       if (!room.cover) {
-        await EstateService.setCover(room.estate_id, filePathName)
+        await EstateService.setCover(room.estate_id, filePathName, trx)
       }
       Event.fire('estate::update', room.estate_id)
+
+      await trx.commit()
       response.res(imageObj)
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -201,15 +226,19 @@ class RoomController {
       throw new HttpException('Invalid room', 404)
     }
 
+    const trx = await Database.beginTransaction()
     try {
       //need to remove if this image is used as the esate's cover
-      const image = await RoomService.removeImage(id)
+      const image = await RoomService.removeImage(id, trx)
       if (image) {
-        await EstateService.removeCover(room.estate_id, image.url)
+        await EstateService.removeCover(room.estate_id, image.url, trx)
       }
       Event.fire('estate::update', room.estate_id)
+
+      await trx.commit()
       response.res(true)
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }

@@ -21,6 +21,7 @@ const Event = use('Event')
 const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
+const HttpException = use('App/Exceptions/HttpException')
 
 class RoomService {
   /**
@@ -60,8 +61,8 @@ class RoomService {
   /**
    *
    */
-  static async removeRoom(roomId) {
-    return Room.query().update({ status: STATUS_DELETE }).where('id', roomId)
+  static async removeRoom(roomId,trx) {
+    return Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
   }
 
   /**
@@ -86,16 +87,15 @@ class RoomService {
   /**
    *
    */
-  static async removeImage(id) {
-    const image = await Image.findOrFail(id)
+  static async removeImage(id, trx) {
     try {
+      const image = await Image.findOrFail(id)
       await Drive.disk(image.disk).delete(image.url)
+      await image.delete().transacting(trx)      
+      return image
     } catch (e) {
-      Logger.error(e.message)
       return null
     }
-    await image.delete()
-    return image
   }
 
   /**

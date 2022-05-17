@@ -50,6 +50,7 @@ const {
   NO_UNPAID_RENTAL,
   STATUS_DRAFT,
   BUDDY_STATUS_ACCEPTED,
+  MINIMUM_SHOW_PERIOD,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -647,6 +648,7 @@ class MatchService {
     }
 
     const slotDate = moment.utc(date, DATE_FORMAT)
+    console.log('slotDate', slotDate)
     const getTimeslot = async () =>
       Database.table('time_slots')
         .where({ estate_id: estateId })
@@ -669,11 +671,24 @@ class MatchService {
       throw new AppException('Cant book this slot')
     }
 
+    const endDate = currentTimeslot.slot_length
+      ? moment(slotDate).add(parseInt(currentTimeslot.slot_length), 'minutes')
+      : moment(slotDate).add(MINIMUM_SHOW_PERIOD, 'minutes')
+
+    // if show end time is bigger than show time
+    if (moment.utc(currentTimeslot.end_at, DATE_FORMAT) < endDate) {
+      throw new AppException("can't book this time slot, out of time range!")
+    }
+
     // Book new visit to calendar
     await Database.into('visits').insert({
       estate_id: estate.id,
       user_id: userId,
       date: slotDate.format(DATE_FORMAT),
+      start_date: slotDate.format(DATE_FORMAT),
+      end_date: currentTimeslot.slot_length
+        ? endDate.format(DATE_FORMAT)
+        : currentTimeslot.end_at,
     })
     // Move match status to next
     await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({

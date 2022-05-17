@@ -245,12 +245,12 @@ class EstateService {
   /**
    *
    */
-  static async setCover(estateId, filePathName) {
-    return Estate.query().update({ cover: filePathName }).where('id', estateId)
+  static async setCover(estateId, filePathName, trx =null) {
+    return Estate.query().update({ cover: filePathName }).where('id', estateId).transacting(trx)
   }
 
-  static async removeCover(estateId, filePathName) {
-    return Estate.query().update({ cover: null }).where('id', estateId).where('cover', filePathName)
+  static async removeCover(estateId, filePathName, trx=null) {
+    return Estate.query().update({ cover: null }).where('id', estateId).where('cover', filePathName).transacting(trx)
   }
 
   /**
