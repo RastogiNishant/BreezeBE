@@ -55,12 +55,12 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'pagination',
   ])
-  Route.get('/users/:user_id', 'Admin/UserController.getUser').middleware(['auth:jwtAdministrator'])
+  Route.get('/users/:user_id', 'Admin/UserController.getUser').middleware(['auth:jwtAdministrator']) //this is missing on Admin/UserController
   Route.post('/users/:user_id', 'Admin/UserController.updateUser').middleware([
     'auth:jwtAdministrator',
-  ])
+  ]) //this is missing on Admin/UserController. Note: this should be **put**
 
-  //feature
+  //feature (Controllers should be moved to app/Controllers/Http/Admin)
   Route.post('/feature/', 'FeatureController.createFeature').middleware([
     'auth:jwtAdministrator',
     'valid:CreateFeature',
@@ -75,6 +75,7 @@ Route.group(() => {
   ])
 
   //admin plan
+  //Controllers should be moved to app/Controllers/Http/Admin
   Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
   Route.get('/plan/', 'PlanController.getPlanAll').middleware(['auth:jwtAdministrator'])
   Route.post('/plan/', 'PlanController.createPlan').middleware([
