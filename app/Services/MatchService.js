@@ -50,6 +50,7 @@ const {
   NO_UNPAID_RENTAL,
   STATUS_DRAFT,
   BUDDY_STATUS_ACCEPTED,
+  MINIMUM_SHOW_PERIOD,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -647,6 +648,7 @@ class MatchService {
     }
 
     const slotDate = moment.utc(date, DATE_FORMAT)
+    console.log('slotDate', slotDate)
     const getTimeslot = async () =>
       Database.table('time_slots')
         .where({ estate_id: estateId })
@@ -669,11 +671,24 @@ class MatchService {
       throw new AppException('Cant book this slot')
     }
 
+    const endDate = currentTimeslot.slot_length
+      ? moment(slotDate).add(parseInt(currentTimeslot.slot_length), 'minutes')
+      : moment(slotDate).add(MINIMUM_SHOW_PERIOD, 'minutes')
+
+    // if show end time is bigger than show time
+    if (moment.utc(currentTimeslot.end_at, DATE_FORMAT) < endDate) {
+      throw new AppException("can't book this time slot, out of time range!")
+    }
+
     // Book new visit to calendar
     await Database.into('visits').insert({
       estate_id: estate.id,
       user_id: userId,
       date: slotDate.format(DATE_FORMAT),
+      start_date: slotDate.format(DATE_FORMAT),
+      end_date: currentTimeslot.slot_length
+        ? endDate.format(DATE_FORMAT)
+        : currentTimeslot.end_at,
     })
     // Move match status to next
     await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
@@ -1413,6 +1428,17 @@ class MatchService {
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
+      .select(`_pm.profession`)
+      .select(
+        Database.raw(`
+        (case when _bd.user_id is null
+          then
+            'match'
+          else
+            'buddy'
+          end
+        ) as match_type`)
+      )
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1455,6 +1481,34 @@ class MatchService {
             .limit(1)
         })
       })
+      .leftJoin(
+        Database.raw(`
+        (select
+          (array_agg(primaryMember.user_id))[1] as user_id,
+          incomes.member_id,
+          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
+        from
+          members as primaryMember
+        left join
+          incomes
+        on
+          primaryMember.id=incomes.member_id
+        and
+          primaryMember.email is null
+        and
+          primaryMember.owner_user_id is null
+        group by
+          incomes.member_id)
+        as _pm
+      `),
+        function () {
+          this.on('tenants.user_id', '_pm.user_id')
+        }
+      )
+      .leftJoin({ _bd: 'buddies' }, function () {
+        this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
+      })
+
     query.select(
       '_mb.firstname',
       '_mb.secondname',

@@ -36,7 +36,7 @@ class UserController {
   }
 
   /**
-   *
+   * This endpoint is wrong on the roles. roles can be agg'd by email
    */
   async getUsers({ request, response }) {
     const { page, size } = request.pagination
@@ -61,6 +61,18 @@ class UserController {
     const mixedUserRoles = await mixRoles(users.data)
 
     response.res({ ...users, data: mixedUserRoles })
+  }
+
+  //this is missing before... just the basic query on users using id
+  async getUser({ request, response }) {
+    const user_id = request.params.user_id
+    const user = await User.query().where('id', user_id).first()
+    response.res(user)
+  }
+
+  async updateUser({ request, response }) {
+    const user_id = request.params.user_id
+    response.res({ user_id })
   }
 
   async verifyUsers({ request, auth, response }) {

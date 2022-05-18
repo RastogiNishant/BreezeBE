@@ -25,10 +25,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
-  MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
-  MATCH_STATUS_INVITE,
-  MATCH_STATUS_KNOCK,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
@@ -245,12 +242,16 @@ class EstateService {
   /**
    *
    */
-  static async setCover(estateId, filePathName) {
-    return Estate.query().update({ cover: filePathName }).where('id', estateId)
+  static async setCover(estateId, filePathName, trx = null) {
+    return Estate.query().update({ cover: filePathName }).where('id', estateId).transacting(trx)
   }
 
-  static async removeCover(estateId, filePathName) {
-    return Estate.query().update({ cover: null }).where('id', estateId).where('cover', filePathName)
+  static async removeCover(estateId, filePathName, trx = null) {
+    return Estate.query()
+      .update({ cover: null })
+      .where('id', estateId)
+      .where('cover', filePathName)
+      .transacting(trx)
   }
 
   /**
@@ -806,7 +807,7 @@ class EstateService {
 
   static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
-      .select('estates.*')
+      .select(['estates.*', '_m.share', '_m.status'])
       .with('user')
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id').on('_m.user_id', tenant_id)

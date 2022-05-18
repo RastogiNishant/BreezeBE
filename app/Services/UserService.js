@@ -296,7 +296,7 @@ class UserService {
   /**
    *
    */
-  static async sendConfirmEmail(user, from_web=false) {
+  static async sendConfirmEmail(user, from_web = false) {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
@@ -311,14 +311,14 @@ class UserService {
         user: user,
         role: user.role,
         lang: lang,
-        forgotLink: forgotLink
+        forgotLink: forgotLink,
       })
     } catch (e) {
       throw new HttpException(e)
     }
   }
 
-  static async getForgotShortLink(from_web=false) {
+  static async getForgotShortLink(from_web = false) {
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
     const deepLink_URL = from_web
@@ -354,7 +354,7 @@ class UserService {
   /**
    *
    */
-  static async confirmEmail(user, userCode, from_web=false) {
+  static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
@@ -388,7 +388,7 @@ class UserService {
       code: shortLink,
       role: user.role,
       lang: lang,
-      forgotLink:forgotLink
+      forgotLink: forgotLink,
     })
     return user.save()
   }
@@ -578,7 +578,7 @@ class UserService {
    *
    */
   static async landlordHasAccessTenant(landlordId, userTenantId) {
-    const result = await Database.table({ _m: 'matches' })
+    const sharedMatch = await Database.table({ _m: 'matches' })
       .select('_m.estate_id')
       .where({ '_m.user_id': userTenantId })
       .whereIn('_m.estate_id', function () {
@@ -587,7 +587,19 @@ class UserService {
       .where('_m.share', true)
       .first()
 
-    return !!result
+    if (sharedMatch) {
+      return true
+    } else {
+      const finalMatch = await Database.table({ _m: 'matches' })
+        .select('_m.estate_id')
+        .where({ '_m.user_id': userTenantId })
+        .whereIn('_m.estate_id', function () {
+          this.select('id').from('estates').where({ user_id: landlordId })
+        })
+        .where('_m.status', MATCH_STATUS_FINISH)
+        .first()
+      return finalMatch ? true : false
+    }
   }
 
   /**
@@ -730,6 +742,10 @@ class UserService {
       .whereIn('email', emails)
       .where({ role: role })
       .fetch()
+  }
+
+  static async getByRole(role) {
+    return (await User.query().select('*').where('role', role).fetch()).rows
   }
 
   static async housekeeperSignup(ownerId, email, password, firstname, lang) {

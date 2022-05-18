@@ -57,7 +57,6 @@ class Tenant extends Model {
       'firstname',
       'secondname',
       'birthday',
-      'income',
       'avatar',
       'members_count',
       'minors_count',
@@ -66,6 +65,8 @@ class Tenant extends Model {
       'selected_adults_count',
       'phone_verified',
       'updated_at',
+      'profession',
+      'match_type',
     ]
   }
 
