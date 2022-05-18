@@ -806,7 +806,7 @@ class EstateService {
 
   static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
-      .select('estates.*')
+      .select(['estates.*', '_m.share', '_m.status'])
       .with('user')
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id').on('_m.user_id', tenant_id)

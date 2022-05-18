@@ -269,11 +269,14 @@ class MemberService {
   /**
    *
    */
-  static async addIncome(data, member,trx=null) {
-    return Income.createItem({
-      ...data,
-      member_id: member.id,
-    },trx)
+  static async addIncome(data, member, trx = null) {
+    return Income.createItem(
+      {
+        ...data,
+        member_id: member.id,
+      },
+      trx
+    )
   }
 
   /**
@@ -298,20 +301,34 @@ class MemberService {
   }
 
   /**
-   *
+   * user will be prospect
    */
-  static async updateUserIncome(userId, trx) {
+  static async updateUserIncome(userId, sUserId, trx) {
     await Database.raw(
       `
-      UPDATE tenants SET income = (
-        SELECT COALESCE(SUM(coalesce(income, 0)), 0)
-          FROM members as _m
-            INNER JOIN incomes as _i ON _i.member_id = _m.id
-          WHERE user_id = ?
-      ) WHERE user_id = ?
-    `,
+        UPDATE tenants SET income = (
+          SELECT COALESCE(SUM(coalesce(income, 0)), 0)
+            FROM members as _m
+              INNER JOIN incomes as _i ON _i.member_id = _m.id
+            WHERE user_id = ?
+        ) WHERE user_id = ?
+      `,
       [userId, userId]
     ).transacting(trx)
+
+    if (sUserId) {
+      await Database.raw(
+        `
+        UPDATE tenants SET income = (
+          SELECT COALESCE(SUM(coalesce(income, 0)), 0)
+            FROM members as _m
+              INNER JOIN incomes as _i ON _i.member_id = _m.id
+            WHERE owner_user_id = ?
+        ) WHERE user_id = ?
+      `,
+        [sUserId, sUserId]
+      ).transacting(trx)
+    }
   }
 
   static async sendInvitationCode(id, userId) {
