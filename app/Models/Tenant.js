@@ -57,7 +57,6 @@ class Tenant extends Model {
       'firstname',
       'secondname',
       'birthday',
-      'income',
       'avatar',
       'members_count',
       'minors_count',
