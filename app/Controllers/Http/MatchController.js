@@ -891,7 +891,7 @@ class MatchController {
 
     const visitsCount = await Database.table('matches')
       .count('*')
-      .whereIn('status', [MATCH_STATUS_VISIT])
+      .whereIn('status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
       .whereIn('estate_id', estatesId)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
