@@ -489,6 +489,7 @@ class UserService {
     if (!tenant) {
       return userData
     }
+    
     userData.tenant = tenant.toJSON({ isShort: !isShare })
 
     const members =
