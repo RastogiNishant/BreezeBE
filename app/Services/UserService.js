@@ -296,7 +296,7 @@ class UserService {
   /**
    *
    */
-  static async sendConfirmEmail(user, from_web=false) {
+  static async sendConfirmEmail(user, from_web = false) {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
@@ -311,14 +311,14 @@ class UserService {
         user: user,
         role: user.role,
         lang: lang,
-        forgotLink: forgotLink
+        forgotLink: forgotLink,
       })
     } catch (e) {
       throw new HttpException(e)
     }
   }
 
-  static async getForgotShortLink(from_web=false) {
+  static async getForgotShortLink(from_web = false) {
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
     const deepLink_URL = from_web
@@ -354,7 +354,7 @@ class UserService {
   /**
    *
    */
-  static async confirmEmail(user, userCode, from_web=false) {
+  static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
@@ -388,7 +388,7 @@ class UserService {
       code: shortLink,
       role: user.role,
       lang: lang,
-      forgotLink:forgotLink
+      forgotLink: forgotLink,
     })
     return user.save()
   }
@@ -482,9 +482,7 @@ class UserService {
     // Get tenant extend data
     if (user.share || user.finish) {
       const tenantQuery = Tenant.query().where('user_id', user.id)
-      if (user.share) {
-        tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
-      }
+      tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
 
       /** Updated by Yong */
       const tenant = await tenantQuery.first()
@@ -493,57 +491,9 @@ class UserService {
       }
 
       let extraFields = Tenant.columns
-      if (!user.share) {
-        extraFields = Object.values(
-          omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
-        )
-      }
-
-      if (!user.share) {
-        extraFields = Object.values(omit(extraFields, ['income']))
-      }
-
-      if (!user.share) {
-        extraFields = Object.values(omit(extraFields, ['address', 'coord']))
-      }
-
-      if (!user.share) {
-        extraFields = Object.values(omit(extraFields, ['credit_score']))
-      }
-
-      if (!user.share) {
-        extraFields = Object.values(omit(extraFields, ['income_seizure']))
-      }
 
       /** End by Yong*/
       userData.tenant = tenant.toJSON({ isShort: true, extraFields: extraFields })
-
-      if (!user.share) {
-        const members =
-          userData.tenant.members &&
-          userData.tenant.members.map((m) => {
-            if (!user.share) {
-              delete m.incomes
-            }
-            if (!user.share) {
-              delete m.last_address
-            }
-            if (!user.share) {
-              delete m.credit_score
-            }
-            if (!user.share) {
-              delete m.income_seizure
-            }
-          })
-        userData = {
-          members,
-          ...userData,
-        }
-      }
-
-      if (!user.share || !user.share) {
-        delete userData.tenant.members
-      }
     }
 
     return userData
