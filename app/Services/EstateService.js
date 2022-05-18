@@ -25,10 +25,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
-  MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
-  MATCH_STATUS_INVITE,
-  MATCH_STATUS_KNOCK,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
@@ -245,12 +242,16 @@ class EstateService {
   /**
    *
    */
-  static async setCover(estateId, filePathName, trx =null) {
+  static async setCover(estateId, filePathName, trx = null) {
     return Estate.query().update({ cover: filePathName }).where('id', estateId).transacting(trx)
   }
 
-  static async removeCover(estateId, filePathName, trx=null) {
-    return Estate.query().update({ cover: null }).where('id', estateId).where('cover', filePathName).transacting(trx)
+  static async removeCover(estateId, filePathName, trx = null) {
+    return Estate.query()
+      .update({ cover: null })
+      .where('id', estateId)
+      .where('cover', filePathName)
+      .transacting(trx)
   }
 
   /**
