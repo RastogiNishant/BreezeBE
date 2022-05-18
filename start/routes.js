@@ -36,6 +36,67 @@ Route.get('/', () => {
   }
 })
 
+/** New Administrator Endpoints */
+Route.group(() => {
+  //acivation
+  Route.put('/activation', 'Admin/UserController.updateActivationStatus').middleware([
+    'auth:jwtAdministrator',
+    'valid:UpdateUserValidationStatus',
+  ])
+
+  //verify users
+  Route.post('/verifyUsers', 'Admin/UserController.verifyUsers').middleware([
+    'auth:jwtAdministrator',
+    'valid:Ids,UserVerify',
+  ])
+
+  //users
+  Route.get('/users/', 'Admin/UserController.getUsers').middleware([
+    'auth:jwtAdministrator',
+    'pagination',
+  ])
+  Route.get('/users/:user_id', 'Admin/UserController.getUser').middleware(['auth:jwtAdministrator']) //this is missing on Admin/UserController
+  Route.post('/users/:user_id', 'Admin/UserController.updateUser').middleware([
+    'auth:jwtAdministrator',
+  ]) //this is missing on Admin/UserController. Note: this should be **put**
+
+  //feature (Controllers should be moved to app/Controllers/Http/Admin)
+  Route.post('/feature/', 'FeatureController.createFeature').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreateFeature',
+  ])
+  Route.put('/feature/', 'FeatureController.updateFeature').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreateFeature,Id',
+  ])
+  Route.delete('/feature/', 'FeatureController.removeFeature').middleware([
+    'auth:jwtAdministrator',
+    'valid:Ids',
+  ])
+
+  //admin plan
+  //Controllers should be moved to app/Controllers/Http/Admin
+  Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
+  Route.get('/plan/', 'PlanController.getPlanAll').middleware(['auth:jwtAdministrator'])
+  Route.post('/plan/', 'PlanController.createPlan').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreatePlan',
+  ])
+  Route.put('/plan/:id', 'PlanController.updatePlan').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreatePlan,Id',
+  ])
+  Route.delete('/plan/', 'PlanController.deletePlan').middleware([
+    'auth:jwtAdministrator',
+    'valid:Ids',
+  ])
+
+  //admin authentication
+  Route.post('/auth/login', 'Admin/AuthController.login').middleware(['guest', 'valid:AdminLogin'])
+}).prefix('api/v1/administration')
+
+/** End administration */
+
 Route.get(
   '/api/v1/estate-by-hash/:hash',
   'EstateViewInvitationController.getEstateByHash'
@@ -401,6 +462,10 @@ Route.group(() => {
 })
   .prefix('api/v1/admin/plan')
   .middleware(['auth:jwtAdmin', 'is:admin'])
+
+Route.group(() => {
+  Route.post('/auth/login', 'Admin/AuthController.login').middleware(['valid:AdminLogin'])
+}).prefix('api/v1/admin')
 
 Route.group(() => {
   Route.get('/:id', 'TenantPaymentPlanController.getTenantPaymentPlanById').middleware(['valid:Id'])
@@ -855,13 +920,16 @@ Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB'
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
 Route.list().forEach((r) => {
-  if (Array.isArray(r.middlewareList) && !excludeRoutes.includes(r._route)) {
+  if (
+    Array.isArray(r.middlewareList) &&
+    !excludeRoutes.includes(r._route) &&
+    !r._route.match(/\/administration/)
+  ) {
     if (r.middlewareList.length > 0) {
       r.middlewareList = [...r.middlewareList, 'agreement']
     }
   }
 })
-
 
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {
