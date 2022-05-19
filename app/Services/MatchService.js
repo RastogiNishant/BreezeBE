@@ -686,9 +686,7 @@ class MatchService {
       user_id: userId,
       date: slotDate.format(DATE_FORMAT),
       start_date: slotDate.format(DATE_FORMAT),
-      end_date: currentTimeslot.slot_length
-        ? endDate.format(DATE_FORMAT)
-        : currentTimeslot.end_at,
+      end_date: currentTimeslot.slot_length ? endDate.format(DATE_FORMAT) : currentTimeslot.end_at,
     })
     // Move match status to next
     await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
@@ -1145,6 +1143,8 @@ class MatchService {
       '_m.buddy',
       '_m.share',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
@@ -1178,6 +1178,8 @@ class MatchService {
       '_m.buddy',
       '_m.share',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
@@ -1402,6 +1404,8 @@ class MatchService {
       '_m.buddy',
       '_m.share',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.lord_status AS visit_status',
       '_v.lord_delay AS delay',
       '_l AS like',
@@ -1517,6 +1521,8 @@ class MatchService {
       '_mb.last_address',
       '_mb.phone_verified',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
