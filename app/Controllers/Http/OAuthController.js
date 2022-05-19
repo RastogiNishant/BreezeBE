@@ -121,7 +121,6 @@ class OAuthController {
     let is_profile_onboarded = false
 
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
-      console.log({ code })
       try {
         if (code) {
           const member = await Member.query()
@@ -159,8 +158,6 @@ class OAuthController {
       }
     }
 
-    console.log('çıktı')
-
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
@@ -169,7 +166,6 @@ class OAuthController {
         role: user.role,
         email: user.email,
       })
-      console.log({ member_id })
       if (member_id) {
         await MemberService.setMemberOwner(member_id, user.id)
       }

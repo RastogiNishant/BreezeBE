@@ -68,7 +68,6 @@ class UserService {
       try {
         // Create empty tenant and link to user
         const tenant = userData.signupData
-        console.log('tenanttenant', tenant)
         await Tenant.createItem({
           user_id: user.id,
           coord: tenant?.address?.coord,
@@ -114,8 +113,6 @@ class UserService {
       google_id,
       status: STATUS_ACTIVE,
     }
-
-    console.log({ userData })
 
     const { user } = await UserService.createUser(userData)
 
