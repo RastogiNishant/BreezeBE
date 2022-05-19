@@ -24,6 +24,15 @@ class AuthController {
     }
     return response.res(token)
   }
+
+  async me({ request, response, auth }) {
+    const userId = auth.user.id
+    const me = await Admin.query().where('id', userId).first()
+    if (!me) {
+      throw new HttpException('User not found.')
+    }
+    return response.res(me)
+  }
 }
 
 module.exports = AuthController
