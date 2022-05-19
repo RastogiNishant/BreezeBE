@@ -38,6 +38,7 @@ const {
   MATCH_STATUS_COMMIT,
   TENANT_MATCH_FIELDS,
   MATCH_STATUS_FINISH,
+  MATCH_STATUS_SHARE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -301,6 +302,7 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_INVITE,
       MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
     ])
   }
 
