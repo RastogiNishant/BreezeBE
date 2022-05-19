@@ -11,6 +11,11 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_SITE,
+  FILTER_CONSTRAINTS_MATCH_MODES,
 } = require('../constants')
 
 class EstateFilter extends Base {
@@ -18,6 +23,15 @@ class EstateFilter extends Base {
     yup.object().shape({
       query: yup.string().min(2),
       filter: yup.array().of(yup.number()).nullable(),
+      address: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            value: yup.string().nullable(),
+          })
+        ),
+      }),
       status: yup.lazy((value) => {
         if (isArray(value)) {
           return yup
@@ -28,6 +42,18 @@ class EstateFilter extends Base {
           return yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE])
         }
       }),
+      property_type: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              PROPERTY_TYPE_APARTMENT,
+              PROPERTY_TYPE_ROOM,
+              PROPERTY_TYPE_HOUSE,
+              PROPERTY_TYPE_SITE,
+            ])
+        ),
       letting_type: yup
         .array()
         .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])),
