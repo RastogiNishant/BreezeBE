@@ -115,6 +115,8 @@ class UserService {
       status: STATUS_ACTIVE,
     }
 
+    console.log({ userData })
+
     const { user } = await UserService.createUser(userData)
 
     logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {

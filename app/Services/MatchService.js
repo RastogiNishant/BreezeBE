@@ -550,7 +550,6 @@ class MatchService {
     }
 
     if (like || knock_anyway) {
-      // TODO: send landlord knock notification
       await Database.into('matches').insert({
         status: MATCH_STATUS_KNOCK,
         user_id: userId,
@@ -573,10 +572,18 @@ class MatchService {
     if (!match) {
       throw new AppException('Invalid match stage')
     }
-    await Database.table('matches').update({ status: MATCH_STATUS_NEW }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+
+    const trx = await Database.beginTransaction()
+
+    try {
+      await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
+      await EstateService.addDislike(userId, estateId, trx)
+      await trx.commit()
+      return true
+    } catch (e) {
+      await trx.rollback()
+      throw e
+    }
   }
 
   /**
@@ -686,9 +693,7 @@ class MatchService {
       user_id: userId,
       date: slotDate.format(DATE_FORMAT),
       start_date: slotDate.format(DATE_FORMAT),
-      end_date: currentTimeslot.slot_length
-        ? endDate.format(DATE_FORMAT)
-        : currentTimeslot.end_at,
+      end_date: currentTimeslot.slot_length ? endDate.format(DATE_FORMAT) : currentTimeslot.end_at,
     })
     // Move match status to next
     await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
