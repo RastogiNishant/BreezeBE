@@ -105,6 +105,9 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
+      .with('rooms', function (q) {
+        q.with('room_amenities').with('images')
+      })
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
