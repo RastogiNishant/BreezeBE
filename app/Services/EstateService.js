@@ -109,6 +109,7 @@ class EstateService {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
         this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
+        this.orWhere('estates.city', 'ilike', `${params.query}%`)
       })
     }
 
