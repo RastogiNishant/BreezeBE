@@ -14,9 +14,11 @@ class LandlordService {
         '_t.income',
         '_u.birthday',
         '_v.date',
+        '_v.start_date AS visit_start_date',
+        '_v.end_date AS visit_end_date',
         '_e.address',
         '_v.estate_id',
-        '_v.user_id',
+        '_v.user_id'
       )
       .select(Database.raw("'50'::int AS percent"))
       .select(Database.raw("'10'::int AS slot_length"))
@@ -43,6 +45,8 @@ class LandlordService {
         '_t.income',
         '_u.birthday',
         '_v.date',
+        '_v.start_date AS visit_start_date',
+        '_v.end_date AS visit_end_date',
         '_e.address',
         '_v.estate_id',
         '_v.user_id'

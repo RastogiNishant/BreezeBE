@@ -64,8 +64,8 @@ class CompanyService {
   /**
    *
    */
-  static async removeCompany(companyId, userId) {
-    return Company.query().where({ user_id: userId, id: companyId }).delete()
+  static async removeCompany(companyId, userId, trx) {
+    return Company.query().where({ user_id: userId, id: companyId }).delete(trx)
   }
 
   /**
