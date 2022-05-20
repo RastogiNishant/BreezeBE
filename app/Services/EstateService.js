@@ -394,24 +394,37 @@ class EstateService {
   /**
    *
    */
-  static async removeLike(userId, estateId) {
-    return Database.table('likes').where({ user_id: userId, estate_id: estateId }).delete()
+  static async removeLike(userId, estateId, trx) {
+    return Database.table('likes')
+      .where({ user_id: userId, estate_id: estateId })
+      .delete()
+      .transacting(trx)
   }
 
   /**
    *
    */
-  static async addDislike(userId, estateId) {
+  static async addDislike(userId, estateId, trx) {
+    const shouldTrxProceed = trx
+
+    if (!trx) {
+      trx = await Database.beginTransaction()
+    }
+
     const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
 
     try {
-      await Database.into('dislikes').insert({ user_id: userId, estate_id: estateId })
-      await EstateService.removeLike(userId, estateId)
+      await Database.table('dislikes')
+        .insert({ user_id: userId, estate_id: estateId })
+        .transacting(trx)
+      await EstateService.removeLike(userId, estateId, trx)
+      if (shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
+      if (shouldTrxProceed) await trx.rollback()
       throw new AppException('Cant create like')
     }
   }
