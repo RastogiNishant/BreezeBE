@@ -39,28 +39,17 @@ class UserController {
    * This endpoint is wrong on the roles. roles can be agg'd by email
    */
   async getUsers({ request, response }) {
-    const { page, size } = request.pagination
-    const { filters, order } = request.only(['filters', 'order'])
+    const { filters, order, role } = request.only(['filters', 'order', 'role'])
 
-    const query = User.query().select('users.*').filter(filters).sort(order)
-    const users = (await query.paginate(page, size)).toJSON()
+    const query = User.query()
+      .select(Database.raw(`users.*, concat(users.firstname, ' ', users.secondname) as fullname`))
+      .where('role', role)
+      .filter(filters)
+      .orderBy(order.by, order.direction)
 
-    const mixRoles = async (users) => {
-      const ids = users.map((i) => i.id)
-      const data = await Database.select('_ru.user_id', Database.raw('array_agg(_r.slug) as roles'))
-        .from({ _ru: 'role_user' })
-        .innerJoin({ _r: 'roles' }, '_r.id', '_ru.role_id')
-        .whereIn('_ru.user_id', ids)
-        .groupBy('_ru.user_id')
-
-      return users.reduce((n, v) => {
-        const roles = find(data, { user_id: v.id })
-        return [...n, { ...v, roles: get(roles, 'roles', []) }]
-      }, [])
-    }
-    const mixedUserRoles = await mixRoles(users.data)
-
-    response.res({ ...users, data: mixedUserRoles })
+    const users = await query.fetch()
+    //FIXME: should propbably add an isAdmin param here...
+    response.res(users.toJSON({ isOwner: true }))
   }
 
   //this is missing before... just the basic query on users using id
