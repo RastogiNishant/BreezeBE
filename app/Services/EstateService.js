@@ -257,11 +257,10 @@ class EstateService {
         throw new HttpException('No permission to update cover', 400)
       }
 
-      const roomObj = room.toJSON()
       const rooms = await RoomService.getRoomsByEstate(estate.id, true)
 
       const favoriteRooms = room.favorite
-        ? [roomObj]
+        ? [room]
         : filter(rooms.toJSON(), function (r) {
             return r.favorite
           })

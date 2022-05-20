@@ -99,7 +99,7 @@ class RoomController {
       room.merge(data)
       await room.save(trx)
 
-      await EstateService.updateCover({ room: room }, trx)
+      await EstateService.updateCover({ room: room.toJSON() }, trx)
 
       Event.fire('estate::update', estate_id)
       await trx.commit()
@@ -123,7 +123,7 @@ class RoomController {
     const trx = await Database.beginTransaction()
     try {
       await RoomService.removeRoom(room_id, trx)
-      await EstateService.updateCover({ room: room }, trx)
+      await EstateService.updateCover({ room: room.toJSON() }, trx)
       Event.fire('estate::update', room.estate_id)
       await trx.commit()
 
@@ -208,7 +208,7 @@ class RoomController {
 
       const image = await RoomService.addImage(filePathName, room, 's3public', trx)
 
-      await EstateService.updateCover({ room: room, addImage: image }, trx)
+      await EstateService.updateCover({ room: room.toJSON(), addImage: image }, trx)
 
       Event.fire('estate::update', room.estate_id)
 
@@ -238,7 +238,7 @@ class RoomController {
       //   //await EstateService.removeCover(room.estate_id, image.url, trx)
 
       // }
-      await EstateService.updateCover({ room: room, removeImage: image }, trx)
+      await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
       Event.fire('estate::update', room.estate_id)
 
       await trx.commit()
