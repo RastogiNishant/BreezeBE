@@ -325,6 +325,10 @@ const constants = {
   COMPANY_SIZE_MID: 'md',
   COMPANY_SIZE_LARGE: 'lg',
 
+  DISLIKE_REASON_MANUAL: 'manual',
+  DISLIKE_REASON_EXPIRED_ESTATE: 'expired_estate',
+  DISLIKE_REASON_EXPIRED_SHOW_DATE: 'expired_show_date',
+
   // Tabs matches list
   TENANT_TABS_BUDDY: 'buddy',
   TENANT_TABS_LIKE: 'like',
@@ -429,6 +433,8 @@ const constants = {
   TIMESLOT_STATUS_REJECT: 'reject',
   TIMESLOT_STATUS_DELAY: 'delay',
   TIMESLOT_STATUS_COME: 'come',
+
+  MIN_TIME_SLOT: 5,
 
   NO_UNPAID_RENTAL: 1,
   YES_UNPAID_RENTAL: 2,

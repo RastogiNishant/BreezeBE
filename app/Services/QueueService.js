@@ -62,14 +62,14 @@ class QueueService {
    */
   static async sendEvery5Min() {
     return Promise.all([
-      wrapException(EstateService.moveJobsToExpire),
+      wrapException(EstateService.handleExpiredEstates),
+      wrapException(EstateService.handleShowDateEndedEstates),
       wrapException(NoticeService.landlordVisitIn90m),
       wrapException(NoticeService.prospectVisitIn90m),
       wrapException(NoticeService.getNewWeekMatches),
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
-      wrapException(NoticeService.detectShowDateIsEndedEstates),
     ])
   }
 

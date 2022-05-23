@@ -8,12 +8,8 @@ const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
-const EstateService = use('App/Services/EstateService')
-const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
 const Logger = use('Logger')
-
-const MIN_TIME_SLOT = 5
 
 const {
   ROLE_USER,
@@ -75,6 +71,7 @@ const {
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
+  MIN_TIME_SLOT,
 } = require('../constants')
 
 class NoticeService {
@@ -779,22 +776,11 @@ class NoticeService {
     await NotificationsService.sendLandlordIsVerifiedByAdmin(notices)
   }
 
-  static async detectShowDateIsEndedEstates() {
-    const start = moment().startOf('minute').subtract(5, 'minutes')
-    const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
-
-    const showedEstates = await Estate.query()
-      .whereIn('status', [STATUS_ACTIVE])
-      .whereHas('slots', (estateQuery) => {
-        estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
-        estateQuery.where('end_at', '<=', end.format(DATE_FORMAT))
-      })
-      .fetch()
-
-    const notices = showedEstates.rows.map(({ user_id, address, cover }) => ({
+  static async sendToShowDateIsEndedEstatesLandlords(showedEstates = []) {
+    const notices = showedEstates.map(({ id, user_id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
-      data: { estate_id, estate_address: address },
+      data: { estate_id: id, estate_address: address },
       image: File.getPublicUrl(cover),
     }))
 

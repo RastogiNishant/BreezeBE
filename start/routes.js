@@ -933,6 +933,8 @@ Route.list().forEach((r) => {
   }
 })
 
+Route.get('/osman-test', 'EstateController.osmanTest')
+
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {
 //   if (!process.env.DEV) {

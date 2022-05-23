@@ -13,6 +13,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
@@ -29,6 +30,11 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_KNOCK,
+  DISLIKE_REASON_EXPIRED_SHOW_DATE,
+  DISLIKE_REASON_EXPIRED_ESTATE,
+  MIN_TIME_SLOT,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const MAX_DIST = 10000
@@ -651,50 +657,128 @@ class EstateService {
     return query.limit(limit).fetch()
   }
 
-  /**
-   *
-   */
-  static async moveJobsToExpire() {
-    // Find jobs with expired date and status active
-    const estateIds = (
-      await Estate.query()
-        .select('id')
-        .where('status', STATUS_ACTIVE)
-        .where('available_date', '<=', moment().format(DATE_FORMAT))
-        // .limit(100)
-        .fetch()
-    ).rows.map((i) => i.id)
-
+  //Finds and handles the estates that available date is over
+  static async handleExpiredEstates() {
+    const estateIds = (await this.fetchExpiredEstates()).rows.map((i) => i.id)
+    // return console.log({ estateIds })
     if (isEmpty(estateIds)) {
       return false
     }
 
     const trx = await Database.beginTransaction()
     try {
-      // Update job status
       await Estate.query()
         .update({ status: STATUS_EXPIRE })
         .whereIn('id', estateIds)
         .transacting(trx)
 
-      // Remove estates from - matches / likes / dislikes
-      await Database.table('matches')
-        .where('status', MATCH_STATUS_NEW)
-        .whereIn('estate_id', estateIds)
-        .delete()
-        .transacting(trx)
-
-      await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
-      await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
-
+      await this.handleExpiredEstatesMatches(estateIds, trx)
       await NoticeService.landLandlordEstateExpired(estateIds)
+      await trx.commit()
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
       return false
     }
+  }
 
-    await trx.commit()
+  //Finds and handles the estates that show date is over between now and 5 minutes before
+  static async handleShowDateEndedEstates() {
+    const showedEstates = (await this.fetchShowDateEndedEstatesFor5Minutes()).rows
+    const estateIds = showedEstates.map((e) => e.id)
+    if (isEmpty(estateIds)) {
+      return false
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await this.handleShowDateEndedEstatesMatches(estateIds, trx)
+      await NoticeService.sendToShowDateIsEndedEstatesLandlords(showedEstates)
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      console.log(e)
+      return false
+    }
+
+    return true
+  }
+
+  static async fetchExpiredEstates() {
+    return Estate.query()
+      .select('id')
+      .where('status', STATUS_ACTIVE)
+      .where('available_date', '<=', moment().format(DATE_FORMAT))
+      .fetch()
+  }
+
+  static async fetchShowDateEndedEstatesFor5Minutes() {
+    const start = moment().startOf('minute').subtract(5, 'minutes')
+    const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
+
+    return Estate.query()
+      .whereIn('status', [STATUS_ACTIVE])
+      .whereHas('slots', (estateQuery) => {
+        estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
+        estateQuery.where('end_at', '<=', end.format(DATE_FORMAT))
+      })
+      .fetch()
+  }
+
+  static async handleExpiredEstatesMatches(estateIds, trx) {
+    await this.deleteEstatesLikesAndDislikesBatch(estateIds, trx)
+    await this.createDislikeFromShowDateEndedEstatesMatches(
+      estateIds,
+      DISLIKE_REASON_EXPIRED_ESTATE,
+      trx
+    )
+    await this.deleteShowDateEndedEstatesMatches(estateIds, trx)
+  }
+
+  static async handleShowDateEndedEstatesMatches(estateIds, trx) {
+    await this.deleteEstatesLikesAndDislikesBatch(estateIds, trx)
+    await this.createDislikeFromShowDateEndedEstatesMatches(
+      estateIds,
+      DISLIKE_REASON_EXPIRED_SHOW_DATE,
+      trx
+    )
+    await this.deleteShowDateEndedEstatesMatches(estateIds, trx)
+  }
+
+  static async deleteEstatesLikesAndDislikesBatch(estateIds = [], trx) {
+    await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
+    await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
+  }
+
+  static async createDislikeFromShowDateEndedEstatesMatches(estateIds = [], reason, trx) {
+    console.log({ estateIds })
+    // CREATE DISLIKE FOR AUTOMATICALLY DELETED MATCHES' PROSPECT USERS
+    const matches = await Match.query()
+      .select('user_id', 'estate_id')
+      .whereIn('status', [MATCH_STATUS_KNOCK, MATCH_STATUS_INVITE])
+      .whereIn('estate_id', estateIds)
+      .fetch()
+
+    console.log({ matches })
+
+    const promises = []
+    matches.rows.map(({ user_id, estate_id }) => {
+      promises.push(
+        Database.table('dislikes').insert({ user_id, estate_id, reason }).transacting(trx)
+      )
+    })
+    await Promise.all(promises)
+
+    // We will send the notification to the prospects here in the future
+    // TODO: SEND NOTIFICATION HERE
+  }
+
+  static async deleteShowDateEndedEstatesMatches(estateIds = [], trx) {
+    await Database.table('matches')
+      .whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK, MATCH_STATUS_INVITE])
+      .whereIn('estate_id', estateIds)
+      .delete()
+      .transacting(trx)
   }
 
   /**
@@ -708,9 +792,12 @@ class EstateService {
       await CompanyService.validateUserContacts(estate.user_id)
     }
     await props({
-      delMatches: () => Database.table('matches').where({ estate_id: estate.id }).delete(),
-      delLikes: () => Database.table('likes').where({ estate_id: estate.id }).delete(),
-      delDislikes: () => Database.table('dislikes').where({ estate_id: estate.id }).delete(),
+      // TODO: It's in clarification
+      // delMatches: Database.table('matches').where({ estate_id: estate.id }).delete(),
+      delLikes: Database.table('likes').where({ estate_id: estate.id }).delete(),
+      delDislikes: Database.table('dislikes').where({ estate_id: estate.id }).delete(),
+    }).then((results) => {
+      console.log(results.delDislikes)
     })
     await estate.publishEstate()
     logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)

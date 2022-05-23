@@ -364,7 +364,6 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
-        console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -875,6 +874,11 @@ class EstateController {
     }
     trx.commit()
     return response.res({ deleted: affectedRows })
+  }
+
+  async osmanTest() {
+    await EstateService.handleExpiredEstates()
+    return true
   }
 }
 
