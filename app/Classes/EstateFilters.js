@@ -1,9 +1,12 @@
-const { toLower, isArray } = require('lodash')
+const { toLower, isArray, isEmpty } = require('lodash')
 const Database = use('Database')
 class EstateFilters {
   possibleStringParams = ['address', 'area', 'property_id', 'net_rent']
   constructor(params, query) {
-    console.log({ params })
+    if (isEmpty(params)) {
+      this.query = query
+      return
+    }
     this.possibleStringParams.forEach((param) => {
       if (params[param]) {
         if (params[param].operator && params[param].constraints.length > 0) {
