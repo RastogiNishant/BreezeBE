@@ -30,6 +30,14 @@ class EstateFilters {
       }
     })
 
+    if (params.verified) {
+      if (params.verified === 'checked') {
+        query.whereNotNull('coord_raw')
+      } else if (params.verified === 'exed') {
+        query.whereNull('coord_raw')
+      }
+    }
+
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
