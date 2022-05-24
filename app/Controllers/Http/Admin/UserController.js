@@ -12,6 +12,7 @@ const {
   ROLE_ADMIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
   USER_ACTIVATION_STATUS_DEACTIVATED,
+  STATUS_DELETE,
 } = require('../../../constants')
 
 class UserController {
@@ -39,28 +40,18 @@ class UserController {
    * This endpoint is wrong on the roles. roles can be agg'd by email
    */
   async getUsers({ request, response }) {
-    const { page, size } = request.pagination
-    const { filters, order } = request.only(['filters', 'order'])
+    const { filters, order, role } = request.only(['filters', 'order', 'role'])
 
-    const query = User.query().select('users.*').filter(filters).sort(order)
-    const users = (await query.paginate(page, size)).toJSON()
+    const query = User.query()
+      .select(Database.raw(`users.*, concat(users.firstname, ' ', users.secondname) as fullname`))
+      .where('role', role)
+      .whereNot('status', STATUS_DELETE)
+      .filter(filters)
+      .orderBy(order.by, order.direction)
 
-    const mixRoles = async (users) => {
-      const ids = users.map((i) => i.id)
-      const data = await Database.select('_ru.user_id', Database.raw('array_agg(_r.slug) as roles'))
-        .from({ _ru: 'role_user' })
-        .innerJoin({ _r: 'roles' }, '_r.id', '_ru.role_id')
-        .whereIn('_ru.user_id', ids)
-        .groupBy('_ru.user_id')
-
-      return users.reduce((n, v) => {
-        const roles = find(data, { user_id: v.id })
-        return [...n, { ...v, roles: get(roles, 'roles', []) }]
-      }, [])
-    }
-    const mixedUserRoles = await mixRoles(users.data)
-
-    response.res({ ...users, data: mixedUserRoles })
+    const users = await query.fetch()
+    //FIXME: should propbably add an isAdmin param here...
+    response.res(users.toJSON({ isOwner: true }))
   }
 
   //this is missing before... just the basic query on users using id
@@ -84,36 +75,30 @@ class UserController {
   }
 
   async updateActivationStatus({ request, auth, response }) {
-    const user_id = auth.user.id
-    const adminUser = await User.query().where({ id: user_id, is_admin: true }).first()
-    if (adminUser) {
-      const { ids, action } = request.all()
-      let affectedRows = 0
-      switch (action) {
-        case 'activate':
-          affectedRows = await User.query()
-            .whereIn('id', ids)
-            .update({
-              activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-              is_verified: true,
-              verified_by: auth.user.id,
-              verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-            })
-          NoticeService.verifyUserByAdmin(ids)
-          break
-        case 'deactivate':
-          affectedRows = await User.query().whereIn('id', ids).update({
-            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-            is_verified: false,
-            verified_by: null,
-            verified_date: null,
+    const { ids, action } = request.all()
+    let affectedRows = 0
+    switch (action) {
+      case 'activate':
+        affectedRows = await User.query()
+          .whereIn('id', ids)
+          .update({
+            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+            is_verified: true,
+            verified_by: auth.user.id,
+            verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
           })
-          break
-      }
-      return response.res({ affectedRows })
-    } else {
-      throw new HttpException('You are not authorized to do this.', 401)
+        NoticeService.verifyUserByAdmin(ids)
+        break
+      case 'deactivate':
+        affectedRows = await User.query().whereIn('id', ids).update({
+          activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+          is_verified: false,
+          verified_by: null,
+          verified_date: null,
+        })
+        break
     }
+    return response.res({ affectedRows })
   }
 }
 

@@ -490,6 +490,8 @@ const constants = {
     'delay',
     'estate_status',
     'date',
+    'visit_start_date',
+    'visit_end_date',
     'email',
     'firstname',
     'secondname',

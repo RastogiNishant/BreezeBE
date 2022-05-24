@@ -93,6 +93,8 @@ Route.group(() => {
 
   //admin authentication
   Route.post('/auth/login', 'Admin/AuthController.login').middleware(['guest', 'valid:AdminLogin'])
+
+  Route.get('/me', 'Admin/AuthController.me').middleware(['auth:jwtAdministrator'])
 }).prefix('api/v1/administration')
 
 /** End administration */
