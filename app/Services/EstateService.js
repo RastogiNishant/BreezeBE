@@ -112,38 +112,6 @@ class EstateService {
 
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
-    if (params.query) {
-      query.where(function () {
-        this.orWhere('estates.street', 'ilike', `%${params.query}%`)
-        this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
-        this.orWhere('estates.city', 'ilike', `${params.query}%`)
-      })
-    }
-
-    if (params.status) {
-      query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
-    }
-
-    if (params.property_type) {
-      query.whereIn(
-        'estates.property_type',
-        isArray(params.property_type) ? params.property_type : [params.property_type]
-      )
-    }
-
-    if (params.letting_type) {
-      query.whereIn('estates.letting_type', params.letting_type)
-    }
-
-    // if(params.filter && params.filter.includes(1)) {
-    //   query.whereHas('inviteBuddies')
-    // }
-    if (params.filter) {
-      query.whereHas('matches', (query) => {
-        query.whereIn('status', params.filter)
-      })
-    }
-
     return query.orderBy('estates.id', 'desc')
   }
 
