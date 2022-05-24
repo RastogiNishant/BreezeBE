@@ -314,6 +314,9 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.post('/with-filters', 'EstateController.getEstates').middleware([
+    'valid:Pagination,EstateFilter',
+  ])
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')

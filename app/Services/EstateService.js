@@ -31,6 +31,7 @@ const {
   LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
+const EstateFilters = require('../Classes/EstateFilters')
 const MAX_DIST = 10000
 
 /**
@@ -95,7 +96,7 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query()
+    let query = Estate.query()
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -108,31 +109,9 @@ class EstateService {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
-    if (params.query) {
-      query.where(function () {
-        this.orWhere('estates.street', 'ilike', `%${params.query}%`)
-        this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
-        this.orWhere('estates.city', 'ilike', `${params.query}%`)
-      })
-    }
 
-    if (params.status) {
-      query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
-    }
-
-    if (params.letting_type) {
-      query.whereIn('estates.letting_type', params.letting_type)
-    }
-
-    // if(params.filter && params.filter.includes(1)) {
-    //   query.whereHas('inviteBuddies')
-    // }
-    if (params.filter) {
-      query.whereHas('matches', (query) => {
-        query.whereIn('status', params.filter)
-      })
-    }
-
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }
 
