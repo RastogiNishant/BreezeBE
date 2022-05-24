@@ -1,10 +1,10 @@
 const { toLower } = require('lodash')
 const Database = use('Database')
 class EstateFilters {
-  possibleParams = ['address', 'property_id']
+  possibleStringParams = ['address', 'area', 'property_id', 'net_rent']
   constructor(params, query) {
     console.log({ params })
-    this.possibleParams.forEach((param) => {
+    this.possibleStringParams.forEach((param) => {
       if (params[param]) {
         if (params[param].operator && params[param].constraints.length > 0) {
           query.andWhere(function () {
@@ -45,7 +45,15 @@ class EstateFilters {
       case 'equals':
         return `${param} = '${value}'`
       case 'notEquals':
-        return `${param} <>'${value}'`
+        return `${param} <> '${value}'`
+      case 'lessThan':
+        return `${param} < '${value}'`
+      case 'lesserThanOrEqualTo':
+        return `${param} <= '${value}'`
+      case 'greaterThan':
+        return `${param} > '${value}'`
+      case 'greaterThanOrEqualTo':
+        return `${param} >= '${value}'`
     }
   }
 

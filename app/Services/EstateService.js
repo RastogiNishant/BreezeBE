@@ -124,6 +124,13 @@ class EstateService {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
 
+    if (params.property_type) {
+      query.whereIn(
+        'estates.property_type',
+        isArray(params.property_type) ? params.property_type : [params.property_type]
+      )
+    }
+
     if (params.letting_type) {
       query.whereIn('estates.letting_type', params.letting_type)
     }

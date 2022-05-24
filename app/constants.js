@@ -582,6 +582,10 @@ const constants = {
     'endsWith',
     'equals',
     'notEquals',
+    'greaterThan',
+    'lesserThan',
+    'greaterThanOrEqualTo',
+    'lesserThanOrEqualTo',
   ],
 }
 

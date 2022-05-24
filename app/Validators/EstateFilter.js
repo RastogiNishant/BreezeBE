@@ -30,7 +30,7 @@ class EstateFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.string().nullable(),
+              value: yup.string(),
             })
           ),
         })
@@ -43,6 +43,30 @@ class EstateFilter extends Base {
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
               value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      net_rent: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      area: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string(),
             })
           ),
         })
