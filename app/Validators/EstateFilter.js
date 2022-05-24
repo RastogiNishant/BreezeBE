@@ -23,15 +23,30 @@ class EstateFilter extends Base {
     yup.object().shape({
       query: yup.string().min(2),
       filter: yup.array().of(yup.number()).nullable(),
-      address: yup.object().shape({
-        operator: yup.string().oneOf(['and', 'or']),
-        constraints: yup.array().of(
-          yup.object().shape({
-            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-            value: yup.string().nullable(),
-          })
-        ),
-      }),
+      address: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      property_id: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
       status: yup.lazy((value) => {
         if (isArray(value)) {
           return yup

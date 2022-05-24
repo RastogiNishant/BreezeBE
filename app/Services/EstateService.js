@@ -31,6 +31,7 @@ const {
   LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
+const EstateFilters = require('../Classes/EstateFilters')
 const MAX_DIST = 10000
 
 /**
@@ -95,7 +96,7 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query()
+    let query = Estate.query()
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -109,9 +110,8 @@ class EstateService {
         q.with('room_amenities').with('images')
       })
 
-    if (params.address) {
-      //if()
-    }
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)

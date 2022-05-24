@@ -196,7 +196,6 @@ class EstateController {
     if (!isEmpty(request.post())) {
       params = request.post()
     }
-    return response.res(params)
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
