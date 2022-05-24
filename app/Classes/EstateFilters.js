@@ -1,4 +1,4 @@
-const { toLower } = require('lodash')
+const { toLower, isArray } = require('lodash')
 const Database = use('Database')
 class EstateFilters {
   possibleStringParams = ['address', 'area', 'property_id', 'net_rent']
