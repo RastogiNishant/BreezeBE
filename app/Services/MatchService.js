@@ -1484,6 +1484,7 @@ class MatchService {
         this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
       })
       .leftJoin({ _mb: 'members' }, function () {
+        //primaryUser?
         this.on('_mb.user_id', '_m.user_id').onIn('_mb.id', function () {
           this.min('id')
             .from('members')
@@ -1493,6 +1494,25 @@ class MatchService {
         })
       })
       .leftJoin(
+        //members have proofs for credit_score and no_rent_arrears
+        Database.raw(`
+        (select
+          members.user_id,
+          count(*) as member_count,
+          bool_and(case when members.rent_arrears_doc is not null then true else false end) as submitted_no_rent_arrears_proof,
+          bool_and(case when members.debt_proof is not null then true else false end) as submitted_credit_score_proof
+        from
+          members
+        group by
+          members.user_id)
+        as _mp
+        `),
+        function () {
+          this.on('_mp.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //profession of primaryMember
         Database.raw(`
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
@@ -1533,7 +1553,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
-      '_m.share as share',      
+      '_m.share as share',
       '_m.status as status',
       '_m.user_id'
     )
