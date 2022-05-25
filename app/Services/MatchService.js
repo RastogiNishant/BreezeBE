@@ -1450,6 +1450,12 @@ class MatchService {
           end
         ) as match_type`)
       )
+      .select(
+        Database.raw(`(_ip.submitted_income_proof::int
+        + _mp.submitted_no_rent_arrears_proof::int
+        + _mp.submitted_credit_score_proof::int)
+        as total_completed_proofs`)
+      )
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1509,6 +1515,42 @@ class MatchService {
         `),
         function () {
           this.on('_mp.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //all members have proofs for income
+        Database.raw(`
+        (select
+          members.user_id,
+          bool_and(case when iip.income_proof_filed is not null then true else false end) as submitted_income_proof
+        from
+          members
+        left join
+          (
+            select
+              incomes.member_id , (array_agg(income_proofs.file order by income_proofs.id desc))[1] as income_proof_filed
+            from
+              incomes
+            left join
+              income_proofs
+            on
+              incomes.id=income_proofs.income_id 
+            and 
+              income_proofs.expire_date >= now()
+            group by
+              incomes.id
+            )
+            as iip
+        on
+          iip.member_id=members.id
+        group by
+          members.user_id 
+        order by
+          members.user_id desc
+        
+        ) as _ip`),
+        function () {
+          this.on('_ip.user_id', '_m.user_id')
         }
       )
       .leftJoin(
