@@ -78,13 +78,13 @@ class EstateFilters {
   static parseMatchMode(param, value, matchMode) {
     switch (matchMode) {
       case 'startsWith':
-        return `${param} like '${value}%'`
+        return `${param} ilike '${value}%'`
       case 'contains':
-        return `${param} like '%${value}%'`
+        return `${param} ilike '%${value}%'`
       case 'notContains':
-        return `${param} not like '%${value}%'`
+        return `${param} not ilike '%${value}%'`
       case 'endsWith':
-        return `${param} like '%${value}'`
+        return `${param} ilike '%${value}'`
       case 'equals':
         return `${param} = '${value}'`
       case 'notEquals':
