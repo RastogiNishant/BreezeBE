@@ -1,12 +1,41 @@
-const { toLower, isArray, isEmpty } = require('lodash')
+const { toLower, isArray, isEmpty, trim } = require('lodash')
 const Database = use('Database')
+const {
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+  LETTING_STATUS_CONSTRUCTION_WORKS,
+  LETTING_STATUS_FIRST_TIME_USE,
+  LETTING_STATUS_STRUCTURAL_VACANCY,
+  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_VACANCY,
+  LETTING_STATUS_TERMINATED,
+} = require('../constants')
+
 class EstateFilters {
+  static lettingTypeString = {
+    let: LETTING_TYPE_LET,
+    void: LETTING_TYPE_VOID,
+    na: LETTING_TYPE_NA,
+  }
+  static lettingStatusString = {
+    construction_works: LETTING_STATUS_CONSTRUCTION_WORKS,
+    first_time_use: LETTING_STATUS_FIRST_TIME_USE,
+    structural_vacancy: LETTING_STATUS_STRUCTURAL_VACANCY,
+    defected: LETTING_STATUS_DEFECTED,
+    normal: LETTING_STATUS_NORMAL,
+    vacancy: LETTING_STATUS_VACANCY,
+    terminated: LETTING_STATUS_TERMINATED,
+  }
   possibleStringParams = ['address', 'area', 'property_id', 'net_rent']
+
   constructor(params, query) {
     if (isEmpty(params)) {
       this.query = query
       return
     }
+    /* address, area, property_id, net_rent */
     this.possibleStringParams.forEach((param) => {
       if (params[param]) {
         if (params[param].operator && params[param].constraints.length > 0) {
@@ -32,7 +61,24 @@ class EstateFilters {
         }
       }
     })
-
+    /* filter for combined letting_status and letting_type */
+    if (params.letting) {
+      query.andWhere(function () {
+        params.letting.map((letting) => {
+          const letting_str = EstateFilters.parseLetting(letting)
+          const { letting_type, letting_status } = EstateFilters.lettingToIntVal(letting_str)
+          this.orWhere(function () {
+            if (letting_type) {
+              this.andWhere('letting_type', letting_type)
+            }
+            if (letting_status) {
+              this.andWhere('letting_status', letting_status)
+            }
+          })
+        })
+      })
+    }
+    /* filter for verified or not verified */
     if (params.verified) {
       if (params.verified === 'checked') {
         query.whereNotNull('coord_raw')
@@ -40,7 +86,7 @@ class EstateFilters {
         query.whereNull('coord_raw')
       }
     }
-
+    /* query */
     if (params.query) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
@@ -48,24 +94,22 @@ class EstateFilters {
         this.orWhere('estates.city', 'ilike', `${params.query}%`)
       })
     }
-
+    /* status */
     if (params.status) {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
-
+    /* property_type */
     if (params.property_type) {
       query.whereIn(
         'estates.property_type',
         isArray(params.property_type) ? params.property_type : [params.property_type]
       )
     }
-
+    /* letting_type */
     if (params.letting_type) {
       query.whereIn('estates.letting_type', params.letting_type)
     }
-    // if(params.filter && params.filter.includes(1)) {
-    //   query.whereHas('inviteBuddies')
-    // }
+    /* this should be changed to match_status */
     if (params.filter) {
       query.whereHas('matches', (query) => {
         query.whereIn('status', params.filter)
@@ -73,6 +117,26 @@ class EstateFilters {
     }
 
     this.query = query
+  }
+
+  static parseLetting(letting) {
+    let letting_type
+    let letting_status
+    let matches
+    if ((matches = letting.match(/^(.*?)-(.*?)$/))) {
+      letting_type = toLower(trim(matches[1])).replace(/\./, '').replace(/ /, '_')
+      letting_status = toLower(trim(matches[2])).replace(/\./, '').replace(/ /, '_')
+    } else {
+      letting_type = toLower(trim(letting)).replace(/\./, '').replace(/ /, '_')
+      letting_status = null
+    }
+    return { letting_type, letting_status }
+  }
+
+  static lettingToIntVal({ letting_type, letting_status }) {
+    letting_type = EstateFilters.lettingTypeString[letting_type]
+    letting_status = letting_status ? EstateFilters.lettingStatusString[letting_status] : null
+    return { letting_type, letting_status }
   }
 
   static parseMatchMode(param, value, matchMode) {
@@ -98,6 +162,7 @@ class EstateFilters {
       case 'greaterThanOrEqualTo':
         return `${param} >= '${value}'`
     }
+    return false
   }
 
   process() {
