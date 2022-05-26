@@ -34,6 +34,7 @@ const {
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
+const EstateFilters = require('../Classes/EstateFilters')
 const MAX_DIST = 10000
 
 /**
@@ -102,7 +103,7 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query()
+    let query = Estate.query()
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -115,31 +116,9 @@ class EstateService {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
-    if (params.query) {
-      query.where(function () {
-        this.orWhere('estates.street', 'ilike', `%${params.query}%`)
-        this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
-        this.orWhere('estates.city', 'ilike', `${params.query}%`)
-      })
-    }
 
-    if (params.status) {
-      query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
-    }
-
-    if (params.letting_type) {
-      query.whereIn('estates.letting_type', params.letting_type)
-    }
-
-    // if(params.filter && params.filter.includes(1)) {
-    //   query.whereHas('inviteBuddies')
-    // }
-    if (params.filter) {
-      query.whereHas('matches', (query) => {
-        query.whereIn('status', params.filter)
-      })
-    }
-
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }
 
@@ -479,24 +458,37 @@ class EstateService {
   /**
    *
    */
-  static async removeLike(userId, estateId) {
-    return Database.table('likes').where({ user_id: userId, estate_id: estateId }).delete()
+  static async removeLike(userId, estateId, trx) {
+    return Database.table('likes')
+      .where({ user_id: userId, estate_id: estateId })
+      .delete()
+      .transacting(trx)
   }
 
   /**
    *
    */
-  static async addDislike(userId, estateId) {
+  static async addDislike(userId, estateId, trx) {
+    const shouldTrxProceed = trx
+
+    if (!trx) {
+      trx = await Database.beginTransaction()
+    }
+
     const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
 
     try {
-      await Database.into('dislikes').insert({ user_id: userId, estate_id: estateId })
-      await EstateService.removeLike(userId, estateId)
+      await Database.table('dislikes')
+        .insert({ user_id: userId, estate_id: estateId })
+        .transacting(trx)
+      await EstateService.removeLike(userId, estateId, trx)
+      if (shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
+      if (shouldTrxProceed) await trx.rollback()
       throw new AppException('Cant create like')
     }
   }

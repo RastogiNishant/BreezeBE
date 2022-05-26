@@ -490,6 +490,8 @@ const constants = {
     'delay',
     'estate_status',
     'date',
+    'visit_start_date',
+    'visit_end_date',
     'email',
     'firstname',
     'secondname',
@@ -572,6 +574,19 @@ const constants = {
   ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR: 2311252,
   ROOM_CUSTOM_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 5433122,
   SUPPORTED_IMAGE_FORMAT: ['jpg', 'png', 'gif'],
+
+  FILTER_CONSTRAINTS_MATCH_MODES: [
+    'startsWith',
+    'contains',
+    'notContains',
+    'endsWith',
+    'equals',
+    'notEquals',
+    'greaterThan',
+    'lesserThan',
+    'greaterThanOrEqualTo',
+    'lesserThanOrEqualTo',
+  ],
 }
 
 module.exports = constants
