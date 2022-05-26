@@ -1522,13 +1522,16 @@ class MatchService {
         Database.raw(`
         (select
           members.user_id,
-          bool_and(case when iip.income_proof_filed is not null then true else false end) as submitted_income_proof
+          -- bool_and(case when iip.income_proof_filed is not null then true else false end) as submitted_income_proof
+          bool_and(income_proof_filed) as submitted_income_proof
         from
           members
         left join
           (
             select
-              incomes.member_id , (array_agg(income_proofs.file order by income_proofs.id desc))[1] as income_proof_filed
+              incomes.member_id ,
+              -- (array_agg(income_proofs.file order by income_proofs.id desc))[1] as income_proof_filed
+              (count(income_proofs.file) >= 3) as income_proof_filed
             from
               incomes
             left join
