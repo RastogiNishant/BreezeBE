@@ -1451,10 +1451,23 @@ class MatchService {
         ) as match_type`)
       )
       .select(
-        Database.raw(`(_ip.submitted_income_proof::int
-        + _mp.submitted_no_rent_arrears_proof::int
-        + _mp.submitted_credit_score_proof::int)
+        Database.raw(`
+        -- null here indicates members did not submit any income
+        (_ip.all_members_submitted_income_proofs::int
+        + _mp.all_members_submitted_no_rent_arrears_proofs::int
+        + _mp.all_members_submitted_credit_score_proofs::int)
         as total_completed_proofs`)
+      )
+      .select(
+        Database.raw(`
+        json_build_object
+          (
+            'income', all_members_submitted_income_proofs,
+            'credit_score', all_members_submitted_credit_score_proofs,
+            'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
+          )
+        as submitted_proofs
+        `)
       )
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
@@ -1505,8 +1518,8 @@ class MatchService {
         (select
           members.user_id,
           count(*) as member_count,
-          bool_and(case when members.rent_arrears_doc is not null then true else false end) as submitted_no_rent_arrears_proof,
-          bool_and(case when members.debt_proof is not null then true else false end) as submitted_credit_score_proof
+          bool_and(case when members.rent_arrears_doc is not null then true else false end) as all_members_submitted_no_rent_arrears_proofs,
+          bool_and(case when members.debt_proof is not null then true else false end) as all_members_submitted_credit_score_proofs
         from
           members
         group by
@@ -1520,18 +1533,18 @@ class MatchService {
       .leftJoin(
         //all members have proofs for income
         Database.raw(`
+        -- table indicating all members under prospect submitted complete income proofs
         (select
           members.user_id,
-          -- bool_and(case when iip.income_proof_filed is not null then true else false end) as submitted_income_proof
-          bool_and(income_proof_filed) as submitted_income_proof
+          bool_and(member_submitted_all_income_proofs) as all_members_submitted_income_proofs
         from
           members
         left join
           (
+            -- table indicating members submitted 3 or more unexpired income proofs
             select
               incomes.member_id ,
-              -- (array_agg(income_proofs.file order by income_proofs.id desc))[1] as income_proof_filed
-              (count(income_proofs.file) >= 3) as income_proof_filed
+              (count(income_proofs.file) >= 3) as member_submitted_all_income_proofs
             from
               incomes
             left join
