@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim } = require('lodash')
+const { toLower, isArray, isEmpty, trim, isNull } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -56,27 +56,31 @@ class EstateFilters {
           query.andWhere(function () {
             if (toLower(params[param].operator) === 'or') {
               params[param].constraints.map((constraint) => {
-                this.orWhere(
-                  Database.raw(
-                    EstateFilters.parseMatchMode(
-                      EstateFilters.mapParamToField(param),
-                      constraint.value,
-                      constraint.matchMode
+                if (!isNull(constraint.value)) {
+                  this.orWhere(
+                    Database.raw(
+                      EstateFilters.parseMatchMode(
+                        EstateFilters.mapParamToField(param),
+                        constraint.value,
+                        constraint.matchMode
+                      )
                     )
                   )
-                )
+                }
               })
             } else if (toLower(params[param].operator) === 'and') {
               params[param].constraints.map((constraint) => {
-                this.andWhere(
-                  Database.raw(
-                    EstateFilters.parseMatchMode(
-                      EstateFilters.mapParamToField(param),
-                      constraint.value,
-                      constraint.matchMode
+                if (!isNull(constraint.value)) {
+                  this.andWhere(
+                    Database.raw(
+                      EstateFilters.parseMatchMode(
+                        EstateFilters.mapParamToField(param),
+                        constraint.value,
+                        constraint.matchMode
+                      )
                     )
                   )
-                )
+                }
               })
             }
           })
@@ -84,7 +88,7 @@ class EstateFilters {
       }
     })
     /* filter for combined letting_status and letting_type */
-    if (params.customLettingStatus) {
+    if (params.customLettingStatus && !isNull(params.customLettingStatus.value)) {
       query.andWhere(function () {
         params.customLettingStatus.value.map((letting) => {
           const letting_str = EstateFilters.parseLetting(letting)
@@ -101,12 +105,10 @@ class EstateFilters {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified) {
-      if (params.verified === 'checked') {
-        query.whereNotNull('coord_raw')
-      } else if (params.verified === 'exed') {
-        query.whereNull('coord_raw')
-      }
+    if (params.verified_address && !isNull(params.verified_address.value)) {
+      query.andWhere(
+        Database.raw(EstateFilters.whereQueryForVerifiedAddress(params.verified_address.value))
+      )
     }
     /* query */
     if (params.query) {
@@ -193,6 +195,10 @@ class EstateFilters {
    */
   static mapParamToField(param) {
     return EstateFilters.paramToField[param] || param
+  }
+
+  static whereQueryForVerifiedAddress(value) {
+    return value ? `coord_raw is not null` : `coord_raw is null`
   }
 
   process() {
