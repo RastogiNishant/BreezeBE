@@ -2,6 +2,7 @@ const Event = use('Event')
 const File = use('App/Classes/File')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
+const MemberFile = use('App/Models/MemberFile')
 const MemberService = use('App/Services/MemberService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const UserService = use('App/Services/UserService')
@@ -11,7 +12,7 @@ const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
-const { omit } = require('lodash')
+const { omit, unset } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 const NoticeService = use('App/Services/NoticeService')
@@ -21,6 +22,7 @@ const {
   ROLE_USER,
   ERROR_WRONG_HOUSEHOLD_INVITATION_DATA,
   VISIBLE_TO_NOBODY,
+  STATUS_ACTIVE,
 } = require('../../constants')
 /**
  *
@@ -103,6 +105,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: imageMimes, isPublic: true },
       ])
 
       const user_id = auth.user.id
@@ -123,6 +126,9 @@ class MemberController {
 
         if (existingUser) {
           data.owner_user_id = existingUser.id
+        }
+
+        if (files.passport) {
         }
 
         const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
@@ -158,25 +164,37 @@ class MemberController {
     const { id, ...data } = request.all()
 
     const member = await MemberService.allowEditMemberByPermission(auth.user, id)
-
-    const files = await File.saveRequestFiles(request, [
-      { field: 'avatar', mime: imageMimes, isPublic: true },
-      { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
-      { field: 'debt_proof', mime: docMimes, isPublic: false },
-    ])
-
+    let files
+    try {
+      files = await File.saveRequestFiles(request, [
+        { field: 'avatar', mime: imageMimes, isPublic: true },
+        { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
+        { field: 'debt_proof', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: imageMimes, isPublic: true },
+      ])
+    } catch (err) {
+      throw new HttpException(err.message)
+    }
     const newData = member.owner_user_id ? omit(data, ['email']) : data
 
     if (data?.phone !== member.phone) {
       newData.phone_verified = false
     }
 
+    if (files.passport) {
+      let memberFile = new MemberFile()
+      memberFile.merge({
+        file: files.passport,
+        type: 'passport',
+        status: STATUS_ACTIVE,
+        member_id: member.id,
+      })
+      await memberFile.save()
+    }
     await member.updateItem({ ...newData, ...files })
     await MemberService.calcTenantMemberData(member.user_id)
-
     Event.fire('tenant::update', member.user_id)
-
-    response.res(member)
+    return response.res(member)
   }
 
   /**
