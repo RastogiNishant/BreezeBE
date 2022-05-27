@@ -39,6 +39,16 @@ class MemberController {
     }
 
     let members = (await MemberService.getMembers(userId)).toJSON()
+    members = members.reduce((members, member) => {
+      member.passports = member.passports.reduce(
+        (passports, passport) => [
+          ...passports,
+          { ...passport, file: File.getPublicUrl(passport.file) },
+        ],
+        []
+      )
+      return [...members, member]
+    }, [])
     const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
     let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
