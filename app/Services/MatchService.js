@@ -1532,7 +1532,7 @@ class MatchService {
               count(member_files.file) > 0 as member_has_id
             from
               member_files
-            where member_files.status = 1
+            where member_files.status = 1 and member_files.type='passport'
             group by
               member_files.member_id
             ) as mf
