@@ -14,6 +14,10 @@ const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
   STATUS_EXPIRE,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_SITE,
 } = require('../constants')
 
 class EstateFilters {
@@ -41,6 +45,12 @@ class EstateFilters {
     online: STATUS_ACTIVE,
     offline: STATUS_DRAFT,
     expired: STATUS_EXPIRE,
+  }
+  static propertyTypeStringToValMap = {
+    apartment: PROPERTY_TYPE_APARTMENT,
+    room: PROPERTY_TYPE_ROOM,
+    house: PROPERTY_TYPE_HOUSE,
+    site: PROPERTY_TYPE_SITE,
   }
   possibleStringParams = [
     'address',
@@ -135,7 +145,13 @@ class EstateFilters {
     if (params.status) {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
+
     /* property_type */
+    if (params.customPropertyType && !isNull(params.customPropertyType.value)) {
+      let propertyTypes = EstateFilters.customPropertyTypesToValue(params.customPropertyType.value)
+      query.whereIn('estates.property_type', propertyTypes)
+    }
+
     if (params.property_type) {
       query.whereIn(
         'estates.property_type',
@@ -217,6 +233,16 @@ class EstateFilters {
   static customStatusesToValue(statuses) {
     return statuses.reduce(
       (statuses, status) => [...statuses, EstateFilters.statusStringToValMap[toLower(status)]],
+      []
+    )
+  }
+
+  static customPropertyTypesToValue(propertyTypes) {
+    return propertyTypes.reduce(
+      (propertyTypes, propertyType) => [
+        ...propertyTypes,
+        EstateFilters.propertyTypeStringToValMap[toLower(propertyType)],
+      ],
       []
     )
   }
