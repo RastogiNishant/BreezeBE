@@ -28,7 +28,7 @@ class EstateFilters {
     vacancy: LETTING_STATUS_VACANCY,
     terminated: LETTING_STATUS_TERMINATED,
   }
-  possibleStringParams = ['address', 'area', 'property_id', 'net_rent']
+  possibleStringParams = ['address', 'area', 'property_id', 'net_rent', 'rooms_number']
 
   constructor(params, query) {
     if (isEmpty(params)) {
@@ -153,13 +153,13 @@ class EstateFilters {
         return `${param} = '${value}'`
       case 'notEquals':
         return `${param} <> '${value}'`
-      case 'lesserThan':
+      case 'lt':
         return `${param} < '${value}'`
-      case 'lesserThanOrEqualTo':
+      case 'lte':
         return `${param} <= '${value}'`
-      case 'greaterThan':
+      case 'gt':
         return `${param} > '${value}'`
-      case 'greaterThanOrEqualTo':
+      case 'gte':
         return `${param} >= '${value}'`
     }
     return false
