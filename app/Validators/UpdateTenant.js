@@ -61,8 +61,8 @@ class UpdateTenant extends Base {
       rooms_max: yup.number().positive().max(6),
       floor_min: yup.number().min(0).max(21),
       floor_max: yup.number().min(0).max(21),
-      space_min: yup.number().min(5).max(300),
-      space_max: yup.number().min(5).max(300),
+      space_min: yup.number().min(5).max(500),
+      space_max: yup.number().min(5).max(500),
       apt_type: yup
         .array()
         .of(

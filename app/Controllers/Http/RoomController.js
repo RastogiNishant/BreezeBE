@@ -1,6 +1,6 @@
 'use strict'
 
-const { countBy, includes, filter, orderBy } = require('lodash')
+const { countBy, includes } = require('lodash')
 const moment = require('moment')
 const uuid = require('uuid')
 const AppException = use('App/Exceptions/AppException')
@@ -23,7 +23,6 @@ const {
   SUPPORTED_IMAGE_FORMAT,
 } = require('../../constants')
 const ImageService = require('../../Services/ImageService')
-
 class RoomController {
   /**
    *
@@ -51,7 +50,6 @@ class RoomController {
           .update({ favorite: false })
           .transacting(trx)
       }
-
       const room = await Room.createItem(
         {
           ...roomData,
@@ -92,14 +90,12 @@ class RoomController {
       if (data.favorite) {
         await Room.query()
           .where('estate_id', estate_id)
+          .where('type', data.type)
           .update({ favorite: false })
           .transacting(trx)
       }
-
       room.merge(data)
       await room.save(trx)
-
-      await EstateService.updateCover({ room: room.toJSON() }, trx)
 
       Event.fire('estate::update', estate_id)
       await trx.commit()
@@ -122,8 +118,16 @@ class RoomController {
 
     const trx = await Database.beginTransaction()
     try {
+      // need to remove corresponding cover if room's image has to be used as cover of estate
+      const images = room.toJSON().images
+      if (room.cover && images && images.length) {
+        const cover_images = images.filter((image) => includes(image.url, room.cover))
+        if (cover_images && cover_images.length) {
+          await EstateService.removeCover(room.estate_id, room.cover, trx)
+        }
+      }
+
       await RoomService.removeRoom(room_id, trx)
-      await EstateService.updateCover({ room: room.toJSON() }, trx)
       Event.fire('estate::update', room.estate_id)
       await trx.commit()
 
@@ -158,21 +162,13 @@ class RoomController {
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
-
-    const trx = await Database.beginTransaction()
-
     try {
-      const images = (await ImageService.getImagesByRoom(room_id, ids)).toJSON()
-      if (!images || images.length != ids.length) {
+      const imageIds = await ImageService.getImageIds(room_id, ids)
+      if (imageIds.length != ids.length) {
         throw new HttpException("Some imageIds don't exist")
       }
-
-      await ImageService.updateOrder(ids, trx)
-      await EstateService.changeEstateCoverInFavorite(room, images, ids[0], trx)
-
-      await trx.commit()
+      await ImageService.updateOrder(ids)
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
     response.res(true)
@@ -195,25 +191,25 @@ class RoomController {
 
     const trx = await Database.beginTransaction()
     try {
-      const file = request.file('file')
-      const ext = file.extname
-        ? file.extname
-        : file.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
+      const image = request.file('file')
+      const ext = image.extname
+        ? image.extname
+        : image.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
       const filename = `${uuid.v4()}.${ext}`
       const filePathName = `${moment().format('YYYYMM')}/${filename}`
-      await Drive.disk('s3public').put(filePathName, Drive.getStream(file.tmpPath), {
+      await Drive.disk('s3public').put(filePathName, Drive.getStream(image.tmpPath), {
         ACL: 'public-read',
-        ContentType: file.headers['content-type'],
+        ContentType: image.headers['content-type'],
       })
+      const imageObj = await RoomService.addImage(filePathName, room, 's3public')
 
-      const image = await RoomService.addImage(filePathName, room, 's3public', trx)
-
-      await EstateService.updateCover({ room: room.toJSON(), addImage: image }, trx)
-
+      if (!room.cover) {
+        await EstateService.setCover(room.estate_id, filePathName, trx)
+      }
       Event.fire('estate::update', room.estate_id)
 
       await trx.commit()
-      response.res(image)
+      response.res(imageObj)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
@@ -234,11 +230,9 @@ class RoomController {
     try {
       //need to remove if this image is used as the esate's cover
       const image = await RoomService.removeImage(id, trx)
-      // if (image) {
-      //   //await EstateService.removeCover(room.estate_id, image.url, trx)
-
-      // }
-      await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
+      if (image) {
+        await EstateService.removeCover(room.estate_id, image.url, trx)
+      }
       Event.fire('estate::update', room.estate_id)
 
       await trx.commit()

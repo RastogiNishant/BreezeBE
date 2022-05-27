@@ -21,7 +21,6 @@ const Event = use('Event')
 const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
-
 const HttpException = use('App/Exceptions/HttpException')
 
 class RoomService {
@@ -29,7 +28,7 @@ class RoomService {
    *
    */
   static async getRoomByUser(userId, roomId) {
-    return await Room.query()
+    return Room.query()
       .select('rooms.*', '_e.cover')
       .with('images')
       .where('rooms.id', roomId)
@@ -62,32 +61,27 @@ class RoomService {
   /**
    *
    */
-  static async removeRoom(roomId, trx) {
-    return await Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
+  static async removeRoom(roomId,trx) {
+    return Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
   }
 
   /**
    *
    */
-  static async getRoomsByEstate(estateId, withImage = false) {
-    const roomQuery = Room.query()
-      .select('rooms.*')
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'rooms.estate_id')
-      })
-      .whereNot('_e.status', STATUS_DELETE)
-      .where('rooms.estate_id', estateId)
-    if (withImage) {
-      roomQuery.with('images')
-    }
-    return await roomQuery.orderBy('rooms.order', 'asc').orderBy('rooms.id', 'asc').fetch()
+  static async getRoomsByEstate(estateId) {
+    return Room.query()
+      .where('estate_id', estateId)
+      .whereNot('status', STATUS_DELETE)
+      .orderBy('order', 'asc')
+      .orderBy('id', 'asc')
+      .fetch()
   }
 
   /**
    *
    */
-  static async addImage(url, room, disk, trx = null) {
-    return Image.createItem({ url, disk, room_id: room.id }, trx)
+  static async addImage(url, room, disk) {
+    return Image.createItem({ url, disk, room_id: room.id })
   }
 
   /**
@@ -97,7 +91,7 @@ class RoomService {
     try {
       const image = await Image.findOrFail(id)
       await Drive.disk(image.disk).delete(image.url)
-      await image.delete(trx)
+      await image.delete().transacting(trx)      
       return image
     } catch (e) {
       return null
