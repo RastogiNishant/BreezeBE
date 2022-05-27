@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray, filter, omit, flatten } = require('lodash')
+const { get, isEmpty, findIndex, range, isArray, size, omit } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -11,14 +11,12 @@ const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
-const RoomService = use('App/Services/RoomService')
 
 const Estate = use('App/Models/Estate')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
-const Promise = require('bluebird')
 
 const {
   STATUS_DRAFT,
@@ -33,7 +31,6 @@ const {
   LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
-const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const MAX_DIST = 10000
 
@@ -59,10 +56,6 @@ class EstateService {
     return Estate.query().whereNot('status', STATUS_DELETE)
   }
 
-  static async getById(id) {
-    return await this.getActiveEstateQuery().where({ id }).first()
-  }
-
   /**
    *
    */
@@ -72,7 +65,7 @@ class EstateService {
       query.where(conditions)
     }
 
-    return await query.first()
+    return query.first()
   }
 
   /**
@@ -229,93 +222,15 @@ class EstateService {
     await File.query().delete().where('id', file.id)
   }
 
-  static async updateCover({ room, removeImage, addImage }, trx = null) {
-    try {
-      const estate = await this.getById(room.estate_id)
-      if (!estate) {
-        throw new HttpException('No permission to update cover', 400)
-      }
-
-      const rooms = await RoomService.getRoomsByEstate(estate.id, true)
-
-      const favoriteRooms = room.favorite
-        ? [room]
-        : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
-
-      let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
-
-      // no cover or cover is no longer favorite image
-      if (favImages && favImages.length) {
-        if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
-          await this.setCover(estate.id, favImages[0].relativeUrl, trx)
-        }
-      } else {
-        let images = this.extractImages(rooms.toJSON(), removeImage)
-        if (estate.cover) {
-          if (
-            images &&
-            images.length &&
-            images.find((i) => i.relativeUrl === estate.cover) === undefined
-          ) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
-          } else if (!images && !images.length) {
-            await this.removeCover(estate.id, estate.cover, trx)
-          }
-        } else {
-          if (images && images.length) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
-          }
-        }
-      }
-    } catch (e) {
-      throw new HttpException(e.message, 500)
-    }
-  }
-
-  static extractImages(rooms, removeImage = undefined, addImage = undefined) {
-    let images = []
-
-    rooms.map((r) => {
-      if (addImage) {
-        r.images.push(addImage.toJSON())
-      }
-      if (!r.images || !r.images.length) {
-        return
-      }
-      images.push(r.images)
-    })
-
-    images = flatten(images)
-    if (removeImage) {
-      images = images.filter((i) => i.id !== removeImage.id)
-    }
-
-    return images
-  }
-
-  static async changeEstateCoverInFavorite(room, images, firstId, trx) {
-    if (!images || !images.length) {
-      return
-    }
-
-    const image = images.find((i) => i.id === firstId)
-    await this.setCover(room.estate_id, image.relativeUrl, trx)
-  }
-
   /**
    *
    */
   static async setCover(estateId, filePathName, trx = null) {
-    return await Estate.query()
-      .update({ cover: filePathName })
-      .where('id', estateId)
-      .transacting(trx)
+    return Estate.query().update({ cover: filePathName }).where('id', estateId).transacting(trx)
   }
 
   static async removeCover(estateId, filePathName, trx = null) {
-    return await Estate.query()
+    return Estate.query()
       .update({ cover: null })
       .where('id', estateId)
       .where('cover', filePathName)

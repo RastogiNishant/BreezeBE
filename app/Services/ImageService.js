@@ -38,21 +38,22 @@ class ImageService {
     return dest
   }
 
-  static async savePropertyBulkImages(images) {
-    for (let image of images) {
-      if (image && image.photos && image.photos.length) {
-        image.photos.map((p) => {
-          ImageService.savePropertyImage(p, image.room_id)
+  static async savePropertyBulkImages( images ) {
+    for( let image of images ) {
+      if( image && image.photos && image.photos.length ) {
+        image.photos.map( p => {
+          ImageService.savePropertyImage(p, image.room_id);
         })
       }
     }
   }
+  
+  static async savePropertyImage(imagePath, roomId ) {
 
-  static async savePropertyImage(imagePath, roomId) {
-    fs.readFile(imagePath, async function (err, data) {
-      if (err) throw err // Fail if the file can't be read.
-      try {
-        const ext = ContentType.getExt(imagePath)
+    fs.readFile( imagePath, async function(err, data) {
+      if (err) throw err; // Fail if the file can't be read.
+      try{
+        const ext = ContentType.getExt(imagePath);
         const filename = `${uuid.v4()}`
         const filePathName = `${moment().format('YYYYMM')}/${filename}.${ext}`
 
@@ -62,34 +63,31 @@ class ImageService {
         })
 
         await Image.createItem({
-          url: filePathName,
+          url:filePathName,
           room_id: roomId,
-          disk: 's3public',
+          disk:'s3public'
         })
-      } catch (e) {
-        console.log(e)
+      }catch(e) {
+        console.log(e);
       }
-    })
+    });
   }
-  static async getImagesByRoom(roomId, imageIds) {
-    return await Image.query()
-      .select('images.*')
+  static async getImageIds( roomId, imageIds) {
+    return (await Image.query()
+      .select('images.id')
       .whereIn('images.id', imageIds)
-      .orderBy('order', 'asc')
-      .orderBy('id', 'asc')
       .innerJoin({ _r: 'rooms' }, function () {
-        this.on('_r.id', 'images.room_id').onIn('_r.id', roomId)
+        this.on('_r.id', 'images.room_id').onIn('_r.id', roomId)          
       })
-      .fetch()
+      .fetch()).rows
   }
 
-  static async updateOrder(ids, trx = null) {
+  static async updateOrder( ids ) {
     await Promise.all(
-      ids.map(async (id, index) => {
+      ids.map(async(id, index) => {
         await Image.query()
-          .where('id', id)
-          .update({ order: index + 1 })
-          .transacting(trx)
+        .where('id', id)
+        .update({order:index+1})
       })
     )
   }
