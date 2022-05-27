@@ -497,6 +497,14 @@ class MemberController {
       )
     }
   }
+
+  addPassportImage({ request, auth, response }) {
+    return response.res(true)
+  }
+
+  deletePassportImage({ request, auth, response }) {
+    return response.res(true)
+  }
 }
 
 module.exports = MemberController
