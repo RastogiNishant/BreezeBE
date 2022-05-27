@@ -11,6 +11,9 @@ const {
   LETTING_STATUS_NORMAL,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_TERMINATED,
+  STATUS_ACTIVE,
+  STATUS_DRAFT,
+  STATUS_EXPIRE,
 } = require('../constants')
 
 class EstateFilters {
@@ -33,6 +36,11 @@ class EstateFilters {
     customFloor: 'floor',
     customNumFloor: 'number_floors',
     customRent: 'net_rent',
+  }
+  static statusStringToValMap = {
+    online: STATUS_ACTIVE,
+    offline: STATUS_DRAFT,
+    expired: STATUS_EXPIRE,
   }
   possibleStringParams = [
     'address',
@@ -119,6 +127,11 @@ class EstateFilters {
       })
     }
     /* status */
+    if (params.customStatus && !isNull(params.customStatus.value)) {
+      let statuses = EstateFilters.customStatusesToValue(params.customStatus.value)
+      query.whereIn('estates.status', statuses)
+    }
+
     if (params.status) {
       query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
     }
@@ -199,6 +212,13 @@ class EstateFilters {
 
   static whereQueryForVerifiedAddress(value) {
     return value ? `coord_raw is not null` : `coord_raw is null`
+  }
+
+  static customStatusesToValue(statuses) {
+    return statuses.reduce(
+      (statuses, status) => [...statuses, EstateFilters.statusStringToValMap[toLower(status)]],
+      []
+    )
   }
 
   process() {
