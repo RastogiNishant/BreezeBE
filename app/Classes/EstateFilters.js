@@ -62,9 +62,9 @@ class EstateFilters {
       }
     })
     /* filter for combined letting_status and letting_type */
-    if (params.letting) {
+    if (params.customLettingStatus) {
       query.andWhere(function () {
-        params.letting.map((letting) => {
+        params.customLettingStatus.value.map((letting) => {
           const letting_str = EstateFilters.parseLetting(letting)
           const { letting_type, letting_status } = EstateFilters.lettingToIntVal(letting_str)
           this.orWhere(function () {
@@ -124,10 +124,10 @@ class EstateFilters {
     let letting_status
     let matches
     if ((matches = letting.match(/^(.*?)-(.*?)$/))) {
-      letting_type = toLower(trim(matches[1])).replace(/\./, '').replace(/ /, '_')
-      letting_status = toLower(trim(matches[2])).replace(/\./, '').replace(/ /, '_')
+      letting_type = toLower(trim(matches[1])).replace(/\./g, '').replace(/ /g, '_')
+      letting_status = toLower(trim(matches[2])).replace(/\./g, '').replace(/ /g, '_')
     } else {
-      letting_type = toLower(trim(letting)).replace(/\./, '').replace(/ /, '_')
+      letting_type = toLower(trim(letting)).replace(/\./g, '').replace(/ /g, '_')
       letting_status = null
     }
     return { letting_type, letting_status }
