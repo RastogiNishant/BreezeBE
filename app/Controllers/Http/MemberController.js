@@ -128,10 +128,17 @@ class MemberController {
           data.owner_user_id = existingUser.id
         }
 
-        if (files.passport) {
-        }
-
         const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
+        if (files.passport) {
+          const memberFile = new MemberFile()
+          memberFile.merge({
+            file: files.passport,
+            type: 'passport',
+            status: STATUS_ACTIVE,
+            member_id: createdMember.id,
+          })
+          await memberFile.save(trx)
+        }
         await MemberService.calcTenantMemberData(user_id, trx)
 
         /**
@@ -173,7 +180,7 @@ class MemberController {
         { field: 'passport', mime: imageMimes, isPublic: true },
       ])
     } catch (err) {
-      throw new HttpException(err.message)
+      throw new HttpException(err.message, 422)
     }
     const newData = member.owner_user_id ? omit(data, ['email']) : data
 
