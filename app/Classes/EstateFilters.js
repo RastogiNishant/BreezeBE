@@ -28,7 +28,21 @@ class EstateFilters {
     vacancy: LETTING_STATUS_VACANCY,
     terminated: LETTING_STATUS_TERMINATED,
   }
-  possibleStringParams = ['address', 'area', 'property_id', 'net_rent', 'rooms_number']
+  static paramToField = {
+    customArea: 'area',
+    customFloor: 'floor',
+    customNumFloor: 'number_floors',
+    customRent: 'net_rent',
+  }
+  possibleStringParams = [
+    'address',
+    'customArea',
+    'customFloor',
+    'property_id',
+    'customRent',
+    'customNumFloor',
+    'rooms_number',
+  ]
 
   constructor(params, query) {
     if (isEmpty(params)) {
@@ -44,7 +58,11 @@ class EstateFilters {
               params[param].constraints.map((constraint) => {
                 this.orWhere(
                   Database.raw(
-                    EstateFilters.parseMatchMode(param, constraint.value, constraint.matchMode)
+                    EstateFilters.parseMatchMode(
+                      EstateFilters.mapParamToField(param),
+                      constraint.value,
+                      constraint.matchMode
+                    )
                   )
                 )
               })
@@ -52,7 +70,11 @@ class EstateFilters {
               params[param].constraints.map((constraint) => {
                 this.andWhere(
                   Database.raw(
-                    EstateFilters.parseMatchMode(param, constraint.value, constraint.matchMode)
+                    EstateFilters.parseMatchMode(
+                      EstateFilters.mapParamToField(param),
+                      constraint.value,
+                      constraint.matchMode
+                    )
                   )
                 )
               })
@@ -163,6 +185,14 @@ class EstateFilters {
         return `${param} >= '${value}'`
     }
     return false
+  }
+  /**
+   * map param to database field
+   *
+   * @memberof EstateFilters
+   */
+  static mapParamToField(param) {
+    return EstateFilters.paramToField[param] || param
   }
 
   process() {
