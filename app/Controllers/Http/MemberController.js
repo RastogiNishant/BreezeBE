@@ -23,6 +23,7 @@ const {
   ERROR_WRONG_HOUSEHOLD_INVITATION_DATA,
   VISIBLE_TO_NOBODY,
   STATUS_ACTIVE,
+  STATUS_DELETE,
 } = require('../../constants')
 /**
  *
@@ -540,12 +541,14 @@ class MemberController {
     }
   }
 
-  addPassportImage({ request, auth, response }) {
-    return response.res(true)
-  }
-
-  deletePassportImage({ request, auth, response }) {
-    return response.res(true)
+  async deletePassportImage({ request, auth, response }) {
+    const { passport_id, id } = request.all()
+    const affected_rows = await MemberFile.query()
+      .update({ status: STATUS_DELETE })
+      .where('type', 'passport')
+      .where('id', passport_id)
+      .where('member_id', id)
+    return response.res({ deleted: affected_rows })
   }
 }
 
