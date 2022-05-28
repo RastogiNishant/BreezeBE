@@ -12,7 +12,7 @@ const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
-const { omit, unset } = require('lodash')
+const { omit } = require('lodash')
 const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 const NoticeService = use('App/Services/NoticeService')
@@ -179,8 +179,6 @@ class MemberController {
    */
   async updateMember({ request, auth, response }) {
     const { id, ...data } = request.all()
-
-    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
     let files
     try {
       files = await File.saveRequestFiles(request, [
@@ -192,24 +190,33 @@ class MemberController {
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
-    const newData = member.owner_user_id ? omit(data, ['email']) : data
-
-    if (data?.phone !== member.phone) {
-      newData.phone_verified = false
-    }
-
     if (files.passport) {
       let memberFile = new MemberFile()
       memberFile.merge({
         file: files.passport,
         type: 'passport',
         status: STATUS_ACTIVE,
-        member_id: member.id,
+        member_id: id,
       })
       await memberFile.save()
     }
+
+    let member = await MemberService.allowEditMemberByPermission(auth.user, id)
+    const newData = member.owner_user_id ? omit(data, ['email']) : data
+
+    if (data?.phone !== member.phone) {
+      newData.phone_verified = false
+    }
     await member.updateItem({ ...newData, ...files })
     await MemberService.calcTenantMemberData(member.user_id)
+    member = member.toJSON()
+    member.passports = member.passports.reduce(
+      (passports, passport) => [
+        ...passports,
+        { ...passport, file: File.getPublicUrl(passport.file) },
+      ],
+      []
+    )
     Event.fire('tenant::update', member.user_id)
     return response.res(member)
   }
