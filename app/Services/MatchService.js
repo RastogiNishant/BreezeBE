@@ -1533,6 +1533,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
+      '_m.share as share',      
       '_m.status as status',
       '_m.user_id'
     )

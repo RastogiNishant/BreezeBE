@@ -1,5 +1,6 @@
 'use strict'
 
+const { MATCH_STATUS_FINISH } = require('../constants')
 const BaseSerializer = require('./BaseSerializer')
 
 /**
@@ -12,7 +13,12 @@ class TenantSerializer extends BaseSerializer {
       item.coord = item.coord_raw
     }
     item.coord_raw = undefined
-    isShort && this.filterFields(item, extraFields)
+
+    let isShown = isShort
+    if( item.share || item.status === MATCH_STATUS_FINISH ){
+      isShown = false
+    }
+    isShown && this.filterFields(item, extraFields)
 
     return this._getRowJSON(item)
   }
