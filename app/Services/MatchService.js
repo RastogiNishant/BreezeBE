@@ -1194,6 +1194,45 @@ class MatchService {
     return query
   }
 
+  static getLandlordUpcomingVisits(userId) {
+    const now = moment().format(DATE_FORMAT)
+    const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
+    const query = Estate.query()
+      .select('estates.*')
+      .select('_m.percent as match')
+      .select('_m.updated_at')
+      .orderBy('_m.updated_at', 'DESC')
+      .where('estates.user_id', userId)
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+
+    query.innerJoin({ _m: 'matches' }, function () {
+      this.on('_m.estate_id', 'estates.id')
+    })
+    query.leftJoin({ _v: 'visits' }, function () {
+      this.on('_v.estate_id', '_m.estate_id')
+    })
+
+    query.select(
+      'estates.user_id',
+      'estates.street',
+      'estates.city',
+      'estates.zip',
+      'estates.status as estate_status',
+      '_m.status as status',
+      '_m.buddy',
+      '_m.share',
+      '_v.date',
+      '_v.start_date as visit_start_date',
+      '_v.end_date as visit_end_date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
+      '_v.tenant_status AS visit_status',
+      '_v.tenant_delay AS delay'
+    )
+    query.where('_v.date', '>', now).where('_v.date', '<=', tomorrow)
+    return query
+  }
+
   static async getMatchesCountsTenant(userId) {
     const estates = await Estate.query()
       .select('status', 'id')
@@ -1533,7 +1572,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
-      '_m.share as share',      
+      '_m.share as share',
       '_m.status as status',
       '_m.user_id'
     )
