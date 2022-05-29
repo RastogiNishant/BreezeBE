@@ -8,7 +8,7 @@ class MemberFile extends Model {
   }
 
   member() {
-    return this.belongsTo('App/Models/member', 'member_id', 'id')
+    return this.belongsTo('App/Models/Member', 'member_id', 'id')
   }
 }
 
