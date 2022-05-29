@@ -655,7 +655,6 @@ class MatchService {
     }
 
     const slotDate = moment.utc(date, DATE_FORMAT)
-    console.log('slotDate', slotDate)
     const getTimeslot = async () =>
       Database.table('time_slots')
         .where({ estate_id: estateId })
@@ -674,7 +673,7 @@ class MatchService {
       anotherVisit: getAnotherVisit(),
     })
 
-    if (!currentTimeslot || anotherVisit) {
+    if (!currentTimeslot || (anotherVisit && currentTimeslot.slot_length)) {
       throw new AppException('Cant book this slot')
     }
 
@@ -1197,40 +1196,18 @@ class MatchService {
   static getLandlordUpcomingVisits(userId) {
     const now = moment().format(DATE_FORMAT)
     const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
+
     const query = Estate.query()
       .select('estates.*')
-      .select('_m.percent as match')
-      .select('_m.updated_at')
-      .orderBy('_m.updated_at', 'DESC')
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .innerJoin('visits', 'visits.estate_id', 'estates.id')
+      .select('visits.start_date as visit_start_date')
+      .select('visits.end_date as visit_end_date')
+      .where('visits.date', '>', now)
+      .where('visits.date', '<=', tomorrow)
+      .fetch()
 
-    query.innerJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id')
-    })
-    query.where('_m.status', MATCH_STATUS_VISIT)
-    query.leftJoin({ _v: 'visits' }, function () {
-      this.on('_v.estate_id', '_m.estate_id')
-    })
-
-    query.select(
-      'estates.user_id',
-      'estates.street',
-      'estates.city',
-      'estates.zip',
-      'estates.status as estate_status',
-      '_m.status as status',
-      '_m.buddy',
-      '_m.share',
-      '_v.date',
-      '_v.start_date as visit_start_date',
-      '_v.end_date as visit_end_date',
-      '_v.start_date AS visit_start_date',
-      '_v.end_date AS visit_end_date',
-      '_v.tenant_status AS visit_status',
-      '_v.tenant_delay AS delay'
-    )
-    query.where('_v.date', '>', now).where('_v.date', '<=', tomorrow)
     return query
   }
 
