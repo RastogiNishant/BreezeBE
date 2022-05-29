@@ -24,6 +24,7 @@ const {
   VISIBLE_TO_NOBODY,
   STATUS_ACTIVE,
   STATUS_DELETE,
+  MEMBER_FILE_TYPE_PASSPORT,
 } = require('../../constants')
 /**
  *
@@ -116,7 +117,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: imageMimes, isPublic: true },
+        { field: 'passport', mime: docMimes, isPublic: true },
       ])
 
       const user_id = auth.user.id
@@ -144,7 +145,7 @@ class MemberController {
           const memberFile = new MemberFile()
           memberFile.merge({
             file: files.passport,
-            type: 'passport',
+            type: MEMBER_FILE_TYPE_PASSPORT,
             status: STATUS_ACTIVE,
             member_id: createdMember.id,
           })
@@ -186,7 +187,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: imageMimes, isPublic: true },
+        { field: 'passport', mime: docMimes, isPublic: true },
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)
@@ -195,7 +196,7 @@ class MemberController {
       let memberFile = new MemberFile()
       memberFile.merge({
         file: files.passport,
-        type: 'passport',
+        type: MEMBER,
         status: STATUS_ACTIVE,
         member_id: id,
       })
@@ -545,7 +546,7 @@ class MemberController {
     const { passport_id, id } = request.all()
     const affected_rows = await MemberFile.query()
       .update({ status: STATUS_DELETE })
-      .where('type', 'passport')
+      .where('type', MEMBER_FILE_TYPE_PASSPORT)
       .where('id', passport_id)
       .where('member_id', id)
     return response.res({ deleted: affected_rows })

@@ -559,7 +559,6 @@ Route.group(() => {
   Route.delete('/:id/income/:income_id', 'MemberController.removeMemberIncome').middleware([
     'valid:Id,IncomeId',
   ])
-  Route.post('/:id/passport', 'MemberController.addPassportImage').middleware(['valid:Id'])
   Route.delete('/:id/passport/:passport_id', 'MemberController.deletePassportImage').middleware([
     'valid:Id,PassportId',
   ])
