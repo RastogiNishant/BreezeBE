@@ -298,7 +298,6 @@ class TenantService {
    *
    */
   static async deactivateTenant(userId) {
-    console.log('workeddddd')
     await Tenant.query().update({ status: STATUS_DRAFT }).where({ user_id: userId })
     // Remove New matches
     await Database.table({ _m: 'matches' })
