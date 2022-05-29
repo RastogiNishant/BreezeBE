@@ -51,6 +51,7 @@ const {
   STATUS_DRAFT,
   BUDDY_STATUS_ACCEPTED,
   MINIMUM_SHOW_PERIOD,
+  MEMBER_FILE_TYPE_PASSPORT,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -1532,7 +1533,7 @@ class MatchService {
               count(member_files.file) > 0 as member_has_id
             from
               member_files
-            where member_files.status = ${STATUS_ACTIVE} and member_files.type='passport'
+            where member_files.status = ${STATUS_ACTIVE} and member_files.type='${MEMBER_FILE_TYPE_PASSPORT}'
             group by
               member_files.member_id
             ) as mf
