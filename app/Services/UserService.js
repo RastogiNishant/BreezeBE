@@ -480,7 +480,7 @@ class UserService {
 
     const isShare = user.finish || user.share
 
-    let userData = user.toJSON({ publicOnly: isShare })
+    let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
     const tenantQuery = Tenant.query().select('*').where('user_id', user.id)
     tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
@@ -489,16 +489,15 @@ class UserService {
     if (!tenant) {
       return userData
     }
-    
+
     userData.tenant = tenant.toJSON({ isShort: !isShare })
 
-    const members =
-      tenant.members &&
-      tenant.toJSON().members.map((m) => {
-        return isShare ? m : pick(m, Member.limitFieldsList)
-      })
+    if (tenant.members) {
+      userData.tenant.members = tenant
+        .toJSON()
+        .members.map((m) => (isShare ? m : pick(m, Member.limitFieldsList)))
+    }
 
-    userData.tenant.members = members
     return userData
   }
 
