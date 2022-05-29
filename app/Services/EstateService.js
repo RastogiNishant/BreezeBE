@@ -136,7 +136,7 @@ class EstateService {
     // }
 
     // return timeSlot
-    return EstateService.getEstates()
+    return this.getEstates()
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .whereIn('user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
@@ -166,7 +166,7 @@ class EstateService {
    *
    */
   static async updateEstatePoint(estateId) {
-    const estate = await EstateService.getQuery().where('id', estateId).first()
+    const estate = await this.getQuery().where('id', estateId).first()
     if (!estate) {
       throw new AppException(`Invalid estate ${estateId}`)
     }
@@ -205,7 +205,7 @@ class EstateService {
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result) {
       await estate.updateItem({ coord: `${result.lat},${result.lon}` })
-      await EstateService.updateEstatePoint(estateId)
+      await this.updateEstatePoint(estateId)
     }
   }
 
@@ -376,10 +376,7 @@ class EstateService {
     }
 
     // Checks is time slot crossing existing
-    const existing = await EstateService.getCrossTimeslotQuery(
-      { end_at, start_at },
-      estate.user_id
-    ).first()
+    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
 
     if (existing) {
       throw new AppException('Time slot crossing existing')
@@ -412,7 +409,7 @@ class EstateService {
       }
     }
     const estate = await Estate.find(slot.estate_id)
-    const crossingSlot = await EstateService.getCrossTimeslotQuery(
+    const crossingSlot = await this.getCrossTimeslotQuery(
       { end_at: slot.end_at, start_at: slot.start_at },
       estate.user_id
     )
@@ -441,14 +438,14 @@ class EstateService {
    *
    */
   static async addLike(userId, estateId) {
-    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
 
     try {
       await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
-      await EstateService.removeDislike(userId, estateId)
+      await this.removeDislike(userId, estateId)
     } catch (e) {
       Logger.error(e)
       throw new AppException('Cant create like')
@@ -475,7 +472,7 @@ class EstateService {
       trx = await Database.beginTransaction()
     }
 
-    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
@@ -484,7 +481,7 @@ class EstateService {
       await Database.table('dislikes')
         .insert({ user_id: userId, estate_id: estateId })
         .transacting(trx)
-      await EstateService.removeLike(userId, estateId, trx)
+      await this.removeLike(userId, estateId, trx)
       if (shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
@@ -642,15 +639,15 @@ class EstateService {
 
     if (!tenant.point_id) {
       const { lat, lon } = tenant.getLatLon()
-      query = EstateService.getEstatesByPointCoordQuery(lat, lon)
+      query = this.getEstatesByPointCoordQuery(lat, lon)
     } else if (tenant.zones && !isEmpty[tenant.zones]) {
       // TODO: Get apartments by user selected zones
     } else if (tenant.point_zone) {
       // Get apartments by zone
-      query = EstateService.getEstatesByPointZoneQuery(tenant.point_id)
+      query = this.getEstatesByPointZoneQuery(tenant.point_id)
     } else {
       // Get apartments by anchor coords
-      query = EstateService.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
+      query = this.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
     }
 
     if (!query) {
@@ -707,9 +704,9 @@ class EstateService {
     }
     let query = null
     if (tenant.isActive()) {
-      query = EstateService.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
+      query = this.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
     } else {
-      query = EstateService.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
+      query = this.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
     }
 
     return query.limit(limit).fetch()
@@ -785,7 +782,7 @@ class EstateService {
 
   static async getEstatesByUserId(ids, limit, page, params) {
     if (params.return_all && params.return_all == 1) {
-      return await EstateService.getEstates(params)
+      return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)
@@ -793,7 +790,7 @@ class EstateService {
         .with('current_tenant')
         .fetch()
     } else {
-      return await EstateService.getEstates(params)
+      return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)

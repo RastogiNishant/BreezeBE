@@ -564,6 +564,15 @@ class MatchController {
     })
   }
 
+  async getLandlordUpcomingVisits({ auth, response }) {
+    const estates = await MatchService.getLandlordUpcomingVisits(auth.user.id).paginate(1, 999999)
+    const fields = TENANT_MATCH_FIELDS
+
+    return response.res({
+      ...estates.toJSON({ isShort: true, fields }),
+    })
+  }
+
   async getMatchesCountsTenant({ auth, response }) {
     const userId = auth.user.id
     const counts = await MatchService.getMatchesCountsTenant(userId)
