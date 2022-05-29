@@ -175,6 +175,7 @@ class TenantService {
           '_m.debt_proof',
           '_m.execution',
           '_m.credit_score',
+          '_m.credit_score_submit_later',
           '_m.phone_verified',
           '_i.position',
           '_i.company',
@@ -203,11 +204,23 @@ class TenantService {
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
       pets: yup.number().oneOf([PETS_BIG, PETS_SMALL, PETS_NO]).required(),
-      credit_score: yup.number().min(0).max(100).required(),
+      credit_score: yup.number().when(['credit_score_submit_later'], {
+        is: (credit_score_submit_later) => {
+          return credit_score_submit_later
+        },
+        then: yup.number().notRequired().nullable(),
+        otherwise: yup.number().min(0).max(100).required(),
+      }),
       last_address: yup.string().required(),
       firstname: yup.string().required(),
       secondname: yup.string().required(),
-      debt_proof: yup.string().required(),
+      debt_proof: yup.string().when(['credit_score_submit_later'], {
+        is: (credit_score_submit_later) => {
+          return credit_score_submit_later
+        },
+        then: yup.string().notRequired().nullable(),
+        otherwise: yup.string().required(),
+      }),
       birthday: yup.date().required(),
       unpaid_rental: yup
         .number()
