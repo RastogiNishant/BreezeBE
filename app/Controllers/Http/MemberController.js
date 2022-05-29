@@ -196,7 +196,7 @@ class MemberController {
       let memberFile = new MemberFile()
       memberFile.merge({
         file: files.passport,
-        type: MEMBER,
+        type: MEMBER_FILE_TYPE_PASSPORT,
         status: STATUS_ACTIVE,
         member_id: id,
       })
