@@ -6,6 +6,7 @@ const { isEmpty } = require('lodash')
 
 const Database = use('Database')
 const Member = use('App/Models/Member')
+const MemberFile = use('App/Models/MemberFile')
 const Tenant = use('App/Models/Tenant')
 const Point = use('App/Models/Point')
 const IncomeProof = use('App/Models/IncomeProof')
@@ -17,6 +18,7 @@ const {
   MEMBER_FILE_TYPE_RENT,
   MEMBER_FILE_TYPE_DEBT,
   MEMBER_FILE_TYPE_INCOME,
+  MEMBER_FILE_TYPE_PASSPORT,
 
   PETS_BIG,
   PETS_SMALL,
@@ -64,7 +66,18 @@ class TenantService {
    *
    */
   static async getProtectedFileLink(userId, fileId, fileType, memberId) {
-    if (fileType === MEMBER_FILE_TYPE_INCOME) {
+    if (fileType === MEMBER_FILE_TYPE_PASSPORT) {
+      const passport = await MemberFile.query()
+        .where('member_id', memberId)
+        .where('id', fileId)
+        .where('type', MEMBER_FILE_TYPE_PASSPORT)
+        .where('status', STATUS_ACTIVE)
+        .first()
+      if (!passport) {
+        throw new AppException('File not exists')
+      }
+      return File.getProtectedUrl(passport.file)
+    } else if (fileType === MEMBER_FILE_TYPE_INCOME) {
       const incomeProof = await IncomeProof.query()
         .select('income_proofs.*')
         .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
