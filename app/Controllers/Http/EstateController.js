@@ -200,9 +200,8 @@ class EstateController {
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
     //
-    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id])
+    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id], params)
     result = { ...result, ...lettingTypeCounts }
-    result.total_filtered_properties = result.total
     return response.res(result)
   }
 

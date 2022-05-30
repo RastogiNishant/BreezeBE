@@ -916,20 +916,33 @@ class EstateService {
     return affectedRows
   }
 
-  static async getLettingTypeCounts(userIds) {
-    let lettingTypeCounts = await Estate.query()
+  static async getLettingTypeCounts(userIds, params) {
+    let query = Estate.query()
+      .select(Database.raw(`count(*) as total_filtered_estate_count`))
       .select(
         Database.raw(
-          `count(*) filter(where status not in (${STATUS_DELETE})) as total_estate_count`
+          `count(*) filter(where letting_type='${LETTING_TYPE_LET}') as filtered_let_count`
         )
       )
-      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let`))
-      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void`))
-      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na`))
+      .select(
+        Database.raw(
+          `count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as filtered_void_count`
+        )
+      )
+      .select(
+        Database.raw(
+          `count(*) filter(where letting_type='${LETTING_TYPE_NA}') as filtered_na_count`
+        )
+      )
       .whereNot('estates.status', STATUS_DELETE)
       .whereNot('area', 0)
       .whereIn('user_id', userIds)
-      .first()
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+
+    let lettingTypeCounts = await query.first()
+
     lettingTypeCounts = omit(lettingTypeCounts.toJSON(), [
       'hash',
       'coord',
