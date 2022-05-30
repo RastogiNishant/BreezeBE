@@ -308,10 +308,11 @@ class EstateService {
    *
    */
   static async setCover(estateId, filePathName, trx = null) {
-    return await Estate.query()
-      .update({ cover: filePathName })
-      .where('id', estateId)
-      .transacting(trx)
+    const coverUpdateQuery = Estate.query().update({ cover: filePathName }).where('id', estateId)
+    if( trx ) {
+      coverUpdateQuery.transacting(trx)
+    }
+    return await coverUpdateQuery
   }
 
   static async removeCover(estateId, filePathName, trx = null) {
