@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray, size, omit } = require('lodash')
+const { get, isEmpty, findIndex, range, isArray, filter, omit, flatten } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -11,12 +11,14 @@ const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
+const RoomService = use('App/Services/RoomService')
 
 const Estate = use('App/Models/Estate')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
+const Promise = require('bluebird')
 
 const {
   STATUS_DRAFT,
@@ -31,6 +33,7 @@ const {
   LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
+const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const MAX_DIST = 10000
 
@@ -56,6 +59,10 @@ class EstateService {
     return Estate.query().whereNot('status', STATUS_DELETE)
   }
 
+  static async getById(id) {
+    return await this.getActiveEstateQuery().where({ id }).first()
+  }
+
   /**
    *
    */
@@ -65,7 +72,7 @@ class EstateService {
       query.where(conditions)
     }
 
-    return query.first()
+    return await query.first()
   }
 
   /**
@@ -129,7 +136,7 @@ class EstateService {
     // }
 
     // return timeSlot
-    return EstateService.getEstates()
+    return this.getEstates()
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .whereIn('user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
@@ -159,7 +166,7 @@ class EstateService {
    *
    */
   static async updateEstatePoint(estateId) {
-    const estate = await EstateService.getQuery().where('id', estateId).first()
+    const estate = await this.getQuery().where('id', estateId).first()
     if (!estate) {
       throw new AppException(`Invalid estate ${estateId}`)
     }
@@ -198,7 +205,7 @@ class EstateService {
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result) {
       await estate.updateItem({ coord: `${result.lat},${result.lon}` })
-      await EstateService.updateEstatePoint(estateId)
+      await this.updateEstatePoint(estateId)
     }
   }
 
@@ -222,15 +229,93 @@ class EstateService {
     await File.query().delete().where('id', file.id)
   }
 
+  static async updateCover({ room, removeImage, addImage }, trx = null) {
+    try {
+      const estate = await this.getById(room.estate_id)
+      if (!estate) {
+        throw new HttpException('No permission to update cover', 400)
+      }
+
+      const rooms = await RoomService.getRoomsByEstate(estate.id, true)
+
+      const favoriteRooms = room.favorite
+        ? [room]
+        : filter(rooms.toJSON(), function (r) {
+            return r.favorite
+          })
+
+      let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
+
+      // no cover or cover is no longer favorite image
+      if (favImages && favImages.length) {
+        if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
+          await this.setCover(estate.id, favImages[0].relativeUrl, trx)
+        }
+      } else {
+        let images = this.extractImages(rooms.toJSON(), removeImage)
+        if (estate.cover) {
+          if (
+            images &&
+            images.length &&
+            images.find((i) => i.relativeUrl === estate.cover) === undefined
+          ) {
+            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          } else if (!images && !images.length) {
+            await this.removeCover(estate.id, estate.cover, trx)
+          }
+        } else {
+          if (images && images.length) {
+            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          }
+        }
+      }
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static extractImages(rooms, removeImage = undefined, addImage = undefined) {
+    let images = []
+
+    rooms.map((r) => {
+      if (addImage) {
+        r.images.push(addImage.toJSON())
+      }
+      if (!r.images || !r.images.length) {
+        return
+      }
+      images.push(r.images)
+    })
+
+    images = flatten(images)
+    if (removeImage) {
+      images = images.filter((i) => i.id !== removeImage.id)
+    }
+
+    return images
+  }
+
+  static async changeEstateCoverInFavorite(room, images, firstId, trx) {
+    if (!images || !images.length) {
+      return
+    }
+
+    const image = images.find((i) => i.id === firstId)
+    await this.setCover(room.estate_id, image.relativeUrl, trx)
+  }
+
   /**
    *
    */
   static async setCover(estateId, filePathName, trx = null) {
-    return Estate.query().update({ cover: filePathName }).where('id', estateId).transacting(trx)
+    return await Estate.query()
+      .update({ cover: filePathName })
+      .where('id', estateId)
+      .transacting(trx)
   }
 
   static async removeCover(estateId, filePathName, trx = null) {
-    return Estate.query()
+    return await Estate.query()
       .update({ cover: null })
       .where('id', estateId)
       .where('cover', filePathName)
@@ -291,10 +376,7 @@ class EstateService {
     }
 
     // Checks is time slot crossing existing
-    const existing = await EstateService.getCrossTimeslotQuery(
-      { end_at, start_at },
-      estate.user_id
-    ).first()
+    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
 
     if (existing) {
       throw new AppException('Time slot crossing existing')
@@ -327,7 +409,7 @@ class EstateService {
       }
     }
     const estate = await Estate.find(slot.estate_id)
-    const crossingSlot = await EstateService.getCrossTimeslotQuery(
+    const crossingSlot = await this.getCrossTimeslotQuery(
       { end_at: slot.end_at, start_at: slot.start_at },
       estate.user_id
     )
@@ -356,14 +438,14 @@ class EstateService {
    *
    */
   static async addLike(userId, estateId) {
-    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
 
     try {
       await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
-      await EstateService.removeDislike(userId, estateId)
+      await this.removeDislike(userId, estateId)
     } catch (e) {
       Logger.error(e)
       throw new AppException('Cant create like')
@@ -390,7 +472,7 @@ class EstateService {
       trx = await Database.beginTransaction()
     }
 
-    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
@@ -399,7 +481,7 @@ class EstateService {
       await Database.table('dislikes')
         .insert({ user_id: userId, estate_id: estateId })
         .transacting(trx)
-      await EstateService.removeLike(userId, estateId, trx)
+      await this.removeLike(userId, estateId, trx)
       if (shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
@@ -557,15 +639,15 @@ class EstateService {
 
     if (!tenant.point_id) {
       const { lat, lon } = tenant.getLatLon()
-      query = EstateService.getEstatesByPointCoordQuery(lat, lon)
+      query = this.getEstatesByPointCoordQuery(lat, lon)
     } else if (tenant.zones && !isEmpty[tenant.zones]) {
       // TODO: Get apartments by user selected zones
     } else if (tenant.point_zone) {
       // Get apartments by zone
-      query = EstateService.getEstatesByPointZoneQuery(tenant.point_id)
+      query = this.getEstatesByPointZoneQuery(tenant.point_id)
     } else {
       // Get apartments by anchor coords
-      query = EstateService.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
+      query = this.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
     }
 
     if (!query) {
@@ -622,9 +704,9 @@ class EstateService {
     }
     let query = null
     if (tenant.isActive()) {
-      query = EstateService.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
+      query = this.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
     } else {
-      query = EstateService.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
+      query = this.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
     }
 
     return query.limit(limit).fetch()
@@ -700,7 +782,7 @@ class EstateService {
 
   static async getEstatesByUserId(ids, limit, page, params) {
     if (params.return_all && params.return_all == 1) {
-      return await EstateService.getEstates(params)
+      return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)
@@ -708,7 +790,7 @@ class EstateService {
         .with('current_tenant')
         .fetch()
     } else {
-      return await EstateService.getEstates(params)
+      return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .whereNot('area', 0)

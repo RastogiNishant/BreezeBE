@@ -23,6 +23,7 @@ class Member extends Model {
       'last_address',
       'rent_arrears_doc',
       'credit_score',
+      'credit_score_submit_later',
       'debt_proof',
       'unpaid_rental',
       'insolvency_proceed',
