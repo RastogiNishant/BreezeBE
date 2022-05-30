@@ -4,7 +4,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq, omit } = require('lodash')
+const { get, isArray, isEmpty, uniq, pick } = require('lodash')
 const Promise = require('bluebird')
 
 const Role = use('Role')
@@ -14,6 +14,7 @@ const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const Member = use('App/Models/Member')
 const Term = use('App/Models/Term')
 const Agreement = use('App/Models/Agreement')
 const MailService = use('App/Services/MailService')
@@ -476,73 +477,24 @@ class UserService {
       throw new AppException('User not exists')
     }
 
-    let userData = user.toJSON({ publicOnly: !user.finish })
-    userData.tenant = null
+    const isShare = user.finish || user.share
+
+    let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
-    if (user.share || user.finish) {
-      const tenantQuery = Tenant.query().where('user_id', user.id)
-      if (user.share) {
-        tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
-      }
+    const tenantQuery = Tenant.query().select('*').where('user_id', user.id)
+    tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
 
-      /** Updated by Yong */
-      const tenant = await tenantQuery.first()
-      if (!tenant) {
-        return userData
-      }
+    const tenant = await tenantQuery.first()
+    if (!tenant) {
+      return userData
+    }
 
-      let extraFields = Tenant.columns
-      if (!tenant.personal_shown) {
-        extraFields = Object.values(
-          omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
-        )
-      }
+    userData.tenant = tenant.toJSON({ isShort: !isShare })
 
-      if (!tenant.income_shown) {
-        extraFields = Object.values(omit(extraFields, ['income']))
-      }
-
-      if (!tenant.residency_shown) {
-        extraFields = Object.values(omit(extraFields, ['address', 'coord']))
-      }
-
-      if (!tenant.creditscore_shown) {
-        extraFields = Object.values(omit(extraFields, ['credit_score']))
-      }
-
-      if (!tenant.solvency_shown) {
-        extraFields = Object.values(omit(extraFields, ['income_seizure']))
-      }
-
-      /** End by Yong*/
-      userData.tenant = tenant.toJSON({ isShort: true, extraFields: extraFields })
-
-      if (!tenant.income_shown) {
-        const members =
-          userData.tenant.members &&
-          userData.tenant.members.map((m) => {
-            if (!tenant.income_shown) {
-              delete m.incomes
-            }
-            if (!tenant.residency_shown) {
-              delete m.last_address
-            }
-            if (!tenant.creditscore_shown) {
-              delete m.credit_score
-            }
-            if (!tenant.solvency_shown) {
-              delete m.income_seizure
-            }
-          })
-        userData = {
-          members,
-          ...userData,
-        }
-      }
-
-      if (!tenant.profile_shown || !tenant.personal_shown) {
-        delete userData.tenant.members
-      }
+    if (tenant.members) {
+      userData.tenant.members = tenant
+        .toJSON()
+        .members.map((m) => (isShare ? m : pick(m, Member.limitFieldsList)))
     }
 
     return userData

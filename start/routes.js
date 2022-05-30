@@ -341,7 +341,7 @@ Route.group(() => {
   Route.put('/extend', 'EstateController.extendEstate')
   Route.get('/deactivate', 'EstateController.deactivateEstate')
 
-  Route.get('/upcomingShows', 'TimeSlotController.getUpcomingShows')
+  Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])

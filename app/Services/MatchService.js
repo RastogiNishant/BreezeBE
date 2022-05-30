@@ -655,7 +655,6 @@ class MatchService {
     }
 
     const slotDate = moment.utc(date, DATE_FORMAT)
-    console.log('slotDate', slotDate)
     const getTimeslot = async () =>
       Database.table('time_slots')
         .where({ estate_id: estateId })
@@ -674,7 +673,7 @@ class MatchService {
       anotherVisit: getAnotherVisit(),
     })
 
-    if (!currentTimeslot || anotherVisit) {
+    if (!currentTimeslot || (anotherVisit && currentTimeslot.slot_length)) {
       throw new AppException('Cant book this slot')
     }
 
@@ -1191,6 +1190,24 @@ class MatchService {
       '_v.tenant_delay AS delay'
     )
     query.where('_v.date', '>', now).where('_v.date', '<=', tomorrow)
+    return query
+  }
+
+  static getLandlordUpcomingVisits(userId) {
+    const now = moment().format(DATE_FORMAT)
+    const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
+
+    const query = Estate.query()
+      .select('estates.*')
+      .where('estates.user_id', userId)
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .innerJoin('visits', 'visits.estate_id', 'estates.id')
+      .select('visits.start_date as visit_start_date')
+      .select('visits.end_date as visit_end_date')
+      .where('visits.date', '>', now)
+      .where('visits.date', '<=', tomorrow)
+      .fetch()
+
     return query
   }
 

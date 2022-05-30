@@ -1,6 +1,6 @@
 const xlsx = require('node-xlsx')
 const { get, has, isEmpty, reduce, isString, isFunction } = require('lodash')
-const schema = require('../Validators/CreateEstate').schema()
+const schema = require('../Validators/ImportEstate').schema()
 const _ = require('lodash')
 const l = use('Localize')
 
