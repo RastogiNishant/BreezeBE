@@ -30,7 +30,7 @@ class TenantController {
     const { user_id, file_id, file_type, member_id } = request.all()
     if (auth.user.role === ROLE_USER) {
       if (file_type === MEMBER_FILE_TYPE_PASSPORT) {
-        const member = Member.query().where('id', member_id).first()
+        const member = Member.query().where('id', member_id).where('user_id', auth.user.id).first()
         if (!member) {
           throw new HttpException('No access', 403)
         }
