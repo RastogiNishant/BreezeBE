@@ -1467,6 +1467,25 @@ class MatchService {
           end
         ) as match_type`)
       )
+      .select(
+        Database.raw(`
+        -- null here indicates members did not submit any income
+        (_ip.all_members_submitted_income_proofs::int
+        + _mp.all_members_submitted_no_rent_arrears_proofs::int
+        + _mp.all_members_submitted_credit_score_proofs::int)
+        as total_completed_proofs`)
+      )
+      .select(
+        Database.raw(`
+        json_build_object
+          (
+            'income', all_members_submitted_income_proofs,
+            'credit_score', all_members_submitted_credit_score_proofs,
+            'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
+          )
+        as submitted_proofs
+        `)
+      )
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1501,6 +1520,7 @@ class MatchService {
         this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
       })
       .leftJoin({ _mb: 'members' }, function () {
+        //primaryUser?
         this.on('_mb.user_id', '_m.user_id').onIn('_mb.id', function () {
           this.min('id')
             .from('members')
@@ -1510,6 +1530,64 @@ class MatchService {
         })
       })
       .leftJoin(
+        //members have proofs for credit_score and no_rent_arrears
+        Database.raw(`
+        (select
+          members.user_id,
+          count(*) as member_count,
+          bool_and(case when members.rent_arrears_doc is not null then true else false end) as all_members_submitted_no_rent_arrears_proofs,
+          bool_and(case when members.debt_proof is not null then true else false end) as all_members_submitted_credit_score_proofs
+        from
+          members
+        group by
+          members.user_id)
+        as _mp
+        `),
+        function () {
+          this.on('_mp.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //all members have proofs for income
+        Database.raw(`
+        -- table indicating all members under prospect submitted complete income proofs
+        (select
+          members.user_id,
+          bool_and(member_submitted_all_income_proofs) as all_members_submitted_income_proofs
+        from
+          members
+        left join
+          (
+            -- table indicating members submitted 3 or more unexpired income proofs
+            select
+              incomes.member_id ,
+              (count(income_proofs.file) >= 3) as member_submitted_all_income_proofs
+            from
+              incomes
+            left join
+              income_proofs
+            on
+              incomes.id=income_proofs.income_id 
+            and 
+              income_proofs.expire_date >= now()
+            group by
+              incomes.id
+            )
+            as iip
+        on
+          iip.member_id=members.id
+        group by
+          members.user_id 
+        order by
+          members.user_id desc
+        
+        ) as _ip`),
+        function () {
+          this.on('_ip.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //profession of primaryMember
         Database.raw(`
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
