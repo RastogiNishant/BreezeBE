@@ -9,6 +9,7 @@ const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const FromEmail = process.env.FROM_EMAIL
+const FROM_ONBOARD_EMAIL = process.env.FROM_ONBOARD_EMAIL
 const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
 const SITE_URL = process.env.SITE_URL
@@ -38,11 +39,8 @@ class MailService {
     )
   }
 
-  static async sendWelcomeMail( user, {code, role, lang, forgotLink=''} ) {
-    const templateId =
-      role === ROLE_LANDLORD
-        ? LANDLORD_EMAIL_TEMPLATE
-        : PROSPECT_EMAIL_TEMPLATE
+  static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
+    const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
       to: trim(user.email, ' '),
@@ -57,7 +55,7 @@ class MailService {
         final: l.get('landlord.email_confirmation.final.message', lang),
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
-        position: l.get('email_signature.position.message', lang),        
+        position: l.get('email_signature.position.message', lang),
         tel: l.get('email_signature.tel.message', lang),
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
@@ -68,12 +66,15 @@ class MailService {
         website_val: l.get('website.customer_service.de.message', lang),
         team: l.get('email_signature.team.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
-        enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
 
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
-        username_val:user.email,
-        forgot_link:forgotLink,
-        password_forbidden:l.get('prospect.email_forgot.password.hidden.message', lang),
+        username_val: user.email,
+        forgot_link: forgotLink,
+        password_forbidden: l.get('prospect.email_forgot.password.hidden.message', lang),
         forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
         forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
         forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
@@ -81,23 +82,20 @@ class MailService {
       },
     }
 
-    return sgMail
-    .send(msg)
-    .then(() => {
-      console.log('Welcome Email delivery successfully')
-    }, error => {
-      console.log('Welcome Email delivery failed', error);
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Welcome Email delivery successfully')
+      },
+      (error) => {
+        console.log('Welcome Email delivery failed', error)
         if (error.response) {
-        console.error(error.response.body)
+          console.error(error.response.body)
+        }
       }
-    });    
+    )
   }
   static async sendcodeForgotPasswordMail(email, code, role, lang) {
-
-    const templateId =
-      role === ROLE_LANDLORD
-        ? LANDLORD_EMAIL_TEMPLATE
-        : PROSPECT_EMAIL_TEMPLATE
+    const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
       to: trim(email),
@@ -108,11 +106,11 @@ class MailService {
         salutation: l.get('email_signature.salutation.message', lang),
         intro: l.get('landlord.email_reset.password.intro.message', lang),
         CTA: l.get('landlord.email_reset.password.CTA.message', lang),
-        link: code,        
+        link: code,
         final: l.get('landlord.email_reset.password.final.message', lang),
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
-        position: l.get('email_signature.position.message', lang),        
+        position: l.get('email_signature.position.message', lang),
         tel: l.get('email_signature.tel.message', lang),
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
@@ -122,21 +120,25 @@ class MailService {
         address_val: l.get('address.customer_service.de.message', lang),
         website_val: l.get('website.customer_service.de.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
-        team: l.get('email_signature.team.message', lang),        
-        enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
       },
     }
 
-    return sgMail
-    .send(msg)
-    .then(() => {
-      console.log('Reset Email delivery successfully')
-    }, error => {
-      console.log('Reset Email delivery failed', error);
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Reset Email delivery successfully')
+      },
+      (error) => {
+        console.log('Reset Email delivery failed', error)
         if (error.response) {
-        console.error(error.response.body)
+          console.error(error.response.body)
+        }
       }
-    });
+    )
   }
 
   static async sendcodeForMemberInvitation(email, shortLink) {
@@ -147,7 +149,7 @@ class MailService {
       text: `Here is the link is ${shortLink}`,
       html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
     }
-console.log('SendCodeForMember Email', email )
+    console.log('SendCodeForMember Email', email)
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -186,6 +188,29 @@ console.log('SendCodeForMember Email', email )
     )
   }
 
+  static async sendUserOnboardEmailToAdmin(role) {
+    const subject = role === ROLE_USER ? `New prospect is coming` : `New landlord is coming`
+
+    const msg = {
+      to: FromEmail,
+      from: FROM_ONBOARD_EMAIL, // Use the email address or domain you verified above
+      subject: subject,
+      text: subject,
+    }
+
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
   static async sendInvitationToTenant(email, shortLink) {
     const msg = {
       to: email,
@@ -194,7 +219,7 @@ console.log('SendCodeForMember Email', email )
       text: `Here is the link is ${shortLink}`,
       html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
     }
-    
+
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -210,13 +235,10 @@ console.log('SendCodeForMember Email', email )
     // await Mail.send('mail/send-code', { code }, (message) => {
     //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
     // })
-  }  
+  }
 
   static async sendChangeEmailConfirmation(email, code, role) {
-    const templateId =
-      role === ROLE_LANDLORD
-        ? LANDLORD_EMAIL_TEMPLATE
-        : PROSPECT_EMAIL_TEMPLATE
+    const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
       to: trim(email),
@@ -245,10 +267,7 @@ console.log('SendCodeForMember Email', email )
    *
    */
   static async sendUserConfirmation(email, { code, user, role, lang = 'de', forgotLink = '' }) {
-    const templateId =
-      role === ROLE_LANDLORD
-        ? LANDLORD_EMAIL_TEMPLATE
-        : PROSPECT_EMAIL_TEMPLATE
+    const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
 
     const msg = {
       to: trim(email),
@@ -258,12 +277,12 @@ console.log('SendCodeForMember Email', email )
         subject: l.get('landlord.email_verification.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
         intro: l.get('landlord.email_verification.intro.message', lang),
-        code:l.get('email_signature.code.message', lang),
+        code: l.get('email_signature.code.message', lang),
         code_val: code,
         final: l.get('landlord.email_verification.final.message', lang),
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
-        position: l.get('email_signature.position.message', lang),        
+        position: l.get('email_signature.position.message', lang),
         tel: l.get('email_signature.tel.message', lang),
         email: l.get('email_signature.email.message', lang),
         address: l.get('email_signature.address.message', lang),
@@ -274,13 +293,16 @@ console.log('SendCodeForMember Email', email )
         website_val: l.get('website.customer_service.de.message', lang),
         team: l.get('email_signature.team.message', lang),
         download_app: l.get('email_signature.download.app.message', lang),
-        enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
-        display:'none',
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+        display: 'none',
 
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
-        username_val:user.email,
-        forgot_link:forgotLink,
-        password_forbidden:l.get('prospect.email_forgot.password.hidden.message', lang),
+        username_val: user.email,
+        forgot_link: forgotLink,
+        password_forbidden: l.get('prospect.email_forgot.password.hidden.message', lang),
         forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
         forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
         forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
@@ -288,20 +310,21 @@ console.log('SendCodeForMember Email', email )
       },
     }
 
-console.log('Mail body', msg )    
-    return sgMail
-    .send(msg)
-    .then(() => {
-      console.log('Email delivery successfully')
-    }, error => {
-      console.log('Email delivery failed', error)
-      if (error.response) {
-        console.error(error.response.body)
-        throw new HttpException(error.response.body)
-      }else {
-        throw new HttpException(error)
+    console.log('Mail body', msg)
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+          throw new HttpException(error.response.body)
+        } else {
+          throw new HttpException(error)
+        }
       }
-    });
+    )
   }
 
   async sendInviteToViewEstate(values) {
@@ -344,16 +367,17 @@ console.log('Mail body', msg )
       html: `<h3> code: <b>${values.code}</b></h3>`,
     }
 
-    return sgMail
-    .send(msg)
-    .then(() => {
-      console.log('Email delivery successfully')
-    }, error => {
-      console.log('Email delivery failed', error);
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
         if (error.response) {
-        console.error(error.response.body)
+          console.error(error.response.body)
+        }
       }
-    });
+    )
   }
 }
 
