@@ -24,7 +24,7 @@ class LandlordOwnsThisEstate {
         ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE
       )
     }
-    await next()
+    return await next()
   }
 }
 

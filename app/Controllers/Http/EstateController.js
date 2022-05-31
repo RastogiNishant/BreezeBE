@@ -20,6 +20,7 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 const User = use('App/Models/User')
+const Amenity = use('App/Models/Amenity')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
@@ -192,15 +193,17 @@ class EstateController {
    *
    */
   async getEstates({ request, auth, response }) {
-    const { limit, page, ...params } = request.all()
+    let { limit, page, ...params } = request.all()
+    if (!isEmpty(request.post())) {
+      params = request.post()
+    }
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
     //
-    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id])
+    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id], params)
     result = { ...result, ...lettingTypeCounts }
-    result.total_filtered_properties = result.total
-    response.res(result)
+    return response.res(result)
   }
 
   /**
@@ -226,21 +229,22 @@ class EstateController {
           .with('room_amenities', function (q) {
             q.select(
               Database.raw(
-                `room_amenities.*,
+                `amenities.*,
               case
                 when
-                  room_amenities.type='amenity'
+                  amenities.type='amenity'
                 then
                   "options"."title"
                 else
-                  "room_amenities"."amenity"
+                  "amenities"."amenity"
               end as amenity`
               )
             )
-              .from('room_amenities')
-              .leftJoin('options', 'options.id', 'room_amenities.option_id')
-              .whereNot('status', STATUS_DELETE)
-              .orderBy('sequence_order', 'desc')
+              .from('amenities')
+              .leftJoin('options', 'options.id', 'amenities.option_id')
+              .where('amenities.location', 'room')
+              .whereNot('amenities.status', STATUS_DELETE)
+              .orderBy('amenities.sequence_order', 'desc')
           })
       })
       .first()

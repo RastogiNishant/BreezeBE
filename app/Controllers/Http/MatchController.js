@@ -231,7 +231,7 @@ class MatchController {
     const { estate_id, tenant_id } = request.all()
 
     try {
-      await MatchService.cancelVisit(estate_id, tenant_id)
+      await MatchService.cancelVisitByLandlord(estate_id, tenant_id)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -565,6 +565,12 @@ class MatchController {
     })
   }
 
+  async getLandlordUpcomingVisits({ auth, response }) {
+    const estates = await MatchService.getLandlordUpcomingVisits(auth.user.id)
+    const fields = TENANT_MATCH_FIELDS
+    return response.res(estates.toJSON({ isShort: true, fields }))
+  }
+
   async getMatchesCountsTenant({ auth, response }) {
     const userId = auth.user.id
     const counts = await MatchService.getMatchesCountsTenant(userId)
@@ -759,6 +765,8 @@ class MatchController {
       'date',
       'user_id',
       'visit_status',
+      'visit_start_date',
+      'visit_end_date',
       'delay',
       'u_status',
       'updated_at',

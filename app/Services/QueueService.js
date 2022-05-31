@@ -6,6 +6,7 @@ const EstateService = use('App/Services/EstateService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
+const { isFunction } = require('lodash')
 
 const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
@@ -25,7 +26,9 @@ const {
  */
 const wrapException = async (func, params = []) => {
   try {
-    return func(...params)
+    if (isFunction(func)) {
+      return func(...params)
+    }
   } catch (e) {
     Logger.error(e)
   }

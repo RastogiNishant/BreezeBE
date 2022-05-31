@@ -314,6 +314,9 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.post('/with-filters', 'EstateController.getEstates').middleware([
+    'valid:Pagination,EstateFilter',
+  ])
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
@@ -338,11 +341,34 @@ Route.group(() => {
   Route.put('/extend', 'EstateController.extendEstate')
   Route.get('/deactivate', 'EstateController.deactivateEstate')
 
-  Route.get('/upcomingShows', 'TimeSlotController.getUpcomingShows')
+  Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
+
+  //Estate Amenities
+  Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware([
+    'valid:EstateId',
+    'LandlordOwnsThisEstate',
+  ])
+  Route.get('/:estate_id/amenities/:location', 'EstateAmenityController.get').middleware([
+    'valid:EstateId,EstateAmenitiesLocation',
+    'LandlordOwnsThisEstate',
+  ])
+  Route.post('/:estate_id/amenities', 'EstateAmenityController.add').middleware([
+    'valid:EstateId,CreateEstateAmenity',
+    'LandlordOwnsThisEstate',
+  ])
+  Route.put('/:estate_id/amenities/:location', 'EstateAmenityController.update').middleware([
+    'valid:EstateId,EstateAmenitiesLocation,UpdateEstateAmenity',
+    'LandlordOwnsThisEstate',
+  ])
+  Route.delete('/:estate_id/amenities/:location', 'EstateAmenityController.delete').middleware([
+    'valid:EstateId,EstateAmenitiesLocation,Id',
+    'LandlordOwnsThisEstate',
+  ])
+
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
   // Rooms manage
