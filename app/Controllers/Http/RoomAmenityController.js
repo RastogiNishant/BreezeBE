@@ -12,15 +12,16 @@ const Database = use('Database')
 const { reverse } = require('lodash')
 const Promise = require('bluebird')
 
-const RoomAmenity = use('App/Models/RoomAmenity')
+const RoomAmenity = use('App/Models/Amenity')
 
 class RoomAmenityController {
   async add({ request, auth, response }) {
     let { amenity, room_id, type, option_id } = request.all()
 
     let currentRoomAmenities = await RoomAmenity.query()
-      .whereNotIn('status', [STATUS_DELETE])
+      .where('status', STATUS_ACTIVE)
       .where('room_id', room_id)
+      .where('location', 'room')
       .orderBy('sequence_order', 'desc')
       .fetch()
     let sequence_order = 1
@@ -34,6 +35,7 @@ class RoomAmenityController {
         .whereNotIn('status', [STATUS_DELETE])
         .where('type', 'custom_amenity')
         .where('room_id', room_id)
+        .where('location', 'room')
         .orderBy('sequence_order', 'desc')
         .fetch()
       currentRoomCustomAmenities = currentRoomCustomAmenities.toJSON()
@@ -55,6 +57,7 @@ class RoomAmenityController {
       newRoomAmenity.room_id = room_id
       newRoomAmenity.status = STATUS_ACTIVE
       newRoomAmenity.sequence_order = sequence_order
+      newRoomAmenity.location = 'room'
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
     } else if (type === 'amenity') {
@@ -72,6 +75,7 @@ class RoomAmenityController {
         room_id: room_id,
         option_id,
         status: STATUS_ACTIVE,
+        location: 'room',
       })
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
@@ -80,14 +84,14 @@ class RoomAmenityController {
     const amenities = await RoomAmenity.query()
       .select(
         Database.raw(
-          `room_amenities.*,
+          `amenities.*,
           case
             when
-              room_amenities.type='amenity'
+              "amenities".type='amenity'
             then
               "options"."title"
             else
-              "room_amenities"."amenity"
+              "amenities"."amenity"
           end as amenity`
         )
       )
@@ -95,6 +99,7 @@ class RoomAmenityController {
         this.on('options.id', 'option_id')
       })
       .where('room_id', room_id)
+      .where('location', 'room')
       .whereNotIn('status', [STATUS_DELETE])
       .orderBy('sequence_order', 'desc')
       .fetch()
@@ -111,6 +116,8 @@ class RoomAmenityController {
     const affectedRows = await RoomAmenity.query()
       .where('id', id)
       .where('room_id', room_id)
+      .where('location', 'room') //this is in preparation if ever
+      //we have outside room amenity and we have location: outside_room
       .update({ status: STATUS_DELETE })
     response.res({ deleted: affectedRows })
   }
@@ -124,12 +131,14 @@ class RoomAmenityController {
         affectedRows = await RoomAmenity.query()
           .where('id', id)
           .where('type', 'custom_amenity')
+          .where('location', 'room')
           .update({ amenity })
         break
       case 'reorder':
         const currentCustomAmenities = await RoomAmenity.query()
           .whereIn('id', amenity_ids)
           .where('room_id', room_id)
+          .where('location', 'room')
           .whereNotIn('status', [STATUS_DELETE])
           .fetch()
         if (currentCustomAmenities.rows.length !== amenity_ids.length) {
@@ -157,14 +166,14 @@ class RoomAmenityController {
     const amenities = await RoomAmenity.query()
       .select(
         Database.raw(
-          `room_amenities.*,
+          `amenities.*,
           case
             when
-              room_amenities.type='amenity'
+              "amenities".type='amenity'
             then
               "options"."title"
             else
-              "room_amenities"."amenity"
+              "amenities"."amenity"
           end as amenity`
         )
       )
@@ -172,6 +181,7 @@ class RoomAmenityController {
         this.on('options.id', 'option_id')
       })
       .where('room_id', room_id)
+      .where('amenities.location', 'room')
       .whereNotIn('status', [STATUS_DELETE])
       .orderBy('sequence_order', 'desc')
       .fetch()

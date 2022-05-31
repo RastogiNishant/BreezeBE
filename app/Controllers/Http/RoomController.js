@@ -263,11 +263,12 @@ class RoomController {
     const { estate_id, room_id } = request.all()
     let room = await Room.query()
       .select(Database.raw('rooms.*'))
-      .select(Database.raw('json_agg (room_amenities order by sequence_order desc) as amenities'))
-      .leftJoin('room_amenities', function () {
-        this.on('room_amenities.room_id', 'rooms.id')
-          .on('room_amenities.room_id', room_id)
-          .on(Database.raw(`"room_amenities"."status" != ${STATUS_DELETE}`))
+      .select(Database.raw('json_agg (amenities order by sequence_order desc) as amenities'))
+      .leftJoin('amenities', function () {
+        this.on('amenities.room_id', 'rooms.id')
+          .on('amenities.room_id', room_id)
+          .on(Database.raw(`"amenities"."status" != ${STATUS_DELETE}`))
+          .on(Database.raw(`"amenities"."location" = 'room'`))
       })
       .where('rooms.id', room_id)
       .where('estate_id', estate_id)

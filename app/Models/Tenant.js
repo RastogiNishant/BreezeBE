@@ -62,6 +62,8 @@ class Tenant extends Model {
       'updated_at',
       'profession',
       'match_type',
+      'total_completed_proofs',
+      'submitted_proofs',
     ]
   }
 
