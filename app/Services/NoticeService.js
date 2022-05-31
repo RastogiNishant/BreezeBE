@@ -8,8 +8,6 @@ const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
-const EstateService = use('App/Services/EstateService')
-const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
 const Logger = use('Logger')
 
