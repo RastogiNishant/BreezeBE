@@ -877,7 +877,7 @@ class EstateController {
   }
 
   async osmanTest() {
-    await EstateService.handleExpiredEstates()
+    await EstateService.handleShowDateEndedEstates()
     return true
   }
 }

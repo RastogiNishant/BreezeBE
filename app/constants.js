@@ -390,6 +390,7 @@ const constants = {
   NOTICE_TYPE_ZENDESK_NOTIFY: 'notification_zendesk_notify',
   NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN: 'notification_user_verification_by_admin',
   NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER: 'notification_estate_show_time_is_over',
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER: 'notification_prospect_invite_reminder',
   NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED: 'notification_prospect_is_not_interested',
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP: 'notification_landlord_moved_prospect_to_top',
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED:
@@ -426,6 +427,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID: 34,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID: 35,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID: 36,
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 39,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',

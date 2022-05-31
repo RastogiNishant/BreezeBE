@@ -72,6 +72,7 @@ const {
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
   MIN_TIME_SLOT,
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -786,6 +787,18 @@ class NoticeService {
 
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendLandlordEstateShowDateIsEnded(notices)
+  }
+
+  static async sendProspectsWillLoseBookingTimeSlotChance(estates) {
+    const notices = estates.map(({ estate_id, address, prospect_id, cover }) => ({
+      user_id: prospect_id,
+      type: NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID,
+      data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendProspectWillLoseBookingTimeSlotChance(notices)
   }
 
   /**

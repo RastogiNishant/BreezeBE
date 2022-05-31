@@ -71,6 +71,8 @@ const {
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
   NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER,
   NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID,
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER,
 } = require('../constants')
 const { lang } = require('moment')
 
@@ -104,6 +106,7 @@ const mapping = [
     NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED,
   ],
   [NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID, NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED],
+  [NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID, NOTICE_TYPE_PROSPECT_INVITE_REMINDER],
   [NOTICE_TYPE_VISIT_DELAY_ID, NOTICE_TYPE_VISIT_DELAY],
   [NOTICE_TYPE_ZENDESK_NOTIFY_ID, NOTICE_TYPE_ZENDESK_NOTIFY],
 ]
@@ -619,6 +622,18 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
         capitalize(data.estate_address) + ' \n' + l.get('landlord.notification.tip.show_over', lang)
+      )
+    })
+  }
+
+  static async sendProspectWillLoseBookingTimeSlotChance(notices) {
+    const title = 'prospect.notification.event.invite_reminder'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.invite_reminder.message', lang)
       )
     })
   }

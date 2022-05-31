@@ -1779,17 +1779,17 @@ class MatchService {
   /**
    *
    */
-  static async updateVisitStatusLandlord(estateId, data) {
+  static async updateVisitStatusLandlord(estateId, user_id, data) {
     const currentDay = moment().startOf('day')
     try {
       const visit = await Visit.query()
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .first()
 
       await Database.table('visits')
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id: user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .update(data)

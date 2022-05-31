@@ -32,8 +32,6 @@ const {
   LETTING_TYPE_NA,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
-  DISLIKE_REASON_EXPIRED_SHOW_DATE,
-  DISLIKE_REASON_EXPIRED_ESTATE,
   MIN_TIME_SLOT,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
@@ -660,7 +658,6 @@ class EstateService {
   //Finds and handles the estates that available date is over
   static async handleExpiredEstates() {
     const estateIds = (await this.fetchExpiredEstates()).rows.map((i) => i.id)
-    // return console.log({ estateIds })
     if (isEmpty(estateIds)) {
       return false
     }
@@ -672,7 +669,6 @@ class EstateService {
         .whereIn('id', estateIds)
         .transacting(trx)
 
-      await this.handleExpiredEstatesMatches(estateIds, trx)
       await NoticeService.landLandlordEstateExpired(estateIds)
       await trx.commit()
     } catch (e) {
@@ -682,6 +678,14 @@ class EstateService {
     }
   }
 
+  static async fetchExpiredEstates() {
+    return Estate.query()
+      .select('id')
+      .where('status', STATUS_ACTIVE)
+      .where('available_date', '<=', moment().format(DATE_FORMAT))
+      .fetch()
+  }
+
   //Finds and handles the estates that show date is over between now and 5 minutes before
   static async handleShowDateEndedEstates() {
     const showedEstates = (await this.fetchShowDateEndedEstatesFor5Minutes()).rows
@@ -689,7 +693,6 @@ class EstateService {
     if (isEmpty(estateIds)) {
       return false
     }
-
     const trx = await Database.beginTransaction()
     try {
       await this.handleShowDateEndedEstatesMatches(estateIds, trx)
@@ -704,87 +707,74 @@ class EstateService {
     return true
   }
 
-  static async fetchExpiredEstates() {
-    return Estate.query()
-      .select('id')
-      .where('status', STATUS_ACTIVE)
-      .where('available_date', '<=', moment().format(DATE_FORMAT))
-      .fetch()
-  }
-
   static async fetchShowDateEndedEstatesFor5Minutes() {
     const start = moment().startOf('minute').subtract(5, 'minutes')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
-    return Estate.query()
-      .whereIn('status', [STATUS_ACTIVE])
-      .whereHas('slots', (estateQuery) => {
-        estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
-        estateQuery.where('end_at', '<=', end.format(DATE_FORMAT))
-      })
-      .fetch()
-  }
-
-  static async handleExpiredEstatesMatches(estateIds, trx) {
-    await this.deleteEstatesLikesAndDislikesBatch(estateIds, trx)
-    await this.createDislikeFromShowDateEndedEstatesMatches(
-      estateIds,
-      DISLIKE_REASON_EXPIRED_ESTATE,
-      trx
+    return Database.raw(
+      `
+        SELECT estates.* FROM estates
+        INNER JOIN time_slots on time_slots.estate_id = estates.id
+        WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
+        AND estates.status = ${STATUS_ACTIVE}
+        AND end_at >= '${start.format(DATE_FORMAT)}'
+        AND end_at <= '${end.format(DATE_FORMAT)}'
+        ORDER BY estates.id
+      `
     )
-    await this.deleteShowDateEndedEstatesMatches(estateIds, trx)
   }
 
   static async handleShowDateEndedEstatesMatches(estateIds, trx) {
-    await this.deleteEstatesLikesAndDislikesBatch(estateIds, trx)
-    await this.createDislikeFromShowDateEndedEstatesMatches(
-      estateIds,
-      DISLIKE_REASON_EXPIRED_SHOW_DATE,
-      trx
-    )
-    await this.deleteShowDateEndedEstatesMatches(estateIds, trx)
-  }
-
-  static async deleteEstatesLikesAndDislikesBatch(estateIds = [], trx) {
-    await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
-    await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
-  }
-
-  static async createDislikeFromShowDateEndedEstatesMatches(estateIds = [], reason, trx) {
-    console.log({ estateIds })
-    // CREATE DISLIKE FOR AUTOMATICALLY DELETED MATCHES' PROSPECT USERS
-    const matches = await Match.query()
-      .select('user_id', 'estate_id')
-      .whereIn('status', [MATCH_STATUS_KNOCK, MATCH_STATUS_INVITE])
-      .whereIn('estate_id', estateIds)
-      .fetch()
-
-    console.log({ matches })
-
-    const promises = []
-    matches.rows.map(({ user_id, estate_id }) => {
-      promises.push(
-        Database.table('dislikes').insert({ user_id, estate_id, reason }).transacting(trx)
-      )
-    })
-    await Promise.all(promises)
-
-    // We will send the notification to the prospects here in the future
-    // TODO: SEND NOTIFICATION HERE
-  }
-
-  static async deleteShowDateEndedEstatesMatches(estateIds = [], trx) {
+    // We move "invite" matches to "knock".
+    // Because estate's show date is over and they are not able to pick timeslot anymore
     await Database.table('matches')
-      .whereIn('status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK, MATCH_STATUS_INVITE])
+      .where('status', MATCH_STATUS_INVITE)
       .whereIn('estate_id', estateIds)
-      .delete()
+      .update({ status: MATCH_STATUS_KNOCK })
       .transacting(trx)
+  }
+
+  static async handleShowDateWillEndInAnHourEstates() {
+    const showDateWillEndEstates = (await this.fetchShowDateWillEndInAnHourEstates()).rows
+    if (isEmpty(showDateWillEndEstates)) {
+      return false
+    }
+
+    try {
+      await NoticeService.sendProspectsWillLoseBookingTimeSlotChance(showDateWillEndEstates)
+    } catch (e) {
+      console.log(e)
+      return false
+    }
+
+    return true
+  }
+
+  static async fetchShowDateWillEndInAnHourEstates() {
+    const anHourLater = moment().add(1, 'hour').startOf('minute')
+    const start = anHourLater.subtract(5, 'minutes')
+    const end = anHourLater.clone().add(MIN_TIME_SLOT, 'minutes')
+
+    return Database.raw(
+      `
+        SELECT estates.id as estate_id, matches.user_id as prospect_id, address, cover FROM estates
+        INNER JOIN time_slots on time_slots.estate_id = estates.id
+        INNER JOIN matches on matches.estate_id = estates.id
+        WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
+        AND matches.status = ${MATCH_STATUS_INVITE}
+        AND estates.status = ${STATUS_ACTIVE}
+        AND end_at >= '${start.format(DATE_FORMAT)}'
+        AND end_at <= '${end.format(DATE_FORMAT)}'
+        ORDER BY estates.id
+      `
+    )
   }
 
   /**
    *
    */
   static async publishEstate(estate, request) {
+    //TODO: We must add transaction here
     const User = use('App/Models/User')
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) return
@@ -792,12 +782,9 @@ class EstateService {
       await CompanyService.validateUserContacts(estate.user_id)
     }
     await props({
-      // TODO: It's in clarification
-      // delMatches: Database.table('matches').where({ estate_id: estate.id }).delete(),
+      delMatches: Database.table('matches').where({ estate_id: estate.id }).delete(),
       delLikes: Database.table('likes').where({ estate_id: estate.id }).delete(),
       delDislikes: Database.table('dislikes').where({ estate_id: estate.id }).delete(),
-    }).then((results) => {
-      console.log(results.delDislikes)
     })
     await estate.publishEstate()
     logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
