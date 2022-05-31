@@ -16,8 +16,8 @@ class CreateEstateAmenity extends Base {
           .string()
           .test(
             'len',
-            `Custom amenity must be less than or equal to ${ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH} characters`,
-            (val) => val.length >= 1 && val.length <= ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH
+            `Custom amenity must be at least one character and less than or equal to ${ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH} characters`,
+            (val) => val && val.length >= 1 && val.length <= ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH
           )
           .typeError('Custom amenity must have at least 1 character.')
           .required('Custom amenity name is required.'),

@@ -92,6 +92,7 @@ class EstateAmenityController {
         .where('location', location)
         .orderBy('sequence_order', 'desc')
         .fetch()
+
       currentEstateCustomAmenities = currentEstateCustomAmenities.toJSON()
       if (currentEstateCustomAmenities.length >= ESTATE_CUSTOM_AMENITIES_MAX_COUNT) {
         throw new HttpException(
