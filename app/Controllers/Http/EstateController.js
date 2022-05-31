@@ -20,6 +20,7 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 const User = use('App/Models/User')
+const Amenity = use('App/Models/Amenity')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
@@ -228,21 +229,22 @@ class EstateController {
           .with('room_amenities', function (q) {
             q.select(
               Database.raw(
-                `room_amenities.*,
+                `amenities.*,
               case
                 when
-                  room_amenities.type='amenity'
+                  amenities.type='amenity'
                 then
                   "options"."title"
                 else
-                  "room_amenities"."amenity"
+                  "amenities"."amenity"
               end as amenity`
               )
             )
-              .from('room_amenities')
-              .leftJoin('options', 'options.id', 'room_amenities.option_id')
-              .whereNot('status', STATUS_DELETE)
-              .orderBy('sequence_order', 'desc')
+              .from('amenities')
+              .leftJoin('options', 'options.id', 'amenities.option_id')
+              .where('amenities.location', 'room')
+              .whereNot('amenities.status', STATUS_DELETE)
+              .orderBy('amenities.sequence_order', 'desc')
           })
       })
       .first()
