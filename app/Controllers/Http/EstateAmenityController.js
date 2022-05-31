@@ -8,7 +8,7 @@ const {
 } = require('../../constants')
 
 class EstateAmenityController {
-  async get({ auth, request, response }) {
+  async get({ request, response }) {
     const { location, estate_id } = request.all()
     let amenities
 
@@ -17,7 +17,7 @@ class EstateAmenityController {
         Database.raw(`location, json_agg(damenities.* order by sequence_order desc) as amenities`)
       )
         .from(
-          Database.raw(`(select *,
+          Database.raw(`(select amenities.*,
         case
           when
             "amenities".type='amenity'
@@ -35,13 +35,14 @@ class EstateAmenityController {
         )
         .where('location', location)
         .where('estate_id', estate_id)
+        .where('status', STATUS_ACTIVE)
         .groupBy('location')
     } else {
       amenities = await Database.select(
         Database.raw(`location, json_agg(damenities.* order by sequence_order desc) as amenities`)
       )
         .from(
-          Database.raw(`(select *,
+          Database.raw(`(select amenities.*,
             case
               when
                 "amenities".type='amenity'
@@ -59,6 +60,7 @@ class EstateAmenityController {
              ) as damenities`)
         )
         .where('estate_id', estate_id)
+        .where('status', STATUS_ACTIVE)
         .groupBy('location')
     }
 
@@ -135,7 +137,7 @@ class EstateAmenityController {
       Database.raw(`location, json_agg(damenities.* order by sequence_order desc) as amenities`)
     )
       .from(
-        Database.raw(`(select *,
+        Database.raw(`(select amenities.*,
           case
             when
               "amenities".type='amenity'
@@ -154,11 +156,21 @@ class EstateAmenityController {
       )
       .where('estate_id', estate_id)
       .groupBy('location')
-    response.res({
+    return response.res({
       newEstateAmenityId,
       total: amenities.length,
       amenities: amenities,
     })
+  }
+
+  async delete({ request, response }) {
+    const { estate_id, id, location } = request.all()
+    const affectedRows = await Amenity.query()
+      .where('estate_id', estate_id)
+      .where('location', location)
+      .where('id', id)
+      .update({ status: STATUS_DELETE })
+    return response.res({ deleted: affectedRows })
   }
 }
 
