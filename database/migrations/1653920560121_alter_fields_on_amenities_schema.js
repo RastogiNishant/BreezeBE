@@ -9,6 +9,7 @@ class AlterFieldsOnAmenitiesSchema extends Schema {
       // alter table
       table.integer('room_id').unsigned().nullable().alter()
       table.integer('estate_id').unsigned().nullable()
+      table.string('amenity', 35).nullable().alter()
       table.string('location', 32).index()
     })
   }
@@ -16,7 +17,6 @@ class AlterFieldsOnAmenitiesSchema extends Schema {
   down() {
     this.table('amenities', (table) => {
       // reverse alternations
-      table.integer('room_id').unsigned().notNullable().alter()
       table.dropColumn('estate_id')
       table.dropColumn('location')
     })
