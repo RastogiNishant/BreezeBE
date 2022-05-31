@@ -9,9 +9,7 @@ class ChangeRoomAmenitiesToAmenitiesSchema extends Schema {
   }
 
   down() {
-    this.table('change_room_amenities_to_amenities', (table) => {
-      this.rename('amenities', 'room_amenities')
-    })
+    this.rename('amenities', 'room_amenities')
   }
 }
 

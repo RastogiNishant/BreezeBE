@@ -5,8 +5,8 @@ const Schema = use('Schema')
 const Database = use('Database')
 
 class SetLocationValuesForExistingAmenitiesSchema extends Schema {
-  up() {
-    Database.raw(`update amenities set location='room' where "room_id" is not null`)
+  async up() {
+    await Database.raw(`update amenities set location='room' where "room_id" is not null`)
   }
 
   down() {
