@@ -12,15 +12,16 @@ const Database = use('Database')
 const { reverse } = require('lodash')
 const Promise = require('bluebird')
 
-const RoomAmenity = use('App/Models/RoomAmenity')
+const RoomAmenity = use('App/Models/Amenity')
 
 class RoomAmenityController {
   async add({ request, auth, response }) {
     let { amenity, room_id, type, option_id } = request.all()
 
     let currentRoomAmenities = await RoomAmenity.query()
-      .whereNotIn('status', [STATUS_DELETE])
+      .where('status', STATUS_ACTIVE)
       .where('room_id', room_id)
+      .where('location', 'room')
       .orderBy('sequence_order', 'desc')
       .fetch()
     let sequence_order = 1
@@ -34,6 +35,7 @@ class RoomAmenityController {
         .whereNotIn('status', [STATUS_DELETE])
         .where('type', 'custom_amenity')
         .where('room_id', room_id)
+        .where('location', 'room')
         .orderBy('sequence_order', 'desc')
         .fetch()
       currentRoomCustomAmenities = currentRoomCustomAmenities.toJSON()
@@ -80,14 +82,14 @@ class RoomAmenityController {
     const amenities = await RoomAmenity.query()
       .select(
         Database.raw(
-          `room_amenities.*,
+          `amenities.*,
           case
             when
-              room_amenities.type='amenity'
+              "amenities".type='amenity'
             then
               "options"."title"
             else
-              "room_amenities"."amenity"
+              "amenities"."amenity"
           end as amenity`
         )
       )
@@ -157,14 +159,14 @@ class RoomAmenityController {
     const amenities = await RoomAmenity.query()
       .select(
         Database.raw(
-          `room_amenities.*,
+          `amenities.*,
           case
             when
-              room_amenities.type='amenity'
+              "amenities".type='amenity'
             then
               "options"."title"
             else
-              "room_amenities"."amenity"
+              "amenities"."amenity"
           end as amenity`
         )
       )

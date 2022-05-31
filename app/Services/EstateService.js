@@ -950,6 +950,7 @@ class EstateService {
       'bath_options',
       'kitchen_options',
       'equipment',
+      'verified_address',
     ])
     return lettingTypeCounts
   }
