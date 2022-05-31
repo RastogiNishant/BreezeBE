@@ -2,7 +2,7 @@ const Queue = use('Queue')
 const Logger = use('Logger')
 const MemberService = use('App/Services/MemberService')
 const NoticeService = use('App/Services/NoticeService')
-const EstateService = use('App/Services/EstateService')
+const JobsForQueueService = use('App/Services/JobsForQueueService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
@@ -65,7 +65,7 @@ class QueueService {
    */
   static async sendEvery5Min() {
     return Promise.all([
-      wrapException(EstateService.moveJobsToExpire),
+      wrapException(JobsForQueueService.moveJobsToExpire),
       wrapException(NoticeService.landlordVisitIn90m),
       wrapException(NoticeService.prospectVisitIn90m),
       wrapException(NoticeService.getNewWeekMatches),
@@ -116,9 +116,9 @@ class QueueService {
     try {
       switch (job.name) {
         case GET_POINTS:
-          return EstateService.updateEstatePoint(job.data.estateId)
+          return JobsForQueueService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
-          return EstateService.updateEstateCoord(job.data.estateId)
+          return JobsForQueueService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case SCHEDULED_EVERY_5M_JOB:
