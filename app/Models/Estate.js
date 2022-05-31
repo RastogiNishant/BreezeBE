@@ -225,6 +225,11 @@ class Estate extends Model {
         instance.stp_garage = 0
       }
 
+      if (instance.dirty.address) {
+        instance.coord = null
+        instance.coord_raw = null
+      }
+
       if (
         instance.dirty.extra_costs &&
         (instance.dirty.heating_costs || instance.dirty.additional_costs)
