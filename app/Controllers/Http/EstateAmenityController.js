@@ -5,7 +5,9 @@ const {
   STATUS_ACTIVE,
   STATUS_DELETE,
   ESTATE_CUSTOM_AMENITIES_MAX_COUNT,
+  ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH,
 } = require('../../constants')
+const { reverse } = require('lodash')
 
 class EstateAmenityController {
   async get({ request, response }) {
@@ -171,6 +173,47 @@ class EstateAmenityController {
       .where('id', id)
       .update({ status: STATUS_DELETE })
     return response.res({ deleted: affectedRows })
+  }
+
+  async update({ request, response }) {
+    const { action, amenity, amenity_ids, id, estate_id, location } = request.all()
+    let affectedRows = 0
+    switch (action) {
+      case 'update':
+        //we can only update a custom_amenity. If you want to update an amenity. Just delete.
+        affectedRows = await Amenity.query()
+          .where('id', id)
+          .where('type', 'custom_amenity')
+          .where('location', location)
+          .where('estate_id', estate_id)
+          .where('status', STATUS_ACTIVE)
+          .update({ amenity })
+        break
+      case 'reorder':
+        const currentAmenities = await Amenity.query()
+          .whereIn('id', amenity_ids)
+          .where('location', location)
+          .where('estate_id', estate_id)
+          .where('status', STATUS_ACTIVE)
+          .fetch()
+        if (currentAmenities.rows.length !== amenity_ids.length) {
+          throw new HttpException(
+            'Error found while validating amenity ids',
+            422,
+            ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH
+          )
+        }
+        Promise.all(
+          await reverse(amenity_ids).map(async (id, index) => {
+            await Amenity.query()
+              .where('id', id)
+              .update({ sequence_order: index + 1 })
+          })
+        )
+        affectedRows = 1
+        break
+    }
+    response.res(affectedRows > 0)
   }
 }
 

@@ -360,10 +360,10 @@ Route.group(() => {
     'valid:EstateId,CreateEstateAmenity',
     'LandlordOwnsThisEstate',
   ])
-  Route.put(
-    '/:estate_id/amenities/:location',
-    'EstateAmenityController.updateAmenities'
-  ).middleware(['valid:EstateId,EstateAmenitiesLocation', 'LandlordOwnsThisEstate'])
+  Route.put('/:estate_id/amenities/:location', 'EstateAmenityController.update').middleware([
+    'valid:EstateId,EstateAmenitiesLocation,UpdateEstateAmenity',
+    'LandlordOwnsThisEstate',
+  ])
   Route.delete('/:estate_id/amenities/:location', 'EstateAmenityController.delete').middleware([
     'valid:EstateId,EstateAmenitiesLocation,Id',
     'LandlordOwnsThisEstate',
