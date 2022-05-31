@@ -57,6 +57,7 @@ class RoomAmenityController {
       newRoomAmenity.room_id = room_id
       newRoomAmenity.status = STATUS_ACTIVE
       newRoomAmenity.sequence_order = sequence_order
+      newRoomAmenity.location = 'room'
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
     } else if (type === 'amenity') {
@@ -74,6 +75,7 @@ class RoomAmenityController {
         room_id: room_id,
         option_id,
         status: STATUS_ACTIVE,
+        location: 'room',
       })
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
@@ -97,6 +99,7 @@ class RoomAmenityController {
         this.on('options.id', 'option_id')
       })
       .where('room_id', room_id)
+      .where('location', 'room')
       .whereNotIn('status', [STATUS_DELETE])
       .orderBy('sequence_order', 'desc')
       .fetch()
@@ -113,6 +116,8 @@ class RoomAmenityController {
     const affectedRows = await RoomAmenity.query()
       .where('id', id)
       .where('room_id', room_id)
+      .where('location', 'room') //this is in preparation if ever
+      //we have outside room amenity and we have location: outside_room
       .update({ status: STATUS_DELETE })
     response.res({ deleted: affectedRows })
   }
@@ -126,12 +131,14 @@ class RoomAmenityController {
         affectedRows = await RoomAmenity.query()
           .where('id', id)
           .where('type', 'custom_amenity')
+          .where('location', 'room')
           .update({ amenity })
         break
       case 'reorder':
         const currentCustomAmenities = await RoomAmenity.query()
           .whereIn('id', amenity_ids)
           .where('room_id', room_id)
+          .where('location', 'room')
           .whereNotIn('status', [STATUS_DELETE])
           .fetch()
         if (currentCustomAmenities.rows.length !== amenity_ids.length) {
@@ -174,6 +181,7 @@ class RoomAmenityController {
         this.on('options.id', 'option_id')
       })
       .where('room_id', room_id)
+      .where('amenities.location', 'room')
       .whereNotIn('status', [STATUS_DELETE])
       .orderBy('sequence_order', 'desc')
       .fetch()
