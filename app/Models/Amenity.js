@@ -3,7 +3,7 @@
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = require('./BaseModel')
 
-class RoomAmenity extends Model {
+class Amenity extends Model {
   static get columns() {
     return [
       'id',
@@ -14,6 +14,8 @@ class RoomAmenity extends Model {
       'sequence_order',
       'added_by',
       'type',
+      'estate_id',
+      'location',
     ]
   }
 
@@ -24,6 +26,10 @@ class RoomAmenity extends Model {
   room() {
     return this.belongsTo('App/Models/Room', 'room_id', 'id')
   }
+
+  estate() {
+    return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
+  }
 }
 
-module.exports = RoomAmenity
+module.exports = Amenity
