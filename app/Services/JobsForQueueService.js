@@ -1,6 +1,7 @@
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const GeoService = use('App/Services/Geoservice')
+const NoticeService = use('App/Services/NoticeService')
 
 class JobsForQueueService {
   static async updateEstateCoord(estateId) {
@@ -60,7 +61,7 @@ class JobsForQueueService {
   }
 
   static async updateEstatePoint(estateId) {
-    const estate = await this.getQuery().where('id', estateId).first()
+    const estate = await Estate.query().where('id', estateId).first()
     if (!estate) {
       throw new AppException(`Invalid estate ${estateId}`)
     }
