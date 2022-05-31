@@ -346,6 +346,24 @@ Route.group(() => {
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
+
+  //Estate Amenities
+  Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware(['valid:EstateId'])
+  Route.get('/:estate_id/amenities/:location', 'EstateAmenityController.get').middleware([
+    'valid:EstateId,EstateAmenitiesLocation',
+  ])
+  Route.post('/:estate_id/amenities', 'EstateAmenityController.add').middleware([
+    'valid:EstateId,CreateEstateAmenity',
+  ])
+  Route.put(
+    '/:estate_id/amenities/:location',
+    'EstateAmenityController.updateAmenities'
+  ).middleware(['valid:EstateId,EstateAmenitiesLocation'])
+  Route.delete(
+    '/:estate_id/amenities/:location',
+    'EstateAmenityController.deleteAmenities'
+  ).middleware(['valid:EstateId,EstateAmenitiesLocation'])
+
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
   // Rooms manage
