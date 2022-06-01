@@ -35,6 +35,30 @@ class EstateFilter extends Base {
           ),
         })
         .nullable(),
+      customArea: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.number().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      customFloor: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.number().nullable(),
+            })
+          ),
+        })
+        .nullable(),
       property_id: yup
         .object()
         .shape({
@@ -47,7 +71,7 @@ class EstateFilter extends Base {
           ),
         })
         .nullable(),
-      net_rent: yup
+      customRent: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
@@ -59,14 +83,26 @@ class EstateFilter extends Base {
           ),
         })
         .nullable(),
-      area: yup
+      customNumFloor: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.number().nullable(),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      rooms_number: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
             })
           ),
         })

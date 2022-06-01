@@ -52,7 +52,7 @@ class EstateFilters {
     house: PROPERTY_TYPE_HOUSE,
     site: PROPERTY_TYPE_SITE,
   }
-  possibleStringParams = [
+  static possibleStringParams = [
     'address',
     'customArea',
     'customFloor',
@@ -68,7 +68,7 @@ class EstateFilters {
       return
     }
     /* address, area, property_id, net_rent */
-    this.possibleStringParams.forEach((param) => {
+    EstateFilters.possibleStringParams.forEach((param) => {
       if (params[param]) {
         if (params[param].operator && params[param].constraints.length > 0) {
           query.andWhere(function () {
@@ -245,6 +245,14 @@ class EstateFilters {
       ],
       []
     )
+  }
+
+  static paramsAreUsed(params) {
+    EstateFilters.possibleStringParams.map((param) => {
+      if (params[param] && params[param].operator) {
+        return true
+      }
+    })
   }
 
   process() {
