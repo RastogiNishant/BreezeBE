@@ -62,5 +62,6 @@ class CreateMember extends Base {
 
 // debt_proof
 // rent_arrears_doc
+// passport
 
 module.exports = CreateMember
