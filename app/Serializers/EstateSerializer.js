@@ -23,6 +23,10 @@ class EstateSerializer extends BaseSerializer {
       item.cover = File.getPublicUrl(item.cover)
     }
 
+    if (isString(item.energy_proof) && !item.energy_proof.includes('http')) {
+      item.energy_proof = File.getPublicUrl(item.energy_proof)
+    }
+
     if (isDate(item.construction_year)) {
       item.construction_year = moment(item.construction_year).format('YYYY')
     }

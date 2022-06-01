@@ -466,6 +466,14 @@ class CreateEstate extends Base {
           }),
         ])
         .nullable(),
+      energy_proof: yup.mixed(),
+        // .test({
+        //   message: `File too big, can't exceed ${MAX_FILE_SIZE}`,
+        //   test: (file) => {
+        //     const isValid = file?.size < MAX_FILE_SIZE
+        //     return isValid
+        //   },
+        // }),
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40),
       zip: yup.string().max(8),
