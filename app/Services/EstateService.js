@@ -309,7 +309,7 @@ class EstateService {
    */
   static async setCover(estateId, filePathName, trx = null) {
     const coverUpdateQuery = Estate.query().update({ cover: filePathName }).where('id', estateId)
-    if( trx ) {
+    if (trx) {
       coverUpdateQuery.transacting(trx)
     }
     return await coverUpdateQuery
@@ -786,7 +786,6 @@ class EstateService {
       return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .whereNot('area', 0)
         .with('rooms')
         .with('current_tenant')
         .fetch()
@@ -794,7 +793,6 @@ class EstateService {
       return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .whereNot('area', 0)
         .paginate(page, limit)
     }
   }
@@ -936,7 +934,6 @@ class EstateService {
         )
       )
       .whereNot('estates.status', STATUS_DELETE)
-      .whereNot('area', 0)
       .whereIn('user_id', userIds)
 
     const Filter = new EstateFilters(params, query)
@@ -954,6 +951,15 @@ class EstateService {
       'verified_address',
     ])
     return lettingTypeCounts
+  }
+
+  static async getTotalEstateCount(userId) {
+    const estateCount = await Estate.query()
+      .select(Database.raw(`count(*) as total_estate_count`))
+      .where('user_id', userId)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+    return estateCount.total_estate_count
   }
 }
 

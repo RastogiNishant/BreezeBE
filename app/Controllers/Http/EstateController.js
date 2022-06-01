@@ -202,7 +202,8 @@ class EstateController {
     result = result.toJSON()
     //
     const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id], params)
-    result = { ...result, ...lettingTypeCounts }
+    const total_estate_count = await EstateService.getTotalEstateCount(auth.user.id)
+    result = { ...result, ...lettingTypeCounts, total_estate_count }
     return response.res(result)
   }
 
