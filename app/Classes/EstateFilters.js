@@ -253,6 +253,7 @@ class EstateFilters {
         return true
       }
     })
+    return false
   }
 
   process() {

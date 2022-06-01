@@ -915,32 +915,26 @@ class EstateService {
     return affectedRows
   }
 
-  static async getLettingTypeCounts(userIds, params) {
-    let query = Estate.query()
+  static getCounts() {
+    return Estate.query()
+      .select(Database.raw(`count(*) as all_count`))
       .select(
-        Database.raw(
-          `count(*) filter(where letting_type='${LETTING_TYPE_LET}') as filtered_let_count`
-        )
+        Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let_count`)
       )
       .select(
-        Database.raw(
-          `count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as filtered_void_count`
-        )
+        Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
-      .select(
-        Database.raw(
-          `count(*) filter(where letting_type='${LETTING_TYPE_NA}') as filtered_na_count`
-        )
-      )
-      .whereNot('estates.status', STATUS_DELETE)
-      .whereIn('user_id', userIds)
+  }
 
+  static async getFilteredCounts(userId, params) {
+    let query = EstateService.getCounts()
+      .whereNot('estates.status', STATUS_DELETE)
+      .where('user_id', userId)
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
+    let filteredCounts = await query.first()
 
-    let lettingTypeCounts = await query.first()
-
-    lettingTypeCounts = omit(lettingTypeCounts.toJSON(), [
+    filteredCounts = omit(filteredCounts.toJSON(), [
       'hash',
       'coord',
       'coord_raw',
@@ -949,16 +943,24 @@ class EstateService {
       'equipment',
       'verified_address',
     ])
-    return lettingTypeCounts
+    return filteredCounts
   }
 
-  static async getTotalEstateCount(userId) {
-    const estateCount = await Estate.query()
-      .select(Database.raw(`count(*) as total_estate_count`))
+  static async getTotalEstateCounts(userId) {
+    let estateCount = await EstateService.getCounts()
       .where('user_id', userId)
       .whereNot('status', STATUS_DELETE)
       .first()
-    return estateCount.total_estate_count
+    estateCount = omit(estateCount.toJSON(), [
+      'hash',
+      'coord',
+      'coord_raw',
+      'bath_options',
+      'kitchen_options',
+      'equipment',
+      'verified_address',
+    ])
+    return estateCount
   }
 }
 
