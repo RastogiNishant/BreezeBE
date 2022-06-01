@@ -358,6 +358,10 @@ class Estate extends Model {
     return this.hasMany('App/Models/File')
   }
 
+  amenities() {
+    return this.hasMany('App/Models/Amenity')
+  }
+
   /**
    *
    */
