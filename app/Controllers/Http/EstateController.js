@@ -254,6 +254,39 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
     estate = estate.toJSON({ isOwner: true })
+    let amenities = await Amenity.query()
+      .select(
+        Database.raw(
+          `amenities.location, json_agg(amenities.* order by sequence_order desc) as amenities`
+        )
+      )
+      .from(
+        Database.raw(`(
+          select amenities.*,
+            case
+              when
+                "amenities".type='amenity'
+              then
+                "options"."title"
+              else
+                "amenities"."amenity"
+                  end as amenity
+          from amenities
+          left join options
+          on options.id=amenities.option_id
+          where
+            amenities.status = '${STATUS_ACTIVE}'
+          and
+            amenities.location not in('room')
+          and
+            amenities.estate_id in ('${id}')
+        ) as amenities`)
+      )
+      .where('status', STATUS_ACTIVE)
+      .whereIn('estate_id', [id])
+      .groupBy('location')
+      .fetch()
+    estate.amenities = amenities
     response.res(estate)
   }
 
