@@ -247,11 +247,39 @@ class EstateController {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
+      .with('amenities', function (q) {
+        q.select(
+          Database.raw(
+            `amenities.location, json_agg(amenities.* order by sequence_order desc) as amenities`
+          )
+        )
+          .from(
+            Database.raw(`(select amenities.*,
+              case
+                when
+                  "amenities".type='amenity'
+                then
+                  "options"."title"
+                else
+                  "amenities"."amenity"
+                    end as amenity
+              from amenities
+              left join options
+              on options.id=amenities.option_id
+              and estate_id='${id}'
+              and status='${STATUS_ACTIVE}'
+              ) as amenities
+            `)
+          )
+          .where('status', STATUS_ACTIVE)
+          .groupBy('location')
+      })
       .first()
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
+    console.log({ estate })
     estate = estate.toJSON({ isOwner: true })
     response.res(estate)
   }
