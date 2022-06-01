@@ -271,7 +271,7 @@ class RoomController {
           .on(Database.raw(`"amenities"."location" = 'room'`))
       })
       .where('rooms.id', room_id)
-      .where('estate_id', estate_id)
+      .where('rooms.estate_id', estate_id)
       .groupBy('rooms.id')
       .first()
     room = room.toJSON()
