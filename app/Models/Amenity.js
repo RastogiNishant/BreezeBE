@@ -28,7 +28,7 @@ class Amenity extends Model {
   }
 
   estate() {
-    return this.belongsTo('App/Models/Estate', 'estate_id', 'id').whereNotIsNull('estate_id')
+    return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
   }
 }
 
