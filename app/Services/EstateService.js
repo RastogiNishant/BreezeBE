@@ -917,7 +917,6 @@ class EstateService {
 
   static async getLettingTypeCounts(userIds, params) {
     let query = Estate.query()
-      .select(Database.raw(`count(*) as total_filtered_estate_count`))
       .select(
         Database.raw(
           `count(*) filter(where letting_type='${LETTING_TYPE_LET}') as filtered_let_count`
