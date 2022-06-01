@@ -52,6 +52,7 @@ const {
   BUDDY_STATUS_ACCEPTED,
   MINIMUM_SHOW_PERIOD,
   MEMBER_FILE_TYPE_PASSPORT,
+  TIMESLOT_STATUS_CONFIRM,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -735,9 +736,7 @@ class MatchService {
 
     await Promise.all([deleteVisit, updateMatch])
 
-    //TODO: notify landlord that prospect cancels visit
-
-    NoticeService.cancelVisit(estateId)
+    NoticeService.cancelVisit(estateId, null, userId)
   }
 
   /**
@@ -746,7 +745,6 @@ class MatchService {
   static async cancelVisitByLandlord(estateId, tenantId) {
     const visit = await Database.table('visits')
       .where({ estate_id: estateId })
-      .where({ status: MATCH_STATUS_VISIT })
       .where({ user_id: tenantId })
       .first()
 
@@ -756,7 +754,6 @@ class MatchService {
 
     const deleteVisit = Database.table('visits')
       .where({ estate_id: estateId })
-      .where({ status: MATCH_STATUS_VISIT })
       .where({ user_id: tenantId })
       .delete()
 
@@ -766,8 +763,6 @@ class MatchService {
     })
 
     await Promise.all([deleteVisit, updateMatch])
-
-    // //TODO: notify landlord that prospect cancels visit
     NoticeService.cancelVisit(estateId, tenantId)
   }
 
@@ -1849,6 +1844,7 @@ class MatchService {
   static async getEstateSlotsStat(estateId) {
     const slotWithoutLength = await Database.table('time_slots')
       .select('slot_length')
+      .where('estate_id', estateId)
       .whereNull('slot_length')
       .first()
 
@@ -1891,7 +1887,11 @@ class MatchService {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
     const estate = await EstateService.getActiveById(estateId)
     if (estate) {
-      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
+      if (data.tenant_delay) {
+        NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay, userId)
+      } else if (data.tenant_status === TIMESLOT_STATUS_CONFIRM) {
+        NoticeService.prospectArrived(estateId, userId)
+      }
     } else {
       throw new AppException('No estate')
     }
@@ -1903,6 +1903,7 @@ class MatchService {
   static async updateVisitStatusLandlord(estateId, data) {
     const currentDay = moment().startOf('day')
     try {
+      //TODO: handle this flow. seems wrong
       const visit = await Visit.query()
         .where({ estate_id: estateId })
         .where('date', '>', currentDay.format(DATE_FORMAT))
@@ -1914,9 +1915,8 @@ class MatchService {
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .update(data)
-
-      if (visit) {
-        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
+      if (visit && visit.lord_delay) {
+        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay, null)
       }
     } catch (e) {
       Logger.error(e)
