@@ -30,7 +30,7 @@ class EstateFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.string(),
+              value: yup.string().nullable(),
             })
           ),
         })
@@ -66,7 +66,7 @@ class EstateFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.string(),
+              value: yup.number().nullable(),
             })
           ),
         })
