@@ -231,7 +231,7 @@ class MatchController {
     const { estate_id, tenant_id } = request.all()
 
     try {
-      await MatchService.cancelVisit(estate_id, tenant_id)
+      await MatchService.cancelVisitByLandlord(estate_id, tenant_id)
       return response.res(true)
     } catch (e) {
       Logger.error(e)

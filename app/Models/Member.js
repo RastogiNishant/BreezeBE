@@ -1,5 +1,6 @@
 'use strict'
 
+const { STATUS_ACTIVE, MEMBER_FILE_TYPE_PASSPORT } = require('../constants')
 const Model = require('./BaseModel')
 
 class Member extends Model {
@@ -59,6 +60,12 @@ class Member extends Model {
    */
   incomes() {
     return this.hasMany('App/Models/Income')
+  }
+
+  passports() {
+    return this.hasMany('App/Models/MemberFile')
+      .where('type', MEMBER_FILE_TYPE_PASSPORT)
+      .where('status', STATUS_ACTIVE)
   }
 
   static get limitFieldsList() {
