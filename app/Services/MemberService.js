@@ -99,6 +99,7 @@ class MemberService {
       .with('incomes', function (b) {
         b.with('proofs')
       })
+      .with('passports')
       .orderBy('id', 'asc')
 
     return await query.fetch()
@@ -239,7 +240,7 @@ class MemberService {
   }
 
   static async allowEditMemberByPermission(user, memberId) {
-    const member = await Member.query().where('id', memberId).firstOrFail()
+    const member = await Member.query().where('id', memberId).with('passports').firstOrFail()
     const isEditingOwnMember = user.owner_id
       ? member.owner_user_id === user.id
       : member.user_id === user.id
