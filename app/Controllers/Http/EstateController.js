@@ -173,7 +173,6 @@ class EstateController {
         tenant: tenant,
         members: members,
       }
-      //console.log('result', result.toJSON() )
       response.res(result)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -804,7 +803,6 @@ class EstateController {
             )
           }
           //placeholder for now...
-          console.log('sending email to ', email, 'code', code)
         })
       )
       trx.commit()

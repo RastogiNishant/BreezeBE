@@ -2,7 +2,6 @@
 
 const constants = require('../../constants')
 const { get, map } = require('lodash')
-const P = require('bluebird')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
@@ -10,8 +9,6 @@ const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
-const UserService = use('App/Services/UserService')
-const TenantService = use('App/Services/TenantService')
 const HttpException = use('App/Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')

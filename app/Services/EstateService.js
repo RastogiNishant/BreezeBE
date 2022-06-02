@@ -1,13 +1,12 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray, filter, omit, flatten } = require('lodash')
+const { get, isEmpty, findIndex, range, filter, omit, flatten } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
-const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
@@ -20,7 +19,6 @@ const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const AppException = use('App/Exceptions/AppException')
-const Promise = require('bluebird')
 
 const {
   STATUS_DRAFT,
@@ -33,9 +31,6 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
-  MATCH_STATUS_INVITE,
-  MATCH_STATUS_KNOCK,
-  MIN_TIME_SLOT,
   MATCH_STATUS_FINISH,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
@@ -132,16 +127,6 @@ class EstateService {
    *
    */
   static getUpcomingShows(ids, query = '') {
-    // const timeSlot = TimeSlot.query()
-
-    // if(query.length > 0 ) {
-    //   timeSlot
-    //   .whereHas('user', (estateQuery) => {
-    //               estateQuery.where('address', 'ILIKE', `%${query}%`)
-    //             })
-    // }
-
-    // return timeSlot
     return this.getEstates()
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .whereIn('user_id', ids)
@@ -171,25 +156,6 @@ class EstateService {
   /**
    *
    */
-  static async updateEstatePoint(estateId) {
-    const estate = await this.getQuery().where('id', estateId).first()
-    if (!estate) {
-      throw new AppException(`Invalid estate ${estateId}`)
-    }
-
-    const { lat, lon } = estate.getLatLon()
-    if (+lat === 0 && +lon === 0) {
-      return false
-    }
-    const point = await GeoService.getOrCreatePoint({ lat, lon })
-    estate.point_id = point.id
-
-    return estate.save()
-  }
-
-  /**
-   *
-   */
   static async getSqrRange({ year, sqr, quality }) {
     return Database.from('sqr_rates')
       .whereRaw(`COALESCE(min_year, 0) <= ?`, [year])
@@ -197,22 +163,6 @@ class EstateService {
       .whereRaw(`COALESCE(min_sqr, 0) <= ?`, [sqr])
       .whereRaw(`COALESCE(max_sqr, 100000) >= ?`, [sqr])
       .where('quality', quality)
-  }
-
-  /**
-   *
-   */
-  static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
-    if (!estate.address) {
-      throw new AppException('Estate address invalid')
-    }
-
-    const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result) {
-      await estate.updateItem({ coord: `${result.lat},${result.lon}` })
-      await this.updateEstatePoint(estateId)
-    }
   }
 
   /**
@@ -719,121 +669,6 @@ class EstateService {
     return query.limit(limit).fetch()
   }
 
-  //Finds and handles the estates that available date is over
-  static async handleExpiredEstates() {
-    const estateIds = (await this.fetchExpiredEstates()).rows.map((i) => i.id)
-    if (isEmpty(estateIds)) {
-      return false
-    }
-
-    const trx = await Database.beginTransaction()
-    try {
-      await Estate.query()
-        .update({ status: STATUS_EXPIRE })
-        .whereIn('id', estateIds)
-        .transacting(trx)
-
-      await NoticeService.landLandlordEstateExpired(estateIds)
-      await trx.commit()
-    } catch (e) {
-      await trx.rollback()
-      Logger.error(e)
-      return false
-    }
-  }
-
-  static async fetchExpiredEstates() {
-    return Estate.query()
-      .select('id')
-      .where('status', STATUS_ACTIVE)
-      .where('available_date', '<=', moment().format(DATE_FORMAT))
-      .fetch()
-  }
-
-  //Finds and handles the estates that show date is over between now and 5 minutes before
-  static async handleShowDateEndedEstates() {
-    const showedEstates = (await this.fetchShowDateEndedEstatesFor5Minutes()).rows
-    const estateIds = showedEstates.map((e) => e.id)
-    if (isEmpty(estateIds)) {
-      return false
-    }
-    const trx = await Database.beginTransaction()
-    try {
-      await this.handleShowDateEndedEstatesMatches(estateIds, trx)
-      await NoticeService.sendToShowDateIsEndedEstatesLandlords(showedEstates)
-      await trx.commit()
-    } catch (e) {
-      await trx.rollback()
-      console.log(e)
-      return false
-    }
-
-    return true
-  }
-
-  static async fetchShowDateEndedEstatesFor5Minutes() {
-    const start = moment().startOf('minute').subtract(5, 'minutes')
-    const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
-
-    return Database.raw(
-      `
-        SELECT estates.* FROM estates
-        INNER JOIN time_slots on time_slots.estate_id = estates.id
-        WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
-        AND estates.status = ${STATUS_ACTIVE}
-        AND end_at >= '${start.format(DATE_FORMAT)}'
-        AND end_at <= '${end.format(DATE_FORMAT)}'
-        ORDER BY estates.id
-      `
-    )
-  }
-
-  static async handleShowDateEndedEstatesMatches(estateIds, trx) {
-    // We move "invite" matches to "knock".
-    // Because estate's show date is over and they are not able to pick timeslot anymore
-    await Database.table('matches')
-      .where('status', MATCH_STATUS_INVITE)
-      .whereIn('estate_id', estateIds)
-      .update({ status: MATCH_STATUS_KNOCK })
-      .transacting(trx)
-  }
-
-  static async handleShowDateWillEndInAnHourEstates() {
-    const showDateWillEndEstates = (await this.fetchShowDateWillEndInAnHourEstates()).rows
-    if (isEmpty(showDateWillEndEstates)) {
-      return false
-    }
-
-    try {
-      await NoticeService.sendProspectsWillLoseBookingTimeSlotChance(showDateWillEndEstates)
-    } catch (e) {
-      console.log(e)
-      return false
-    }
-
-    return true
-  }
-
-  static async fetchShowDateWillEndInAnHourEstates() {
-    const anHourLater = moment().add(1, 'hour').startOf('minute')
-    const start = anHourLater.subtract(5, 'minutes')
-    const end = anHourLater.clone().add(MIN_TIME_SLOT, 'minutes')
-
-    return Database.raw(
-      `
-        SELECT estates.id as estate_id, matches.user_id as prospect_id, address, cover FROM estates
-        INNER JOIN time_slots on time_slots.estate_id = estates.id
-        INNER JOIN matches on matches.estate_id = estates.id
-        WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
-        AND matches.status = ${MATCH_STATUS_INVITE}
-        AND estates.status = ${STATUS_ACTIVE}
-        AND end_at >= '${start.format(DATE_FORMAT)}'
-        AND end_at <= '${end.format(DATE_FORMAT)}'
-        ORDER BY estates.id
-      `
-    )
-  }
-
   /**
    *
    */
@@ -858,7 +693,6 @@ class EstateService {
   }
 
   static async handleOfflineEstate(estateId, trx) {
-    console.log('girdi', estateId)
     const matches = await Estate.query()
       .select('estates.*')
       .where('id', estateId)

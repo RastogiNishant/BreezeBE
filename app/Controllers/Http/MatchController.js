@@ -285,7 +285,6 @@ class MatchController {
 
     try {
       const match = await MatchService.hasPermissionToEditProperty(estate_id, auth.user.id)
-      console.log('updateProperty Match', match)
       await MatchService.addTenantProperty({
         estate_id: estate_id,
         user_id: auth.user.id,

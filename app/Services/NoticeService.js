@@ -105,7 +105,6 @@ class NoticeService {
         }))
       )
     )
-    console.log(data)
     return Promise.all(promises)
   }
 

@@ -225,7 +225,6 @@ class MemberService {
 
   static async getMember(id, user_id, owner_id) {
     let member
-    console.log({ user_id, owner_id })
     if (!owner_id) {
       member = await Member.query()
         .where('id', id)
