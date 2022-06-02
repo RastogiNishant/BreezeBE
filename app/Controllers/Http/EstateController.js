@@ -176,7 +176,6 @@ class EstateController {
         tenant: tenant,
         members: members,
       }
-      //console.log('result', result.toJSON() )
       response.res(result)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -439,7 +438,6 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
-        console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -458,6 +456,27 @@ class EstateController {
     }
 
     response.res(true)
+  }
+
+  async makeEstateOffline({ request, auth, response }) {
+    const { id } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query().where('id', id).first()
+      if (estate) {
+        estate.status = STATUS_DRAFT
+        await EstateService.handleOfflineEstate(estate.id, trx)
+        await estate.save(trx)
+        await trx.commit()
+        return response.res(true)
+      } else {
+        throw new HttpException('You are attempted to edit wrong estate', 409)
+      }
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+      throw new HttpException(e?.message ?? e, 400)
+    }
   }
 
   /**
@@ -855,7 +874,6 @@ class EstateController {
             )
           }
           //placeholder for now...
-          console.log('sending email to ', email, 'code', code)
         })
       )
       trx.commit()

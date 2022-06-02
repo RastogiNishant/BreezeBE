@@ -285,7 +285,6 @@ class MatchController {
 
     try {
       const match = await MatchService.hasPermissionToEditProperty(estate_id, auth.user.id)
-      console.log('updateProperty Match', match)
       await MatchService.addTenantProperty({
         estate_id: estate_id,
         user_id: auth.user.id,
@@ -332,13 +331,14 @@ class MatchController {
    *
    */
   async updateVisitTimeslotLandlord({ request, auth, response }) {
-    const { estate_id, status, delay = null } = request.all()
+    const { estate_id, status, delay = null, user_id } = request.all()
     const estate = await this.getOwnEstate(estate_id, auth.user.id)
+    console.log({ user_id })
     if (!estate) {
       throw HttpException('Invalid estate', 404)
     }
 
-    await MatchService.updateVisitStatusLandlord(estate_id, {
+    await MatchService.updateVisitStatusLandlord(estate_id, user_id, {
       lord_status: status,
       lord_delay: delay || 0,
     })
