@@ -54,7 +54,7 @@ class Room extends Model {
   }
 
   room_amenities() {
-    return this.hasMany('App/Models/RoomAmenity', 'id', 'room_id')
+    return this.hasMany('App/Models/Amenity', 'id', 'room_id').where('amenities.location', 'room')
   }
 }
 

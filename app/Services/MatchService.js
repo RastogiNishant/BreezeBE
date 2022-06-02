@@ -51,6 +51,8 @@ const {
   STATUS_DRAFT,
   BUDDY_STATUS_ACCEPTED,
   MINIMUM_SHOW_PERIOD,
+  MEMBER_FILE_TYPE_PASSPORT,
+  TIMESLOT_STATUS_CONFIRM,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -493,6 +495,10 @@ class MatchService {
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
       await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(estateId, superMatches)
+      }
     }
   }
 
@@ -734,9 +740,7 @@ class MatchService {
 
     await Promise.all([deleteVisit, updateMatch])
 
-    //TODO: notify landlord that prospect cancels visit
-
-    NoticeService.cancelVisit(estateId)
+    NoticeService.cancelVisit(estateId, null, userId)
   }
 
   /**
@@ -745,7 +749,6 @@ class MatchService {
   static async cancelVisitByLandlord(estateId, tenantId) {
     const visit = await Database.table('visits')
       .where({ estate_id: estateId })
-      .where({ status: MATCH_STATUS_VISIT })
       .where({ user_id: tenantId })
       .first()
 
@@ -755,7 +758,6 @@ class MatchService {
 
     const deleteVisit = Database.table('visits')
       .where({ estate_id: estateId })
-      .where({ status: MATCH_STATUS_VISIT })
       .where({ user_id: tenantId })
       .delete()
 
@@ -765,8 +767,6 @@ class MatchService {
     })
 
     await Promise.all([deleteVisit, updateMatch])
-
-    // //TODO: notify landlord that prospect cancels visit
     NoticeService.cancelVisit(estateId, tenantId)
   }
 
@@ -957,9 +957,6 @@ class MatchService {
       })
       .update({ status: MATCH_STATUS_FINISH })
 
-    //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
-
-    // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
 
@@ -1457,6 +1454,7 @@ class MatchService {
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
+      .select(`_mf.id_verified`)
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -1506,7 +1504,7 @@ class MatchService {
         .where('_m.status', MATCH_STATUS_TOP)
         .clearOrder()
         .orderBy([
-          { column: '_m.order_lord', order: 'ASK' },
+          { column: '_m.order_lord', order: 'ASC' },
           { column: '_m.updated_at', order: 'DESC' },
         ])
     } else if (commit) {
@@ -1614,7 +1612,29 @@ class MatchService {
       .leftJoin({ _bd: 'buddies' }, function () {
         this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
       })
-
+      .leftJoin(
+        Database.raw(`
+          (select
+            members.user_id,
+            bool_and(member_has_id) as id_verified
+          from members
+          left join
+            (select
+              member_files.member_id,
+              count(member_files.file) > 0 as member_has_id
+            from
+              member_files
+            where member_files.status = ${STATUS_ACTIVE} and member_files.type='${MEMBER_FILE_TYPE_PASSPORT}'
+            group by
+              member_files.member_id
+            ) as mf
+          on mf.member_id=members.id
+          group by members.user_id)
+        as _mf`),
+        function () {
+          this.on('_mf.user_id', '_m.user_id')
+        }
+      )
     query.select(
       '_mb.firstname',
       '_mb.secondname',
@@ -1630,7 +1650,8 @@ class MatchService {
       '_m.buddy',
       '_m.share as share',
       '_m.status as status',
-      '_m.user_id'
+      '_m.user_id',
+      '_mf.id_verified'
     )
 
     return query
@@ -1824,6 +1845,7 @@ class MatchService {
   static async getEstateSlotsStat(estateId) {
     const slotWithoutLength = await Database.table('time_slots')
       .select('slot_length')
+      .where('estate_id', estateId)
       .whereNull('slot_length')
       .first()
 
@@ -1866,7 +1888,11 @@ class MatchService {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
     const estate = await EstateService.getActiveById(estateId)
     if (estate) {
-      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
+      if (data.tenant_delay) {
+        NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay, userId)
+      } else if (data.tenant_status === TIMESLOT_STATUS_CONFIRM) {
+        NoticeService.prospectArrived(estateId, userId)
+      }
     } else {
       throw new AppException('No estate')
     }
@@ -1875,23 +1901,23 @@ class MatchService {
   /**
    *
    */
-  static async updateVisitStatusLandlord(estateId, data) {
+  static async updateVisitStatusLandlord(estateId, user_id, data) {
     const currentDay = moment().startOf('day')
     try {
+      //TODO: handle this flow. seems wrong
       const visit = await Visit.query()
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .first()
 
       await Database.table('visits')
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id: user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .update(data)
-
-      if (visit) {
-        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
+      if (visit && visit.lord_delay) {
+        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay, null)
       }
     } catch (e) {
       Logger.error(e)

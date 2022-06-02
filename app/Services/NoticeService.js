@@ -6,14 +6,11 @@ const P = require('bluebird')
 const File = use('App/Classes/File')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
+const User = use('App/Models/User')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
-const EstateService = use('App/Services/EstateService')
-const VisitService = use('App/Services/VisitService')
 const NotificationsService = use('App/Services/NotificationsService')
 const Logger = use('Logger')
-
-const MIN_TIME_SLOT = 5
 
 const {
   ROLE_USER,
@@ -39,6 +36,7 @@ const {
   NOTICE_TYPE_PROSPECT_COME_ID,
   NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
+  NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -61,7 +59,7 @@ const {
   NOTICE_TYPE_PROSPECT_COME,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
-  NOTICE_TYPE_PROSPECT_INVITE_IN,
+  NOTICE_TYPE_VISIT_DELAY_LANDLORD,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -75,6 +73,14 @@ const {
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
+  MIN_TIME_SLOT,
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID,
+  NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID,
+  GERMAN_DATE_TIME_FORMAT,
+  NOTICE_TYPE_PROSPECT_ARRIVED_ID,
+  MATCH_STATUS_FINISH,
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -99,7 +105,6 @@ class NoticeService {
         }))
       )
     )
-    console.log(data)
     return Promise.all(promises)
   }
 
@@ -188,6 +193,20 @@ class NoticeService {
   }
 
   /**
+   * On estate deactivation, send to matched prospects
+   */
+  static async prospectPropertDeactivated(estates) {
+    const notices = estates.map(({ address, id, cover, prospect_id }) => ({
+      user_id: prospect_id,
+      type: NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
+      data: { estate_id: id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendProspectPropertyDeactivated(notices)
+  }
+
+  /**
    * On estate expiration, send to landlord
    */
   static async landLandlordEstateExpired(estateIds) {
@@ -228,6 +247,7 @@ class NoticeService {
       estate_address: estate.address,
       total,
       booked,
+      date: moment().format(GERMAN_DATE_TIME_FORMAT),
     }
 
     const notice = {
@@ -261,19 +281,15 @@ class NoticeService {
         })
         .whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_TOP])
         .whereNot('_e.id', estateId)
-        .limit(100)
     }
 
-    // Another top users from current estate
+    // Another users from current estate
     const getAnotherUsersCurEstate = () => {
       return Database.table({ _m: 'matches' })
         .select('_m.user_id')
         .where({ '_m.estate_id': estateId })
-        .where(function () {
-          this.orWhere({ '_m.status': MATCH_STATUS_TOP }).orWhere({ '_m.share': true })
-        })
+        .whereNotIn('_m.status', [MATCH_STATUS_NEW, MATCH_STATUS_FINISH])
         .whereNot('_m.user_id', userId)
-        .limit(100)
     }
 
     const { estate, anotherEstates, anotherUsers } = await P.props({
@@ -410,7 +426,7 @@ class NoticeService {
    * userId : null => prospect cancel his visit
    * userId: not null => landlord cancel his visit
    */
-  static async cancelVisit(estateId, userId = null) {
+  static async cancelVisit(estateId, userId = null, tenantId = null) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover', 'user_id')
       .where('id', estateId)
@@ -419,17 +435,28 @@ class NoticeService {
       Logger.error('knockToLandloard', `there is no estate for${estateId}`)
       throw new AppException('there is no estate')
     }
+
+    const notificationUser = tenantId
+      ? await User.query().where('id', tenantId).firstOrFail()
+      : null
+
     const notice = {
       user_id: userId ? userId : estate.user_id,
-      type: NOTICE_TYPE_CANCEL_VISIT_ID,
+      type: userId ? NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID : NOTICE_TYPE_CANCEL_VISIT_ID,
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
+        user_name: tenantId ? `${notificationUser.firstname} ${notificationUser.secondname}` : null,
       },
       image: File.getPublicUrl(estate.cover),
     }
+
     await NoticeService.insertNotices([notice])
-    await NotificationsService.sendProspectCancelVisit([notice])
+    if (userId) {
+      await NotificationsService.sendLandlordCancelVisit([notice])
+    } else {
+      await NotificationsService.sendProspectCancelVisit([notice])
+    }
   }
 
   /**
@@ -566,6 +593,30 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectLandlordConfirmed(notice)
+  }
+
+  /**
+   *
+   */
+  static async prospectSuperMatch(estateId, matches) {
+    if (matches.length > 0) {
+      const estate = await Estate.query().select('*').where('id', estateId).first()
+
+      const notices = matches.map(({ user_id }) => {
+        return {
+          user_id,
+          type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+          data: {
+            estate_id: estateId,
+            estate_address: estate.address,
+            params: estate.getAptParams(),
+          },
+          image: File.getPublicUrl(estate.cover),
+        }
+      })
+      await NoticeService.insertNotices(notices)
+      await NotificationsService.sendProspectHasSuperMatch(notices)
+    }
   }
 
   /**
@@ -724,8 +775,8 @@ class NoticeService {
         return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_VISIT_DELAY:
         return NotificationsService.sendChangeVisitTime([notice])
-      case NOTICE_TYPE_PROSPECT_INVITE_IN:
-        return NotificationsService.sendInviteIn([notice])
+      case NOTICE_TYPE_VISIT_DELAY_LANDLORD:
+        return NotificationsService.sendChangeVisitTime([notice])
     }
   }
 
@@ -750,24 +801,60 @@ class NoticeService {
   /**
    *
    */
-  static async changeVisitTime(estateId, userId, delay) {
+  static async changeVisitTime(estateId, userId, delay, prospectId) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover')
       .where('id', estateId)
       .first()
+
+    const notificationUser = prospectId
+      ? await User.query().where('id', prospectId).firstOrFail()
+      : {}
+
     const notice = {
       user_id: userId,
-      type: NOTICE_TYPE_VISIT_DELAY_ID,
+      type: prospectId ? NOTICE_TYPE_VISIT_DELAY_ID : NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
         delay: delay,
+        user_name: prospectId
+          ? `${notificationUser.firstname} ${notificationUser.secondname}`
+          : undefined,
       },
       image: File.getPublicUrl(estate.cover),
     }
 
     await NoticeService.insertNotices([notice])
-    await NotificationsService.sendChangeVisitTime([notice])
+
+    if (prospectId) {
+      await NotificationsService.sendChangeVisitTimeProspect([notice])
+    } else {
+      await NotificationsService.sendChangeVisitTimeLandlord([notice])
+    }
+  }
+
+  /**
+   *
+   */
+  static async prospectArrived(estateId, prospectId) {
+    const estate = await Estate.query().where('id', estateId).first()
+    const prospect = await User.query().where('id', prospectId).first()
+    if (estate && prospect) {
+      const notice = {
+        user_id: estate.user_id,
+        type: NOTICE_TYPE_PROSPECT_ARRIVED_ID,
+        data: {
+          estate_id: estateId,
+          estate_address: estate.address,
+          params: estate.getAptParams(),
+          user_name: `${prospect.firstname} ${prospect.secondname}`,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+      await NoticeService.insertNotices([notice])
+      await NotificationsService.sendProspectArrived([notice])
+    }
   }
 
   static async verifyUserByAdmin(userIds = []) {
@@ -779,27 +866,28 @@ class NoticeService {
     await NotificationsService.sendLandlordIsVerifiedByAdmin(notices)
   }
 
-  static async detectShowDateIsEndedEstates() {
-    const start = moment().startOf('minute').subtract(5, 'minutes')
-    const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
-
-    const showedEstates = await Estate.query()
-      .whereIn('status', [STATUS_ACTIVE])
-      .whereHas('slots', (estateQuery) => {
-        estateQuery.where('end_at', '>=', start.format(DATE_FORMAT))
-        estateQuery.where('end_at', '<=', end.format(DATE_FORMAT))
-      })
-      .fetch()
-
-    const notices = showedEstates.rows.map(({ user_id, address, cover }) => ({
+  static async sendToShowDateIsEndedEstatesLandlords(showedEstates = []) {
+    const notices = showedEstates.map(({ id, user_id, address, cover }) => ({
       user_id,
       type: NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
-      data: { estate_id, estate_address: address },
+      data: { estate_id: id, estate_address: address },
       image: File.getPublicUrl(cover),
     }))
 
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendLandlordEstateShowDateIsEnded(notices)
+  }
+
+  static async sendProspectsWillLoseBookingTimeSlotChance(estates) {
+    const notices = estates.map(({ estate_id, address, prospect_id, cover }) => ({
+      user_id: prospect_id,
+      type: NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID,
+      data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendProspectWillLoseBookingTimeSlotChance(notices)
   }
 
   /**

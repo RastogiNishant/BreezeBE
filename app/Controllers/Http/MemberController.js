@@ -2,6 +2,7 @@ const Event = use('Event')
 const File = use('App/Classes/File')
 const Income = use('App/Models/Income')
 const IncomeProof = use('App/Models/IncomeProof')
+const MemberFile = use('App/Models/MemberFile')
 const MemberService = use('App/Services/MemberService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const UserService = use('App/Services/UserService')
@@ -21,6 +22,9 @@ const {
   ROLE_USER,
   ERROR_WRONG_HOUSEHOLD_INVITATION_DATA,
   VISIBLE_TO_NOBODY,
+  STATUS_ACTIVE,
+  STATUS_DELETE,
+  MEMBER_FILE_TYPE_PASSPORT,
 } = require('../../constants')
 /**
  *
@@ -103,6 +107,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: imageMimes, isPublic: false },
       ])
 
       const user_id = auth.user.id
@@ -126,6 +131,16 @@ class MemberController {
         }
 
         const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
+        if (files.passport) {
+          const memberFile = new MemberFile()
+          memberFile.merge({
+            file: files.passport,
+            type: MEMBER_FILE_TYPE_PASSPORT,
+            status: STATUS_ACTIVE,
+            member_id: createdMember.id,
+          })
+          await memberFile.save(trx)
+        }
         await MemberService.calcTenantMemberData(user_id, trx)
 
         /**
@@ -156,27 +171,39 @@ class MemberController {
    */
   async updateMember({ request, auth, response }) {
     const { id, ...data } = request.all()
+    let files
+    try {
+      files = await File.saveRequestFiles(request, [
+        { field: 'avatar', mime: imageMimes, isPublic: true },
+        { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
+        { field: 'debt_proof', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: imageMimes, isPublic: false },
+      ])
+    } catch (err) {
+      throw new HttpException(err.message, 422)
+    }
+    if (files.passport) {
+      let memberFile = new MemberFile()
+      memberFile.merge({
+        file: files.passport,
+        type: MEMBER_FILE_TYPE_PASSPORT,
+        status: STATUS_ACTIVE,
+        member_id: id,
+      })
+      await memberFile.save()
+    }
 
-    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
-
-    const files = await File.saveRequestFiles(request, [
-      { field: 'avatar', mime: imageMimes, isPublic: true },
-      { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
-      { field: 'debt_proof', mime: docMimes, isPublic: false },
-    ])
-
+    let member = await MemberService.allowEditMemberByPermission(auth.user, id)
     const newData = member.owner_user_id ? omit(data, ['email']) : data
 
     if (data?.phone !== member.phone) {
       newData.phone_verified = false
     }
-
     await member.updateItem({ ...newData, ...files })
     await MemberService.calcTenantMemberData(member.user_id)
-
+    member = member.toJSON()
     Event.fire('tenant::update', member.user_id)
-
-    response.res(member)
+    return response.res(member)
   }
 
   /**
@@ -368,7 +395,6 @@ class MemberController {
         })
         .delete()
         .transacting(trx)
-      console.log('userId', user_id)
       await MemberService.updateUserIncome(user_id, auth.user.owner_id ? auth.user.id : null, trx)
 
       await trx.commit()
@@ -496,6 +522,16 @@ class MemberController {
         ERROR_WRONG_HOUSEHOLD_INVITATION_DATA
       )
     }
+  }
+
+  async deletePassportImage({ request, auth, response }) {
+    const { passport_id, id } = request.all()
+    const affected_rows = await MemberFile.query()
+      .update({ status: STATUS_DELETE })
+      .where('type', MEMBER_FILE_TYPE_PASSPORT)
+      .where('id', passport_id)
+      .where('member_id', id)
+    return response.res({ deleted: affected_rows })
   }
 }
 

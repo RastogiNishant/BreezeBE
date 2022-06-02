@@ -28,6 +28,7 @@ const constants = {
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
+  MEMBER_FILE_TYPE_PASSPORT: 'passport',
 
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
@@ -343,6 +344,7 @@ const constants = {
   LANDLORD_TABS_COMMIT: 'commit',
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
+  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
   DAY_FORMAT: 'YYYY-MM-DD',
 
   AMENITIES_OPTIONS: [
@@ -381,16 +383,22 @@ const constants = {
   NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE: 'notification_prospect_profile_expire',
   NOTICE_TYPE_PROSPECT_COME: 'notification_prospect_come',
   NOTICE_TYPE_CANCEL_VISIT: 'notification_cancel_visit',
-  NOTICE_TYPE_PROSPECT_INVITE_IN: 'notification_prospect_invite_in',
+  NOTICE_TYPE_CANCEL_VISIT_LANDLORD: 'notification_cancel_visit_landlord',
+  NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT: 'notification_tenant_in_to_visit',
   NOTICE_TYPE_VISIT_DELAY: 'notification_visit_delay',
+  NOTICE_TYPE_VISIT_DELAY_LANDLORD: 'notification_visit_delay_landlord',
   NOTICE_TYPE_ZENDESK_NOTIFY: 'notification_zendesk_notify',
   NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN: 'notification_user_verification_by_admin',
   NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER: 'notification_estate_show_time_is_over',
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER: 'notification_prospect_invite_reminder',
   NOTICE_TYPE_PROSPECT_IS_NOT_INTERESTED: 'notification_prospect_is_not_interested',
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP: 'notification_landlord_moved_prospect_to_top',
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED:
     'notification_prospect_household_invitation_accepted',
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED: 'notification_prospect_household_disconnected',
+  NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -422,6 +430,12 @@ const constants = {
   NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID: 34,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID: 35,
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID: 36,
+  NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID: 37, // visit delayed
+  NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID: 38,
+  NOTICE_TYPE_PROSPECT_ARRIVED_ID: 39,
+  NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -429,6 +443,8 @@ const constants = {
   TIMESLOT_STATUS_REJECT: 'reject',
   TIMESLOT_STATUS_DELAY: 'delay',
   TIMESLOT_STATUS_COME: 'come',
+
+  MIN_TIME_SLOT: 5,
 
   NO_UNPAID_RENTAL: 1,
   YES_UNPAID_RENTAL: 2,
@@ -575,6 +591,13 @@ const constants = {
   ROOM_CUSTOM_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 5433122,
   SUPPORTED_IMAGE_FORMAT: ['jpg', 'png', 'gif'],
 
+  ESTATE_CUSTOM_AMENITIES_MAX_COUNT: 3,
+  ESTATE_CUSTOM_AMENITIES_EXCEED_MAX_ERROR: 23551276,
+  ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 34338761,
+  ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH: 35,
+
+  ESTATE_AMENITY_LOCATIONS: ['building', 'apartment', 'outside', 'vicinity', 'kitchen'],
+
   FILTER_CONSTRAINTS_MATCH_MODES: [
     'startsWith',
     'contains',
@@ -582,10 +605,10 @@ const constants = {
     'endsWith',
     'equals',
     'notEquals',
-    'greaterThan',
-    'lesserThan',
-    'greaterThanOrEqualTo',
-    'lesserThanOrEqualTo',
+    'gt',
+    'lt',
+    'gte',
+    'lte',
   ],
 }
 
