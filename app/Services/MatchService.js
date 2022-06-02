@@ -51,6 +51,7 @@ const {
   STATUS_DRAFT,
   BUDDY_STATUS_ACCEPTED,
   MINIMUM_SHOW_PERIOD,
+  MEMBER_FILE_TYPE_PASSPORT,
   TIMESLOT_STATUS_CONFIRM,
 } = require('../constants')
 const { logger } = require('../../config/app')
@@ -1452,6 +1453,7 @@ class MatchService {
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
+      .select(`_mf.id_verified`)
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -1501,7 +1503,7 @@ class MatchService {
         .where('_m.status', MATCH_STATUS_TOP)
         .clearOrder()
         .orderBy([
-          { column: '_m.order_lord', order: 'ASK' },
+          { column: '_m.order_lord', order: 'ASC' },
           { column: '_m.updated_at', order: 'DESC' },
         ])
     } else if (commit) {
@@ -1609,7 +1611,29 @@ class MatchService {
       .leftJoin({ _bd: 'buddies' }, function () {
         this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
       })
-
+      .leftJoin(
+        Database.raw(`
+          (select
+            members.user_id,
+            bool_and(member_has_id) as id_verified
+          from members
+          left join
+            (select
+              member_files.member_id,
+              count(member_files.file) > 0 as member_has_id
+            from
+              member_files
+            where member_files.status = ${STATUS_ACTIVE} and member_files.type='${MEMBER_FILE_TYPE_PASSPORT}'
+            group by
+              member_files.member_id
+            ) as mf
+          on mf.member_id=members.id
+          group by members.user_id)
+        as _mf`),
+        function () {
+          this.on('_mf.user_id', '_m.user_id')
+        }
+      )
     query.select(
       '_mb.firstname',
       '_mb.secondname',
@@ -1625,7 +1649,8 @@ class MatchService {
       '_m.buddy',
       '_m.share as share',
       '_m.status as status',
-      '_m.user_id'
+      '_m.user_id',
+      '_mf.id_verified'
     )
 
     return query

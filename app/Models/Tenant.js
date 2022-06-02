@@ -47,6 +47,7 @@ class Tenant extends Model {
     return [
       'id',
       'user_id',
+      'id_verified',
       'status',
       'firstname',
       'secondname',
