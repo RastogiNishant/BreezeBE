@@ -231,7 +231,6 @@ class EstateFilters {
   }
 
   static customStatusesToValue(statuses) {
-    console.log({ statuses })
     return statuses.reduce(
       (statuses, status) => [...statuses, EstateFilters.statusStringToValMap[toLower(status)]],
       []
@@ -249,7 +248,6 @@ class EstateFilters {
   }
 
   static paramsAreUsed(params) {
-    console.log(params)
     let returns = EstateFilters.possibleStringParams.map((param) =>
       params[param] && params[param].operator ? true : false
     )
