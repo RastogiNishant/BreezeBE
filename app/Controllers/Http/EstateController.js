@@ -388,6 +388,27 @@ class EstateController {
     response.res(true)
   }
 
+  async makeEstateOffline({ request, auth, response }) {
+    const { id } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query().where('id', id).first()
+      if (estate) {
+        estate.status = STATUS_DRAFT
+        await EstateService.handleOfflineEstate(estate.id, trx)
+        await estate.save(trx)
+        await trx.commit()
+        return response.res(true)
+      } else {
+        throw new HttpException('You are attempted to edit wrong estate', 409)
+      }
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+      throw new HttpException(e?.message ?? e, 400)
+    }
+  }
+
   /**
    *
    */
@@ -878,11 +899,6 @@ class EstateController {
     }
     trx.commit()
     return response.res({ deleted: affectedRows })
-  }
-
-  async osmanTest() {
-    await EstateService.handleShowDateEndedEstates()
-    return true
   }
 }
 

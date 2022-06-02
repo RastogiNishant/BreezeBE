@@ -400,6 +400,8 @@ const constants = {
     'notification_prospect_household_invitation_accepted',
   NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED: 'notification_prospect_household_disconnected',
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -435,6 +437,8 @@ const constants = {
   NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID: 38,
   NOTICE_TYPE_PROSPECT_ARRIVED_ID: 39,
   NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',

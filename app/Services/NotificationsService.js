@@ -81,6 +81,10 @@ const {
   NOTICE_TYPE_CANCEL_VISIT_LANDLORD,
   NOTICE_TYPE_PROSPECT_ARRIVED_ID,
   NOTICE_TYPE_PROSPECT_ARRIVED,
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED,
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH,
 } = require('../constants')
 const { lang } = require('moment')
 
@@ -121,6 +125,8 @@ const mapping = [
   [NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID, NOTICE_TYPE_VISIT_DELAY_LANDLORD],
   [NOTICE_TYPE_ZENDESK_NOTIFY_ID, NOTICE_TYPE_ZENDESK_NOTIFY],
   [NOTICE_TYPE_PROSPECT_ARRIVED_ID, NOTICE_TYPE_PROSPECT_ARRIVED],
+  [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
+  [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
 ]
 
 class NotificationsService {
@@ -239,10 +245,20 @@ class NotificationsService {
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
+      return address + ' \n' + `${l.get('landlord.notification.next.limit_expired.message', lang)}`
+    })
+  }
+
+  /**
+   * Send Notification about estate expired soon
+   */
+  static async sendProspectPropertyDeactivated(notices) {
+    const title = 'prospect.notification.event.prop_deactivated'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      const address = capitalize(get(data, 'estate_address', ''))
       return (
-        address +
-        ' \n' +
-        `${l.get('landlord.notification.next.limit_expired.message', lang)} ${data.date}`
+        address + ' \n' + `${l.get('prospect.notification.next.prop_deactivated.message', lang)}`
       )
     })
   }
@@ -263,7 +279,7 @@ class NotificationsService {
       },
       (data, lang) => {
         const address = capitalize(get(data, 'estate_address', ''))
-        return address + ' \n' + l.get(`${subBody}.message`, lang)
+        return address + ' \n' + l.get(`${subBody}.message`, lang) + ` ${data.date}`
       }
     )
   }
@@ -587,6 +603,21 @@ class NotificationsService {
         capitalize(data.estate_address) +
         ' \n' +
         l.get('prospect.notification.next.commit.message', lang)
+      )
+    })
+  }
+
+  /**
+   *
+   */
+  static async sendProspectHasSuperMatch(notice) {
+    const title = 'prospect.notification.event.best_match'
+
+    return NotificationsService.sendNotes([notice], title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.best_match.message', lang)
       )
     })
   }

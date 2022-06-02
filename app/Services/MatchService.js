@@ -494,6 +494,10 @@ class MatchService {
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
       await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(estateId, superMatches)
+      }
     }
   }
 
@@ -952,9 +956,6 @@ class MatchService {
       })
       .update({ status: MATCH_STATUS_FINISH })
 
-    //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
-
-    // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
 

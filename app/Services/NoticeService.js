@@ -78,6 +78,9 @@ const {
   NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID,
   GERMAN_DATE_TIME_FORMAT,
   NOTICE_TYPE_PROSPECT_ARRIVED_ID,
+  MATCH_STATUS_FINISH,
+  NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -191,6 +194,20 @@ class NoticeService {
   }
 
   /**
+   * On estate deactivation, send to matched prospects
+   */
+  static async prospectPropertDeactivated(estates) {
+    const notices = estates.map(({ address, id, cover, prospect_id }) => ({
+      user_id: prospect_id,
+      type: NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
+      data: { estate_id: id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendProspectPropertyDeactivated(notices)
+  }
+
+  /**
    * On estate expiration, send to landlord
    */
   static async landLandlordEstateExpired(estateIds) {
@@ -265,19 +282,15 @@ class NoticeService {
         })
         .whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_TOP])
         .whereNot('_e.id', estateId)
-        .limit(100)
     }
 
-    // Another top users from current estate
+    // Another users from current estate
     const getAnotherUsersCurEstate = () => {
       return Database.table({ _m: 'matches' })
         .select('_m.user_id')
         .where({ '_m.estate_id': estateId })
-        .where(function () {
-          this.orWhere({ '_m.status': MATCH_STATUS_TOP }).orWhere({ '_m.share': true })
-        })
+        .whereNotIn('_m.status', [MATCH_STATUS_NEW, MATCH_STATUS_FINISH])
         .whereNot('_m.user_id', userId)
-        .limit(100)
     }
 
     const { estate, anotherEstates, anotherUsers } = await P.props({
@@ -581,6 +594,30 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectLandlordConfirmed(notice)
+  }
+
+  /**
+   *
+   */
+  static async prospectSuperMatch(estateId, matches) {
+    if (matches.length > 0) {
+      const estate = await Estate.query().select('*').where('id', estateId).first()
+
+      const notices = matches.map(({ user_id }) => {
+        return {
+          user_id,
+          type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+          data: {
+            estate_id: estateId,
+            estate_address: estate.address,
+            params: estate.getAptParams(),
+          },
+          image: File.getPublicUrl(estate.cover),
+        }
+      })
+      await NoticeService.insertNotices(notices)
+      await NotificationsService.sendProspectHasSuperMatch(notices)
+    }
   }
 
   /**

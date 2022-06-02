@@ -370,6 +370,7 @@ Route.group(() => {
   ])
 
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
+  Route.put('/:id/offline', 'EstateController.makeEstateOffline').middleware(['valid:Id'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
   // Rooms manage
   Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
@@ -958,8 +959,6 @@ Route.list().forEach((r) => {
     }
   }
 })
-
-Route.get('/osman-test', 'EstateController.osmanTest')
 
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {

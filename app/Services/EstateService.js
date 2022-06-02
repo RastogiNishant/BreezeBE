@@ -15,6 +15,7 @@ const RoomService = use('App/Services/RoomService')
 
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
+const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
@@ -35,6 +36,7 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
   MIN_TIME_SLOT,
+  MATCH_STATUS_FINISH,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -313,7 +315,7 @@ class EstateService {
    */
   static async setCover(estateId, filePathName, trx = null) {
     const coverUpdateQuery = Estate.query().update({ cover: filePathName }).where('id', estateId)
-    if( trx ) {
+    if (trx) {
       coverUpdateQuery.transacting(trx)
     }
     return await coverUpdateQuery
@@ -853,6 +855,31 @@ class EstateService {
     // Run match estate
     Event.fire('match::estate', estate.id)
     Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+  }
+
+  static async handleOfflineEstate(estateId, trx) {
+    console.log('girdi', estateId)
+    const matches = await Estate.query()
+      .select('estates.*')
+      .where('id', estateId)
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', estateId)
+      })
+      .select('_m.user_id as prospect_id')
+      .whereNotIn('_m.status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .fetch()
+
+    await Match.query()
+      .where('estate_id', estateId)
+      .whereNotIn('status', [MATCH_STATUS_FINISH])
+      .delete()
+      .transacting(trx)
+
+    await Visit.query().where('estate_id', estateId).delete().transacting(trx)
+    await Database.table('likes').where({ estate_id: estateId }).delete().transacting(trx)
+    await Database.table('dislikes').where({ estate_id: estateId }).delete().transacting(trx)
+
+    NoticeService.prospectPropertDeactivated(matches.rows)
   }
 
   static async getEstatesByUserId(ids, limit, page, params) {
