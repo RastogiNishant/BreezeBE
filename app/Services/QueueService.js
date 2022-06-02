@@ -67,6 +67,7 @@ class QueueService {
     return Promise.all([
       wrapException(EstateService.handleExpiredEstates),
       wrapException(EstateService.handleShowDateEndedEstates),
+      wrapException(EstateService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
       wrapException(NoticeService.prospectVisitIn90m),
       wrapException(NoticeService.getNewWeekMatches),
