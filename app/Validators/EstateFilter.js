@@ -10,7 +10,6 @@ const {
   STATUS_EXPIRE,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  LETTING_TYPE_NA,
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
@@ -30,7 +29,31 @@ class EstateFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.string(),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      customArea: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.number().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      customFloor: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.number().nullable(),
             })
           ),
         })
@@ -47,7 +70,7 @@ class EstateFilter extends Base {
           ),
         })
         .nullable(),
-      net_rent: yup
+      customRent: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
@@ -59,16 +82,56 @@ class EstateFilter extends Base {
           ),
         })
         .nullable(),
-      area: yup
+      customNumFloor: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.string(),
+              value: yup.string().nullable(),
             })
           ),
+        })
+        .nullable(),
+      rooms_number: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      customLettingStatus: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup.array().of(yup.string()).nullable(),
+        })
+        .nullable(),
+      verified_address: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup.array().of(yup.string()).nullable(),
+        })
+        .nullable(),
+      customStatus: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup.array().of(yup.string()).nullable(),
+        })
+        .nullable(),
+      customPropertyType: yup
+        .object()
+        .shape({
+          matchMode: yup.array().of(yup.string()),
+          value: yup.string().nullable(),
         })
         .nullable(),
       status: yup.lazy((value) => {
@@ -93,9 +156,7 @@ class EstateFilter extends Base {
               PROPERTY_TYPE_SITE,
             ])
         ),
-      letting_type: yup
-        .array()
-        .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])),
+      letting_type: yup.array().of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID])),
       letting: yup.array().of(yup.string()),
     })
 }
