@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, isNull } = require('lodash')
+const { toLower, isArray, isEmpty, trim, isNull, includes } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -106,7 +106,7 @@ class EstateFilters {
       }
     })
     /* filter for combined letting_status and letting_type */
-    if (params.customLettingStatus && !isNull(params.customLettingStatus.value)) {
+    if (params.customLettingStatus && params.customLettingStatus.value) {
       query.andWhere(function () {
         params.customLettingStatus.value.map((letting) => {
           const letting_str = EstateFilters.parseLetting(letting)
@@ -123,7 +123,7 @@ class EstateFilters {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified_address && !isNull(params.verified_address.value)) {
+    if (params.verified_address && params.verified_address.value) {
       query.andWhere(
         Database.raw(EstateFilters.whereQueryForVerifiedAddress(params.verified_address.value))
       )
@@ -137,7 +137,7 @@ class EstateFilters {
       })
     }
     /* status */
-    if (params.customStatus && !isNull(params.customStatus.value)) {
+    if (params.customStatus && params.customStatus.value) {
       let statuses = EstateFilters.customStatusesToValue(params.customStatus.value)
       query.whereIn('estates.status', statuses)
     }
@@ -147,7 +147,7 @@ class EstateFilters {
     }
 
     /* property_type */
-    if (params.customPropertyType && !isNull(params.customPropertyType.value)) {
+    if (params.customPropertyType && params.customPropertyType.value) {
       let propertyTypes = EstateFilters.customPropertyTypesToValue(params.customPropertyType.value)
       query.whereIn('estates.property_type', propertyTypes)
     }
@@ -231,6 +231,7 @@ class EstateFilters {
   }
 
   static customStatusesToValue(statuses) {
+    console.log({ statuses })
     return statuses.reduce(
       (statuses, status) => [...statuses, EstateFilters.statusStringToValMap[toLower(status)]],
       []
@@ -248,11 +249,19 @@ class EstateFilters {
   }
 
   static paramsAreUsed(params) {
-    EstateFilters.possibleStringParams.map((param) => {
-      if (params[param] && params[param].operator) {
-        return true
-      }
-    })
+    console.log(params)
+    let returns = EstateFilters.possibleStringParams.map((param) =>
+      params[param] && params[param].operator ? true : false
+    )
+    if (includes(returns, true)) {
+      return true
+    }
+    returns = ['customLettingStatus', 'verified_address', 'customStatus', 'customPropertyType'].map(
+      (param) => (params[param] && params[param].value ? true : false)
+    )
+    if (includes(returns, true)) {
+      return true
+    }
     return false
   }
 

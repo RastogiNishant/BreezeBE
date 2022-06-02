@@ -240,6 +240,7 @@ class EstateController {
         }
       }
     }
+    result = { ...result, total_estate_count: totalEstateCounts.all_count }
     return response.res(result)
   }
 
