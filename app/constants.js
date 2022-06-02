@@ -325,10 +325,6 @@ const constants = {
   COMPANY_SIZE_MID: 'md',
   COMPANY_SIZE_LARGE: 'lg',
 
-  DISLIKE_REASON_MANUAL: 'manual',
-  DISLIKE_REASON_EXPIRED_ESTATE: 'expired_estate',
-  DISLIKE_REASON_EXPIRED_SHOW_DATE: 'expired_show_date',
-
   // Tabs matches list
   TENANT_TABS_BUDDY: 'buddy',
   TENANT_TABS_LIKE: 'like',
