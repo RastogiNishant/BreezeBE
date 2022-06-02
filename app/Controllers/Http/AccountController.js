@@ -352,8 +352,6 @@ class AccountController {
 
   async housekeeperSignup({ request, response }) {
     const { firstname, email, password, code, lang } = request.all()
-    console.log({ code })
-    console.log({ email, code })
     try {
       const member = await Member.query()
         .select('user_id', 'id')

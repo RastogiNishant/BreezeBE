@@ -2,7 +2,7 @@ const Queue = use('Queue')
 const Logger = use('Logger')
 const MemberService = use('App/Services/MemberService')
 const NoticeService = use('App/Services/NoticeService')
-const JobsForQueueService = use('App/Services/JobsForQueueService')
+const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
@@ -65,14 +65,15 @@ class QueueService {
    */
   static async sendEvery5Min() {
     return Promise.all([
-      wrapException(JobsForQueueService.moveJobsToExpire),
+      wrapException(QueueJobService.handleExpiredEstates),
+      wrapException(QueueJobService.handleShowDateEndedEstates),
+      wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
       wrapException(NoticeService.prospectVisitIn90m),
       wrapException(NoticeService.getNewWeekMatches),
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
-      wrapException(NoticeService.detectShowDateIsEndedEstates),
     ])
   }
 
@@ -116,9 +117,15 @@ class QueueService {
     try {
       switch (job.name) {
         case GET_POINTS:
+<<<<<<< HEAD
           return JobsForQueueService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
           return JobsForQueueService.updateEstateCoord(job.data.estateId)
+=======
+          return QueueJobService.updateEstatePoint(job.data.estateId)
+        case GET_COORDINATES:
+          return QueueJobService.updateEstateCoord(job.data.estateId)
+>>>>>>> development
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case SCHEDULED_EVERY_5M_JOB:

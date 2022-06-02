@@ -495,6 +495,10 @@ class MatchService {
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
       await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(estateId, superMatches)
+      }
     }
   }
 
@@ -953,9 +957,6 @@ class MatchService {
       })
       .update({ status: MATCH_STATUS_FINISH })
 
-    //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
-
-    // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
 
@@ -1900,18 +1901,18 @@ class MatchService {
   /**
    *
    */
-  static async updateVisitStatusLandlord(estateId, data) {
+  static async updateVisitStatusLandlord(estateId, user_id, data) {
     const currentDay = moment().startOf('day')
     try {
       //TODO: handle this flow. seems wrong
       const visit = await Visit.query()
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .first()
 
       await Database.table('visits')
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id: user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .update(data)

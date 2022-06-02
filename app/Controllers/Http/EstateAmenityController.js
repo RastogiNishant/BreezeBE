@@ -86,7 +86,7 @@ class EstateAmenityController {
     if (type === 'custom_amenity') {
       //we check if addition of custom amenities could be possible...
       let currentEstateCustomAmenities = await Amenity.query()
-        .whereNotIn('status', [STATUS_DELETE])
+        .where('status', STATUS_ACTIVE)
         .where('type', 'custom_amenity')
         .where('estate_id', estate_id)
         .where('location', location)
@@ -158,6 +158,7 @@ class EstateAmenityController {
            ) as damenities`)
       )
       .where('estate_id', estate_id)
+      .where('status', STATUS_ACTIVE)
       .groupBy('location')
     return response.res({
       newEstateAmenityId,

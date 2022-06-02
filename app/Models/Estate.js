@@ -322,7 +322,7 @@ class Estate extends Model {
    *
    */
   slots() {
-    return this.hasMany('App/Models/TimeSlot')
+    return this.hasMany('App/Models/TimeSlot').orderBy('end_at')
   }
 
   current_tenant() {

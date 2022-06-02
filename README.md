@@ -1,6 +1,6 @@
-# Breeze Notes to Backend Developers
-
-These are notes to setup your local. 
+# Breeze Notes to Backend Developers 
+ 
+These are notes to setup your local.  
 
 ## Prerequisites
 

@@ -30,8 +30,7 @@ function initMap() {
   function customIcon(opts) {
     return Object.assign(
       {
-        path:
-          'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
+        path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
         fillColor: '#34495e',
         fillOpacity: 1,
         strokeColor: '#000',
@@ -75,7 +74,6 @@ function initMap() {
 
   if (window.tenants && window.tenants.length) {
     window.tenants.forEach(({ lat, lon, id }) => {
-      console.log(lat, lon, id )
       new google.maps.Marker({
         position: { lat: parseFloat(lat), lng: parseFloat(lon) },
         map,
@@ -88,10 +86,8 @@ function initMap() {
   let points = []
   map.addListener('click', (mapsMouseEvent) => {
     const point = mapsMouseEvent.latLng.toJSON()
-    console.log(point)
     points.push(point)
     if (points.length >= 2) {
-      console.log(distance(points[0].lat, points[0].lng, points[1].lat, points[1].lng))
       points = []
     }
   })

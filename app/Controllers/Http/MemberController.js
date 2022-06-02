@@ -107,7 +107,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: imageMimes, isPublic: false },
       ])
 
       const user_id = auth.user.id
@@ -177,7 +177,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: imageMimes, isPublic: false },
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)
@@ -395,7 +395,6 @@ class MemberController {
         })
         .delete()
         .transacting(trx)
-      console.log('userId', user_id)
       await MemberService.updateUserIncome(user_id, auth.user.owner_id ? auth.user.id : null, trx)
 
       await trx.commit()
