@@ -117,15 +117,9 @@ class QueueService {
     try {
       switch (job.name) {
         case GET_POINTS:
-<<<<<<< HEAD
-          return JobsForQueueService.updateEstatePoint(job.data.estateId)
-        case GET_COORDINATES:
-          return JobsForQueueService.updateEstateCoord(job.data.estateId)
-=======
           return QueueJobService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
           return QueueJobService.updateEstateCoord(job.data.estateId)
->>>>>>> development
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case SCHEDULED_EVERY_5M_JOB:
