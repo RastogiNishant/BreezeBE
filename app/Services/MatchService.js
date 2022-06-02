@@ -1989,6 +1989,30 @@ class MatchService {
       .where('user_id', data.user_id)
       .update({ properties: data.properties, prices: data.prices })
   }
+
+  static getEstateForScoringQuery() {
+    return Estate.query()
+      .select(
+        'budget',
+        'credit_score',
+        'rent_arrears',
+        'min_age',
+        'max_age',
+        'family_size_min',
+        'family_size_max',
+        'pets',
+        'net_rent',
+        'vacant_date',
+        Database.raw(`json_agg(amenities.amenities`),
+        'area',
+        'apt_type'
+      )
+      .leftJoin('amenities')
+  }
+
+  static getProspectForScoringQuery() {
+    return Tenant.query().select()
+  }
 }
 
 module.exports = MatchService
