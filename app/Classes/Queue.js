@@ -9,7 +9,7 @@ const {
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
-  SCHEDULED_MONTHLY_JOB
+  SCHEDULED_MONTHLY_JOB,
 } = require('../constants')
 const COMMON_QUEUE = 'common'
 
@@ -25,7 +25,6 @@ class QueueEngine {
    */
   async init() {
     // TODO: add scheduled jobs here
-    console.log('Init queue')
     const QueueService = use('App/Services/QueueService')
     const Logger = use('Logger')
     this.commonWorker = new Worker(
@@ -56,8 +55,6 @@ class QueueEngine {
     this.commonQueue
       .add(SCHEDULED_MONTHLY_JOB, {}, { repeat: { cron: '0 0 12 * * *' }, removeOnComplete: true })
       .catch(Logger.error)
-
-
   }
 
   /**
