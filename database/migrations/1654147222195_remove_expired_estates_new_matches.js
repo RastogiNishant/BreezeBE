@@ -1,5 +1,6 @@
 'use strict'
 
+const e = require('express')
 const {
   STATUS_EXPIRE,
   STATUS_DRAFT,
@@ -8,6 +9,7 @@ const {
 } = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
+const Database = use('Database')
 const Schema = use('Schema')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
@@ -37,6 +39,20 @@ class RemoveExpiredEstatesNewMatches extends Schema {
         draftEstates.map((e) => e.id)
       )
       .whereNot('status', MATCH_STATUS_FINISH)
+      .delete()
+
+    await Database.table('likes')
+      .whereIn(
+        'estate_id',
+        draftEstates.map((e) => e.id)
+      )
+      .delete()
+
+    await Database.table('dislikes')
+      .whereIn(
+        'estate_id',
+        draftEstates.map((e) => e.id)
+      )
       .delete()
 
     // Draft estates should now have visits except visit of final match
