@@ -232,12 +232,7 @@ class RoomController {
 
     const trx = await Database.beginTransaction()
     try {
-      //need to remove if this image is used as the esate's cover
       const image = await RoomService.removeImage(id, trx)
-      // if (image) {
-      //   //await EstateService.removeCover(room.estate_id, image.url, trx)
-
-      // }
       await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
       Event.fire('estate::update', room.estate_id)
 
