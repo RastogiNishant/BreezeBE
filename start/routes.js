@@ -963,6 +963,14 @@ Route.list().forEach((r) => {
   }
 })
 
+const MatchService = use('App/Services/MatchService')
+Route.get('/test/estate', async ({ request, response }) => {
+  let query = MatchService.getEstateForScoringQuery()
+  query.where('estates.id', 1015)
+  const estate = await query.first()
+  return response.res(estate)
+})
+
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {
 //   if (!process.env.DEV) {

@@ -2004,11 +2004,19 @@ class MatchService {
         'pets',
         'net_rent',
         'vacant_date',
-        Database.raw(`json_agg(amenities.amenities`),
+        'amenities.options',
         'area',
         'apt_type'
       )
-      .leftJoin('amenities')
+      .leftJoin(
+        Database.raw(`
+        (select estate_id, json_agg(option_id) as options
+        from amenities where type='amenity' group by estate_id) as amenities
+        `),
+        function () {
+          this.on('amenities.estate_id', 'estates.id')
+        }
+      )
   }
 
   static getProspectForScoringQuery() {
