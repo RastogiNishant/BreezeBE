@@ -138,9 +138,9 @@ class UserService {
       user.save(trx)
       await DataStorage.setItem(code, { userId: user.id }, 'change_email', { ttl: 3600 })
       await MailService.sendChangeEmailConfirmation(email, code, user.role)
-      trx.commit()
+      await trx.commit()
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw e
     }
   }

@@ -876,7 +876,7 @@ class EstateController {
           //placeholder for now...
         })
       )
-      trx.commit()
+      await trx.commit()
       //transaction end
       return response.res({ code })
     } catch (e) {
@@ -963,10 +963,10 @@ class EstateController {
     try {
       affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
     } catch (error) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    trx.commit()
+    await trx.commit()
     return response.res({ deleted: affectedRows })
   }
 }

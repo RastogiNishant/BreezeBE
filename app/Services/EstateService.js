@@ -439,10 +439,10 @@ class EstateService {
         .insert({ user_id: userId, estate_id: estateId })
         .transacting(trx)
       await this.removeLike(userId, estateId, trx)
-      if (shouldTrxProceed) await trx.commit()
+      if (!shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
-      if (shouldTrxProceed) await trx.rollback()
+      if (!shouldTrxProceed) await trx.rollback()
       throw new AppException('Cant create like')
     }
   }

@@ -85,12 +85,12 @@ class MemberController {
         await trx.commit()
         return response.res(member)
       } else {
-        trx.rollback()
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count),
-          response.res(null)
+        await trx.rollback()
+        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
+        response.res(null)
       }
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -161,7 +161,7 @@ class MemberController {
         throw new HttpException('You should specify email to add member', 400)
       }
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -251,7 +251,7 @@ class MemberController {
       await MemberService.calcTenantMemberData(user_id, trx)
 
       Event.fire('tenant::update', user_id)
-      trx.commit()
+      await trx.commit()
       if (auth.user.owner_id) {
         await NoticeService.prospectHouseholdDisconnected(user_id)
       }
@@ -283,6 +283,7 @@ class MemberController {
       if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
         Event.fire('memberPermission:create', member_id, auth.user.id)
       }
+      await trx.commit()
       response.res(true)
     } catch (e) {
       await trx.rollback()

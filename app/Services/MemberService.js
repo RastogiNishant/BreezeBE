@@ -373,9 +373,12 @@ class MemberService {
         await MailService.sendcodeForMemberInvitation(member.email, shortLink)
         trx.commit()
         return true
-      }
-      if (member && !member.email) {
-        throw new HttpException("this member doesn't have email. please add email first", 400)
+      } else {
+        if (member && !member.email) {
+          throw new HttpException("this member doesn't have email. please add email first", 400)
+        } else {
+          await trx.rollback()
+        }
       }
       return false
     } catch (e) {
