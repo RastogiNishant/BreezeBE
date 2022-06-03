@@ -9,8 +9,11 @@ const File = require('../Classes/File')
 class MemberSerializer extends BaseSerializer {
   mergeData(item, options = {}) {
     if (item.avatar) {
-      item.avatar = File.getPublicUrl(item.avatar)
+      if (item.avatar.search('http') !== 0) {
+        item.avatar = File.getPublicUrl(item.avatar)
+      }
     }
+
     // if (item.rent_arrears_doc) {
     //   item.rent_arrears_doc = File.getProtectedUrl(item.rent_arrears_doc)
     // }
