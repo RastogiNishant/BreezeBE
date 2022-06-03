@@ -130,8 +130,8 @@ class EstateFilter extends Base {
       customPropertyType: yup
         .object()
         .shape({
-          matchMode: yup.array().of(yup.string()),
-          value: yup.string().nullable(),
+          matchMode: yup.string().nullable(),
+          value: yup.array().of(yup.string()).nullable(),
         })
         .nullable(),
       status: yup.lazy((value) => {
