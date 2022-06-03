@@ -42,10 +42,13 @@ const {
   MATCH_STATUS_FINISH,
   LOG_TYPE_PROPERTIES_IMPORTED,
   ROLE_USER,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
+const EstateFilters = require('../../Classes/EstateFilters')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -173,7 +176,6 @@ class EstateController {
         tenant: tenant,
         members: members,
       }
-      //console.log('result', result.toJSON() )
       response.res(result)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -200,9 +202,44 @@ class EstateController {
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
-    //
-    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id], params)
-    result = { ...result, ...lettingTypeCounts }
+    const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
+    const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
+    if (!EstateFilters.paramsAreUsed(params)) {
+      //no param is used
+      result = { ...result, ...totalEstateCounts }
+    } else {
+      //param is used
+      if (params.letting_type) {
+        //funnel filter was changed
+        switch (params.letting_type[0]) {
+          case LETTING_TYPE_LET:
+            result = {
+              ...result,
+              all_count: totalEstateCounts.all_count,
+              let_count: filteredCounts.let_count,
+              void_count: totalEstateCounts.void_count,
+            }
+            break
+          case LETTING_TYPE_VOID:
+            result = {
+              ...result,
+              all_count: totalEstateCounts.all_count,
+              let_count: totalEstateCounts.let_count,
+              void_count: filteredCounts.void_count,
+            }
+            break
+        }
+      } else {
+        //All is selected...
+        result = {
+          ...result,
+          all_count: filteredCounts.all_count,
+          let_count: totalEstateCounts.let_count,
+          void_count: filteredCounts.void_count,
+        }
+      }
+    }
+    result = { ...result, total_estate_count: totalEstateCounts.all_count }
     return response.res(result)
   }
 
@@ -401,7 +438,6 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
-        console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -420,6 +456,27 @@ class EstateController {
     }
 
     response.res(true)
+  }
+
+  async makeEstateOffline({ request, auth, response }) {
+    const { id } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query().where('id', id).first()
+      if (estate) {
+        estate.status = STATUS_DRAFT
+        await EstateService.handleOfflineEstate(estate.id, trx)
+        await estate.save(trx)
+        await trx.commit()
+        return response.res(true)
+      } else {
+        throw new HttpException('You are attempted to edit wrong estate', 409)
+      }
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+      throw new HttpException(e?.message ?? e, 400)
+    }
   }
 
   /**
@@ -817,7 +874,6 @@ class EstateController {
             )
           }
           //placeholder for now...
-          console.log('sending email to ', email, 'code', code)
         })
       )
       trx.commit()

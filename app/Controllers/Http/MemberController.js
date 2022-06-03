@@ -395,7 +395,6 @@ class MemberController {
         })
         .delete()
         .transacting(trx)
-      console.log('userId', user_id)
       await MemberService.updateUserIncome(user_id, auth.user.owner_id ? auth.user.id : null, trx)
 
       await trx.commit()

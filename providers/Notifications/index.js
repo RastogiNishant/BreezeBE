@@ -78,13 +78,6 @@ class Notifications {
           this.Sentry.captureException(error)
         }
 
-        console.log({
-          tokens,
-          successCount: result.successCount,
-          failureCount: result.failureCount,
-          messages: JSON.stringify(result.results, null, 2),
-          message,
-        })
         return result
       })
       .catch((e) => {
