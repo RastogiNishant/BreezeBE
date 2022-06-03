@@ -214,6 +214,8 @@ class Estate extends Model {
           }, ${instance.country || ''}`,
           ', '
         ).toLowerCase()
+        instance.coord = null
+        instance.coord_raw = null
       }
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
@@ -223,11 +225,6 @@ class Estate extends Model {
 
       if (instance.dirty?.parking_space === 0) {
         instance.stp_garage = 0
-      }
-
-      if (instance.dirty.address) {
-        instance.coord = null
-        instance.coord_raw = null
       }
 
       if (
