@@ -48,7 +48,9 @@ class QueueJobService {
 
   //Finds and handles the estates that available date is over
   static async handleExpiredEstates() {
+    console.log('debug ->>> worked handleExpiredEstates')
     const estateIds = (await this.fetchExpiredEstates()).rows.map((i) => i.id)
+    console.log({ estateIds })
     if (isEmpty(estateIds)) {
       return false
     }
