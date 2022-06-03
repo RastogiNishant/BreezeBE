@@ -114,7 +114,7 @@ class QueueJobService {
           SELECT estates.* FROM estates
           INNER JOIN time_slots on time_slots.estate_id = estates.id
           WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
-          AND estates.status = ${STATUS_ACTIVE}
+          AND estates.status IN (${STATUS_ACTIVE},${STATUS_EXPIRE})
           AND end_at >= '${start.format(DATE_FORMAT)}'
           AND end_at <= '${end.format(DATE_FORMAT)}'
           ORDER BY estates.id
@@ -124,7 +124,7 @@ class QueueJobService {
 
   static async handleShowDateEndedEstatesMatches(estateIds, trx) {
     // We move "invite" matches to "knock".
-    // Because estate's show date is over and they are not able to pick timeslot anymore
+    // Because estate's timeslots(show date) is over and the prospects are not able to pick timeslot anymore
     await Database.table('matches')
       .where('status', MATCH_STATUS_INVITE)
       .whereIn('estate_id', estateIds)
@@ -160,7 +160,7 @@ class QueueJobService {
           INNER JOIN matches on matches.estate_id = estates.id
           WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
           AND matches.status = ${MATCH_STATUS_INVITE}
-          AND estates.status = ${STATUS_ACTIVE}
+          AND estates.status IN (${STATUS_ACTIVE},${STATUS_EXPIRE})
           AND end_at >= '${start.format(DATE_FORMAT)}'
           AND end_at <= '${end.format(DATE_FORMAT)}'
           ORDER BY estates.id
