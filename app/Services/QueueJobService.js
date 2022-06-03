@@ -3,6 +3,7 @@ const Database = use('Database')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
 const { isEmpty } = require('lodash')
@@ -13,6 +14,7 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
   MIN_TIME_SLOT,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 
 class QueueJobService {
@@ -56,6 +58,13 @@ class QueueJobService {
       await Estate.query()
         .update({ status: STATUS_EXPIRE })
         .whereIn('id', estateIds)
+        .transacting(trx)
+
+      // Delete new matches
+      await Match.query()
+        .whereIn('estate_id', estateIds)
+        .where('status', MATCH_STATUS_NEW)
+        .delete()
         .transacting(trx)
 
       await NoticeService.landLandlordEstateExpired(estateIds)

@@ -30,8 +30,8 @@ const {
   LOG_TYPE_PUBLISHED_PROPERTY,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  LETTING_TYPE_NA,
   MATCH_STATUS_FINISH,
+  MAX_SEARCH_ITEMS,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -466,7 +466,7 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-      .limit(1000)
+      .limit(MAX_SEARCH_ITEMS)
   }
 
   /**
