@@ -437,7 +437,7 @@ class NotificationsService {
       (data, lang) => {
         return `${data.user_name} ${rc(
           l.get('prospect.notification.event.coming_min_later', lang),
-          [{ '^minutes': data.delay }]
+          [{ minutes: data.delay }]
         )}`
       },
       (data, lang) => {
@@ -456,7 +456,7 @@ class NotificationsService {
       notice,
       (data, lang) => {
         return `${rc(l.get('prospect.notification.event.visit_delay', lang), [
-          { '^minutes': data.delay },
+          { minutes: data.delay },
         ])}`
       },
       (data, lang) => {
