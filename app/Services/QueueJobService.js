@@ -42,13 +42,13 @@ class QueueJobService {
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result) {
       await estate.updateItem({ coord: `${result.lat},${result.lon}` })
-      await this.updateEstatePoint(estateId)
+      await QueueJobService.updateEstatePoint(estateId)
     }
   }
 
   //Finds and handles the estates that available date is over
   static async handleExpiredEstates() {
-    const estateIds = (await this.fetchExpiredEstates()).rows.map((i) => i.id)
+    const estateIds = (await QueueJobService.fetchExpiredEstates()).rows.map((i) => i.id)
     if (isEmpty(estateIds)) {
       return false
     }
@@ -86,14 +86,14 @@ class QueueJobService {
 
   //Finds and handles the estates that show date is over between now and 5 minutes before
   static async handleShowDateEndedEstates() {
-    const showedEstates = (await this.fetchShowDateEndedEstatesFor5Minutes()).rows
+    const showedEstates = (await QueueJobService.fetchShowDateEndedEstatesFor5Minutes()).rows
     const estateIds = showedEstates.map((e) => e.id)
     if (isEmpty(estateIds)) {
       return false
     }
     const trx = await Database.beginTransaction()
     try {
-      await this.handleShowDateEndedEstatesMatches(estateIds, trx)
+      await QueueJobService.handleShowDateEndedEstatesMatches(estateIds, trx)
       await NoticeService.sendToShowDateIsEndedEstatesLandlords(showedEstates)
       await trx.commit()
     } catch (e) {
@@ -133,7 +133,8 @@ class QueueJobService {
   }
 
   static async handleShowDateWillEndInAnHourEstates() {
-    const showDateWillEndEstates = (await this.fetchShowDateWillEndInAnHourEstates()).rows
+    const showDateWillEndEstates = (await QueueJobService.fetchShowDateWillEndInAnHourEstates())
+      .rows
     if (isEmpty(showDateWillEndEstates)) {
       return false
     }
