@@ -75,16 +75,18 @@ class File {
 
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field)
+
       if (!file) {
         return null
       }
       const path = await File.saveToDisk(file, mime, isPublic)
+      const fileName = file.clientName
 
-      return { field, path }
+      return { field, path, fileName }
     }
     const files = await Promise.map(fields, saveFile)
 
-    return files.reduce((n, v) => (v ? { ...n, [v.field]: v.path } : n), {})
+    return files.reduce((n, v) => (v ? { ...n, [v.field]: v.path, [`original_${v.field}`]:v.fileName } : n), {})
   }
 
   /**
