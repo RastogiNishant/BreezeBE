@@ -102,15 +102,15 @@ class EstateService {
 
     let createData = {
       ...data,
+      user_id: userId,
+      property_id: propertyId,
+      status: STATUS_DRAFT,
     }
 
     if (files && files.energy_proof) {
       createData = {
         ...createData,
         energy_proof: files.energy_proof,
-        user_id: userId,
-        property_id: propertyId,
-        status: STATUS_DRAFT,
       }
     }
 
@@ -133,7 +133,7 @@ class EstateService {
   static async updateEstate(request) {
     const { ...data } = request.all()
     const files = await this.saveEnergyProof(request)
-console.log('Estate', data )
+    console.log('Estate', data)
     let updateData = {
       ...data,
       status: STATUS_DRAFT,
@@ -153,7 +153,7 @@ console.log('Estate', data )
       })
 
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)  
+    QueueService.getEstatePoint(estate.id)
     return estate
   }
 
