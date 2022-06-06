@@ -962,7 +962,7 @@ Route.list().forEach((r) => {
     }
   }
 })
-
+/*
 const MatchService = use('App/Services/MatchService')
 const { omit } = require('lodash')
 Route.get('/test/estate/:id', async ({ request, response }) => {
@@ -1063,3 +1063,4 @@ Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
   const matchScore = MatchService.calculateMatchPercent(prospect, estate)
   return response.res({ estate, prospect, matchScore })
 }).middleware(['valid:Id,EstateId'])
+*/
