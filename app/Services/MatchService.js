@@ -2007,7 +2007,7 @@ class MatchService {
         'rooms_number',
         'number_floors',
         'house_type',
-        'vacant_date',
+        Database.raw(`vacant_date::TIMESTAMP::DATE as vacant_date`),
         'amenities.options',
         'area',
         'apt_type'
@@ -2095,12 +2095,13 @@ class MatchService {
               incomes
             left join
               (
-              -- how many proofs are submitted for each income also 
+              -- how many proofs are submitted for each income
               select
                 incomes.id,
                 incomes.income as income,
                 incomes.member_id,
-                count(income_proofs.file) as submitted_proofs
+                count(income_proofs.file) 
+                  filter (where income_proofs.expire_date > NOW()) as submitted_proofs
               from
                 incomes
               left join
