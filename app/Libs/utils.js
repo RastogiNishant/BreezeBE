@@ -76,7 +76,7 @@ const capt = (str) => {
 
 const localeTemplateToValue = (str, values) => {
   return str
-    .split(/{(.*?)}/)
+    .split(/{{(.*?)}}/)
     .map((s) => {
       return values.map((k) => s.replace(Object.keys(k), Object.values(k)))
     })

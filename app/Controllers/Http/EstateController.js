@@ -11,7 +11,6 @@ const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
-const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
@@ -60,9 +59,7 @@ class EstateController {
     )
 
     if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate(data, data.landlord_id)
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
+      const estate = await EstateService.createEstate(request, data.landlord_id)
       response.res(estate)
     } else {
       throw new HttpException('Not Allowed', 400)
@@ -73,11 +70,7 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const data = request.all()
-
-    const estate = await EstateService.createEstate(data, auth.user.id)
-    // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    const estate = await EstateService.createEstate(request, auth.user.id)
     response.res(estate)
   }
 
@@ -95,13 +88,8 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      await estate.updateItem(data)
-      Event.fire('estate::update', estate.id)
-
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
-
-      response.res(estate)
+      const newEstate = await EstateService.updateEstate(request)
+      response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -116,13 +104,8 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    await estate.updateItem(data)
-    Event.fire('estate::update', estate.id)
-
-    // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
-
-    response.res(estate)
+    const newEstate = await EstateService.updateEstate(request)
+    response.res(newEstate)
   }
 
   async lanlordTenantDetailInfo({ request, auth, response }) {
@@ -876,7 +859,7 @@ class EstateController {
           //placeholder for now...
         })
       )
-      trx.commit()
+      await trx.commit()
       //transaction end
       return response.res({ code })
     } catch (e) {
@@ -963,10 +946,10 @@ class EstateController {
     try {
       affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
     } catch (error) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    trx.commit()
+    await trx.commit()
     return response.res({ deleted: affectedRows })
   }
 }

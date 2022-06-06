@@ -54,12 +54,11 @@ const {
   MEMBER_FILE_TYPE_PASSPORT,
   TIMESLOT_STATUS_CONFIRM,
   ADULT_MIN_AGE,
+  MAX_SEARCH_ITEMS,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
 const MATCH_PERCENT_PASS = 40
-const MAX_DIST = 10000
-const MAX_SEARCH_ITEMS = 1000
 
 /**
  * Check is item in data range

@@ -25,6 +25,8 @@ const constants = {
 
   MAX_MINOR_COUNT: 5,
 
+  MAX_SEARCH_ITEMS: 10000,
+
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
