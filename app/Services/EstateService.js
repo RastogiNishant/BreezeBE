@@ -135,7 +135,7 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'coord']),
+      ...omit(data, ['delete_energy_proof', 'rooms']),
       status: STATUS_DRAFT,
     }
 
