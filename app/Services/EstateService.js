@@ -101,7 +101,7 @@ class EstateService {
       : Math.random().toString(36).substr(2, 8).toUpperCase()
 
     let createData = {
-      ...data,
+      ...omit(data, ['rooms']),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -134,7 +134,7 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof']),
+      ...omit(data, ['delete_energy_proof', 'rooms']),
       status: STATUS_DRAFT,
     }
 
