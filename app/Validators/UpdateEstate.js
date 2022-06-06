@@ -11,8 +11,10 @@ class UpdateEstate extends Base {
       .object()
       .shape({
         id: id.required(),
+        delete_energy_proof: yup.boolean().default(false)
       })
       .concat(CreateEstate.schema())
+
 }
 
 module.exports = UpdateEstate
