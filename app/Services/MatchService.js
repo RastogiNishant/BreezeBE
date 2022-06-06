@@ -53,6 +53,7 @@ const {
   MINIMUM_SHOW_PERIOD,
   MEMBER_FILE_TYPE_PASSPORT,
   TIMESLOT_STATUS_CONFIRM,
+  ADULT_MIN_AGE,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
@@ -2003,6 +2004,9 @@ class MatchService {
         'family_size_max',
         'pets',
         'net_rent',
+        'rooms_number',
+        'number_floors',
+        'house_type',
         'vacant_date',
         'amenities.options',
         'area',
@@ -2011,7 +2015,8 @@ class MatchService {
       .leftJoin(
         Database.raw(`
         (select estate_id, json_agg(option_id) as options
-        from amenities where type='amenity' group by estate_id) as amenities
+        from amenities where type='amenity' and location in
+        ('building', 'apartment', 'vicinity') group by estate_id) as amenities
         `),
         function () {
           this.on('amenities.estate_id', 'estates.id')
@@ -2020,7 +2025,102 @@ class MatchService {
   }
 
   static getProspectForScoringQuery() {
-    return Tenant.query().select()
+    const filterForAdults = `(where extract(year from age(${Database.fn.now()}, birthday)) :: int >= ${ADULT_MIN_AGE})`
+    return Tenant.query()
+      .select(
+        Database.raw(`_me.total_income as income`), //sum of all member's income
+        '_m.credit_score', //average
+        'rent_arrears', //if at least one has true, then true
+        '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
+        '_m.credit_score_proofs', //all members must submit their credit score proofs
+        '_m.no_rent_arrears_proofs', //all members must submit no_rent_arrears_proofs
+        '_m.members_age',
+        '_m.members_count', //adult members only
+        'pets',
+        'budget_max',
+        'rent_start',
+        'options', //array
+        'space_min',
+        'space_max',
+        'floor_min',
+        'floor_max',
+        'rooms_min',
+        'rooms_max',
+        'house_type', //array
+        'apt_type' //array
+      )
+      .leftJoin(
+        //members...
+        Database.raw(`
+      (select
+        user_id,
+        avg(credit_score) 
+          filter ${filterForAdults} as credit_score,
+        count(id)
+          filter ${filterForAdults} as members_count,
+        bool_and(coalesce(debt_proof, '') <> '') 
+          filter ${filterForAdults} as credit_score_proofs,
+        bool_and(coalesce(rent_arrears_doc, '') <> '') 
+          filter ${filterForAdults} as no_rent_arrears_proofs,
+        bool_or(coalesce(unpaid_rental, 0) > 0)
+          filter ${filterForAdults} as rent_arrears,
+        -- sum(income) as income,
+        json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
+      from members
+      group by user_id
+      ) as _m
+      `),
+        function () {
+          this.on('tenants.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //members incomes and income_proofs
+        Database.raw(`
+        (-- tenant has members
+          select
+            members.user_id,
+            sum(member_total_income) as total_income,
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs
+          from
+            members
+          left join
+            (
+            -- whether or not member has all proofs, get also member's total income
+            select
+              incomes.member_id,
+              sum(_mip.income) as member_total_income,
+              bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+            from
+              incomes
+            left join
+              (
+              -- how many proofs are submitted for each income also 
+              select
+                incomes.id,
+                incomes.income as income,
+                incomes.member_id,
+                count(income_proofs.file) as submitted_proofs
+              from
+                incomes
+              left join
+                income_proofs
+              on
+                income_proofs.income_id = incomes.id
+              group by incomes.id) as _mip
+            on
+              _mip.id=incomes.id
+            group by
+              incomes.id
+            ) as _mi
+          on _mi.member_id=members.id
+          group by
+            members.user_id
+        ) as _me`),
+        function () {
+          this.on('_me.user_id', '_m.user_id')
+        }
+      )
   }
 }
 
