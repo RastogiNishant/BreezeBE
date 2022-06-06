@@ -109,6 +109,7 @@ class Estate extends Model {
       'equipment_standard',
       'ground',
       'energy_efficiency',
+      'energy_proof',
       'energy_pass',
       'status',
       'property_id',

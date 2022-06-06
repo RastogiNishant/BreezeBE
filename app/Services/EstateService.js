@@ -11,6 +11,7 @@ const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
+const QueueService = use('App/Services/QueueService')
 
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
@@ -18,6 +19,7 @@ const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
+const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 
 const {
@@ -76,28 +78,84 @@ class EstateService {
     return await query.first()
   }
 
+  static async saveEnergyProof(request) {
+    const imageMimes = [
+      FileBucket.IMAGE_JPG,
+      FileBucket.IMAGE_JPEG,
+      FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_PDF,
+    ]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'energy_proof', mime: imageMimes, isPublic: true },
+    ])
+    return files
+  }
   /**
    *
    */
-  static async createEstate(data, userId) {
+  static async createEstate(request, userId) {
+    const data = request.all()
+    const files = await this.saveEnergyProof(request)
+
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
 
-    let estate = await Estate.createItem({
+    let createData = {
       ...data,
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
+    }
+
+    if (files && files.energy_proof) {
+      createData = {
+        ...createData,
+        energy_proof: files.energy_proof,
+      }
+    }
+
+    const estate = await Estate.createItem({
+      ...createData,
     })
 
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+
+    // Run processing estate geo nearest
+    QueueService.getEstatePoint(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
       hash: estateHash.hash,
       ...estateData,
     }
+  }
+
+  static async updateEstate(request) {
+    const { ...data } = request.all()
+    const files = await this.saveEnergyProof(request)
+    console.log('Estate', data)
+    let updateData = {
+      ...data,
+      status: STATUS_DRAFT,
+    }
+
+    if (files && files.energy_proof) {
+      updateData = {
+        ...updateData,
+        energy_proof: files.energy_proof,
+      }
+    }
+
+    const estate = await EstateService.getQuery()
+      .where('id', data.id)
+      .update({
+        ...updateData,
+      })
+
+    // Run processing estate geo nearest
+    QueueService.getEstatePoint(estate.id)
+    return estate
   }
 
   /**
