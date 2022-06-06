@@ -135,13 +135,14 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'coord']),
       status: STATUS_DRAFT,
     }
 
     let energy_proof = null
+    const estate = await this.getById(data.id)    
     if (data.delete_energy_proof) {
-      const estate = await this.getById(data.id)
+
       energy_proof = estate?.energy_proof
 
       updateData = {
@@ -158,11 +159,7 @@ class EstateService {
       }
     }
 
-    const estate = await EstateService.getQuery()
-      .where('id', data.id)
-      .update({
-        ...updateData,
-      })
+    await estate.updateItem(updateData)
 
     if (data.delete_energy_proof && energy_proof) {
       FileBucket.remove(energy_proof)
