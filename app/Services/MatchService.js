@@ -2016,7 +2016,7 @@ class MatchService {
         'rooms_number',
         'number_floors',
         'house_type',
-        Database.raw(`vacant_date::TIMESTAMP::DATE as vacant_date`),
+        'vacant_date',
         'amenities.options',
         'area',
         'apt_type'

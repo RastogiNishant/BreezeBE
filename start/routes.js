@@ -964,12 +964,28 @@ Route.list().forEach((r) => {
 })
 
 const MatchService = use('App/Services/MatchService')
-Route.get('/test/estate', async ({ request, response }) => {
+const { omit } = require('lodash')
+Route.get('/test/estate/:id', async ({ request, response }) => {
   let query = MatchService.getEstateForScoringQuery()
-  query.where('estates.id', 1015)
-  const estate = await query.first()
+  const { id } = request.all()
+  query.where('estates.id', id)
+  let estate = await query.first()
+  estate = omit(estate.toJSON(), [
+    'verified_address',
+    'bath_options',
+    'kitchen_options',
+    'equipment',
+  ])
   return response.res(estate)
-})
+}).middleware(['valid:Id'])
+
+Route.get('/test/prospect/:id/', async ({ request, response }) => {
+  const { id } = request.all()
+  let query = MatchService.getProspectForScoringQuery()
+  query.where('tenants.user_id', id)
+  let prospect = await query.first()
+  return response.res(prospect)
+}).middleware(['valid:Id'])
 
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {
@@ -1028,3 +1044,22 @@ Route.get('/test/estate', async ({ request, response }) => {
 //   }
 //   return response.res({ scores })
 // })
+
+//test matching given estate and
+Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
+  const { id, estate_id } = request.all()
+  let query = MatchService.getEstateForScoringQuery()
+  query.where('estates.id', estate_id)
+  let estate = await query.first()
+  estate = omit(estate.toJSON(), [
+    'verified_address',
+    'bath_options',
+    'kitchen_options',
+    'equipment',
+  ])
+  query = MatchService.getProspectForScoringQuery()
+  query.where('tenants.user_id', id)
+  let prospect = await query.first()
+  const matchScore = MatchService.calculateMatchPercent(prospect, estate)
+  return response.res({ estate, prospect, matchScore })
+}).middleware(['valid:Id,EstateId'])
