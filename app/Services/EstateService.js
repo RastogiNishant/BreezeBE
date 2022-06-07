@@ -102,7 +102,7 @@ class EstateService {
       : Math.random().toString(36).substr(2, 8).toUpperCase()
 
     let createData = {
-      ...data,
+      ...omit(data, ['rooms']),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -133,17 +133,28 @@ class EstateService {
 
   static async updateEstate(request) {
     const { ...data } = request.all()
-    const files = await this.saveEnergyProof(request)
-    console.log('Estate', data)
+
     let updateData = {
-      ...data,
+      ...omit(data, ['delete_energy_proof', 'rooms']),
       status: STATUS_DRAFT,
     }
 
-    if (files && files.energy_proof) {
+    let energy_proof = null
+    if (data.delete_energy_proof) {
+      const estate = await this.getById(data.id)
+      energy_proof = estate?.energy_proof
+
       updateData = {
         ...updateData,
-        energy_proof: files.energy_proof,
+        energy_proof: null,
+      }
+    } else {
+      const files = await this.saveEnergyProof(request)
+      if (files && files.energy_proof) {
+        updateData = {
+          ...updateData,
+          energy_proof: files.energy_proof,
+        }
       }
     }
 
@@ -153,6 +164,9 @@ class EstateService {
         ...updateData,
       })
 
+    if (data.delete_energy_proof && energy_proof) {
+      FileBucket.remove(energy_proof)
+    }
     // Run processing estate geo nearest
     QueueService.getEstatePoint(estate.id)
     return estate
