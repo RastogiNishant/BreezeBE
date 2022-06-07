@@ -88,6 +88,7 @@ class EstateService {
     const files = await FileBucket.saveRequestFiles(request, [
       { field: 'energy_proof', mime: imageMimes, isPublic: true },
     ])
+
     return files
   }
   /**
@@ -112,6 +113,7 @@ class EstateService {
       createData = {
         ...createData,
         energy_proof: files.energy_proof,
+        energy_proof_original_file:files.original_energy_proof,
       }
     }
 
@@ -148,6 +150,7 @@ class EstateService {
       updateData = {
         ...updateData,
         energy_proof: null,
+        energy_proof_original_file:null,
       }
     } else {
       const files = await this.saveEnergyProof(request)
@@ -155,6 +158,7 @@ class EstateService {
         updateData = {
           ...updateData,
           energy_proof: files.energy_proof,
+          energy_proof_original_file:files.original_energy_proof,
         }
       }
     }
