@@ -39,14 +39,6 @@ class EstateSerializer extends BaseSerializer {
 
     isShort && this.filterFields(item, extraFields)
 
-    if (role != null && role === 3) {
-      if (item.full_address === false) {
-        item.coord = undefined
-        item.street = undefined
-        item.house_number = undefined
-      }
-    }
-
     return this._getRowJSON(item)
   }
 }
