@@ -123,7 +123,7 @@ class EstateFilters {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified_address && params.verified_address.value) {
+    if (params.verified_address && !isNull(params.verified_address.value)) {
       query.andWhere(
         Database.raw(EstateFilters.whereQueryForVerifiedAddress(params.verified_address.value))
       )
