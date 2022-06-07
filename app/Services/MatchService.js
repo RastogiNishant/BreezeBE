@@ -401,7 +401,6 @@ class MatchService {
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
       .where({ 'tenants.user_id': userId })
       .first()
-    return tenant
     const polygon = get(tenant, 'polygon.data.0.0')
     if (!tenant || !polygon) {
       if (ignoreNullFields) {
@@ -425,12 +424,16 @@ class MatchService {
 
     // Max radius
     const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-    const estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
-    const tenantForMatching = MatchService.getProspectForScoringQuery().where
+    let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
+    const estateIds = estates.reduce((estateIds, estate) => {
+      return [...estateIds, estate.id]
+    }, [])
+    estates = await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
     const matched = estates
+      .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
-        if (percent >= MATCH_PERCENT_PASS) {
+        if (percent >= 0) {
           return [...n, { estate_id: v.id, percent }]
         }
         return n
@@ -2004,6 +2007,7 @@ class MatchService {
   static getEstateForScoringQuery() {
     return Estate.query()
       .select(
+        'estates.id',
         'budget',
         'credit_score',
         'rent_arrears',
