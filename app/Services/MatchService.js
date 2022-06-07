@@ -463,9 +463,9 @@ class MatchService {
    */
   static async matchByEstate(estateId) {
     // Get current estate
-    const estate = await Estate.query().where({ id: estateId }).first()
+    const estate = await MatchService.getEstateForScoringQuery().where({ id: estateId }).first()
     // Get tenant in zone and check crossing with every tenant search zone
-    const tenants = await Database.from({ _e: 'estates' })
+    let tenants = await Database.from({ _e: 'estates' })
       .select('_t.*', Database.raw(`TRUE AS inside`))
       .crossJoin({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
@@ -473,9 +473,16 @@ class MatchService {
       .where('_t.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
       .limit(MAX_SEARCH_ITEMS)
-
+    const tenantUserIds = tenants.reduce(
+      (tenantUserIds, tenant) => [...tenantUserIds, tenant.user_id],
+      []
+    )
+    tenants = await MatchService.getProspectForScoringQuery()
+      .whereIn('tenants.user_id', tenantUserIds)
+      .fetch()
     // Calculate matches for tenants to current estate
     const matched = tenants
+      .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(v, estate)
         if (percent >= MATCH_PERCENT_PASS) {
