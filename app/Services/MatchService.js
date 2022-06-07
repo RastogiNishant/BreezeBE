@@ -396,11 +396,12 @@ class MatchService {
    *
    */
   static async matchByUser(userId, ignoreNullFields = false) {
-    const tenant = await Tenant.query()
-      .select('tenants.*', '_p.data as polygon')
-      .where({ 'tenants.user_id': userId })
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .select('_p.data as polygon')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .where({ 'tenants.user_id': userId })
       .first()
+    return tenant
     const polygon = get(tenant, 'polygon.data.0.0')
     if (!tenant || !polygon) {
       if (ignoreNullFields) {
@@ -425,7 +426,7 @@ class MatchService {
     // Max radius
     const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
     const estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
-
+    const tenantForMatching = MatchService.getProspectForScoringQuery().where
     const matched = estates
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
@@ -2036,6 +2037,8 @@ class MatchService {
     const filterForAdults = `(where extract(year from age(${Database.fn.now()}, birthday)) :: int >= ${ADULT_MIN_AGE})`
     return Tenant.query()
       .select(
+        'tenants.id',
+        'tenants.user_id',
         Database.raw(`_me.total_income as income`), //sum of all member's income
         '_m.credit_score', //average
         'rent_arrears', //if at least one has true, then true
