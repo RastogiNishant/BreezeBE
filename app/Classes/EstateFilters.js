@@ -63,7 +63,6 @@ class EstateFilters {
   ]
 
   constructor(params, query) {
-    console.log({ params })
     if (isEmpty(params)) {
       this.query = query
       return
