@@ -423,7 +423,7 @@ class MemberController {
       { field: 'file', mime: docMimes, isPublic: false },
     ])
     const incomeProof = await MemberService.addMemberIncomeProof({ ...rest, ...files }, income)
-
+    Event.fire('tenant::update', user_id)
     response.res(incomeProof)
   }
 
@@ -448,7 +448,7 @@ class MemberController {
       throw new HttpException('Invalid income proof', 400)
     }
     await IncomeProof.query().where('id', proof.id).delete()
-
+    Event.fire('tenant::update', user_id)
     response.res(true)
   }
 
