@@ -413,7 +413,7 @@ class MemberController {
   //MERGED TENANT
   async addMemberIncomeProof({ request, auth, response }) {
     const { income_id, ...rest } = request.all()
-
+    const user_id = auth.user.owner_id || auth.user.id
     const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
     if (!income) {
       throw new HttpException('Invalid income', 400)
@@ -423,7 +423,7 @@ class MemberController {
       { field: 'file', mime: docMimes, isPublic: false },
     ])
     const incomeProof = await MemberService.addMemberIncomeProof({ ...rest, ...files }, income)
-
+    Event.fire('tenant::update', user_id)
     response.res(incomeProof)
   }
 
@@ -433,7 +433,7 @@ class MemberController {
   //MERGED TENANT
   async removeMemberIncomeProof({ request, auth, response }) {
     const { id } = request.all()
-
+    const user_id = auth.user.owner_id || auth.user.id
     let proofQuery = IncomeProof.query()
       .select('income_proofs.*')
       .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
@@ -448,7 +448,7 @@ class MemberController {
       throw new HttpException('Invalid income proof', 400)
     }
     await IncomeProof.query().where('id', proof.id).delete()
-
+    Event.fire('tenant::update', user_id)
     response.res(true)
   }
 
