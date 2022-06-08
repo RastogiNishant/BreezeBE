@@ -43,11 +43,13 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
+  TRANSPORT_TYPE_WALK
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
+const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -626,6 +628,14 @@ class EstateController {
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
+    }
+
+    if( !estate.full_address && estate.coord_raw ) {
+      const coords = estate.coord_raw.split(',')
+      const lat = coords[0]
+      const lon = coords[1]
+      const isolinePoints = await GeoService.getOrCreateIsoline({lat,lon}, TRANSPORT_TYPE_WALK, 60)
+      estate.isoline = isolinePoints?.toJSON()?.data || []
     }
 
     response.res(estate.toJSON({ isShort: true, role: auth.user.role }))

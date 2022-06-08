@@ -770,6 +770,7 @@ class MatchController {
       'u_status',
       'updated_at',
       'inviteIn',
+      'income',
     ]
 
     const matchesCount = await Database.table('matches')
