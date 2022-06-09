@@ -38,6 +38,7 @@ const {
   MATCH_STATUS_COMMIT,
   TENANT_MATCH_FIELDS,
   MATCH_STATUS_FINISH,
+  MATCH_STATUS_SHARE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -108,6 +109,8 @@ class Estate extends Model {
       'equipment_standard',
       'ground',
       'energy_efficiency',
+      'energy_proof',
+      'energy_proof_original_file',
       'energy_pass',
       'status',
       'property_id',
@@ -200,6 +203,7 @@ class Estate extends Model {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
     this.addHook('beforeSave', async (instance) => {
+
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord
@@ -301,6 +305,7 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_INVITE,
       MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
     ])
   }
 
@@ -315,7 +320,7 @@ class Estate extends Model {
    *
    */
   slots() {
-    return this.hasMany('App/Models/TimeSlot')
+    return this.hasMany('App/Models/TimeSlot').orderBy('end_at')
   }
 
   current_tenant() {
@@ -353,6 +358,10 @@ class Estate extends Model {
    */
   files() {
     return this.hasMany('App/Models/File')
+  }
+
+  amenities() {
+    return this.hasMany('App/Models/Amenity')
   }
 
   /**

@@ -1,5 +1,5 @@
 const { map } = require('bluebird')
-const { get } = require('lodash')
+const { get, trim } = require('lodash')
 
 const Request = require('../../app/Libs/Request')
 
@@ -21,6 +21,8 @@ class Localization {
    *
    */
   async init() {
+    if (trim(process.env.DEV) == 'true' && trim(process.env.NO_LOCALIZATION_PULL) == 'true')
+      return true
     const File = use('App/Classes/File')
     // Disable loading localisation from phrase
     const req = new Request(ROOT_LOCALISATION_API)
@@ -32,7 +34,7 @@ class Localization {
       })
     }
 
-console.log('Location File downloading')    
+    console.log('Location File downloading')
     // try {
     //   this._data = JSON.parse(await File.readLog('../resources/locales.json'))
 
@@ -45,21 +47,21 @@ console.log('Location File downloading')
         const res = await getLocale(l)
         return { locale: l, data: res }
       })
-    
+
       this._data = data.reduce((n, { locale, data }) => ({ ...n, [locale]: data }), {})
-//console.log( "Locale", this._data );      
-//await File.logFile(this._data, 'locales.json')
+      //console.log( "Locale", this._data );
+      //await File.logFile(this._data, 'locales.json')
       console.log('Location loading success')
     } catch (e) {
-      console.log('Loading location failure', e )
+      console.log('Loading location failure', e)
     }
-   }
+  }
 
   /**
    *
    */
   get(key, locale = this.locales[0]) {
-    if(!locale) {
+    if (!locale) {
       locale = 'de'
     }
     return get(this._data, [locale, key, 'message'], key)

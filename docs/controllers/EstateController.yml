@@ -572,8 +572,8 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateEstateSchema'
           application/x-www-form-urlencoded:
+            type: object
             schema:
-              type: object
               $ref: '#/components/schemas/CreateEstateSchema'
       responses:
         '200':

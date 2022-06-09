@@ -78,6 +78,13 @@ const getMauticContact = async (mauticId) => {
 
 class MauticService {
   static async createContact(userId) {
+    if (
+      (process.env.DEV && process.env.DEV.trim() == 'true') ||
+      !MAUTIC_API_URL ||
+      !MAUTIC_AUTH_TOKEN
+    ) {
+      return true
+    }
     const user = await User.query().where('id', userId).first()
     try {
       const body = JSON.stringify(await getUserData(user))
@@ -100,6 +107,13 @@ class MauticService {
   }
 
   static async syncContact(userId, payload = {}) {
+    if (
+      (process.env.DEV && process.env.DEV.trim() == 'true') ||
+      !MAUTIC_API_URL ||
+      !MAUTIC_AUTH_TOKEN
+    ) {
+      return true
+    }
     const user = await User.query().where('id', userId).first()
     try {
       const mauticPrevData = await getMauticContact(user.mautic_id)

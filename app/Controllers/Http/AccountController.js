@@ -54,7 +54,7 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, firstname, ...userData } = request.all()
+    const { email, firstname, from_web, ...userData } = request.all()
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {
@@ -95,7 +95,7 @@ class AccountController {
           await currentTenant.save()
         }
       }
-      await UserService.sendConfirmEmail(user)
+      await UserService.sendConfirmEmail(user, from_web)
       response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
@@ -151,117 +151,7 @@ class AccountController {
       )
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
-      trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return response.res(true)
-    } catch (e) {
-      console.log(e)
-      await trx.rollback()
-      throw new HttpException('Signup failed.', 412)
-    }
-  }
-
-  /**
-   * Signup prospect with code we email to him.
-   */
-  async signupProspectWithViewEstateInvitation({ request, response }) {
-    //create user
-    const { email, phone, role, password, ...userData } = request.all()
-    const trx = await Database.beginTransaction()
-    try {
-      //add this user
-      let user = await User.create(
-        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
-        trx
-      )
-      if (role === ROLE_USER) {
-        await Tenant.create(
-          {
-            user_id: user.id,
-          },
-          trx
-        )
-      }
-      //include him on estate_view_invited_users with sticky set to true
-      //this will add him even if he's not invited.
-      //Probably a situation where he has mail forwarded from a different email
-      const invitedUser = new EstateViewInvitedUser()
-      invitedUser.user_id = user.id
-      invitedUser.sticky = true
-      invitedUser.estate_view_invite_id = request.estate_view_invite_id
-      await invitedUser.save(trx)
-
-      //lets find other estates he's invited to view
-      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
-        .where('email', email)
-        .fetch()
-      await Promise.all(
-        myInvitesToViewEstates.toJSON().map(async (invite) => {
-          await EstateViewInvitedUser.findOrCreate(
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            trx
-          )
-        })
-      )
-      //send email for confirmation
-      await UserService.sendConfirmEmail(user)
-      trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return response.res(true)
-    } catch (e) {
-      console.log(e)
-      await trx.rollback()
-      throw new HttpException('Signup failed.', 412)
-    }
-  }
-
-  /**
-   * Signup prospect with code we email to him.
-   */
-  async signupProspectWithViewEstateInvitation({ request, response }) {
-    //create user
-    const { email, phone, role, password, ...userData } = request.all()
-    const trx = await Database.beginTransaction()
-    try {
-      //add this user
-      let user = await User.create(
-        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
-        trx
-      )
-      if (role === ROLE_USER) {
-        await Tenant.create(
-          {
-            user_id: user.id,
-          },
-          trx
-        )
-      }
-      //include him on estate_view_invited_users with sticky set to true
-      //this will add him even if he's not invited.
-      //Probably a situation where he has mail forwarded from a different email
-      const invitedUser = new EstateViewInvitedUser()
-      invitedUser.user_id = user.id
-      invitedUser.sticky = true
-      invitedUser.estate_view_invite_id = request.estate_view_invite_id
-      await invitedUser.save(trx)
-
-      //lets find other estates he's invited to view
-      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
-        .where('email', email)
-        .fetch()
-      await Promise.all(
-        myInvitesToViewEstates.toJSON().map(async (invite) => {
-          await EstateViewInvitedUser.findOrCreate(
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            trx
-          )
-        })
-      )
-      //send email for confirmation
-      await UserService.sendConfirmEmail(user)
-      trx.commit()
+      await trx.commit()
       Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
@@ -340,7 +230,7 @@ class AccountController {
       })
       //send email for confirmation
       await UserService.sendConfirmEmail(user)
-      trx.commit()
+      await trx.commit()
       Event.fire('mautic:createContact', user.id)
       return response.res(true)
     } catch (e) {
@@ -352,8 +242,6 @@ class AccountController {
 
   async housekeeperSignup({ request, response }) {
     const { firstname, email, password, code, lang } = request.all()
-    console.log({ code })
-    console.log({ email, code })
     try {
       const member = await Member.query()
         .select('user_id', 'id')
@@ -945,7 +833,7 @@ class AccountController {
         receipt,
         trx
       )
-      trx.commit()
+      await trx.commit()
 
       if (purchase) {
         const user = await User.query()

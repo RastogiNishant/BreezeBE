@@ -2,6 +2,7 @@
 
 const yup = require('yup')
 const Base = require('./Base')
+const { phoneSchema } = require('../Libs/schemas.js')
 
 const {
   GENDER_ANY,
@@ -32,7 +33,7 @@ class CreateMember extends Base {
       secondname: yup.string().max(254),
       child: yup.boolean().default(false),
       sex: yup.number().positive().oneOf([GENDER_ANY, GENDER_FEMALE, GENDER_MALE]),
-      phone: yup.string().max(30).nullable(),
+      phone: phoneSchema.nullable(),
       bio: yup.string().max(100).nullable(),
       birthday: yup.date(),
       email: yup.string().email().lowercase().max('255'),
@@ -41,6 +42,7 @@ class CreateMember extends Base {
       landlord_email: yup.string().email().max('255'),
       last_address: yup.string().max('255'),
       credit_score: yup.number().min(0).max(100),
+      credit_score_submit_later: yup.boolean(),
       unpaid_rental: yup
         .number()
         .oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL]),
@@ -60,5 +62,6 @@ class CreateMember extends Base {
 
 // debt_proof
 // rent_arrears_doc
+// passport
 
 module.exports = CreateMember

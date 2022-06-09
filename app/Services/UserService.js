@@ -4,7 +4,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq, omit } = require('lodash')
+const { get, isArray, isEmpty, uniq, pick } = require('lodash')
 const Promise = require('bluebird')
 
 const Role = use('Role')
@@ -14,6 +14,7 @@ const DataStorage = use('DataStorage')
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
+const Member = use('App/Models/Member')
 const Term = use('App/Models/Term')
 const Agreement = use('App/Models/Agreement')
 const MailService = use('App/Services/MailService')
@@ -68,7 +69,6 @@ class UserService {
       try {
         // Create empty tenant and link to user
         const tenant = userData.signupData
-        console.log('tenanttenant', tenant)
         await Tenant.createItem({
           user_id: user.id,
           coord: tenant?.address?.coord,
@@ -138,9 +138,9 @@ class UserService {
       user.save(trx)
       await DataStorage.setItem(code, { userId: user.id }, 'change_email', { ttl: 3600 })
       await MailService.sendChangeEmailConfirmation(email, code, user.role)
-      trx.commit()
+      await trx.commit()
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw e
     }
   }
@@ -296,7 +296,7 @@ class UserService {
   /**
    *
    */
-  static async sendConfirmEmail(user) {
+  static async sendConfirmEmail(user, from_web = false) {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
@@ -304,17 +304,40 @@ class UserService {
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
+      const forgotLink = await UserService.getForgotShortLink(from_web)
+
       await MailService.sendUserConfirmation(user.email, {
         code,
-        user_id: user.id,
+        user: user,
         role: user.role,
         lang: lang,
+        forgotLink: forgotLink,
       })
     } catch (e) {
       throw new HttpException(e)
     }
   }
 
+  static async getForgotShortLink(from_web = false) {
+    const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+    const deepLink_URL = from_web
+      ? `${process.env.SITE_URL}/forgotPassword`
+      : `${process.env.DEEP_LINK}?type=forgotPassword`
+    const { shortLink } = await firebaseDynamicLinks.createLink({
+      dynamicLinkInfo: {
+        domainUriPrefix: process.env.DOMAIN_PREFIX,
+        link: deepLink_URL,
+        androidInfo: {
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+        },
+        iosInfo: {
+          iosBundleId: process.env.IOS_BUNDLE_ID,
+        },
+      },
+    })
+    return shortLink
+  }
   /**
    *
    */
@@ -331,7 +354,7 @@ class UserService {
   /**
    *
    */
-  static async confirmEmail(user, userCode) {
+  static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
@@ -358,10 +381,14 @@ class UserService {
         },
       },
     })
-    await MailService.sendWelcomeMail(user.email, {
+
+    const forgotLink = await UserService.getForgotShortLink(from_web)
+
+    await MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
+      forgotLink: forgotLink,
     })
     return user.save()
   }
@@ -450,73 +477,24 @@ class UserService {
       throw new AppException('User not exists')
     }
 
-    let userData = user.toJSON({ publicOnly: !user.finish })
-    userData.tenant = null
+    const isShare = user.finish || user.share
+
+    let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
-    if (user.share || user.finish) {
-      const tenantQuery = Tenant.query().where('user_id', user.id)
-      if (user.share) {
-        tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
-      }
+    const tenantQuery = Tenant.query().select('*').where('user_id', user.id)
+    tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
 
-      /** Updated by Yong */
-      const tenant = await tenantQuery.first()
-      if (!tenant) {
-        return userData
-      }
+    const tenant = await tenantQuery.first()
+    if (!tenant) {
+      return userData
+    }
 
-      let extraFields = Tenant.columns
-      if (!tenant.personal_shown) {
-        extraFields = Object.values(
-          omit(extraFields, ['unpaid_rental', 'insolvency_proceed', 'clean_procedure'])
-        )
-      }
+    userData.tenant = tenant.toJSON({ isShort: !isShare })
 
-      if (!tenant.income_shown) {
-        extraFields = Object.values(omit(extraFields, ['income']))
-      }
-
-      if (!tenant.residency_shown) {
-        extraFields = Object.values(omit(extraFields, ['address', 'coord']))
-      }
-
-      if (!tenant.creditscore_shown) {
-        extraFields = Object.values(omit(extraFields, ['credit_score']))
-      }
-
-      if (!tenant.solvency_shown) {
-        extraFields = Object.values(omit(extraFields, ['income_seizure']))
-      }
-
-      /** End by Yong*/
-      userData.tenant = tenant.toJSON({ isShort: true, extraFields: extraFields })
-
-      if (!tenant.income_shown) {
-        const members =
-          userData.tenant.members &&
-          userData.tenant.members.map((m) => {
-            if (!tenant.income_shown) {
-              delete m.incomes
-            }
-            if (!tenant.residency_shown) {
-              delete m.last_address
-            }
-            if (!tenant.creditscore_shown) {
-              delete m.credit_score
-            }
-            if (!tenant.solvency_shown) {
-              delete m.income_seizure
-            }
-          })
-        userData = {
-          members,
-          ...userData,
-        }
-      }
-
-      if (!tenant.profile_shown || !tenant.personal_shown) {
-        delete userData.tenant.members
-      }
+    if (tenant.members) {
+      userData.tenant.members = tenant
+        .toJSON()
+        .members.map((m) => (isShare ? m : pick(m, Member.limitFieldsList)))
     }
 
     return userData
@@ -551,7 +529,7 @@ class UserService {
    *
    */
   static async landlordHasAccessTenant(landlordId, userTenantId) {
-    const result = await Database.table({ _m: 'matches' })
+    const sharedMatch = await Database.table({ _m: 'matches' })
       .select('_m.estate_id')
       .where({ '_m.user_id': userTenantId })
       .whereIn('_m.estate_id', function () {
@@ -560,7 +538,19 @@ class UserService {
       .where('_m.share', true)
       .first()
 
-    return !!result
+    if (sharedMatch) {
+      return true
+    } else {
+      const finalMatch = await Database.table({ _m: 'matches' })
+        .select('_m.estate_id')
+        .where({ '_m.user_id': userTenantId })
+        .whereIn('_m.estate_id', function () {
+          this.select('id').from('estates').where({ user_id: landlordId })
+        })
+        .where('_m.status', MATCH_STATUS_FINISH)
+        .first()
+      return finalMatch ? true : false
+    }
   }
 
   /**
@@ -705,6 +695,10 @@ class UserService {
       .fetch()
   }
 
+  static async getByRole(role) {
+    return (await User.query().select('*').where('role', role).fetch()).rows
+  }
+
   static async housekeeperSignup(ownerId, email, password, firstname, lang) {
     await User.query().where('id', ownerId).firstOrFail()
 
@@ -820,6 +814,18 @@ class UserService {
     }
 
     return true
+  }
+
+  static async updateFreeUserPlans(old_plan_id, plan_id, trx) {
+    await User.query().where('plan_id', old_plan_id).update({ plan_id: plan_id }).transacting(trx)
+  }
+
+  static async getUserByPaymentPlan(plan_ids) {
+    if (isArray(plan_ids)) {
+      return (await User.query().whereIn('plan_id', plan_ids).fetch()).rows
+    } else {
+      return await User.query().where('plan_id', plan_id).first()
+    }
   }
 }
 

@@ -5,7 +5,9 @@ const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
+const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
+const User = use('App/Models/User')
 
 const { without } = require('lodash')
 
@@ -14,7 +16,9 @@ const {
   ROLE_LANDLORD,
   MEMBER_FILE_TYPE_INCOME,
   STATUS_DRAFT,
+  STATUS_ACTIVE,
   LOG_TYPE_ACTIVATED_PROFILE,
+  MEMBER_FILE_TYPE_PASSPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -25,12 +29,18 @@ class TenantController {
   async getProtectedFile({ request, auth, response }) {
     const { user_id, file_id, file_type, member_id } = request.all()
     if (auth.user.role === ROLE_USER) {
-      //MERGED TENANT
       if (+auth.user.id !== +user_id && +auth.user.owner_id !== +user_id) {
+        //MERGED TENANT
         throw new HttpException('No access', 403)
       }
     } else if (auth.user.role === ROLE_LANDLORD) {
-      const hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
+      let hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
+      if (!hasAccess) {
+        const fileOwner = await User.query().where('id', user_id).first()
+        if (fileOwner && fileOwner.owner_id) {
+          hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, fileOwner.owner_id)
+        }
+      }
       if (!hasAccess) {
         throw new HttpException('No access', 403)
       }
@@ -38,7 +48,7 @@ class TenantController {
       throw new HttpException('No access', 403)
     }
 
-    if (file_type === MEMBER_FILE_TYPE_INCOME) {
+    if (file_type === MEMBER_FILE_TYPE_INCOME || file_type === MEMBER_FILE_TYPE_PASSPORT) {
       if (!file_id) {
         throw new HttpException('File id required', 400)
       }
@@ -104,7 +114,7 @@ class TenantController {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)
     }
-    await MatchService.matchByUser(auth.user.id)
+    await MatchService.matchByUser(auth.user.id, true)
 
     response.res(true)
   }

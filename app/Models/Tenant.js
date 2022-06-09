@@ -36,12 +36,6 @@ class Tenant extends Model {
       'options',
       'status',
       'rent_start',
-      'personal_shown',
-      'income_shown',
-      'residency_shown',
-      'creditscore_shown',
-      'solvency_shown',
-      'profile_shown',
       'minors_count',
     ]
   }
@@ -53,6 +47,7 @@ class Tenant extends Model {
     return [
       'id',
       'user_id',
+      'id_verified',
       'status',
       'firstname',
       'secondname',
@@ -65,6 +60,10 @@ class Tenant extends Model {
       'selected_adults_count',
       'phone_verified',
       'updated_at',
+      'profession',
+      'match_type',
+      'total_completed_proofs',
+      'submitted_proofs',
     ]
   }
 
@@ -87,7 +86,7 @@ class Tenant extends Model {
       'options',
       'rent_start',
       'address',
-      'coord'
+      'coord',
     ]
   }
 

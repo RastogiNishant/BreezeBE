@@ -6,10 +6,11 @@ const moment = require('moment')
 const Event = use('Event')
 const Logger = use('Logger')
 const Estate = use('App/Models/Estate')
+const Member = use('App/Models/Member')
 const File = use('App/Models/File')
+const FileBucket = use('App/Classes/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
-const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
@@ -18,6 +19,7 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 const User = use('App/Models/User')
+const Amenity = use('App/Models/Amenity')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
@@ -39,10 +41,15 @@ const {
   MATCH_STATUS_FINISH,
   LOG_TYPE_PROPERTIES_IMPORTED,
   ROLE_USER,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  TRANSPORT_TYPE_WALK
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, toString } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
+const EstateFilters = require('../../Classes/EstateFilters')
+const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -54,9 +61,7 @@ class EstateController {
     )
 
     if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate(data, data.landlord_id)
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
+      const estate = await EstateService.createEstate(request, data.landlord_id)
       response.res(estate)
     } else {
       throw new HttpException('Not Allowed', 400)
@@ -67,11 +72,7 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const data = request.all()
-
-    const estate = await EstateService.createEstate(data, auth.user.id)
-    // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    const estate = await EstateService.createEstate(request, auth.user.id)
     response.res(estate)
   }
 
@@ -89,13 +90,8 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      await estate.updateItem(data)
-      Event.fire('estate::update', estate.id)
-
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
-
-      response.res(estate)
+      const newEstate = await EstateService.updateEstate(request)
+      response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -110,13 +106,8 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    await estate.updateItem(data)
-    Event.fire('estate::update', estate.id)
-
-    // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
-
-    response.res(estate)
+    const newEstate = await EstateService.updateEstate(request)
+    response.res(newEstate)
   }
 
   async lanlordTenantDetailInfo({ request, auth, response }) {
@@ -127,9 +118,42 @@ class EstateController {
         estate_id,
         tenant_id
       )
-      const tenant = await TenantService.getTenant(tenant_id)
-      const members = await MemberService.getMembers(tenant_id)
+      let tenant = await TenantService.getTenant(tenant_id)
+      let members = await MemberService.getMembers(tenant_id)
       const company = await CompanyService.getUserCompany(auth.user.id)
+      if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
+        members = members.toJSON().map((member) => pick(member, Member.limitFieldsList))
+        tenant = tenant.toJSON({ isShort: true })
+      } else {
+        members = await Promise.all(
+          members.toJSON().map(async (member) => {
+            const incomes = await Promise.all(
+              member.incomes.map(async (income) => {
+                const proofs = await Promise.all(
+                  income.proofs.map(async (proof) => {
+                    if (!proof.file) return proof
+                    proof.file = await FileBucket.getProtectedUrl(proof.file)
+                    return proof
+                  })
+                )
+                income = {
+                  ...income,
+                  proofs: proofs,
+                }
+                return income
+              })
+            )
+
+            member = {
+              ...member,
+              rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
+              debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
+              incomes: incomes,
+            }
+            return member
+          })
+        )
+      }
 
       const result = {
         ...lanlord.toJSON(),
@@ -137,7 +161,6 @@ class EstateController {
         tenant: tenant,
         members: members,
       }
-      //console.log('result', result.toJSON() )
       response.res(result)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -157,15 +180,52 @@ class EstateController {
    *
    */
   async getEstates({ request, auth, response }) {
-    const { limit, page, ...params } = request.all()
+    let { limit, page, ...params } = request.all()
+    if (!isEmpty(request.post())) {
+      params = request.post()
+    }
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
-    //
-    const lettingTypeCounts = await EstateService.getLettingTypeCounts([auth.user.id])
-    result = { ...result, ...lettingTypeCounts }
-    result.total_filtered_properties = result.total
-    response.res(result)
+    const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
+    const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
+    if (!EstateFilters.paramsAreUsed(params)) {
+      //no param is used
+      result = { ...result, ...totalEstateCounts }
+    } else {
+      //param is used
+      if (params.letting_type) {
+        //funnel filter was changed
+        switch (params.letting_type[0]) {
+          case LETTING_TYPE_LET:
+            result = {
+              ...result,
+              all_count: totalEstateCounts.all_count,
+              let_count: filteredCounts.let_count,
+              void_count: totalEstateCounts.void_count,
+            }
+            break
+          case LETTING_TYPE_VOID:
+            result = {
+              ...result,
+              all_count: totalEstateCounts.all_count,
+              let_count: totalEstateCounts.let_count,
+              void_count: filteredCounts.void_count,
+            }
+            break
+        }
+      } else {
+        //All is selected...
+        result = {
+          ...result,
+          all_count: filteredCounts.all_count,
+          let_count: totalEstateCounts.let_count,
+          void_count: filteredCounts.void_count,
+        }
+      }
+    }
+    result = { ...result, total_estate_count: totalEstateCounts.all_count }
+    return response.res(result)
   }
 
   /**
@@ -173,7 +233,7 @@ class EstateController {
    */
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
-    const estate = await EstateService.getQuery()
+    let estate = await EstateService.getQuery()
       .where('id', id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
@@ -188,14 +248,67 @@ class EstateController {
           .orderBy('order', 'asc')
           .orderBy('favorite', 'desc')
           .orderBy('id', 'asc')
+          .with('room_amenities', function (q) {
+            q.select(
+              Database.raw(
+                `amenities.*,
+              case
+                when
+                  amenities.type='amenity'
+                then
+                  "options"."title"
+                else
+                  "amenities"."amenity"
+              end as amenity`
+              )
+            )
+              .from('amenities')
+              .leftJoin('options', 'options.id', 'amenities.option_id')
+              .where('amenities.location', 'room')
+              .whereNot('amenities.status', STATUS_DELETE)
+              .orderBy('amenities.sequence_order', 'desc')
+          })
       })
       .first()
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
-
-    response.res(estate.toJSON({ isOwner: true }))
+    estate = estate.toJSON({ isOwner: true })
+    let amenities = await Amenity.query()
+      .select(
+        Database.raw(
+          `amenities.location, json_agg(amenities.* order by sequence_order desc) as amenities`
+        )
+      )
+      .from(
+        Database.raw(`(
+          select amenities.*,
+            case
+              when
+                "amenities".type='amenity'
+              then
+                "options"."title"
+              else
+                "amenities"."amenity"
+                  end as amenity
+          from amenities
+          left join options
+          on options.id=amenities.option_id
+          where
+            amenities.status = '${STATUS_ACTIVE}'
+          and
+            amenities.location not in('room')
+          and
+            amenities.estate_id in ('${id}')
+        ) as amenities`)
+      )
+      .where('status', STATUS_ACTIVE)
+      .whereIn('estate_id', [id])
+      .groupBy('location')
+      .fetch()
+    estate.amenities = amenities
+    response.res(estate)
   }
 
   async getEstateByPM({ request, auth, response }) {
@@ -310,7 +423,6 @@ class EstateController {
       }
 
       if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
-        console.log('>>> here')
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -329,6 +441,27 @@ class EstateController {
     }
 
     response.res(true)
+  }
+
+  async makeEstateOffline({ request, auth, response }) {
+    const { id } = request.all()
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query().where('id', id).first()
+      if (estate) {
+        estate.status = STATUS_DRAFT
+        await EstateService.handleOfflineEstate(estate.id, trx)
+        await estate.save(trx)
+        await trx.commit()
+        return response.res(true)
+      } else {
+        throw new HttpException('You are attempted to edit wrong estate', 409)
+      }
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+      throw new HttpException(e?.message ?? e, 400)
+    }
   }
 
   /**
@@ -497,6 +630,14 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
+    if( !estate.full_address && estate.coord_raw ) {
+      const coords = estate.coord_raw.split(',')
+      const lat = coords[0]
+      const lon = coords[1]
+      const isolinePoints = await GeoService.getOrCreateIsoline({lat,lon}, TRANSPORT_TYPE_WALK, 60)
+      estate.isoline = isolinePoints?.toJSON()?.data || []
+    }
+
     response.res(estate.toJSON({ isShort: true, role: auth.user.role }))
   }
 
@@ -657,12 +798,14 @@ class EstateController {
   async verifyPropertyId({ request, auth, response }) {
     const { property_id, estate_id } = request.all()
     const estate = await Estate.query()
+      .select(Database.raw('count(*) as row_count'))
       .where({ property_id })
+      .where('user_id', auth.user.id)
+      .whereNotIn('status', [STATUS_DELETE])
       .whereNot({ id: estate_id || null })
-      .orderBy('id')
-      .fetch()
-    const duplicate = estate.rows.length > 0 ? false : true
-    response.res(duplicate)
+      .first()
+
+    response.res(!(estate.row_count > 0))
   }
 
   async getInviteToViewCode({ request, auth, response }) {}
@@ -724,10 +867,9 @@ class EstateController {
             )
           }
           //placeholder for now...
-          console.log('sending email to ', email, 'code', code)
         })
       )
-      trx.commit()
+      await trx.commit()
       //transaction end
       return response.res({ code })
     } catch (e) {
@@ -814,10 +956,10 @@ class EstateController {
     try {
       affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
     } catch (error) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    trx.commit()
+    await trx.commit()
     return response.res({ deleted: affectedRows })
   }
 }

@@ -24,7 +24,6 @@ class Request {
    *
    */
   async send({ url, data, headers = {}, method = 'GET', type = 'json', status = [202, 201, 200] }) {
-    // console.log({ url, data, headers, method, type, status })
     if (method === 'GET') {
       url = this.constructor.getUri(`${this.rootUrl}/${url}`, data)
       data = isEmpty(data) ? null : data

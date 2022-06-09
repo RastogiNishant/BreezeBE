@@ -22,13 +22,16 @@ const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
 
+const HttpException = use('App/Exceptions/HttpException')
+
 class RoomService {
   /**
    *
    */
   static async getRoomByUser(userId, roomId) {
-    return Room.query()
+    return await Room.query()
       .select('rooms.*', '_e.cover')
+      .with('images')
       .where('rooms.id', roomId)
       .innerJoin({ _e: 'estates' }, function () {
         if (isArray(userId)) {
@@ -59,40 +62,46 @@ class RoomService {
   /**
    *
    */
-  static async removeRoom(roomId) {
-    return Room.query().update({ status: STATUS_DELETE }).where('id', roomId)
+  static async removeRoom(roomId, trx) {
+    return await Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
   }
 
   /**
    *
    */
-  static async getRoomsByEstate(estateId) {
-    return Room.query()
-      .where('estate_id', estateId)
-      .whereNot('status', STATUS_DELETE)
-      .orderBy('order', 'asc')
-      .orderBy('id', 'asc')
-      .fetch()
-  }
-
-  /**
-   *
-   */
-  static async addImage(url, room, disk) {
-    return Image.createItem({ url, disk, room_id: room.id })
-  }
-
-  /**
-   *
-   */
-  static async removeImage(id) {
-    const image = await Image.findOrFail(id)
-    try {
-      await Drive.disk(image.disk).delete(image.url)
-    } catch (e) {
-      Logger.error(e.message)
+  static async getRoomsByEstate(estateId, withImage = false) {
+    const roomQuery = Room.query()
+      .select('rooms.*')
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'rooms.estate_id')
+      })
+      .whereNot('_e.status', STATUS_DELETE)
+      .where('rooms.estate_id', estateId)
+    if (withImage) {
+      roomQuery.with('images')
     }
-    await image.delete()
+    return await roomQuery.orderBy('rooms.order', 'asc').orderBy('rooms.id', 'asc').fetch()
+  }
+
+  /**
+   *
+   */
+  static async addImage(url, room, disk, trx = null) {
+    return Image.createItem({ url, disk, room_id: room.id }, trx)
+  }
+
+  /**
+   *
+   */
+  static async removeImage(id, trx) {
+    try {
+      const image = await Image.findOrFail(id)
+      await Drive.disk(image.disk).delete(image.url)
+      await image.delete(trx)
+      return image
+    } catch (e) {
+      return null
+    }
   }
 
   /**

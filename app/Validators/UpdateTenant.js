@@ -61,8 +61,8 @@ class UpdateTenant extends Base {
       rooms_max: yup.number().positive().max(6),
       floor_min: yup.number().min(0).max(21),
       floor_max: yup.number().min(0).max(21),
-      space_min: yup.number().min(5).max(300),
-      space_max: yup.number().min(5).max(300),
+      space_min: yup.number().min(5).max(500),
+      space_max: yup.number().min(5).max(500),
       apt_type: yup
         .array()
         .of(
@@ -104,12 +104,6 @@ class UpdateTenant extends Base {
       garden: yup.boolean(),
       options: yup.array().of(yup.number().integer().positive().max(999)),
       rent_start: yup.date(),
-      personal_shown: yup.boolean(),
-      income_shown: yup.boolean(),
-      residency_shown: yup.boolean(),
-      creditscore_shown: yup.boolean(),
-      solvency_shown: yup.boolean(),
-      profile_shown: yup.boolean(),
     })
 }
 

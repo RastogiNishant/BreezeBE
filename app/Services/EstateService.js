@@ -1,21 +1,25 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, isArray, size, omit } = require('lodash')
+const { get, isEmpty, findIndex, range, filter, omit, flatten } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
-const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
+const RoomService = use('App/Services/RoomService')
+const QueueService = use('App/Services/QueueService')
 
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
+const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
+const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 
 const {
@@ -25,15 +29,15 @@ const {
   MATCH_STATUS_NEW,
   STATUS_EXPIRE,
   DATE_FORMAT,
-  MATCH_STATUS_FINISH,
   LOG_TYPE_PUBLISHED_PROPERTY,
-  MATCH_STATUS_INVITE,
-  MATCH_STATUS_KNOCK,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  LETTING_TYPE_NA,
+  MATCH_STATUS_FINISH,
+  MAX_SEARCH_ITEMS,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
+const HttpException = use('App/Exceptions/HttpException')
+const EstateFilters = require('../Classes/EstateFilters')
 const MAX_DIST = 10000
 
 /**
@@ -58,6 +62,10 @@ class EstateService {
     return Estate.query().whereNot('status', STATUS_DELETE)
   }
 
+  static async getById(id) {
+    return await this.getActiveEstateQuery().where({ id }).first()
+  }
+
   /**
    *
    */
@@ -67,25 +75,56 @@ class EstateService {
       query.where(conditions)
     }
 
-    return query.first()
+    return await query.first()
   }
 
+  static async saveEnergyProof(request) {
+    const imageMimes = [
+      FileBucket.IMAGE_JPG,
+      FileBucket.IMAGE_JPEG,
+      FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_PDF,
+    ]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'energy_proof', mime: imageMimes, isPublic: true },
+    ])
+
+    return files
+  }
   /**
    *
    */
-  static async createEstate(data, userId) {
+  static async createEstate(request, userId) {
+    const data = request.all()
+    const files = await this.saveEnergyProof(request)
+
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
 
-    let estate = await Estate.createItem({
-      ...data,
+    let createData = {
+      ...omit(data, ['rooms']),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
+    }
+
+    if (files && files.energy_proof) {
+      createData = {
+        ...createData,
+        energy_proof: files.energy_proof,
+        energy_proof_original_file:files.original_energy_proof,
+      }
+    }
+
+    const estate = await Estate.createItem({
+      ...createData,
     })
 
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+
+    // Run processing estate geo nearest
+    QueueService.getEstatePoint(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
@@ -94,11 +133,51 @@ class EstateService {
     }
   }
 
+  static async updateEstate(request) {
+    const { ...data } = request.all()
+
+    let updateData = {
+      ...omit(data, ['delete_energy_proof', 'rooms']),
+      status: STATUS_DRAFT,
+    }
+
+    let energy_proof = null
+    const estate = await this.getById(data.id)    
+    if (data.delete_energy_proof) {
+
+      energy_proof = estate?.energy_proof
+
+      updateData = {
+        ...updateData,
+        energy_proof: null,
+        energy_proof_original_file:null,
+      }
+    } else {
+      const files = await this.saveEnergyProof(request)
+      if (files && files.energy_proof) {
+        updateData = {
+          ...updateData,
+          energy_proof: files.energy_proof,
+          energy_proof_original_file:files.original_energy_proof,
+        }
+      }
+    }
+
+    await estate.updateItem(updateData)
+
+    if (data.delete_energy_proof && energy_proof) {
+      FileBucket.remove(energy_proof)
+    }
+    // Run processing estate geo nearest
+    QueueService.getEstatePoint(estate.id)
+    return estate
+  }
+
   /**
    *
    */
   static getEstates(params = {}) {
-    const query = Estate.query()
+    let query = Estate.query()
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -108,30 +187,12 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
-    if (params.query) {
-      query.where(function () {
-        this.orWhere('estates.street', 'ilike', `%${params.query}%`)
-        this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
+      .with('rooms', function (q) {
+        q.with('room_amenities').with('images')
       })
-    }
 
-    if (params.status) {
-      query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
-    }
-
-    if (params.letting_type) {
-      query.whereIn('estates.letting_type', params.letting_type)
-    }
-
-    // if(params.filter && params.filter.includes(1)) {
-    //   query.whereHas('inviteBuddies')
-    // }
-    if (params.filter) {
-      query.whereHas('matches', (query) => {
-        query.whereIn('status', params.filter)
-      })
-    }
-
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }
 
@@ -139,17 +200,7 @@ class EstateService {
    *
    */
   static getUpcomingShows(ids, query = '') {
-    // const timeSlot = TimeSlot.query()
-
-    // if(query.length > 0 ) {
-    //   timeSlot
-    //   .whereHas('user', (estateQuery) => {
-    //               estateQuery.where('address', 'ILIKE', `%${query}%`)
-    //             })
-    // }
-
-    // return timeSlot
-    return EstateService.getEstates()
+    return this.getEstates()
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .whereIn('user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
@@ -178,25 +229,6 @@ class EstateService {
   /**
    *
    */
-  static async updateEstatePoint(estateId) {
-    const estate = await EstateService.getQuery().where('id', estateId).first()
-    if (!estate) {
-      throw new AppException(`Invalid estate ${estateId}`)
-    }
-
-    const { lat, lon } = estate.getLatLon()
-    if (+lat === 0 && +lon === 0) {
-      return false
-    }
-    const point = await GeoService.getOrCreatePoint({ lat, lon })
-    estate.point_id = point.id
-
-    return estate.save()
-  }
-
-  /**
-   *
-   */
   static async getSqrRange({ year, sqr, quality }) {
     return Database.from('sqr_rates')
       .whereRaw(`COALESCE(min_year, 0) <= ?`, [year])
@@ -204,22 +236,6 @@ class EstateService {
       .whereRaw(`COALESCE(min_sqr, 0) <= ?`, [sqr])
       .whereRaw(`COALESCE(max_sqr, 100000) >= ?`, [sqr])
       .where('quality', quality)
-  }
-
-  /**
-   *
-   */
-  static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
-    if (!estate.address) {
-      throw new AppException('Estate address invalid')
-    }
-
-    const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result) {
-      await estate.updateItem({ coord: `${result.lat},${result.lon}` })
-      await EstateService.updateEstatePoint(estateId)
-    }
   }
 
   /**
@@ -242,11 +258,98 @@ class EstateService {
     await File.query().delete().where('id', file.id)
   }
 
+  static async updateCover({ room, removeImage, addImage }, trx = null) {
+    try {
+      const estate = await this.getById(room.estate_id)
+      if (!estate) {
+        throw new HttpException('No permission to update cover', 400)
+      }
+
+      const rooms = await RoomService.getRoomsByEstate(estate.id, true)
+
+      const favoriteRooms = room.favorite
+        ? [room]
+        : filter(rooms.toJSON(), function (r) {
+            return r.favorite
+          })
+
+      let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
+
+      // no cover or cover is no longer favorite image
+      if (favImages && favImages.length) {
+        if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
+          await this.setCover(estate.id, favImages[0].relativeUrl, trx)
+        }
+      } else {
+        let images = this.extractImages(rooms.toJSON(), removeImage)
+        if (estate.cover) {
+          if (
+            images &&
+            images.length &&
+            images.find((i) => i.relativeUrl === estate.cover) === undefined
+          ) {
+            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          } else if (!images && !images.length) {
+            await this.removeCover(estate.id, estate.cover, trx)
+          }
+        } else {
+          if (images && images.length) {
+            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          }
+        }
+      }
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static extractImages(rooms, removeImage = undefined, addImage = undefined) {
+    let images = []
+
+    rooms.map((r) => {
+      if (addImage) {
+        r.images.push(addImage.toJSON())
+      }
+      if (!r.images || !r.images.length) {
+        return
+      }
+      images.push(r.images)
+    })
+
+    images = flatten(images)
+    if (removeImage) {
+      images = images.filter((i) => i.id !== removeImage.id)
+    }
+
+    return images
+  }
+
+  static async changeEstateCoverInFavorite(room, images, firstId, trx) {
+    if (!images || !images.length) {
+      return
+    }
+
+    const image = images.find((i) => i.id === firstId)
+    await this.setCover(room.estate_id, image.relativeUrl, trx)
+  }
+
   /**
    *
    */
-  static async setCover(estateId, filePathName) {
-    return Estate.query().update({ cover: filePathName }).where('id', estateId)
+  static async setCover(estateId, filePathName, trx = null) {
+    const coverUpdateQuery = Estate.query().update({ cover: filePathName }).where('id', estateId)
+    if (trx) {
+      coverUpdateQuery.transacting(trx)
+    }
+    return await coverUpdateQuery
+  }
+
+  static async removeCover(estateId, filePathName, trx = null) {
+    return await Estate.query()
+      .update({ cover: null })
+      .where('id', estateId)
+      .where('cover', filePathName)
+      .transacting(trx)
   }
 
   /**
@@ -303,10 +406,7 @@ class EstateService {
     }
 
     // Checks is time slot crossing existing
-    const existing = await EstateService.getCrossTimeslotQuery(
-      { end_at, start_at },
-      estate.user_id
-    ).first()
+    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
 
     if (existing) {
       throw new AppException('Time slot crossing existing')
@@ -339,7 +439,7 @@ class EstateService {
       }
     }
     const estate = await Estate.find(slot.estate_id)
-    const crossingSlot = await EstateService.getCrossTimeslotQuery(
+    const crossingSlot = await this.getCrossTimeslotQuery(
       { end_at: slot.end_at, start_at: slot.start_at },
       estate.user_id
     )
@@ -368,14 +468,14 @@ class EstateService {
    *
    */
   static async addLike(userId, estateId) {
-    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
 
     try {
       await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
-      await EstateService.removeDislike(userId, estateId)
+      await this.removeDislike(userId, estateId)
     } catch (e) {
       Logger.error(e)
       throw new AppException('Cant create like')
@@ -385,24 +485,37 @@ class EstateService {
   /**
    *
    */
-  static async removeLike(userId, estateId) {
-    return Database.table('likes').where({ user_id: userId, estate_id: estateId }).delete()
+  static async removeLike(userId, estateId, trx) {
+    return Database.table('likes')
+      .where({ user_id: userId, estate_id: estateId })
+      .delete()
+      .transacting(trx)
   }
 
   /**
    *
    */
-  static async addDislike(userId, estateId) {
-    const estate = await EstateService.getActiveEstateQuery().where({ id: estateId }).first()
+  static async addDislike(userId, estateId, trx) {
+    const shouldTrxProceed = trx
+
+    if (!trx) {
+      trx = await Database.beginTransaction()
+    }
+
+    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
     if (!estate) {
       throw new AppException('Invalid estate')
     }
 
     try {
-      await Database.into('dislikes').insert({ user_id: userId, estate_id: estateId })
-      await EstateService.removeLike(userId, estateId)
+      await Database.table('dislikes')
+        .insert({ user_id: userId, estate_id: estateId })
+        .transacting(trx)
+      await this.removeLike(userId, estateId, trx)
+      if (!shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
+      if (!shouldTrxProceed) await trx.rollback()
       throw new AppException('Cant create like')
     }
   }
@@ -426,7 +539,7 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-      .limit(1000)
+      .limit(MAX_SEARCH_ITEMS)
   }
 
   /**
@@ -556,15 +669,15 @@ class EstateService {
 
     if (!tenant.point_id) {
       const { lat, lon } = tenant.getLatLon()
-      query = EstateService.getEstatesByPointCoordQuery(lat, lon)
+      query = this.getEstatesByPointCoordQuery(lat, lon)
     } else if (tenant.zones && !isEmpty[tenant.zones]) {
       // TODO: Get apartments by user selected zones
     } else if (tenant.point_zone) {
       // Get apartments by zone
-      query = EstateService.getEstatesByPointZoneQuery(tenant.point_id)
+      query = this.getEstatesByPointZoneQuery(tenant.point_id)
     } else {
       // Get apartments by anchor coords
-      query = EstateService.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
+      query = this.getEstatesByPointCoordQuery(tenant.point_lat, tenant.point_lon)
     }
 
     if (!query) {
@@ -621,9 +734,9 @@ class EstateService {
     }
     let query = null
     if (tenant.isActive()) {
-      query = EstateService.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
+      query = this.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
     } else {
-      query = EstateService.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
+      query = this.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
     }
 
     return query.limit(limit).fetch()
@@ -632,53 +745,8 @@ class EstateService {
   /**
    *
    */
-  static async moveJobsToExpire() {
-    // Find jobs with expired date and status active
-    const estateIds = (
-      await Estate.query()
-        .select('id')
-        .where('status', STATUS_ACTIVE)
-        .where('available_date', '<=', moment().format(DATE_FORMAT))
-        // .limit(100)
-        .fetch()
-    ).rows.map((i) => i.id)
-
-    if (isEmpty(estateIds)) {
-      return false
-    }
-
-    const trx = await Database.beginTransaction()
-    try {
-      // Update job status
-      await Estate.query()
-        .update({ status: STATUS_EXPIRE })
-        .whereIn('id', estateIds)
-        .transacting(trx)
-
-      // Remove estates from - matches / likes / dislikes
-      await Database.table('matches')
-        .where('status', MATCH_STATUS_NEW)
-        .whereIn('estate_id', estateIds)
-        .delete()
-        .transacting(trx)
-
-      await Database.table('likes').whereIn('estate_id', estateIds).delete().transacting(trx)
-      await Database.table('dislikes').whereIn('estate_id', estateIds).delete().transacting(trx)
-
-      await NoticeService.landLandlordEstateExpired(estateIds)
-    } catch (e) {
-      await trx.rollback()
-      Logger.error(e)
-      return false
-    }
-
-    await trx.commit()
-  }
-
-  /**
-   *
-   */
   static async publishEstate(estate, request) {
+    //TODO: We must add transaction here
     const User = use('App/Models/User')
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) return
@@ -686,9 +754,9 @@ class EstateService {
       await CompanyService.validateUserContacts(estate.user_id)
     }
     await props({
-      delMatches: () => Database.table('matches').where({ estate_id: estate.id }).delete(),
-      delLikes: () => Database.table('likes').where({ estate_id: estate.id }).delete(),
-      delDislikes: () => Database.table('dislikes').where({ estate_id: estate.id }).delete(),
+      delMatches: Database.table('matches').where({ estate_id: estate.id }).delete(),
+      delLikes: Database.table('likes').where({ estate_id: estate.id }).delete(),
+      delDislikes: Database.table('dislikes').where({ estate_id: estate.id }).delete(),
     })
     await estate.publishEstate()
     logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
@@ -697,20 +765,42 @@ class EstateService {
     Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
   }
 
+  static async handleOfflineEstate(estateId, trx) {
+    const matches = await Estate.query()
+      .select('estates.*')
+      .where('id', estateId)
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', estateId)
+      })
+      .select('_m.user_id as prospect_id')
+      .whereNotIn('_m.status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .fetch()
+
+    await Match.query()
+      .where('estate_id', estateId)
+      .whereNotIn('status', [MATCH_STATUS_FINISH])
+      .delete()
+      .transacting(trx)
+
+    await Visit.query().where('estate_id', estateId).delete().transacting(trx)
+    await Database.table('likes').where({ estate_id: estateId }).delete().transacting(trx)
+    await Database.table('dislikes').where({ estate_id: estateId }).delete().transacting(trx)
+
+    NoticeService.prospectPropertDeactivated(matches.rows)
+  }
+
   static async getEstatesByUserId(ids, limit, page, params) {
     if (params.return_all && params.return_all == 1) {
-      return await EstateService.getEstates(params)
+      return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .whereNot('area', 0)
         .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
-      return await EstateService.getEstates(params)
+      return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .whereNot('area', 0)
         .paginate(page, limit)
     }
   }
@@ -802,12 +892,11 @@ class EstateService {
 
   static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
-      .select('estates.*')
+      .select(['estates.*', '_m.share', '_m.status'])
       .with('user')
       .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id')
-          .on('_m.user_id', tenant_id)
-          .on('_m.status', MATCH_STATUS_FINISH)
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', tenant_id)
+        //.on('_m.status', MATCH_STATUS_FINISH)
       })
       .leftJoin({ _mb: 'members' }, function () {
         this.on('_mb.user_id', '_m.user_id')
@@ -834,29 +923,52 @@ class EstateService {
     return affectedRows
   }
 
-  static async getLettingTypeCounts(userIds) {
-    let lettingTypeCounts = await Estate.query()
+  static getCounts() {
+    return Estate.query()
+      .select(Database.raw(`count(*) as all_count`))
       .select(
-        Database.raw(
-          `count(*) filter(where status not in (${STATUS_DELETE})) as total_estate_count`
-        )
+        Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let_count`)
       )
-      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_LET}') as let`))
-      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void`))
-      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na`))
+      .select(
+        Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
+      )
+  }
+
+  static async getFilteredCounts(userId, params) {
+    let query = EstateService.getCounts()
       .whereNot('estates.status', STATUS_DELETE)
-      .whereNot('area', 0)
-      .whereIn('user_id', userIds)
-      .first()
-    lettingTypeCounts = omit(lettingTypeCounts.toJSON(), [
+      .where('user_id', userId)
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    let filteredCounts = await query.first()
+
+    filteredCounts = omit(filteredCounts.toJSON(), [
       'hash',
       'coord',
       'coord_raw',
       'bath_options',
       'kitchen_options',
       'equipment',
+      'verified_address',
     ])
-    return lettingTypeCounts
+    return filteredCounts
+  }
+
+  static async getTotalEstateCounts(userId) {
+    let estateCount = await EstateService.getCounts()
+      .where('user_id', userId)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+    estateCount = omit(estateCount.toJSON(), [
+      'hash',
+      'coord',
+      'coord_raw',
+      'bath_options',
+      'kitchen_options',
+      'equipment',
+      'verified_address',
+    ])
+    return estateCount
   }
 }
 

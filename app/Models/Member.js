@@ -1,5 +1,6 @@
 'use strict'
 
+const { STATUS_ACTIVE, MEMBER_FILE_TYPE_PASSPORT } = require('../constants')
 const Model = require('./BaseModel')
 
 class Member extends Model {
@@ -22,6 +23,7 @@ class Member extends Model {
       'last_address',
       'rent_arrears_doc',
       'credit_score',
+      'credit_score_submit_later',
       'debt_proof',
       'unpaid_rental',
       'insolvency_proceed',
@@ -60,6 +62,12 @@ class Member extends Model {
     return this.hasMany('App/Models/Income')
   }
 
+  passports() {
+    return this.hasMany('App/Models/MemberFile')
+      .where('type', MEMBER_FILE_TYPE_PASSPORT)
+      .where('status', STATUS_ACTIVE)
+  }
+
   static get limitFieldsList() {
     return [
       'id',
@@ -67,16 +75,11 @@ class Member extends Model {
       'firstname',
       'secondname',
       'child',
-      'phone',
       'email',
       'birthday',
       'sex',
       'avatar',
       'share',
-      'landlord_name',
-      'landlord_phone',
-      'landlord_email',
-      'last_address',
       'published_at',
       'is_verified',
       'owner_id',

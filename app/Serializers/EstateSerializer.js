@@ -3,7 +3,7 @@ const moment = require('moment')
 const { isString, each, get, isDate } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
 const Drive = use('Drive')
-
+const File = require('../Classes/File')
 /**
  *
  */
@@ -16,10 +16,15 @@ class EstateSerializer extends BaseSerializer {
 
     item.coord = item.coord_raw
     item.coord_raw = undefined
+    item.verified_address = item.coord !== null
 
     // Get cover url
-    if (isString(item.cover)) {
-      item.cover = Drive.disk('s3public').getUrl(item.cover)
+    if (isString(item.cover) && !item.cover.includes('http')) {
+      item.cover = File.getPublicUrl(item.cover)
+    }
+
+    if (isString(item.energy_proof) && !item.energy_proof.includes('http')) {
+      item.energy_proof = File.getPublicUrl(item.energy_proof)
     }
 
     if (isDate(item.construction_year)) {
@@ -33,14 +38,6 @@ class EstateSerializer extends BaseSerializer {
     this.applyOptionsSerializer(item, item.constructor.options)
 
     isShort && this.filterFields(item, extraFields)
-
-    if (role != null && role === 3) {
-      if (item.full_address === false) {
-        item.coord = undefined
-        item.street = undefined
-        item.house_number = undefined
-      }
-    }
 
     return this._getRowJSON(item)
   }

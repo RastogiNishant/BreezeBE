@@ -99,6 +99,7 @@ class MemberService {
       .with('incomes', function (b) {
         b.with('proofs')
       })
+      .with('passports')
       .orderBy('id', 'asc')
 
     return await query.fetch()
@@ -225,7 +226,6 @@ class MemberService {
 
   static async getMember(id, user_id, owner_id) {
     let member
-    console.log({ user_id, owner_id })
     if (!owner_id) {
       member = await Member.query()
         .where('id', id)
@@ -239,7 +239,7 @@ class MemberService {
   }
 
   static async allowEditMemberByPermission(user, memberId) {
-    const member = await Member.query().where('id', memberId).firstOrFail()
+    const member = await Member.query().where('id', memberId).with('passports').firstOrFail()
     const isEditingOwnMember = user.owner_id
       ? member.owner_user_id === user.id
       : member.user_id === user.id
@@ -269,11 +269,14 @@ class MemberService {
   /**
    *
    */
-  static async addIncome(data, member,trx=null) {
-    return Income.createItem({
-      ...data,
-      member_id: member.id,
-    },trx)
+  static async addIncome(data, member, trx = null) {
+    return Income.createItem(
+      {
+        ...data,
+        member_id: member.id,
+      },
+      trx
+    )
   }
 
   /**
@@ -298,20 +301,34 @@ class MemberService {
   }
 
   /**
-   *
+   * user will be prospect
    */
-  static async updateUserIncome(userId, trx) {
+  static async updateUserIncome(userId, sUserId, trx) {
     await Database.raw(
       `
-      UPDATE tenants SET income = (
-        SELECT COALESCE(SUM(coalesce(income, 0)), 0)
-          FROM members as _m
-            INNER JOIN incomes as _i ON _i.member_id = _m.id
-          WHERE user_id = ?
-      ) WHERE user_id = ?
-    `,
+        UPDATE tenants SET income = (
+          SELECT COALESCE(SUM(coalesce(income, 0)), 0)
+            FROM members as _m
+              INNER JOIN incomes as _i ON _i.member_id = _m.id
+            WHERE user_id = ?
+        ) WHERE user_id = ?
+      `,
       [userId, userId]
     ).transacting(trx)
+
+    if (sUserId) {
+      await Database.raw(
+        `
+        UPDATE tenants SET income = (
+          SELECT COALESCE(SUM(coalesce(income, 0)), 0)
+            FROM members as _m
+              INNER JOIN incomes as _i ON _i.member_id = _m.id
+            WHERE owner_user_id = ?
+        ) WHERE user_id = ?
+      `,
+        [sUserId, sUserId]
+      ).transacting(trx)
+    }
   }
 
   static async sendInvitationCode(id, userId) {
@@ -356,9 +373,12 @@ class MemberService {
         await MailService.sendcodeForMemberInvitation(member.email, shortLink)
         trx.commit()
         return true
-      }
-      if (member && !member.email) {
-        throw new HttpException("this member doesn't have email. please add email first", 400)
+      } else {
+        if (member && !member.email) {
+          throw new HttpException("this member doesn't have email. please add email first", 400)
+        } else {
+          await trx.rollback()
+        }
       }
       return false
     } catch (e) {

@@ -28,7 +28,8 @@ const {
   NOTICE_TYPE_PROSPECT_COME,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
-  NOTICE_TYPE_PROSPECT_INVITE_IN,
+  NOTICE_TYPE_VISIT_DELAY_LANDLORD,
+  NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT,
 } = require('../../constants')
 
 class NoticeController {
@@ -78,7 +79,8 @@ class NoticeController {
       NOTICE_TYPE_CANCEL_VISIT,
       NOTICE_TYPE_LANDLORD_CONFIRM_VISIT,
       NOTICE_TYPE_VISIT_DELAY,
-      NOTICE_TYPE_PROSPECT_INVITE_IN,
+      NOTICE_TYPE_VISIT_DELAY_LANDLORD,
+      NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT,
     ]
     await Promise.map(notification_types, async (type) => {
       await NoticeService.sendTestNotification(userId, type, estate_id, data)

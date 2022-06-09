@@ -50,12 +50,14 @@ const {
   NO_UNPAID_RENTAL,
   STATUS_DRAFT,
   BUDDY_STATUS_ACCEPTED,
+  MINIMUM_SHOW_PERIOD,
+  MEMBER_FILE_TYPE_PASSPORT,
+  TIMESLOT_STATUS_CONFIRM,
+  MAX_SEARCH_ITEMS,
 } = require('../constants')
 const { logger } = require('../../config/app')
 
 const MATCH_PERCENT_PASS = 40
-const MAX_DIST = 10000
-const MAX_SEARCH_ITEMS = 1000
 
 /**
  * Check is item in data range
@@ -392,7 +394,7 @@ class MatchService {
   /**
    *
    */
-  static async matchByUser(userId) {
+  static async matchByUser(userId, ignoreNullFields = false) {
     const tenant = await Tenant.query()
       .select('tenants.*', '_p.data as polygon')
       .where({ 'tenants.user_id': userId })
@@ -400,7 +402,11 @@ class MatchService {
       .first()
     const polygon = get(tenant, 'polygon.data.0.0')
     if (!tenant || !polygon) {
-      throw new AppException('Invalid tenant filters')
+      if (ignoreNullFields) {
+        return
+      } else {
+        throw new AppException('Invalid tenant filters')
+      }
     }
 
     let maxLat = -90,
@@ -488,6 +494,10 @@ class MatchService {
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
       await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(estateId, superMatches)
+      }
     }
   }
 
@@ -545,7 +555,6 @@ class MatchService {
     }
 
     if (like || knock_anyway) {
-      // TODO: send landlord knock notification
       await Database.into('matches').insert({
         status: MATCH_STATUS_KNOCK,
         user_id: userId,
@@ -568,10 +577,18 @@ class MatchService {
     if (!match) {
       throw new AppException('Invalid match stage')
     }
-    await Database.table('matches').update({ status: MATCH_STATUS_NEW }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+
+    const trx = await Database.beginTransaction()
+
+    try {
+      await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
+      await EstateService.addDislike(userId, estateId, trx)
+      await trx.commit()
+      return true
+    } catch (e) {
+      await trx.rollback()
+      throw e
+    }
   }
 
   /**
@@ -661,8 +678,17 @@ class MatchService {
       anotherVisit: getAnotherVisit(),
     })
 
-    if (!currentTimeslot || anotherVisit) {
+    if (!currentTimeslot || (anotherVisit && currentTimeslot.slot_length)) {
       throw new AppException('Cant book this slot')
+    }
+
+    const endDate = currentTimeslot.slot_length
+      ? moment(slotDate).add(parseInt(currentTimeslot.slot_length), 'minutes')
+      : moment(slotDate).add(MINIMUM_SHOW_PERIOD, 'minutes')
+
+    // if show end time is bigger than show time
+    if (moment.utc(currentTimeslot.end_at, DATE_FORMAT) < endDate) {
+      throw new AppException("can't book this time slot, out of time range!")
     }
 
     // Book new visit to calendar
@@ -670,6 +696,8 @@ class MatchService {
       estate_id: estate.id,
       user_id: userId,
       date: slotDate.format(DATE_FORMAT),
+      start_date: slotDate.format(DATE_FORMAT),
+      end_date: currentTimeslot.slot_length ? endDate.format(DATE_FORMAT) : currentTimeslot.end_at,
     })
     // Move match status to next
     await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
@@ -711,9 +739,7 @@ class MatchService {
 
     await Promise.all([deleteVisit, updateMatch])
 
-    //TODO: notify landlord that prospect cancels visit
-
-    NoticeService.cancelVisit(estateId)
+    NoticeService.cancelVisit(estateId, null, userId)
   }
 
   /**
@@ -722,7 +748,6 @@ class MatchService {
   static async cancelVisitByLandlord(estateId, tenantId) {
     const visit = await Database.table('visits')
       .where({ estate_id: estateId })
-      .where({ status: MATCH_STATUS_VISIT })
       .where({ user_id: tenantId })
       .first()
 
@@ -732,7 +757,6 @@ class MatchService {
 
     const deleteVisit = Database.table('visits')
       .where({ estate_id: estateId })
-      .where({ status: MATCH_STATUS_VISIT })
       .where({ user_id: tenantId })
       .delete()
 
@@ -742,8 +766,6 @@ class MatchService {
     })
 
     await Promise.all([deleteVisit, updateMatch])
-
-    // //TODO: notify landlord that prospect cancels visit
     NoticeService.cancelVisit(estateId, tenantId)
   }
 
@@ -934,9 +956,6 @@ class MatchService {
       })
       .update({ status: MATCH_STATUS_FINISH })
 
-    //await MatchService.removeNonConfirmUserMatches(estateId, tenantId)
-
-    // remove another users matches for this estate
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
 
@@ -1126,6 +1145,8 @@ class MatchService {
       '_m.buddy',
       '_m.share',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
@@ -1159,10 +1180,30 @@ class MatchService {
       '_m.buddy',
       '_m.share',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
     query.where('_v.date', '>', now).where('_v.date', '<=', tomorrow)
+    return query
+  }
+
+  static getLandlordUpcomingVisits(userId) {
+    const now = moment().format(DATE_FORMAT)
+    const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
+
+    const query = Estate.query()
+      .select('estates.*')
+      .where('estates.user_id', userId)
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .innerJoin('visits', 'visits.estate_id', 'estates.id')
+      .select('visits.start_date as visit_start_date')
+      .select('visits.end_date as visit_end_date')
+      .where('visits.date', '>', now)
+      .where('visits.date', '<=', tomorrow)
+      .fetch()
+
     return query
   }
 
@@ -1383,6 +1424,8 @@ class MatchService {
       '_m.buddy',
       '_m.share',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.lord_status AS visit_status',
       '_v.lord_delay AS delay',
       '_l AS like',
@@ -1409,6 +1452,37 @@ class MatchService {
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
+      .select(`_pm.profession`)
+      .select(`_mf.id_verified`)
+      .select(
+        Database.raw(`
+        (case when _bd.user_id is null
+          then
+            'match'
+          else
+            'buddy'
+          end
+        ) as match_type`)
+      )
+      .select(
+        Database.raw(`
+        -- null here indicates members did not submit any income
+        (_ip.all_members_submitted_income_proofs::int
+        + _mp.all_members_submitted_no_rent_arrears_proofs::int
+        + _mp.all_members_submitted_credit_score_proofs::int)
+        as total_completed_proofs`)
+      )
+      .select(
+        Database.raw(`
+        json_build_object
+          (
+            'income', all_members_submitted_income_proofs,
+            'credit_score', all_members_submitted_credit_score_proofs,
+            'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
+          )
+        as submitted_proofs
+        `)
+      )
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
@@ -1429,7 +1503,7 @@ class MatchService {
         .where('_m.status', MATCH_STATUS_TOP)
         .clearOrder()
         .orderBy([
-          { column: '_m.order_lord', order: 'ASK' },
+          { column: '_m.order_lord', order: 'ASC' },
           { column: '_m.updated_at', order: 'DESC' },
         ])
     } else if (commit) {
@@ -1443,6 +1517,7 @@ class MatchService {
         this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
       })
       .leftJoin({ _mb: 'members' }, function () {
+        //primaryUser?
         this.on('_mb.user_id', '_m.user_id').onIn('_mb.id', function () {
           this.min('id')
             .from('members')
@@ -1451,6 +1526,114 @@ class MatchService {
             .limit(1)
         })
       })
+      .leftJoin(
+        //members have proofs for credit_score and no_rent_arrears
+        Database.raw(`
+        (select
+          members.user_id,
+          count(*) as member_count,
+          bool_and(case when members.rent_arrears_doc is not null then true else false end) as all_members_submitted_no_rent_arrears_proofs,
+          bool_and(case when members.debt_proof is not null then true else false end) as all_members_submitted_credit_score_proofs
+        from
+          members
+        group by
+          members.user_id)
+        as _mp
+        `),
+        function () {
+          this.on('_mp.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //all members have proofs for income
+        Database.raw(`
+        -- table indicating all members under prospect submitted complete income proofs
+        (select
+          members.user_id,
+          bool_and(member_submitted_all_income_proofs) as all_members_submitted_income_proofs
+        from
+          members
+        left join
+          (
+            -- table indicating members submitted 3 or more unexpired income proofs
+            select
+              incomes.member_id ,
+              (count(income_proofs.file) >= 3) as member_submitted_all_income_proofs
+            from
+              incomes
+            left join
+              income_proofs
+            on
+              incomes.id=income_proofs.income_id 
+            and 
+              income_proofs.expire_date >= now()
+            group by
+              incomes.id
+            )
+            as iip
+        on
+          iip.member_id=members.id
+        group by
+          members.user_id 
+        order by
+          members.user_id desc
+        
+        ) as _ip`),
+        function () {
+          this.on('_ip.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //profession of primaryMember
+        Database.raw(`
+        (select
+          (array_agg(primaryMember.user_id))[1] as user_id,
+          incomes.member_id,
+          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
+        from
+          members as primaryMember
+        left join
+          incomes
+        on
+          primaryMember.id=incomes.member_id
+        and
+          primaryMember.email is null
+        and
+          primaryMember.owner_user_id is null
+        group by
+          incomes.member_id)
+        as _pm
+      `),
+        function () {
+          this.on('tenants.user_id', '_pm.user_id')
+        }
+      )
+      .leftJoin({ _bd: 'buddies' }, function () {
+        this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
+      })
+      .leftJoin(
+        Database.raw(`
+          (select
+            members.user_id,
+            bool_and(member_has_id) as id_verified
+          from members
+          left join
+            (select
+              member_files.member_id,
+              count(member_files.file) > 0 as member_has_id
+            from
+              member_files
+            where member_files.status = ${STATUS_ACTIVE} and member_files.type='${MEMBER_FILE_TYPE_PASSPORT}'
+            group by
+              member_files.member_id
+            ) as mf
+          on mf.member_id=members.id
+          group by members.user_id)
+        as _mf`),
+        function () {
+          this.on('_mf.user_id', '_m.user_id')
+        }
+      )
     query.select(
       '_mb.firstname',
       '_mb.secondname',
@@ -1459,11 +1642,15 @@ class MatchService {
       '_mb.last_address',
       '_mb.phone_verified',
       '_v.date',
+      '_v.start_date AS visit_start_date',
+      '_v.end_date AS visit_end_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
+      '_m.share as share',
       '_m.status as status',
-      '_m.user_id'
+      '_m.user_id',
+      '_mf.id_verified'
     )
 
     return query
@@ -1657,6 +1844,7 @@ class MatchService {
   static async getEstateSlotsStat(estateId) {
     const slotWithoutLength = await Database.table('time_slots')
       .select('slot_length')
+      .where('estate_id', estateId)
       .whereNull('slot_length')
       .first()
 
@@ -1699,7 +1887,11 @@ class MatchService {
     await Database.table('visits').where({ estate_id: estateId, user_id: userId }).update(data)
     const estate = await EstateService.getActiveById(estateId)
     if (estate) {
-      NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay)
+      if (data.tenant_delay) {
+        NoticeService.changeVisitTime(estateId, estate.user_id, data.tenant_delay, userId)
+      } else if (data.tenant_status === TIMESLOT_STATUS_CONFIRM) {
+        NoticeService.prospectArrived(estateId, userId)
+      }
     } else {
       throw new AppException('No estate')
     }
@@ -1708,23 +1900,23 @@ class MatchService {
   /**
    *
    */
-  static async updateVisitStatusLandlord(estateId, data) {
+  static async updateVisitStatusLandlord(estateId, user_id, data) {
     const currentDay = moment().startOf('day')
     try {
+      //TODO: handle this flow. seems wrong
       const visit = await Visit.query()
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .first()
 
       await Database.table('visits')
-        .where({ estate_id: estateId })
+        .where({ estate_id: estateId, user_id: user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .update(data)
-
-      if (visit) {
-        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay)
+      if (visit && visit.lord_delay) {
+        NoticeService.changeVisitTime(estateId, visit.user_id, visit.lord_delay, null)
       }
     } catch (e) {
       Logger.error(e)
