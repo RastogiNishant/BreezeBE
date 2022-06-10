@@ -14,6 +14,7 @@ const {
   USER_ACTIVATION_STATUS_ACTIVATED,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
+  STATUS_ACTIVE,
 } = require('../../../constants')
 
 class UserController {
@@ -103,7 +104,7 @@ class UserController {
   }
 
   async getLandlords({ request, response }) {
-    let { activation_status, page, limit } = request.all()
+    let { activation_status, status, page, limit } = request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -111,8 +112,10 @@ class UserController {
         USER_ACTIVATION_STATUS_DEACTIVATED,
       ]
     }
+    status = status || STATUS_ACTIVE
     const landlords = await User.query()
       .where('role', ROLE_LANDLORD)
+      .whereIn('status', isArray(status) ? status : [status])
       .whereIn(
         'activation_status',
         isArray(activation_status) ? activation_status : [activation_status]
