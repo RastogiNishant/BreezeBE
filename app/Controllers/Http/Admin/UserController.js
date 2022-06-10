@@ -6,8 +6,7 @@ const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-
-const { isEmpty, find, get } = require('lodash')
+const { isArray, isEmpty, find, get } = require('lodash')
 const {
   ROLE_ADMIN,
   ROLE_LANDLORD,
@@ -103,16 +102,27 @@ class UserController {
     return response.res({ affectedRows })
   }
 
-  async getUnverifiedLandlords({ request, response }) {
-    const { page, limit } = request.all()
+  async getLandlords({ request, response }) {
+    let { activation_status, page, limit } = request.all()
+    if (!activation_status) {
+      activation_status = [
+        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+        USER_ACTIVATION_STATUS_ACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED,
+      ]
+    }
     const landlords = await User.query()
       .where('role', ROLE_LANDLORD)
-      .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
+      .whereIn(
+        'activation_status',
+        isArray(activation_status) ? activation_status : [activation_status]
+      )
       .with('estates', function (e) {
         e.whereNot('status', STATUS_DELETE)
       })
-      .orderBy('id', 'asc')
+      .orderBy('users.id', 'asc')
       .paginate(page, limit)
+    //let's return all info... this is admin
     return response.res(landlords)
   }
 }
