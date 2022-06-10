@@ -95,6 +95,8 @@ Route.group(() => {
   Route.post('/auth/login', 'Admin/AuthController.login').middleware(['guest', 'valid:AdminLogin'])
 
   Route.get('/me', 'Admin/AuthController.me').middleware(['auth:jwtAdministrator'])
+
+  Route.get('/landlords/unactivated', 'Admin/UserController.getUnverifiedLandlords')
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -586,9 +588,7 @@ Route.group(() => {
   Route.delete('/:id/passport/:passport_id', 'MemberController.deletePassportImage').middleware([
     'valid:Id,PassportId',
   ])
-  Route.post('/:id/passport', 'MemberController.addPassportImage').middleware([
-    'valid:Id',
-  ])  
+  Route.post('/:id/passport', 'MemberController.addPassportImage').middleware(['valid:Id'])
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
   Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
     'valid:MemberId,Phone',

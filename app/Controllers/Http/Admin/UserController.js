@@ -10,6 +10,8 @@ const moment = require('moment')
 const { isEmpty, find, get } = require('lodash')
 const {
   ROLE_ADMIN,
+  ROLE_LANDLORD,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
@@ -99,6 +101,18 @@ class UserController {
         break
     }
     return response.res({ affectedRows })
+  }
+
+  async getUnverifiedLandlords({ request, response }) {
+    const { page, limit } = request.all()
+    const landlords = await User.query()
+      .where('role', ROLE_LANDLORD)
+      .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
+      .with('estates', function (e) {
+        e.whereNot('status', STATUS_DELETE)
+      })
+      .paginate(page, limit)
+    return response.res(landlords)
   }
 }
 
