@@ -586,6 +586,9 @@ Route.group(() => {
   Route.delete('/:id/passport/:passport_id', 'MemberController.deletePassportImage').middleware([
     'valid:Id,PassportId',
   ])
+  Route.post('/:id/passport', 'MemberController.addPassportImage').middleware([
+    'valid:Id',
+  ])  
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
   Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
     'valid:MemberId,Phone',

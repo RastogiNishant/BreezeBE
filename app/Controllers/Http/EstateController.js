@@ -144,11 +144,20 @@ class EstateController {
               })
             )
 
+           const passports =  await Promise.all(
+            member.passports.map(async (passport) => {
+              if( !passport.file) return passport
+              passport.file = await FileBucket.getProtectedUrl(passport.file)
+              return passport
+            })
+          )
+
             member = {
               ...member,
               rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
               debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
               incomes: incomes,
+              passports:passports
             }
             return member
           })
