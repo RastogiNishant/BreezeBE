@@ -111,6 +111,7 @@ class UserController {
       .with('estates', function (e) {
         e.whereNot('status', STATUS_DELETE)
       })
+      .orderBy('id', 'asc')
       .paginate(page, limit)
     return response.res(landlords)
   }
