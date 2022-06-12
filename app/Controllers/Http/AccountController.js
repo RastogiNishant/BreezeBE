@@ -364,16 +364,15 @@ class AccountController {
       user = await Admin.query()
         .select('admins.*')
         .select(Database.raw(`${ROLE_LANDLORD} as role`))
-        .select(Database.raw(`true as isAdmin`))
+        .select(Database.raw(`true as is_admin`))
         .select(Database.raw(`${STATUS_ACTIVE} as status`))
         .select(Database.raw(`true as real_admin`))
         .where('email', email)
         .first()
     }
-
     if (!user) {
       user = await User.query()
-        .select('users.*', Database.raw(`false as isAdmin`))
+        .select('users.*', Database.raw(`false as is_admin`))
         .where('email', email)
         .where('role', role)
         .first()
@@ -410,7 +409,7 @@ class AccountController {
       const [error, message] = e.message.split(':')
       throw new HttpException(message, 401)
     }
-    if (!user.isAdmin) {
+    if (!user.is_admin) {
       //we don't have device_token on admins table hence the test...
       await User.query().where({ email }).update({ device_token: null })
       if (device_token) {
