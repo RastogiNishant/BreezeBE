@@ -23,6 +23,10 @@ class EstateSerializer extends BaseSerializer {
       item.cover = File.getPublicUrl(item.cover)
     }
 
+    if (isString(item.energy_proof) && !item.energy_proof.includes('http')) {
+      item.energy_proof = File.getPublicUrl(item.energy_proof)
+    }
+
     if (isDate(item.construction_year)) {
       item.construction_year = moment(item.construction_year).format('YYYY')
     }
@@ -34,14 +38,6 @@ class EstateSerializer extends BaseSerializer {
     this.applyOptionsSerializer(item, item.constructor.options)
 
     isShort && this.filterFields(item, extraFields)
-
-    if (role != null && role === 3) {
-      if (item.full_address === false) {
-        item.coord = undefined
-        item.street = undefined
-        item.house_number = undefined
-      }
-    }
 
     return this._getRowJSON(item)
   }

@@ -3,6 +3,7 @@ const Database = use('Database')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
 const { isEmpty } = require('lodash')
@@ -13,6 +14,7 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
   MIN_TIME_SLOT,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 
 class QueueJobService {
@@ -40,13 +42,13 @@ class QueueJobService {
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result) {
       await estate.updateItem({ coord: `${result.lat},${result.lon}` })
-      await this.updateEstatePoint(estateId)
+      await QueueJobService.updateEstatePoint(estateId)
     }
   }
 
   //Finds and handles the estates that available date is over
   static async handleExpiredEstates() {
-    const estateIds = (await this.fetchExpiredEstates()).rows.map((i) => i.id)
+    const estateIds = (await QueueJobService.fetchExpiredEstates()).rows.map((i) => i.id)
     if (isEmpty(estateIds)) {
       return false
     }
@@ -56,6 +58,13 @@ class QueueJobService {
       await Estate.query()
         .update({ status: STATUS_EXPIRE })
         .whereIn('id', estateIds)
+        .transacting(trx)
+
+      // Delete new matches
+      await Match.query()
+        .whereIn('estate_id', estateIds)
+        .where('status', MATCH_STATUS_NEW)
+        .delete()
         .transacting(trx)
 
       await NoticeService.landLandlordEstateExpired(estateIds)
@@ -77,14 +86,14 @@ class QueueJobService {
 
   //Finds and handles the estates that show date is over between now and 5 minutes before
   static async handleShowDateEndedEstates() {
-    const showedEstates = (await this.fetchShowDateEndedEstatesFor5Minutes()).rows
+    const showedEstates = (await QueueJobService.fetchShowDateEndedEstatesFor5Minutes()).rows
     const estateIds = showedEstates.map((e) => e.id)
     if (isEmpty(estateIds)) {
       return false
     }
     const trx = await Database.beginTransaction()
     try {
-      await this.handleShowDateEndedEstatesMatches(estateIds, trx)
+      await QueueJobService.handleShowDateEndedEstatesMatches(estateIds, trx)
       await NoticeService.sendToShowDateIsEndedEstatesLandlords(showedEstates)
       await trx.commit()
     } catch (e) {
@@ -105,7 +114,7 @@ class QueueJobService {
           SELECT estates.* FROM estates
           INNER JOIN time_slots on time_slots.estate_id = estates.id
           WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
-          AND estates.status = ${STATUS_ACTIVE}
+          AND estates.status IN (${STATUS_ACTIVE},${STATUS_EXPIRE})
           AND end_at >= '${start.format(DATE_FORMAT)}'
           AND end_at <= '${end.format(DATE_FORMAT)}'
           ORDER BY estates.id
@@ -115,7 +124,7 @@ class QueueJobService {
 
   static async handleShowDateEndedEstatesMatches(estateIds, trx) {
     // We move "invite" matches to "knock".
-    // Because estate's show date is over and they are not able to pick timeslot anymore
+    // Because estate's timeslots(show date) is over and the prospects are not able to pick timeslot anymore
     await Database.table('matches')
       .where('status', MATCH_STATUS_INVITE)
       .whereIn('estate_id', estateIds)
@@ -124,7 +133,8 @@ class QueueJobService {
   }
 
   static async handleShowDateWillEndInAnHourEstates() {
-    const showDateWillEndEstates = (await this.fetchShowDateWillEndInAnHourEstates()).rows
+    const showDateWillEndEstates = (await QueueJobService.fetchShowDateWillEndInAnHourEstates())
+      .rows
     if (isEmpty(showDateWillEndEstates)) {
       return false
     }
@@ -151,7 +161,7 @@ class QueueJobService {
           INNER JOIN matches on matches.estate_id = estates.id
           WHERE end_at IN (SELECT max(end_at) FROM time_slots WHERE estate_id = estates.id)
           AND matches.status = ${MATCH_STATUS_INVITE}
-          AND estates.status = ${STATUS_ACTIVE}
+          AND estates.status IN (${STATUS_ACTIVE},${STATUS_EXPIRE})
           AND end_at >= '${start.format(DATE_FORMAT)}'
           AND end_at <= '${end.format(DATE_FORMAT)}'
           ORDER BY estates.id

@@ -211,7 +211,7 @@ class NotificationsService {
    *
    */
   static async sendLandlordNoProfile(notices) {
-    const title = 'landlord.notification.event.no_ll_profile'
+    const title = 'landlord.notification.event.no_ll_profile.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -226,14 +226,16 @@ class NotificationsService {
    *
    */
   static async sendLandlordNoProperty(notices = []) {
-    const title = 'notification_landlord_fill_property'
+    const title = 'landlord.notification.event.unpublished_property'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
-      return (
-        l.get('landlord.notification.tip.no_prop_profile.message', lang) +
-        ' \n' +
-        l.get('landlord.notification.next.no_prop_profile.message', lang)
-      )
+      let text = ''
+      const address = capitalize(get(data, 'estate_address', ''))
+      if (address) {
+        text += address + ' \n'
+      }
+      text += l.get('landlord.notification.next.unpublished_property.message', lang)
+      return text
     })
   }
 
@@ -241,7 +243,7 @@ class NotificationsService {
    * Send Notification about estate expired soon
    */
   static async sendEstateExpired(notices) {
-    const title = 'landlord.notification.event.limit_expired'
+    const title = 'landlord.notification.event.limit_expired.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
@@ -267,8 +269,8 @@ class NotificationsService {
    *
    */
   static async sendLandlordSlotsSelected(notices) {
-    let title = 'landlord.notification.event.slots_selected'
-    let subBody = 'landlord.notification.next.slots_selected'
+    let title = 'landlord.notification.event.slots_selected.message'
+    let subBody = 'landlord.notification.next.slots_selected.message'
 
     return NotificationsService.sendNotes(
       notices,
@@ -295,7 +297,7 @@ class NotificationsService {
    *
    */
   static async sendLandlordGetFinalMatch(notes) {
-    const title = 'landlord.notification.event.final_match'
+    const title = 'landlord.notification.event.final_match.message'
 
     return NotificationsService.sendNotes(notes, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
@@ -307,7 +309,7 @@ class NotificationsService {
    * Send message for landlord, user choose another apt
    */
   static async sendLandlordFinalMatchRejected(notices) {
-    const title = 'landlord.notification.event.final_match_rejected'
+    const title = 'landlord.notification.event.final_match_rejected.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
@@ -356,8 +358,8 @@ class NotificationsService {
           tokens,
           NotificationsService.getTypeById(typeId),
           {
-            title: isFunction(title) ? title(data, lang) : l.get(`${title}.message`, lang),
-            body: isFunction(body) ? body(data, lang) : l.get(`${body}.message`, lang),
+            title: isFunction(title) ? title(data, lang) : l.get(`${title}`, lang),
+            body: isFunction(body) ? body(data, lang) : l.get(`${body}`, lang),
             data,
           },
           image
@@ -372,7 +374,7 @@ class NotificationsService {
    *
    */
   static async sendProspectNoActivity(notices) {
-    const title = 'prospect.notification.event.no_activity'
+    const title = 'prospect.notification.event.no_activity.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return l.get('prospect.notification.next.no_activity.message', lang)
@@ -383,17 +385,13 @@ class NotificationsService {
    *
    */
   static async sendProspectNewMatch(notices) {
-    const title = l.get('prospect.notification.event.new_match')
+    const title = l.get('prospect.notification.event.new_match.message')
 
     return NotificationsService.sendNotes(
       notices,
-      (data, lang) => `${data.match_count} ${l.get(`${title}.message`, lang)}`,
+      (data, lang) => `${data.match_count} ${l.get(`${title}`, lang)}`,
       (data, lang) => {
-        return (
-          l.get('prospect.notification.tip.new_match.message', lang) +
-          ' \n' +
-          l.get('prospect.notification.next.new_match.message', lang)
-        )
+        return l.get('prospect.notification.next.new_match.message', lang)
       }
     )
   }
@@ -402,7 +400,7 @@ class NotificationsService {
    *
    */
   static async sendProspectEstateExpiring(notices) {
-    const title = 'prospect.notification.event.knock_limit_expiring'
+    const title = 'prospect.notification.event.knock_limit_expiring.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -417,7 +415,7 @@ class NotificationsService {
    *
    */
   static async sendProspectNewInvite(notice) {
-    const title = 'prospect.notification.event.new_invite'
+    const title = 'prospect.notification.event.new_invite.message'
 
     return NotificationsService.sendNotes([notice], title, (data, lang) => {
       return (
@@ -437,7 +435,7 @@ class NotificationsService {
       (data, lang) => {
         return `${data.user_name} ${rc(
           l.get('prospect.notification.event.coming_min_later', lang),
-          [{ '^minutes': data.delay }]
+          [{ minutes: data.delay }]
         )}`
       },
       (data, lang) => {
@@ -456,7 +454,7 @@ class NotificationsService {
       notice,
       (data, lang) => {
         return `${rc(l.get('prospect.notification.event.visit_delay', lang), [
-          { '^minutes': data.delay },
+          { minutes: data.delay },
         ])}`
       },
       (data, lang) => {
@@ -551,7 +549,7 @@ class NotificationsService {
    *
    */
   static async sendProspectFirstVisitConfirm(notices) {
-    const title = 'prospect.notification.event.confirm_visit_in'
+    const title = 'prospect.notification.event.confirm_visit_in.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -566,7 +564,7 @@ class NotificationsService {
    *
    */
   static async sendProspectVisit90m(notices) {
-    const title = 'prospect.notification.event.visit_in'
+    const title = 'prospect.notification.event.visit_in.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -581,7 +579,7 @@ class NotificationsService {
    *
    */
   static async sendLandlordVisit90m(notices) {
-    const title = 'landlord.notification.event.visit_starting_in'
+    const title = 'landlord.notification.event.visit_starting_in.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -596,7 +594,7 @@ class NotificationsService {
    *
    */
   static async sendProspectLandlordConfirmed(notice) {
-    const title = 'prospect.notification.event.commit'
+    const title = 'prospect.notification.event.commit.message'
 
     return NotificationsService.sendNotes([notice], title, (data, lang) => {
       return (
@@ -641,7 +639,7 @@ class NotificationsService {
    *
    */
   static async sendProspectProfileExpiring(notices) {
-    const title = 'prospect.notification.event.profile_expiring'
+    const title = 'prospect.notification.event.profile_expiring.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return l.get('prospect.notification.next.profile_expiring.message', lang)
@@ -652,7 +650,7 @@ class NotificationsService {
    *
    */
   static async sendProspectFinalVisitConfirm(notices) {
-    const title = 'prospect.notification.event.visit_status'
+    const title = 'prospect.notification.event.visit_status.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -667,7 +665,7 @@ class NotificationsService {
    *
    */
   static async sendLandlordVisitIn30m(notices) {
-    const title = 'landlord.notification.event.visit_status'
+    const title = 'landlord.notification.event.visit_status.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
@@ -682,7 +680,7 @@ class NotificationsService {
    *
    */
   static async sendProspectInviteToCome(notices) {
-    const title = 'prospect.notification.event.come'
+    const title = 'prospect.notification.event.come.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (

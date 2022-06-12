@@ -85,12 +85,12 @@ class MemberController {
         await trx.commit()
         return response.res(member)
       } else {
-        trx.rollback()
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count),
-          response.res(null)
+        await trx.rollback()
+        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
+        response.res(null)
       }
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -161,7 +161,7 @@ class MemberController {
         throw new HttpException('You should specify email to add member', 400)
       }
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -251,7 +251,7 @@ class MemberController {
       await MemberService.calcTenantMemberData(user_id, trx)
 
       Event.fire('tenant::update', user_id)
-      trx.commit()
+      await trx.commit()
       if (auth.user.owner_id) {
         await NoticeService.prospectHouseholdDisconnected(user_id)
       }
@@ -283,6 +283,7 @@ class MemberController {
       if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
         Event.fire('memberPermission:create', member_id, auth.user.id)
       }
+      await trx.commit()
       response.res(true)
     } catch (e) {
       await trx.rollback()
@@ -412,7 +413,7 @@ class MemberController {
   //MERGED TENANT
   async addMemberIncomeProof({ request, auth, response }) {
     const { income_id, ...rest } = request.all()
-
+    const user_id = auth.user.owner_id || auth.user.id
     const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
     if (!income) {
       throw new HttpException('Invalid income', 400)
@@ -422,7 +423,7 @@ class MemberController {
       { field: 'file', mime: docMimes, isPublic: false },
     ])
     const incomeProof = await MemberService.addMemberIncomeProof({ ...rest, ...files }, income)
-
+    Event.fire('tenant::update', user_id)
     response.res(incomeProof)
   }
 
@@ -432,7 +433,7 @@ class MemberController {
   //MERGED TENANT
   async removeMemberIncomeProof({ request, auth, response }) {
     const { id } = request.all()
-
+    const user_id = auth.user.owner_id || auth.user.id
     let proofQuery = IncomeProof.query()
       .select('income_proofs.*')
       .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
@@ -447,8 +448,41 @@ class MemberController {
       throw new HttpException('Invalid income proof', 400)
     }
     await IncomeProof.query().where('id', proof.id).delete()
-
+    Event.fire('tenant::update', user_id)
     response.res(true)
+  }
+
+  async addPassportImage({ request, auth, response }) {
+    try {
+      const { id } = request.all()
+
+      const member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      if( !member ) {
+        throw new HttpException('No permission to add passport')
+      } 
+
+      const files = await File.saveRequestFiles(request, [
+        { field: 'passport', mime: imageMimes, isPublic: false },
+      ])
+
+      if (files.passport) {
+        let memberFile = new MemberFile()
+        memberFile.merge({
+          file: files.passport,
+          type: MEMBER_FILE_TYPE_PASSPORT,
+          status: STATUS_ACTIVE,
+          member_id: id,
+        })
+
+        const ret = await memberFile.save()
+        response.res(ret)
+      }else{
+        throw new HttpException( 'Failure uploading image', 422)
+      }
+      
+    } catch (e) {
+      throw new HttpException(e.message, 422)
+    }
   }
 
   async sendInviteCode({ request, auth, response }) {

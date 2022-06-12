@@ -11,7 +11,6 @@ const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const EstateService = use('App/Services/EstateService')
 const MatchService = use('App/Services/MatchService')
-const QueueService = use('App/Services/QueueService')
 const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
@@ -44,11 +43,13 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
+  TRANSPORT_TYPE_WALK
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
+const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -60,9 +61,7 @@ class EstateController {
     )
 
     if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate(data, data.landlord_id)
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
+      const estate = await EstateService.createEstate(request, data.landlord_id)
       response.res(estate)
     } else {
       throw new HttpException('Not Allowed', 400)
@@ -73,11 +72,7 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const data = request.all()
-
-    const estate = await EstateService.createEstate(data, auth.user.id)
-    // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    const estate = await EstateService.createEstate(request, auth.user.id)
     response.res(estate)
   }
 
@@ -95,13 +90,8 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      await estate.updateItem(data)
-      Event.fire('estate::update', estate.id)
-
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
-
-      response.res(estate)
+      const newEstate = await EstateService.updateEstate(request)
+      response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -116,13 +106,8 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    await estate.updateItem(data)
-    Event.fire('estate::update', estate.id)
-
-    // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
-
-    response.res(estate)
+    const newEstate = await EstateService.updateEstate(request)
+    response.res(newEstate)
   }
 
   async lanlordTenantDetailInfo({ request, auth, response }) {
@@ -159,11 +144,20 @@ class EstateController {
               })
             )
 
+           const passports =  await Promise.all(
+            member.passports.map(async (passport) => {
+              if( !passport.file) return passport
+              passport.file = await FileBucket.getProtectedUrl(passport.file)
+              return passport
+            })
+          )
+
             member = {
               ...member,
               rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
               debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
               incomes: incomes,
+              passports:passports
             }
             return member
           })
@@ -645,6 +639,14 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
+    if( !estate.full_address && estate.coord_raw ) {
+      const coords = estate.coord_raw.split(',')
+      const lat = coords[0]
+      const lon = coords[1]
+      const isolinePoints = await GeoService.getOrCreateIsoline({lat,lon}, TRANSPORT_TYPE_WALK, 60)
+      estate.isoline = isolinePoints?.toJSON()?.data || []
+    }
+
     response.res(estate.toJSON({ isShort: true, role: auth.user.role }))
   }
 
@@ -876,7 +878,7 @@ class EstateController {
           //placeholder for now...
         })
       )
-      trx.commit()
+      await trx.commit()
       //transaction end
       return response.res({ code })
     } catch (e) {
@@ -963,10 +965,10 @@ class EstateController {
     try {
       affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
     } catch (error) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    trx.commit()
+    await trx.commit()
     return response.res({ deleted: affectedRows })
   }
 }

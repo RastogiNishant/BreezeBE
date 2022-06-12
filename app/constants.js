@@ -25,6 +25,8 @@ const constants = {
 
   MAX_MINOR_COUNT: 5,
 
+  MAX_SEARCH_ITEMS: 10000,
+
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
@@ -528,6 +530,9 @@ const constants = {
     'apt_type',
     'options',
     'stp_garage',
+    'energy_proof',
+    'energy_proof_original_file',
+    'isoline'
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
