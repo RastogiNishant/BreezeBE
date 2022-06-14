@@ -3,6 +3,7 @@
 const uuid = require('uuid')
 const moment = require('moment')
 
+const Admin = use('App/Models/Admin')
 const Event = use('Event')
 const Logger = use('Logger')
 const Estate = use('App/Models/Estate')
@@ -43,7 +44,7 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  TRANSPORT_TYPE_WALK
+  TRANSPORT_TYPE_WALK,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick } = require('lodash')
@@ -144,20 +145,20 @@ class EstateController {
               })
             )
 
-           const passports =  await Promise.all(
-            member.passports.map(async (passport) => {
-              if( !passport.file) return passport
-              passport.file = await FileBucket.getProtectedUrl(passport.file)
-              return passport
-            })
-          )
+            const passports = await Promise.all(
+              member.passports.map(async (passport) => {
+                if (!passport.file) return passport
+                passport.file = await FileBucket.getProtectedUrl(passport.file)
+                return passport
+              })
+            )
 
             member = {
               ...member,
               rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
               debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
               incomes: incomes,
-              passports:passports
+              passports: passports,
             }
             return member
           })
@@ -242,9 +243,8 @@ class EstateController {
    */
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
-    let estate = await EstateService.getQuery()
+    let estateQuery = EstateService.getQuery()
       .where('id', id)
-      .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
@@ -278,7 +278,12 @@ class EstateController {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
-      .first()
+
+    if (!(auth.user instanceof Admin)) {
+      estateQuery.where('user_id', auth.user.id)
+    }
+
+    let estate = await estateQuery.first()
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
@@ -639,11 +644,15 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    if( !estate.full_address && estate.coord_raw ) {
+    if (!estate.full_address && estate.coord_raw) {
       const coords = estate.coord_raw.split(',')
       const lat = coords[0]
       const lon = coords[1]
-      const isolinePoints = await GeoService.getOrCreateIsoline({lat,lon}, TRANSPORT_TYPE_WALK, 60)
+      const isolinePoints = await GeoService.getOrCreateIsoline(
+        { lat, lon },
+        TRANSPORT_TYPE_WALK,
+        60
+      )
       estate.isoline = isolinePoints?.toJSON()?.data || []
     }
 
@@ -677,10 +686,14 @@ class EstateController {
    */
   async getSlots({ request, auth, response }) {
     const { estate_id } = request.all()
-    const estate = await EstateService.getActiveEstateQuery()
-      .where('user_id', auth.user.id)
-      .where('id', estate_id)
-      .first()
+    const estateQuery = EstateService.getActiveEstateQuery().where('id', estate_id)
+
+    if (!(auth.user instanceof Admin)) {
+      estateQuery.where('user_id', auth.user.id)
+    }
+
+    const estate = await estateQuery.first()
+
     if (!estate) {
       throw new HttpException('Estate not exists', 404)
     }

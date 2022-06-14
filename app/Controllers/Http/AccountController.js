@@ -501,7 +501,9 @@ class AccountController {
    *
    */
   async logout({ auth, response }) {
-    await User.query().where('id', auth.user.id).update({ device_token: null })
+    if (!(auth.current.user instanceof Admin)) {
+      await User.query().where('id', auth.user.id).update({ device_token: null })
+    }
     return response.res()
   }
 
