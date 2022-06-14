@@ -374,10 +374,12 @@ class AccountController {
         .where('email', email)
         .where('role', role)
         .first()
+      uid = User.getHash(email, role)
     } else {
       authenticator = auth.authenticator('jwtAdministrator')
       uid = Admin.getHash(email)
     }
+
     if (!user) {
       throw new HttpException('User not found', 404)
     }
