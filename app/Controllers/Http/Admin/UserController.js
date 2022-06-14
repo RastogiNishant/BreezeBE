@@ -126,7 +126,8 @@ class UserController {
       .orderBy('users.id', 'asc')
       .paginate(page, limit)
     //let's return all info... this is admin
-    return response.res(landlords)
+    const users = landlords.toJSON({ publicOnly: false })
+    return response.res(users)
   }
 }
 
