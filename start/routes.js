@@ -203,7 +203,9 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
+Route.get('/api/v1/me', 'AccountController.me').middleware([
+  'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
+])
 Route.put('/api/v1/me', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',

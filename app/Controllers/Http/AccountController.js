@@ -421,6 +421,9 @@ class AccountController {
         email: user.email,
       })
       Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
+      token['is_admin'] = false
+    } else {
+      token['is_admin'] = true
     }
     return response.res(token)
   }
@@ -443,7 +446,12 @@ class AccountController {
    *
    */
   async me({ auth, response, request }) {
-    const user = await User.query()
+    if (auth.current.user instanceof Admin) {
+      let admin = JSON.parse(JSON.stringify(auth.current.user))
+      admin.is_admin = true
+      return response.res(admin)
+    }
+    let user = await User.query()
       .where('users.id', auth.current.user.id)
       .with('household')
       .with('plan')
@@ -484,8 +492,9 @@ class AccountController {
     if (tenant) {
       user.tenant = tenant
     }
-
-    return response.res(user.toJSON({ isOwner: true }))
+    user = user.toJSON({ isOwner: true })
+    user.is_admin = false
+    return response.res(user)
   }
 
   /**
