@@ -49,8 +49,6 @@ const {
   USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const e = require('express')
-const { admin } = require('googleapis/build/src/apis/admin')
 
 class AccountController {
   /**
