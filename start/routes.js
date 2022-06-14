@@ -97,7 +97,7 @@ Route.group(() => {
   Route.get('/me', 'Admin/AuthController.me').middleware(['auth:jwtAdministrator'])
 
   Route.get('/landlords', 'Admin/UserController.getLandlords').middleware([
-    'auth:jwtAdministrators',
+    'auth:jwtAdministrator',
     'valid:Pagination,AdminGetsLandlords',
   ])
 }).prefix('api/v1/administration')
