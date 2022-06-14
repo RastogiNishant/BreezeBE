@@ -421,6 +421,9 @@ class AccountController {
         email: user.email,
       })
       Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
+      token['is_admin'] = false
+    } else {
+      token['is_admin'] = true
     }
     return response.res(token)
   }
