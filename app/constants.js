@@ -532,7 +532,7 @@ const constants = {
     'stp_garage',
     'energy_proof',
     'energy_proof_original_file',
-    'isoline'
+    'isoline',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -615,6 +615,12 @@ const constants = {
     'gte',
     'lte',
   ],
+
+  PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
+  PREDEFINED_MSG_OPEN_ENDED: 3,
+  PREDEFINED_NOT_A_QUESTION: 4,
+  PREDEFINED_LAST: 5,
 }
 
 module.exports = constants

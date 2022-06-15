@@ -100,6 +100,47 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Pagination,AdminGetsLandlords',
   ])
+
+  Route.get('/predefinedMessage/:id', 'Admin/PredefinedMessageController.get').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
+  Route.get('/predefinedMessage', 'Admin/PredefinedMessageController.getAll').middleware([
+    'auth:jwtAdministrator',
+  ])
+  Route.post('/predefinedMessage', 'Admin/PredefinedMessageController.create').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreatePredefinedMessage',
+  ])
+  Route.put('/predefinedMessage/:id', 'Admin/PredefinedMessageController.update').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreatePredefinedMessage,Id',
+  ])
+  Route.delete('/predefinedMessage/:id', 'Admin/PredefinedMessageController.delete').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
+
+  Route.get(
+    '/predefinedMessageChoice/:id',
+    'Admin/PredefinedMessageChoiceController.get'
+  ).middleware(['auth:jwtAdministrator', 'valid:Id'])
+  Route.get(
+    '/predefinedMessageChoice',
+    'Admin/PredefinedMessageChoiceController.getAll'
+  ).middleware(['auth:jwtAdministrator'])
+  Route.post(
+    '/predefinedMessageChoice',
+    'Admin/PredefinedMessageChoiceController.create'
+  ).middleware(['auth:jwtAdministrator', 'valid:CreatePredefinedMessageChoice'])
+  Route.put(
+    '/predefinedMessageChoice/:id',
+    'Admin/PredefinedMessageChoiceController.update'
+  ).middleware(['auth:jwtAdministrator', 'valid:CreatePredefinedMessageChoice,Id'])
+  Route.delete(
+    '/predefinedMessageChoice/:id',
+    'Admin/PredefinedMessageChoiceController.delete'
+  ).middleware(['auth:jwtAdministrator', 'valid:Id'])
 }).prefix('api/v1/administration')
 
 /** End administration */
