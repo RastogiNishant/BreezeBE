@@ -452,6 +452,39 @@ class MemberController {
     response.res(true)
   }
 
+  async addPassportImage({ request, auth, response }) {
+    try {
+      const { id } = request.all()
+
+      const member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      if( !member ) {
+        throw new HttpException('No permission to add passport')
+      } 
+
+      const files = await File.saveRequestFiles(request, [
+        { field: 'passport', mime: imageMimes, isPublic: false },
+      ])
+
+      if (files.passport) {
+        let memberFile = new MemberFile()
+        memberFile.merge({
+          file: files.passport,
+          type: MEMBER_FILE_TYPE_PASSPORT,
+          status: STATUS_ACTIVE,
+          member_id: id,
+        })
+
+        const ret = await memberFile.save()
+        response.res(ret)
+      }else{
+        throw new HttpException( 'Failure uploading image', 422)
+      }
+      
+    } catch (e) {
+      throw new HttpException(e.message, 422)
+    }
+  }
+
   async sendInviteCode({ request, auth, response }) {
     const { id } = request.all()
 

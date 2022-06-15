@@ -6,8 +6,8 @@ const BaseSerializer = require('./BaseSerializer')
  */
 class UserSerializer extends BaseSerializer {
   mergeData(item, options = {}) {
-    const { isOwner = false, publicOnly = true , basicFields= false} = options
-   
+    const { isOwner = false, publicOnly = true, basicFields = false } = options
+
     if (isOwner) {
       return this._getRowJSON(item)
     }
@@ -19,11 +19,11 @@ class UserSerializer extends BaseSerializer {
     }
 
     if (basicFields) {
-      if (item.secondname != null){
-          item.name = item.firstname + ' ' + item.secondname  
+      if (item.secondname != null) {
+        item.name = item.firstname + ' ' + item.secondname
       } else {
         item.name = item.firstname
-      } 
+      }
       item.firstname = undefined
       item.secondname = undefined
       item.location = item.coord

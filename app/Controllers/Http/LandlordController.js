@@ -1,5 +1,7 @@
 'use strict'
 
+const { ROLE_LANDLORD } = require('../../constants')
+
 const LandlordService = use('App/Services/LandlordService')
 const CompanyService = use('App/Services/CompanyService')
 const User = use('App/Models/User')
