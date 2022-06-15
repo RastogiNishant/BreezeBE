@@ -20,7 +20,6 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const Drive = use('Drive')
 const User = use('App/Models/User')
-const Amenity = use('App/Models/Amenity')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
@@ -243,85 +242,14 @@ class EstateController {
    */
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
-    let estateQuery = EstateService.getQuery()
-      .where('id', id)
-      .whereNot('status', STATUS_DELETE)
-      .with('point')
-      .with('files')
-      .with('current_tenant', function (q) {
-        q.with('user')
-      })
-      .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE)
-          .with('images')
-          .orderBy('order', 'asc')
-          .orderBy('favorite', 'desc')
-          .orderBy('id', 'asc')
-          .with('room_amenities', function (q) {
-            q.select(
-              Database.raw(
-                `amenities.*,
-              case
-                when
-                  amenities.type='amenity'
-                then
-                  "options"."title"
-                else
-                  "amenities"."amenity"
-              end as amenity`
-              )
-            )
-              .from('amenities')
-              .leftJoin('options', 'options.id', 'amenities.option_id')
-              .where('amenities.location', 'room')
-              .whereNot('amenities.status', STATUS_DELETE)
-              .orderBy('amenities.sequence_order', 'desc')
-          })
-      })
-
-    if (!(auth.user instanceof Admin)) {
-      estateQuery.where('user_id', auth.user.id)
-    }
-
-    let estate = await estateQuery.first()
+    const user_id = auth.user instanceof Admin ? null : auth.user.id
+    let estate = await EstateService.getEstateWithDetails(id, user_id)
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
     estate = estate.toJSON({ isOwner: true })
-    let amenities = await Amenity.query()
-      .select(
-        Database.raw(
-          `amenities.location, json_agg(amenities.* order by sequence_order desc) as amenities`
-        )
-      )
-      .from(
-        Database.raw(`(
-          select amenities.*,
-            case
-              when
-                "amenities".type='amenity'
-              then
-                "options"."title"
-              else
-                "amenities"."amenity"
-                  end as amenity
-          from amenities
-          left join options
-          on options.id=amenities.option_id
-          where
-            amenities.status = '${STATUS_ACTIVE}'
-          and
-            amenities.location not in('room')
-          and
-            amenities.estate_id in ('${id}')
-        ) as amenities`)
-      )
-      .where('status', STATUS_ACTIVE)
-      .whereIn('estate_id', [id])
-      .groupBy('location')
-      .fetch()
-    estate.amenities = amenities
+    estate = await EstateService.assignEstateAmenities(estate)
     response.res(estate)
   }
 
@@ -631,14 +559,7 @@ class EstateController {
   async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
 
-    const estate = await EstateService.getQuery()
-      .with('point')
-      .with('files')
-      .with('rooms', function (b) {
-        b.where('status', STATUS_ACTIVE).with('images')
-      })
-      .where('id', id)
-      .first()
+    let estate = await EstateService.getEstateWithDetails(id)
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
@@ -656,7 +577,10 @@ class EstateController {
       estate.isoline = isolinePoints?.toJSON()?.data || []
     }
 
-    response.res(estate.toJSON({ isShort: true, role: auth.user.role }))
+    estate = estate.toJSON({ isShort: true, role: auth.user.role })
+    estate = await EstateService.assignEstateAmenities(estate)
+
+    response.res(estate)
   }
 
   /**
