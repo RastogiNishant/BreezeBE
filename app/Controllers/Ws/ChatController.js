@@ -1,7 +1,7 @@
 'use strict'
 const Ws = use('Ws')
 //this should be coming from the database...
-const questions = [
+const origQuestions = [
   { id: 1, question: 'Hello There', type: 'not-a-question', next: 2 },
   {
     id: 2,
@@ -23,7 +23,7 @@ const questions = [
   },
   {
     id: 4,
-    question: 'Scratching you at your %%prev_answers%%. What else do you want?',
+    question: 'Scratching you... What else do you want?',
     type: 'multiple-choice-single-answer',
     choices: [
       { choice: 'Scratch Me', next_question: 3 },
@@ -56,7 +56,7 @@ const questions = [
       { choice: 'Scratch Me', next_question: 3 },
       { choice: 'Lets chat', next_question: 5 },
       { choice: 'Not here', next_question: 8 },
-      { choice: 'I think thats all.', next_question: 10 },
+      { choice: 'Lets stop', next_question: 10 },
     ],
   },
   {
@@ -88,31 +88,62 @@ class ChatController {
   constructor({ socket, request }) {
     this.socket = socket
     this.request = request
+    console.log('A new subscription for room topic', socket.topic)
     this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
   }
 
-  onAnswer(answer) {
-    console.log('got answered', answer)
-    this.socket.emit('question', this._nextQuestion(answer))
+  onAnswer({ question_id, answer }) {
+    this.socket.emit('question', this._nextQuestion(question_id, answer))
   }
 
   onCreateTask() {
-    console.log('create task...')
     let count = 0
     let doMore = true
+    let qs = []
     do {
-      if (questions[count].type !== 'not-a-question') {
+      if (origQuestions[count].type !== 'not-a-question') {
         doMore = false
       }
-      console.log(questions[count])
-      this.topic.broadcast('question', questions[count])
+      qs.push(origQuestions[count])
       count++
     } while (doMore)
+    this.socket.emit('question', qs)
   }
 
   onMessage(message) {}
 
-  _nextQuestion(answer) {}
+  _nextQuestion(id, answer) {
+    const questions = origQuestions
+    const question = questions.find((question) => question.id == id)
+    let next_question
+    if (question.type == 'multiple-choice-single-answer') {
+      const choice = question.choices.find((choice) => choice.choice == answer)
+      if (choice) {
+        next_question = questions.find((question) => question.id == choice.next_question)
+        next_question.question.replace(/%%prev_answers%%/g, answer)
+      } else {
+        next_question = { question: `Wrong Answer. Please select from:`, choices: question.choices }
+      }
+    } else if (
+      question.type == 'multiple-choice-multiple-answer' ||
+      question.type == 'open-ended'
+    ) {
+      next_question = questions.find((dquestion) => dquestion.id == question.next)
+      next_question.question = next_question.question.replace(/%%prev_answers%%/g, answer)
+    } else if (question.type == 'not-a-question') {
+      let doMore = true
+      let qs = [next_question]
+      while (doMore) {
+        if (next_question.type !== 'not-a-question') {
+          doMore = false
+        }
+        qs.push(next_question)
+        next_question = questions.find((dquestion) => dquestion.id == next_question.next)
+      }
+      next_question = qs
+    }
+    return next_question
+  }
 }
 
 module.exports = ChatController
