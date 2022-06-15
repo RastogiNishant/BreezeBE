@@ -95,6 +95,11 @@ Route.group(() => {
   Route.post('/auth/login', 'Admin/AuthController.login').middleware(['guest', 'valid:AdminLogin'])
 
   Route.get('/me', 'Admin/AuthController.me').middleware(['auth:jwtAdministrator'])
+
+  Route.get('/landlords', 'Admin/UserController.getLandlords').middleware([
+    'auth:jwtAdministrator',
+    'valid:Pagination,AdminGetsLandlords',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -132,7 +137,7 @@ Route.post('/api/v1/zendesk/notify', 'NoticeController.acceptZendeskNotification
 Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'valid:SignUp'])
 Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
 Route.post('/api/v1/logout', 'AccountController.logout').middleware([
-  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
+  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager,jwtAdministrator',
 ])
 Route.get('/api/v1/zendeskToken', 'AccountController.createZendeskToken').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
@@ -198,7 +203,9 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
+Route.get('/api/v1/me', 'AccountController.me').middleware([
+  'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
+])
 Route.put('/api/v1/me', 'AccountController.updateProfile').middleware([
   'auth:jwt,jwtLandlord',
   'valid:UpdateUser',
@@ -416,7 +423,7 @@ Route.group(() => {
   ])
 })
   .prefix('/api/v1/estates')
-  .middleware(['auth:jwtLandlord'])
+  .middleware(['auth:jwtLandlord,jwtAdministrator'])
 // Change visits statuses
 Route.group(() => {
   Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([
@@ -951,7 +958,7 @@ Route.group(() => {
 
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests
-const excludeRoutes = ['/api/v1/terms', '/api/v1/me']
+const excludeRoutes = ['/api/v1/terms', '/api/v1/me', '/api/v1/logout']
 Route.list().forEach((r) => {
   if (
     Array.isArray(r.middlewareList) &&

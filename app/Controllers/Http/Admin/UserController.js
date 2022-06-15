@@ -6,13 +6,15 @@ const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-
-const { isEmpty, find, get } = require('lodash')
+const { isArray, isEmpty, find, get } = require('lodash')
 const {
   ROLE_ADMIN,
+  ROLE_LANDLORD,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
+  STATUS_ACTIVE,
 } = require('../../../constants')
 
 class UserController {
@@ -99,6 +101,33 @@ class UserController {
         break
     }
     return response.res({ affectedRows })
+  }
+
+  async getLandlords({ request, response }) {
+    let { activation_status, status, page, limit } = request.all()
+    if (!activation_status) {
+      activation_status = [
+        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+        USER_ACTIVATION_STATUS_ACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED,
+      ]
+    }
+    status = status || STATUS_ACTIVE
+    const landlords = await User.query()
+      .where('role', ROLE_LANDLORD)
+      .whereIn('status', isArray(status) ? status : [status])
+      .whereIn(
+        'activation_status',
+        isArray(activation_status) ? activation_status : [activation_status]
+      )
+      .with('estates', function (e) {
+        e.whereNot('status', STATUS_DELETE)
+      })
+      .orderBy('users.id', 'asc')
+      .paginate(page, limit)
+    //let's return all info... this is admin
+    const users = landlords.toJSON({ publicOnly: false })
+    return response.res(users)
   }
 }
 
