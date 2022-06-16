@@ -28,7 +28,7 @@ class ImageController {
         // image size is bigger than 2M, it's only for test, we need to change it later
         img_data = (
           await imagemin([image.tmpPath], {
-            plugins: [imageminPngquant({ quality: [0.6, 0.8] }),imageminMozjpeg({  quality: 50 })],
+            plugins: [imageminPngquant({ quality: [0.6, 0.8] }),imageminMozjpeg({  quality: 80 })],
           })
         )[0].data
       }
