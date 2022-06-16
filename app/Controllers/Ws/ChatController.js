@@ -88,12 +88,11 @@ class ChatController {
   constructor({ socket, request }) {
     this.socket = socket
     this.request = request
-    console.log('A new subscription for room topic', socket.topic)
-    this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
+    this.topic = socket.topic
   }
 
   onAnswer({ question_id, answer }) {
-    this.socket.emit('question', this._nextQuestion(question_id, answer))
+    this.topic.emit('question', this._nextQuestion(question_id, answer))
   }
 
   onCreateTask() {
@@ -107,7 +106,7 @@ class ChatController {
       qs.push(origQuestions[count])
       count++
     } while (doMore)
-    this.socket.emit('question', qs)
+    this.topic.broadcastAll('question', qs)
   }
 
   onMessage(message) {}
