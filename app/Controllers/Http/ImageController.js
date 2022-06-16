@@ -21,7 +21,6 @@ class ImageController {
 
       const imagemin = (await import('imagemin')).default
       const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
-      const imageminJpegRecompress = require('imagemin-jpeg-recompress');
       const imageminPngquant = require('imagemin-pngquant')
 
       let img_data = Drive.getStream(image.tmpPath)
