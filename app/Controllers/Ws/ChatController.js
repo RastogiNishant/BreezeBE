@@ -88,11 +88,12 @@ class ChatController {
   constructor({ socket, request }) {
     this.socket = socket
     this.request = request
-    this.topic = socket.topic
+    this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
   }
 
   onAnswer({ question_id, answer }) {
-    this.topic.emit('question', this._nextQuestion(question_id, answer))
+    this.topic.broadcastToAll('message', answer)
+    this.topic.broadcastToAll('question', this._nextQuestion(question_id, answer))
   }
 
   onCreateTask() {
@@ -106,10 +107,18 @@ class ChatController {
       qs.push(origQuestions[count])
       count++
     } while (doMore)
-    this.topic.broadcastAll('question', qs)
+
+    if (this.topic) {
+      //broadcast - not including sender
+      //emitTo
+      this.topic.broadcastToAll('question', qs)
+    }
   }
 
-  onMessage(message) {}
+  onMessage(message) {
+    //save to db
+    this.topic.broadcastToAll('message', message)
+  }
 
   _nextQuestion(id, answer) {
     const questions = origQuestions
