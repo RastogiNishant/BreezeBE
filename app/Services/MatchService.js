@@ -1589,7 +1589,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
+          (array_agg(incomes.income_type order by incomes.income desc))[1] as profession
         from
           members as primaryMember
         left join
