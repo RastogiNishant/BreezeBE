@@ -1546,25 +1546,6 @@ class MatchService {
       )
       .leftJoin(
         //all members have proofs for income
-        //members have proofs for credit_score and no_rent_arrears
-        Database.raw(`
-        (select
-          members.user_id,
-          count(*) as member_count,
-          bool_and(case when members.rent_arrears_doc is not null then true else false end) as all_members_submitted_no_rent_arrears_proofs,
-          bool_and(case when members.debt_proof is not null then true else false end) as all_members_submitted_credit_score_proofs
-        from
-          members
-        group by
-          members.user_id)
-        as _mp
-        `),
-        function () {
-          this.on('_mp.user_id', '_m.user_id')
-        }
-      )
-      .leftJoin(
-        //all members have proofs for income
         Database.raw(`
         -- table indicating all members under prospect submitted complete income proofs
         (-- tenant has members
