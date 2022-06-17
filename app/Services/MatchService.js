@@ -265,7 +265,7 @@ class MatchService {
     D2 - prospectBudgetRel
     */
     if (realBudget > 1) {
-      prospectBudgetPoints = 1
+      prospectBudgetPoints = 0
     } else if (prospectBudgetRel >= realBudget) {
       prospectBudgetPoints = 1
       //prospectBudgetPoints = realBudget / prospectBudgetRel - old fmla
