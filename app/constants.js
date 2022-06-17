@@ -621,6 +621,10 @@ const constants = {
   PREDEFINED_MSG_OPEN_ENDED: 3,
   PREDEFINED_NOT_A_QUESTION: 4,
   PREDEFINED_LAST: 5,
+  
+  URGENCY_NORMAL: 1,
+  URGENCY_HIGHT: 2,
+  URGENCY_SUPER: 3,
 }
 
 module.exports = constants
