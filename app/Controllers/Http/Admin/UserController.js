@@ -104,7 +104,7 @@ class UserController {
   }
 
   async getLandlords({ request, response }) {
-    let { activation_status, status, page, limit } = request.all()
+    let { activation_status, status, page, limit, query } = request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -113,7 +113,7 @@ class UserController {
       ]
     }
     status = status || STATUS_ACTIVE
-    const landlords = await User.query()
+    const landlordQuery = User.query()
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
       .whereIn(
@@ -123,8 +123,14 @@ class UserController {
       .with('estates', function (e) {
         e.whereNot('status', STATUS_DELETE)
       })
-      .orderBy('users.id', 'asc')
-      .paginate(page, limit)
+    if (query) {
+      landlordQuery.andWhere(function (d) {
+        d.orWhere('email', 'ilike', `${query}%`)
+        d.orWhere('firstname', 'ilike', `${query}%`)
+        d.orWhere('secondname', 'ilike', `${query}%`)
+      })
+    }
+    const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
     //let's return all info... this is admin
     const users = landlords.toJSON({ publicOnly: false })
     return response.res(users)

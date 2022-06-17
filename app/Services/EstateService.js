@@ -21,6 +21,7 @@ const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
+const Amenity = use('App/Models/Amenity')
 
 const {
   STATUS_DRAFT,
@@ -64,6 +65,86 @@ class EstateService {
 
   static async getById(id) {
     return await this.getActiveEstateQuery().where({ id }).first()
+  }
+
+  static async getEstateWithDetails(id, user_id) {
+    const estateQuery = Estate.query()
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .with('point')
+      .with('files')
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE)
+          .with('images')
+          .orderBy('order', 'asc')
+          .orderBy('favorite', 'desc')
+          .orderBy('id', 'asc')
+          .with('room_amenities', function (q) {
+            q.select(
+              Database.raw(
+                `amenities.*,
+              case
+                when
+                  amenities.type='amenity'
+                then
+                  "options"."title"
+                else
+                  "amenities"."amenity"
+              end as amenity`
+              )
+            )
+              .from('amenities')
+              .leftJoin('options', 'options.id', 'amenities.option_id')
+              .where('amenities.location', 'room')
+              .whereNot('amenities.status', STATUS_DELETE)
+              .orderBy('amenities.sequence_order', 'desc')
+          })
+      })
+
+    if (user_id) {
+      estateQuery.where('user_id', user_id)
+    }
+    return estateQuery.first()
+  }
+
+  static async assignEstateAmenities(estate) {
+    let amenities = await Amenity.query()
+      .select(
+        Database.raw(
+          `amenities.location, json_agg(amenities.* order by sequence_order desc) as amenities`
+        )
+      )
+      .from(
+        Database.raw(`(
+          select amenities.*,
+            case
+              when
+                "amenities".type='amenity'
+              then
+                "options"."title"
+              else
+                "amenities"."amenity"
+                  end as amenity
+          from amenities
+          left join options
+          on options.id=amenities.option_id
+          where
+            amenities.status = '${STATUS_ACTIVE}'
+          and
+            amenities.location not in('room')
+          and
+            amenities.estate_id in ('${estate?.id}')
+        ) as amenities`)
+      )
+      .where('status', STATUS_ACTIVE)
+      .whereIn('estate_id', [estate?.id])
+      .groupBy('location')
+      .fetch()
+    estate.amenities = amenities
+    return estate
   }
 
   /**
@@ -113,7 +194,7 @@ class EstateService {
       createData = {
         ...createData,
         energy_proof: files.energy_proof,
-        energy_proof_original_file:files.original_energy_proof,
+        energy_proof_original_file: files.original_energy_proof,
       }
     }
 
@@ -142,15 +223,14 @@ class EstateService {
     }
 
     let energy_proof = null
-    const estate = await this.getById(data.id)    
+    const estate = await this.getById(data.id)
     if (data.delete_energy_proof) {
-
       energy_proof = estate?.energy_proof
 
       updateData = {
         ...updateData,
         energy_proof: null,
-        energy_proof_original_file:null,
+        energy_proof_original_file: null,
       }
     } else {
       const files = await this.saveEnergyProof(request)
@@ -158,7 +238,7 @@ class EstateService {
         updateData = {
           ...updateData,
           energy_proof: files.energy_proof,
-          energy_proof_original_file:files.original_energy_proof,
+          energy_proof_original_file: files.original_energy_proof,
         }
       }
     }
