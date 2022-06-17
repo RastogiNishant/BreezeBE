@@ -144,6 +144,10 @@ class MatchService {
     let amenitiesScore = 0
     let rentStartPoints = 0
 
+    /*
+    IF(E2>1,0,IF(D2>=E2,1,(E2-1)/(D2-1)))
+    E2 - realBudget
+    D2 - estateBudgetRel*/
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       log("Prospect can't afford.")
@@ -154,12 +158,8 @@ class MatchService {
     if (estateBudgetRel >= realBudget) {
       //landlordBudgetPoints = realBudget / estateBudgetRel
       landlordBudgetPoints = 1
-    } else if (
-      realBudget < 1 &&
-      realBudget > estateBudgetRel &&
-      0 < 2 - realBudget / estateBudgetRel
-    ) {
-      landlordBudgetPoints = 2 - realBudget / estateBudgetRel
+    } else {
+      landlordBudgetPoints = (realBudget - 1) / (estateBudgetRel - 1)
     }
     scoreL += landlordBudgetPoints
 
