@@ -44,17 +44,14 @@ class ImageController {
         ContentType: image.headers['content-type'],
       })
 
-      // const originalFilePathName = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
-      // await Drive.disk('s3public').put(originalFilePathName, Drive.getStream(image.tmpPath), {
-      //   ACL: 'public-read',
-      //   ContentType: image.headers['content-type'],
-      // })
-      
-console.log('Time 1', new Date().getTime())
+      const originalFilePathName = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
+      await Drive.disk('s3public').put(originalFilePathName, Drive.getStream(image.tmpPath), {
+        ACL: 'public-read',
+        ContentType: image.headers['content-type'],
+      })
       const thumbnail = await this.createThumbnail(img_data)
-console.log('Time 2', new Date().getTime())
       const ret = {
-        // origin: Drive.disk('s3public').getUrl(originalFilePathName),
+        origin: Drive.disk('s3public').getUrl(originalFilePathName),
         compress: Drive.disk('s3public').getUrl(compressFilePathName),
         thumbnail: thumbnail,
       }
