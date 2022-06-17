@@ -26,7 +26,6 @@ const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const Database = use('Database')
 const randomstring = require('randomstring')
 const l = use('Localize')
-
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -492,18 +491,20 @@ class EstateController {
       .whereIn('user_id', userIds)
       .firstOrFail()
 
-    const disk = 's3public'
-    const file = request.file('file')
-    const ext = file.extname
-      ? file.extname
-      : file.clientName.toLowerCase().replace(/.*(jpeg|jpg|png|doc|docx|pdf|xls|xlsx)$/, '$1')
-    const filename = `${uuid.v4()}.${ext}`
-    const filePathName = `${moment().format('YYYYMM')}/${filename}`
-    await Drive.disk(disk).put(filePathName, Drive.getStream(file.tmpPath), {
-      ACL: 'public-read',
-      ContentType: file.headers['content-type'],
-    })
-    const fileObj = await EstateService.addFile({ disk, url: filePathName, type, estate })
+    const imageMimes = [
+      FileBucket.IMAGE_JPEG,
+      FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_PDF,
+      FileBucket.MIME_DOC,
+      FileBucket.MIME_DOCX,
+      FileBucket.MIME_EXCEL,
+      FileBucket.MIME_EXCELX,
+    ]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'file', mime: imageMimes, isPublic: true },
+    ])
+
+    const fileObj = await EstateService.addFile({ disk: 's3public', url: files.file, type, estate })
     Event.fire('estate::update', estate_id)
 
     response.res(fileObj)
