@@ -260,16 +260,17 @@ class MatchService {
     // prospect calculation part
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
-
-    if (prospectBudgetRel >= realBudget) {
+    /* IF(E2>1,0,IF(D2>=E2,1,(E2-1)/(D2-1)))
+    E2 - realBudget
+    D2 - prospectBudgetRel
+    */
+    if (realBudget > 1) {
       prospectBudgetPoints = 1
-      //prospectBudgetPoints = realBudget / prospectBudgetRel
-    } else if (
-      realBudget < 1 &&
-      realBudget > prospectBudgetRel &&
-      0 < 2 - realBudget / prospectBudgetRel
-    ) {
-      prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
+    } else if (prospectBudgetRel >= realBudget) {
+      prospectBudgetPoints = 1
+      //prospectBudgetPoints = realBudget / prospectBudgetRel - old fmla
+    } else {
+      prospectBudgetPoints = (realBudget - 1) / (prospectBudgetRel - 1)
     }
     prospectBudgetPoints = prospectBudgetWeight * prospectBudgetPoints
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
