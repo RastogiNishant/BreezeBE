@@ -71,6 +71,7 @@
 		"firebase-dynamic-links": "^1.1.0",
 		"google-auth-library": "^5.10.1",
 		"googleapis": "^95.0.0",
+		"image-thumbnail": "^1.0.15",
 		"imagemin": "^8.0.1",
 		"imagemin-mozjpeg": "^10.0.0",
 		"imagemin-pngquant": "^9.0.2",
