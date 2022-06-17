@@ -91,9 +91,12 @@ class ChatController {
     this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
   }
 
-  onAnswer({ question_id, answer }) {
-    this.topic.broadcastToAll('message', answer)
-    this.topic.broadcastToAll('question', this._nextQuestion(question_id, answer))
+  onAnswer({ question_id, answer, user }) {
+    console.log('answer: ', question_id, answer, user)
+    if (this.topic) {
+      this.topic.broadcast('message', { message: answer, user })
+      this.topic.broadcastToAll('question', this._nextQuestion(question_id, answer))
+    }
   }
 
   onCreateTask() {
@@ -107,7 +110,7 @@ class ChatController {
       qs.push(origQuestions[count])
       count++
     } while (doMore)
-
+    console.log('craete task')
     if (this.topic) {
       //broadcast - not including sender
       //emitTo
@@ -117,13 +120,17 @@ class ChatController {
 
   onMessage(message) {
     //save to db
-    this.topic.broadcastToAll('message', message)
+    console.log('message received')
+    if (this.topic) {
+      this.topic.broadcastToAll('message', message)
+    }
   }
 
   _nextQuestion(id, answer) {
     const questions = origQuestions
     const question = questions.find((question) => question.id == id)
     let next_question
+    console.log({ id, answer, question })
     if (question.type == 'multiple-choice-single-answer') {
       const choice = question.choices.find((choice) => choice.choice == answer)
       if (choice) {
