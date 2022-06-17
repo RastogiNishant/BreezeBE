@@ -1,7 +1,7 @@
 'use strict'
 const Admin = use('App/Models/Admin')
-const { getAuthByRole } = require('../../../Libs/utils')
 const HttpException = use('App/Exceptions/HttpException')
+const Database = use('Database')
 
 class AuthController {
   async login({ request, auth, response }) {
@@ -25,12 +25,9 @@ class AuthController {
     return response.res(token)
   }
 
-  async me({ request, response, auth }) {
-    const userId = auth.user.id
-    const me = await Admin.query().where('id', userId).first()
-    if (!me) {
-      throw new HttpException('User not found.')
-    }
+  async me({ response, auth }) {
+    let me = JSON.parse(JSON.stringify(auth.current.user))
+    me.is_admin = true
     return response.res(me)
   }
 }

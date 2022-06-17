@@ -1548,37 +1548,46 @@ class MatchService {
         //all members have proofs for income
         Database.raw(`
         -- table indicating all members under prospect submitted complete income proofs
-        (select
-          members.user_id,
-          bool_and(member_submitted_all_income_proofs) as all_members_submitted_income_proofs
-        from
-          members
-        left join
-          (
-            -- table indicating members submitted 3 or more unexpired income proofs
+        (-- tenant has members
+          select
+            members.user_id,
+            sum(member_total_income) as total_income,
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as all_members_submitted_income_proofs
+          from
+            members
+          left join
+            (
+            -- if member has all proofs, get also member's total income
             select
-              incomes.member_id ,
-              (count(income_proofs.file) >= 3) as member_submitted_all_income_proofs
+              incomes.member_id,
+              sum(_mip.income) as member_total_income,
+              bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
             from
               incomes
             left join
-              income_proofs
+              (
+              -- how many proofs are submitted for each income
+              select
+                incomes.id,
+                incomes.income as income,
+                incomes.member_id,
+                count(income_proofs.file) as submitted_proofs
+              from
+                incomes
+              left join
+                income_proofs
+              on
+                income_proofs.income_id = incomes.id
+              group by incomes.id) as _mip
             on
-              incomes.id=income_proofs.income_id 
-            and 
-              income_proofs.expire_date >= now()
+              _mip.id=incomes.id
             group by
               incomes.id
-            )
-            as iip
-        on
-          iip.member_id=members.id
-        group by
-          members.user_id 
-        order by
-          members.user_id desc
-        
-        ) as _ip`),
+            ) as _mi
+          on _mi.member_id=members.id
+          group by
+            members.user_id
+            ) as _ip`),
         function () {
           this.on('_ip.user_id', '_m.user_id')
         }
@@ -1589,7 +1598,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
+          (array_agg(incomes.income_type order by incomes.income desc))[1] as profession
         from
           members as primaryMember
         left join

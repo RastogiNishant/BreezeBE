@@ -159,6 +159,10 @@ class User extends Model {
   isValidToken() {
     return /^([^\.\$\[\]\#\/]){100,768}$/.test(toString(this.device_token))
   }
+
+  estates() {
+    return this.hasMany('App/Models/Estate', 'id', 'user_id')
+  }
 }
 
 module.exports = User
