@@ -152,7 +152,8 @@ class MatchService {
     let estateBudgetRel = estateBudget / 100
     log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
-      landlordBudgetPoints = realBudget / estateBudgetRel
+      //landlordBudgetPoints = realBudget / estateBudgetRel
+      landlordBudgetPoints = 1
     } else if (
       realBudget < 1 &&
       realBudget > estateBudgetRel &&
@@ -261,7 +262,8 @@ class MatchService {
     const prospectBudgetRel = prospectBudget / 100
 
     if (prospectBudgetRel >= realBudget) {
-      prospectBudgetPoints = realBudget / prospectBudgetRel
+      prospectBudgetPoints = 1
+      //prospectBudgetPoints = realBudget / prospectBudgetRel
     } else if (
       realBudget < 1 &&
       realBudget > prospectBudgetRel &&
