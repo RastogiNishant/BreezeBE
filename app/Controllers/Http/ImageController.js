@@ -5,6 +5,7 @@ const Drive = use('Drive')
 const { SUPPORTED_IMAGE_FORMAT } = require('../../constants')
 const uuid = require('uuid')
 const moment = require('moment')
+const imageThumbnail = require('image-thumbnail');
 
 class ImageController {
   async compressImage({ request, response }) {
@@ -43,20 +44,30 @@ class ImageController {
         ContentType: image.headers['content-type'],
       })
 
-      const originalFilePathName = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
-      await Drive.disk('s3public').put(originalFilePathName, Drive.getStream(image.tmpPath), {
-        ACL: 'public-read',
-        ContentType: image.headers['content-type'],
-      })
-
+      // const originalFilePathName = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
+      // await Drive.disk('s3public').put(originalFilePathName, Drive.getStream(image.tmpPath), {
+      //   ACL: 'public-read',
+      //   ContentType: image.headers['content-type'],
+      // })
+      
+console.log('Time 1', new Date().getTime())
+      const thumbnail = await this.createThumbnail(img_data)
+console.log('Time 2', new Date().getTime())
       const ret = {
-        origin: Drive.disk('s3public').getUrl(originalFilePathName),
+        // origin: Drive.disk('s3public').getUrl(originalFilePathName),
         compress: Drive.disk('s3public').getUrl(compressFilePathName),
+        thumbnail: thumbnail,
       }
       response.res(ret)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
+  }
+
+  async createThumbnail( buffer ) {
+    const options = { width: 100, height: 100, responseType: 'base64', jpegOptions: { force:true, quality:90 } }
+    const thumbnail = await imageThumbnail(buffer, options)
+    return thumbnail
   }
 }
 
