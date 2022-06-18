@@ -10,18 +10,13 @@ const Drive = use('Drive')
 const Event = use('Event')
 const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
+const File = use('App/Classes/File')
 const Option = use('App/Models/Option')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
-const {
-  PROPERTY_MANAGE_ALLOWED,
-  ROLE_LANDLORD,
-  ROLE_PROPERTY_MANAGER,
-  STATUS_DELETE,
-  SUPPORTED_IMAGE_FORMAT,
-} = require('../../constants')
+const { PROPERTY_MANAGE_ALLOWED, ROLE_PROPERTY_MANAGER, STATUS_DELETE } = require('../../constants')
 const ImageService = require('../../Services/ImageService')
 
 class RoomController {
@@ -195,18 +190,12 @@ class RoomController {
 
     const trx = await Database.beginTransaction()
     try {
-      const file = request.file('file')
-      const ext = file.extname
-        ? file.extname
-        : file.clientName.toLowerCase().replace(/.*(jpeg|jpg|png)$/, '$1')
-      const filename = `${uuid.v4()}.${ext}`
-      const filePathName = `${moment().format('YYYYMM')}/${filename}`
-      await Drive.disk('s3public').put(filePathName, Drive.getStream(file.tmpPath), {
-        ACL: 'public-read',
-        ContentType: file.headers['content-type'],
-      })
+      const imageMimes = [File.IMAGE_JPEG, File.IMAGE_PNG]
+      const files = await File.saveRequestFiles(request, [
+        { field: 'file', mime: imageMimes, isPublic: true },
+      ])
 
-      const image = await RoomService.addImage(filePathName, room, 's3public', trx)
+      const image = await RoomService.addImage(files.file, room, 's3public', trx)
 
       await EstateService.updateCover({ room: room.toJSON(), addImage: image }, trx)
 
