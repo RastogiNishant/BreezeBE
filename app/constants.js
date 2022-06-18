@@ -530,6 +530,9 @@ const constants = {
     'apt_type',
     'options',
     'stp_garage',
+    'energy_proof',
+    'energy_proof_original_file',
+    'isoline'
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

@@ -6,6 +6,7 @@ const _ = require('lodash')
 const Promise = require('bluebird')
 const Event = use('Event')
 const User = use('App/Models/User')
+const Admin = use('App/Models/Admin')
 const Member = use('App/Models/Member')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
@@ -353,16 +354,32 @@ class AccountController {
     let { email, role, password, device_token } = request.all()
 
     // Select role if not set, (allows only for non-admin users)
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
-    if (role) {
-      roles = [role]
+    let user
+    let authenticator
+    let uid
+    if (role === ROLE_LANDLORD) {
+      //lets make this admin has a role of landlord for now
+      user = await Admin.query()
+        .select('admins.*')
+        .select(Database.raw(`${ROLE_LANDLORD} as role`))
+        .select(Database.raw(`true as is_admin`))
+        .select(Database.raw(`${STATUS_ACTIVE} as status`))
+        .select(Database.raw(`true as real_admin`))
+        .where('email', email)
+        .first()
+    }
+    if (!user) {
+      user = await User.query()
+        .select('users.*', Database.raw(`false as is_admin`))
+        .where('email', email)
+        .where('role', role)
+        .first()
+      uid = User.getHash(email, role)
+    } else {
+      authenticator = auth.authenticator('jwtAdministrator')
+      uid = Admin.getHash(email)
     }
 
-    const user = await User.query()
-      .where('email', email)
-      .whereIn('role', roles)
-      .orderBy('updated_at', 'desc')
-      .first()
     if (!user) {
       throw new HttpException('User not found', 404)
     }
@@ -377,15 +394,14 @@ class AccountController {
         parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
       )
     }
-    role = user.role
-
-    let authenticator
     try {
-      authenticator = getAuthByRole(auth, role)
+      if (!authenticator) {
+        authenticator = getAuthByRole(auth, user.role)
+      }
     } catch (e) {
       throw new HttpException(e.message, 403)
     }
-    const uid = User.getHash(email, role)
+
     let token
     try {
       token = await authenticator.attempt(uid, password)
@@ -393,17 +409,22 @@ class AccountController {
       const [error, message] = e.message.split(':')
       throw new HttpException(message, 401)
     }
-
-    await User.query().where({ email }).update({ device_token: null })
-    if (device_token) {
-      await User.query().where({ id: user.id }).update({ device_token })
+    if (!user.is_admin) {
+      //we don't have device_token on admins table hence the test...
+      await User.query().where({ email }).update({ device_token: null })
+      if (device_token) {
+        await User.query().where({ id: user.id }).update({ device_token })
+      }
+      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
+        method: SIGN_IN_METHOD_EMAIL,
+        role,
+        email: user.email,
+      })
+      Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
+      token['is_admin'] = false
+    } else {
+      token['is_admin'] = true
     }
-    logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
-      method: SIGN_IN_METHOD_EMAIL,
-      role,
-      email: user.email,
-    })
-    Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
     return response.res(token)
   }
 
@@ -425,7 +446,12 @@ class AccountController {
    *
    */
   async me({ auth, response, request }) {
-    const user = await User.query()
+    if (auth.current.user instanceof Admin) {
+      let admin = JSON.parse(JSON.stringify(auth.current.user))
+      admin.is_admin = true
+      return response.res(admin)
+    }
+    let user = await User.query()
       .where('users.id', auth.current.user.id)
       .with('household')
       .with('plan')
@@ -466,15 +492,18 @@ class AccountController {
     if (tenant) {
       user.tenant = tenant
     }
-
-    return response.res(user.toJSON({ isOwner: true }))
+    user = user.toJSON({ isOwner: true })
+    user.is_admin = false
+    return response.res(user)
   }
 
   /**
    *
    */
   async logout({ auth, response }) {
-    await User.query().where('id', auth.user.id).update({ device_token: null })
+    if (!(auth.current.user instanceof Admin)) {
+      await User.query().where('id', auth.user.id).update({ device_token: null })
+    }
     return response.res()
   }
 

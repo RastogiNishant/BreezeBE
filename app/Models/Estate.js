@@ -110,6 +110,7 @@ class Estate extends Model {
       'ground',
       'energy_efficiency',
       'energy_proof',
+      'energy_proof_original_file',
       'energy_pass',
       'status',
       'property_id',
@@ -202,6 +203,7 @@ class Estate extends Model {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
     this.addHook('beforeSave', async (instance) => {
+
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord

@@ -3,13 +3,14 @@
 const Static = use('Static')
 const HttpException = use('App/Exceptions/HttpException')
 const { get } = require('lodash')
+const Admin = use('App/Models/Admin')
 
 const { ERROR_AGREEMENT_CONFIRM, ERROR_TERMS_CONFIRM, ROLE_ADMIN } = require('../constants')
 
 class Agreement {
   async handle({ auth }, next) {
     // Skip anonymous routes and admin routes check
-    if (!auth || !auth.user || auth.user.role === ROLE_ADMIN) {
+    if (!auth || !auth.user || auth.user.role === ROLE_ADMIN || auth.user instanceof Admin) {
       return next()
     }
 

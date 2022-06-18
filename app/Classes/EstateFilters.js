@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, isNull, includes } = require('lodash')
+const { toLower, isArray, isEmpty, trim, isNull, includes, isBoolean } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -123,7 +123,7 @@ class EstateFilters {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified_address && params.verified_address.value) {
+    if (params.verified_address && isBoolean(params.verified_address.value)) {
       query.andWhere(
         Database.raw(EstateFilters.whereQueryForVerifiedAddress(params.verified_address.value))
       )
