@@ -614,6 +614,8 @@ const constants = {
     'gte',
     'lte',
   ],
+
+  ADULT_MIN_AGE: 18,
 }
 
 module.exports = constants
