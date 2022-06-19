@@ -180,12 +180,12 @@ class MatchService {
 
     // Get rent arrears score
     const rentArrearsWeight = 1
-    if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
+    if (!estate.rent_arrears || prospect.rent_arrears === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
       rentArrearsScore = 1
     }
-    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
+    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.rent_arrears })
 
     // prospect's age
     log({
@@ -2079,7 +2079,7 @@ class MatchService {
         count(id) as members_count,
         bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
-        bool_or(coalesce(unpaid_rental, 0) > 0)as rent_arrears,
+        bool_or(coalesce(unpaid_rental, 0) > 0) as rent_arrears,
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
