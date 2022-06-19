@@ -433,7 +433,7 @@ class MatchService {
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
-        if (percent >= 0) {
+        if (percent >= MATCH_PERCENT_PASS) {
           return [...n, { estate_id: v.id, percent }]
         }
         return n
