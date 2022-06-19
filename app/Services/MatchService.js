@@ -2045,7 +2045,6 @@ class MatchService {
   }
 
   static getProspectForScoringQuery() {
-    const filterForAdults = `(where extract(year from age(${Database.fn.now()}, birthday)) :: int >= ${ADULT_MIN_AGE})`
     return Tenant.query()
       .select(
         'tenants.id',
@@ -2076,16 +2075,11 @@ class MatchService {
         Database.raw(`
       (select
         user_id,
-        avg(credit_score) 
-          filter ${filterForAdults} as credit_score,
-        count(id)
-          filter ${filterForAdults} as members_count,
-        bool_and(coalesce(debt_proof, '') <> '') 
-          filter ${filterForAdults} as credit_score_proofs,
-        bool_and(coalesce(rent_arrears_doc, '') <> '') 
-          filter ${filterForAdults} as no_rent_arrears_proofs,
-        bool_or(coalesce(unpaid_rental, 0) > 0)
-          filter ${filterForAdults} as rent_arrears,
+        avg(credit_score) as credit_score,
+        count(id) as members_count,
+        bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
+        bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
+        bool_or(coalesce(unpaid_rental, 0) > 0)as rent_arrears,
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
@@ -2122,8 +2116,7 @@ class MatchService {
                 incomes.id,
                 incomes.income as income,
                 incomes.member_id,
-                count(income_proofs.file) 
-                  filter (where income_proofs.expire_date > NOW()) as submitted_proofs
+                count(income_proofs.file) as submitted_proofs
               from
                 incomes
               left join
