@@ -74,6 +74,14 @@ Route.group(() => {
     'valid:Ids',
   ])
 
+  Route.post('/image/compress', 'ImageController.compressImage').middleware([
+    'auth:jwtAdministrator',
+  ])
+
+  Route.post('/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
+    'auth:jwtAdministrator',
+  ])
+
   //admin plan
   //Controllers should be moved to app/Controllers/Http/Admin
   Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
@@ -949,12 +957,6 @@ Route.group(() => {
 })
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
-
-Route.group(() => {
-  Route.post('/', 'ImageController.compressImage')
-})
-  .prefix('/api/v1/image/compress')
-  .middleware(['auth:jwtLandlord,jwt'])
 
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests
