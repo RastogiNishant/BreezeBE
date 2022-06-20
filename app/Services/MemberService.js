@@ -167,12 +167,12 @@ class MemberService {
       .where({ user_id: userId })
   }
 
-  static async sendSMS(memberId, phone) {
+  static async sendSMS(memberId, phone, lang = 'en') {
     const code = random.int(1000, 9999)
     await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, {
       ttl: 3600,
     })
-    await SMSService.send(phone, code)
+    await SMSService.send(phone, code, lang)
   }
 
   static async confirmSMS(memberId, phone, code) {
