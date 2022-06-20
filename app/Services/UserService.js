@@ -22,6 +22,7 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
+const l = use('Localize')
 
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
@@ -733,10 +734,13 @@ class UserService {
   static async sendSMS(userId, phone, paramLang) {
     const code = random.int(1000, 9999)
     const data = await UserService.getTokenWithLocale([userId])
-    const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
 
+console.log('Param lang', paramLang)    
+    const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
+    
+    const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
-    await SMSService.send(phone, code, lang)
+    await SMSService.send({to:phone, txt:txt})
   }
 
   static async confirmSMS(email, phone, code) {

@@ -17,6 +17,7 @@ const MemberPermissionService = use('App/Services/MemberPermissionService')
 const NoticeService = use('App/Services/NoticeService')
 const UserService = use('App/Services/UserService')
 const File = use('App/Classes/File')
+const l = use('Localize')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -187,8 +188,9 @@ class MemberService {
 
       const data = await UserService.getTokenWithLocale([member.owner_user_id || member.user_id])
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
+      const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
 
-      await SMSService.send(phone, code, lang)
+      await SMSService.send({to:phone, txt})
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
