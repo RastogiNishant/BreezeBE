@@ -43,6 +43,7 @@ const {
   DEFAULT_LANG,
   SIGN_IN_METHOD_GOOGLE,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -826,6 +827,13 @@ class UserService {
     } else {
       return await User.query().where('plan_id', plan_id).first()
     }
+  }
+
+  static async getUnverifiedUserByAdmin(id) {
+    return await User.query()
+      .where('id', id)
+      .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
+      .first()
   }
 }
 
