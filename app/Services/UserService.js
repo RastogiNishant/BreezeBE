@@ -599,7 +599,6 @@ class UserService {
       return []
     }
     userIds = uniq(userIds)
-
     const data = await Database.table('users')
       .select('device_token', Database.raw(`COALESCE(lang, ?) AS lang`, DEFAULT_LANG), 'id')
       .whereIn('id', userIds)

@@ -600,7 +600,7 @@ Route.group(() => {
   Route.post('/:id/passport', 'MemberController.addPassportImage').middleware(['valid:Id'])
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
   Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
-    'valid:MemberId,Phone,Lang',
+    'valid:MemberId,Phone',
   ])
   Route.post('/confirmsms', 'MemberController.confirmBySMS').middleware([
     'valid:MemberId,Code,Phone',
