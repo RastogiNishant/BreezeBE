@@ -284,7 +284,7 @@ class AccountController {
   }
 
   async resendUserConfirmBySMS({ request, response }) {
-    const { email, phone } = request.all()
+    const { email, phone, lang } = request.all()
 
     try {
       const availableUser = await User.query().select('id').where('email', email).first()
@@ -292,7 +292,7 @@ class AccountController {
         throw new HttpException("Your email doesn't exist", 400)
       }
 
-      await UserService.sendSMS(availableUser.id, phone)
+      await UserService.sendSMS(availableUser.id, phone, lang)
       return response.res(true)
     } catch (e) {
       throw new HttpException(e.message, 400)

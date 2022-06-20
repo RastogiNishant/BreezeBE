@@ -731,10 +731,13 @@ class UserService {
     }
   }
 
-  static async sendSMS(userId, phone) {
+  static async sendSMS(userId, phone, paramLang) {
     const code = random.int(1000, 9999)
+    const data = await UserService.getTokenWithLocale([userId])
+    const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
+
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
-    await SMSService.send(phone, code)
+    await SMSService.send(phone, code, lang)
   }
 
   static async confirmSMS(email, phone, code) {
