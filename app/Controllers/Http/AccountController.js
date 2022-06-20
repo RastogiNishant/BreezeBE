@@ -545,7 +545,6 @@ class AccountController {
     const user = await User.query().where('id', auth.user.id).first()
     user.is_dashboard_onboarded = true
     await user.save()
-    sendUserOnboardEmailToAdmin
     return response.res(true)
   }
 
@@ -557,12 +556,10 @@ class AccountController {
   }
 
   async onboardLandlordVerification({ auth, response }) {
-    try {
-      await UserService.onboardLandlordVerification(auth.user.id)
-      response.res(true)
-    } catch (e) {
-      throw new HttpException(e.message, 500)
-    }
+    const user = await User.query().where('id', auth.user.id).first()
+    user.is_landlord_verification_onboarded = true
+    await user.save()
+    return response.res(true)
   }
 
   /**

@@ -827,13 +827,6 @@ class UserService {
       return await User.query().where('plan_id', plan_id).first()
     }
   }
-
-  static async onboardLandlordVerification(user_id) {
-    const user = await User.query().where('id', user_id).firstOrFail()
-    user.is_landlord_verification_onboarded = true
-    await user.save()
-    MailService.sendUserOnboardEmailToAdmin()
-  }
 }
 
 module.exports = UserService
