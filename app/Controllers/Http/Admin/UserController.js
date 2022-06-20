@@ -15,6 +15,7 @@ const {
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
   STATUS_ACTIVE,
+  STATUS_DRAFT,
 } = require('../../../constants')
 
 class UserController {
@@ -104,7 +105,7 @@ class UserController {
   }
 
   async getLandlords({ request, response }) {
-    let { activation_status, status, page, limit, query } = request.all()
+    let { activation_status, status, estate_status, page, limit, query } = request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -113,6 +114,8 @@ class UserController {
       ]
     }
     status = status || STATUS_ACTIVE
+    estate_status = estate_status || STATUS_DRAFT
+    limit = 99999
     const landlordQuery = User.query()
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
@@ -122,6 +125,7 @@ class UserController {
       )
       .with('estates', function (e) {
         e.whereNot('status', STATUS_DELETE)
+        e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
       })
     if (query) {
       landlordQuery.andWhere(function (d) {

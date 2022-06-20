@@ -15,6 +15,7 @@ const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const NoticeService = use('App/Services/NoticeService')
+const File = use('App/Classes/File')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -544,6 +545,50 @@ class MemberService {
   static async getIncomeProofs() {
     const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
     return IncomeProof.query().where('expire_date', '<=', startOf).delete()
+  }
+
+  static async createThumbnail() {
+    const incomeProofs = (await IncomeProof.query().fetch()).rows
+    console.log('Start creating income proofs thumbnail')
+    await Promise.all(
+      incomeProofs.map(async (incomeProof) => {
+        {
+          try {
+            const url = await File.getProtectedUrl(incomeProof.file)
+            if (incomeProof.file) {
+              const url_strs = incomeProof.file.split('/')
+              if (url_strs.length === 2) {
+                const fileName = url_strs[1]
+                const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
+                  return fileName.includes(format)
+                })
+
+                if (isValidFormat) {
+                  const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
+                  const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
+
+                  console.log('Income Proof is saving', url)
+                  await File.saveThumbnailToDisk({
+                    image: url,
+                    fileName: fileName,
+                    dir: `${url_strs[0]}`,
+                    options,
+                    disk: 's3',
+                    isUri: true,
+                  })
+                  console.log('Income Proof saved', url)
+                }
+              }
+            }
+          } catch (e) {
+            console.log('Creating thumbnail Error', e)
+            throw new HttpException('Creating thumbnail HttpException Error', e)
+          }
+        }
+      })
+    )
+
+    console.log('End creating income proofs thumbnail')
   }
 }
 

@@ -12,6 +12,7 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
+const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 
 const {
   SCHEDULED_EVERY_5M_JOB,
@@ -58,6 +59,10 @@ class QueueService {
 
   static savePropertyBulkImages(properyImages) {
     Queue.addJob(SAVE_PROPERTY_IMAGES, { properyImages }, { delay: 1 })
+  }
+
+  static creatThumbnail() {
+    Queue.addJob(CREATE_THUMBNAIL_IMAGES, {}, { delay: 1 })
   }
 
   /**
@@ -134,6 +139,8 @@ class QueueService {
           return QueueService.sendEveryEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
+        case CREATE_THUMBNAIL_IMAGES:
+          return QueueJobService.createThumbnailImages()
         default:
           console.log(`No job processor for: ${job.name}`)
       }
