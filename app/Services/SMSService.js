@@ -3,12 +3,13 @@ const HttpException = use('App/Exceptions/HttpException')
 
 const Twilio = use('Twilio')
 const Env = use('Env')
+const l = use('Localize')
 
 class SMS {
-  static async send(to, code) {
+  static async send({ to, txt }) {
     try {
-      const message = await Twilio.messages.create({
-        body: `Your invitation code is ${code}`,
+      await Twilio.messages.create({
+        body: txt,
         from: Env.get('TWILIO_FROM', ''),
         to: to,
       })

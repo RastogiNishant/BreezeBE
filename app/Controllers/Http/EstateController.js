@@ -48,6 +48,8 @@ const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
+const MailService = require('../../Services/MailService')
+const UserService = require('../../Services/UserService')
 const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -71,8 +73,18 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const estate = await EstateService.createEstate(request, auth.user.id)
-    response.res(estate)
+    try {
+      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
+      
+      if (unverifiedUser) {
+        await MailService.sendUnverifiedLandlordActivationEmailToAdmin()
+      }
+
+      const estate = await EstateService.createEstate(request, auth.user.id)
+      response.res(estate)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   async updateEstateByPM({ request, auth, response }) {
