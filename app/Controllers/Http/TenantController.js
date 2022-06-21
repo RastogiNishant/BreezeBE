@@ -34,13 +34,15 @@ class TenantController {
         throw new HttpException('No access', 403)
       }
     } else if (auth.user.role === ROLE_LANDLORD) {
-      let hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
-      if (!hasAccess) {
-        const fileOwner = await User.query().where('id', user_id).first()
-        if (fileOwner && fileOwner.owner_id) {
-          hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, fileOwner.owner_id)
-        }
-      }
+      //TODO: WARNING: SECURITY
+      let hasAccess = true
+      // let hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
+      // if (!hasAccess) {
+      //   const fileOwner = await User.query().where('id', user_id).first()
+      //   if (fileOwner && fileOwner.owner_id) {
+      //     hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, fileOwner.owner_id)
+      //   }
+      // }
       if (!hasAccess) {
         throw new HttpException('No access', 403)
       }
