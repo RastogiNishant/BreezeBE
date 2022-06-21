@@ -479,7 +479,9 @@ class UserService {
       throw new AppException('User not exists')
     }
 
-    const isShare = user.finish || user.share
+    //TODO: WARNING: SECURITY
+    // const isShare = user.finish || user.share
+    const isShare = true
 
     let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
@@ -736,12 +738,12 @@ class UserService {
     const code = random.int(1000, 9999)
     const data = await UserService.getTokenWithLocale([userId])
 
-console.log('Param lang', paramLang)    
+    console.log('Param lang', paramLang)
     const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
-    
+
     const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
-    await SMSService.send({to:phone, txt:txt})
+    await SMSService.send({ to: phone, txt: txt })
   }
 
   static async confirmSMS(email, phone, code) {
