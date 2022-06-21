@@ -188,7 +188,7 @@ Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').m
 ])
 Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
   'guest',
-  'valid:ResendSMS',
+  'valid:ResendSMS,Lang',
 ])
 Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
   'guest',
@@ -954,9 +954,9 @@ Route.group(() => {
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
 
-  Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
-    'auth:jwtLandlord',
-  ])
+Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
+  'auth:jwtLandlord',
+])
 
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests

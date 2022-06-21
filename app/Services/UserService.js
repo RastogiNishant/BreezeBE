@@ -22,6 +22,7 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
 const Logger = use('Logger')
+const l = use('Localize')
 
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
@@ -43,6 +44,7 @@ const {
   DEFAULT_LANG,
   SIGN_IN_METHOD_GOOGLE,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -477,7 +479,9 @@ class UserService {
       throw new AppException('User not exists')
     }
 
-    const isShare = user.finish || user.share
+    //TODO: WARNING: SECURITY
+    // const isShare = user.finish || user.share
+    const isShare = true
 
     let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
@@ -599,7 +603,6 @@ class UserService {
       return []
     }
     userIds = uniq(userIds)
-
     const data = await Database.table('users')
       .select('device_token', Database.raw(`COALESCE(lang, ?) AS lang`, DEFAULT_LANG), 'id')
       .whereIn('id', userIds)
@@ -731,10 +734,16 @@ class UserService {
     }
   }
 
-  static async sendSMS(userId, phone) {
+  static async sendSMS(userId, phone, paramLang) {
     const code = random.int(1000, 9999)
+    const data = await UserService.getTokenWithLocale([userId])
+
+    console.log('Param lang', paramLang)
+    const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
+
+    const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
-    await SMSService.send(phone, code)
+    await SMSService.send({ to: phone, txt: txt })
   }
 
   static async confirmSMS(email, phone, code) {
@@ -826,6 +835,13 @@ class UserService {
     } else {
       return await User.query().where('plan_id', plan_id).first()
     }
+  }
+
+  static async getUnverifiedUserByAdmin(id) {
+    return await User.query()
+      .where('id', id)
+      .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
+      .first()
   }
 }
 
