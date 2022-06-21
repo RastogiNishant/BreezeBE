@@ -15,7 +15,9 @@ const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const NoticeService = use('App/Services/NoticeService')
+const UserService = use('App/Services/UserService')
 const File = use('App/Classes/File')
+const l = use('Localize')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -169,10 +171,29 @@ class MemberService {
 
   static async sendSMS(memberId, phone, lang = 'en') {
     const code = random.int(1000, 9999)
-    await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, {
-      ttl: 3600,
-    })
-    await SMSService.send(phone, code, lang)
+    try {
+      const member = await Member.query().select('*').where('id', memberId).first()
+
+      if (!member) {
+        throw new HttpException('No member exists', 400)
+      }
+      await DataStorage.setItem(
+        memberId,
+        { code: code, count: 5 },
+        SMS_MEMBER_PHONE_VERIFY_PREFIX,
+        {
+          ttl: 3600,
+        }
+      )
+
+      const data = await UserService.getTokenWithLocale([member.owner_user_id || member.user_id])
+      const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
+      const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
+
+      await SMSService.send({to:phone, txt})
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   static async confirmSMS(memberId, phone, code) {

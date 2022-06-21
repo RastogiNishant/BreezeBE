@@ -9,7 +9,7 @@ const { phoneSchema } = require('../Libs/schemas.js')
 class Lang extends Base {
   static schema = () =>
     yup.object().shape({
-      lang: yup.string().oneOf(['en', 'de']).default('en'),
+      lang: yup.string().oneOf(['en', 'de']),
     })
 }
 
