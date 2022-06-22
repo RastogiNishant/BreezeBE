@@ -13,6 +13,7 @@ const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
+const MemberService = use('App/Services/MemberService')
 
 const {
   MEMBER_FILE_TYPE_RENT,
@@ -312,6 +313,7 @@ class TenantService {
    */
   static async deactivateTenant(userId) {
     await Tenant.query().update({ status: STATUS_DRAFT }).where({ user_id: userId })
+    await MemberService.calcTenantMemberData(userId)
     // Remove New matches
     await Database.table({ _m: 'matches' })
       .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })

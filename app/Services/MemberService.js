@@ -142,28 +142,42 @@ class MemberService {
       .where({ user_id: userId })
       .groupBy('user_id')
 
+    const householdTenant = await Tenant.query().where({ user_id: userId }).first()
+
+    const { members_count, credit_score } = tenantData[0] // calculated data
+    const { minors_count, private_use, pets, pets_species, parking_space, status } = householdTenant // data to sync with all the tenants of all the members
+
     await Promise.map(members, async (member) => {
-      const tenant = await Tenant.query().where({ user_id: member.owner_user_id || member.user_id }).first()
+      const tenant = await Tenant.query()
+        .where({ user_id: member.owner_user_id || member.user_id })
+        .first()
 
-      if (tenant && tenant.length) {
-        const { members_count, credit_score } = tenantData[0]
-
+      if (tenant) {
         const family_status =
-          tenant.minors_count > 0
+          minors_count > 0
             ? FAMILY_STATUS_WITH_CHILD
             : members_count < 2
             ? FAMILY_STATUS_SINGLE
             : FAMILY_STATUS_NO_CHILD
 
+        const updatingFields = {
+          members_count,
+          family_status,
+          credit_score: parseInt(credit_score) || null,
+        }
+
+        // sync secondary member's tenant
+        if (member.owner_user_id) {
+          updatingFields.private_use = private_use
+          updatingFields.pets = pets
+          updatingFields.pets_species = pets_species
+          updatingFields.parking_space = parking_space
+          updatingFields.minors_count = minors_count
+          updatingFields.status = status
+        }
+
         await Tenant.query()
-          .update(
-            {
-              members_count: members_count,
-              family_status: family_status,
-              credit_score: parseInt(credit_score) || null,
-            },
-            trx
-          )
+          .update(updatingFields, trx)
           .where({ user_id: member.owner_user_id || member.user_id })
       }
     })
@@ -326,6 +340,10 @@ class MemberService {
    * user will be prospect
    */
   static async updateUserIncome(userId, sUserId, trx) {
+    // family: member1, member2, member3
+    // we should sync all of them income with the same count
+    // it should be the sum up of all the members all the incomes
+
     await Database.raw(
       `
         UPDATE tenants SET income = (

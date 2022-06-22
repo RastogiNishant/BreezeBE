@@ -5,9 +5,8 @@ const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
-const Member = use('App/Models/Member')
+const MemberService = use('App/Services/MemberService')
 const Tenant = use('App/Models/Tenant')
-const User = use('App/Models/User')
 
 const { without } = require('lodash')
 
@@ -92,6 +91,7 @@ class TenantController {
       // Deactivate tenant on personal data change
       if (without(Object.keys(data), ...Tenant.updateIgnoreFields).length) {
         Event.fire('tenant::update', auth.user.id)
+        MemberService.calcTenantMemberData(auth.user.id)
         updatedTenant.status = STATUS_DRAFT
       } else {
         await MatchService.matchByUser(auth.user.id)
