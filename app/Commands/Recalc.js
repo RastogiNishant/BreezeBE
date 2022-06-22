@@ -1,32 +1,61 @@
 'use strict'
 
 const { Command } = require('@adonisjs/ace')
-const P = require('bluebird')
-
-const Estate = use('App/Models/Estate')
+const Promise = require('bluebird')
 const MatchService = use('App/Services/MatchService')
-
-const { STATUS_ACTIVE } = require('../constants')
+const Database = use('Database')
+const Match = use('App/Models/Match')
 
 class Recalc extends Command {
   static get signature() {
-    return 'app:match_estates'
+    return 'app:recalculate_scores'
   }
 
   static get description() {
-    return 'Run match recalculation for all active estates'
+    return 'Run match recalculation for all current matches.'
   }
 
   async handle(args, options) {
-    const estates = await Estate.query().where({ status: STATUS_ACTIVE }).orderBy('id').fetch()
-    await P.map(
-      estates.rows,
-      (e) => {
-        console.log(e.id)
-        return MatchService.matchByEstate(e.id)
-      },
-      { concurrency: 1 }
-    )
+    const matchEstateUsers = await Match.query().select('estate_id', 'user_id').fetch()
+    let prospects = {}
+    let estates = {}
+    const trx = await Database.beginTransaction()
+    await Promise.map(matchEstateUsers.toJSON(), async (matchEstateUser) => {
+      let prospect
+      if (!prospects[matchEstateUser.user_id]) {
+        prospect = await MatchService.getProspectForScoringQuery()
+          .where(`tenants.user_id`, matchEstateUser.user_id)
+          .first()
+        prospects[matchEstateUser.user_id] = prospect
+      } else {
+        prospect = prospects[matchEstateUser.user_id]
+      }
+      let estate
+      if (!estates[matchEstateUser.estate_id]) {
+        estate = await MatchService.getEstateForScoringQuery()
+          .where('estate_id', matchEstateUser.estate_id)
+          .first()
+        estates[matchEstateUser.estate_id] = estate
+      } else {
+        console.log('using calculated estate...')
+        estate = estates[matchEstateUser.estate_id]
+      }
+      if (prospect && estate) {
+        let matchScore = MatchService.calculateMatchPercent(prospect, estate).toFixed(2)
+        console.log(
+          `User: ${matchEstateUser.user_id}, Estate: ${matchEstateUser.estate_id}, Score: ${matchScore}`
+        )
+        try {
+          await Match.query(trx)
+            .where('user_id', matchEstateUser.user_id)
+            .where('estate_id', matchEstateUser.estate_id)
+            .update('percent', matchScore)
+          trx.commit()
+        } catch (error) {
+          trx.rollback()
+        }
+      }
+    })
   }
 }
 
