@@ -85,10 +85,11 @@ const origQuestions = [
 ]
 
 class ChatController {
-  constructor({ socket, request }) {
+  constructor({ socket, request, auth }) {
     this.socket = socket
     this.request = request
     this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
+    console.log({ auth })
   }
 
   onAnswer({ question_id, answer, user }) {
