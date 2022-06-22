@@ -532,7 +532,7 @@ const constants = {
     'stp_garage',
     'energy_proof',
     'energy_proof_original_file',
-    'isoline'
+    'isoline',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -594,7 +594,7 @@ const constants = {
   ROOM_CUSTOM_AMENITY_MAX_STRING_LENGTH: 35,
   ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR: 2311252,
   ROOM_CUSTOM_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 5433122,
-  
+
   ESTATE_CUSTOM_AMENITIES_MAX_COUNT: 3,
   ESTATE_CUSTOM_AMENITIES_EXCEED_MAX_ERROR: 23551276,
   ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 34338761,

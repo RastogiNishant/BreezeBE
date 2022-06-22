@@ -89,7 +89,7 @@ class ChatController {
     this.socket = socket
     this.request = request
     this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
-    console.log({ auth })
+    console.log({ auth: auth.user.id })
   }
 
   onAnswer({ question_id, answer, user }) {
