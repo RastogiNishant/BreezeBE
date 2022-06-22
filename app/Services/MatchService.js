@@ -457,7 +457,9 @@ class MatchService {
     // Create new matches
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
-      await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      await Database.raw(
+        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+      )
     }
   }
 
