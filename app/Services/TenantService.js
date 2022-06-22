@@ -307,19 +307,28 @@ class TenantService {
 
     tenant.status = STATUS_ACTIVE
     await tenant.save()
+    MemberService.calcTenantMemberData(tenant.user_id)
   }
 
   /**
    *
    */
   static async deactivateTenant(userId) {
-    await Tenant.query().update({ status: STATUS_DRAFT }).where({ user_id: userId })
-    await MemberService.calcTenantMemberData(userId)
-    // Remove New matches
-    await Database.table({ _m: 'matches' })
-      .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
-      .whereNot('_m.buddy', true)
-      .delete()
+    const trx = await Database.beginTransaction()
+    try {
+      await Tenant.query().update({ status: STATUS_DRAFT }, trx).where({ user_id: userId })
+      await MemberService.calcTenantMemberData(userId, trx)
+      // Remove New matches
+      await Database.table({ _m: 'matches' })
+        .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
+        .whereNot('_m.buddy', true)
+        .delete()
+        .transacting(trx)
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+    }
   }
 
   /**

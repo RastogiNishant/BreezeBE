@@ -78,11 +78,9 @@ class MemberController {
 
       if (!isInitializedAlready) {
         const member = await MemberService.createMember({ is_verified: true }, user_id, trx)
-        await Promise.all([
-          MemberService.calcTenantMemberData(user_id, trx),
-          TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count),
-        ])
+        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
         await trx.commit()
+        Event.fire('tenant::update', user_id)
         return response.res(member)
       } else {
         await trx.rollback()
@@ -141,7 +139,6 @@ class MemberController {
           })
           await memberFile.save(trx)
         }
-        await MemberService.calcTenantMemberData(user_id, trx)
 
         /**
          * Created by YY
@@ -151,9 +148,8 @@ class MemberController {
         if (data.visibility_to_other === VISIBLE_TO_SPECIFIC) {
           Event.fire('memberPermission:create', createdMember.id, user_id)
         }
+        await trx.commit()
         Event.fire('tenant::update', user_id)
-        trx.commit()
-
         await MemberService.sendInvitationCode(createdMember.id, user_id)
 
         response.res(createdMember)
@@ -182,28 +178,36 @@ class MemberController {
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
-    if (files.passport) {
-      let memberFile = new MemberFile()
-      memberFile.merge({
-        file: files.passport,
-        type: MEMBER_FILE_TYPE_PASSPORT,
-        status: STATUS_ACTIVE,
-        member_id: id,
-      })
-      await memberFile.save()
-    }
 
-    let member = await MemberService.allowEditMemberByPermission(auth.user, id)
-    const newData = member.owner_user_id ? omit(data, ['email']) : data
+    const trx = await Database.beginTransaction()
 
-    if (data?.phone !== member.phone) {
-      newData.phone_verified = false
+    try {
+      if (files.passport) {
+        let memberFile = new MemberFile()
+        memberFile.merge({
+          file: files.passport,
+          type: MEMBER_FILE_TYPE_PASSPORT,
+          status: STATUS_ACTIVE,
+          member_id: id,
+        })
+        await memberFile.save(trx)
+      }
+
+      let member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      const newData = member.owner_user_id ? omit(data, ['email']) : data
+
+      if (data?.phone !== member.phone) {
+        newData.phone_verified = false
+      }
+      await member.updateItemWithTrx({ ...newData, ...files }, trx)
+      member = member.toJSON()
+      await trx.commit()
+      Event.fire('tenant::update', member.user_id)
+      return response.res(member)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 422)
     }
-    await member.updateItem({ ...newData, ...files })
-    await MemberService.calcTenantMemberData(member.user_id)
-    member = member.toJSON()
-    Event.fire('tenant::update', member.user_id)
-    return response.res(member)
   }
 
   /**
@@ -242,16 +246,16 @@ class MemberController {
           email: null,
           code: null,
         })
-        await MemberService.calcTenantMemberData(owner_id, trx)
         await UserService.removeUserOwnerId(owner_id, trx)
       } else {
         await MemberService.getMemberQuery().where('id', member.id).delete(trx)
       }
 
-      await MemberService.calcTenantMemberData(user_id, trx)
-
-      Event.fire('tenant::update', user_id)
       await trx.commit()
+      Event.fire('tenant::update', user_id)
+      if (owner_id) {
+        Event.fire('tenant::update', owner_id)
+      }
       if (auth.user.owner_id) {
         await NoticeService.prospectHouseholdDisconnected(user_id)
       }
@@ -328,10 +332,9 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       const income = await MemberService.addIncome({ ...data, ...files }, member, trx)
-      await MemberService.updateTenantIncome(member.user_id, trx)
 
-      Event.fire('tenant::update', member.user_id)
       await trx.commit()
+      Event.fire('tenant::update', member.user_id)
       response.res(income)
     } catch (e) {
       await trx.rollback()
@@ -369,8 +372,6 @@ class MemberController {
         .update({ ...rest, ...files })
         .transacting(trx)
 
-      await MemberService.updateTenantIncome(member.user_id, trx)
-
       await trx.commit()
       Event.fire('tenant::update', member.user_id)
       response.res(income)
@@ -396,7 +397,6 @@ class MemberController {
         })
         .delete()
         .transacting(trx)
-      await MemberService.updateTenantIncome(user_id, trx)
 
       await trx.commit()
       Event.fire('tenant::update', user_id)
