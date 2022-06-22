@@ -112,7 +112,7 @@ class QueueService {
    *
    */
   static async sendEveryEveryMonth12AM() {
-    return Promise.all([wrapException(MemberService.getIncomeProofs)])
+    return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
   /**

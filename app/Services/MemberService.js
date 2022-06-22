@@ -190,7 +190,7 @@ class MemberService {
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
       const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
 
-      await SMSService.send({to:phone, txt})
+      await SMSService.send({ to: phone, txt })
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -563,9 +563,28 @@ class MemberService {
   /**
    *
    */
-  static async getIncomeProofs() {
+  static async handleOutdatedIncomeProofs() {
     const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
-    return IncomeProof.query().where('expire_date', '<=', startOf).delete()
+    const incomeProofs = await IncomeProof.query()
+      .select('income_proofs.*')
+      .where('income_proofs.expire_date', '<=', startOf)
+      .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+      .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+      .select('_m.user_id')
+      .fetch()
+
+    const promises = []
+    const deactivatedUsers = []
+
+    incomeProofs.rows.map(({ user_id, id }) => {
+      promises.push(IncomeProof.query().where('id', id).delete())
+      if (!deactivatedUsers.includes(user_id)) {
+        Event.fire('tenant::update', user_id)
+        deactivatedUsers.push(user_id)
+      }
+    })
+
+    return await Promise.all(promises)
   }
 
   static async createThumbnail() {
