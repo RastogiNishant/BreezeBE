@@ -18,6 +18,7 @@ const NoticeService = use('App/Services/NoticeService')
 const UserService = use('App/Services/UserService')
 const File = use('App/Classes/File')
 const l = use('Localize')
+const Promise = require('bluebird')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -108,10 +109,21 @@ class MemberService {
     return await query.fetch()
   }
 
+  static async getMembersByHousehold(householdId) {
+    return (
+      await Member.query().select('user_id', 'owner_user_id').where('user_id', householdId).fetch()
+    ).rows
+  }
+
   /**
    * Get all tenant members and calculate general tenant params
    */
   static async calcTenantMemberData(userId, trx = null) {
+    const members = await this.getMembersByHousehold(userId)
+    if (!members || !members.length) {
+      return
+    }
+
     const tenantData = await Database.query()
       .from('members')
       .select(
@@ -130,43 +142,31 @@ class MemberService {
       .where({ user_id: userId })
       .groupBy('user_id')
 
-    let toUpdate = {}
-    if (isEmpty(tenantData)) {
-      toUpdate = {
-        family_status: FAMILY_STATUS_SINGLE,
-        minors_count: 0,
-        members_count: 0,
-        unpaid_rental: null,
-        insolvency_proceed: null,
-        clean_procedure: null,
-        income_seizure: null,
-        members_age: null,
-        credit_score: 0,
+    await Promise.map(members, async (member) => {
+      const tenant = await Tenant.query().where({ user_id: member.owner_user_id || member.user_id }).first()
+
+      if (tenant && tenant.length) {
+        const { members_count, credit_score } = tenantData[0]
+
+        const family_status =
+          tenant.minors_count > 0
+            ? FAMILY_STATUS_WITH_CHILD
+            : members_count < 2
+            ? FAMILY_STATUS_SINGLE
+            : FAMILY_STATUS_NO_CHILD
+
+        await Tenant.query()
+          .update(
+            {
+              members_count: members_count,
+              family_status: family_status,
+              credit_score: parseInt(credit_score) || null,
+            },
+            trx
+          )
+          .where({ user_id: member.owner_user_id || member.user_id })
       }
-    } else {
-      const { minors_count } = await Tenant.query()
-        .select('minors_count')
-        .where({ user_id: userId })
-        .firstOrFail()
-      const { members_count } = tenantData[0]
-
-      toUpdate.family_status =
-        minors_count > 0
-          ? FAMILY_STATUS_WITH_CHILD
-          : members_count < 2
-          ? FAMILY_STATUS_SINGLE
-          : FAMILY_STATUS_NO_CHILD
-    }
-
-    await Tenant.query()
-      .update(
-        {
-          ...toUpdate,
-          credit_score: parseInt(toUpdate.credit_score) || null,
-        },
-        trx
-      )
-      .where({ user_id: userId })
+    })
   }
 
   static async sendSMS(memberId, phone, lang = 'en') {
@@ -190,7 +190,7 @@ class MemberService {
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
       const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
 
-      await SMSService.send({to:phone, txt})
+      await SMSService.send({ to: phone, txt })
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
