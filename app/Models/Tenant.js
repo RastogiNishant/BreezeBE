@@ -37,6 +37,7 @@ class Tenant extends Model {
       'status',
       'rent_start',
       'minors_count',
+      'members_count',
     ]
   }
 

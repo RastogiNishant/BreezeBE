@@ -7,16 +7,15 @@ const User = use('App/Models/User')
 const Promise = require('bluebird')
 const MemberService = use('App/Services/MemberService')
 
-class RecalculateMemberCountsToTenantSchema extends Schema {
+class SyncTenantIncomeSumUpAllMembersSchema extends Schema {
   async up() {
     const trx = await Database.beginTransaction()
     try {
-      const users = (
-        await User.query().select('id').where('role', 3).whereNull('owner_id').fetch()
-      ).rows
+      const users = (await User.query().select('id').where('role', 3).whereNull('owner_id').fetch())
+        .rows
 
       await Promise.map(users, async (user) => {
-        await MemberService.calcTenantMemberData(user.id, trx)
+        await MemberService.updateTenantIncome(user.id, trx)
       })
       await trx.commit()
     } catch (e) {
@@ -27,4 +26,4 @@ class RecalculateMemberCountsToTenantSchema extends Schema {
   down() {}
 }
 
-module.exports = RecalculateMemberCountsToTenantSchema
+module.exports = SyncTenantIncomeSumUpAllMembersSchema
