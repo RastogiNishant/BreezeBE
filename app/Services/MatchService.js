@@ -2166,10 +2166,7 @@ class MatchService {
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(prospect, v)
-        if (percent >= MATCH_PERCENT_PASS) {
-          return [...n, { estate_id: v.id, percent }]
-        }
-        return n
+        return [...n, { estate_id: v.id, percent }]
       }, [])
       .map((i) => ({
         user_id: userId,
