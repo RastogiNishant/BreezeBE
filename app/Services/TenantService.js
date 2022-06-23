@@ -324,7 +324,7 @@ class TenantService {
         .whereNot('_m.buddy', true)
         .delete()
         .transacting(trx)
-      await require('./MatchService').recalculateMatchScoresByUserId(auth.user.id)
+      await require('./MatchService').recalculateMatchScoresByUserId(userId)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
