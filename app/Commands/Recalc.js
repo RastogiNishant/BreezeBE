@@ -33,11 +33,10 @@ class Recalc extends Command {
       let estate
       if (!estates[matchEstateUser.estate_id]) {
         estate = await MatchService.getEstateForScoringQuery()
-          .where('estate_id', matchEstateUser.estate_id)
+          .where('estates.id', matchEstateUser.estate_id)
           .first()
         estates[matchEstateUser.estate_id] = estate
       } else {
-        console.log('using calculated estate...')
         estate = estates[matchEstateUser.estate_id]
       }
       if (prospect && estate) {
@@ -46,10 +45,10 @@ class Recalc extends Command {
           `User: ${matchEstateUser.user_id}, Estate: ${matchEstateUser.estate_id}, Score: ${matchScore}`
         )
         try {
-          await Match.query(trx)
+          await Match.query()
             .where('user_id', matchEstateUser.user_id)
             .where('estate_id', matchEstateUser.estate_id)
-            .update('percent', matchScore)
+            .update({ percent: matchScore }, trx)
           trx.commit()
         } catch (error) {
           trx.rollback()
