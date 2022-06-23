@@ -630,6 +630,7 @@ const constants = {
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4, 
+  TASK_STATUS_CLOSED: 5,
 }
 
 module.exports = constants
