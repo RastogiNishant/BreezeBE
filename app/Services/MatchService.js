@@ -510,7 +510,9 @@ class MatchService {
     // Create new matches
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
-      await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      await Database.raw(
+        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+      )
       const superMatches = matched.filter(({ percent }) => percent >= 90)
       if (superMatches.length > 0) {
         await NoticeService.prospectSuperMatch(estateId, superMatches)
@@ -2144,22 +2146,44 @@ class MatchService {
       )
   }
 
-  async recalculateMatchScoresOnMatchesByUserId(userId, trx) {
-    const matches = await Match.query().where('user_id', userId).fetch()
+  static async recalculateMatchScoresByUserId(userId, trx) {
+    let matches = await Match.query().where('user_id', userId).fetch()
+    matches = matches.toJSON()
+    if (isEmpty(matches)) {
+      return
+    }
     const prospect = await MatchService.getProspectForScoringQuery()
-      .where('user_id', userId)
+      .where('tenants.user_id', userId)
       .first()
-    await Promise.map(matches.toJSON(), async (match) => {
-      let estate = await MatchService.getEstateForScoringQuery()
-        .where('estate_id', match.estate_id)
-        .first()
-      let matchScore = MatchService.calculateMatchPercent(prospect, estate)
-      console.log(matchScore, estate_id, userId)
-      await Match.query()
-        .where('user_id', userId)
-        .where('estate_id', match.estate_id)
-        .update({ percent: matchScore }, trx)
-    })
+    const estateIds = matches.reduce((estateIds, match) => {
+      return [...estateIds, match.estate_id]
+    }, [])
+    let estates = await MatchService.getEstateForScoringQuery()
+      .whereIn('estate_id', estateIds)
+      .fetch()
+
+    const matchScores = estates
+      .toJSON()
+      .reduce((n, v) => {
+        const percent = MatchService.calculateMatchPercent(prospect, v)
+        if (percent >= MATCH_PERCENT_PASS) {
+          return [...n, { estate_id: v.id, percent }]
+        }
+        return n
+      }, [])
+      .map((i) => ({
+        user_id: userId,
+        estate_id: i.estate_id,
+        percent: i.percent,
+      }))
+
+    if (!isEmpty(matchScores)) {
+      //console.log({ matchScores })
+      const insertQuery = Database.query().into('matches').insert(matchScores).toString()
+      await Database.raw(
+        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+      )
+    }
   }
 }
 

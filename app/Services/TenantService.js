@@ -54,7 +54,6 @@ const {
   INCOME_TYPE_TRAINEE,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
-const MatchService = require('./MatchService')
 
 class TenantService {
   /**
@@ -318,9 +317,6 @@ class TenantService {
     const trx = await Database.beginTransaction()
     try {
       await Tenant.query().update({ status: STATUS_DRAFT }, trx).where({ user_id: userId })
-
-      // TODO: Add here recalculation of all the current matches except status = MATCH_STATUS_NEW
-      // Because we remove matches that status = MATCH_STATUS_NEW below
       await MemberService.calcTenantMemberData(userId, trx)
       // Remove New matches
       await Database.table({ _m: 'matches' })
@@ -328,7 +324,8 @@ class TenantService {
         .whereNot('_m.buddy', true)
         .delete()
         .transacting(trx)
-      await MatchService.recalculateMatchScoresOnMatchesByUserId(userId, trx)
+      //recalculate Match Score... after deleting matches that are MATCH_STATUS_NEW
+      //await MatchService.recalculateMatchScoresByUserId(userId, trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()

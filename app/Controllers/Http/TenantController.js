@@ -92,9 +92,7 @@ class TenantController {
       }
       const updatedTenant = await Tenant.find(tenant.id)
       // Deactivate tenant on personal data change
-
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
-
       if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
       } else {
@@ -103,6 +101,7 @@ class TenantController {
       Event.fire('mautic:syncContact', auth.user.id)
       await trx.commit()
       if (shouldDeactivateTenant) {
+        await MatchService.recalculateMatchScoresByUserId(auth.user.id)
         Event.fire('tenant::update', auth.user.id)
       }
       response.res(updatedTenant)
