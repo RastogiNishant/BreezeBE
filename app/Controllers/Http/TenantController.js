@@ -101,7 +101,6 @@ class TenantController {
       Event.fire('mautic:syncContact', auth.user.id)
       await trx.commit()
       if (shouldDeactivateTenant) {
-        await MatchService.recalculateMatchScoresByUserId(auth.user.id)
         Event.fire('tenant::update', auth.user.id)
       }
       response.res(updatedTenant)
