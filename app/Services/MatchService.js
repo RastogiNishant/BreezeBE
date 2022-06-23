@@ -2178,7 +2178,6 @@ class MatchService {
       }))
 
     if (!isEmpty(matchScores)) {
-      //console.log({ matchScores })
       const insertQuery = Database.query().into('matches').insert(matchScores).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`

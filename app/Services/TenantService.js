@@ -324,8 +324,6 @@ class TenantService {
         .whereNot('_m.buddy', true)
         .delete()
         .transacting(trx)
-      //recalculate Match Score... after deleting matches that are MATCH_STATUS_NEW
-      //await MatchService.recalculateMatchScoresByUserId(userId, trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
