@@ -45,7 +45,7 @@ const {
   TRANSPORT_TYPE_WALK,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -75,9 +75,19 @@ class EstateController {
   async createEstate({ request, auth, response }) {
     try {
       const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
-      
+
       if (unverifiedUser) {
-        await MailService.sendUnverifiedLandlordActivationEmailToAdmin()
+        const { street, house_number, zip, city, country } = request.all()
+        const address = trim(
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'}`
+        ).toLowerCase()
+
+        const txt = `The landlord '${
+          unverifiedUser.email
+        }' created a property with an address '${address}' in ${
+          process.env.NODE_ENV || 'local'
+        } environment`
+        await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
 
       const estate = await EstateService.createEstate(request, auth.user.id)
