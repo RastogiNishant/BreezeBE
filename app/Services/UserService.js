@@ -417,7 +417,7 @@ class UserService {
   /**
    * Get tenant for user or create if not exists
    */
-  static async getOrCreateTenant(user) {
+  static async getOrCreateTenant(user, trx=null) {
     if (user.role !== ROLE_USER) {
       throw new AppException('Invalid tenant user role')
     }
@@ -426,7 +426,7 @@ class UserService {
       return tenant
     }
 
-    return Tenant.createItem({ user_id: user.id })
+    return Tenant.createItem({ user_id: user.id }, trx)
   }
 
   /**

@@ -13,6 +13,7 @@ const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
+const MemberService = use('App/Services/MemberService')
 
 const {
   MEMBER_FILE_TYPE_RENT,
@@ -107,7 +108,7 @@ class TenantService {
   /**
    *
    */
-  static async updateTenantIsoline(tenantId) {
+  static async updateTenantIsoline(tenantId, trx = null) {
     const tenant = await TenantService.getTenantQuery().where({ id: tenantId }).first()
     const { lat, lon } = tenant.getLatLon()
 
@@ -122,6 +123,7 @@ class TenantService {
     )
     tenant.point_id = point.id
 
+    if (trx) return tenant.save(trx)
     return tenant.save()
   }
 
@@ -305,18 +307,28 @@ class TenantService {
 
     tenant.status = STATUS_ACTIVE
     await tenant.save()
+    MemberService.calcTenantMemberData(tenant.user_id)
   }
 
   /**
    *
    */
   static async deactivateTenant(userId) {
-    await Tenant.query().update({ status: STATUS_DRAFT }).where({ user_id: userId })
-    // Remove New matches
-    await Database.table({ _m: 'matches' })
-      .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
-      .whereNot('_m.buddy', true)
-      .delete()
+    const trx = await Database.beginTransaction()
+    try {
+      await Tenant.query().update({ status: STATUS_DRAFT }, trx).where({ user_id: userId })
+      await MemberService.calcTenantMemberData(userId, trx)
+      // Remove New matches
+      await Database.table({ _m: 'matches' })
+        .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
+        .whereNot('_m.buddy', true)
+        .delete()
+        .transacting(trx)
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+    }
   }
 
   /**

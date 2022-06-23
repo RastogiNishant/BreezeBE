@@ -357,13 +357,13 @@ class MailService {
     )
   }
 
-  static async sendUnverifiedLandlordActivationEmailToAdmin() {
+  static async sendUnverifiedLandlordActivationEmailToAdmin(txt) {
     const subject = `New landlord is adding property`
     const msg = {
       to: FromEmail,
       from: FROM_ONBOARD_EMAIL, // Use the email address or domain you verified above
       subject: subject,
-      text: subject,
+      text: txt,
     }
 
     return sgMail.send(msg).then(

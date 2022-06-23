@@ -236,7 +236,6 @@ class DatabaseSeeder {
     await tenant.save()
     await this.createMembers(user.id, budget, hhType)
     await MemberService.calcTenantMemberData(user.id)
-    await MemberService.updateUserIncome(user.id)
   }
 
   /**

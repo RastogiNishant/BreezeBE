@@ -39,6 +39,13 @@ class BaseModel extends Model {
     return this.save()
   }
 
+  async updateItemWithTrx(data, trx, force = false ) {
+    const exclude = force ? [] : this.constructor.readonly || []
+    this.merge(omit(pick(data, this.constructor.columns || []), exclude))
+
+    return this.save(trx)    
+  }
+
   getNumber(field) {
     return parseFloat(this[field]) || 0
   }
