@@ -2161,7 +2161,6 @@ class MatchService {
     let estates = await MatchService.getEstateForScoringQuery()
       .whereIn('estates.id', estateIds)
       .fetch()
-    console.log({ estates: estates.toJSON() })
     const matchScores = estates
       .toJSON()
       .reduce((n, v) => {
