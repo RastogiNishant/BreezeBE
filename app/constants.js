@@ -625,6 +625,11 @@ const constants = {
   URGENCY_NORMAL: 1,
   URGENCY_HIGHT: 2,
   URGENCY_SUPER: 3,
+
+  TASK_STATUS_NEW: 1,
+  TASK_STATUS_INPROGRESS: 2,
+  TASK_STATUS_UNRESOLVED: 3,
+  TASK_STATUS_RESOLVED: 4, 
 }
 
 module.exports = constants
