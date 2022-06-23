@@ -10,6 +10,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const FromEmail = process.env.FROM_EMAIL
 const FROM_ONBOARD_EMAIL = process.env.FROM_ONBOARD_EMAIL
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL
 const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
 const SITE_URL = process.env.SITE_URL
@@ -360,7 +361,7 @@ class MailService {
   static async sendUnverifiedLandlordActivationEmailToAdmin(txt) {
     const subject = `New landlord is adding property`
     const msg = {
-      to: FromEmail,
+      to: ADMIN_NOTIFY_EMAIL,
       from: FROM_ONBOARD_EMAIL, // Use the email address or domain you verified above
       subject: subject,
       text: txt,
