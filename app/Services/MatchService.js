@@ -2143,6 +2143,24 @@ class MatchService {
         }
       )
   }
+
+  async recalculateMatchScoresOnMatchesByUserId(userId, trx) {
+    const matches = await Match.query().where('user_id', userId).fetch()
+    const prospect = await MatchService.getProspectForScoringQuery()
+      .where('user_id', userId)
+      .first()
+    await Promise.map(matches.toJSON(), async (match) => {
+      let estate = await MatchService.getEstateForScoringQuery()
+        .where('estate_id', match.estate_id)
+        .first()
+      let matchScore = MatchService.calculateMatchPercent(prospect, estate)
+      console.log(matchScore, estate_id, userId)
+      await Match.query()
+        .where('user_id', userId)
+        .where('estate_id', match.estate_id)
+        .update({ percent: matchScore }, trx)
+    })
+  }
 }
 
 module.exports = MatchService
