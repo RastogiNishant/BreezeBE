@@ -317,6 +317,10 @@ class TenantService {
     const trx = await Database.beginTransaction()
     try {
       await Tenant.query().update({ status: STATUS_DRAFT }, trx).where({ user_id: userId })
+
+      // TODO: Add here recalculation of all the current matches except status = MATCH_STATUS_NEW
+      // Because we remove matches that status = MATCH_STATUS_NEW below
+
       await MemberService.calcTenantMemberData(userId, trx)
       // Remove New matches
       await Database.table({ _m: 'matches' })
