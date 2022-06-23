@@ -92,9 +92,7 @@ class TenantController {
       }
       const updatedTenant = await Tenant.find(tenant.id)
       // Deactivate tenant on personal data change
-
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
-
       if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
       } else {
