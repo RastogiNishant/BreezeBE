@@ -27,7 +27,7 @@ class RecalculateMatchScoresSchema extends Schema {
       let estate
       if (!estates[matchEstateUser.estate_id]) {
         estate = await MatchService.getEstateForScoringQuery()
-          .where('estate_id', matchEstateUser.estate_id)
+          .where('estates.id', matchEstateUser.estate_id)
           .first()
         estates[matchEstateUser.estate_id] = estate
       } else {
@@ -39,10 +39,10 @@ class RecalculateMatchScoresSchema extends Schema {
           `User: ${matchEstateUser.user_id}, Estate: ${matchEstateUser.estate_id}, Score: ${matchScore}`
         )
         try {
-          await Match.query(trx)
+          await Match.query()
             .where('user_id', matchEstateUser.user_id)
             .where('estate_id', matchEstateUser.estate_id)
-            .update('percent', matchScore)
+            .update({ percent: matchScore }, trx)
           await trx.commit()
         } catch (error) {
           await trx.rollback()
