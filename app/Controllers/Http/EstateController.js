@@ -74,8 +74,9 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     try {
-      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
+      const estate = await EstateService.createEstate(request, auth.user.id)
 
+      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
       if (unverifiedUser) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
@@ -87,10 +88,10 @@ class EstateController {
         }' created a property with an address '${address}' in ${
           process.env.NODE_ENV || 'local'
         } environment`
+
         await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
 
-      const estate = await EstateService.createEstate(request, auth.user.id)
       response.res(estate)
     } catch (e) {
       throw new HttpException(e.message, 400)
