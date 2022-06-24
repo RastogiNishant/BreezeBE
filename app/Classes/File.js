@@ -38,6 +38,7 @@ class File {
       const thumbnail = await imageThumbnail(buffer, options)
       return thumbnail
     } catch (e) {
+      console.log('createThumbnail Error')
       return false
     }
   }
@@ -47,7 +48,6 @@ class File {
    */
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
-    Logger.info('File type', { mime })
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
@@ -61,7 +61,7 @@ class File {
     try {
       let img_data = Drive.getStream(file.tmpPath)
       const image_compress_tick = process.env.IMAGE_COMPRESS_TICK || 10000
-      if (file.size > image_compress_tick && [this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
+      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
         const imagemin = (await import('imagemin')).default
         const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
 
@@ -160,11 +160,19 @@ class File {
       }
 
       if (file.hasErrors) {
-        throw new HttpException(image.errors, 400)
+        throw new HttpException('Image has an error', 400)
       }
 
-      const { filePathName, thumbnailFilePathName } = await File.saveToDisk(file, mime, isPublic)
-      const fileName = file.clientName
+      const fileInfo = await Promise.all(
+        (file._files || [file]).map(async (f) => {
+          const { filePathName, thumbnailFilePathName } = await File.saveToDisk(f, mime, isPublic)
+          const fileName = f.clientName
+          return { filePathName, thumbnailFilePathName, fileName }
+        })
+      )
+      const filePathName = fileInfo.map((fi) => fi.path)
+      const fileName = fileInfo.map((fi) => fi.fileName)
+      const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
 
       return { field, filePathName, fileName, thumbnailFilePathName }
     }
@@ -175,9 +183,12 @@ class File {
         v
           ? {
               ...n,
-              [v.field]: v.filePathName,
-              [`original_${v.field}`]: v.fileName,
-              [`thumb_${v.field}`]: v.thumbnailFilePathName,
+              [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
+              [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
+              [`thumb_${v.field}`]:
+                v.thumbnailFilePathName.length > 1
+                  ? v.thumbnailFilePathName
+                  : v.thumbnailFilePathName[0],
             }
           : n,
       {}
