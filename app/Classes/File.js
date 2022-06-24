@@ -165,7 +165,6 @@ class File {
         (file._files || [file]).map(async (f) => {
           const { filePathName, thumbnailFilePathName } = await File.saveToDisk(f, mime, isPublic)
           const fileName = f.clientName
-console.log('why not uploading?', filePathName )          
           return { filePathName, thumbnailFilePathName, fileName }
         })
       )
@@ -176,7 +175,6 @@ console.log('why not uploading?', filePathName )
       return { field, filePathName, fileName, thumbnailFilePathName }
     }
     const files = await Promise.map(fields, saveFile)
-console.log('FILESSSSS', files )
     return files.reduce(
       (n, v) =>
         v
