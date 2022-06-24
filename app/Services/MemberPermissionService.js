@@ -35,7 +35,7 @@ class MemberPermissionService {
       await MemberPermission.query().where('member_id', member_id).delete(trans)
       return true
     } catch (e) {
-      return e
+      throw e
     }
   }
 
@@ -44,7 +44,7 @@ class MemberPermissionService {
       await MemberPermission.query().where('user_id', user_id).delete(trans)
       return true
     } catch (e) {
-      return e
+      throw e
     }
   }
 }

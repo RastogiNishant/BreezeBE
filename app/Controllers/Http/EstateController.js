@@ -26,7 +26,6 @@ const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const Database = use('Database')
 const randomstring = require('randomstring')
 const l = use('Localize')
-
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -46,9 +45,11 @@ const {
   TRANSPORT_TYPE_WALK,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
+const MailService = require('../../Services/MailService')
+const UserService = require('../../Services/UserService')
 const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -72,8 +73,28 @@ class EstateController {
    *
    */
   async createEstate({ request, auth, response }) {
-    const estate = await EstateService.createEstate(request, auth.user.id)
-    response.res(estate)
+    try {
+      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
+
+      if (unverifiedUser) {
+        const { street, house_number, zip, city, country } = request.all()
+        const address = trim(
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'}`
+        ).toLowerCase()
+
+        const txt = `The landlord '${
+          unverifiedUser.email
+        }' created a property with an address '${address}' in ${
+          process.env.NODE_ENV || 'local'
+        } environment`
+        await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
+      }
+
+      const estate = await EstateService.createEstate(request, auth.user.id)
+      response.res(estate)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   async updateEstateByPM({ request, auth, response }) {
@@ -492,18 +513,20 @@ class EstateController {
       .whereIn('user_id', userIds)
       .firstOrFail()
 
-    const disk = 's3public'
-    const file = request.file('file')
-    const ext = file.extname
-      ? file.extname
-      : file.clientName.toLowerCase().replace(/.*(jpeg|jpg|png|doc|docx|pdf|xls|xlsx)$/, '$1')
-    const filename = `${uuid.v4()}.${ext}`
-    const filePathName = `${moment().format('YYYYMM')}/${filename}`
-    await Drive.disk(disk).put(filePathName, Drive.getStream(file.tmpPath), {
-      ACL: 'public-read',
-      ContentType: file.headers['content-type'],
-    })
-    const fileObj = await EstateService.addFile({ disk, url: filePathName, type, estate })
+    const imageMimes = [
+      FileBucket.IMAGE_JPEG,
+      FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_PDF,
+      FileBucket.MIME_DOC,
+      FileBucket.MIME_DOCX,
+      FileBucket.MIME_EXCEL,
+      FileBucket.MIME_EXCELX,
+    ]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'file', mime: imageMimes, isPublic: true },
+    ])
+
+    const fileObj = await EstateService.addFile({ disk: 's3public', url: files.file, type, estate })
     Event.fire('estate::update', estate_id)
 
     response.res(fileObj)
