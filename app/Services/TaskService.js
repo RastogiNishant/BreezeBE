@@ -1,9 +1,32 @@
 'use strict'
 
+const { files } = require('../../config/bodyParser')
+const { TASK_STATUS_NEW } = require('../constants')
+const { isArray } = require('lodash')
+
 const Task = use('App/Models/Task')
+const File = use('App/Classes/File')
 
 class TaskService {
-  static async create(task, trx) {
+  static async create(request, trx) {
+const { ...data } = request.all()
+console.log('Data', data)
+    const files = await this.saveTaskImages(request)
+    let task = {
+      ...data,
+      status: TASK_STATUS_NEW,
+    }
+    if (files && files.file) {
+      const path = JSON.stringify(!isArray(files.file) ? [files.file] : files.file)
+      console.log('Path', path)
+      const pathJSON = path.map((p) => {
+        path: p
+      })
+      task = {
+        ...task,
+        attachments: pathJSON,
+      }
+    }
     return await Task.createItem({ ...task }, trx)
   }
 
@@ -33,6 +56,15 @@ class TaskService {
 
   static async get(id) {
     return await Task.query().where('id', id).with('estate').with('users')
+  }
+
+  static async saveTaskImages(request) {
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
+    const files = await File.saveRequestFiles(request, [
+      { field: 'file', mime: imageMimes, isPublic: true },
+    ])
+    
+    return files
   }
 }
 

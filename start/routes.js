@@ -679,7 +679,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.get('/', 'TaskController.createTask').middleware(['valid:TenantEstateFilter'])
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
 })
   .prefix('api/v1/connect/tasks')
   .middleware(['auth:jwt,jwtLandlord'])
