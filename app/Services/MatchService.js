@@ -53,6 +53,7 @@ const {
   MINIMUM_SHOW_PERIOD,
   MEMBER_FILE_TYPE_PASSPORT,
   TIMESLOT_STATUS_CONFIRM,
+  ADULT_MIN_AGE,
   MAX_SEARCH_ITEMS,
 } = require('../constants')
 const { logger } = require('../../config/app')
@@ -144,6 +145,10 @@ class MatchService {
     let amenitiesScore = 0
     let rentStartPoints = 0
 
+    /*
+    IF(E2>1,0,IF(D2>=E2,1,(E2-1)/(D2-1)))
+    E2 - realBudget
+    D2 - estateBudgetRel*/
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       log("Prospect can't afford.")
@@ -152,13 +157,10 @@ class MatchService {
     let estateBudgetRel = estateBudget / 100
     log({ estateBudgetRel, realBudget })
     if (estateBudgetRel >= realBudget) {
-      landlordBudgetPoints = realBudget / estateBudgetRel
-    } else if (
-      realBudget < 1 &&
-      realBudget > estateBudgetRel &&
-      0 < 2 - realBudget / estateBudgetRel
-    ) {
-      landlordBudgetPoints = 2 - realBudget / estateBudgetRel
+      //landlordBudgetPoints = realBudget / estateBudgetRel
+      landlordBudgetPoints = 1
+    } else {
+      landlordBudgetPoints = (realBudget - 1) / (estateBudgetRel - 1)
     }
     scoreL += landlordBudgetPoints
 
@@ -179,12 +181,12 @@ class MatchService {
 
     // Get rent arrears score
     const rentArrearsWeight = 1
-    if (!estate.rent_arrears || prospect.unpaid_rental === NO_UNPAID_RENTAL) {
+    if (!estate.rent_arrears || prospect.rent_arrears === NO_UNPAID_RENTAL) {
       log({ rentArrearsPoints: rentArrearsWeight })
       scoreL += rentArrearsWeight
       rentArrearsScore = 1
     }
-    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.unpaid_rental })
+    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.rent_arrears })
 
     // prospect's age
     log({
@@ -259,15 +261,17 @@ class MatchService {
     // prospect calculation part
     // -----------------------
     const prospectBudgetRel = prospectBudget / 100
-
-    if (prospectBudgetRel >= realBudget) {
-      prospectBudgetPoints = realBudget / prospectBudgetRel
-    } else if (
-      realBudget < 1 &&
-      realBudget > prospectBudgetRel &&
-      0 < 2 - realBudget / prospectBudgetRel
-    ) {
-      prospectBudgetPoints = 2 - realBudget / prospectBudgetRel
+    /* IF(E2>1,0,IF(D2>=E2,1,(E2-1)/(D2-1)))
+    E2 - realBudget
+    D2 - prospectBudgetRel
+    */
+    if (realBudget > 1) {
+      prospectBudgetPoints = 0
+    } else if (prospectBudgetRel >= realBudget) {
+      prospectBudgetPoints = 1
+      //prospectBudgetPoints = realBudget / prospectBudgetRel - old fmla
+    } else {
+      prospectBudgetPoints = (realBudget - 1) / (prospectBudgetRel - 1)
     }
     prospectBudgetPoints = prospectBudgetWeight * prospectBudgetPoints
     log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
@@ -395,10 +399,10 @@ class MatchService {
    *
    */
   static async matchByUser(userId, ignoreNullFields = false) {
-    const tenant = await Tenant.query()
-      .select('tenants.*', '_p.data as polygon')
-      .where({ 'tenants.user_id': userId })
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .select('_p.data as polygon')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .where({ 'tenants.user_id': userId })
       .first()
     const polygon = get(tenant, 'polygon.data.0.0')
     if (!tenant || !polygon) {
@@ -423,9 +427,13 @@ class MatchService {
 
     // Max radius
     const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-    const estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
-
+    let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
+    const estateIds = estates.reduce((estateIds, estate) => {
+      return [...estateIds, estate.id]
+    }, [])
+    estates = await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
     const matched = estates
+      .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
         if (percent >= MATCH_PERCENT_PASS) {
@@ -458,9 +466,9 @@ class MatchService {
    */
   static async matchByEstate(estateId) {
     // Get current estate
-    const estate = await Estate.query().where({ id: estateId }).first()
+    const estate = await MatchService.getEstateForScoringQuery().where({ id: estateId }).first()
     // Get tenant in zone and check crossing with every tenant search zone
-    const tenants = await Database.from({ _e: 'estates' })
+    let tenants = await Database.from({ _e: 'estates' })
       .select('_t.*', Database.raw(`TRUE AS inside`))
       .crossJoin({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
@@ -468,9 +476,16 @@ class MatchService {
       .where('_t.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
       .limit(MAX_SEARCH_ITEMS)
-
+    const tenantUserIds = tenants.reduce(
+      (tenantUserIds, tenant) => [...tenantUserIds, tenant.user_id],
+      []
+    )
+    tenants = await MatchService.getProspectForScoringQuery()
+      .whereIn('tenants.user_id', tenantUserIds)
+      .fetch()
     // Calculate matches for tenants to current estate
     const matched = tenants
+      .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(v, estate)
         if (percent >= MATCH_PERCENT_PASS) {
@@ -1548,37 +1563,46 @@ class MatchService {
         //all members have proofs for income
         Database.raw(`
         -- table indicating all members under prospect submitted complete income proofs
-        (select
-          members.user_id,
-          bool_and(member_submitted_all_income_proofs) as all_members_submitted_income_proofs
-        from
-          members
-        left join
-          (
-            -- table indicating members submitted 3 or more unexpired income proofs
+        (-- tenant has members
+          select
+            members.user_id,
+            sum(member_total_income) as total_income,
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as all_members_submitted_income_proofs
+          from
+            members
+          left join
+            (
+            -- if member has all proofs, get also member's total income
             select
-              incomes.member_id ,
-              (count(income_proofs.file) >= 3) as member_submitted_all_income_proofs
+              incomes.member_id,
+              sum(_mip.income) as member_total_income,
+              bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
             from
               incomes
             left join
-              income_proofs
+              (
+              -- how many proofs are submitted for each income
+              select
+                incomes.id,
+                incomes.income as income,
+                incomes.member_id,
+                count(income_proofs.file) as submitted_proofs
+              from
+                incomes
+              left join
+                income_proofs
+              on
+                income_proofs.income_id = incomes.id
+              group by incomes.id) as _mip
             on
-              incomes.id=income_proofs.income_id 
-            and 
-              income_proofs.expire_date >= now()
+              _mip.id=incomes.id
             group by
               incomes.id
-            )
-            as iip
-        on
-          iip.member_id=members.id
-        group by
-          members.user_id 
-        order by
-          members.user_id desc
-        
-        ) as _ip`),
+            ) as _mi
+          on _mi.member_id=members.id
+          group by
+            members.user_id
+            ) as _ip`),
         function () {
           this.on('_ip.user_id', '_m.user_id')
         }
@@ -1589,7 +1613,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.profession order by incomes.income desc))[1] as profession
+          (array_agg(incomes.income_type order by incomes.income desc))[1] as profession
         from
           members as primaryMember
         left join
@@ -1988,6 +2012,134 @@ class MatchService {
       .where('estate_id', data.estate_id)
       .where('user_id', data.user_id)
       .update({ properties: data.properties, prices: data.prices })
+  }
+
+  static getEstateForScoringQuery() {
+    return Estate.query()
+      .select(
+        'estates.id',
+        'budget',
+        'credit_score',
+        'rent_arrears',
+        'min_age',
+        'max_age',
+        'family_size_min',
+        'family_size_max',
+        'pets',
+        'net_rent',
+        'rooms_number',
+        'number_floors',
+        'house_type',
+        'vacant_date',
+        'amenities.options',
+        'area',
+        'apt_type'
+      )
+      .leftJoin(
+        Database.raw(`
+        (select estate_id, json_agg(option_id) as options
+        from amenities where type='amenity' and location in
+        ('building', 'apartment', 'vicinity') group by estate_id) as amenities
+        `),
+        function () {
+          this.on('amenities.estate_id', 'estates.id')
+        }
+      )
+  }
+
+  static getProspectForScoringQuery() {
+    return Tenant.query()
+      .select(
+        'tenants.id',
+        'tenants.user_id',
+        Database.raw(`_me.total_income as income`), //sum of all member's income
+        '_m.credit_score', //average
+        'rent_arrears', //if at least one has true, then true
+        '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
+        '_m.credit_score_proofs', //all members must submit their credit score proofs
+        '_m.no_rent_arrears_proofs', //all members must submit no_rent_arrears_proofs
+        '_m.members_age',
+        '_m.members_count', //adult members only
+        'pets',
+        'budget_max',
+        'rent_start',
+        'options', //array
+        'space_min',
+        'space_max',
+        'floor_min',
+        'floor_max',
+        'rooms_min',
+        'rooms_max',
+        'house_type', //array
+        'apt_type' //array
+      )
+      .leftJoin(
+        //members...
+        Database.raw(`
+      (select
+        user_id,
+        avg(credit_score) as credit_score,
+        count(id) as members_count,
+        bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
+        bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
+        bool_or(coalesce(unpaid_rental, 0) > 0) as rent_arrears,
+        -- sum(income) as income,
+        json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
+      from members
+      group by user_id
+      ) as _m
+      `),
+        function () {
+          this.on('tenants.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //members incomes and income_proofs
+        Database.raw(`
+        (-- tenant has members
+          select
+            members.user_id,
+            sum(member_total_income) as total_income,
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs
+          from
+            members
+          left join
+            (
+            -- whether or not member has all proofs, get also member's total income
+            select
+              incomes.member_id,
+              sum(_mip.income) as member_total_income,
+              bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+            from
+              incomes
+            left join
+              (
+              -- how many proofs are submitted for each income
+              select
+                incomes.id,
+                incomes.income as income,
+                incomes.member_id,
+                count(income_proofs.file) as submitted_proofs
+              from
+                incomes
+              left join
+                income_proofs
+              on
+                income_proofs.income_id = incomes.id
+              group by incomes.id) as _mip
+            on
+              _mip.id=incomes.id
+            group by
+              incomes.id
+            ) as _mi
+          on _mi.member_id=members.id
+          group by
+            members.user_id
+        ) as _me`),
+        function () {
+          this.on('_me.user_id', '_m.user_id')
+        }
+      )
   }
 }
 
