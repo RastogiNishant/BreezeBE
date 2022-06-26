@@ -417,7 +417,7 @@ class UserService {
   /**
    * Get tenant for user or create if not exists
    */
-  static async getOrCreateTenant(user, trx=null) {
+  static async getOrCreateTenant(user, trx = null) {
     if (user.role !== ROLE_USER) {
       throw new AppException('Invalid tenant user role')
     }
@@ -486,7 +486,11 @@ class UserService {
     let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
     const tenantQuery = Tenant.query().select('*').where('user_id', user.id)
-    tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
+    tenantQuery
+      .with('members')
+      .with('members.incomes')
+      .with('members.incomes.proofs')
+      .with('members.passports')
 
     const tenant = await tenantQuery.first()
     if (!tenant) {
