@@ -1,16 +1,18 @@
 'use strict'
-
+const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
 const { files } = require('../../config/bodyParser')
 const { TASK_STATUS_NEW } = require('../constants')
 const { isArray } = require('lodash')
 
 const Task = use('App/Models/Task')
 const File = use('App/Classes/File')
+const MatchService = use('App/Services/MatchService')
+const EstateService = use('App/Services/EstateService')
 
 class TaskService {
   static async create(request, trx) {
-const { ...data } = request.all()
-console.log('Data', data)
+    const { ...data } = request.all()
+
     const files = await this.saveTaskImages(request)
     let task = {
       ...data,
@@ -63,8 +65,24 @@ console.log('Data', data)
     const files = await File.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
-    
+
     return files
+  }
+
+  static async hasPermission({ estate_id, user_id, role }) {
+    if (role === ROLE_LANDLORD) {
+      //to check if the user has permission
+      await EstateService.hasPermission({ id: estate_id, user_id })
+      if (!(await MatchService.getFinalMatch(estate_id))) {
+        throw new HttpException('No tenant yet', 500)
+      }
+    }
+
+    // to check if the user is not the tenant for that property.
+    if (role === ROLE_USER) {
+      await MatchService.findCurrentTenant(estate_id, user_id)
+    }
+    return true
   }
 }
 

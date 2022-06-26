@@ -1050,6 +1050,10 @@ class EstateService {
     ])
     return estateCount
   }
-}
 
+  static async hasPermission({id, user_id}) {
+    return await Estate.findByOrFail({ id, user_id: user_id })
+  }
+  
+}
 module.exports = EstateService
