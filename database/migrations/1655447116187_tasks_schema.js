@@ -13,7 +13,7 @@ class TasksSchema extends Schema {
       table.integer('tenant_id').unsigned().notNullable().references('id').inTable('users')
       table.integer('urgency').defaultTo(URGENCY_NORMAL)
       table.integer('status').defaultTo(TASK_STATUS_NEW)
-      table.integer('creator_role')
+      table.integer('creator_role').unsigned().notNullable()
       table.json('attachments')
       table.timestamp('created_at', { precision: 3 }).defaultTo(Database.fn.now(3))
       table.timestamp('updated_at', { precision: 3 }).defaultTo(Database.fn.now(3))
