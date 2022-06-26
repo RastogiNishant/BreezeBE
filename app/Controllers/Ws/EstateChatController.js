@@ -1,5 +1,6 @@
 'use strict'
-
+const Ws = use('Ws')
+const Chat = use('App/Models/Chat')
 //endpoint for General Chat
 class EstateChatController {
   constructor({ socket, request }) {
@@ -8,13 +9,17 @@ class EstateChatController {
     this.topic = Ws.getChannel('estate:*').topic(this.socket.topic)
   }
 
-  onMessage(message) {
+  async onMessage(message) {
     //add record to db...
+    await Chat.query().insert({})
+    if (this.topic) {
+      this.topic.broadcastToAll('message', message)
+    }
   }
 
-  onMarkLastRead
+  async onMarkLastRead(message) {}
 
-  onConnect() {
+  async onConnect() {
     //send
   }
 }
