@@ -457,7 +457,9 @@ class MatchService {
     // Create new matches
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
-      await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      await Database.raw(
+        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+      )
     }
   }
 
@@ -508,7 +510,9 @@ class MatchService {
     // Create new matches
     if (!isEmpty(matched)) {
       const insertQuery = Database.query().into('matches').insert(matched).toString()
-      await Database.raw(`${insertQuery} ON CONFLICT DO NOTHING`)
+      await Database.raw(
+        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+      )
       const superMatches = matched.filter(({ percent }) => percent >= 90)
       if (superMatches.length > 0) {
         await NoticeService.prospectSuperMatch(estateId, superMatches)
@@ -2140,6 +2144,41 @@ class MatchService {
           this.on('_me.user_id', '_m.user_id')
         }
       )
+  }
+
+  static async recalculateMatchScoresByUserId(userId, trx) {
+    let matches = await Match.query().where('user_id', userId).fetch()
+    matches = matches.toJSON()
+    if (isEmpty(matches)) {
+      return
+    }
+    const prospect = await MatchService.getProspectForScoringQuery()
+      .where('tenants.user_id', userId)
+      .first()
+    const estateIds = matches.reduce((estateIds, match) => {
+      return [...estateIds, match.estate_id]
+    }, [])
+    let estates = await MatchService.getEstateForScoringQuery()
+      .whereIn('estates.id', estateIds)
+      .fetch()
+    const matchScores = estates
+      .toJSON()
+      .reduce((n, v) => {
+        const percent = MatchService.calculateMatchPercent(prospect, v)
+        return [...n, { estate_id: v.id, percent }]
+      }, [])
+      .map((i) => ({
+        user_id: userId,
+        estate_id: i.estate_id,
+        percent: i.percent,
+      }))
+
+    if (!isEmpty(matchScores)) {
+      const insertQuery = Database.query().into('matches').insert(matchScores).toString()
+      await Database.raw(
+        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+      ).transacting(trx)
+    }
   }
 }
 

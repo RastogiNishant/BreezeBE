@@ -1,21 +1,15 @@
 'use strict'
-
-const { Command } = require('@adonisjs/ace')
-const Promise = require('bluebird')
-const MatchService = use('App/Services/MatchService')
-const Database = use('Database')
 const Match = use('App/Models/Match')
+const MatchService = use('App/Services/MatchService')
+const Promise = require('bluebird')
+const Database = use('Database')
+const _ = require('lodash')
 
-class Recalc extends Command {
-  static get signature() {
-    return 'app:recalculate_scores'
-  }
+/** @type {import('@adonisjs/lucid/src/Schema')} */
+const Schema = use('Schema')
 
-  static get description() {
-    return 'Run match recalculation for all current matches.'
-  }
-
-  async handle(args, options) {
+class RecalculateMatchScoresSchema extends Schema {
+  async up() {
     const matchEstateUsers = await Match.query().select('estate_id', 'user_id').fetch()
     let prospects = {}
     let estates = {}
@@ -49,13 +43,15 @@ class Recalc extends Command {
             .where('user_id', matchEstateUser.user_id)
             .where('estate_id', matchEstateUser.estate_id)
             .update({ percent: matchScore }, trx)
-          trx.commit()
+          await trx.commit()
         } catch (error) {
-          trx.rollback()
+          await trx.rollback()
         }
       }
     })
   }
+
+  down() {}
 }
 
-module.exports = Recalc
+module.exports = RecalculateMatchScoresSchema
