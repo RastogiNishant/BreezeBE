@@ -680,6 +680,12 @@ Route.group(() => {
 
 Route.group(() => {
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
+  Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
+  Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
+  Route.put('/:id/addImage', 'TaskController.addImage').middleware(['valid:Id'])
+  Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
+    'valid:Id,RemoveImage',
+  ])
 })
   .prefix('api/v1/connect/tasks')
   .middleware(['auth:jwt,jwtLandlord'])
@@ -697,8 +703,15 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.get('/myTenants', 'LandlordController.getTenants')
+})
+  .prefix('api/v1/landlords')
+  .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
   Route.get('/', 'LandlordController.landlords')
   Route.get('/getLandlords', 'LandlordController.landlords')
+  Route.get('/myTenants', 'LandlordController.getTenants')
   Route.get('/toggle', 'LandlordController.toggleStatus')
   Route.post('/buddies/import', 'BuddyController.importBuddies')
   Route.get('/buddies/get', 'BuddyController.getBuddies')

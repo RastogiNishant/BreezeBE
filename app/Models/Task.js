@@ -3,12 +3,21 @@
 const Model = require('./BaseModel')
 class Task extends Model {
   static get columns() {
-    return ['id', 'estate_id', 'tenant_id', 'urgency', 'status', 'attachments']
+    return [
+      'id',
+      'name',
+      'estate_id',
+      'tenant_id',
+      'urgency',
+      'creator_role',
+      'status',
+      'attachments',
+    ]
   }
   static get readonly() {
     return ['id']
   }
-  
+
   static get Serializer() {
     return 'App/Serializers/RoomSerializer'
   }
