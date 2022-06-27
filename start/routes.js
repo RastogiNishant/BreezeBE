@@ -74,6 +74,10 @@ Route.group(() => {
     'valid:Ids',
   ])
 
+  Route.post('/image/compress', 'ImageController.compressImage').middleware([
+    'auth:jwtAdministrator',
+  ])
+
   //admin plan
   //Controllers should be moved to app/Controllers/Http/Admin
   Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
@@ -225,7 +229,7 @@ Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').m
 ])
 Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
   'guest',
-  'valid:ResendSMS',
+  'valid:ResendSMS,Lang',
 ])
 Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
   'guest',
@@ -991,11 +995,9 @@ Route.group(() => {
   .prefix('/api/v1/propertymanager/estates')
   .middleware(['auth:jwtPropertyManager'])
 
-Route.group(() => {
-  Route.post('/', 'ImageController.compressImage')
-})
-  .prefix('/api/v1/image/compress')
-  .middleware(['auth:jwtLandlord,jwt'])
+Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
+  'auth:jwtLandlord',
+])
 
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests
@@ -1011,6 +1013,30 @@ Route.list().forEach((r) => {
     }
   }
 })
+/*
+const MatchService = use('App/Services/MatchService')
+const { omit } = require('lodash')
+Route.get('/test/estate/:id', async ({ request, response }) => {
+  let query = MatchService.getEstateForScoringQuery()
+  const { id } = request.all()
+  query.where('estates.id', id)
+  let estate = await query.first()
+  estate = omit(estate.toJSON(), [
+    'verified_address',
+    'bath_options',
+    'kitchen_options',
+    'equipment',
+  ])
+  return response.res(estate)
+}).middleware(['valid:Id'])
+
+Route.get('/test/prospect/:id/', async ({ request, response }) => {
+  const { id } = request.all()
+  let query = MatchService.getProspectForScoringQuery()
+  query.where('tenants.user_id', id)
+  let prospect = await query.first()
+  return response.res(prospect)
+}).middleware(['valid:Id'])
 
 // const Matchservice = use('App/Services/Matchservice1')
 // Route.get('/debug/test-match', async ({ request, response }) => {
@@ -1069,3 +1095,23 @@ Route.list().forEach((r) => {
 //   }
 //   return response.res({ scores })
 // })
+
+//test matching given estate and
+Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
+  const { id, estate_id } = request.all()
+  let query = MatchService.getEstateForScoringQuery()
+  query.where('estates.id', estate_id)
+  let estate = await query.first()
+  estate = omit(estate.toJSON(), [
+    'verified_address',
+    'bath_options',
+    'kitchen_options',
+    'equipment',
+  ])
+  query = MatchService.getProspectForScoringQuery()
+  query.where('tenants.user_id', id)
+  let prospect = await query.first()
+  const matchScore = MatchService.calculateMatchPercent(prospect, estate)
+  return response.res({ estate, prospect, matchScore })
+}).middleware(['valid:Id,EstateId'])
+*/

@@ -15,6 +15,10 @@ const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const NoticeService = use('App/Services/NoticeService')
+const UserService = use('App/Services/UserService')
+const File = use('App/Classes/File')
+const l = use('Localize')
+const Promise = require('bluebird')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -105,73 +109,119 @@ class MemberService {
     return await query.fetch()
   }
 
+  static async getMembersByHousehold(householdId) {
+    return (
+      await Member.query().select('user_id', 'owner_user_id').where('user_id', householdId).fetch()
+    ).rows
+  }
+
   /**
    * Get all tenant members and calculate general tenant params
    */
   static async calcTenantMemberData(userId, trx = null) {
-    const tenantData = await Database.query()
-      .from('members')
-      .select(
-        Database.raw(`COUNT(*) AS members_count`),
-        Database.raw(
-          `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
-        ),
-        Database.raw(
-          `(CASE WHEN (COUNT(*)) = 0 THEN NULL
-             ELSE
-               SUM(COALESCE(credit_score, 0)) /
-               COUNT(*)
-             END) AS credit_score`
-        )
-      )
-      .where({ user_id: userId })
-      .groupBy('user_id')
+    const shouldTrxProceed = trx !== null
+    if (!trx) trx = await Database.beginTransaction()
 
-    let toUpdate = {}
-    if (isEmpty(tenantData)) {
-      toUpdate = {
-        family_status: FAMILY_STATUS_SINGLE,
-        minors_count: 0,
-        members_count: 0,
-        unpaid_rental: null,
-        insolvency_proceed: null,
-        clean_procedure: null,
-        income_seizure: null,
-        members_age: null,
-        credit_score: 0,
+    try {
+      const members = await this.getMembersByHousehold(userId)
+      if (!members || !members.length) {
+        return
       }
-    } else {
-      const { minors_count } = await Tenant.query()
-        .select('minors_count')
+
+      const tenantData = await Database.query()
+        .from('members')
+        .select(
+          Database.raw(`COUNT(*) AS members_count`),
+          Database.raw(
+            `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
+          ),
+          Database.raw(
+            `(CASE WHEN (COUNT(*)) = 0 THEN NULL
+               ELSE
+                 SUM(COALESCE(credit_score, 0)) /
+                 COUNT(*)
+               END) AS credit_score`
+          )
+        )
         .where({ user_id: userId })
-        .firstOrFail()
-      const { members_count } = tenantData[0]
+        .groupBy('user_id')
 
-      toUpdate.family_status =
-        minors_count > 0
-          ? FAMILY_STATUS_WITH_CHILD
-          : members_count < 2
-          ? FAMILY_STATUS_SINGLE
-          : FAMILY_STATUS_NO_CHILD
+      const householdTenant = await Tenant.query().where({ user_id: userId }).first()
+
+      const { members_count, credit_score } = tenantData[0] // calculated data
+      const { minors_count, private_use, pets, pets_species, parking_space, status } =
+        householdTenant // data to sync with all the tenants of all the members
+
+      await Promise.map(members, async (member) => {
+        const tenant = await Tenant.query()
+          .where({ user_id: member.owner_user_id || member.user_id })
+          .first()
+
+        if (tenant) {
+          const family_status =
+            minors_count > 0
+              ? FAMILY_STATUS_WITH_CHILD
+              : members_count < 2
+              ? FAMILY_STATUS_SINGLE
+              : FAMILY_STATUS_NO_CHILD
+
+          const updatingFields = {
+            members_count,
+            family_status,
+            credit_score: parseInt(credit_score) || null,
+          }
+
+          // sync secondary member's tenant
+          if (member.owner_user_id) {
+            updatingFields.private_use = private_use
+            updatingFields.pets = pets
+            updatingFields.pets_species = pets_species
+            updatingFields.parking_space = parking_space
+            updatingFields.minors_count = minors_count
+            updatingFields.status = status
+          }
+
+          await Tenant.query()
+            .update(updatingFields, trx)
+            .where({ user_id: member.owner_user_id || member.user_id })
+        }
+      })
+
+      await MemberService.updateTenantIncome(userId, trx)
+      if (!shouldTrxProceed) await trx.commit()
+    } catch (e) {
+      if (!shouldTrxProceed) {
+        await trx.rollback()
+      }
+      throw e
     }
-
-    await Tenant.query()
-      .update(
-        {
-          ...toUpdate,
-          credit_score: parseInt(toUpdate.credit_score) || null,
-        },
-        trx
-      )
-      .where({ user_id: userId })
   }
 
-  static async sendSMS(memberId, phone) {
+  static async sendSMS(memberId, phone, lang = 'en') {
     const code = random.int(1000, 9999)
-    await DataStorage.setItem(memberId, { code: code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, {
-      ttl: 3600,
-    })
-    await SMSService.send(phone, code)
+    try {
+      const member = await Member.query().select('*').where('id', memberId).first()
+
+      if (!member) {
+        throw new HttpException('No member exists', 400)
+      }
+      await DataStorage.setItem(
+        memberId,
+        { code: code, count: 5 },
+        SMS_MEMBER_PHONE_VERIFY_PREFIX,
+        {
+          ttl: 3600,
+        }
+      )
+
+      const data = await UserService.getTokenWithLocale([member.owner_user_id || member.user_id])
+      const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
+      const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
+
+      await SMSService.send({ to: phone, txt })
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   static async confirmSMS(memberId, phone, code) {
@@ -303,32 +353,28 @@ class MemberService {
   /**
    * user will be prospect
    */
-  static async updateUserIncome(userId, sUserId, trx) {
+  static async updateTenantIncome(userId, trx) {
+    // family: member1, member2, member3
+    // we should sync all of them income with the same count
+    // it should be the sum up of all the members all the incomes
+
+    const members = await this.getMembersByHousehold(userId)
+    if (!members || !members.length) {
+      return
+    }
+
+    const ids = members.map((member) => member.owner_user_id || member.user_id)
+
     await Database.raw(
       `
         UPDATE tenants SET income = (
           SELECT COALESCE(SUM(coalesce(income, 0)), 0)
             FROM members as _m
               INNER JOIN incomes as _i ON _i.member_id = _m.id
-            WHERE user_id = ?
-        ) WHERE user_id = ?
-      `,
-      [userId, userId]
+            WHERE user_id = ${userId}
+        ) WHERE user_id in (${ids})
+      `
     ).transacting(trx)
-
-    if (sUserId) {
-      await Database.raw(
-        `
-        UPDATE tenants SET income = (
-          SELECT COALESCE(SUM(coalesce(income, 0)), 0)
-            FROM members as _m
-              INNER JOIN incomes as _i ON _i.member_id = _m.id
-            WHERE owner_user_id = ?
-        ) WHERE user_id = ?
-      `,
-        [sUserId, sUserId]
-      ).transacting(trx)
-    }
   }
 
   static async sendInvitationCode(id, userId) {
@@ -456,8 +502,6 @@ class MemberService {
         updatePromises.push(member.save(trx))
       }
 
-      updatePromises.push(this.calcTenantMemberData(invitorUserId, trx))
-
       await Promise.all(updatePromises)
       if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
         const invitorMember = await Member.query()
@@ -472,6 +516,8 @@ class MemberService {
         }
       }
       await trx.commit()
+      Event.fire('tenant::update', invitorUserId)
+      Event.fire('tenant::update', user.id)
       await NoticeService.prospectHouseholdInvitationAccepted(invitorUserId)
       return true
     } catch (e) {
@@ -527,9 +573,9 @@ class MemberService {
       }
 
       await Promise.all(updatePromises)
-      await this.calcTenantMemberData(invitorUserId, trx)
-      await this.calcTenantMemberData(user.id, trx)
       await trx.commit()
+      Event.fire('tenant::update', invitorUserId)
+      Event.fire('tenant::update', user.id)
       return true
     } catch (e) {
       console.log({ e })
@@ -544,6 +590,50 @@ class MemberService {
   static async getIncomeProofs() {
     const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
     return IncomeProof.query().where('expire_date', '<=', startOf).delete()
+  }
+
+  static async createThumbnail() {
+    const incomeProofs = (await IncomeProof.query().fetch()).rows
+    console.log('Start creating income proofs thumbnail')
+    await Promise.all(
+      incomeProofs.map(async (incomeProof) => {
+        {
+          try {
+            const url = await File.getProtectedUrl(incomeProof.file)
+            if (incomeProof.file) {
+              const url_strs = incomeProof.file.split('/')
+              if (url_strs.length === 2) {
+                const fileName = url_strs[1]
+                const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
+                  return fileName.includes(format)
+                })
+
+                if (isValidFormat) {
+                  const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
+                  const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
+
+                  console.log('Income Proof is saving', url)
+                  await File.saveThumbnailToDisk({
+                    image: url,
+                    fileName: fileName,
+                    dir: `${url_strs[0]}`,
+                    options,
+                    disk: 's3',
+                    isUri: true,
+                  })
+                  console.log('Income Proof saved', url)
+                }
+              }
+            }
+          } catch (e) {
+            console.log('Creating thumbnail Error', e)
+            throw new HttpException('Creating thumbnail HttpException Error', e)
+          }
+        }
+      })
+    )
+
+    console.log('End creating income proofs thumbnail')
   }
 }
 
