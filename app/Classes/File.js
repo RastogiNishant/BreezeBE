@@ -148,13 +148,11 @@ class File {
     if (isEmpty(fields)) {
       return {}
     }
-
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
         extnames: File.SUPPORTED_IMAGE_FORMAT,
       })
-
       if (!file) {
         return null
       }
@@ -170,14 +168,13 @@ class File {
           return { filePathName, thumbnailFilePathName, fileName }
         })
       )
-      const filePathName = fileInfo.map((fi) => fi.path)
+      const filePathName = fileInfo.map((fi) => fi.filePathName)
       const fileName = fileInfo.map((fi) => fi.fileName)
       const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
 
       return { field, filePathName, fileName, thumbnailFilePathName }
     }
     const files = await Promise.map(fields, saveFile)
-
     return files.reduce(
       (n, v) =>
         v
