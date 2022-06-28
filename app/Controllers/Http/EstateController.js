@@ -450,11 +450,11 @@ class EstateController {
       estates = await Estate.query()
         .select('estates.*', Database.raw(`json_agg(dslot) as slots`))
         .where({ user_id: userId })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .leftJoin(
           Database.raw(`(
             select 
-              ts.id, ts.estate_id, ts.start_at, ts.end_at, count(_v.*) as visit_count
+              ts.id, ts.estate_id, ts.start_at, ts.end_at, count(_v.*) as visits
             from
               time_slots ts 
             left join
@@ -470,9 +470,11 @@ class EstateController {
             group by
               ts.estate_id, ts.id
             ) as dslot`),
-          'dslot.estate_id',
-          'estates.id'
+          function () {
+            this.on('dslot.estate_id', 'estates.id')
+          }
         )
+        .where(Database.raw(`dslot is not null`))
         .groupBy('estates.id')
         .orderBy('estates.id')
         .fetch()
