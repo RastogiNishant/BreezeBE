@@ -89,7 +89,7 @@ class ChatController {
     this.socket = socket
     this.request = request
     this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
-    console.log({ auth: auth.user.id })
+    console.log({ auth: auth.user.id, topic: this.topic })
   }
 
   onAnswer({ question_id, answer, user }) {
@@ -121,7 +121,7 @@ class ChatController {
 
   onMessage(message) {
     //save to db
-    console.log('message received')
+    console.log('message received', message)
     if (this.topic) {
       this.topic.broadcastToAll('message', message)
     }

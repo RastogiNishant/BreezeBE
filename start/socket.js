@@ -1,6 +1,6 @@
 const Ws = use('Ws')
 
-Ws.channel('chat:*', 'ChatController').middleware(['auth:jwtLandlord'])
+Ws.channel('chat:*', 'ChatController').middleware(['auth:jwtLandlord,jwt'])
 Ws.channel('estate:*', 'EstateChatController').middleware([
   'auth:jwtLandlord,jwt',
   'userCanChatHere',
