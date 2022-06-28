@@ -80,7 +80,9 @@ class EstateController {
       if (unverifiedUser) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'}`
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
+            country || 'Germany'
+          }`
         ).toLowerCase()
 
         const txt = `The landlord '${
@@ -446,13 +448,33 @@ class EstateController {
         .fetch()
     } else if (filter == 2) {
       estates = await Estate.query()
+        .select('estates.*', Database.raw(`json_agg(dslot) as slots`))
         .where({ user_id: userId })
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .with('slots')
-        .whereHas('slots', (estateQuery) => {
-          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
-        })
-        .orderBy('id')
+        .leftJoin(
+          Database.raw(`(
+            select 
+              ts.id, ts.estate_id, ts.start_at, ts.end_at, count(_v.*) as visit_count
+            from
+              time_slots ts 
+            left join
+              (select
+                start_date,
+                end_date,
+                estate_id
+              from visits
+              ) as _v on _v.estate_id=ts.estate_id
+              and (_v.start_date >= ts.start_at
+                and _v.end_date <= ts.end_at
+                and ts.end_at < '${currentDay.format(DATE_FORMAT)}')
+            group by
+              ts.estate_id, ts.id
+            ) as dslot`),
+          'dslot.estate_id',
+          'estates.id'
+        )
+        .groupBy('estates.id')
+        .orderBy('estates.id')
         .fetch()
     } else if (filter == 3) {
       estates = await Estate.query()
