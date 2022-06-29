@@ -1,5 +1,6 @@
 'use strict'
-const Ws = use('Ws')
+
+const BaseController = require('./BaseController')
 //this should be coming from the database...
 const origQuestions = [
   { id: 1, question: 'Hello There', type: 'not-a-question', next: 2 },
@@ -84,18 +85,15 @@ const origQuestions = [
   },
 ]
 
-class ChatController {
+class ChatController extends BaseController {
   constructor({ socket, request, auth }) {
-    this.socket = socket
-    this.request = request
-    this.topic = Ws.getChannel('chat:*').topic(this.socket.topic)
-    console.log({ auth: auth.user.id, topic: this.topic })
+    super({ socket, request, auth })
   }
 
   onAnswer({ question_id, answer, user }) {
     console.log('answer: ', question_id, answer, user)
     if (this.topic) {
-      this.topic.broadcast('message', { message: answer, user })
+      this.topic.broadcast('message', { message: answer, userId: this.auth.user.id })
       this.topic.broadcastToAll('question', this._nextQuestion(question_id, answer))
     }
   }
@@ -121,9 +119,8 @@ class ChatController {
 
   onMessage(message) {
     //save to db
-    console.log('message received', message)
     if (this.topic) {
-      this.topic.broadcastToAll('message', message)
+      this.topic.broadcastToAll('message', { message, userId: this.auth.user.id })
     }
   }
 
