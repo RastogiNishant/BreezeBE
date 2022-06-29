@@ -647,7 +647,6 @@ class MatchController {
       }
 
       const filters = [
-        { value: MATCH_STATUS_FINISH, key: 'finalMatches' },
         { value: MATCH_STATUS_COMMIT, key: 'commits' },
         { value: MATCH_STATUS_TOP, key: 'top' },
         { value: MATCH_STATUS_VISIT, key: 'visits' },
@@ -693,6 +692,15 @@ class MatchController {
         .count()
 
       counts.showed = showed[0].count
+
+      const finalMatches = await Estate.query()
+        .where({ user_id: user.id })
+        .whereHas('matches', (query) => {
+          query.where('status', MATCH_STATUS_FINISH)
+        })
+        .count()
+
+      counts.finalMatches = finalMatches[0].count
 
       return response.res(counts)
     } catch (e) {
