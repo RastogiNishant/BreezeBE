@@ -1672,6 +1672,7 @@ class MatchService {
       '_v.date',
       '_v.start_date AS visit_start_date',
       '_v.end_date AS visit_end_date',
+      '_v.created_at AS visit_confirmation_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',

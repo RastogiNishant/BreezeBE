@@ -766,6 +766,7 @@ class MatchController {
       'visit_status',
       'visit_start_date',
       'visit_end_date',
+      'visit_confirmation_date',
       'delay',
       'u_status',
       'updated_at',
