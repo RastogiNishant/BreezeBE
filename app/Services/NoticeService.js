@@ -446,9 +446,7 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
-        user_name: tenantId
-          ? `${notificationUser.firstname || ''} ${notificationUser.secondname || ''}`
-          : null,
+        user_name: tenantId ? `${notificationUser.firstname || ''}` : null,
       },
       image: File.getPublicUrl(estate.cover),
     }
@@ -820,9 +818,7 @@ class NoticeService {
         estate_id: estate.id,
         estate_address: estate.address,
         delay: delay,
-        user_name: prospectId
-          ? `${notificationUser.firstname || ''} ${notificationUser.secondname || ''}`
-          : undefined,
+        user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined,
       },
       image: File.getPublicUrl(estate.cover),
     }
@@ -850,7 +846,7 @@ class NoticeService {
           estate_id: estateId,
           estate_address: estate.address,
           params: estate.getAptParams(),
-          user_name: `${prospect.firstname || ''} ${prospect.secondname || ''}`,
+          user_name: `${prospect.firstname || ''}`,
         },
         image: File.getPublicUrl(estate.cover),
       }
