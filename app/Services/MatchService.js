@@ -10,7 +10,9 @@ const User = use('App/Models/User')
 const Visit = use('App/Models/Visit')
 const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
+const UserService = use('App/Services/UserService')
 const EstateService = use('App/Services/EstateService')
+const MailService = use('App/Services/MailService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
@@ -55,8 +57,10 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   ADULT_MIN_AGE,
   MAX_SEARCH_ITEMS,
+  DEFAULT_LANG,
 } = require('../constants')
 const { logger } = require('../../config/app')
+const HttpException = require('../Exceptions/HttpException')
 
 const MATCH_PERCENT_PASS = 40
 
@@ -628,6 +632,20 @@ class MatchService {
       estate_id: estateId,
     })
     await NoticeService.userInvite(estateId, userId)
+    MatchService.inviteEmailToProspect({ estateId, userId })
+  }
+
+  static async inviteEmailToProspect({ estateId, userId }) {
+    const estate = await EstateService.getById(estateId)
+    const tenant = await UserService.getById(userId)
+
+    const lang = tenant.lang ? tenant.lang : DEFAULT_LANG
+
+    await MailService.inviteEmailToProspect({
+      email: tenant.email,
+      address: estate.address,
+      lang: lang,
+    })
   }
 
   /**

@@ -694,6 +694,10 @@ class UserService {
     return await User.query().whereIn('id', ids).where({ role: role }).pluck('id')
   }
 
+  static async getById(id) {
+    return await User.query().where('id', id).firstOrFail()
+  }
+
   static async getByEmailWithRole(emails, role) {
     return await User.query()
       .select(['id', 'email'])
