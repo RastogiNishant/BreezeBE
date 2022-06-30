@@ -12,6 +12,9 @@ class Task extends Model {
       'creator_role',
       'status',
       'attachments',
+      'description',
+      'created_at',
+      'updated_at'
     ]
   }
   static get readonly() {

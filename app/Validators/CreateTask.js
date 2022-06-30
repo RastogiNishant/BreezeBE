@@ -33,6 +33,7 @@ class CreateTask extends Base {
           TASK_STATUS_RESOLVED,
           TASK_STATUS_CLOSED,
         ]),
+      description: yup.string(),
       file: yup.mixed(),
     })
 }

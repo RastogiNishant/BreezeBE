@@ -1055,5 +1055,21 @@ class EstateService {
   static async hasPermission({ id, user_id }) {
     return await Estate.findByOrFail({ id, user_id: user_id })
   }
+
+  static async getTotalLetCount(user_id) {
+    return await Estate.query()
+      .count('estates.*')
+      .where('estates.user_id', user_id)
+      .andWhere(function () {
+        this.orWhere('estates.property_type', LETTING_TYPE_LET)
+        this.orWhere(
+          'estates.id',
+          '=',
+          Database.raw(`(
+        SELECT estate_id from matches where status  = ${MATCH_STATUS_FINISH}
+      )`)
+        )
+      })
+  }
 }
 module.exports = EstateService

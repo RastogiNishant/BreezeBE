@@ -1,14 +1,16 @@
 'use strict'
-const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
-const { files } = require('../../config/bodyParser')
-const { TASK_STATUS_NEW } = require('../constants')
+const { ROLE_LANDLORD, ROLE_USER, MATCH_STATUS_FINISH } = require('../constants')
+const { TASK_STATUS_NEW, LETTING_TYPE_LET, TASK_STATUS_DRFAT } = require('../constants')
 const { isArray } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 
 const Task = use('App/Models/Task')
+const Estate = use('App/Models/Estate')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
+const TaskFilters = require('../Classes/TaskFilters')
+const Database = use('Database')
 
 class TaskService {
   static async create(request, user, trx) {
@@ -57,7 +59,7 @@ class TaskService {
     return await query.update({ ...task })
   }
 
-  static async delete({ id, estate_id, user }, trx) {
+  static async delete({ id, user }, trx) {
     const task = await this.get(id)
     if (
       await this.hasPermission({
@@ -73,19 +75,96 @@ class TaskService {
     }
   }
 
-  static async getAll(filter) {
-    let query = Task.query()
-    if (filter.estate_id) {
-      query.where('estate_id', filter.estate_id)
+  static async getTenantAllTask({ tenant_id }) {
+    return (
+      await Task.query()
+        .where('tenant_id', tenant_id)
+        .orderBy('status', 'asc')
+        .orderBy('created_at', 'asc')
+        .orderBy('urgency', 'desc')
+        .fetch()
+    ).rows
+  }
+  static async count({ estate_id, status, urgency, role }) {
+    let query = Database.table('tasks').count('*').where('estate_id', estate_id)
+
+    if (status) {
+      if (!isArray(status)) {
+        status = [status]
+      }
+      query.whereIn('status', status)
     }
-    if (filter.status) {
-      query.where('status', filter.status)
+
+    if (urgency) {
+      if (!isArray(urgency)) {
+        urgency = [urgency]
+      }
+      query.whereIn('status', status)
     }
-    return await query.with('estate').with('users').fetch().rows
+
+    if (role === ROLE_LANDLORD) {
+      query.whereNot('status', TASK_STATUS_DRFAT)
+    }
+    return await query
+  }
+
+  static async getLanlordAllTasks(user, params, page, limit = -1) {
+    let query = Estate.query()
+      .with('inside_current_tenant')
+      .with('outside_current_tenant')
+      .select(
+        'estates.*',
+        '_m.status as mStatus',
+        Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant'),
+        Database.raw('COUNT("tasks"."id") as taskCount'),
+        Database.raw('MAX("tasks"."urgency") as urgency')
+      )
+
+    query.leftJoin({ _m: 'matches' }, function () {
+      this.on('_m.estate_id', 'estates.id').on('_m.status', 8)
+    })
+
+    query.leftJoin('tasks', function () {
+      this.on('estates.id', 'tasks.estate_id').on(
+        Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
+      )
+    })
+
+    query.where('estates.user_id', user.id)
+    query.andWhere(function () {
+      this.orWhere('estates.property_type', LETTING_TYPE_LET)
+      this.orWhere(
+        'estates.id',
+        '=',
+        Database.raw(`(
+        SELECT estate_id from matches where status  = ${MATCH_STATUS_FINISH}
+      )`)
+      )
+    })
+
+    if (params.estate_id) {
+      query.where('estates.id', params.estate_id)
+    }
+
+    const filter = new TaskFilters(params, query)
+    query = filter.process()
+    query.groupBy('estates.id').groupBy('_m.status')
+    query.orderBy('_m.status')
+    if (limit == -1) {
+      return (await query.fetch()).rows
+    } else {
+      return await query.paginate(page, limit)
+    }
+
+    //return await query.with('estate').with('users').fetch().rows
   }
 
   static async get(id) {
     return await Task.query().where('id', id).firstOrFail()
+  }
+
+  static async getWithTenantId({ id, tenant_id }) {
+    return await Task.query().where('id', id).where('tenant_id', tenant_id).firstOrFail()
   }
 
   static async getWith(id) {
@@ -148,7 +227,9 @@ class TaskService {
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
     const attachments = task
       .toJSON()
-      .attachments.filter((attachment) => !(attachment.user_id === user.id && attachment.uri === uri))
+      .attachments.filter(
+        (attachment) => !(attachment.user_id === user.id && attachment.uri === uri)
+      )
     console.log('TASK', attachments)
     console.log('TASK LENG', attachments.length)
     return await Task.query()

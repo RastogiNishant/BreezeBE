@@ -5,47 +5,69 @@ const { isArray } = require('lodash')
 const Base = require('./Base')
 
 const {
-  TASK_STATUS_NEW,
-  TASK_STATUS_INPROGRESS,
-  TASK_STATUS_UNRESOLVED,
-  TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
-  URGENCY_LOW,
-  URGENCY_NORMAL,
-  URGENCY_HIGH,
-  URGENCY_SUPER,
+  TASK_STATUS_NEW_LABEL,
+  TASK_STATUS_INPROGRESS_LABEL,
+  TASK_STATUS_UNRESOLVED_LABEL,
+  TASK_STATUS_RESOLVED_LABEL,
+  TASK_STATUS_CLOSED_LABEL,
+  URGENCY_LOW_LABEL,
+  URGENCY_NORMAL_LABEL,
+  URGENCY_HIGH_LABEL,
+  URGENCY_SUPER_LABEL,
   FILTER_CONSTRAINTS_MATCH_MODES,
 } = require('../constants')
 
 class TaskFilter extends Base {
   static schema = () =>
     yup.object().shape({
-      status: yup.lazy((value) => {
-        return yup
-          .array()
-          .of(
-            yup
-              .number()
-              .oneOf([
-                TASK_STATUS_NEW,
-                TASK_STATUS_INPROGRESS,
-                TASK_STATUS_RESOLVED,
-                TASK_STATUS_UNRESOLVED,
-                TASK_STATUS_RESOLVED,
-                TASK_STATUS_CLOSED,
-              ])
-          )
-      }),
-      urgency: yup.lazy((value) => {
-        return yup
-          .array()
-          .of(yup.number().oneOf([URGENCY_LOW, URGENCY_NORMAL, URGENCY_HIGH, URGENCY_SUPER]))
-      }),
-      tenant_id: yup
-        .lazy((value) => {
-          return yup.array().of(yup.number().positive())
+      status: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup
+            .array()
+            .of(
+              yup
+                .string()
+                .oneOf([
+                  TASK_STATUS_NEW_LABEL,
+                  TASK_STATUS_INPROGRESS_LABEL,
+                  TASK_STATUS_UNRESOLVED_LABEL,
+                  TASK_STATUS_RESOLVED_LABEL,
+                  TASK_STATUS_CLOSED_LABEL,
+                ])
+            )
+            .nullable(),
         })
         .nullable(),
+      urgency: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup
+            .array()
+            .of(
+              yup
+                .string()
+                .oneOf([
+                  URGENCY_LOW_LABEL,
+                  URGENCY_NORMAL_LABEL,
+                  URGENCY_HIGH_LABEL,
+                  URGENCY_SUPER_LABEL,
+                ])
+            )
+            .nullable(),
+        })
+        .nullable(),
+        
+      tenant_id: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup.array().of(yup.number().positive()).nullable(),
+        })
+        .nullable(),
+
       city: yup
         .object()
         .shape({
