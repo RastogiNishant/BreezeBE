@@ -462,8 +462,6 @@ class UserService {
     const tenantUser = await User.query().select('id', 'owner_id').where('id', userTenantId).first()
     const mainUserId = tenantUser.owner_id || tenantUser.id
 
-    console.log({ tenantUser, mainUserId })
-
     const user = await User.query()
       .select('users.*')
       .select(Database.raw('? = ANY(ARRAY_AGG("_m"."share")) as share', [true]))
