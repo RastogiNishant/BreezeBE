@@ -490,9 +490,10 @@ class NotificationsService {
     return NotificationsService.sendNotes(
       notice,
       (data, lang) => {
-        return `${data.user_name} ${
-          (l.get('prospect.notification.event.cancelled_visit_by_prospect'), lang)
-        }`
+        return `${data.user_name} ${l.get(
+          'prospect.notification.event.cancelled_visit_by_prospect',
+          lang
+        )}`
       },
       (data, lang) => {
         return (

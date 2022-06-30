@@ -459,6 +459,11 @@ class UserService {
    *
    */
   static async getTenantInfo(userTenantId, landlordId) {
+    const tenantUser = await User.query().select('id', 'owner_id').where('id', userTenantId).first()
+    const mainUserId = tenantUser.owner_id || tenantUser.id
+
+    console.log({ tenantUser, mainUserId })
+
     const user = await User.query()
       .select('users.*')
       .select(Database.raw('? = ANY(ARRAY_AGG("_m"."share")) as share', [true]))
@@ -471,7 +476,7 @@ class UserService {
           Database.raw('("_m"."share" = ? or "_m"."status" = ?)', [true, MATCH_STATUS_FINISH])
         )
       })
-      .where({ 'users.id': userTenantId, 'users.role': ROLE_USER })
+      .where({ 'users.id': mainUserId, 'users.role': ROLE_USER })
       .groupBy('users.id')
       .first()
 
