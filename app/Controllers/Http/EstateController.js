@@ -80,7 +80,9 @@ class EstateController {
       if (unverifiedUser) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'}`
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
+            country || 'Germany'
+          }`
         ).toLowerCase()
 
         const txt = `The landlord '${
@@ -446,13 +448,21 @@ class EstateController {
         .fetch()
     } else if (filter == 2) {
       estates = await Estate.query()
-        .where({ user_id: userId })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .with('slots')
-        .whereHas('slots', (estateQuery) => {
-          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+        .select('time_slots.*', 'estates.*')
+        .select(Database.raw('COUNT(visits)::int as visitCount'))
+        .where('estates.user_id', userId)
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .leftJoin('time_slots', function () {
+          this.on('estates.id', 'time_slots.estate_id')
         })
-        .orderBy('id')
+        .where('time_slots.end_at', '<=', currentDay.format(DAY_FORMAT))
+        .leftJoin('visits', function () {
+          this.on('visits.start_date', '>=', 'time_slots.start_at')
+            .on('visits.end_date', '<=', 'time_slots.end_at')
+            .on('visits.estate_id', '=', 'estates.id')
+        })
+        .groupBy('time_slots.id', 'estates.id')
+        .orderBy('time_slots.end_at', 'DESC')
         .fetch()
     } else if (filter == 3) {
       estates = await Estate.query()
