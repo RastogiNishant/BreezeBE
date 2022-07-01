@@ -650,6 +650,7 @@ class MatchController {
         { value: MATCH_STATUS_FINISH, key: 'finalMatches' },
         { value: MATCH_STATUS_COMMIT, key: 'commits' },
         { value: MATCH_STATUS_TOP, key: 'top' },
+        { value: MATCH_STATUS_SHARE, key: 'sharedVisits' },
         { value: MATCH_STATUS_VISIT, key: 'visits' },
         { value: MATCH_STATUS_INVITE, key: 'invites' },
         { value: MATCH_STATUS_KNOCK, key: 'matches' },
@@ -673,7 +674,7 @@ class MatchController {
       const newMatchedEstatesCount = groupedFilteredEstates.length
       const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
-      counts.totalVisits = counts.visits + counts.invites
+      counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
       counts.totalInvite =
         counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
