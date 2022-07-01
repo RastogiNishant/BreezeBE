@@ -2,7 +2,9 @@
 
 const yup = require('yup')
 
-const phoneSchema = yup.string().matches(/^\+[1-9]{1,2}[0-9]{9,11}$/, 'Phone number format is wrong')
+const phoneSchema = yup
+  .string()
+  .matches(/^\+[1-9]{1,2}[0-9]{9,11}$/, 'Phone number format is wrong')
 
 const verificationCodeSchema = yup.string().matches(/^\d{6}$/)
 
@@ -16,7 +18,7 @@ const pagination = yup.object().shape({
   }),
   limit: yup.number().when('return_all', {
     is: 1,
-    otherwise: yup.number().positive().max(20).default(20),
+    otherwise: yup.number().positive().max(1000).default(20),
   }),
 })
 
