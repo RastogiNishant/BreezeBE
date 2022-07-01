@@ -10,6 +10,7 @@ const User = use('App/Models/User')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
 const NotificationsService = use('App/Services/NotificationsService')
+const MailService = use('App/Services/MailService')
 const Logger = use('Logger')
 
 const {
@@ -81,6 +82,7 @@ const {
   MATCH_STATUS_FINISH,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+  DEFAULT_LANG,
 } = require('../constants')
 
 class NoticeService {
@@ -467,8 +469,9 @@ class NoticeService {
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
-      .select('_v.user_id', '_v.estate_id', '_e.address', '_e.cover')
+      .select('_v.user_id', '_v.estate_id', '_e.address', '_e.cover', '_u.email', '_u.lang')
       .innerJoin({ _e: 'estates' }, '_e.id', '_v.estate_id')
+      .innerJoin({ _u: 'users' }, '_u.id', '_v.user_id')
       .where('_v.date', '>=', start.format(DATE_FORMAT))
       .where('_v.date', '<', end.format(DATE_FORMAT))
       .limit(1000)
@@ -502,6 +505,11 @@ class NoticeService {
    */
   static async getProspectVisitIn3H() {
     const result = await NoticeService.getVisitsIn(3)
+
+    result.map((r) => {
+      const lang = r.lang ? r.lang : DEFAULT_LANG
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+    })
 
     const notices = result.map(({ user_id, estate_id, address, cover }) => ({
       user_id,
