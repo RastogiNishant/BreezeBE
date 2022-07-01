@@ -417,7 +417,7 @@ class UserService {
   /**
    * Get tenant for user or create if not exists
    */
-  static async getOrCreateTenant(user, trx=null) {
+  static async getOrCreateTenant(user, trx = null) {
     if (user.role !== ROLE_USER) {
       throw new AppException('Invalid tenant user role')
     }
@@ -459,6 +459,9 @@ class UserService {
    *
    */
   static async getTenantInfo(userTenantId, landlordId) {
+    const tenantUser = await User.query().select('id', 'owner_id').where('id', userTenantId).first()
+    const mainUserId = tenantUser.owner_id || tenantUser.id
+
     const user = await User.query()
       .select('users.*')
       .select(Database.raw('? = ANY(ARRAY_AGG("_m"."share")) as share', [true]))
@@ -471,7 +474,7 @@ class UserService {
           Database.raw('("_m"."share" = ? or "_m"."status" = ?)', [true, MATCH_STATUS_FINISH])
         )
       })
-      .where({ 'users.id': userTenantId, 'users.role': ROLE_USER })
+      .where({ 'users.id': mainUserId, 'users.role': ROLE_USER })
       .groupBy('users.id')
       .first()
 
@@ -486,7 +489,11 @@ class UserService {
     let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
     const tenantQuery = Tenant.query().select('*').where('user_id', user.id)
-    tenantQuery.with('members').with('members.incomes').with('members.incomes.proofs')
+    tenantQuery
+      .with('members')
+      .with('members.incomes')
+      .with('members.incomes.proofs')
+      .with('members.passports')
 
     const tenant = await tenantQuery.first()
     if (!tenant) {
@@ -688,6 +695,10 @@ class UserService {
 
   static async getByIdWithRole(ids, role) {
     return await User.query().whereIn('id', ids).where({ role: role }).pluck('id')
+  }
+
+  static async getById(id) {
+    return await User.query().where('id', id).firstOrFail()
   }
 
   static async getByEmailWithRole(emails, role) {
