@@ -448,35 +448,21 @@ class EstateController {
         .fetch()
     } else if (filter == 2) {
       estates = await Estate.query()
-        .select('estates.*', Database.raw(`json_agg(dslot) as slots`))
-        .where({ user_id: userId })
+        .select('time_slots.*', 'estates.*')
+        .select(Database.raw('COUNT(visits)::int as visitCount'))
+        .where('estates.user_id', userId)
         .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .leftJoin(
-          Database.raw(`(
-            select 
-              ts.id, ts.estate_id, ts.start_at, ts.end_at, count(_v.*) as visits
-            from
-              time_slots ts 
-            left join
-              (select
-                start_date,
-                end_date,
-                estate_id
-              from visits
-              ) as _v on _v.estate_id=ts.estate_id
-              and (_v.start_date >= ts.start_at
-                and _v.end_date <= ts.end_at
-                and ts.end_at < '${currentDay.format(DATE_FORMAT)}')
-            group by
-              ts.estate_id, ts.id
-            ) as dslot`),
-          function () {
-            this.on('dslot.estate_id', 'estates.id')
-          }
-        )
-        .where(Database.raw(`dslot is not null`))
-        .groupBy('estates.id')
-        .orderBy('estates.id')
+        .leftJoin('time_slots', function () {
+          this.on('estates.id', 'time_slots.estate_id')
+        })
+        .where('time_slots.end_at', '<=', currentDay.format(DAY_FORMAT))
+        .leftJoin('visits', function () {
+          this.on('visits.start_date', '>=', 'time_slots.start_at')
+            .on('visits.end_date', '<=', 'time_slots.end_at')
+            .on('visits.estate_id', '=', 'estates.id')
+        })
+        .groupBy('time_slots.id', 'estates.id')
+        .orderBy('time_slots.end_at', 'DESC')
         .fetch()
     } else if (filter == 3) {
       estates = await Estate.query()

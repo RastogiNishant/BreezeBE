@@ -566,8 +566,7 @@ class MatchController {
 
   async getLandlordUpcomingVisits({ auth, response }) {
     const estates = await MatchService.getLandlordUpcomingVisits(auth.user.id)
-    const fields = TENANT_MATCH_FIELDS
-    return response.res(estates.toJSON({ isShort: true, fields }))
+    return response.res(estates.toJSON())
   }
 
   async getMatchesCountsTenant({ auth, response }) {

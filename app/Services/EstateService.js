@@ -447,9 +447,15 @@ class EstateService {
    */
   static async getTimeSlotsByEstate(estate) {
     return TimeSlot.query()
-      .where('estate_id', estate.id)
-      .orderBy([{ column: 'start_at', order: 'ask' }])
-      .limit(100)
+      .select('time_slots.*', Database.raw('COUNT(visits)::int as visitCount'))
+      .where('time_slots.estate_id', estate.id)
+      .leftJoin('visits', function () {
+        this.on('visits.start_date', '>=', 'time_slots.start_at')
+          .on('visits.end_date', '<=', 'time_slots.end_at')
+          .on('visits.estate_id', 'time_slots.estate_id')
+      })
+      .groupBy('time_slots.id')
+      .orderBy([{ column: 'end_at', order: 'desc' }])
       .fetch()
   }
 

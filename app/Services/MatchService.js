@@ -1231,14 +1231,22 @@ class MatchService {
     const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
 
     const query = Estate.query()
-      .select('estates.*')
+      .select('time_slots.*', 'estates.*')
+      .select(Database.raw('COUNT(visits)::int as visitCount'))
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
-      .innerJoin('visits', 'visits.estate_id', 'estates.id')
-      .select('visits.start_date as visit_start_date')
-      .select('visits.end_date as visit_end_date')
-      .where('visits.date', '>', now)
-      .where('visits.date', '<=', tomorrow)
+      .leftJoin('time_slots', function () {
+        this.on('estates.id', 'time_slots.estate_id')
+      })
+      .where('time_slots.start_at', '>=', now)
+      .where('time_slots.end_at', '<=', tomorrow)
+      .leftJoin('visits', function () {
+        this.on('visits.start_date', '>=', 'time_slots.start_at')
+          .on('visits.end_date', '<=', 'time_slots.end_at')
+          .on('visits.estate_id', '=', 'estates.id')
+      })
+      .groupBy('time_slots.id', 'estates.id')
+      .orderBy('time_slots.end_at', 'ASC')
       .fetch()
 
     return query
