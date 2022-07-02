@@ -738,6 +738,26 @@ class EstateService {
       .orderBy('_m.percent', 'DESC')
   }
 
+  static async getTenantTrashEstates(userId) {
+    // Find the estates that user has match, but rented by another user
+    const allActiveMatches = await Match.query()
+      .select('estate_id')
+      .where('user_id', userId)
+      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .fetch()
+
+    const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
+    const trashEstates = await Estate.query()
+      .select('*')
+      .whereIn('estates.id', estateIds)
+      .whereHas('matches', (estateQuery) => {
+        estateQuery.where('status', MATCH_STATUS_FINISH)
+      })
+      .fetch()
+
+    return trashEstates
+  }
+
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
