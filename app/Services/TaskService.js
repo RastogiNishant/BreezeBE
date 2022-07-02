@@ -1,7 +1,16 @@
 'use strict'
-const { ROLE_LANDLORD, ROLE_USER, MATCH_STATUS_FINISH } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  MATCH_STATUS_FINISH,
+  STATUS_ACTIVE,
+  TASK_STATUS_INPROGRESS,
+  STATUS_EXPIRE,
+  STATUS_DELETE,
+} = require('../constants')
+
+const { groupBy, countBy, isArray, maxBy } = require('lodash')
 const { TASK_STATUS_NEW, LETTING_TYPE_LET, TASK_STATUS_DRFAT } = require('../constants')
-const { isArray } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 
 const Task = use('App/Models/Task')
@@ -108,20 +117,45 @@ class TaskService {
     return await query
   }
 
+  static async getEstateAllTasks(user, id, params, page, limit = -1) {
+    let query = Task.query()
+      .select('tasks.*')
+      .where('estate_id', id)
+      .whereNot('tasks.status', TASK_STATUS_DRFAT)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('tasks.estate_id', '_e.id').on('_e.user_id', user.id)
+      })
+
+    const filter = new TaskFilters(params, query)
+    query = filter.process()
+
+    query.orderBy('tasks.updated_at')
+
+    if (limit == -1) {
+      return await query.fetch()
+    } else {
+      return await query.paginate(page, limit)
+    }
+  }
+
   static async getLanlordAllTasks(user, params, page, limit = -1) {
     let query = Estate.query()
-      .with('inside_current_tenant')
+      .with('inside_current_tenant', function (ict) {
+        ict.select(Database.raw('id, firstname, secondname'))
+      })
       .with('outside_current_tenant')
       .select(
-        'estates.*',
-        '_m.status as mStatus',
-        Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant'),
-        Database.raw('COUNT("tasks"."id") as taskCount'),
-        Database.raw('MAX("tasks"."urgency") as urgency')
+        'estates.id',
+        'estates.address',
+        'estates.property_id',
+        'estates.city',
+        'tasks.id as tid',
+        'tasks.urgency as urgency',
+        Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant')
       )
 
     query.leftJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id').on('_m.status', 8)
+      this.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
     })
 
     query.leftJoin('tasks', function () {
@@ -131,32 +165,53 @@ class TaskService {
     })
 
     query.where('estates.user_id', user.id)
+    query.whereNot('estates.status', STATUS_DELETE)
     query.andWhere(function () {
-      this.orWhere('estates.property_type', LETTING_TYPE_LET)
+      this.orWhere('estates.letting_type', LETTING_TYPE_LET)
       this.orWhere(
         'estates.id',
-        '=',
-        Database.raw(`(
+        'IN',
+        Database.raw(`
         SELECT estate_id from matches where status  = ${MATCH_STATUS_FINISH}
-      )`)
+      `)
       )
     })
 
     if (params.estate_id) {
-      query.where('estates.id', params.estate_id)
+      query.whereIn('estates.id', [params.estate_id])
     }
 
     const filter = new TaskFilters(params, query)
     query = filter.process()
-    query.groupBy('estates.id').groupBy('_m.status')
+    query.groupBy('estates.id', '_m.status', 'tasks.id')
     query.orderBy('_m.status')
+
+    let result = null
     if (limit == -1) {
-      return (await query.fetch()).rows
+      result = await query.fetch()
     } else {
-      return await query.paginate(page, limit)
+      result = await query.paginate(page, limit)
     }
 
-    //return await query.with('estate').with('users').fetch().rows
+    result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
+
+    const estate = result.map((r) => {
+      const mostUrgency = maxBy(r, (re) => {
+        return re.urgency
+      })
+
+      return {
+        ...r[0],
+        task: {
+          taskCount: countBy(r, (re) => re.tid !== null).true || 0,
+          mostUrgency: mostUrgency?.urgency || null,
+          mostUrgencyCount: mostUrgency
+            ? countBy(r, (re) => re.urgency === mostUrgency.urgency).true || 0
+            : 0,
+        },
+      }
+    })
+    return estate
   }
 
   static async get(id) {

@@ -10,6 +10,13 @@ const {
   TASK_STATUS_UNRESOLVED_LABEL,
   TASK_STATUS_RESOLVED_LABEL,
   TASK_STATUS_CLOSED_LABEL,
+
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_RESOLVED,
+  TASK_STATUS_CLOSED,
+
   URGENCY_LOW_LABEL,
   URGENCY_NORMAL_LABEL,
   URGENCY_HIGH_LABEL,
@@ -59,7 +66,7 @@ class TaskFilter extends Base {
             .nullable(),
         })
         .nullable(),
-        
+
       tenant_id: yup
         .object()
         .shape({
@@ -91,6 +98,20 @@ class TaskFilter extends Base {
             })
           ),
         })
+        .nullable(),
+      archived_status: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              TASK_STATUS_NEW,
+              TASK_STATUS_INPROGRESS,
+              TASK_STATUS_RESOLVED,
+              TASK_STATUS_UNRESOLVED,
+              TASK_STATUS_CLOSED,
+            ])
+        )
         .nullable(),
     })
 }

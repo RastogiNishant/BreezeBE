@@ -691,31 +691,8 @@ Route.group(() => {
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'TaskController.getTenantTasks')
-})
-  .prefix('api/v1/connect/tasks')
-  .middleware(['auth:jwt'])
-
-Route.group(() => {
-  Route.post('/', 'PredefinedAnswerController.createPredefinedAnswer').middleware(['valid:createPredefinedAnswer'])
-  Route.put('/:id', 'PredefinedAnswerController.updatePredefinedAnswer').middleware(['valid:createPredefinedAnswer,Id'])
-  Route.delete('/:id', 'PredefinedAnswerController.deletePredefinedAnswer').middleware(['valid:Id'])
-})
-  .prefix('api/v1/connect/predefinedAnswer')
-  .middleware(['auth:jwt'])
-
-Route.group(() => {
-  Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware([
-    'valid:Id',
-  ])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll')
-})
-  .prefix('api/v1/connect/predefinedMessage')
-  .middleware(['auth:jwt'])
-  
-Route.group(() => {
-  Route.post('/estate/:id/with-filters', 'TaskController.getLandlordTasks').middleware([
-    'valid:Pagination,EstateId,TaskFilter',
+  Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
+    'valid:Pagination,Id,TaskFilter',
   ])
   Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
     'valid:Pagination,TaskFilter',
@@ -723,6 +700,31 @@ Route.group(() => {
 })
   .prefix('api/v1/connect/tasks')
   .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
+  Route.get('/', 'TaskController.getTenantTasks')
+})
+  .prefix('api/v1/connect/tasks')
+  .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.post('/', 'PredefinedAnswerController.createPredefinedAnswer').middleware([
+    'valid:createPredefinedAnswer',
+  ])
+  Route.put('/:id', 'PredefinedAnswerController.updatePredefinedAnswer').middleware([
+    'valid:createPredefinedAnswer,Id',
+  ])
+  Route.delete('/:id', 'PredefinedAnswerController.deletePredefinedAnswer').middleware(['valid:Id'])
+})
+  .prefix('api/v1/connect/predefinedAnswer')
+  .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
+  Route.get('/', 'Admin/PredefinedMessageController.getAll')
+})
+  .prefix('api/v1/connect/predefinedMessage')
+  .middleware(['auth:jwt'])
 
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])

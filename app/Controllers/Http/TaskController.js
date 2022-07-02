@@ -1,12 +1,5 @@
 'use strict'
-const { isEmpty, isFunction, isNumber, pick, trim, maxBy, countBy } = require('lodash')
-const {
-  TASK_STATUS_INPROGRESS,
-  TASK_STATUS_NEW,
-  TASK_STATUS_CLOSED,
-  TASK_STATUS_RESOLVED,
-  TASK_STATUS_UNRESOLVED,
-} = require('../../constants')
+const { ROLE_LANDLORD } = require('../../constants')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -50,55 +43,59 @@ class TaskController {
       throw new HttpException(e.message, 500)
     }
   }
+
+  async getEstateTasks({ request, auth, response }) {
+    const params = request.post()
+    const { id } = request.all()
+    let estate = await EstateService.getEstateWithTenant(id, auth.user.id)
+
+    const estateAllTasks = await TaskService.getEstateAllTasks(
+      auth.user,
+      id,
+      params,
+      params.page || -1,
+      params.limit || -1
+    )
+
+    let archivedCount = null
+    if (params.archived_status) {
+      archivedCount = await TaskService.count({
+        estate_id: id,
+        status: params.archived_status,
+        role: ROLE_LANDLORD,
+      })
+    }
+
+    estate = {
+      ...estate.toJSON(),
+      tasks: estateAllTasks,
+      archivedCount: !params.archived_status
+        ? undefined
+        : archivedCount && archivedCount.length
+        ? archivedCount[0].count
+        : 0,
+    }
+    response.res(estate)
+  }
+
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
-    const page = params.page
-    const limit = params.limit
 
     try {
-      const totalCount = await EstateService.getTotalLetCount(auth.user.id)
+      const countResult = await EstateService.getTotalLetCount(auth.user.id)
 
-      let estates = await TaskService.getLanlordAllTasks(auth.user, params, page, limit || -1)
-      console.log('Estates total count', totalCount)
-      // const data = estates.toJSON().data.map(estate => {
-      //   const active_tasks = estate.tasks.filter( task => task.status === TASK_STATUS_INPROGRESS || task.status === TASK_STATUS_NEW )
-      //   const urgentStatus = maxBy(active_tasks, function(task){
-      //     return task.urgency
-      //   })
-
-      //   let urgentCount = 0
-
-      //   if( urgentStatus ){
-      //     urgentCount = countBy(active_tasks, function(task){
-      //       return task.urgency === urgentStatus.urgency
-      //     })
-      //   }
-
-      //   // if( !params.estate_id ) {
-      //   //   delete estate.tasks
-      //   // }
-
-      //   return {
-      //     ...estate,
-      //     taskSummary: {
-      //       activeCount: active_tasks.length || 0,
-      //       urgentCount: urgentCount.true || 0,
-      //       status: urgentStatus.urgency
-      //     }
-      //   }
-      // })
-
-      estates = {
-        ...estates.toJSON(),
-        //data: data,
+      let estate = await TaskService.getLanlordAllTasks(
+        auth.user,
+        params,
+        params.page || -1,
+        params.limit || -1
+      )
+      const result = {
+        total: countResult[0].count,
+        estates: estate,
       }
 
-      // if( params.estate_id ){
-      //   const archieveTasksCount = await TaskService.count({estate_id:params.estate_id, status:[TASK_STATUS_CLOSED, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED], role:auth.user.role})
-      //   estates.data[0].taskSummary.archivedTasksCount = archieveTasksCount[0].count
-      // }
-
-      response.res(estates)
+      response.res(result)
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
