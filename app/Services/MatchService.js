@@ -1086,12 +1086,14 @@ class MatchService {
     userId,
     { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
   ) {
+    const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
+
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.status', defaultWhereIn)
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
@@ -1269,7 +1271,7 @@ class MatchService {
       this.getTenantCommitsCount(userId, estateIds),
       this.getTenantTopsCount(userId, estateIds),
       this.getTenantBuddiesCount(userId, estateIds),
-      this.getTenantFinalMatchesCount(userId, estateIds),
+      this.getTenantFinalMatchesCount(userId),
     ])
     const [{ count: likesCount }] = datas[0]
     const [{ count: dislikesCount }] = datas[1]
@@ -1418,10 +1420,9 @@ class MatchService {
     return data
   }
 
-  static async getTenantFinalMatchesCount(userId, estateIds) {
+  static async getTenantFinalMatchesCount(userId) {
     const data = await Database.table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_FINISH })
-      .whereIn('estate_id', estateIds)
       .count('*')
     return data
   }
