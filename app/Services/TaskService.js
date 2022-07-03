@@ -162,6 +162,9 @@ class TaskService {
       this.on('estates.id', 'tasks.estate_id').on(
         Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
       )
+      if (!params.status) {
+        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      }
     })
 
     query.where('estates.user_id', user.id)
