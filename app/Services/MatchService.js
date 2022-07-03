@@ -1152,9 +1152,11 @@ class MatchService {
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
     } else if (visit) {
-      query
-        .where('_m.status', MATCH_STATUS_VISIT)
-        .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
+      query.where((query) => {
+        query
+          .where('_m.status', MATCH_STATUS_VISIT)
+          .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
+      })
     } else if (share) {
       query
         .where({ '_m.share': true })
@@ -1408,11 +1410,20 @@ class MatchService {
 
   static async getTenantVisitsCount(userId, estateIds) {
     const data = await Database.table('matches')
-      .where({ user_id: userId })
-      .where('status', MATCH_STATUS_VISIT)
-      .orWhere({ status: MATCH_STATUS_SHARE, share: true })
-      .whereIn('estate_id', estateIds)
+      .where((query) => {
+        query
+          .where('user_id', userId)
+          .where('status', MATCH_STATUS_VISIT)
+          .whereIn('estate_id', estateIds)
+      })
+      .orWhere((query) => {
+        query
+          .where('user_id', userId)
+          .where({ status: MATCH_STATUS_SHARE, share: true })
+          .whereIn('estate_id', estateIds)
+      })
       .count('*')
+
     return data
   }
 
@@ -2228,6 +2239,38 @@ class MatchService {
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       ).transacting(trx)
     }
+  }
+
+  static async handleDeletedTimeSlotVisits({ estate_id, start_at, end_at }, trx) {
+    const visits = await Visit.query()
+      .where('estate_id', estate_id)
+      .where('start_date', '>=', start_at)
+      .where('end_date', '<=', end_at)
+      .fetch()
+
+    if (isEmpty(visits)) {
+      return
+    }
+
+    const userIds = visits.rows.map(({ user_id }) => user_id)
+
+    for (const visit of visits.rows) {
+      await Visit.query()
+        .where('start_date', visit.start_date)
+        .where('end_date', visit.end_date)
+        .where('user_id', visit.user_id)
+        .where('estate_id', visit.estate_id)
+        .delete()
+        .transacting(trx)
+    }
+
+    await Database.table('matches')
+      .whereIn('user_id', userIds)
+      .where({ estate_id })
+      .update({ status: MATCH_STATUS_INVITE })
+      .transacting(trx)
+
+    return userIds
   }
 }
 

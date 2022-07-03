@@ -998,7 +998,6 @@ class EstateService {
       // if slot_length is null, so show only 1 slot for date range
       const step = s.slot_length ? s.slot_length * 60 : s.end_at - s.start_at
       const items = range(s.start_at, s.end_at, step)
-      console.log({ items })
       items.forEach((i) => {
         const items = [...get(result, day, []), { from: i, to: i + step }]
         result = { ...result, [day]: items }
