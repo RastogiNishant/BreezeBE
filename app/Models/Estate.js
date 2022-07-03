@@ -277,6 +277,9 @@ class Estate extends Model {
     return this.belongsTo('App/Models/User', 'user_id', 'id')
   }
 
+  inside_current_tenant() {
+    return this.belongsTo('App/Models/User', 'user_id', 'id')
+  }  
   /**
    *
    */
@@ -289,6 +292,10 @@ class Estate extends Model {
    */
   rooms() {
     return this.hasMany('App/Models/Room')
+  }
+
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
   }
 
   /**
@@ -323,7 +330,8 @@ class Estate extends Model {
     return this.hasMany('App/Models/TimeSlot').orderBy('end_at')
   }
 
-  current_tenant() {
+
+  outside_current_tenant() {
     return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
   }
 

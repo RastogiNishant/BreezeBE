@@ -854,6 +854,22 @@ class UserService {
       .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
       .first()
   }
+
+  static async getTenants(id) {
+    return (
+      await User.query()
+        .select('users.id', 'users.avatar')
+        .innerJoin({ _m: 'matches' }, function () {
+          this.on('_m.user_id', 'users.id')
+          this.on('_m.status', MATCH_STATUS_FINISH)
+        })
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', '_m.estate_id').on('_e.user_id', id)
+        })
+        .groupBy('users.id')
+        .fetch()
+    ).rows
+  }
 }
 
 module.exports = UserService

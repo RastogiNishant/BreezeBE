@@ -615,7 +615,6 @@ const constants = {
     'lte',
   ],
 
-  ADULT_MIN_AGE: 18,
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
   PREDEFINED_MSG_OPEN_ENDED: 3,
@@ -626,6 +625,11 @@ const constants = {
   URGENCY_NORMAL: 2,
   URGENCY_HIGH: 3,
   URGENCY_SUPER: 4,
+
+  URGENCY_LOW_LABEL: 'Low',
+  URGENCY_NORMAL_LABEL: 'Normal',
+  URGENCY_HIGH_LABEL: 'High',
+  URGENCY_SUPER_LABEL: 'Urgent',
 
   TASK_STATUS_NEW: 1,
   TASK_STATUS_INPROGRESS: 2,
@@ -639,6 +643,15 @@ const constants = {
     secondname: 'Monster',
     avatar: '/img/brezeLogo.png',
   },
+  TASK_STATUS_DRFAT: 100,
+
+  TASK_STATUS_NEW_LABEL: 'New',
+  TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
+  TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',
+  TASK_STATUS_RESOLVED_LABEL: 'Resolved',
+  TASK_STATUS_CLOSED_LABEL: 'Closed',
+
+  ADULT_MIN_AGE: 18,
 }
 
 module.exports = constants

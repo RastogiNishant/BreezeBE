@@ -159,6 +159,20 @@ class EstateService {
     return await query.first()
   }
 
+  static async getEstateWithTenant(id, user_id) {
+    const query = Estate.query()
+      .select('estates.*', '_u.avatar')
+      .innerJoin({ _m: 'matches'}, function () {
+        this.on('_m.estate_id', 'estates.id')
+        this.on('_m.status', MATCH_STATUS_FINISH)
+      })
+      .innerJoin({ _u: 'users' }, '_m.user_id', '_u.id')
+      .where( 'estates.id', id)
+      .whereNotIn('estates.status', [STATUS_DELETE])
+    query.where('estates.user_id', user_id)
+    return await query.firstOrFail()
+  }
+
   static async saveEnergyProof(request) {
     const imageMimes = [
       FileBucket.IMAGE_JPG,
@@ -272,6 +286,7 @@ class EstateService {
       })
 
     const Filter = new EstateFilters(params, query)
+    console.log('Filter , filter')
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }
@@ -1076,6 +1091,25 @@ class EstateService {
     ])
     return estateCount
   }
-}
 
+  static async hasPermission({ id, user_id }) {
+    return await Estate.findByOrFail({ id, user_id: user_id })
+  }
+
+  static async getTotalLetCount(user_id) {
+    return await Estate.query()
+      .count('estates.*')
+      .where('estates.user_id', user_id)
+      .andWhere(function () {
+        this.orWhere('estates.property_type', LETTING_TYPE_LET)
+        this.orWhere(
+          'estates.id',
+          '=',
+          Database.raw(`(
+        SELECT estate_id from matches where status  = ${MATCH_STATUS_FINISH}
+      )`)
+        )
+      })
+  }
+}
 module.exports = EstateService
