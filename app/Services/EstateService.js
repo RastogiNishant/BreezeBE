@@ -752,7 +752,6 @@ class EstateService {
     // Find the estates that user has match, but rented by another user
     // Find the estates that user shared the info first, and then cancelled the share
 
-    // Find the estates that user has match, but rented by another user
     const allActiveMatches = await Match.query()
       .select('estate_id')
       .where('user_id', userId)
@@ -774,31 +773,6 @@ class EstateService {
           .andWhere('matches.user_id', userId)
       })
       .fetch()
-
-    // const rentedTrashEstates = await Estate.query()
-    //   .select('*')
-    //   .whereIn('estates.id', estateIds)
-    //   .whereHas('matches', (estateQuery) => {
-    //     estateQuery.where('status', MATCH_STATUS_FINISH)
-    //   })
-    //   .fetch()
-
-    // const unsharedTrashMatches = allActiveMatches.rows.filter(
-    //   ({ status, share }) =>
-    //     [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT].includes(status) && !share
-    // )
-
-    // const unsharedMatchesEstateIds = unsharedTrashMatches.map(({ estate_id }) => estate_id)
-
-    // const unsharedTrashEstates = await Estate.query()
-    //   .select('*')
-    //   .whereIn('estates.id', unsharedMatchesEstateIds)
-    //   .doesntHave('matches', (estateQuery) => {
-    //     estateQuery.where('status', MATCH_STATUS_FINISH)
-    //   })
-    //   .fetch()
-
-    // return [...rentedTrashEstates, ...unsharedTrashEstates]
     return trashedEstates
   }
 
