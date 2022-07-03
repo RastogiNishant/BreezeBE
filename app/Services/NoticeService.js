@@ -465,7 +465,7 @@ class NoticeService {
    * Get visits in {time}
    */
   static async getVisitsIn(hours) {
-    const start = moment().startOf('minute').add(hours, 'hours')
+    const start = moment().startOf('minute').add(hours, 'hours').add(2, hours) // 2 hours for the German timezone
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
@@ -475,7 +475,6 @@ class NoticeService {
       .where('_v.date', '>=', start.format(DATE_FORMAT))
       .where('_v.date', '<', end.format(DATE_FORMAT))
       .limit(1000)
-    // .limit(1)
   }
 
   static async inviteTenantInToVisit(estateId, tenantId) {
@@ -545,7 +544,7 @@ class NoticeService {
   static async getLandlordVisitsIn(hoursOffset) {
     const minDate = moment().startOf('day')
     const maxDate = minDate.clone().add(1, 'day')
-    const start = moment().startOf('minute').add(hoursOffset, 'hours')
+    const start = moment().startOf('minute').add(hoursOffset, 'hours').add(2, hours) // 2 hours for the German timezone
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     const withQuery = Database.table({ _v: 'visits' })

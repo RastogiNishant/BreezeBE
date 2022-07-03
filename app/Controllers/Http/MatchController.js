@@ -333,7 +333,6 @@ class MatchController {
   async updateVisitTimeslotLandlord({ request, auth, response }) {
     const { estate_id, status, delay = null, user_id } = request.all()
     const estate = await this.getOwnEstate(estate_id, auth.user.id)
-    console.log({ user_id })
     if (!estate) {
       throw HttpException('Invalid estate', 404)
     }
@@ -462,16 +461,24 @@ class MatchController {
     if (finalMatch) {
       throw new HttpException('There is a final match for that property', 400)
     }
-    await MatchService.requestFinalConfirm(estate_id, user_id)
-    logEvent(
-      request,
-      LOG_TYPE_FINAL_MATCH_REQUEST,
-      auth.user.id,
-      { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
-      false
-    )
-    Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
-    response.res(true)
+    const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
+    if (isValidMatch) {
+      await MatchService.requestFinalConfirm(estate_id, user_id)
+      logEvent(
+        request,
+        LOG_TYPE_FINAL_MATCH_REQUEST,
+        auth.user.id,
+        { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
+        false
+      )
+      Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
+      response.res(true)
+    } else {
+      throw new HttpException(
+        'This prospect has not shared the data. Match is not valid for final match request',
+        400
+      )
+    }
   }
 
   async tenantCancelCommit({ request, auth, response }) {
@@ -563,7 +570,6 @@ class MatchController {
         lastPage: 1,
       }
       estates.total = estates.data.length
-      console.log({ data: estates.data })
     }
 
     return response.res({

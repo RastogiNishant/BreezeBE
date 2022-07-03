@@ -35,6 +35,9 @@ const {
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -760,7 +763,10 @@ class EstateService {
   }
 
   static async getTenantTrashEstates(userId) {
+    // 2 cases for trash estates
     // Find the estates that user has match, but rented by another user
+    // Find the estates that user shared the info first, and then cancelled the share
+
     const allActiveMatches = await Match.query()
       .select('estate_id')
       .where('user_id', userId)
@@ -768,15 +774,21 @@ class EstateService {
       .fetch()
 
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
-    const trashEstates = await Estate.query()
+
+    const trashedEstates = await Estate.query()
       .select('*')
-      .whereIn('estates.id', estateIds)
       .whereHas('matches', (estateQuery) => {
-        estateQuery.where('status', MATCH_STATUS_FINISH)
+        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      })
+      .orWhereHas('matches', (estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+          .andWhere('matches.share', false)
+          .andWhere('matches.user_id', userId)
       })
       .fetch()
-
-    return trashEstates
+    return trashedEstates
   }
 
   /**
@@ -1001,7 +1013,6 @@ class EstateService {
       // if slot_length is null, so show only 1 slot for date range
       const step = s.slot_length ? s.slot_length * 60 : s.end_at - s.start_at
       const items = range(s.start_at, s.end_at, step)
-      console.log({ items })
       items.forEach((i) => {
         const items = [...get(result, day, []), { from: i, to: i + step }]
         result = { ...result, [day]: items }

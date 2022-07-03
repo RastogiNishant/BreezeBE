@@ -16,9 +16,9 @@ const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
+const NoticeService = use('App/Services/NoticeService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
-const Drive = use('Drive')
 const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
@@ -712,9 +712,32 @@ class EstateController {
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
     }
-    await slot.delete()
 
-    response.res(true)
+    // If slot's end date is passed, we only delete the slot
+    // But if slot's end date is not passed, we delete the slot and all the visits
+    if (slot.end_at < new Date()) {
+      await slot.delete()
+      response.res(true)
+    } else {
+      const trx = await Database.beginTransaction()
+      try {
+        const estateId = slot.estate_id
+        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
+        await slot.delete(trx)
+
+        await trx.commit()
+
+        const notificationPromises = userIds.map((userId) =>
+          NoticeService.cancelVisit(estateId, userId)
+        )
+        await Promise.all(notificationPromises)
+        response.res(true)
+      } catch (e) {
+        Logger.error(e)
+        await trx.rollback()
+        throw new HttpException(e.message, 400)
+      }
+    }
   }
 
   /**
