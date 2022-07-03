@@ -872,6 +872,7 @@ class MatchService {
       .where({
         user_id: tenantId,
         estate_id: estateId,
+        share: true,
       })
       .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
   }
@@ -940,6 +941,13 @@ class MatchService {
         status: MATCH_STATUS_FINISH,
       })
       .first()
+  }
+
+  static async checkMatchIsValidForFinalRequest(estateId, tenantId) {
+    const match = Database.table('matches')
+      .where({ status: MATCH_STATUS_TOP, share: true, user_id: tenantId, estate_id: estateId })
+      .first()
+    return match
   }
 
   static async requestFinalConfirm(estateId, tenantId) {
