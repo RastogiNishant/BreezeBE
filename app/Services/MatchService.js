@@ -10,7 +10,9 @@ const User = use('App/Models/User')
 const Visit = use('App/Models/Visit')
 const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
+const UserService = use('App/Services/UserService')
 const EstateService = use('App/Services/EstateService')
+const MailService = use('App/Services/MailService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
@@ -53,10 +55,11 @@ const {
   MINIMUM_SHOW_PERIOD,
   MEMBER_FILE_TYPE_PASSPORT,
   TIMESLOT_STATUS_CONFIRM,
-  ADULT_MIN_AGE,
   MAX_SEARCH_ITEMS,
+  DEFAULT_LANG,
 } = require('../constants')
 const { logger } = require('../../config/app')
+const HttpException = require('../Exceptions/HttpException')
 
 const MATCH_PERCENT_PASS = 40
 
@@ -628,6 +631,20 @@ class MatchService {
       estate_id: estateId,
     })
     await NoticeService.userInvite(estateId, userId)
+    MatchService.inviteEmailToProspect({ estateId, userId })
+  }
+
+  static async inviteEmailToProspect({ estateId, userId }) {
+    const estate = await EstateService.getById(estateId)
+    const tenant = await UserService.getById(userId)
+
+    const lang = tenant.lang ? tenant.lang : DEFAULT_LANG
+
+    await MailService.inviteEmailToProspect({
+      email: tenant.email,
+      address: estate.address,
+      lang: lang,
+    })
   }
 
   /**
@@ -966,7 +983,7 @@ class MatchService {
   /**
    * Tenant confirmed final request
    */
-  static async finalConfirm(estateId, tenantId) {
+  static async finalConfirm(estateId, tenantId, trx) {
     await Database.table('matches')
       .where({
         user_id: tenantId,
@@ -974,6 +991,13 @@ class MatchService {
         status: MATCH_STATUS_COMMIT,
       })
       .update({ status: MATCH_STATUS_FINISH })
+      .transacting(trx)
+
+    // Make estate status DRAFT to hide from tenants' matches list
+    await Database.table('estates')
+      .where({ id: estateId })
+      .update({ status: STATUS_DRAFT })
+      .transacting(trx)
 
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
@@ -1062,12 +1086,14 @@ class MatchService {
     userId,
     { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
   ) {
+    const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
+
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', defaultWhereIn)
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
@@ -1079,7 +1105,7 @@ class MatchService {
       // Buddy show knocked matches with buddy only for active estate
       query
         .clearWhere()
-        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
     } else if (like) {
       // All liked estates
@@ -1180,7 +1206,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     query.innerJoin({ _m: 'matches' }, function () {
       this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
@@ -1213,14 +1239,22 @@ class MatchService {
     const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
 
     const query = Estate.query()
-      .select('estates.*')
+      .select('time_slots.*', 'estates.*')
+      .select(Database.raw('COUNT(visits)::int as visitCount'))
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
-      .innerJoin('visits', 'visits.estate_id', 'estates.id')
-      .select('visits.start_date as visit_start_date')
-      .select('visits.end_date as visit_end_date')
-      .where('visits.date', '>', now)
-      .where('visits.date', '<=', tomorrow)
+      .leftJoin('time_slots', function () {
+        this.on('estates.id', 'time_slots.estate_id')
+      })
+      .where('time_slots.start_at', '>=', now)
+      .where('time_slots.end_at', '<=', tomorrow)
+      .leftJoin('visits', function () {
+        this.on('visits.start_date', '>=', 'time_slots.start_at')
+          .on('visits.end_date', '<=', 'time_slots.end_at')
+          .on('visits.estate_id', '=', 'estates.id')
+      })
+      .groupBy('time_slots.id', 'estates.id')
+      .orderBy('time_slots.end_at', 'ASC')
       .fetch()
 
     return query
@@ -1229,7 +1263,7 @@ class MatchService {
   static async getMatchesCountsTenant(userId) {
     const estates = await Estate.query()
       .select('status', 'id')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     const estateIds = estatesJson.map(function (item) {
@@ -1245,7 +1279,7 @@ class MatchService {
       this.getTenantCommitsCount(userId, estateIds),
       this.getTenantTopsCount(userId, estateIds),
       this.getTenantBuddiesCount(userId, estateIds),
-      this.getTenantFinalMatchesCount(userId, estateIds),
+      this.getTenantFinalMatchesCount(userId),
     ])
     const [{ count: likesCount }] = datas[0]
     const [{ count: dislikesCount }] = datas[1]
@@ -1273,7 +1307,7 @@ class MatchService {
   static async getMatchesStageCountsTenant(filter, userId) {
     const estates = await Estate.query()
       .select('status', 'id')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     const estateIds = estatesJson.map(function (item) {
@@ -1310,7 +1344,7 @@ class MatchService {
 
   static async getTenantLikesCount(userId) {
     const estates = await Estate.query()
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .select('estates.*')
       .innerJoin({ _l: 'likes' }, function () {
         this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
@@ -1327,7 +1361,7 @@ class MatchService {
 
   static async getTenantDislikesCount(userId) {
     const estates = await Estate.query()
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .select('estates.*')
       .innerJoin({ _l: 'dislikes' }, function () {
         this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
@@ -1339,7 +1373,10 @@ class MatchService {
         this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
       })
       .fetch()
-    return [{ count: estates.rows.length }]
+
+    const trashEstates = await EstateService.getTenantTrashEstates(userId)
+
+    return [{ count: estates.rows.length + trashEstates.rows.length }]
   }
 
   static async getTenantKnocksCount(userId, estateIds) {
@@ -1391,10 +1428,9 @@ class MatchService {
     return data
   }
 
-  static async getTenantFinalMatchesCount(userId, estateIds) {
+  static async getTenantFinalMatchesCount(userId) {
     const data = await Database.table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_FINISH })
-      .whereIn('estate_id', estateIds)
       .count('*')
     return data
   }
@@ -1413,7 +1449,7 @@ class MatchService {
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     query.innerJoin({ _m: 'matches' }, function () {
       this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
@@ -1672,6 +1708,7 @@ class MatchService {
       '_v.date',
       '_v.start_date AS visit_start_date',
       '_v.end_date AS visit_end_date',
+      '_v.created_at AS visit_confirmation_date',
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',

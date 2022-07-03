@@ -447,9 +447,15 @@ class EstateService {
    */
   static async getTimeSlotsByEstate(estate) {
     return TimeSlot.query()
-      .where('estate_id', estate.id)
-      .orderBy([{ column: 'start_at', order: 'ask' }])
-      .limit(100)
+      .select('time_slots.*', Database.raw('COUNT(visits)::int as visitCount'))
+      .where('time_slots.estate_id', estate.id)
+      .leftJoin('visits', function () {
+        this.on('visits.start_date', '>=', 'time_slots.start_at')
+          .on('visits.end_date', '<=', 'time_slots.end_at')
+          .on('visits.estate_id', 'time_slots.estate_id')
+      })
+      .groupBy('time_slots.id')
+      .orderBy([{ column: 'end_at', order: 'desc' }])
       .fetch()
   }
 
@@ -736,6 +742,26 @@ class EstateService {
       })
       .with('files')
       .orderBy('_m.percent', 'DESC')
+  }
+
+  static async getTenantTrashEstates(userId) {
+    // Find the estates that user has match, but rented by another user
+    const allActiveMatches = await Match.query()
+      .select('estate_id')
+      .where('user_id', userId)
+      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .fetch()
+
+    const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
+    const trashEstates = await Estate.query()
+      .select('*')
+      .whereIn('estates.id', estateIds)
+      .whereHas('matches', (estateQuery) => {
+        estateQuery.where('status', MATCH_STATUS_FINISH)
+      })
+      .fetch()
+
+    return trashEstates
   }
 
   /**

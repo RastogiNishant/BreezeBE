@@ -496,15 +496,34 @@ class MatchController {
     const userId = auth.user.id
     const { estate_id } = request.all()
     const estate = await this.getActiveEstate(estate_id)
-    await MatchService.finalConfirm(estate_id, userId)
-    let contact = await estate.getContacts()
-    if (contact) {
-      contact = contact.toJSON()
-      contact.avatar = File.getPublicUrl(contact.avatar)
+
+    const trx = await Database.beginTransaction()
+
+    try {
+      await MatchService.finalConfirm(estate_id, userId, trx)
+      await trx.commit()
+      let contact = await estate.getContacts()
+      if (contact) {
+        contact = contact.toJSON()
+        contact.avatar = File.getPublicUrl(contact.avatar)
+      }
+      logEvent(
+        request,
+        LOG_TYPE_FINAL_MATCH_APPROVAL,
+        userId,
+        { estate_id, role: ROLE_USER },
+        false
+      )
+      Event.fire('mautic:syncContact', userId, { finalmatchapproval_count: 1 })
+      response.res({ estate, contact })
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
     }
-    logEvent(request, LOG_TYPE_FINAL_MATCH_APPROVAL, userId, { estate_id, role: ROLE_USER }, false)
-    Event.fire('mautic:syncContact', userId, { finalmatchapproval_count: 1 })
-    response.res({ estate, contact })
   }
 
   /**
@@ -525,15 +544,30 @@ class MatchController {
       currentTab = activeFilters[0]
     }
 
-    const estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).paginate(
-      page,
-      limit
+    const isDislikeFilter = filters.dislike
+
+    let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).paginate(
+      isDislikeFilter ? 1 : page,
+      isDislikeFilter ? 9999 : limit
     )
 
-    const fields = TENANT_MATCH_FIELDS
+    const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
+    estates = estates.toJSON(params)
+
+    if (filters?.dislike) {
+      const trashEstates = await EstateService.getTenantTrashEstates(user.id)
+      estates = {
+        data: estates.data.concat(trashEstates.toJSON(params)),
+        perPage: 9999,
+        page: 1,
+        lastPage: 1,
+      }
+      estates.total = estates.data.length
+      console.log({ data: estates.data })
+    }
 
     return response.res({
-      ...estates.toJSON({ isShort: true, fields }),
+      ...estates,
       tab: currentTab,
     })
   }
@@ -566,8 +600,7 @@ class MatchController {
 
   async getLandlordUpcomingVisits({ auth, response }) {
     const estates = await MatchService.getLandlordUpcomingVisits(auth.user.id)
-    const fields = TENANT_MATCH_FIELDS
-    return response.res(estates.toJSON({ isShort: true, fields }))
+    return response.res(estates.toJSON())
   }
 
   async getMatchesCountsTenant({ auth, response }) {
@@ -647,9 +680,9 @@ class MatchController {
       }
 
       const filters = [
-        { value: MATCH_STATUS_FINISH, key: 'finalMatches' },
         { value: MATCH_STATUS_COMMIT, key: 'commits' },
         { value: MATCH_STATUS_TOP, key: 'top' },
+        { value: MATCH_STATUS_SHARE, key: 'sharedVisits' },
         { value: MATCH_STATUS_VISIT, key: 'visits' },
         { value: MATCH_STATUS_INVITE, key: 'invites' },
         { value: MATCH_STATUS_KNOCK, key: 'matches' },
@@ -673,7 +706,7 @@ class MatchController {
       const newMatchedEstatesCount = groupedFilteredEstates.length
       const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
-      counts.totalVisits = counts.visits + counts.invites
+      counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
       counts.totalInvite =
         counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
@@ -693,6 +726,15 @@ class MatchController {
         .count()
 
       counts.showed = showed[0].count
+
+      const finalMatches = await Estate.query()
+        .where({ user_id: user.id })
+        .whereHas('matches', (query) => {
+          query.where('status', MATCH_STATUS_FINISH)
+        })
+        .count()
+
+      counts.finalMatches = finalMatches[0].count
 
       return response.res(counts)
     } catch (e) {
@@ -766,6 +808,7 @@ class MatchController {
       'visit_status',
       'visit_start_date',
       'visit_end_date',
+      'visit_confirmation_date',
       'delay',
       'u_status',
       'updated_at',
