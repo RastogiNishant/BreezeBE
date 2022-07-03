@@ -35,6 +35,9 @@ const {
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -745,6 +748,10 @@ class EstateService {
   }
 
   static async getTenantTrashEstates(userId) {
+    // 2 cases for trash estates
+    // Find the estates that user has match, but rented by another user
+    // Find the estates that user shared the info first, and then cancelled the share
+
     // Find the estates that user has match, but rented by another user
     const allActiveMatches = await Match.query()
       .select('estate_id')
@@ -753,15 +760,46 @@ class EstateService {
       .fetch()
 
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
-    const trashEstates = await Estate.query()
+
+    const trashedEstates = await Estate.query()
       .select('*')
-      .whereIn('estates.id', estateIds)
       .whereHas('matches', (estateQuery) => {
-        estateQuery.where('status', MATCH_STATUS_FINISH)
+        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      })
+      .orWhereHas('matches', (estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+          .andWhere('matches.share', false)
+          .andWhere('matches.user_id', userId)
       })
       .fetch()
 
-    return trashEstates
+    // const rentedTrashEstates = await Estate.query()
+    //   .select('*')
+    //   .whereIn('estates.id', estateIds)
+    //   .whereHas('matches', (estateQuery) => {
+    //     estateQuery.where('status', MATCH_STATUS_FINISH)
+    //   })
+    //   .fetch()
+
+    // const unsharedTrashMatches = allActiveMatches.rows.filter(
+    //   ({ status, share }) =>
+    //     [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT].includes(status) && !share
+    // )
+
+    // const unsharedMatchesEstateIds = unsharedTrashMatches.map(({ estate_id }) => estate_id)
+
+    // const unsharedTrashEstates = await Estate.query()
+    //   .select('*')
+    //   .whereIn('estates.id', unsharedMatchesEstateIds)
+    //   .doesntHave('matches', (estateQuery) => {
+    //     estateQuery.where('status', MATCH_STATUS_FINISH)
+    //   })
+    //   .fetch()
+
+    // return [...rentedTrashEstates, ...unsharedTrashEstates]
+    return trashedEstates
   }
 
   /**

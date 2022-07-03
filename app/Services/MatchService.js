@@ -1144,7 +1144,9 @@ class MatchService {
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
     } else if (visit) {
-      query.whereIn('_m.status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
+      query
+        .where('_m.status', MATCH_STATUS_VISIT)
+        .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
     } else if (share) {
       query
         .where({ '_m.share': true })
@@ -1155,7 +1157,7 @@ class MatchService {
         ])
     } else if (top) {
       query
-        .where({ '_m.status': MATCH_STATUS_TOP })
+        .where({ '_m.status': MATCH_STATUS_TOP, share: true })
         .clearOrder()
         .orderBy([
           { column: '_m.order_tenant', order: 'ASK' },
@@ -1166,6 +1168,7 @@ class MatchService {
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
         .whereIn('_m.status', [MATCH_STATUS_COMMIT])
+        .where('_m.share', true)
     } else if (final) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
@@ -1398,7 +1401,8 @@ class MatchService {
   static async getTenantVisitsCount(userId, estateIds) {
     const data = await Database.table('matches')
       .where({ user_id: userId })
-      .whereIn('status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
+      .where('status', MATCH_STATUS_VISIT)
+      .orWhere({ status: MATCH_STATUS_SHARE, share: true })
       .whereIn('estate_id', estateIds)
       .count('*')
     return data
@@ -1414,7 +1418,7 @@ class MatchService {
 
   static async getTenantTopsCount(userId, estateIds) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_TOP })
+      .where({ user_id: userId, status: MATCH_STATUS_TOP, share: true })
       .whereIn('estate_id', estateIds)
       .count('*')
     return data
@@ -1422,7 +1426,7 @@ class MatchService {
 
   static async getTenantCommitsCount(userId, estateIds) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_COMMIT })
+      .where({ user_id: userId, status: MATCH_STATUS_COMMIT, share: true })
       .whereIn('estate_id', estateIds)
       .count('*')
     return data
