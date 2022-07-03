@@ -22,7 +22,7 @@ class Task extends Model {
   }
 
   static get Serializer() {
-    return 'App/Serializers/RoomSerializer'
+    return 'App/Serializers/TaskSerializer'
   }
 
   estate() {
