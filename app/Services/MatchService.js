@@ -1114,7 +1114,7 @@ class MatchService {
       query
         .clearWhere()
         .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .where({ '_m.status': MATCH_STATUS_NEW, '_m.buddy': true })
+        .where({ '_m.buddy': true })
     } else if (like) {
       // All liked estates
       query
