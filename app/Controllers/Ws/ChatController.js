@@ -119,9 +119,7 @@ class ChatController extends BaseController {
 
   onMessage(message) {
     //save to db
-    if (this.topic) {
-      this.topic.broadcastToAll('message', { message, userId: this.auth.user.id })
-    }
+    super.onMessage(message)
   }
 
   _nextQuestion(id, answer) {

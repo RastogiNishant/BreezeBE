@@ -9,7 +9,7 @@ class BaseController {
   constructor({ socket, auth, request, channel }) {
     this.socket = socket
     this.request = request
-    this.topic = Ws.getChannel(`${channel}:*`).topic(this.socket.topic)
+    this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
   }
   //this will broadcast to all including sender
@@ -85,6 +85,8 @@ class BaseController {
       this.broadcast(message, 'message')
     }
   }
+
+  onMarkLastRead() {}
 
   async _saveToChats(message, sender, estateId, taskId = null) {
     let data = {}

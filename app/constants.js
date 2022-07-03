@@ -632,6 +632,13 @@ const constants = {
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
   TASK_STATUS_CLOSED: 5,
+
+  BREEZE_BOT_USER: {
+    id: 0,
+    firstname: 'Breeze',
+    secondname: 'Monster',
+    avatar: '/img/brezeLogo.png',
+  },
 }
 
 module.exports = constants

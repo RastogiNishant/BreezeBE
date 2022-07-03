@@ -100,6 +100,7 @@ class TaskController extends BaseController {
     super({ socket, request, auth, channel: 'task' })
   }
 
+  //this is not needed anymore...
   onTaskInit() {
     let count = 0
     let doMore = true
@@ -111,13 +112,12 @@ class TaskController extends BaseController {
       qs.push(origQuestions[count])
       count++
     } while (doMore)
-    //this.emitToSender(qs, 'question', 0)
     this.broadcast(qs, 'question', 0)
   }
 
-  onAnswer() {}
-
-  onMessage() {}
+  onMessage(message) {
+    super.onMessage(message)
+  }
 }
 
 module.exports = TaskController
