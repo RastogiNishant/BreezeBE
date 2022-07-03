@@ -2,7 +2,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
-const { STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE, STATUS_DELETE } = require('../constants')
 
 class EstateCurrentTenant extends Model {
   static get columns() {
@@ -23,6 +23,12 @@ class EstateCurrentTenant extends Model {
 
   user() {
     return this.hasOne('App/Models/User', 'user_id', 'id').where('status', STATUS_ACTIVE)
+  }
+
+  estate() {
+    return this.hasOne('App/Models/Estate', 'estate_id', 'id').whereNotIn('estates.status', [
+      STATUS_DELETE,
+    ])
   }
 }
 
