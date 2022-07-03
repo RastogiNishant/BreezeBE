@@ -333,7 +333,6 @@ class MatchController {
   async updateVisitTimeslotLandlord({ request, auth, response }) {
     const { estate_id, status, delay = null, user_id } = request.all()
     const estate = await this.getOwnEstate(estate_id, auth.user.id)
-    console.log({ user_id })
     if (!estate) {
       throw HttpException('Invalid estate', 404)
     }
@@ -571,7 +570,6 @@ class MatchController {
         lastPage: 1,
       }
       estates.total = estates.data.length
-      console.log({ data: estates.data })
     }
 
     return response.res({
