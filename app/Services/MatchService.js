@@ -1248,8 +1248,8 @@ class MatchService {
   }
 
   static getLandlordUpcomingVisits(userId) {
-    const now = moment().format(DATE_FORMAT)
-    const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
+    // const now = moment().format(DATE_FORMAT)
+    // const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
 
     const query = Estate.query()
       .select('time_slots.*', 'estates.*')
@@ -1259,8 +1259,8 @@ class MatchService {
       .leftJoin('time_slots', function () {
         this.on('estates.id', 'time_slots.estate_id')
       })
-      .where('time_slots.start_at', '>=', now)
-      .where('time_slots.end_at', '<=', tomorrow)
+      // .where('time_slots.start_at', '>=', now)
+      // .where('time_slots.end_at', '<=', tomorrow)
       .leftJoin('visits', function () {
         this.on('visits.start_date', '>=', 'time_slots.start_at')
           .on('visits.end_date', '<=', 'time_slots.end_at')
