@@ -83,8 +83,6 @@ class TaskController {
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
 
-    console.log('Moment', moment().utc().startOf('minute').add(2, 'hours'))
-    throw new HttpException('Testing', 500)
     try {
       const countResult = await EstateService.getTotalLetCount(auth.user.id, params)
       let estate = await EstateService.getEstatesWithTask(
