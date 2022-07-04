@@ -1,8 +1,18 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, filter, omit, flatten } = require('lodash')
+const {
+  get,
+  isEmpty,
+  findIndex,
+  range,
+  filter,
+  omit,
+  flatten,
+  groupBy,
+  countBy,
+  maxBy,
+} = require('lodash')
 const { props } = require('bluebird')
-
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
@@ -22,6 +32,7 @@ const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
+const TaskFilters = require('../Classes/TaskFilters')
 
 const {
   STATUS_DRAFT,
@@ -35,6 +46,9 @@ const {
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
+  TASK_STATUS_DRFAT,
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -162,12 +176,12 @@ class EstateService {
   static async getEstateWithTenant(id, user_id) {
     const query = Estate.query()
       .select('estates.*', '_u.avatar')
-      .innerJoin({ _m: 'matches'}, function () {
+      .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
         this.on('_m.status', MATCH_STATUS_FINISH)
       })
       .innerJoin({ _u: 'users' }, '_m.user_id', '_u.id')
-      .where( 'estates.id', id)
+      .where('estates.id', id)
       .whereNotIn('estates.status', [STATUS_DELETE])
     query.where('estates.user_id', user_id)
     return await query.firstOrFail()
@@ -1070,20 +1084,171 @@ class EstateService {
     return await Estate.findByOrFail({ id, user_id: user_id })
   }
 
-  static async getTotalLetCount(user_id) {
-    return await Estate.query()
+  static async getEstatesWithTask(user, params, page, limit = -1) {
+    let outsideTenantIds = []
+    let insideTenantIds = []
+    if (params.tenant_id) {
+      insideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 1).map((t) => t.id)
+      outsideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 0).map((t) => t.id)
+    }
+
+    let query = Estate.query()
+      .with('inside_current_tenant', function (ict) {
+        ict.select(Database.raw('id, firstname, secondname'))
+      })
+      .with('outside_current_tenant')
+      .select(
+        'estates.id',
+        'estates.address',
+        'estates.property_id',
+        'estates.city',
+        'tasks.id as tid',
+        'tasks.urgency as urgency',
+        Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant')
+      )
+
+    query.leftJoin({ _m: 'matches' }, function () {
+      this.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
+    })
+
+    query.leftJoin('tasks', function () {
+      this.on('estates.id', 'tasks.estate_id').on(
+        Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
+      )
+      if (!params.status) {
+        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      }
+    })
+
+    let insideBreezeFilterSQL = ` SELECT estate_id from matches `
+
+    if (params.only_outside_breeze) {
+      insideBreezeFilterSQL += ` INNER JOIN users ON users.id = matches.user_id AND users.id IN ( NULL )`
+    } else if (insideTenantIds.length) {
+      insideBreezeFilterSQL += ` INNER JOIN users ON users.id = matches.user_id AND users.id IN ( ${insideTenantIds} )`
+    }
+
+    insideBreezeFilterSQL += ` where matches.status  = ${MATCH_STATUS_FINISH}`
+    insideBreezeFilterSQL = Database.raw(insideBreezeFilterSQL)
+
+    query.where('estates.user_id', user.id)
+    query.whereNot('estates.status', STATUS_DELETE)
+    query.andWhere(function () {
+      if (
+        params.only_inside_breeze ||
+        !params.tenant_id ||
+        !params.tenant_id.length ||
+        outsideTenantIds.length
+      ) {
+        this.orWhere(function () {
+          if (outsideTenantIds.length) {
+            this.innerJoin({
+              _ect: 'estate_current_tenants',
+              function() {
+                this.on('estates.id', '_ect.estate_id')
+                this.onIn('_ect.id', outsideTenantIds)
+              },
+            })
+          }
+          this.where('estates.letting_type', LETTING_TYPE_LET)
+        })
+      }
+
+      this.orWhere('estates.id', 'IN', insideBreezeFilterSQL)
+    })
+
+    if (params.estate_id) {
+      query.whereIn('estates.id', [params.estate_id])
+    }
+
+    const filter = new TaskFilters(params, query)
+    query = filter.process()
+    query.groupBy('estates.id', '_m.status', 'tasks.id')
+    query.orderBy('_m.status')
+    let result = null
+    if (limit == -1) {
+      result = await query.fetch()
+    } else {
+      result = await query.paginate(page, limit)
+    }
+
+    result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
+
+    const estate = result.map((r) => {
+      const mostUrgency = maxBy(r, (re) => {
+        return re.urgency
+      })
+
+      return {
+        ...r[0],
+        task: {
+          taskCount: countBy(r, (re) => re.tid !== null).true || 0,
+          mostUrgency: mostUrgency?.urgency || null,
+          mostUrgencyCount: mostUrgency
+            ? countBy(r, (re) => re.urgency === mostUrgency.urgency).true || 0
+            : 0,
+        },
+      }
+    })
+    return estate
+  }
+
+  static async getTotalLetCount(user_id, params) {
+    let outsideTenantIds = []
+    let insideTenantIds = []
+    if (params.tenant_id) {
+      insideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 1).map((t) => t.id)
+      outsideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 0).map((t) => t.id)
+    }
+
+    let insideBreezeFilterSQL = ` SELECT estate_id from matches `
+
+    if (params.only_outside_breeze) {
+      insideBreezeFilterSQL += ` INNER JOIN users ON users.id = matches.user_id AND users.id IN ( NULL )`
+    } else if (insideTenantIds.length) {
+      insideBreezeFilterSQL += ` INNER JOIN users ON users.id = matches.user_id AND users.id IN ( ${insideTenantIds} )`
+    }
+
+    insideBreezeFilterSQL += ` where matches.status  = ${MATCH_STATUS_FINISH}`
+    insideBreezeFilterSQL = Database.raw(insideBreezeFilterSQL)
+
+    let query = Estate.query()
       .count('estates.*')
-      .where('estates.user_id', user_id)
-      .andWhere(function () {
-        this.orWhere('estates.property_type', LETTING_TYPE_LET)
-        this.orWhere(
-          'estates.id',
-          '=',
-          Database.raw(`(
-        SELECT estate_id from matches where status  = ${MATCH_STATUS_FINISH}
-      )`)
+      .leftJoin('tasks', function () {
+        this.on('estates.id', 'tasks.estate_id').on(
+          Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
         )
       })
+      .where('estates.user_id', user_id)
+      .whereNot('estates.status', STATUS_DELETE)
+      .andWhere(function () {
+        if (
+          params.only_inside_breeze ||
+          !params.tenant_id ||
+          !params.tenant_id.length ||
+          outsideTenantIds.length
+        ) {
+          this.orWhere(function () {
+            if (outsideTenantIds.length) {
+              this.innerJoin({
+                _ect: 'estate_current_tenants',
+                function() {
+                  this.on('estates.id', '_ect.estate_id')
+                  this.onIn('_ect.id', outsideTenantIds)
+                },
+              })
+            }
+            this.where('estates.letting_type', LETTING_TYPE_LET)
+          })
+        }
+
+        this.orWhere('estates.id', 'IN', insideBreezeFilterSQL)
+      })
+
+    const filter = new TaskFilters(params, query)
+    query = filter.process()
+    query.groupBy('estates.id')
+    return await query
   }
 }
 module.exports = EstateService

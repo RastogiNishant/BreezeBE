@@ -18,8 +18,8 @@ const Estate = use('App/Models/Estate')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
-const TaskFilters = require('../Classes/TaskFilters')
 const Database = use('Database')
+const TaskFilters = require('../Classes/TaskFilters')
 
 class TaskService {
   static async create(request, user, trx) {
@@ -136,85 +136,6 @@ class TaskService {
     } else {
       return await query.paginate(page, limit)
     }
-  }
-
-  static async getLanlordAllTasks(user, params, page, limit = -1) {
-    let query = Estate.query()
-      .with('inside_current_tenant', function (ict) {
-        ict.select(Database.raw('id, firstname, secondname'))
-      })
-      .with('outside_current_tenant')
-      .select(
-        'estates.id',
-        'estates.address',
-        'estates.property_id',
-        'estates.city',
-        'tasks.id as tid',
-        'tasks.urgency as urgency',
-        Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant')
-      )
-
-    query.leftJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
-    })
-
-    query.leftJoin('tasks', function () {
-      this.on('estates.id', 'tasks.estate_id').on(
-        Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
-      )
-      if (!params.status) {
-        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-      }
-    })
-
-    query.where('estates.user_id', user.id)
-    query.whereNot('estates.status', STATUS_DELETE)
-    query.andWhere(function () {
-      this.orWhere('estates.letting_type', LETTING_TYPE_LET)
-      this.orWhere(
-        'estates.id',
-        'IN',
-        Database.raw(`
-        SELECT estate_id from matches where status  = ${MATCH_STATUS_FINISH}
-      `)
-      )
-    })
-
-    if (params.estate_id) {
-      query.whereIn('estates.id', [params.estate_id])
-    }
-
-    const filter = new TaskFilters(params, query)
-    query = filter.process()
-    query.groupBy('estates.id', '_m.status', 'tasks.id')
-    query.orderBy('_m.status')
-
-    let result = null
-    if (limit == -1) {
-      result = await query.fetch()
-    } else {
-      result = await query.paginate(page, limit)
-    }
-
-    result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
-
-    const estate = result.map((r) => {
-      const mostUrgency = maxBy(r, (re) => {
-        return re.urgency
-      })
-
-      return {
-        ...r[0],
-        task: {
-          taskCount: countBy(r, (re) => re.tid !== null).true || 0,
-          mostUrgency: mostUrgency?.urgency || null,
-          mostUrgencyCount: mostUrgency
-            ? countBy(r, (re) => re.urgency === mostUrgency.urgency).true || 0
-            : 0,
-        },
-      }
-    })
-    return estate
   }
 
   static async get(id) {

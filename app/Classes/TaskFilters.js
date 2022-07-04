@@ -9,10 +9,10 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED
+  TASK_STATUS_CLOSED,
 } = require('../constants')
 
-class TaskFilters extends Filter{
+class TaskFilters extends Filter {
   constructor(params, query) {
     super(params, query)
 
@@ -21,25 +21,24 @@ class TaskFilters extends Filter{
         low: URGENCY_LOW,
         normal: URGENCY_NORMAL,
         high: URGENCY_HIGH,
-        super: URGENCY_SUPER
+        super: URGENCY_SUPER,
       },
       status: {
         new: TASK_STATUS_NEW,
-        inprogress:TASK_STATUS_INPROGRESS,
+        inprogress: TASK_STATUS_INPROGRESS,
         resolved: TASK_STATUS_RESOLVED,
         unresolved: TASK_STATUS_UNRESOLVED,
-        closed: TASK_STATUS_CLOSED
-      }
+        closed: TASK_STATUS_CLOSED,
+      },
     }
     Filter.TableInfo = {
       address: 'estates',
       city: 'estates',
       urgency: 'tasks',
-      tenant_id: 'tasks',
-      status: 'tasks'
+      status: 'tasks',
     }
 
-    this.matchFilter(['address','city', 'urgency', 'tenant_id', 'status'], params )
+    this.matchFilter(['address', 'city', 'urgency', 'status'], params)
   }
 }
 

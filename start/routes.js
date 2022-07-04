@@ -739,7 +739,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.get('/myTenants', 'LandlordController.getTenants')
+  Route.get('/myTenants', 'LandlordController.getAllTenants')
 })
   .prefix('api/v1/landlords')
   .middleware(['auth:jwtLandlord'])
@@ -747,7 +747,6 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'LandlordController.landlords')
   Route.get('/getLandlords', 'LandlordController.landlords')
-  Route.get('/myTenants', 'LandlordController.getTenants')
   Route.get('/toggle', 'LandlordController.toggleStatus')
   Route.post('/buddies/import', 'BuddyController.importBuddies')
   Route.get('/buddies/get', 'BuddyController.getBuddies')
