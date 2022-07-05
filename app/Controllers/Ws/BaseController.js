@@ -4,6 +4,7 @@ const Ws = use('Ws')
 const { isNull } = require('lodash')
 const { BREEZE_BOT_USER } = require('../../constants')
 const Chat = use('App/Models/Chat')
+const Database = use('Database')
 
 class BaseController {
   constructor({ socket, auth, request, channel }) {
@@ -86,7 +87,29 @@ class BaseController {
     }
   }
 
-  onMarkLastRead() {}
+  async _markLastRead(taskId) {
+    const trx = await Database.beginTransaction()
+    try {
+      await Chat.query()
+        .where({
+          type: 'last-read-marker',
+          sender_id: this.user.id,
+          task_id: taskId,
+        })
+        .delete()
+        .transacting(trx)
+      await Chat.query()
+        .insert({
+          type: 'last-read-marker',
+          sender_id: this.user.id,
+          task_id: taskId,
+        })
+        .transacting(trx)
+      await trx.commit()
+    } catch (err) {
+      await trx.rollback()
+    }
+  }
 
   async _saveToChats(message, taskId = null) {
     let data = {}
