@@ -86,22 +86,24 @@ class TenantController {
       await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
 
-      // Add tenant anchor zone processing
-      if (lat && lon && tenant.dist_type && tenant.dist_min) {
-        await TenantService.updateTenantIsoline(tenant.id, trx)
-      }
       const updatedTenant = await Tenant.find(tenant.id)
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
       if (shouldDeactivateTenant) {
+      } else {
+      }
+      await trx.commit()
+
+      // Add tenant anchor zone processing
+      if (lat && lon && tenant.dist_type && tenant.dist_min) {
+        await TenantService.updateTenantIsoline(tenant.id)
+      }
+
+      if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
+        Event.fire('tenant::update', auth.user.id)
       } else {
         await MatchService.matchByUser(auth.user.id)
-      }
-      Event.fire('mautic:syncContact', auth.user.id)
-      await trx.commit()
-      if (shouldDeactivateTenant) {
-        Event.fire('tenant::update', auth.user.id)
       }
       response.res(updatedTenant)
     } catch (e) {

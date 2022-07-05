@@ -1114,7 +1114,7 @@ class MatchService {
       query
         .clearWhere()
         .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .where({ '_m.buddy': true })
+        .where({ '_m.buddy': true, '_m.status': MATCH_STATUS_NEW })
     } else if (like) {
       // All liked estates
       query
@@ -1248,8 +1248,7 @@ class MatchService {
   }
 
   static getLandlordUpcomingVisits(userId) {
-    // const now = moment().format(DATE_FORMAT)
-    // const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
+    const now = moment().format(DATE_FORMAT)
 
     const query = Estate.query()
       .select('time_slots.*', 'estates.*')
@@ -1259,8 +1258,7 @@ class MatchService {
       .leftJoin('time_slots', function () {
         this.on('estates.id', 'time_slots.estate_id')
       })
-      // .where('time_slots.start_at', '>=', now)
-      // .where('time_slots.end_at', '<=', tomorrow)
+      .where('time_slots.start_at', '>=', now)
       .leftJoin('visits', function () {
         this.on('visits.start_date', '>=', 'time_slots.start_at')
           .on('visits.end_date', '<=', 'time_slots.end_at')
@@ -1460,7 +1458,7 @@ class MatchService {
 
   static async getTenantBuddiesCount(userId, estateIds) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, buddy: true })
+      .where({ user_id: userId, buddy: true, status: MATCH_STATUS_NEW })
       .whereIn('estate_id', estateIds)
       .count('*')
     return data
