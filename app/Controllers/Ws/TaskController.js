@@ -97,7 +97,9 @@ const BaseController = require('./BaseController')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
-    super({ socket, request, auth, channel: 'task' })
+    super({ socket, request, auth })
+    const matches = this.socket.topic.match(/^task:[0-9]+brz([0-9]+)$/)
+    this.taskId = matches[1]
   }
 
   //this is not needed anymore...
@@ -117,6 +119,7 @@ class TaskController extends BaseController {
 
   onMessage(message) {
     super.onMessage(message)
+    this._saveToChats(message, this.taskId)
   }
 }
 

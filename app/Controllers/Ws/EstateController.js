@@ -18,12 +18,6 @@ class EstateController extends BaseController {
   async onCreateTask() {
     super.emitToSender({ task_id: 1 }, 'taskCreated', 0)
   }
-
-  async onMarkLastRead(message) {}
-
-  async onConnect() {
-    //send
-  }
 }
 
 module.exports = EstateController

@@ -88,18 +88,18 @@ class BaseController {
 
   onMarkLastRead() {}
 
-  async _saveToChats(message, sender, estateId, taskId = null) {
+  async _saveToChats(message, taskId = null) {
     let data = {}
     if (message.message) {
-      data.message = message.message
+      data.text = message.message
     } else {
-      data.message = message
+      data.text = message
     }
     if (message.attachments) {
       data.attachments = message.attachments
     }
-    data.estate_id = estateId
     data.task_id = taskId
+    data.sender_id = this.user.id
     const result = await Chat.query().insert(data)
     return result
   }

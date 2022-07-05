@@ -23,7 +23,7 @@ class UserCanChatHere {
       //make sure that the user is the current tenant or the owner of this estate
       currentTenant = await this._getCurrentTenant(matches[1], auth.user.id, auth.user.role)
       if (!currentTenant) {
-        throw new HttpException(`User cannot send message to this topic.`)
+        throw new HttpException(`User cannot send message to this topic.`, 403, 1101)
       }
       request.estate_id = matches[1]
     } else if ((matches = socket.topic.match(/^task:([0-9]+)brz([0-9]+)$/))) {
@@ -31,11 +31,12 @@ class UserCanChatHere {
       //estate task chat
       currentTenant = await this._getCurrentTenant(matches[1], auth.user.id, auth.user.role)
       if (!currentTenant) {
-        throw new HttpException(`User cannot send message to this topic.`)
+        throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
       }
-      const task = this._getTask(matches[2], matches[1])
+      const task = await this._getTask(matches[2], matches[1])
+      console.log({ task })
       if (!task) {
-        throw new HttpException(`Task not found or you are not allowed on this task`)
+        throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
       request.task_id = task.id
     }
