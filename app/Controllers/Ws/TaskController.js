@@ -2,6 +2,8 @@
 const BaseController = require('./BaseController')
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
+const { min } = require('lodash')
+const { CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL } = require('../../constants')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -51,27 +53,69 @@ class TaskController extends BaseController {
       query.where('chats.id', '<', lastId)
     }
     let lastMessages = await query.fetch()
+
     //for unread messages
-    const result = await Chat.query()
+    let counts = []
+    const allCount = await Chat.query()
+      .select(Database.raw(`count(*) as unread_messages`))
+      .where('task_id', this.taskId)
+      .where('type', 'message')
+      .first()
+
+    if (allCount) {
+      counts.push(parseInt(allCount.unread_messages))
+    }
+
+    const unreadByMarker = await Chat.query()
       .select(Database.raw(`count(*) as unread_messages`))
       .where(
         'created_at',
         '>',
         Database.raw(
-          `(select created_at from chats where "type"='last-read-marker' and task_id='${this.taskId}')`
+          `(select created_at from chats
+            where "type"='last-read-marker'
+            and task_id='${this.taskId}'
+            order by created_at desc
+            limit 1
+            )`
         )
       )
       .where('task_id', this.taskId)
       .where('type', 'message')
       .first()
+    if (unreadByMarker) {
+      counts.push(parseInt(unreadByMarker.unread_messages))
+    }
 
+    const unreadByLastSent = await Chat.query()
+      .select(Database.raw(`count(*) as unread_messages`))
+      .where(
+        'created_at',
+        '>',
+        Database.raw(
+          `(select created_at from chats
+            where "type"='message'
+            and "sender_id"='${this.user.id}'
+            and task_id='${this.taskId}'
+            order by created_at desc
+            limit 1)`
+        )
+      )
+      .where('task_id', this.taskId)
+      .where('type', 'message')
+      .first()
+    if (unreadByLastSent) {
+      counts.push(parseInt(unreadByLastSent.unread_messages))
+    }
+    const unreadMessages = min(counts)
+    console.log({ counts, unreadMessages })
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',
         {
           messages: lastMessages,
           topic: this.socket.topic,
-          unread: parseInt(result.unread_messages),
+          unread: unreadMessages,
         },
         [this.socket.id]
       )
