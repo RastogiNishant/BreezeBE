@@ -1,7 +1,9 @@
 'use strict'
+const { CONNECT_MESSAGE_EDITABLE_TIME_LIMIT } = require('../../constants')
 const BaseController = require('./BaseController')
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
+const HttpException = use('App/Exceptions/HttpException')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -77,6 +79,35 @@ class TaskController extends BaseController {
       )
     }
   }
+
+  async onEditMessage({ message, id }) {
+    let result = await Chat.query()
+      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .where('id', id)
+      .first()
+    if (!result) {
+      throw new HttpException('Chat message not found.')
+    }
+    if (result.difference > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+      throw new HttpException('Chat message not anymore editable.')
+    }
+    result = await Chat.query()
+      .where('id', id)
+      .update({ message: message.message, attachments: message.attachments })
+    if (this.topic) {
+      this.topic.emitTo(
+        'messageEdited',
+        {
+          id,
+          message: message.message,
+          attachments: message.attachments,
+        },
+        [[this.socket.id]]
+      )
+    }
+  }
+
+  async onDeleteMessage({ id }) {}
 
   async onMarkLastRead() {
     super._markLastRead(this.taskId)
