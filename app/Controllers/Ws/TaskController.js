@@ -49,7 +49,7 @@ class TaskController extends BaseController {
       .orderBy('created_at', 'desc')
       .limit(10)
     if (lastId) {
-      query.where('id <', lastId)
+      query.where('chats.id', '<', lastId)
     }
     let lastMessages = await query.fetch()
     //for unread messages
