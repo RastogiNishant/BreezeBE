@@ -1213,7 +1213,6 @@ class MatchService {
 
   static getTenantUpcomingVisits(userId) {
     const now = moment().format(DATE_FORMAT)
-    const tomorrow = moment().add(1, 'day').endOf('day').format(DATE_FORMAT)
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
@@ -1243,7 +1242,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
-    query.where('_v.date', '>', now).where('_v.date', '<=', tomorrow)
+    query.where('_v.date', '>', now)
     return query
   }
 
