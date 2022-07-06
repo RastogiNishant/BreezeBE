@@ -82,6 +82,7 @@ class BaseController {
   }
   //override this on the child controller
   onMessage(message) {
+    message.dateTime = message.dateTime ? message.dateTime : new Date()
     if (this.topic) {
       this.broadcast(message, 'message')
     }
@@ -98,15 +99,17 @@ class BaseController {
         })
         .delete()
         .transacting(trx)
-      await Chat.query()
-        .insert({
+      await Chat.query().insert(
+        {
           type: 'last-read-marker',
           sender_id: this.user.id,
           task_id: taskId,
-        })
-        .transacting(trx)
+        },
+        trx
+      )
       await trx.commit()
     } catch (err) {
+      console.log(err)
       await trx.rollback()
     }
   }
@@ -123,8 +126,9 @@ class BaseController {
     }
     data.task_id = taskId
     data.sender_id = this.user.id
-    const result = await Chat.query().insert(data)
-    return result
+    data.type = 'message'
+    const chat = await Chat.create(data)
+    return chat
   }
 }
 

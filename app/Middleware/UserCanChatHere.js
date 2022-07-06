@@ -34,7 +34,6 @@ class UserCanChatHere {
         throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
       }
       const task = await this._getTask(matches[2], matches[1])
-      console.log({ task })
       if (!task) {
         throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
