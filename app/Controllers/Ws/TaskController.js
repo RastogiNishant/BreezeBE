@@ -46,7 +46,7 @@ class TaskController extends BaseController {
         task_id: this.taskId,
       })
       .orderBy('created_at', 'desc')
-      .limit(10)
+      .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
