@@ -108,7 +108,6 @@ class TaskController extends BaseController {
       counts.push(parseInt(unreadByLastSent.unread_messages))
     }
     const unreadMessages = min(counts)
-    console.log({ counts, unreadMessages })
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',
