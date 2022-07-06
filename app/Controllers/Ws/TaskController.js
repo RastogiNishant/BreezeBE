@@ -1,7 +1,6 @@
 'use strict'
 const BaseController = require('./BaseController')
 const Chat = use('App/Models/Chat')
-const { reverse } = require('lodash')
 const Database = use('Database')
 
 class TaskController extends BaseController {
