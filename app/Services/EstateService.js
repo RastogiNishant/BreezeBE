@@ -1093,23 +1093,29 @@ class EstateService {
     }
 
     let query = Estate.query()
-      .with('inside_current_tenant', function (ict) {
-        ict.select(Database.raw('id, firstname, secondname'))
-      })
-      .with('outside_current_tenant')
+      .with('current_tenant')
       .select(
         'estates.id',
         'estates.address',
         'estates.property_id',
         'estates.city',
         'tasks.id as tid',
+        '_u.id as uid',
+        '_u.firstname',
+        '_u.secondname',
+        '_u.avatar',
         'tasks.urgency as urgency',
         Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant')
       )
 
-    query.leftJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
+    query.leftJoin({ _m: 'matches' }, function (m) {
+      m.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
     })
+
+    query.leftJoin({ _u: 'users' }, function (m) {
+      m.on('_m.user_id', '_u.id')
+    })
+
 
     query.leftJoin('tasks', function () {
       this.on('estates.id', 'tasks.estate_id').on(
@@ -1167,7 +1173,7 @@ class EstateService {
 
     const filter = new TaskFilters(params, query)
     query = filter.process()
-    query.groupBy('estates.id', '_m.status', 'tasks.id')
+    query.groupBy('estates.id', '_m.status', '_u.id', 'tasks.id')
     query.orderBy('_m.status')
     let result = null
     if (limit == -1) {
