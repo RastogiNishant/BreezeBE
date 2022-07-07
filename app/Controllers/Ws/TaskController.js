@@ -140,23 +140,19 @@ class TaskController extends BaseController {
         .where('id', id)
         .update({ text: message, attachments: JSON.stringify(attachments) })
       if (this.topic) {
-        this.topic.emitTo(
-          'messageEdited',
-          {
-            id,
-            message: message.message,
-            attachments: message.attachments,
-            edit_status: 'edited',
-          },
-          [[this.socket.id]]
-        )
+        this.topic.broadcast('messageEdited', {
+          id,
+          message: message.message,
+          attachments: message.attachments,
+          edit_status: 'edited',
+        })
       }
     } catch (err) {
       this.emitError(err.message)
     }
   }
 
-  async onDeleteMessage({ id }) {
+  async onRemoveMessage({ id }) {
     try {
       let result = await Chat.query()
         .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
@@ -173,13 +169,7 @@ class TaskController extends BaseController {
         .where('id', id)
         .update({ text: '', attachments: null, edit_status: 'deleted' })
       if (this.topic) {
-        this.topic.emitTo(
-          'messageDeleted',
-          {
-            id,
-          },
-          [[this.socket.id]]
-        )
+        this.topic.broadcast('messageRemoved', { id })
       }
     } catch (err) {
       this.emitError(err.message)
