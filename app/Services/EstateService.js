@@ -49,6 +49,9 @@ const {
   TASK_STATUS_DRFAT,
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -476,9 +479,15 @@ class EstateService {
    */
   static async getTimeSlotsByEstate(estate) {
     return TimeSlot.query()
-      .where('estate_id', estate.id)
-      .orderBy([{ column: 'start_at', order: 'ask' }])
-      .limit(100)
+      .select('time_slots.*', Database.raw('COUNT(visits)::int as visitCount'))
+      .where('time_slots.estate_id', estate.id)
+      .leftJoin('visits', function () {
+        this.on('visits.start_date', '>=', 'time_slots.start_at')
+          .on('visits.end_date', '<=', 'time_slots.end_at')
+          .on('visits.estate_id', 'time_slots.estate_id')
+      })
+      .groupBy('time_slots.id')
+      .orderBy([{ column: 'end_at', order: 'desc' }])
       .fetch()
   }
 
@@ -648,7 +657,6 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-      .limit(MAX_SEARCH_ITEMS)
   }
 
   /**
@@ -765,6 +773,35 @@ class EstateService {
       })
       .with('files')
       .orderBy('_m.percent', 'DESC')
+  }
+
+  static async getTenantTrashEstates(userId) {
+    // 2 cases for trash estates
+    // Find the estates that user has match, but rented by another user
+    // Find the estates that user shared the info first, and then cancelled the share
+
+    const allActiveMatches = await Match.query()
+      .select('estate_id')
+      .where('user_id', userId)
+      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .fetch()
+
+    const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
+
+    const trashedEstates = await Estate.query()
+      .select('*')
+      .whereHas('matches', (estateQuery) => {
+        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      })
+      .orWhereHas('matches', (estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+          .andWhere('matches.share', false)
+          .andWhere('matches.user_id', userId)
+      })
+      .fetch()
+    return trashedEstates
   }
 
   /**
@@ -989,7 +1026,6 @@ class EstateService {
       // if slot_length is null, so show only 1 slot for date range
       const step = s.slot_length ? s.slot_length * 60 : s.end_at - s.start_at
       const items = range(s.start_at, s.end_at, step)
-      console.log({ items })
       items.forEach((i) => {
         const items = [...get(result, day, []), { from: i, to: i + step }]
         result = { ...result, [day]: items }
@@ -1115,7 +1151,6 @@ class EstateService {
     query.leftJoin({ _u: 'users' }, function (m) {
       m.on('_m.user_id', '_u.id')
     })
-
 
     query.leftJoin('tasks', function () {
       this.on('estates.id', 'tasks.estate_id').on(
