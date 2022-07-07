@@ -125,7 +125,6 @@ class TaskController extends BaseController {
   }
 
   async onEditMessage({ message, attachments, id }) {
-    console.log({ message, attachments, id })
     try {
       let result = await Chat.query()
         .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
@@ -147,6 +146,7 @@ class TaskController extends BaseController {
             id,
             message: message.message,
             attachments: message.attachments,
+            edit_status: 'edited',
           },
           [[this.socket.id]]
         )
@@ -156,7 +156,35 @@ class TaskController extends BaseController {
     }
   }
 
-  async onDeleteMessage({ id }) {}
+  async onDeleteMessage({ id }) {
+    try {
+      let result = await Chat.query()
+        .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+        .where('id', id)
+        .first()
+
+      if (!result) {
+        throw new AppException('Chat message not found.')
+      }
+      if (result.difference > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      result = await Chat.query()
+        .where('id', id)
+        .update({ text: '', attachments: null, edit_status: 'deleted' })
+      if (this.topic) {
+        this.topic.emitTo(
+          'messageDeleted',
+          {
+            id,
+          },
+          [[this.socket.id]]
+        )
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
 
   async onMarkLastRead() {
     super._markLastRead(this.taskId)
