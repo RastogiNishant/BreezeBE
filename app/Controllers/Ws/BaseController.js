@@ -88,6 +88,10 @@ class BaseController {
     }
   }
 
+  emitError(message) {
+    this.topic.emitTo('error', { message }, [this.socket.id])
+  }
+
   async _markLastRead(taskId) {
     const trx = await Database.beginTransaction()
     try {
@@ -122,7 +126,7 @@ class BaseController {
       data.text = message
     }
     if (message.attachments) {
-      data.attachments = message.attachments
+      data.attachments = JSON.stringify(message.attachments)
     }
     data.task_id = taskId
     data.sender_id = this.user.id

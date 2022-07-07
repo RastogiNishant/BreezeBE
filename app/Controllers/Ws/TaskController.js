@@ -3,9 +3,10 @@ const { CONNECT_MESSAGE_EDITABLE_TIME_LIMIT } = require('../../constants')
 const BaseController = require('./BaseController')
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
-const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/HttpException')
 const { min } = require('lodash')
 const { CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL } = require('../../constants')
+const { stringify } = require('uuid')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -123,30 +124,35 @@ class TaskController extends BaseController {
     }
   }
 
-  async onEditMessage({ message, id }) {
-    let result = await Chat.query()
-      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
-      .where('id', id)
-      .first()
-    if (!result) {
-      throw new HttpException('Chat message not found.')
-    }
-    if (result.difference > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
-      throw new HttpException('Chat message not anymore editable.')
-    }
-    result = await Chat.query()
-      .where('id', id)
-      .update({ message: message.message, attachments: message.attachments })
-    if (this.topic) {
-      this.topic.emitTo(
-        'messageEdited',
-        {
-          id,
-          message: message.message,
-          attachments: message.attachments,
-        },
-        [[this.socket.id]]
-      )
+  async onEditMessage({ message, attachments, id }) {
+    console.log({ message, attachments, id })
+    try {
+      let result = await Chat.query()
+        .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+        .where('id', id)
+        .first()
+      if (!result) {
+        throw new AppException('Chat message not found.')
+      }
+      if (result.difference > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      result = await Chat.query()
+        .where('id', id)
+        .update({ text: message, attachments: JSON.stringify(attachments) })
+      if (this.topic) {
+        this.topic.emitTo(
+          'messageEdited',
+          {
+            id,
+            message: message.message,
+            attachments: message.attachments,
+          },
+          [[this.socket.id]]
+        )
+      }
+    } catch (err) {
+      this.emitError(err.message)
     }
   }
 
