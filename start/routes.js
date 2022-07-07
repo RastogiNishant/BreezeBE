@@ -466,6 +466,10 @@ Route.group(() => {
   Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
     'valid:EstateId,TenantId',
   ])
+
+  Route.post('/:estate_id/tenant/:id/invite', 'EstateCurrentTenantController.inviteTenantToApp').middleware([
+    'valid:EstateId,Id'
+  ])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])

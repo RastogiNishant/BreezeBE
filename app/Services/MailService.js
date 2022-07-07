@@ -425,7 +425,6 @@ class MailService {
       },
     }
 
-    console.log('Mail body', msg)
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -501,6 +500,27 @@ class MailService {
       }
     )
   }
+
+  static async sendInvitationToOusideTenant(email, shortLink) {
+    const msg = {
+      to: email,
+      from: FromEmail, // Use the email address or domain you verified above
+      subject: `Invitation to come in to breeze to a tenant outside of breeze`,
+      text: `Here is the link is ${shortLink}`,
+      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
+    }
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }  
 }
 
 module.exports = MailService
