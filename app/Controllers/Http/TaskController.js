@@ -1,8 +1,10 @@
 'use strict'
 const { ROLE_LANDLORD } = require('../../constants')
+const { count } = require('../../Services/TaskService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
+const moment = require('moment')
 
 class TaskController {
   async createTask({ request, auth, response }) {
@@ -82,16 +84,15 @@ class TaskController {
     const params = request.post()
 
     try {
-      const countResult = await EstateService.getTotalLetCount(auth.user.id)
-
-      let estate = await TaskService.getLanlordAllTasks(
+      const countResult = await EstateService.getTotalLetCount(auth.user.id, params)
+      let estate = await EstateService.getEstatesWithTask(
         auth.user,
         params,
         params.page || -1,
         params.limit || -1
       )
       const result = {
-        total: countResult[0].count,
+        total: countResult.length || 0,
         estates: estate,
       }
 

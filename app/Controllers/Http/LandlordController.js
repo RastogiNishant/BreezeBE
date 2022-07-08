@@ -5,6 +5,7 @@ const HttpException = require('../../Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
 const LandlordService = use('App/Services/LandlordService')
 const CompanyService = use('App/Services/CompanyService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const User = use('App/Models/User')
 
 class LandlordController {
@@ -90,11 +91,16 @@ class LandlordController {
     return response.res(true)
   }
 
-  async getTenants({auth, response}) {
-    try{
-console.log('Hello there')      
-      response.res(await UserService.getTenants(auth.user.id))
-    }catch(e) {
+  async getAllTenants({ auth, response }) {
+    try {
+      let inBreezeTenants = await UserService.getAllInsideTenants(auth.user.id)
+      const outsideBreezeTenants = await EstateCurrentTenantService.getAllOutsideTenant(
+        auth.user.id
+      )
+      inBreezeTenants.push(...outsideBreezeTenants)
+
+      response.res(inBreezeTenants)
+    } catch (e) {
       throw new HttpException(e.message, 500)
     }
   }

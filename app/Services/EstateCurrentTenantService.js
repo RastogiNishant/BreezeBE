@@ -1,8 +1,9 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Database = use('Database')
+const moment = require('moment')
 
-const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
+const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE, DAY_FORMAT } = require('../constants')
 
 class EstateCurrentTenantService {
   static async addCurrentTenant(data, estate_id) {
@@ -71,6 +72,21 @@ class EstateCurrentTenantService {
       await currentTenant.save()
       return currentTenant
     }
+  }
+
+  static async getAllOutsideTenant(id) {
+    const today = moment.utc(new Date(), DAY_FORMAT)
+    return (
+      await EstateCurrentTenant.query()
+        .select('estate_current_tenants.*', Database.raw('0 as inside_breeze'))
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_current_tenants.estate_id')
+          this.on('_e.user_id', id)
+        })
+        .where('estate_current_tenants.status', STATUS_ACTIVE)
+        .where('estate_current_tenants.contract_end', '>=', today)
+        .fetch()
+    ).rows
   }
 }
 

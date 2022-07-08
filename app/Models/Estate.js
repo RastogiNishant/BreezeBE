@@ -277,9 +277,6 @@ class Estate extends Model {
     return this.belongsTo('App/Models/User', 'user_id', 'id')
   }
 
-  inside_current_tenant() {
-    return this.belongsTo('App/Models/User', 'user_id', 'id')
-  }  
   /**
    *
    */
@@ -331,7 +328,7 @@ class Estate extends Model {
   }
 
 
-  outside_current_tenant() {
+  current_tenant() {
     return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
   }
 
