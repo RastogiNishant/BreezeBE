@@ -1,12 +1,13 @@
 'use strict'
-const { CONNECT_MESSAGE_EDITABLE_TIME_LIMIT } = require('../../constants')
+const {
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
+  CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
+} = require('../../constants')
 const BaseController = require('./BaseController')
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
-const AppException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
 const { min } = require('lodash')
-const { CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL } = require('../../constants')
-const { stringify } = require('uuid')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -142,9 +143,10 @@ class TaskController extends BaseController {
       if (this.topic) {
         this.topic.broadcast('messageEdited', {
           id,
-          message: message.message,
-          attachments: message.attachments,
+          message: message,
+          attachments: attachments,
           edit_status: 'edited',
+          topic: this.socket.topic,
         })
       }
     } catch (err) {
@@ -169,7 +171,7 @@ class TaskController extends BaseController {
         .where('id', id)
         .update({ text: '', attachments: null, edit_status: 'deleted' })
       if (this.topic) {
-        this.topic.broadcast('messageRemoved', { id })
+        this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
       }
     } catch (err) {
       this.emitError(err.message)
@@ -191,6 +193,7 @@ class TaskController extends BaseController {
       secondname: this.user.secondname,
       avatar: this.user.avatar,
     }
+    message.topic = this.socket.topic
     super.onMessage(message)
   }
 }
