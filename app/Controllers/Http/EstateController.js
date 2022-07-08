@@ -16,9 +16,9 @@ const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
+const NoticeService = use('App/Services/NoticeService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
-const Drive = use('Drive')
 const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
@@ -74,8 +74,9 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     try {
-      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
+      const estate = await EstateService.createEstate(request, auth.user.id)
 
+      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
       if (unverifiedUser) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
@@ -89,10 +90,10 @@ class EstateController {
         }' created a property with an address '${address}' in ${
           process.env.NODE_ENV || 'local'
         } environment`
+
         await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
 
-      const estate = await EstateService.createEstate(request, auth.user.id)
       response.res(estate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -447,13 +448,21 @@ class EstateController {
         .fetch()
     } else if (filter == 2) {
       estates = await Estate.query()
-        .where({ user_id: userId })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .with('slots')
-        .whereHas('slots', (estateQuery) => {
-          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+        .select('time_slots.*', 'estates.*')
+        .select(Database.raw('COUNT(visits)::int as visitCount'))
+        .where('estates.user_id', userId)
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .leftJoin('time_slots', function () {
+          this.on('estates.id', 'time_slots.estate_id')
         })
-        .orderBy('id')
+        .where('time_slots.end_at', '<=', currentDay.format(DAY_FORMAT))
+        .leftJoin('visits', function () {
+          this.on('visits.start_date', '>=', 'time_slots.start_at')
+            .on('visits.end_date', '<=', 'time_slots.end_at')
+            .on('visits.estate_id', '=', 'estates.id')
+        })
+        .groupBy('time_slots.id', 'estates.id')
+        .orderBy('time_slots.end_at', 'DESC')
         .fetch()
     } else if (filter == 3) {
       estates = await Estate.query()
@@ -468,6 +477,7 @@ class EstateController {
     } else if (filter == 4) {
       estates = await Estate.query()
         .where({ user_id: userId })
+        // We make final matched estates statuses "DRAFT"
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
         .with('matches')
         .whereHas('matches', (estateQuery) => {
@@ -702,9 +712,32 @@ class EstateController {
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
     }
-    await slot.delete()
 
-    response.res(true)
+    // If slot's end date is passed, we only delete the slot
+    // But if slot's end date is not passed, we delete the slot and all the visits
+    if (slot.end_at < new Date()) {
+      await slot.delete()
+      response.res(true)
+    } else {
+      const trx = await Database.beginTransaction()
+      try {
+        const estateId = slot.estate_id
+        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
+        await slot.delete(trx)
+
+        await trx.commit()
+
+        const notificationPromises = userIds.map((userId) =>
+          NoticeService.cancelVisit(estateId, userId)
+        )
+        await Promise.all(notificationPromises)
+        response.res(true)
+      } catch (e) {
+        Logger.error(e)
+        await trx.rollback()
+        throw new HttpException(e.message, 400)
+      }
+    }
   }
 
   /**
