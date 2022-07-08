@@ -1221,7 +1221,9 @@ class MatchService {
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     query.innerJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      this.on('_m.estate_id', 'estates.id')
+        .onIn('_m.user_id', userId)
+        .on('_m.status', MATCH_STATUS_VISIT)
     })
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')

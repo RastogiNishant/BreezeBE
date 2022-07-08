@@ -855,10 +855,16 @@ class UserService {
       .first()
   }
 
-  static async getTenants(id) {
+  static async getAllInsideTenants(id) {
     return (
       await User.query()
-        .select('users.id', 'users.avatar')
+        .select(
+          'users.id',
+          'users.avatar',
+          'users.firstname as firstname',
+          'users.secondname as secondname',
+          Database.raw('1 as inside_breeze')
+        )
         .innerJoin({ _m: 'matches' }, function () {
           this.on('_m.user_id', 'users.id')
           this.on('_m.status', MATCH_STATUS_FINISH)

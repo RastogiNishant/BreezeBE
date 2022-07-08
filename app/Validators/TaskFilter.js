@@ -1,8 +1,8 @@
 'use strict'
 
 const yup = require('yup')
-const { isArray } = require('lodash')
 const Base = require('./Base')
+const { id } = require('../Libs/schemas.js')
 
 const {
   TASK_STATUS_NEW_LABEL,
@@ -66,15 +66,17 @@ class TaskFilter extends Base {
             .nullable(),
         })
         .nullable(),
-
       tenant_id: yup
-        .object()
-        .shape({
-          matchMode: yup.string().nullable(),
-          value: yup.array().of(yup.number().positive()).nullable(),
-        })
+        .array()
+        .of(
+          yup.object().shape({
+            id: id,
+            inside_breeze: yup.boolean().required(),
+          })
+        )
         .nullable(),
-
+      only_inside_breeze: yup.boolean(),
+      only_outside_breeze: yup.boolean(),
       city: yup
         .object()
         .shape({
@@ -87,6 +89,7 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
+
       address: yup
         .object()
         .shape({
