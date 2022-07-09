@@ -1,18 +1,49 @@
 'use strict'
 
+const HttpException = require('../../Exceptions/HttpException')
+
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 class EstateCurrentTenantController {
-  async inviteTenantToApp({ request, auth, response }) {
+  async inviteTenantToAppByEmail({ request, auth, response }) {
     const { estate_id, id } = request.all()
-console.log( 'estate_id', estate_id)    
-    response.res(
-      await EstateCurrentTenantService.inviteTenantToApp({
-        estate_id: estate_id,
-        id: id,
-        user_id: auth.user.id,
-      })
-    )
+    try {
+      response.res(
+        await EstateCurrentTenantService.inviteTenantToAppByEmail({
+          estate_id: estate_id,
+          id: id,
+          user_id: auth.user.id,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  async acceptOutsideTenant({ request, auth, response }) {
+    const { data1, data2 } = request.all()
+
+    if (!data1 || !data2) {
+      throw new HttpException('Not enough params', 500)
+    }
+
+    const password = await EstateCurrentTenantService.acceptOutsideTenant({ data1, data2 })
+    response.res(password)
+  }
+
+  async inviteTenantToAppBySMS({ request, auth, response }) {
+    const { estate_id, id } = request.all()
+    try {
+      response.res(
+        await EstateCurrentTenantService.inviteTenantToAppBySMS({
+          estate_id: estate_id,
+          id: id,
+          user_id: auth.user.id,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
   }
 }
 

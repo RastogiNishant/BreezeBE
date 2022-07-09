@@ -2238,6 +2238,13 @@ class MatchService {
     }
   }
 
+  static async getMatches(userId, estateId) {
+    return await Database.query()
+      .from('matches')
+      .where({ user_id: userId, estate_id: estateId })
+      .first()
+  }
+
   static async handleDeletedTimeSlotVisits({ estate_id, start_at, end_at }, trx) {
     const visits = await Visit.query()
       .where('estate_id', estate_id)
@@ -2268,6 +2275,17 @@ class MatchService {
       .transacting(trx)
 
     return userIds
+  }
+
+  static async addFinalTenants({ user_id, estate_id }, trx = null) {
+    await Database.table('matches')
+      .insert({
+        user_id: user_id,
+        estate_id: estate_id,
+        percent: 0,
+        status: MATCH_STATUS_FINISH,
+      })
+      .transacting(trx)
   }
 }
 

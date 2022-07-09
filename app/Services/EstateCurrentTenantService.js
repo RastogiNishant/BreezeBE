@@ -1,17 +1,25 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const EstateSevice = use('App/Services/EstateService')
-const Estate = use('App/Models/Estate')
 const MailService = use('App/Services/MailService')
 const Database = use('Database')
 const crypto = require('crypto')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
-const DataStorage = use('DataStorage')
+const SMSService = use('App/Services/SMSService')
 
-const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
-const HttpException = require('../Exceptions/HttpException')
+const {
+  ROLE_USER,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  MATCH_STATUS_FINISH,
+  DEFAULT_LANG,
+} = require('../constants')
+const HttpException = use('App/Exceptions/HttpException')
+const UserService = use('App/Services/UserService')
+const MatchService = use('App/Services/MatchService')
+const l = use('Localize')
 
 class EstateCurrentTenantService {
   static async addCurrentTenant(data, estate_id) {
@@ -82,20 +90,42 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async inviteTenantToAppByEmail({id, estate_id, user_id}){
-
+  static async inviteTenantToAppByEmail({ id, estate_id, user_id }) {
+    const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
+      id,
+      estate_id,
+      user_id,
+    })
+    await MailService.sendInvitationToOusideTenant(estateCurrentTenant.email, shortLink)
   }
-  
-  static async inviteTenantToApp({ id, estate_id, user_id }) {
+
+  static async inviteTenantToAppBySMS({ id, estate_id, user_id }) {
+    const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
+      id,
+      estate_id,
+      user_id,
+    })
+
+    const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${shortLink}`
+
+    if (estateCurrentTenant.phone_number) {
+      await SMSService.send({ to: estateCurrentTenant.phone_number, txt })
+    } else {
+      throw new HttpException('phone number no exist', 500)
+    }
+  }
+
+  static async getCurrentEstate({ id, estate_id }) {
+    return await EstateCurrentTenant.query().where('id', id).where('estate_id', estate_id).first()
+  }
+
+  static async createDynamicLink({ id, estate_id, user_id }) {
     const estate = await EstateSevice.getActiveById(estate_id, { user_id: user_id })
     if (!estate) {
       throw new HttpException('No permission to invite')
     }
 
-    const estateCurrentTenant = await EstateCurrentTenant.query()
-      .where('id', id)
-      .where('estate_id', estate_id)
-      .first()
+    const estateCurrentTenant = await this.getCurrentEstate({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
@@ -111,13 +141,9 @@ class EstateCurrentTenantService {
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
     const code = uuid.v4()
-    await DataStorage.setItem(
-      code,
-      { estate_id: estateCurrentTenant.estate_id },
-      'invite_outside_breeze',
-      { ttl: 3600 }
-    )
-    console.log('EstateCurrentTenantServiceCode', code)
+    console.log('Code here', code)
+    await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code })
+
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
       estate_id: estateCurrentTenant.estate_id,
@@ -145,10 +171,102 @@ class EstateCurrentTenantService {
         },
       },
     })
+    return {
+      estateCurrentTenant,
+      shortLink,
+    }
+  }
 
-    //MailService.sendInvitationToOusideTenant(currentTenant.email, shortLink)
+  static async acceptOutsideTenant({ data1, data2 }) {
+    const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
-    return shortLink
+    const estateCurrentTenant = await this.getCurrentEstate({ id, estate_id })
+    if (!estateCurrentTenant) {
+      throw new HttpException('No record exists')
+    }
+
+    const preserved_code = estateCurrentTenant.code
+
+    if (code !== preserved_code) {
+      throw new HttpException('code is wrong', 500)
+    }
+
+    const time = moment().utc()
+    const old_time = moment().utc(expired_time, 'YYYY-MM-DD HH:mm:ss').add(2, 'days')
+
+    if (old_time < time) {
+      throw new HttpException('Link has been expired', 500)
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      const password = uuid.v4()
+      const userData = {
+        role: ROLE_USER,
+        secondname: estateCurrentTenant.surname,
+        phone: estateCurrentTenant.phone_number,
+        password: password,
+      }
+
+      await UserService.signUp(
+        { email: estateCurrentTenant.email, firstname: estateCurrentTenant.surname, ...userData },
+        trx
+      )
+      trx.commit()
+      return password
+    } catch (e) {
+      trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static decryptDynamicLink({ data1, data2 }) {
+    try {
+      const iv = Buffer.from(decodeURIComponent(data2), 'base64')
+
+      const password = process.env.CRYPTO_KEY
+      if (!password) {
+        throw new HttpException('Server configuration error')
+      }
+
+      const key = Buffer.from(password)
+
+      const decipher = crypto.createDecipheriv('aes-256-ctr', key, iv)
+
+      let decDst = decipher.update(decodeURIComponent(data1), 'base64', 'utf8')
+      decDst += decipher.final('utf8')
+
+      const { id, estate_id, code, expired_time } = JSON.parse(decDst)
+
+      return { id, estate_id, code, expired_time }
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static async getByUserId(user_id) {
+    await EstateCurrentTenant.query().where('user_id', user_id)
+  }
+
+  static async updateOutsideTenantInfo(user, trx = null) {
+    const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
+    if (!currentTenant) {
+      return
+    }
+    currentTenant.user_id = user.id
+    await currentTenant.save(trx)
+
+    //if current tenant, he needs to save to match as a final match
+    if (currentTenant.estate_id) {
+      const matches = await MatchService.getMatches(user.id, currentTenant.estate_id)
+
+      if (!matches) {
+        await MatchService.addFinalTenants(
+          { user_id: user.id, estate_id: currentTenant.estate_id },
+          trx
+        )
+      }
+    }
   }
 }
 
