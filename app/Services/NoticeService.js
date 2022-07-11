@@ -10,6 +10,7 @@ const User = use('App/Models/User')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
 const NotificationsService = use('App/Services/NotificationsService')
+const MailService = use('App/Services/MailService')
 const Logger = use('Logger')
 
 const {
@@ -81,6 +82,7 @@ const {
   MATCH_STATUS_FINISH,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+  DEFAULT_LANG,
 } = require('../constants')
 
 class NoticeService {
@@ -446,9 +448,7 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
-        user_name: tenantId
-          ? `${notificationUser.firstname || ''} ${notificationUser.secondname || ''}`
-          : null,
+        user_name: tenantId ? `${notificationUser.firstname || ''}` : null,
       },
       image: File.getPublicUrl(estate.cover),
     }
@@ -465,16 +465,16 @@ class NoticeService {
    * Get visits in {time}
    */
   static async getVisitsIn(hours) {
-    const start = moment().startOf('minute').add(hours, 'hours')
+    const start = moment().startOf('minute').add(hours, 'hours').add(2, hours) // 2 hours for the German timezone
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
-      .select('_v.user_id', '_v.estate_id', '_e.address', '_e.cover')
+      .select('_v.user_id', '_v.estate_id', '_e.address', '_e.cover', '_u.email', '_u.lang')
       .innerJoin({ _e: 'estates' }, '_e.id', '_v.estate_id')
+      .innerJoin({ _u: 'users' }, '_u.id', '_v.user_id')
       .where('_v.date', '>=', start.format(DATE_FORMAT))
       .where('_v.date', '<', end.format(DATE_FORMAT))
       .limit(1000)
-    // .limit(1)
   }
 
   static async inviteTenantInToVisit(estateId, tenantId) {
@@ -504,6 +504,11 @@ class NoticeService {
    */
   static async getProspectVisitIn3H() {
     const result = await NoticeService.getVisitsIn(3)
+
+    result.map((r) => {
+      const lang = r.lang ? r.lang : DEFAULT_LANG
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+    })
 
     const notices = result.map(({ user_id, estate_id, address, cover }) => ({
       user_id,
@@ -539,7 +544,7 @@ class NoticeService {
   static async getLandlordVisitsIn(hoursOffset) {
     const minDate = moment().startOf('day')
     const maxDate = minDate.clone().add(1, 'day')
-    const start = moment().startOf('minute').add(hoursOffset, 'hours')
+    const start = moment().startOf('minute').add(hoursOffset, 'hours').add(2, hours) // 2 hours for the German timezone
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     const withQuery = Database.table({ _v: 'visits' })
@@ -820,9 +825,7 @@ class NoticeService {
         estate_id: estate.id,
         estate_address: estate.address,
         delay: delay,
-        user_name: prospectId
-          ? `${notificationUser.firstname || ''} ${notificationUser.secondname || ''}`
-          : undefined,
+        user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined,
       },
       image: File.getPublicUrl(estate.cover),
     }
@@ -850,7 +853,7 @@ class NoticeService {
           estate_id: estateId,
           estate_address: estate.address,
           params: estate.getAptParams(),
-          user_name: `${prospect.firstname || ''} ${prospect.secondname || ''}`,
+          user_name: `${prospect.firstname || ''}`,
         },
         image: File.getPublicUrl(estate.cover),
       }
