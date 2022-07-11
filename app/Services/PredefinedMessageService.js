@@ -1,14 +1,22 @@
 'use strict'
 
+const { STATUS_DELETE } = require('../constants')
+
 const PredefinedMessage = use('App/Models/PredefinedMessage')
 
 class PredefinedMessageService {
   static async get(id) {
-    return await PredefinedMessage.query().with('messageChoices').where('id', id).firstOrFail()
+    return await PredefinedMessage.query().with('choices').where('id', id).firstOrFail()
   }
 
   static async getAll() {
-    return (await PredefinedMessage.query().with('messageChoices').orderBy('step', 'id').fetch()).rows
+    return (
+      await PredefinedMessage.query()
+        .with('choices')
+        .whereNot('status', STATUS_DELETE)
+        .orderBy('step', 'id')
+        .fetch()
+    ).rows
   }
 
   static async create(data) {
@@ -24,7 +32,7 @@ class PredefinedMessageService {
   }
 
   static async delete(id) {
-    return await PredefinedMessage.query().where({ id: id }).delete()
+    return await PredefinedMessage.query().where({ id: id }).update('status', STATUS_DELETE)
   }
 }
 

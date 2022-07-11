@@ -5,7 +5,7 @@ class Task extends Model {
   static get columns() {
     return [
       'id',
-      'name',
+      'title',
       'estate_id',
       'tenant_id',
       'urgency',
@@ -14,7 +14,7 @@ class Task extends Model {
       'attachments',
       'description',
       'created_at',
-      'updated_at'
+      'updated_at',
     ]
   }
   static get readonly() {

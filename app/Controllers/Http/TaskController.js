@@ -40,10 +40,22 @@ class TaskController {
 
   async getTenantTasks({ request, auth, response }) {
     try {
-      response.res(await TaskService.getTenantAllTask({ tenant_id: auth.user.id }))
+      const { estate_id, status } = request.all()
+      response.res(
+        await TaskService.getTenantAllTask({
+          tenant_id: auth.user.id,
+          estate_id: estate_id,
+          status: status,
+        })
+      )
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
+  }
+
+  async getTaskById({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(await TaskService.getTaskById({ id, user: auth.user }))
   }
 
   async getEstateTasks({ request, auth, response }) {
@@ -101,6 +113,7 @@ class TaskController {
       throw new HttpException(e.message, 500)
     }
   }
+
   async getTask({ request, auth, response }) {
     const { ...filter } = request.all()
     try {

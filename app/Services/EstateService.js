@@ -47,6 +47,7 @@ const {
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
   TASK_STATUS_DRFAT,
+  TASK_STATUS_DELETE,
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
 } = require('../constants')
@@ -1085,13 +1086,6 @@ class EstateService {
   }
 
   static async getEstatesWithTask(user, params, page, limit = -1) {
-    let outsideTenantIds = []
-    let insideTenantIds = []
-    if (params.tenant_id) {
-      insideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 1).map((t) => t.id)
-      outsideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 0).map((t) => t.id)
-    }
-
     let query = Estate.query()
       .with('current_tenant')
       .select(
@@ -1108,6 +1102,24 @@ class EstateService {
         Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant')
       )
 
+    query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+      if (params.only_outside_breeze) {
+        this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+      }
+
+      if (params.only_inside_breeze) {
+        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
+      }
+
+      if (params.tenant_id) {
+        this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
+      }
+
+      if (!params.only_outside_breeze && !params.only_inside_breeze) {
+        this.on('_ect.estate_id', 'estates.id')
+      }
+    })
+
     query.leftJoin({ _m: 'matches' }, function (m) {
       m.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
     })
@@ -1116,56 +1128,19 @@ class EstateService {
       m.on('_m.user_id', '_u.id')
     })
 
-
     query.leftJoin('tasks', function () {
-      this.on('estates.id', 'tasks.estate_id').on(
-        Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
-      )
+      this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
+        TASK_STATUS_DRFAT,
+        TASK_STATUS_DELETE,
+      ])
+
       if (!params.status) {
         this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
       }
     })
 
-    let insideBreezeFilterSQL = ` SELECT estate_id from matches `
-
-    if (insideTenantIds.length) {
-      insideBreezeFilterSQL += ` INNER JOIN users ON users.id = matches.user_id AND users.id IN ( ${insideTenantIds} )`
-    }
-
-    insideBreezeFilterSQL += ` where matches.status  = ${MATCH_STATUS_FINISH}`
-    insideBreezeFilterSQL = Database.raw(insideBreezeFilterSQL)
-
     query.where('estates.user_id', user.id)
     query.whereNot('estates.status', STATUS_DELETE)
-    query.andWhere(function () {
-      if (
-        params.only_inside_breeze ||
-        !params.tenant_id ||
-        !params.tenant_id.length ||
-        outsideTenantIds.length
-      ) {
-        this.orWhere(function () {
-          if (outsideTenantIds.length) {
-            this.whereIn(
-              'estates.id',
-              Database.raw(
-                `( SELECT estate_id FROM estate_current_tenants WHERE estate_current_tenants.id IN ( ${outsideTenantIds} ) )`
-              )
-            )
-          }
-          this.where('estates.letting_type', LETTING_TYPE_LET)
-        })
-      }
-
-      if (
-        params.only_inside_breeze ||
-        !params.tenant_id ||
-        !params.tenant_id.length ||
-        insideTenantIds.length
-      ) {
-        this.orWhere('estates.id', 'IN', insideBreezeFilterSQL)
-      }
-    })
 
     if (params.estate_id) {
       query.whereIn('estates.id', [params.estate_id])
@@ -1204,67 +1179,32 @@ class EstateService {
   }
 
   static async getTotalLetCount(user_id, params) {
-    let outsideTenantIds = []
-    let insideTenantIds = []
-    if (params.tenant_id) {
-      insideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 1).map((t) => t.id)
-      outsideTenantIds = params.tenant_id.filter((t) => t.inside_breeze === 0).map((t) => t.id)
-    }
-
-    let insideBreezeFilterSQL = ` SELECT estate_id from matches `
-
-    if (insideTenantIds.length) {
-      insideBreezeFilterSQL += ` INNER JOIN users ON users.id = matches.user_id AND users.id IN ( ${insideTenantIds} )`
-    }
-
-    insideBreezeFilterSQL += ` where matches.status  = ${MATCH_STATUS_FINISH}`
-    insideBreezeFilterSQL = Database.raw(insideBreezeFilterSQL)
-
     let query = Estate.query()
       .count('estates.*')
       .leftJoin('tasks', function () {
         this.on('estates.id', 'tasks.estate_id').on(
-          Database.raw(`tasks.status != ${TASK_STATUS_DRFAT}`)
+          Database.raw(`tasks.status not in (${[TASK_STATUS_DRFAT, TASK_STATUS_DELETE]})`)
         )
+      })
+      .innerJoin({ _ect: 'estate_current_tenants' }, function () {
+        if (params.only_outside_breeze) {
+          this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+        }
+
+        if (params.only_inside_breeze) {
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
+        }
+
+        if (params.tenant_id) {
+          this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
+        }
+
+        if (!params.only_outside_breeze && !params.only_inside_breeze) {
+          this.on('_ect.estate_id', 'estates.id')
+        }
       })
       .where('estates.user_id', user_id)
       .whereNot('estates.status', STATUS_DELETE)
-      .andWhere(function () {
-        if (
-          params.only_outside_breeze ||
-          !params.tenant_id ||
-          !params.tenant_id.length ||
-          outsideTenantIds.length
-        ) {
-          this.orWhere(function () {
-            if (outsideTenantIds.length) {
-              // this.innerJoin({
-              //   _ect: 'estate_current_tenants',
-              //   function() {
-              //     this.on('estates.id', '_ect.estate_id')
-              //     this.onIn('_ect.id', outsideTenantIds)
-              //   },
-              // })
-              this.whereIn(
-                'estates.id',
-                Database.raw(
-                  `( SELECT estate_id FROM estate_current_tenants WHERE estate_current_tenants.id IN ( ${outsideTenantIds} ) )`
-                )
-              )
-            }
-            this.where('estates.letting_type', LETTING_TYPE_LET)
-          })
-        }
-
-        if (
-          params.only_inside_breeze ||
-          !params.tenant_id ||
-          !params.tenant_id.length ||
-          insideTenantIds.length
-        ) {
-          this.orWhere('estates.id', 'IN', insideBreezeFilterSQL)
-        }
-      })
 
     const filter = new TaskFilters(params, query)
     query = filter.process()

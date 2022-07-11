@@ -4,7 +4,14 @@ const Model = require('./BaseModel')
 
 class PredefinedMessageAnswer extends Model {
   static get columns() {
-    return ['id', 'task_id', 'predefined_message_id', 'predefined_message_choice_id', 'text']
+    return [
+      'id',
+      'task_id',
+      'predefined_message_id',
+      'predefined_message_choice_id',
+      'text',
+      'is_deleted',
+    ]
   }
 
   static get readonly() {
