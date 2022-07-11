@@ -75,9 +75,9 @@ const inRange = (value, start, end) => {
 }
 
 const log = (data) => {
-  //return false
+  return false
   //Logger.info('LOG', data)
-  console.log(data)
+  //console.log(data)
 }
 
 class MatchService {
