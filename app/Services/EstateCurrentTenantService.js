@@ -42,7 +42,7 @@ class EstateCurrentTenantService {
       user_id: tenant_id,
       surname: tenantUser.secondname || '',
       email: tenantUser.email,
-      contract_end: moment().add(1, 'years').format(DAY_FORMAT),
+      contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
       phone_number: tenantUser.phone_number || '',
       status: STATUS_ACTIVE,
       salutation_int: SALUTATION_SIR_OR_MADAM,

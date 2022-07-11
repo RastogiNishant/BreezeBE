@@ -28,7 +28,7 @@ class EstateCurrentTenantForFinalMatchesSchema extends Schema {
             user_id: match.user_id,
             surname: tenantUser.secondname || '',
             email: tenantUser.email,
-            contract_end: moment(match.updated_at).add(1, 'years').format(DAY_FORMAT),
+            contract_end: moment(match.updated_at).utc().add(1, 'years').format(DAY_FORMAT),
             phone_number: tenantUser.phone_number || '',
             status: STATUS_ACTIVE,
             salutation_int: SALUTATION_SIR_OR_MADAM,
