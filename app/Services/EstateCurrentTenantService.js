@@ -1,8 +1,15 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Database = use('Database')
+const moment = require('moment')
 
-const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
+const {
+  ROLE_USER,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  DAY_FORMAT,
+  SALUTATION_SIR_OR_MADAM,
+} = require('../constants')
 
 class EstateCurrentTenantService {
   static async addCurrentTenant(data, estate_id) {
@@ -23,6 +30,25 @@ class EstateCurrentTenantService {
       currentTenant.user_id = user.id
     }
     await currentTenant.save()
+    return currentTenant
+  }
+
+  static async createOnFinalMatch(tenant_id, estate_id, trx) {
+    const tenantUser = await User.query().where('id', tenant_id).firstOrFail()
+
+    const currentTenant = new EstateCurrentTenant()
+    currentTenant.fill({
+      estate_id,
+      user_id: tenant_id,
+      surname: tenantUser.secondname || '',
+      email: tenantUser.email,
+      contract_end: moment().add(1, 'years').format(DAY_FORMAT),
+      phone_number: tenantUser.phone_number || '',
+      status: STATUS_ACTIVE,
+      salutation_int: SALUTATION_SIR_OR_MADAM,
+    })
+
+    await currentTenant.save(trx)
     return currentTenant
   }
 

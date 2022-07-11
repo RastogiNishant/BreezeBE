@@ -19,6 +19,8 @@ const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
 
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -1006,6 +1008,8 @@ class MatchService {
       .where({ id: estateId })
       .update({ status: STATUS_DRAFT })
       .transacting(trx)
+
+    await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
 
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
