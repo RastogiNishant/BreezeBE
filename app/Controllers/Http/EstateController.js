@@ -83,8 +83,7 @@ class EstateController {
 
       const estate = await EstateService.createEstate(request, auth.user.id)
 
-      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
-      if (unverifiedUser) {
+      if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
           `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
