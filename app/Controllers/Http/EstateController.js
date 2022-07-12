@@ -42,9 +42,7 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  TRANSPORT_TYPE_WALK,
   USER_ACTIVATION_STATUS_DEACTIVATED,
-  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
@@ -79,13 +77,14 @@ class EstateController {
     try {
       const user = await UserService.getById(auth.user.id)
 
-      if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
+      if (user.activation_status === USER_ACTIVATION_STATUS_DEACTIVATED) {
         throw new HttpException('No permission to create estate')
       }
 
       const estate = await EstateService.createEstate(request, auth.user.id)
 
-      if (user.activation_status !== USER_ACTIVATION_STATUS_NOT_ACTIVATED) {
+      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
+      if (unverifiedUser) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
           `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
