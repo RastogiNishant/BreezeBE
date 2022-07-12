@@ -600,7 +600,7 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true, role: user.role }))
+    response.res(estates)
   }
 
   /**
