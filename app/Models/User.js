@@ -121,7 +121,7 @@ class User extends Model {
    *
    */
   company() {
-    return this.hasOne('App/Models/Company', 'id', 'company_id')
+    return this.hasOne('App/Models/Company', 'id', 'user_id')
   }
 
   /**

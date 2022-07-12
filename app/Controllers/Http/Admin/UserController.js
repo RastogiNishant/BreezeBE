@@ -127,6 +127,9 @@ class UserController {
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
       })
+      .with('company', function (query) {
+        query.with('contacts')
+      })
     if (query) {
       landlordQuery.andWhere(function (d) {
         d.orWhere('email', 'ilike', `${query}%`)
