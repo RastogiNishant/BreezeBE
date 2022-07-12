@@ -116,7 +116,11 @@ class EstateCurrentTenantService {
   }
 
   static async getCurrentEstate({ id, estate_id }) {
-    return await EstateCurrentTenant.query().where('id', id).where('estate_id', estate_id).first()
+    return await EstateCurrentTenant.query()
+      .where('id', id)
+      .where('estate_id', estate_id)
+      .whereNull('user_id')
+      .first()
   }
 
   static async createDynamicLink({ id, estate_id, user_id }) {
@@ -141,7 +145,6 @@ class EstateCurrentTenantService {
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
     const code = uuid.v4()
-    console.log('Code here', code)
     await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code })
 
     const txtSrc = JSON.stringify({
@@ -209,7 +212,7 @@ class EstateCurrentTenantService {
       }
 
       await UserService.signUp(
-        { email: estateCurrentTenant.email, firstname: estateCurrentTenant.surname, ...userData },
+        { email: estateCurrentTenant.email, firstname: '', ...userData },
         trx
       )
       trx.commit()
@@ -261,7 +264,7 @@ class EstateCurrentTenantService {
       const matches = await MatchService.getMatches(user.id, currentTenant.estate_id)
 
       if (!matches) {
-        await MatchService.addFinalTenants(
+        await MatchService.addFinalTenant(
           { user_id: user.id, estate_id: currentTenant.estate_id },
           trx
         )

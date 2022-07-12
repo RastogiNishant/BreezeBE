@@ -483,6 +483,7 @@ Route.post(
   '/api/v1/accept/outside_tenant',
   'EstateCurrentTenantController.acceptOutsideTenant'
 ).middleware(['valid:OutsideTenantInvite'])
+
 // Change visits statuses
 Route.group(() => {
   Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([

@@ -362,7 +362,7 @@ class UserService {
   static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
-    console.log('Code here', code)
+
     if (code !== userCode) {
       throw new AppException('Invalid code')
     }
