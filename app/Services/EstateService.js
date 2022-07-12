@@ -17,6 +17,7 @@ const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
+const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
@@ -53,6 +54,7 @@ const {
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
+  TRANSPORT_TYPE_WALK,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1115,6 +1117,28 @@ class EstateService {
       'verified_address',
     ])
     return estateCount
+  }
+
+  static async getIsolines(estate) {
+    try {
+      if (!estate.full_address && (estate.coord_raw || estate.coord)) {
+        const coords = (estate.coord_raw || estate.coord).split(',')
+        const lat = coords[0]
+        const lon = coords[1]
+
+        const isolinePoints = await GeoService.getOrCreateIsoline(
+          { lat, lon },
+          TRANSPORT_TYPE_WALK,
+          60
+        )
+
+        return isolinePoints?.toJSON()?.data || []
+      }
+      return []
+    } catch (e) {
+      console.log(`getIsolines Error ${e.message}`)
+      return []
+    }
   }
 
   static async hasPermission({ id, user_id }) {

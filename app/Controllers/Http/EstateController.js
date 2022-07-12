@@ -578,6 +578,10 @@ class EstateController {
         { exclude_from, exclude_to, exclude },
         limit
       )
+      estates = await Promise.all(estates.toJSON({ isShort: true, role: user.role }).map( async estate => {
+        estate.isoline = await EstateService.getIsolines(estate)
+        return estate 
+      }))
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
@@ -585,7 +589,7 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true, role: user.role }))
+    response.res(estates)
   }
 
   /**
@@ -600,17 +604,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    if (!estate.full_address && estate.coord_raw) {
-      const coords = estate.coord_raw.split(',')
-      const lat = coords[0]
-      const lon = coords[1]
-      const isolinePoints = await GeoService.getOrCreateIsoline(
-        { lat, lon },
-        TRANSPORT_TYPE_WALK,
-        60
-      )
-      estate.isoline = isolinePoints?.toJSON()?.data || []
-    }
+    estate.isoline = await EstateService.getIsolines(estate)
 
     estate = estate.toJSON({ isShort: true, role: auth.user.role })
     estate = await EstateService.assignEstateAmenities(estate)
