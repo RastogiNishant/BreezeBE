@@ -388,7 +388,10 @@ class EstateController {
         throw new HttpException('Cant update status', 400)
       }
 
-      if (estate.letting_type !== LETTING_TYPE_LET) {
+      if (
+        [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+        estate.letting_type !== LETTING_TYPE_LET
+      ) {
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -578,10 +581,12 @@ class EstateController {
         { exclude_from, exclude_to, exclude },
         limit
       )
-      estates = await Promise.all(estates.toJSON({ isShort: true, role: user.role }).map( async estate => {
-        estate.isoline = await EstateService.getIsolines(estate)
-        return estate 
-      }))
+      estates = await Promise.all(
+        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
