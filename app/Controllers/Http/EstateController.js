@@ -45,8 +45,7 @@ const {
   TRANSPORT_TYPE_WALK,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
-  USER_ACTIVATION_STATUS_ACTIVATED
-
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -78,16 +77,15 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     try {
-
       const user = await UserService.getById(auth.user.id)
 
-      if( user.activation_status !==  USER_ACTIVATION_STATUS_ACTIVATED ) {
+      if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         throw new HttpException('No permission to create estate')
       }
 
       const estate = await EstateService.createEstate(request, auth.user.id)
-      
-      if( user.activation_status !==  USER_ACTIVATION_STATUS_NOT_ACTIVATED ) {
+
+      if (user.activation_status !== USER_ACTIVATION_STATUS_NOT_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
           `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
@@ -398,7 +396,10 @@ class EstateController {
         throw new HttpException('Cant update status', 400)
       }
 
-      if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+      if (
+        [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+        estate.letting_type !== LETTING_TYPE_LET
+      ) {
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -587,6 +588,12 @@ class EstateController {
         user.id,
         { exclude_from, exclude_to, exclude },
         limit
+      )
+      estates = await Promise.all(
+        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
       )
     } catch (e) {
       if (e.name === 'AppException') {
