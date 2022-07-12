@@ -2277,7 +2277,7 @@ class MatchService {
     return userIds
   }
 
-  static async addFinalTenants({ user_id, estate_id }, trx = null) {
+  static async addFinalTenant({ user_id, estate_id }, trx = null) {
     await Database.table('matches')
       .insert({
         user_id: user_id,
