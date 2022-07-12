@@ -388,7 +388,7 @@ class EstateController {
         throw new HttpException('Cant update status', 400)
       }
 
-      if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+      if (estate.letting_type !== LETTING_TYPE_LET) {
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
