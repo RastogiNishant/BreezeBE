@@ -446,6 +446,8 @@ const constants = {
   TIMESLOT_STATUS_DELAY: 'delay',
   TIMESLOT_STATUS_COME: 'come',
 
+  VISIT_MAX_ALLOWED_FOLLOWUPS: 3,
+
   MIN_TIME_SLOT: 5,
 
   NO_UNPAID_RENTAL: 1,
