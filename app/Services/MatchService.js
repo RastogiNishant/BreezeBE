@@ -1001,7 +1001,10 @@ class MatchService {
         estate_id: estateId,
         status: MATCH_STATUS_COMMIT,
       })
-      .update({ status: MATCH_STATUS_FINISH })
+      .update({
+        status: MATCH_STATUS_FINISH,
+        final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+      })
       .transacting(trx)
 
     // Make estate status DRAFT to hide from tenants' matches list
@@ -2275,6 +2278,17 @@ class MatchService {
       .transacting(trx)
 
     return userIds
+  }
+
+  static async getEstatesByStatus({ estate_id, status }) {
+    let query = Match.query()
+    if (estate_id) {
+      query.where('id', estate_id)
+    }
+    if (status) {
+      query.where('status', status)
+    }
+    return (await query.fetch()).rows
   }
 }
 

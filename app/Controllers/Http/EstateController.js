@@ -578,10 +578,12 @@ class EstateController {
         { exclude_from, exclude_to, exclude },
         limit
       )
-      estates = await Promise.all(estates.toJSON({ isShort: true, role: user.role }).map( async estate => {
-        estate.isoline = await EstateService.getIsolines(estate)
-        return estate 
-      }))
+      estates = await Promise.all(
+        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
@@ -709,6 +711,10 @@ class EstateController {
 
     // If slot's end date is passed, we only delete the slot
     // But if slot's end date is not passed, we delete the slot and all the visits
+    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
+      throw new HttpException('Showing is already started', 500)
+    }
+
     if (slot.end_at < new Date()) {
       await slot.delete()
       response.res(true)
