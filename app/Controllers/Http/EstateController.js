@@ -92,7 +92,7 @@ class EstateController {
         ).toLowerCase()
 
         const txt = `The landlord '${
-          unverifiedUser.email
+          user.email
         }' created a property with an address '${address}' in ${
           process.env.NODE_ENV || 'local'
         } environment`
