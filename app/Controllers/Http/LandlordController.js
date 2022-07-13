@@ -93,13 +93,9 @@ class LandlordController {
 
   async getAllTenants({ auth, response }) {
     try {
-      let inBreezeTenants = await UserService.getAllInsideTenants(auth.user.id)
-      const outsideBreezeTenants = await EstateCurrentTenantService.getAllOutsideTenant(
-        auth.user.id
-      )
-      inBreezeTenants.push(...outsideBreezeTenants)
+      const tenants = await EstateCurrentTenantService.getAllTenant(auth.user.id)
 
-      response.res(inBreezeTenants)
+      response.res(tenants)
     } catch (e) {
       throw new HttpException(e.message, 500)
     }

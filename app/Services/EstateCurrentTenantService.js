@@ -99,19 +99,21 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async getAllOutsideTenant(id) {
+  static async getAllTenant(id) {
     const today = moment.utc(new Date(), DAY_FORMAT)
     return (
-      await EstateCurrentTenant.query()
-        .select('estate_current_tenants.*', Database.raw('0 as inside_breeze'))
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'estate_current_tenants.estate_id')
-          this.on('_e.user_id', id)
-        })
-        .where('estate_current_tenants.status', STATUS_ACTIVE)
-        .where('estate_current_tenants.contract_end', '>=', today)
-        .fetch()
-    ).rows
+      (
+        await EstateCurrentTenant.query()
+          .select('estate_current_tenants.*')
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_current_tenants.estate_id')
+            this.on('_e.user_id', id)
+          })
+          .where('estate_current_tenants.status', STATUS_ACTIVE)
+          // .where('estate_current_tenants.contract_end', '>=', today)
+          .fetch()
+      ).rows
+    )
   }
 }
 
