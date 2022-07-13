@@ -189,7 +189,9 @@ class EstateService {
       .innerJoin({ _u: 'users' }, '_m.user_id', '_u.id')
       .where('estates.id', id)
       .whereNotIn('estates.status', [STATUS_DELETE])
+
     query.where('estates.user_id', user_id)
+    
     return await query.firstOrFail()
   }
 
@@ -306,7 +308,6 @@ class EstateService {
       })
 
     const Filter = new EstateFilters(params, query)
-    console.log('Filter , filter')
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }

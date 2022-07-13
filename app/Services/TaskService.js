@@ -83,6 +83,7 @@ class TaskService {
   static async getTaskById({ id, user }) {
     let task = await Task.query()
       .where('id', id)
+      .whereNot('status', TASK_STATUS_DELETE)
       .with('user', function (u) {
         u.select('id', 'avatar')
       })
@@ -90,6 +91,7 @@ class TaskService {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
       .first()
+
     if (!task) {
       return null
     }
@@ -97,6 +99,7 @@ class TaskService {
     if (user.role === ROLE_LANDLORD) {
       await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
+
     if (user.role === ROLE_USER && task.tenant_id !== user.id) {
       throw new HttpException('No Permission')
     }
@@ -137,7 +140,6 @@ class TaskService {
       if (!isArray(status)) {
         status = [status]
       }
-
       query.whereIn('status', status)
     }
 
@@ -149,7 +151,7 @@ class TaskService {
     }
 
     if (role === ROLE_LANDLORD) {
-      query.whereNot('status', TASK_STATUS_DRFAT)
+      query.whereNotIn('status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
     }
     return await query
   }
@@ -180,7 +182,11 @@ class TaskService {
   }
 
   static async getWithTenantId({ id, tenant_id }) {
-    return await Task.query().where('id', id).where('tenant_id', tenant_id).firstOrFail()
+    return await Task.query()
+      .where('id', id)
+      .whereNot('status', TASK_STATUS_DELETE)
+      .where('tenant_id', tenant_id)
+      .firstOrFail()
   }
 
   static async getWithDependencies(id) {

@@ -1,15 +1,33 @@
 'use strict'
 
+const HttpException = require('../Exceptions/HttpException')
+
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
+const PredefinedMessageChoiceService = use('App/Services/PredefinedMessageChoiceService')
 const TaskService = use('App/Services/TaskService')
 class PredefinedAnswerService {
   static async create(user_id, data, trx) {
     await TaskService.getWithTenantId({ id: data.task_id, tenant_id: user_id })
+
+    if (data.predefined_message_choice_id) {
+      await PredefinedMessageChoiceService.getWithPredefinedMessageId({
+        id: data.predefined_message_choice_id,
+        predefined_message_id: data.predefined_message_id,
+      })
+    }
+
     return await PredefinedMessageAnswer.createItem({ ...data }, trx)
   }
 
   static async update(user_id, data, trx) {
     await TaskService.getWithTenantId({ id: data.task_id, tenant_id: user_id })
+
+    if (data.predefined_message_choice_id) {
+      await PredefinedMessageChoiceService.getWithPredefinedMessageId({
+        id: data.predefined_message_choice_id,
+        predefined_message_id: data.predefined_message_id,
+      })
+    }
 
     if (trx) {
       return await PredefinedMessageAnswer.query()

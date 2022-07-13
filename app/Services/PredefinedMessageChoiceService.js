@@ -7,6 +7,13 @@ class PredefinedMessageChoiceService {
     return await PredefinedMessageChoice.query().where('id', id).firstOrFail()
   }
 
+  static async getWithPredefinedMessageId({ id, predefined_message_id }) {
+    return await PredefinedMessageChoice.query()
+      .where('id', id)
+      .where('predefined_message_id', predefined_message_id)
+      .firstOrFail()
+  }
+
   static async getAll(filter) {
     let query = PredefinedMessageChoice.query()
 
