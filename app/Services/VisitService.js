@@ -1,7 +1,7 @@
 const moment = require('moment')
 const Database = use('Database')
-
 const { DATE_FORMAT } = require('../constants')
+const Visit = use('App/Models/Visit')
 
 class VisitService {
   /**
@@ -18,11 +18,27 @@ class VisitService {
       .groupBy('estate_id')
       .as('_t')
 
-    return (
-      Database.from(subQuery)
-        .where('date', '>=', date15H5M.format(DATE_FORMAT))
-        .where('date', '<', date15H.format(DATE_FORMAT))
-    )
+    return Database.from(subQuery)
+      .where('date', '>=', date15H5M.format(DATE_FORMAT))
+      .where('date', '<', date15H.format(DATE_FORMAT))
+  }
+
+  static async getFollowupCount(estate_id, user_id, actor = 'landlord') {
+    let visits = await Visit.query().where('estate_id', estate_id).where('user_id', user_id).first()
+    return visits[`${actor}_followup_count`]
+  }
+
+  static async incrementFollowup(estate_id, user_id, actor = 'landlord') {
+    try {
+      await Visit.query()
+        .where('estate_id', estate_id)
+        .where('user_id', user_id)
+        .update({
+          [`${actor}_followup_count`]: Database.raw(`${actor}_followup_count + 1`),
+        })
+    } catch (err) {
+      console.log(err.message)
+    }
   }
 }
 
