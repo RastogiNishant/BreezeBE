@@ -388,9 +388,24 @@ class MatchController {
         404
       )
     }
+    const notice = {
+      user_id: userId,
+      type: prospectId ? NOTICE_TYPE_VISIT_DELAY_ID : NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
+      data: {
+        estate_id: estate.id,
+        estate_address: estate.address,
+        delay: delay,
+        user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+
+    await NoticeService.insertNotices([notice])
     //notify
-    await tokens = await UserService.getTokenWithLocale([recipient])
-    await NotificationsService.sendNotification()
+    const tokens = await UserService.getTokenWithLocale([recipient])
+    await NotificationsService.sendNotification(tokens, type, {
+      body: l(),
+    })
     await VisitService.incrementFollowup(estate_id, user_id, actor)
     return response.res(true)
   }
