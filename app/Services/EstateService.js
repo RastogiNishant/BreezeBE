@@ -1158,8 +1158,7 @@ class EstateService {
         '_u.firstname',
         '_u.secondname',
         '_u.avatar',
-        'tasks.urgency as urgency',
-        Database.raw('COALESCE( bool(_m.status), false ) as is_breeze_tenant')
+        'tasks.urgency as urgency'
       )
 
     query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
@@ -1180,12 +1179,8 @@ class EstateService {
       }
     })
 
-    query.leftJoin({ _m: 'matches' }, function (m) {
-      m.on('_m.estate_id', 'estates.id').on('_m.status', MATCH_STATUS_FINISH)
-    })
-
     query.leftJoin({ _u: 'users' }, function (m) {
-      m.on('_m.user_id', '_u.id')
+      m.on('_ect.user_id', '_u.id')
     })
 
     query.leftJoin('tasks', function () {
@@ -1208,8 +1203,7 @@ class EstateService {
 
     const filter = new TaskFilters(params, query)
     query = filter.process()
-    query.groupBy('estates.id', '_m.status', '_u.id', 'tasks.id')
-    query.orderBy('_m.status')
+    query.groupBy('estates.id', '_u.id', 'tasks.id')
     let result = null
     if (limit == -1) {
       result = await query.fetch()
