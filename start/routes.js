@@ -483,6 +483,9 @@ Route.group(() => {
     'auth:jwt',
     'valid:UpdateVisitStatusTenant',
   ])
+  Route.post('/notifications/followup', 'MatchController.followupVisit').middleware([
+    'auth:jwt,jwtLandlord',
+  ])
 }).prefix('/api/v1/visit')
 
 Route.group(() => {

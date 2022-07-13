@@ -5,6 +5,7 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
+const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
@@ -39,9 +40,12 @@ const {
   TENANT_EMAIL_INVITE,
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
+  VISIT_MAX_ALLOWED_FOLLOWUPS,
 } = require('../../constants')
+const NotificationsService = require('../../Services/NotificationsService')
 
 const { logEvent } = require('../../Services/TrackingService')
+const VisitService = require('../../Services/VisitService')
 
 class MatchController {
   /**
@@ -345,6 +349,52 @@ class MatchController {
     return response.res(true)
   }
 
+  async followupVisit({ request, auth, response }) {
+    let { estate_id, user_id } = request.all()
+    const { role } = auth.user
+
+    let actor = 'landlord'
+    let estate
+    let recipient
+    switch (role) {
+      case ROLE_LANDLORD:
+        estate = await this.getOwnEstate(estate_id, auth.user.id)
+        if (!estate) {
+          throw new HttpException('Invalid Estate', 404)
+        }
+        //recipient is the prospect of this visit
+        recipient = user_id
+        break
+      case ROLE_USER:
+        let visit = await Visit.query()
+          .where('user_id', auth.user.id)
+          .where('estate_id', estate_id)
+          .first()
+        if (!visit) {
+          throw new HttpException('Not allowed', 404)
+        }
+        user_id = auth.user.id
+        actor = 'prospect'
+        //recipient is the estate owner
+        estate = await Estate.query().where('id', estate_id)
+        recipient = estate.user_id
+        break
+    }
+    const followupCount = await VisitService.getFollowupCount(estate_id, user_id, actor)
+    if (followupCount >= VISIT_MAX_ALLOWED_FOLLOWUPS) {
+      throw new HttpException(
+        `You have already exceeded the maximum of 
+        ${VISIT_MAX_ALLOWED_FOLLOWUPS} followups.`,
+        404
+      )
+    }
+    //notify
+    await tokens = await UserService.getTokenWithLocale([recipient])
+    await NotificationsService.sendNotification()
+    await VisitService.incrementFollowup(estate_id, user_id, actor)
+    return response.res(true)
+  }
+
   /**
    *
    */
@@ -628,14 +678,16 @@ class MatchController {
     const fields = TENANT_MATCH_FIELDS
 
     estates = {
-      ...estates.toJSON({ isShort: true, fields })
+      ...estates.toJSON({ isShort: true, fields }),
     }
 
-    if( estates?.data ) {
-      estates.data = await Promise.all(estates.data.map( async estate => {
-        estate.isoline = await EstateService.getIsolines(estate)
-        return estate 
-      }))
+    if (estates?.data) {
+      estates.data = await Promise.all(
+        estates.data.map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
     }
 
     return response.res(estates)
