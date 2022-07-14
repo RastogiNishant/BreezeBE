@@ -8,7 +8,7 @@ class EstateCurrentTenantController {
   async create({ request, auth, response }) {
     const { estate_id, ...data } = request.all()
     const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
-      ...data,
+      data,
       estate_id,
       user_id: auth.user.id,
     })
@@ -16,9 +16,10 @@ class EstateCurrentTenantController {
   }
 
   async update({ request, auth, response }) {
-    const { estate_id, ...data } = request.all()
+    const { id, estate_id, ...data } = request.all()
     const estateCurrentTenant = await EstateCurrentTenantService.updateCurrentTenant({
-      ...data,
+      data,
+      id,
       estate_id,
       user_id: auth.user.id,
     })
@@ -41,6 +42,11 @@ class EstateCurrentTenantController {
   async delete({ request, auth, response }) {
     const { id } = request.all()
     response.res(await EstateCurrentTenantService.delete(id, auth.user.id))
+  }
+
+  async expired({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(await EstateCurrentTenantService.expired(id, auth.user.id))
   }
 }
 

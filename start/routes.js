@@ -881,6 +881,23 @@ Route.get('/api/v1/feature', 'FeatureController.getFeatures')
   .middleware(['valid:CreateFeature'])
   .middleware(['auth:jwtLandlord,jwt'])
 
+// MATCH FLOW
+Route.group(() => {
+  Route.post('/', 'EstateCurrentTenantController.create').middleware([
+    'valid:CreateEstateCurrentTenant',
+  ])
+  Route.put('/:id', 'EstateCurrentTenantController.update').middleware([
+    'valid:CreateEstateCurrentTenant,Id',
+  ])
+  Route.delete('/:id', 'EstateCurrentTenantController.delete').middleware(['valid:Id'])
+  Route.put('/expired/:id', 'EstateCurrentTenantController.expired').middleware(['valid:Id'])
+  Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
+    'valid:EstateCurrentTenantFilter',
+  ])
+})
+  .middleware(['auth:jwtLandlord'])
+  .prefix('api/v1/current_tenant')
+
 Route.group(() => {
   Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
   Route.get('/', 'PlanController.getPlanAll')

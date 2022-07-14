@@ -12,17 +12,27 @@ const {
   DAY_FORMAT,
   SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
 class EstateCurrentTenantService {
-  static async addCurrentTenant({ data, estate_id, user_id }) {
+  /**
+   * Right now there is no way to determine if the email address is the right tenant's email address or not
+   * So we can't prevent duplicated record for the same estate
+   * @param {*} param0
+   * @returns
+   */
+  static async addCurrentTenant({ data, estate_id, user_id, fromImport = true }) {
     const estate = await EstateService.getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estate_id)
+      .where('letting_status', LETTING_TYPE_LET)
       .first()
+
     if (!estate) {
-      throw new HttpException('No permission to add current tenant')
+      if (!fromImport) throw new HttpException('No permission to add current tenant')
+      return 'Probably Letting status is not Let or no permission to add tenant'
     }
 
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
@@ -46,6 +56,26 @@ class EstateCurrentTenantService {
     return currentTenant
   }
 
+  /**
+   *
+   * we can use this function later to prevent duplicated tenants in the same estate
+   * but for now there are current active tenant though landlord is going to add another tenant
+   * In other words, there will be some periods exchanging tenants
+   * Probably we can decide with contract_end and status later
+   * @param {*} param0
+   * @returns
+   */
+  static async belongsToAnotherTenant({ user_id, estate_id, data }) {
+    const currentTenants = await this.getAll({ user_id, estate_id, status: [STATUS_ACTIVE] })
+    if (currentTenants && currentTenants.total) {
+      const anotherTenant = currentTenants.data.find((ct) => ct.email !== data.email)
+      if (anotherTenant) {
+        return false
+      }
+    }
+    return true
+  }
+
   static async createOnFinalMatch(tenant_id, estate_id, trx) {
     const tenantUser = await User.query().where('id', tenant_id).firstOrFail()
 
@@ -65,14 +95,8 @@ class EstateCurrentTenantService {
     return currentTenant
   }
 
-  static async updateCurrentTenant({ data, estate_id, user_id }) {
-    const estate = await EstateService.getActiveEstateQuery()
-      .where('user_id', user_id)
-      .where('id', estate_id)
-      .first()
-    if (!estate) {
-      throw new HttpException('No permission to add current tenant')
-    }
+  static async updateCurrentTenant({ id, data, estate_id, user_id }) {
+    await this.hasPermission(id, user_id)
 
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
@@ -121,20 +145,30 @@ class EstateCurrentTenantService {
   }
 
   static async get(id) {
-    return await EstateCurrentTenent.query().where('id', id).firstOrFail()
+    return await EstateCurrentTenant.query()
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .firstOrFail()
   }
 
-  static async getAll({ user_id, estate_id, status, page = -1, limit = -1 }) {
+  static async getAll({ user_id, estate_id, status, tenant_id, page = -1, limit = -1 }) {
     const query = EstateCurrentTenant.query()
-      .where('user_id', user_id)
-      .whereNot('status', STATUS_DELETE)
+      .select('estate_current_tenants.*')
+      .with('estate')
+      .whereNot('estate_current_tenants.status', STATUS_DELETE)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+      })
 
     if (status) {
-      query.where('status', status)
+      query.where('estate_current_tenants.status', status)
     }
 
     if (estate_id) {
-      query.where('estate_id', estate_id)
+      query.where('estate_current_tenants.estate_id', estate_id)
+    }
+    if (tenant_id) {
+      query.where('estate_current_tenants.user_id', tenant_id)
     }
 
     if (limit === -1 || page === -1) {
@@ -144,23 +178,37 @@ class EstateCurrentTenantService {
     return await query.paginate(page, limit)
   }
 
+  /**
+   * Permanent delete only has to be used with admin role
+   * but it has to be confirmed from admin frontend seriously
+   * @param {*} id
+   * @param {*} user_id
+   * @returns
+   */
+
+  static async permanentDelete(id, user_id) {
+    await this.hasPermission(id, user_id)
+    return await EstateCurrentTenant.query().where('id').delete()
+  }
+
   static async delete(id, user_id) {
+    await this.hasPermission(id, user_id)
+    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_DELETE })
+  }
+
+  static async hasPermission(id, user_id) {
     const estateCurrentTeant = await this.get(id)
 
-    const estate = await EstateService.getActiveEstateQuery()
+    await EstateService.getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estateCurrentTeant.estate_id)
-      .first()
+      .where('letting_status', LETTING_TYPE_LET)
+      .firstOrFail()
+  }
 
-    if (!estate) {
-      throw new HttpException('No permission to add current tenant')
-    }
-
-    estateCurrentTeant.fill({
-      ...estateCurrentTeant,
-      status: STATUS_EXPIRE,
-    })
-    estateCurrentTeant.save()
+  static async expired(id, user_id) {
+    await this.hasPermission(id, user_id)
+    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_EXPIRE })
   }
 }
 

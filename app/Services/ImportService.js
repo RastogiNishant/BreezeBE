@@ -79,7 +79,7 @@ class ImportService {
         let warning
         if (existingEstate) {
           //await EstateService.completeRemoveEstate(existingEstate.id)
-          warning = `Probable duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
+          warning = `Probably duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
         }
         data.avail_duration = 144
         data.status = STATUS_DRAFT
@@ -102,11 +102,15 @@ class ImportService {
         //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.tenant_email) {
-          await EstateCurrentTenantService.addCurrentTenant({
-            ...data,
+          const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
+            data,
             estate_id: estate.id,
             user_id: userId,
           })
+
+          if (estateCurrentTenant && typeof estateCurrentTenant === 'string') {
+            warning += `${msg}:${address}`
+          }
         }
         if (warning) {
           return { warning, line, address: data.address }
@@ -244,7 +248,7 @@ class ImportService {
 
     if (data.tenant_email) {
       await EstateCurrentTenantService.updateCurrentTenant({
-        ...data,
+        data,
         estate_id: estate.id,
         user_id: estate.user_id,
       })
