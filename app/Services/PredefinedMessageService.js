@@ -6,7 +6,11 @@ const PredefinedMessage = use('App/Models/PredefinedMessage')
 
 class PredefinedMessageService {
   static async get(id) {
-    return await PredefinedMessage.query().with('choices').where('id', id).firstOrFail()
+    return await PredefinedMessage.query()
+      .with('choices')
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .firstOrFail()
   }
 
   static async getAll() {
@@ -26,6 +30,7 @@ class PredefinedMessageService {
   static async update(data) {
     return await PredefinedMessage.query()
       .where({ id: data.id })
+      .whereNot('status', STATUS_DELETE)
       .update({
         ...data,
       })

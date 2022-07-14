@@ -1,5 +1,5 @@
 'use strict'
-const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE } = require('../constants')
 
 const { isArray } = require('lodash')
 const {
@@ -75,7 +75,7 @@ class TaskService {
     ) {
       const query = Task.query().where('id', id)
 
-      if (trx) await query.update({ status: TASK_STATUS_DELETE }).transacting(trx)
+      if (trx) return await query.update({ status: TASK_STATUS_DELETE }).transacting(trx)
       return await query.update({ status: TASK_STATUS_DELETE })
     }
   }
@@ -134,7 +134,10 @@ class TaskService {
   }
 
   static async count({ estate_id, status, urgency, role }) {
-    let query = Database.table('tasks').count('*').where('estate_id', estate_id)
+    let query = Database.table('tasks')
+      .count('*')
+      .where('estate_id', estate_id)
+      .whereNot('status', TASK_STATUS_DELETE)
 
     if (status) {
       if (!isArray(status)) {
@@ -156,21 +159,22 @@ class TaskService {
     return await query
   }
 
-  static async getEstateAllTasks(user, id, params, page, limit = -1) {
+  static async getEstateAllTasks({ user_id, id, params }) {
+    const { page, limit, ...param } = params
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNot('tasks.status', TASK_STATUS_DRFAT)
+      .whereNotIn('tasks.status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
-        this.on('tasks.estate_id', '_e.id').on('_e.user_id', user.id)
+        this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
 
-    const filter = new TaskFilters(params, query)
+    const filter = new TaskFilters(param, query)
     query = filter.process()
 
     query.orderBy('tasks.updated_at')
 
-    if (limit == -1) {
+    if (!page || page === -1 || !limit || limit === -1) {
       return await query.fetch()
     } else {
       return await query.paginate(page, limit)
@@ -190,7 +194,11 @@ class TaskService {
   }
 
   static async getWithDependencies(id) {
-    return await Task.query().where('id', id).with('estate').with('users')
+    return await Task.query()
+      .where('id', id)
+      .whereNot('status', TASK_STATUS_DELETE)
+      .with('estate')
+      .with('users')
   }
 
   static async saveTaskImages(request) {

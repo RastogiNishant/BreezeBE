@@ -1,18 +1,19 @@
 'use strict'
 
 const HttpException = require('../Exceptions/HttpException')
-
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
+const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const PredefinedMessageChoiceService = use('App/Services/PredefinedMessageChoiceService')
 const TaskService = use('App/Services/TaskService')
+
 class PredefinedAnswerService {
   static async create(user_id, data, trx) {
     await TaskService.getWithTenantId({ id: data.task_id, tenant_id: user_id })
 
     if (data.predefined_message_choice_id) {
-      await PredefinedMessageChoiceService.getWithPredefinedMessageId({
-        id: data.predefined_message_choice_id,
+      await this.hasPermissionToChoice({
         predefined_message_id: data.predefined_message_id,
+        predefined_message_choice_id: data.predefined_message_choice_id,
       })
     }
 
@@ -23,15 +24,16 @@ class PredefinedAnswerService {
     await TaskService.getWithTenantId({ id: data.task_id, tenant_id: user_id })
 
     if (data.predefined_message_choice_id) {
-      await PredefinedMessageChoiceService.getWithPredefinedMessageId({
-        id: data.predefined_message_choice_id,
+      await this.hasPermissionToChoice({
         predefined_message_id: data.predefined_message_id,
+        predefined_message_choice_id: data.predefined_message_choice_id,
       })
     }
 
     if (trx) {
       return await PredefinedMessageAnswer.query()
         .where('id', data.id)
+        .where('is_deleted', false)
         .update(data)
         .transacting(trx)
     } else {
@@ -39,8 +41,24 @@ class PredefinedAnswerService {
     }
   }
 
+  static async hasPermissionToChoice({ predefined_message_id, predefined_message_choice_id }) {
+    if (!predefined_message_id) {
+      throw new HttpException('Predefined message id not exist')
+    }
+
+    await PredefinedMessageService.get(predefined_message_id)
+
+    await PredefinedMessageChoiceService.getWithPredefinedMessageId({
+      id: predefined_message_choice_id,
+      predefined_message_id: predefined_message_id,
+    })
+  }
+
   static async get(id) {
-    return await PredefinedMessageAnswer.query().where('id', id).firstOrFail()
+    return await PredefinedMessageAnswer.query()
+      .where('id', id)
+      .where('is_deleted', false)
+      .firstOrFail()
   }
 
   static async getByTask(task_id) {
