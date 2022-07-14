@@ -38,7 +38,10 @@ class EstateCurrentTenantController {
     )
   }
 
-  async delete({ request, auth, response }) {}
+  async delete({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(await EstateCurrentTenantService.delete(id, auth.user.id))
+  }
 }
 
 module.exports = EstateCurrentTenantController
