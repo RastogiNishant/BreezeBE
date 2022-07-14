@@ -41,6 +41,8 @@ const {
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
   VISIT_MAX_ALLOWED_FOLLOWUPS,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
 } = require('../../constants')
 const NotificationsService = require('../../Services/NotificationsService')
 
@@ -390,12 +392,13 @@ class MatchController {
     }
     const notice = {
       user_id: userId,
-      type: prospectId ? NOTICE_TYPE_VISIT_DELAY_ID : NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
+      type:
+        actor == 'landlord'
+          ? NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT
+          : NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
       data: {
-        estate_id: estate.id,
+        actor,
         estate_address: estate.address,
-        delay: delay,
-        user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined,
       },
       image: File.getPublicUrl(estate.cover),
     }
