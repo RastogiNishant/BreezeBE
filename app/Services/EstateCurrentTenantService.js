@@ -1,5 +1,7 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const EstateService = use('App/Services/EstateService')
+
 const Database = use('Database')
 const moment = require('moment')
 
@@ -9,10 +11,20 @@ const {
   STATUS_EXPIRE,
   DAY_FORMAT,
   SALUTATION_SIR_OR_MADAM,
+  STATUS_DELETE,
 } = require('../constants')
+const HttpException = require('../Exceptions/HttpException')
 
 class EstateCurrentTenantService {
-  static async addCurrentTenant(data, estate_id) {
+  static async addCurrentTenant({ data, estate_id, user_id }) {
+    const estate = await EstateService.getActiveEstateQuery()
+      .where('user_id', user_id)
+      .where('id', estate_id)
+      .first()
+    if (!estate) {
+      throw new HttpException('No permission to add current tenant')
+    }
+
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
     let currentTenant = new EstateCurrentTenant()
@@ -26,6 +38,7 @@ class EstateCurrentTenantService {
       status: STATUS_ACTIVE,
       salutation_int: data.salutation_int,
     })
+
     if (user) {
       currentTenant.user_id = user.id
     }
@@ -52,7 +65,15 @@ class EstateCurrentTenantService {
     return currentTenant
   }
 
-  static async updateCurrentTenant(data, estate_id) {
+  static async updateCurrentTenant({ data, estate_id, user_id }) {
+    const estate = await EstateService.getActiveEstateQuery()
+      .where('user_id', user_id)
+      .where('id', estate_id)
+      .first()
+    if (!estate) {
+      throw new HttpException('No permission to add current tenant')
+    }
+
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
     let currentTenant = await EstateCurrentTenant.query()
@@ -97,6 +118,49 @@ class EstateCurrentTenantService {
       await currentTenant.save()
       return currentTenant
     }
+  }
+
+  static async get(id) {
+    return await EstateCurrentTenent.query().where('id', id).firstOrFail()
+  }
+
+  static async getAll({ user_id, estate_id, status, page = -1, limit = -1 }) {
+    const query = EstateCurrentTenant.query()
+      .where('user_id', user_id)
+      .whereNot('status', STATUS_DELETE)
+
+    if (status) {
+      query.where('status', status)
+    }
+
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+
+    if (limit === -1 || page === -1) {
+      return (await query.fetch()).rows
+    }
+
+    return await query.paginate(page, limit)
+  }
+
+  static async delete(id, user_id) {
+    const estateCurrentTeant = await this.get(id)
+
+    const estate = await EstateService.getActiveEstateQuery()
+      .where('user_id', user_id)
+      .where('id', estateCurrentTeant.estate_id)
+      .first()
+
+    if (!estate) {
+      throw new HttpException('No permission to add current tenant')
+    }
+
+    estateCurrentTeant.fill({
+      ...estateCurrentTeant,
+      status: STATUS_EXPIRE,
+    })
+    estateCurrentTeant.save()
   }
 }
 

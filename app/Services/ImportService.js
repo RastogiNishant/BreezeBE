@@ -102,7 +102,11 @@ class ImportService {
         //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.tenant_email) {
-          await EstateCurrentTenantService.addCurrentTenant(data, estate.id)
+          await EstateCurrentTenantService.addCurrentTenant({
+            ...data,
+            estate_id: estate.id,
+            user_id: userId,
+          })
         }
         if (warning) {
           return { warning, line, address: data.address }
@@ -231,12 +235,19 @@ class ImportService {
       'salutation_int',
     ])
     let estate = await Estate.query().where('six_char_code', six_char_code).first()
+    if (!estate) {
+      throw new HttpException('estate no exists')
+    }
     estate_data.id = estate.id
     estate.fill(estate_data)
     await estate.save()
 
     if (data.tenant_email) {
-      await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
+      await EstateCurrentTenantService.updateCurrentTenant({
+        ...data,
+        estate_id: estate.id,
+        user_id: estate.user_id,
+      })
     }
     //update Rooms
     let rooms = []
@@ -253,9 +264,9 @@ class ImportService {
     // Run task to separate get coords and point of estate
     QueueService.getEstateCoords(estate.id)
     //await EstateService.updateEstateCoord(estate.id)
-    if (data.tenant_email) {
-      await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
-    }
+    // if (data.tenant_email) {
+    //   await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
+    // }
     return estate
   }
 }
