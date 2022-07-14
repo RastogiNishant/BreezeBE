@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, isNull, includes, isBoolean } = require('lodash')
+const { toLower, isArray, isEmpty, trim, includes, isBoolean } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -60,6 +60,10 @@ class EstateFilters extends Filter {
 
   constructor(params, query) {
     super(params, query)
+
+    if (isEmpty(params)) {
+      return
+    }
 
     Filter.paramToField = {
       customArea: 'area',

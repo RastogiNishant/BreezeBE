@@ -59,6 +59,7 @@ class EstateCurrentTenantService {
       .where('estate_id', estate_id)
       .where('email', data.tenant_email)
       .first()
+
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
       await Database.table('estate_current_tenants')

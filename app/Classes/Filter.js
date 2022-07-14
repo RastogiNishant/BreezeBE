@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, isNull, includes, isBoolean } = require('lodash')
+const { toLower, isArray, isNull } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 const Database = use('Database')
 
@@ -10,9 +10,6 @@ class Filter {
 
   constructor(params, query) {
     this.query = query
-    if (isEmpty(params)) {
-      return
-    }
   }
 
   matchFilter = (possibleStringParams, params) => {
@@ -53,7 +50,7 @@ class Filter {
         }
         if (params[param].matchMode && params[param].matchMode === 'in') {
           if (!isNull(params[param].value)) {
-            this.query.whereIn( Filter.getField(param), this.getValues(param, params[param].value))
+            this.query.whereIn(Filter.getField(param), this.getValues(param, params[param].value))
           }
         }
       }
@@ -61,18 +58,19 @@ class Filter {
   }
 
   getValues = (param, values) => {
-    if( !isArray(values))
-      values = [values]
+    if (!isArray(values)) values = [values]
 
-    const types = (values.map(v => typeof v )).filter( v=> v != 'number')
+    const types = values.map((v) => typeof v).filter((v) => v != 'number')
 
-    if(!types || !types.length ) {
-      return values;
+    if (!types || !types.length) {
+      return values
     }
 
     if (Filter.MappingInfo && Filter.MappingInfo[param]) {
-      const mappingVals = values.map((v) => Filter.MappingInfo[param][toLower(v.replace(/ /g,''))] || null)
-      if( mappingVals.includes(null)) {
+      const mappingVals = values.map(
+        (v) => Filter.MappingInfo[param][toLower(v.replace(/ /g, ''))] || null
+      )
+      if (mappingVals.includes(null)) {
         throw new HttpException(`No matching value for params ${param} value ${values}`, 500)
       }
       return mappingVals
@@ -80,7 +78,9 @@ class Filter {
   }
 
   static getField(param) {
-    return Filter.TableInfo && Filter.TableInfo[param]?`${Filter.TableInfo[param]}.${param}`:param    
+    return Filter.TableInfo && Filter.TableInfo[param]
+      ? `${Filter.TableInfo[param]}.${param}`
+      : param
   }
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
