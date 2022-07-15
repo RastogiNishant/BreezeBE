@@ -14,6 +14,10 @@ class PredefinedMessage extends Model {
   static get traits() {
     return ['NoTimestamp']
   }
+
+  choices() {
+    return this.hasMany('App/Models/PredefinedMessageChoice')
+  }
 }
 
 module.exports = PredefinedMessage
