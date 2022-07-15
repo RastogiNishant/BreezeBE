@@ -15,8 +15,10 @@ const {
   MATCH_STATUS_KNOCK,
   MIN_TIME_SLOT,
   MATCH_STATUS_NEW,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
 } = require('../constants')
 const Promise = require('bluebird')
+const UserController = require('../Controllers/Http/Admin/UserController')
 const ImageService = use('App/Services/ImageService')
 const MemberService = use('App/Services/MemberService')
 
@@ -180,6 +182,13 @@ class QueueJobService {
     await Promise.all([ImageService.createThumbnail(), MemberService.createThumbnail()])
     console.log('End time', new Date().getTime())
     console.log('Creating thumbnails completed!!!!')
+  }
+
+  static async deactivateLandlord(user_id) {
+    console.log('deactivating landlord: ', user_id)
+    await User.query().where('id', user_id).update({
+      activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+    })
   }
 }
 
