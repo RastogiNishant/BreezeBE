@@ -709,12 +709,13 @@ class EstateController {
       throw new HttpException('Time slot not found', 404)
     }
 
-    // If slot's end date is passed, we only delete the slot
-    // But if slot's end date is not passed, we delete the slot and all the visits
+    // The landlord can't remove the slot if it is already started
     if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
       throw new HttpException('Showing is already started', 500)
     }
 
+    // If slot's end date is passed, we only delete the slot
+    // But if slot's end date is not passed, we delete the slot and all the visits
     if (slot.end_at < new Date()) {
       await slot.delete()
       response.res(true)
