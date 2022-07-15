@@ -293,6 +293,10 @@ class Estate extends Model {
     return this.hasMany('App/Models/Room')
   }
 
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+  }
+
   /**
    *
    */
@@ -324,6 +328,7 @@ class Estate extends Model {
   slots() {
     return this.hasMany('App/Models/TimeSlot').orderBy('end_at')
   }
+
 
   current_tenant() {
     return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)

@@ -5,10 +5,9 @@ const HttpException = use('App/Exceptions/HttpException')
 const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
-const Member = use('App/Models/Member')
+const MemberService = use('App/Services/MemberService')
 const Tenant = use('App/Models/Tenant')
-const User = use('App/Models/User')
-
+const Database = use('Database')
 const { without } = require('lodash')
 
 const {
@@ -79,26 +78,36 @@ class TenantController {
    *
    */
   async updateTenant({ request, auth, response }) {
+    const data = request.all()
+    const trx = await Database.beginTransaction()
+
     try {
-      const data = request.all()
-      const tenant = await UserService.getOrCreateTenant(auth.user)
-      await tenant.updateItem(data)
+      const tenant = await UserService.getOrCreateTenant(auth.user, trx)
+      await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
+
+      const updatedTenant = await Tenant.find(tenant.id)
+      // Deactivate tenant on personal data change
+      const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
+      if (shouldDeactivateTenant) {
+      } else {
+      }
+      await trx.commit()
+
       // Add tenant anchor zone processing
       if (lat && lon && tenant.dist_type && tenant.dist_min) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
-      const updatedTenant = await Tenant.find(tenant.id)
-      // Deactivate tenant on personal data change
-      if (without(Object.keys(data), ...Tenant.updateIgnoreFields).length) {
-        Event.fire('tenant::update', auth.user.id)
+
+      if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
+        Event.fire('tenant::update', auth.user.id)
       } else {
         await MatchService.matchByUser(auth.user.id)
       }
-      Event.fire('mautic:syncContact', auth.user.id)
       response.res(updatedTenant)
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
     }
   }

@@ -1,12 +1,23 @@
 'use strict'
 const moment = require('moment')
-const { get, isEmpty, findIndex, range, filter, omit, flatten } = require('lodash')
+const {
+  get,
+  isEmpty,
+  findIndex,
+  range,
+  filter,
+  omit,
+  flatten,
+  groupBy,
+  countBy,
+  maxBy,
+} = require('lodash')
 const { props } = require('bluebird')
-
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
+const GeoService = use('App/Services/GeoService')
 const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
@@ -22,6 +33,7 @@ const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
+const TaskFilters = require('../Classes/TaskFilters')
 
 const {
   STATUS_DRAFT,
@@ -35,6 +47,14 @@ const {
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
+  TASK_STATUS_DRFAT,
+  TASK_STATUS_DELETE,
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
+  TRANSPORT_TYPE_WALK,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -159,6 +179,22 @@ class EstateService {
     return await query.first()
   }
 
+  static async getEstateWithTenant(id, user_id) {
+    const query = Estate.query()
+      .select('estates.*', '_u.avatar')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id')
+        this.on('_m.status', MATCH_STATUS_FINISH)
+      })
+      .innerJoin({ _u: 'users' }, '_m.user_id', '_u.id')
+      .where('estates.id', id)
+      .whereNotIn('estates.status', [STATUS_DELETE])
+
+    query.where('estates.user_id', user_id)
+    
+    return await query.firstOrFail()
+  }
+
   static async saveEnergyProof(request) {
     const imageMimes = [
       FileBucket.IMAGE_JPG,
@@ -175,9 +211,14 @@ class EstateService {
   /**
    *
    */
-  static async createEstate(request, userId) {
+  static async createEstate(request, userId, fromImport = false) {
     const data = request.all()
     const files = await this.saveEnergyProof(request)
+
+    if (!fromImport) {
+      data.letting_type = null
+      data.letting_status = null
+    }
 
     const propertyId = data.property_id
       ? data.property_id
@@ -447,9 +488,15 @@ class EstateService {
    */
   static async getTimeSlotsByEstate(estate) {
     return TimeSlot.query()
-      .where('estate_id', estate.id)
-      .orderBy([{ column: 'start_at', order: 'ask' }])
-      .limit(100)
+      .select('time_slots.*', Database.raw('COUNT(visits)::int as visitCount'))
+      .where('time_slots.estate_id', estate.id)
+      .leftJoin('visits', function () {
+        this.on('visits.start_date', '>=', 'time_slots.start_at')
+          .on('visits.end_date', '<=', 'time_slots.end_at')
+          .on('visits.estate_id', 'time_slots.estate_id')
+      })
+      .groupBy('time_slots.id')
+      .orderBy([{ column: 'end_at', order: 'desc' }])
       .fetch()
   }
 
@@ -619,7 +666,6 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-      .limit(MAX_SEARCH_ITEMS)
   }
 
   /**
@@ -736,6 +782,35 @@ class EstateService {
       })
       .with('files')
       .orderBy('_m.percent', 'DESC')
+  }
+
+  static async getTenantTrashEstates(userId) {
+    // 2 cases for trash estates
+    // Find the estates that user has match, but rented by another user
+    // Find the estates that user shared the info first, and then cancelled the share
+
+    const allActiveMatches = await Match.query()
+      .select('estate_id')
+      .where('user_id', userId)
+      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .fetch()
+
+    const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
+
+    const trashedEstates = await Estate.query()
+      .select('*')
+      .whereHas('matches', (estateQuery) => {
+        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      })
+      .orWhereHas('matches', (estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+          .andWhere('matches.share', false)
+          .andWhere('matches.user_id', userId)
+      })
+      .fetch()
+    return trashedEstates
   }
 
   /**
@@ -960,7 +1035,6 @@ class EstateService {
       // if slot_length is null, so show only 1 slot for date range
       const step = s.slot_length ? s.slot_length * 60 : s.end_at - s.start_at
       const items = range(s.start_at, s.end_at, step)
-      console.log({ items })
       items.forEach((i) => {
         const items = [...get(result, day, []), { from: i, to: i + step }]
         result = { ...result, [day]: items }
@@ -1050,6 +1124,152 @@ class EstateService {
     ])
     return estateCount
   }
-}
 
+  static async getIsolines(estate) {
+    try {
+      if (!estate.full_address && (estate.coord_raw || estate.coord)) {
+        const coords = (estate.coord_raw || estate.coord).split(',')
+        const lat = coords[0]
+        const lon = coords[1]
+
+        const isolinePoints = await GeoService.getOrCreateIsoline(
+          { lat, lon },
+          TRANSPORT_TYPE_WALK,
+          60
+        )
+
+        return isolinePoints?.toJSON()?.data || []
+      }
+      return []
+    } catch (e) {
+      console.log(`getIsolines Error ${e.message}`)
+      return []
+    }
+  }
+
+  static async hasPermission({ id, user_id }) {
+    return await Estate.findByOrFail({ id, user_id: user_id })
+  }
+
+  static async getEstatesWithTask(user, params, page, limit = -1) {
+    let query = Estate.query()
+      .with('current_tenant')
+      .select(
+        'estates.id',
+        'estates.address',
+        'estates.property_id',
+        'estates.city',
+        'tasks.id as tid',
+        '_u.id as uid',
+        '_u.firstname',
+        '_u.secondname',
+        '_u.avatar',
+        'tasks.urgency as urgency'
+      )
+
+    query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+      if (params.only_outside_breeze) {
+        this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+      }
+
+      if (params.only_inside_breeze) {
+        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
+      }
+
+      if (params.tenant_id) {
+        this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
+      }
+
+      if (!params.only_outside_breeze && !params.only_inside_breeze) {
+        this.on('_ect.estate_id', 'estates.id')
+      }
+    })
+
+    query.leftJoin({ _u: 'users' }, function (m) {
+      m.on('_ect.user_id', '_u.id')
+    })
+
+    query.leftJoin('tasks', function () {
+      this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
+        TASK_STATUS_DRFAT,
+        TASK_STATUS_DELETE,
+      ])
+
+      if (!params.status) {
+        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      }
+    })
+
+    query.where('estates.user_id', user.id)
+    query.whereNot('estates.status', STATUS_DELETE)
+
+    if (params.estate_id) {
+      query.whereIn('estates.id', [params.estate_id])
+    }
+
+    const filter = new TaskFilters(params, query)
+    query = filter.process()
+    query.groupBy('estates.id', '_u.id', 'tasks.id')
+    let result = null
+    if (limit == -1) {
+      result = await query.fetch()
+    } else {
+      result = await query.paginate(page, limit)
+    }
+
+    result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
+
+    const estate = result.map((r) => {
+      const mostUrgency = maxBy(r, (re) => {
+        return re.urgency
+      })
+
+      return {
+        ...r[0],
+        task: {
+          taskCount: countBy(r, (re) => re.tid !== null).true || 0,
+          mostUrgency: mostUrgency?.urgency || null,
+          mostUrgencyCount: mostUrgency
+            ? countBy(r, (re) => re.urgency === mostUrgency.urgency).true || 0
+            : 0,
+        },
+      }
+    })
+    return estate
+  }
+
+  static async getTotalLetCount(user_id, params) {
+    let query = Estate.query()
+      .count('estates.*')
+      .leftJoin('tasks', function () {
+        this.on('estates.id', 'tasks.estate_id').on(
+          Database.raw(`tasks.status not in (${[TASK_STATUS_DRFAT, TASK_STATUS_DELETE]})`)
+        )
+      })
+      .innerJoin({ _ect: 'estate_current_tenants' }, function () {
+        if (params.only_outside_breeze) {
+          this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+        }
+
+        if (params.only_inside_breeze) {
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
+        }
+
+        if (params.tenant_id) {
+          this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
+        }
+
+        if (!params.only_outside_breeze && !params.only_inside_breeze) {
+          this.on('_ect.estate_id', 'estates.id')
+        }
+      })
+      .where('estates.user_id', user_id)
+      .whereNot('estates.status', STATUS_DELETE)
+
+    const filter = new TaskFilters(params, query)
+    query = filter.process()
+    query.groupBy('estates.id')
+    return await query
+  }
+}
 module.exports = EstateService

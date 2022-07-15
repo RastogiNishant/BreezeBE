@@ -16,9 +16,9 @@ const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
+const NoticeService = use('App/Services/NoticeService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
-const Drive = use('Drive')
 const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
@@ -42,10 +42,11 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  TRANSPORT_TYPE_WALK,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -74,13 +75,31 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     try {
-      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
-      
-      if (unverifiedUser) {
-        await MailService.sendUnverifiedLandlordActivationEmailToAdmin()
+      const user = await UserService.getById(auth.user.id)
+
+      if (user.activation_status === USER_ACTIVATION_STATUS_DEACTIVATED) {
+        throw new HttpException('No permission to create estate')
       }
 
       const estate = await EstateService.createEstate(request, auth.user.id)
+
+      if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
+        const { street, house_number, zip, city, country } = request.all()
+        const address = trim(
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
+            country || 'Germany'
+          }`
+        ).toLowerCase()
+
+        const txt = `The landlord '${
+          user.email
+        }' created a property with an address '${address}' in ${
+          process.env.NODE_ENV || 'local'
+        } environment`
+
+        await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
+      }
+
       response.res(estate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -375,7 +394,10 @@ class EstateController {
         throw new HttpException('Cant update status', 400)
       }
 
-      if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+      if (
+        [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+        estate.letting_type !== LETTING_TYPE_LET
+      ) {
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -435,13 +457,21 @@ class EstateController {
         .fetch()
     } else if (filter == 2) {
       estates = await Estate.query()
-        .where({ user_id: userId })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .with('slots')
-        .whereHas('slots', (estateQuery) => {
-          estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
+        .select('time_slots.*', 'estates.*')
+        .select(Database.raw('COUNT(visits)::int as visitCount'))
+        .where('estates.user_id', userId)
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .leftJoin('time_slots', function () {
+          this.on('estates.id', 'time_slots.estate_id')
         })
-        .orderBy('id')
+        .where('time_slots.end_at', '<=', currentDay.format(DAY_FORMAT))
+        .leftJoin('visits', function () {
+          this.on('visits.start_date', '>=', 'time_slots.start_at')
+            .on('visits.end_date', '<=', 'time_slots.end_at')
+            .on('visits.estate_id', '=', 'estates.id')
+        })
+        .groupBy('time_slots.id', 'estates.id')
+        .orderBy('time_slots.end_at', 'DESC')
         .fetch()
     } else if (filter == 3) {
       estates = await Estate.query()
@@ -456,7 +486,8 @@ class EstateController {
     } else if (filter == 4) {
       estates = await Estate.query()
         .where({ user_id: userId })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        // We make final matched estates statuses "DRAFT"
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
         .with('matches')
         .whereHas('matches', (estateQuery) => {
           estateQuery.whereIn('status', finalMatches)
@@ -556,6 +587,12 @@ class EstateController {
         { exclude_from, exclude_to, exclude },
         limit
       )
+      estates = await Promise.all(
+        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
@@ -563,7 +600,7 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true, role: user.role }))
+    response.res(estates)
   }
 
   /**
@@ -578,17 +615,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    if (!estate.full_address && estate.coord_raw) {
-      const coords = estate.coord_raw.split(',')
-      const lat = coords[0]
-      const lon = coords[1]
-      const isolinePoints = await GeoService.getOrCreateIsoline(
-        { lat, lon },
-        TRANSPORT_TYPE_WALK,
-        60
-      )
-      estate.isoline = isolinePoints?.toJSON()?.data || []
-    }
+    estate.isoline = await EstateService.getIsolines(estate)
 
     estate = estate.toJSON({ isShort: true, role: auth.user.role })
     estate = await EstateService.assignEstateAmenities(estate)
@@ -690,9 +717,32 @@ class EstateController {
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
     }
-    await slot.delete()
 
-    response.res(true)
+    // If slot's end date is passed, we only delete the slot
+    // But if slot's end date is not passed, we delete the slot and all the visits
+    if (slot.end_at < new Date()) {
+      await slot.delete()
+      response.res(true)
+    } else {
+      const trx = await Database.beginTransaction()
+      try {
+        const estateId = slot.estate_id
+        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
+        await slot.delete(trx)
+
+        await trx.commit()
+
+        const notificationPromises = userIds.map((userId) =>
+          NoticeService.cancelVisit(estateId, userId)
+        )
+        await Promise.all(notificationPromises)
+        response.res(true)
+      } catch (e) {
+        Logger.error(e)
+        await trx.rollback()
+        throw new HttpException(e.message, 400)
+      }
+    }
   }
 
   /**
