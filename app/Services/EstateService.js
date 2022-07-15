@@ -180,9 +180,14 @@ class EstateService {
   /**
    *
    */
-  static async createEstate(request, userId) {
+  static async createEstate(request, userId, fromImport = false) {
     const data = request.all()
     const files = await this.saveEnergyProof(request)
+
+    if (!fromImport) {
+      data.letting_type = null
+      data.letting_status = null
+    }
 
     const propertyId = data.property_id
       ? data.property_id

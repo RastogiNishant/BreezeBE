@@ -615,17 +615,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    if (!estate.full_address && estate.coord_raw) {
-      const coords = estate.coord_raw.split(',')
-      const lat = coords[0]
-      const lon = coords[1]
-      const isolinePoints = await GeoService.getOrCreateIsoline(
-        { lat, lon },
-        TRANSPORT_TYPE_WALK,
-        60
-      )
-      estate.isoline = isolinePoints?.toJSON()?.data || []
-    }
+    estate.isoline = await EstateService.getIsolines(estate)
 
     estate = estate.toJSON({ isShort: true, role: auth.user.role })
     estate = await EstateService.assignEstateAmenities(estate)
