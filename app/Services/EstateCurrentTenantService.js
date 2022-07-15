@@ -59,6 +59,7 @@ class EstateCurrentTenantService {
       .where('estate_id', estate_id)
       .where('email', data.tenant_email)
       .first()
+
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
       await Database.table('estate_current_tenants')
@@ -97,6 +98,23 @@ class EstateCurrentTenantService {
       await currentTenant.save()
       return currentTenant
     }
+  }
+
+  static async getAllTenant(id) {
+    const today = moment.utc(new Date(), DAY_FORMAT)
+    return (
+      (
+        await EstateCurrentTenant.query()
+          .select('estate_current_tenants.*')
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_current_tenants.estate_id')
+            this.on('_e.user_id', id)
+          })
+          .where('estate_current_tenants.status', STATUS_ACTIVE)
+          // .where('estate_current_tenants.contract_end', '>=', today)
+          .fetch()
+      ).rows
+    )
   }
 }
 
