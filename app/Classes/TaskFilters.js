@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, isNull, includes, isBoolean } = require('lodash')
+const { isEmpty } = require('lodash')
 const Filter = require('./Filter')
 const {
   URGENCY_LOW,
@@ -15,6 +15,10 @@ const {
 class TaskFilters extends Filter {
   constructor(params, query) {
     super(params, query)
+
+    if (isEmpty(params)) {
+      return
+    }
 
     Filter.MappingInfo = {
       urgency: {

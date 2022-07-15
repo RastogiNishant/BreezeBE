@@ -40,10 +40,22 @@ class TaskController {
 
   async getTenantTasks({ request, auth, response }) {
     try {
-      response.res(await TaskService.getTenantAllTask({ tenant_id: auth.user.id }))
+      const { estate_id, status } = request.all()
+      response.res(
+        await TaskService.getTenantAllTask({
+          tenant_id: auth.user.id,
+          estate_id: estate_id,
+          status: status,
+        })
+      )
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
+  }
+
+  async getTaskById({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(await TaskService.getTaskById({ id, user: auth.user }))
   }
 
   async getEstateTasks({ request, auth, response }) {
@@ -51,13 +63,11 @@ class TaskController {
     const { id } = request.all()
     let estate = await EstateService.getEstateWithTenant(id, auth.user.id)
 
-    const estateAllTasks = await TaskService.getEstateAllTasks(
-      auth.user,
+    const estateAllTasks = await TaskService.getEstateAllTasks({
+      user_id: auth.user.id,
       id,
       params,
-      params.page || -1,
-      params.limit || -1
-    )
+    })
 
     let archivedCount = null
     if (params.archived_status) {
@@ -101,6 +111,7 @@ class TaskController {
       throw new HttpException(e.message, 500)
     }
   }
+
   async getTask({ request, auth, response }) {
     const { ...filter } = request.all()
     try {

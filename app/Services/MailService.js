@@ -2,7 +2,7 @@
 
 const Mail = use('Mail')
 const Config = use('Config')
-const { trim } = require('lodash')
+const { trim, startCase } = require('lodash')
 const l = use('Localize')
 
 const sgMail = require('@sendgrid/mail')
@@ -389,7 +389,7 @@ class MailService {
 
     const intro = l
       .get('prospect.email_visit_invitation.intro.message', lang)
-      .replace(/\[[a-z1-9\s]+\]/, `<strong>${address}</strong>`)
+      .replace(/\[[a-z1-9\s]+\]/, `<strong>${startCase(address)}</strong>`)
       .replace(/\n/g, '<br />')
     const final = l
       .get('prospect.email_visit_invitation.final.message', lang)
@@ -447,7 +447,7 @@ class MailService {
 
     const intro = l
       .get('prospect.email_day_of_visit_reminder.intro.message', lang)
-      .replace(/\[[a-z1-9\s]+\]/, `<strong>${address}</strong>`)
+      .replace(/\[[a-z1-9\s]+\]/, `<strong>${startCase(address)}</strong>`)
       .replace(/\n/g, '<br />')
 
     const final = l

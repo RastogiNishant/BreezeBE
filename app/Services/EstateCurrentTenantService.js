@@ -3,7 +3,13 @@ const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Database = use('Database')
 const moment = require('moment')
 
-const { ROLE_USER, STATUS_ACTIVE, STATUS_EXPIRE, DAY_FORMAT } = require('../constants')
+const {
+  ROLE_USER,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  DAY_FORMAT,
+  SALUTATION_SIR_OR_MADAM,
+} = require('../constants')
 
 class EstateCurrentTenantService {
   static async addCurrentTenant(data, estate_id) {
@@ -27,6 +33,25 @@ class EstateCurrentTenantService {
     return currentTenant
   }
 
+  static async createOnFinalMatch(tenant_id, estate_id, trx) {
+    const tenantUser = await User.query().where('id', tenant_id).firstOrFail()
+
+    const currentTenant = new EstateCurrentTenant()
+    currentTenant.fill({
+      estate_id,
+      user_id: tenant_id,
+      surname: tenantUser.secondname || '',
+      email: tenantUser.email,
+      contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
+      phone_number: tenantUser.phone_number || '',
+      status: STATUS_ACTIVE,
+      salutation_int: SALUTATION_SIR_OR_MADAM,
+    })
+
+    await currentTenant.save(trx)
+    return currentTenant
+  }
+
   static async updateCurrentTenant(data, estate_id) {
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
@@ -34,6 +59,7 @@ class EstateCurrentTenantService {
       .where('estate_id', estate_id)
       .where('email', data.tenant_email)
       .first()
+
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
       await Database.table('estate_current_tenants')
@@ -74,19 +100,21 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async getAllOutsideTenant(id) {
+  static async getAllTenant(id) {
     const today = moment.utc(new Date(), DAY_FORMAT)
     return (
-      await EstateCurrentTenant.query()
-        .select('estate_current_tenants.*', Database.raw('0 as inside_breeze'))
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'estate_current_tenants.estate_id')
-          this.on('_e.user_id', id)
-        })
-        .where('estate_current_tenants.status', STATUS_ACTIVE)
-        .where('estate_current_tenants.contract_end', '>=', today)
-        .fetch()
-    ).rows
+      (
+        await EstateCurrentTenant.query()
+          .select('estate_current_tenants.*')
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_current_tenants.estate_id')
+            this.on('_e.user_id', id)
+          })
+          .where('estate_current_tenants.status', STATUS_ACTIVE)
+          // .where('estate_current_tenants.contract_end', '>=', today)
+          .fetch()
+      ).rows
+    )
   }
 }
 

@@ -644,6 +644,7 @@ const constants = {
     avatar: '/img/brezeLogo.png',
   },
   TASK_STATUS_DRFAT: 100,
+  TASK_STATUS_DELETE: 101,
 
   TASK_STATUS_NEW_LABEL: 'New',
   TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
@@ -653,6 +654,21 @@ const constants = {
 
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL: 10,
   ADULT_MIN_AGE: 18,
+
+  ESTATE_FIELD_FOR_TASK: [
+    'id',
+    'coord',
+    'street',
+    'area',
+    'house_number',
+    'country',
+    'floor',
+    'number_floors',
+    'city',
+    'coord_raw',
+    'property_id',
+    'address',
+  ],
 }
 
 module.exports = constants
