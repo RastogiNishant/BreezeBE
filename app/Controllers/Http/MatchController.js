@@ -628,14 +628,16 @@ class MatchController {
     const fields = TENANT_MATCH_FIELDS
 
     estates = {
-      ...estates.toJSON({ isShort: true, fields })
+      ...estates.toJSON({ isShort: true, fields }),
     }
 
-    if( estates?.data ) {
-      estates.data = await Promise.all(estates.data.map( async estate => {
-        estate.isoline = await EstateService.getIsolines(estate)
-        return estate 
-      }))
+    if (estates?.data) {
+      estates.data = await Promise.all(
+        estates.data.map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
     }
 
     return response.res(estates)
