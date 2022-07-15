@@ -1,9 +1,11 @@
 'use strict'
 
 const { ROLE_LANDLORD } = require('../../constants')
-
+const HttpException = require('../../Exceptions/HttpException')
+const UserService = use('App/Services/UserService')
 const LandlordService = use('App/Services/LandlordService')
 const CompanyService = use('App/Services/CompanyService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const User = use('App/Models/User')
 
 class LandlordController {
@@ -87,6 +89,16 @@ class LandlordController {
     await CompanyService.validateUserContacts(auth.user.id)
 
     return response.res(true)
+  }
+
+  async getAllTenants({ auth, response }) {
+    try {
+      const tenants = await EstateCurrentTenantService.getAllTenant(auth.user.id)
+
+      response.res(tenants)
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
   }
 }
 

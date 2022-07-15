@@ -19,6 +19,8 @@ const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
 
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -57,6 +59,7 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
@@ -1007,8 +1010,10 @@ class MatchService {
     // Make estate status DRAFT to hide from tenants' matches list
     await Database.table('estates')
       .where({ id: estateId })
-      .update({ status: STATUS_DRAFT })
+      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
       .transacting(trx)
+
+    await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
 
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
