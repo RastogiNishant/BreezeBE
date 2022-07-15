@@ -6,7 +6,7 @@ class Task extends Model {
   static get columns() {
     return [
       'id',
-      'name',
+      'title',
       'estate_id',
       'tenant_id',
       'urgency',

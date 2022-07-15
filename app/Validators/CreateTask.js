@@ -17,7 +17,7 @@ const {
 class CreateTask extends Base {
   static schema = () =>
     yup.object().shape({
-      name: yup.string().max(255).required(),
+      title: yup.string().max(255).required(),
       estate_id: id.required(),
       urgency: yup
         .number()

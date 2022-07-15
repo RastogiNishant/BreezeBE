@@ -66,15 +66,7 @@ class TaskFilter extends Base {
             .nullable(),
         })
         .nullable(),
-      tenant_id: yup
-        .array()
-        .of(
-          yup.object().shape({
-            id: id,
-            inside_breeze: yup.boolean().required(),
-          })
-        )
-        .nullable(),
+      tenant_id: yup.array().of(id).nullable(),
       only_inside_breeze: yup.boolean(),
       only_outside_breeze: yup.boolean(),
       city: yup

@@ -15,9 +15,9 @@ class PredefinedMessage extends Model {
     return ['NoTimestamp']
   }
 
-  messageChoices() {
+  choices() {
     return this.hasMany('App/Models/PredefinedMessageChoice')
-  }  
+  }
 }
 
 module.exports = PredefinedMessage

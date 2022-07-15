@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, isNull, includes, isBoolean } = require('lodash')
+const { toLower, isArray, isEmpty, trim, includes, isBoolean } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -21,7 +21,7 @@ const {
 } = require('../constants')
 const Filter = require('./Filter')
 
-class EstateFilters extends Filter{
+class EstateFilters extends Filter {
   static lettingTypeString = {
     let: LETTING_TYPE_LET,
     void: LETTING_TYPE_VOID,
@@ -61,6 +61,10 @@ class EstateFilters extends Filter{
   constructor(params, query) {
     super(params, query)
 
+    if (isEmpty(params)) {
+      return
+    }
+
     Filter.paramToField = {
       customArea: 'area',
       customFloor: 'floor',
@@ -68,7 +72,7 @@ class EstateFilters extends Filter{
       customRent: 'net_rent',
     }
 
-    this.matchFilter(EstateFilters.possibleStringParams, params )
+    this.matchFilter(EstateFilters.possibleStringParams, params)
 
     /* address, area, property_id, net_rent */
     /* filter for combined letting_status and letting_type */
