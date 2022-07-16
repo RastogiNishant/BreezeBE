@@ -1,0 +1,135 @@
+definitions: 
+  id:
+    name: id
+    in: path
+    type: number
+    required: true
+
+  title:
+    name: title
+    in: formData
+    type: string
+    required: true
+
+  estate_id:
+    name: estate_id
+    in: formData
+    type: number
+    required: true
+
+  urgency: 
+    name: urgency
+    in: formData
+    type: number
+    enum: ["1", "2", "3", "4", "5"]
+    description: "1: LOW, 2: NORMAL, 3: HIGH, 4: SUPER"
+
+  status:
+    name: status
+    in: formData
+    type: number 
+    enum: ["1", "2", "3", "4", "5"]
+    description: "1: STATUS_NEW, 2: STATUS_INPROGRESS, 3:STATUS_UNRESOLVED, 4:STATUS_RESOLVED, 5:STATUS_CLOSED,"
+
+  description:
+    name: description
+    in: formData
+    type: string
+
+  file: 
+    name: file
+    in: formData
+    description: multiple files to upload
+
+/api/v1/connect/task/:id :
+  get: 
+    tags: [Task - CRUD for task for Landlord]
+    security: [bearerAuth: []]
+    description: get task By id. filters  estate_id , status are only used for tenant
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/estate_id"
+      - $ref: "#/definitions/status"
+    responses: [200]
+
+  put: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: update task By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/title"
+      - $ref: "#/definitions/estate_id"
+      - $ref: "#/definitions/urgency"
+      - $ref: "#/definitions/status"
+      - $ref: "#/definitions/description"      
+    responses: [200]
+
+  delete: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: update task By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]
+
+
+/api/v1/connect/task/ : 
+  get: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: update task By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/title"
+      - $ref: "#/definitions/estate_id"
+      - $ref: "#/definitions/urgency"
+      - $ref: "#/definitions/status"
+      - $ref: "#/definitions/description"      
+      - $ref: "#/definitions/file"      
+    responses: [200]
+
+  post: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: create task
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/title"
+      - $ref: "#/definitions/estate_id"
+      - $ref: "#/definitions/urgency"
+      - $ref: "#/definitions/status"
+      - $ref: "#/definitions/description"      
+      - $ref: "#/definitions/file"
+    responses: [200]
+
+/api/v1/connect/task/estate/:id/with-filters : 
+  get: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: get tasks for specific estate id
+    produces: [application/json]
+    requestBody:
+      content:
+        application/json:
+          type: object
+          schema:
+            $ref: '#/components/schemas/TaskFilterSchema'
+    responses: [200]
+/api/v1/connect/task/estate/with-filters: 
+  post: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: get estate with tasks
+    produces: [application/json]    
+    requestBody:
+      content:
+        application/json:
+          type: object
+          schema:
+            $ref: '#/components/schemas/TaskFilterSchema'

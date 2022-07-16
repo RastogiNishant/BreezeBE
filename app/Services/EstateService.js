@@ -1124,7 +1124,7 @@ class EstateService {
     ])
     return estateCount
   }
-
+  
   static async getIsolines(estate) {
     try {
       if (!estate.full_address && (estate.coord_raw || estate.coord)) {

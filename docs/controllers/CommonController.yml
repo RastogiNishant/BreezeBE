@@ -32,10 +32,10 @@ paths:
       summary: get API constants and values
       responses: 
         "200"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PreferencesReturn'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PreferencesReturn'
   /api/v1/terms:
     get:
       tags: [terms]
