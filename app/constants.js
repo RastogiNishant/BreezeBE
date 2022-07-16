@@ -663,6 +663,9 @@ const constants = {
     'property_id',
     'address',
   ],
+  //whether we deactivate landlord at end of day of his/her deactivation day
+  //or at the moment his deactivation arrives.
+  DEACTIVATE_LANDLORD_AT_END_OF_DAY: false,
 }
 
 module.exports = constants
