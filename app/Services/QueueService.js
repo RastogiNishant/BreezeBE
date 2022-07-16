@@ -66,8 +66,8 @@ class QueueService {
     Queue.addJob(CREATE_THUMBNAIL_IMAGES, {}, { delay: 1 })
   }
 
-  static deactivateLandlord(user_id, delay) {
-    Queue.addJob(DEACTIVATE_LANDLORD, { user_id }, { delay })
+  static deactivateLandlord(deactivationId, userId, delay) {
+    Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
   }
 
   /**
@@ -147,7 +147,7 @@ class QueueService {
         case CREATE_THUMBNAIL_IMAGES:
           return QueueJobService.createThumbnailImages()
         case DEACTIVATE_LANDLORD:
-          return QueueJobService.deactivateLandlord(job.data.user_id)
+          return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

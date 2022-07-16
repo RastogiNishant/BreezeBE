@@ -18,9 +18,10 @@ const {
   USER_ACTIVATION_STATUS_DEACTIVATED,
 } = require('../constants')
 const Promise = require('bluebird')
-const UserController = require('../Controllers/Http/Admin/UserController')
+const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
 const ImageService = use('App/Services/ImageService')
 const MemberService = use('App/Services/MemberService')
+const User = use('App/Models/User')
 
 class QueueJobService {
   static async updateEstatePoint(estateId) {
@@ -184,11 +185,22 @@ class QueueJobService {
     console.log('Creating thumbnails completed!!!!')
   }
 
-  static async deactivateLandlord(user_id) {
-    console.log('deactivating landlord: ', user_id)
-    await User.query().where('id', user_id).update({
-      activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-    })
+  static async deactivateLandlord(deactivationId, userId) {
+    const deactivationSchedule = await UserDeactivationSchedule.query()
+      .where('id', deactivationId)
+      .where('user_id', userId)
+      .first()
+    if (deactivationSchedule) {
+      await User.query().where('id', userId).update({
+        activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+      })
+      await UserDeactivationSchedule.query()
+        .where('id', deactivationId)
+        .where('user_id', userId)
+        .delete()
+    } else {
+      console.log(`deactivating ${deactivationId} is not valid anymore.`)
+    }
   }
 }
 
