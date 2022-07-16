@@ -1,4 +1,9 @@
 definitions:
+  id:
+    name: id
+    in: path
+    type: number
+    required: true
   estate_id:
     name: estate_id
     in: path
@@ -467,6 +472,14 @@ definitions:
     in: path
     type: number
     required: true
+  data1:
+    name: data1
+    in: formData
+    type: string
+  data2:
+    name: data1
+    in: formData
+    type: string
 
 paths:
   /api/v1/estates:
@@ -977,3 +990,43 @@ paths:
               type: object
               schema:
                 $ref: '#/components/schemas/CommonReturn'
+
+  /api/v1/estates/:estate_id/tenant/:id/invite/email :
+    post:
+      summary: send invitation to tenant outside of breeze via email
+      tags: 
+        - Invitation outside of breeze
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - $ref: '#/definitions/id'        
+      responses:
+        '200' :
+        description: OK
+
+  /api/v1/estates/:estate_id/tenant/:id/invite/sms :
+    post:
+      summary: send invitation to tenant outside of breeze via sms
+      tags: 
+        - Invitation outside of breeze
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/definitions/estate_id'
+        - $ref: '#/definitions/id'        
+      responses:
+        '200' :
+        description: OK
+
+  /api/v1/accept/outside_tenant :
+    post:
+      summary: Tenant Accept invitation 
+      tags: 
+        - Tenant accepts invitation from landlord
+      parameters:
+        - $ref: '#/definitions/data1'
+        - $ref: '#/definitions/data2'        
+      responses:
+        '200' :
+        description: OK        
