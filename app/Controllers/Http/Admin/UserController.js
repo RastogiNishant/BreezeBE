@@ -6,7 +6,7 @@ const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-const { isArray, isEmpty, find, get } = require('lodash')
+const { isArray, isEmpty, find, get, includes } = require('lodash')
 const {
   ROLE_ADMIN,
   ROLE_LANDLORD,
@@ -16,7 +16,10 @@ const {
   STATUS_DELETE,
   STATUS_ACTIVE,
   STATUS_DRAFT,
+  DEACTIVATE_LANDLORD_AT_END_OF_DAY,
 } = require('../../../constants')
+const QueueService = require('../../../Services/QueueService')
+const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 
 class UserController {
   /**
@@ -130,6 +133,7 @@ class UserController {
       .with('company', function (query) {
         query.with('contacts')
       })
+      .with('deactivationSchedule')
     if (query) {
       landlordQuery.andWhere(function (d) {
         d.orWhere('email', 'ilike', `${query}%`)
@@ -142,6 +146,53 @@ class UserController {
     const users = landlords.toJSON({ publicOnly: false })
     return response.res(users)
   }
+
+  async updateLandlord({ request, auth, response }) {
+    const { user_id, action } = request.all()
+    switch (action) {
+      case 'deactivate-in-2-days':
+        //FIXME: tzOffset should be coming from header or body of request
+        const tzOffset = 2
+        let workingDaysAdded = 0
+        let deactivateDateTime
+        let daysAdded = 0
+        //calculate when the deactivation will occur.
+        do {
+          daysAdded++
+          deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
+          if (
+            !(
+              isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
+              includes(['Saturday', 'Sunday'], deactivateDateTime.format('dddd'))
+            )
+          ) {
+            workingDaysAdded++
+          }
+        } while (workingDaysAdded < 2)
+        let delay
+        if (DEACTIVATE_LANDLORD_AT_END_OF_DAY) {
+          deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDT23:59:59+02:00')
+          delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
+        } else {
+          deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
+          delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
+        }
+        const deactivationSchedule = await UserDeactivationSchedule.create({
+          user_id,
+          deactivate_schedule: deactivateDateTime,
+        })
+        QueueService.deactivateLandlord(deactivationSchedule.id, user_id, delay)
+        //send notification...
+
+        return response.res({ delay: deactivateDateTime })
+      case 'deactivate-by-date':
+        QueueService.deactivateLandlord()
+        break
+    }
+  }
+}
+const isHoliday = (date) => {
+  return false
 }
 
 module.exports = UserController
