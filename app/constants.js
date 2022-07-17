@@ -401,6 +401,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS: 'notification_landlord_deactivated_in_two_days',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,

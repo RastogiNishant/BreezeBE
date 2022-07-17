@@ -1,6 +1,7 @@
 'use strict'
 
 const User = use('App/Models/User')
+const l = use('Localize')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -17,8 +18,11 @@ const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
+  DEFAULT_LANG,
 } = require('../../../constants')
-const QueueService = require('../../../Services/QueueService')
+const QueueService = use('App/Services/QueueService')
+const NotificationsService = use('App/Services/NotificationsService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 
 class UserController {
@@ -149,8 +153,22 @@ class UserController {
 
   async updateLandlord({ request, auth, response }) {
     const { user_id, action } = request.all()
+    const user = await User.query()
+      .select('device_token')
+      .select('lang')
+      .where('id', user_id)
+      .where('role', ROLE_LANDLORD)
+      .first()
+    if (!user) {
+      throw new HttpException('Landlord not found.', 400)
+    }
     switch (action) {
       case 'deactivate-in-2-days':
+        //check if this user is already on deactivation schedule
+        const scheduled = await UserDeactivationSchedule.query().where('user_id', user_id).first()
+        if (scheduled) {
+          throw new HttpException('Landlord is already booked for deactivation', 400)
+        }
         //FIXME: tzOffset should be coming from header or body of request
         const tzOffset = 2
         let workingDaysAdded = 0
@@ -183,11 +201,24 @@ class UserController {
         })
         QueueService.deactivateLandlord(deactivationSchedule.id, user_id, delay)
         //send notification...
-
-        return response.res({ delay: deactivateDateTime })
+        await NotificationsService.sendNotification(
+          [user.device_token],
+          NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
+          {
+            title: l.get(
+              'landlord.notification.event.profile_deactivated_two_days',
+              user.lang || DEFAULT_LANG
+            ),
+            body: l.get(
+              'landlord.notification.event.profile_deactivated_two_days.next.message',
+              user.lang || DEFAULT_LANG
+            ),
+          }
+        )
+        return response.res(true)
       case 'deactivate-by-date':
-        QueueService.deactivateLandlord()
-        break
+        //QueueService.deactivateLandlord()
+        return response.res({ message: 'action not implemented yet.' })
     }
   }
 }
