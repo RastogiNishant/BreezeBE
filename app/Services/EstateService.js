@@ -1086,6 +1086,17 @@ class EstateService {
     ])
     return estateCount
   }
+
+  static async getEstateHasTenant({ condition = {} }) {
+    let query = Estate.query()
+      .where('letting_status', LETTING_TYPE_LET)
+      .where('status', STATUS_DRAFT)
+    if (isEmpty(condition)) {
+      return await query.first()
+    }
+
+    return await query.where(condition).first()
+  }
 }
 
 module.exports = EstateService

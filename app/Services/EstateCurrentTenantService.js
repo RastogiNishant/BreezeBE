@@ -13,8 +13,8 @@ const {
   ROLE_USER,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
-  MATCH_STATUS_FINISH,
   DEFAULT_LANG,
+  STATUS_DELETE,
 } = require('../constants')
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -124,7 +124,10 @@ class EstateCurrentTenantService {
   }
 
   static async createDynamicLink({ id, estate_id, user_id }) {
-    const estate = await EstateSevice.getActiveById(estate_id, { user_id: user_id })
+    const estate = await EstateSevice.getEstateHasTenant({
+      condition: { id: estate_id, user_id: user_id },
+    })
+
     if (!estate) {
       throw new HttpException('No permission to invite')
     }
@@ -180,7 +183,7 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async acceptOutsideTenant({ data1, data2 }) {
+  static async acceptOutsideTenant({ data1, data2, password }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
     const estateCurrentTenant = await this.getCurrentEstate({ id, estate_id })
@@ -203,7 +206,6 @@ class EstateCurrentTenantService {
 
     const trx = await Database.beginTransaction()
     try {
-      const password = uuid.v4()
       const userData = {
         role: ROLE_USER,
         secondname: estateCurrentTenant.surname,
@@ -216,7 +218,7 @@ class EstateCurrentTenantService {
         trx
       )
       trx.commit()
-      return password
+      return true
     } catch (e) {
       trx.rollback()
       throw new HttpException(e.message, 500)
@@ -243,16 +245,19 @@ class EstateCurrentTenantService {
 
       return { id, estate_id, code, expired_time }
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException('Params are wrong', 500)
     }
   }
 
   static async getByUserId(user_id) {
-    await EstateCurrentTenant.query().where('user_id', user_id)
+    await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
   static async updateOutsideTenantInfo(user, trx = null) {
-    const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
+    const currentTenant = await EstateCurrentTenant.query()
+      .where('email', user.email)
+      .whereNot('status', STATUS_DELETE)
+      .first()
     if (!currentTenant) {
       return
     }

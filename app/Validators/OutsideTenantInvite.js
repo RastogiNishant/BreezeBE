@@ -8,6 +8,7 @@ class OutsideTenantInvite extends Base {
     yup.object().shape({
       data1: yup.string().required(),
       data2: yup.string().required(),
+      password: yup.string().min(6).required(),
     })
 }
 
