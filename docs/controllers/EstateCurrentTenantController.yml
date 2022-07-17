@@ -1,0 +1,81 @@
+definitions: 
+  id: 
+    name: id
+    in: path
+    type: number
+    required: true
+  tenant_email:
+    name: tenant_email
+    in: formData
+    type: string
+    required: true
+  surname: 
+    name: surname 
+    in: formData
+    type: string 
+  phone_number:
+    name: phone_number
+    type: string
+    required: true
+  estate_id: 
+    name: estate_id
+    type: string 
+    required: true
+  contract_end:
+    name: contract_end
+    type: date 
+  salutation_int: 
+    name: salutation_int
+    type: number 
+    enum: [1,2,3]
+    description: '1: MR, 2: Ms, 3: Sir or Madam'
+
+/api/v1/current_tenant/:id:
+  put: 
+    tags: [EstateCurrentTenant - CRUD for outside tenants]
+    security: [bearerAuth: []]
+    description: update current tenant outside of breeze
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/tenant_email"
+      - $ref: "#/definitions/surname"
+      - $ref: "#/definitions/phone_number"
+      - $ref: "#/definitions/estate_id"
+      - $ref: "#/definitions/contract_end"
+      - $ref: "#/definitions/salutation_int"
+    responses: [200]
+    
+  delete: 
+    tags: [EstateCurrentTenant - CRUD for outside tenants]
+    security: [bearerAuth: []]
+    description: delete current tenant outside of breeze
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]    
+
+  /api/v1/current_tenant/expired/:id:
+    put: 
+    tags: [EstateCurrentTenant - CRUD for outside tenants]
+    security: [bearerAuth: []]
+    description: update tenant to expired
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]
+
+  /api/v1/current_tenant/:
+    post: 
+    tags: [EstateCurrentTenant - CRUD for outside tenants]
+    security: [bearerAuth: []]
+    description: create current tenant outside of breeze
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/tenant_email"
+      - $ref: "#/definitions/surname"
+      - $ref: "#/definitions/phone_number"
+      - $ref: "#/definitions/estate_id"
+      - $ref: "#/definitions/contract_end"
+      - $ref: "#/definitions/salutation_int"      
+    responses: [200]
