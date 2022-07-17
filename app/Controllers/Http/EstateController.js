@@ -42,7 +42,8 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  TRANSPORT_TYPE_WALK,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -74,10 +75,15 @@ class EstateController {
    */
   async createEstate({ request, auth, response }) {
     try {
+      const user = await UserService.getById(auth.user.id)
+
+      if (user.activation_status === USER_ACTIVATION_STATUS_DEACTIVATED) {
+        throw new HttpException('No permission to create estate')
+      }
+
       const estate = await EstateService.createEstate(request, auth.user.id)
 
-      const unverifiedUser = await UserService.getUnverifiedUserByAdmin(auth.user.id)
-      if (unverifiedUser) {
+      if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
           `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
@@ -86,7 +92,7 @@ class EstateController {
         ).toLowerCase()
 
         const txt = `The landlord '${
-          unverifiedUser.email
+          user.email
         }' created a property with an address '${address}' in ${
           process.env.NODE_ENV || 'local'
         } environment`
@@ -388,7 +394,10 @@ class EstateController {
         throw new HttpException('Cant update status', 400)
       }
 
-      if ([STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status)) {
+      if (
+        [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+        estate.letting_type !== LETTING_TYPE_LET
+      ) {
         // Validate is Landlord fulfilled contacts
         try {
           await EstateService.publishEstate(estate, request)
@@ -578,6 +587,12 @@ class EstateController {
         { exclude_from, exclude_to, exclude },
         limit
       )
+      estates = await Promise.all(
+        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
@@ -585,7 +600,7 @@ class EstateController {
       throw e
     }
 
-    response.res(estates.toJSON({ isShort: true, role: user.role }))
+    response.res(estates)
   }
 
   /**
@@ -600,17 +615,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    if (!estate.full_address && estate.coord_raw) {
-      const coords = estate.coord_raw.split(',')
-      const lat = coords[0]
-      const lon = coords[1]
-      const isolinePoints = await GeoService.getOrCreateIsoline(
-        { lat, lon },
-        TRANSPORT_TYPE_WALK,
-        60
-      )
-      estate.isoline = isolinePoints?.toJSON()?.data || []
-    }
+    estate.isoline = await EstateService.getIsolines(estate)
 
     estate = estate.toJSON({ isShort: true, role: auth.user.role })
     estate = await EstateService.assignEstateAmenities(estate)
@@ -711,6 +716,11 @@ class EstateController {
     const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
+    }
+
+    // The landlord can't remove the slot if it is already started
+    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
+      throw new HttpException('Showing is already started', 500)
     }
 
     // If slot's end date is passed, we only delete the slot

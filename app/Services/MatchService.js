@@ -19,6 +19,8 @@ const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
 
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -57,6 +59,7 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
@@ -77,7 +80,7 @@ const inRange = (value, start, end) => {
 const log = (data) => {
   return false
   //Logger.info('LOG', data)
-  //console.log(data);
+  //console.log(data)
 }
 
 class MatchService {
@@ -173,7 +176,9 @@ class MatchService {
 
     log({ userCurrentCredit, userRequiredCredit })
 
-    if (userCurrentCredit >= userRequiredCredit) {
+    if (userCurrentCredit == 100 && userRequiredCredit == 100) {
+      creditScorePoints = 1
+    } else if (userCurrentCredit > userRequiredCredit) {
       creditScorePoints =
         0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
     } else {
@@ -373,16 +378,17 @@ class MatchService {
     const now = parseInt(moment().startOf('day').format('X'))
     const nextYear = parseInt(moment().add(1, 'y').format('X'))
 
-    log({ rentStart, vacantFrom, now, nextYear })
     //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
-    if (rentStart < now || rentStart > nextYear) {
+    // note this is fixed in feature/add-unit-test-to-match-scoring
+    if (rentStart < now || rentStart > nextYear || vacantFrom < now || vacantFrom > nextYear) {
       rentStartPoints = 0
     } else if (rentStart >= vacantFrom) {
       rentStartPoints = 0.9 + (0.1 * (rentStart - vacantFrom)) / rentStart
     } else if (rentStart < vacantFrom) {
       rentStartPoints = 0.9 * (1 - (vacantFrom - rentStart) / vacantFrom)
     }
+    log({ rentStart, vacantFrom, now, nextYear, rentStartPoints })
     rentStartPoints = rentStartPoints * rentStartWeight
     scoreT += rentStartPoints
 
@@ -998,14 +1004,19 @@ class MatchService {
         estate_id: estateId,
         status: MATCH_STATUS_COMMIT,
       })
-      .update({ status: MATCH_STATUS_FINISH })
+      .update({
+        status: MATCH_STATUS_FINISH,
+        final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+      })
       .transacting(trx)
 
     // Make estate status DRAFT to hide from tenants' matches list
     await Database.table('estates')
       .where({ id: estateId })
-      .update({ status: STATUS_DRAFT })
+      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
       .transacting(trx)
+
+    await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
 
     return NoticeService.estateFinalConfirm(estateId, tenantId)
   }
@@ -1221,7 +1232,9 @@ class MatchService {
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     query.innerJoin({ _m: 'matches' }, function () {
-      this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+      this.on('_m.estate_id', 'estates.id')
+        .onIn('_m.user_id', userId)
+        .on('_m.status', MATCH_STATUS_VISIT)
     })
     query.leftJoin({ _v: 'visits' }, function () {
       this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
@@ -2277,6 +2290,7 @@ class MatchService {
     return userIds
   }
 
+
   static async addFinalTenant({ user_id, estate_id }, trx = null) {
     await Database.table('matches')
       .insert({
@@ -2286,6 +2300,17 @@ class MatchService {
         status: MATCH_STATUS_FINISH,
       })
       .transacting(trx)
+  }
+
+  static async getEstatesByStatus({ estate_id, status }) {
+    let query = Match.query()
+    if (estate_id) {
+      query.where('id', estate_id)
+    }
+    if (status) {
+      query.where('status', status)
+    }
+    return (await query.fetch()).rows
   }
 }
 

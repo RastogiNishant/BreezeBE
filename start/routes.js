@@ -694,6 +694,55 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
+  Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
+  Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
+  Route.put('/:id/addImage', 'TaskController.addImage').middleware(['valid:Id'])
+  Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
+    'valid:Id,RemoveImage',
+  ])
+})
+  .prefix('api/v1/connect/task')
+  .middleware(['auth:jwt,jwtLandlord'])
+
+Route.group(() => {
+  Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
+    'valid:Pagination,Id,TaskFilter',
+  ])
+  Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
+    'valid:Pagination,TaskFilter',
+  ])
+  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
+})
+  .prefix('api/v1/connect/task')
+  .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
+  Route.get('/', 'TaskController.getTenantTasks').middleware(['valid:TenantTaskFilter'])
+})
+  .prefix('api/v1/connect/task')
+  .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.post('/', 'PredefinedAnswerController.createPredefinedAnswer').middleware([
+    'valid:createPredefinedAnswer',
+  ])
+  Route.put('/:id', 'PredefinedAnswerController.updatePredefinedAnswer').middleware([
+    'valid:createPredefinedAnswer,Id',
+  ])
+  Route.delete('/:id', 'PredefinedAnswerController.deletePredefinedAnswer').middleware(['valid:Id'])
+})
+  .prefix('api/v1/connect/predefinedAnswer')
+  .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
+  Route.get('/', 'Admin/PredefinedMessageController.getAll')
+})
+  .prefix('api/v1/connect/predefinedMessage')
+  .middleware(['auth:jwt'])
+
+Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
   Route.post('/:id/like', 'EstateController.likeEstate').middleware(['valid:Id'])
@@ -704,6 +753,12 @@ Route.group(() => {
 })
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.get('/myTenants', 'LandlordController.getAllTenants')
+})
+  .prefix('api/v1/landlords')
+  .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
   Route.get('/', 'LandlordController.landlords')
