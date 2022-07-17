@@ -466,9 +466,24 @@ Route.group(() => {
   Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
     'valid:EstateId,TenantId',
   ])
+
+  Route.post(
+    '/:estate_id/tenant/:id/invite/email',
+    'EstateCurrentTenantController.inviteTenantToAppByEmail'
+  ).middleware(['valid:EstateId,Id'])
+  Route.post(
+    '/:estate_id/tenant/:id/invite/sms',
+    'EstateCurrentTenantController.inviteTenantToAppBySMS'
+  ).middleware(['valid:EstateId,Id'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.post(
+  '/api/v1/accept/outside_tenant',
+  'EstateCurrentTenantController.acceptOutsideTenant'
+).middleware(['valid:OutsideTenantInvite'])
+
 // Change visits statuses
 Route.group(() => {
   Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([
