@@ -476,11 +476,17 @@ definitions:
     name: data1
     in: formData
     type: string
+    required: true
   data2:
     name: data1
     in: formData
     type: string
-
+    required: true
+  password:
+    name: password
+    in: formData
+    type: string
+    required: true
 paths:
   /api/v1/estates:
     get:
@@ -1026,7 +1032,8 @@ paths:
         - Tenant accepts invitation from landlord
       parameters:
         - $ref: '#/definitions/data1'
-        - $ref: '#/definitions/data2'        
+        - $ref: '#/definitions/data2'
+        - $ref: '#/definitions/password'
       responses:
         '200' :
         description: OK        
