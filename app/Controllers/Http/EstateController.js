@@ -44,6 +44,7 @@ const {
   LETTING_TYPE_VOID,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  TRANSPORT_TYPE_WALK,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
