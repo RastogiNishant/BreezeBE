@@ -80,7 +80,7 @@ const inRange = (value, start, end) => {
 const log = (data) => {
   return false
   //Logger.info('LOG', data)
-  //console.log(data);
+  //console.log(data)
 }
 
 class MatchService {
@@ -176,7 +176,9 @@ class MatchService {
 
     log({ userCurrentCredit, userRequiredCredit })
 
-    if (userCurrentCredit >= userRequiredCredit) {
+    if (userCurrentCredit == 100 && userRequiredCredit == 100) {
+      creditScorePoints = 1
+    } else if (userCurrentCredit > userRequiredCredit) {
       creditScorePoints =
         0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
     } else {
@@ -376,16 +378,17 @@ class MatchService {
     const now = parseInt(moment().startOf('day').format('X'))
     const nextYear = parseInt(moment().add(1, 'y').format('X'))
 
-    log({ rentStart, vacantFrom, now, nextYear })
     //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
-    if (rentStart < now || rentStart > nextYear) {
+    // note this is fixed in feature/add-unit-test-to-match-scoring
+    if (rentStart < now || rentStart > nextYear || vacantFrom < now || vacantFrom > nextYear) {
       rentStartPoints = 0
     } else if (rentStart >= vacantFrom) {
       rentStartPoints = 0.9 + (0.1 * (rentStart - vacantFrom)) / rentStart
     } else if (rentStart < vacantFrom) {
       rentStartPoints = 0.9 * (1 - (vacantFrom - rentStart) / vacantFrom)
     }
+    log({ rentStart, vacantFrom, now, nextYear, rentStartPoints })
     rentStartPoints = rentStartPoints * rentStartWeight
     scoreT += rentStartPoints
 
