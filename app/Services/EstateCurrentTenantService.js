@@ -115,10 +115,11 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async getCurrentEstate({ id, estate_id }) {
+  static async getOutsideTenantByEstateId({ id, estate_id }) {
     return await EstateCurrentTenant.query()
       .where('id', id)
       .where('estate_id', estate_id)
+      .whereNot('status', STATUS_DELETE)
       .whereNull('user_id')
       .first()
   }
@@ -132,7 +133,7 @@ class EstateCurrentTenantService {
       throw new HttpException('No permission to invite')
     }
 
-    const estateCurrentTenant = await this.getCurrentEstate({ id, estate_id })
+    const estateCurrentTenant = await this.getOutsideTenantByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
@@ -186,7 +187,7 @@ class EstateCurrentTenantService {
   static async acceptOutsideTenant({ data1, data2, password }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
-    const estateCurrentTenant = await this.getCurrentEstate({ id, estate_id })
+    const estateCurrentTenant = await this.getOutsideTenantByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
