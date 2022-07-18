@@ -189,19 +189,6 @@ class EstateCurrentTenantService {
     return await query.paginate(page, limit)
   }
 
-  /**
-   * Permanent delete only has to be used with admin role
-   * but it has to be confirmed from admin frontend seriously
-   * @param {*} id
-   * @param {*} user_id
-   * @returns
-   */
-
-  static async permanentDelete(id, user_id) {
-    await this.hasPermission(id, user_id)
-    return await EstateCurrentTenant.query().where('id').delete()
-  }
-
   static async delete(id, user_id) {
     await this.hasPermission(id, user_id)
     return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_DELETE })
