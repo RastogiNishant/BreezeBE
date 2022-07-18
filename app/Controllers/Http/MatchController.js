@@ -643,6 +643,21 @@ class MatchController {
     return response.res(estates)
   }
 
+  async searchForLandlord({ request, auth, response }) {
+    const { query } = request.all()
+    let estates = await MatchService.searchForLandlord(auth.user.id, query)
+    estates = estates.rows
+
+    estates = await Promise.all(
+      estates.map(async (estate) => {
+        estate.isoline = await EstateService.getIsolines(estate)
+        return estate
+      })
+    )
+
+    return response.res(estates)
+  }
+
   async getLandlordSummary({ request, auth, response }) {
     const user = auth.user
     try {

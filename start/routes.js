@@ -799,6 +799,10 @@ Route.get('/api/v1/match/tenant/search', 'MatchController.searchForTenant').midd
   'auth:jwt',
   'valid:Pagination,EstateFilter',
 ])
+Route.get('/api/v1/match/landlord/search', 'MatchController.searchForLandlord').middleware([
+  'auth:jwtLandlord',
+  'valid:Pagination,EstateFilter',
+])
 
 Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').middleware([
   'auth:jwtLandlord',
