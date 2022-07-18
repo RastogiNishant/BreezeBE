@@ -44,9 +44,9 @@ class EstateCurrentTenantController {
     response.res(await EstateCurrentTenantService.delete(id, auth.user.id))
   }
 
-  async expired({ request, auth, response }) {
+  async expire({ request, auth, response }) {
     const { id } = request.all()
-    response.res(await EstateCurrentTenantService.expired(id, auth.user.id))
+    response.res(await EstateCurrentTenantService.expire(id, auth.user.id))
   }
 }
 

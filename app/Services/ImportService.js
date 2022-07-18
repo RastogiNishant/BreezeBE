@@ -102,15 +102,11 @@ class ImportService {
         //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.tenant_email) {
-          const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
+          await EstateCurrentTenantService.addCurrentTenant({
             data,
             estate_id: estate.id,
             user_id: userId,
           })
-
-          if (estateCurrentTenant && typeof estateCurrentTenant === 'string') {
-            warning += `${msg}:${address}`
-          }
         }
         if (warning) {
           return { warning, line, address: data.address }

@@ -23,7 +23,7 @@ class EstateCurrentTenantService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id, user_id, fromImport = true }) {
+  static async addCurrentTenant({ data, estate_id, user_id }) {
     const estate = await EstateService.getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estate_id)
@@ -31,8 +31,7 @@ class EstateCurrentTenantService {
       .first()
 
     if (!estate) {
-      if (!fromImport) throw new HttpException('No permission to add current tenant')
-      return 'Probably Letting status is not Let or no permission to add tenant'
+      throw new HttpException('No permission to add current tenant')
     }
 
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
@@ -153,8 +152,12 @@ class EstateCurrentTenantService {
 
   static async getAll({ user_id, estate_id, status, tenant_id, page = -1, limit = -1 }) {
     const query = EstateCurrentTenant.query()
-      .select('estate_current_tenants.*')
-      .with('estate')
+      .select(
+        'estate_current_tenants.id as estate_current_tenant_id',
+        'estate_current_tenants.status as estate_current_tenant_status',
+        'estate_current_tenants.*'
+      )
+      .select('_e.*')
       .whereNot('estate_current_tenants.status', STATUS_DELETE)
       .innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
@@ -206,7 +209,7 @@ class EstateCurrentTenantService {
       .firstOrFail()
   }
 
-  static async expired(id, user_id) {
+  static async expire(id, user_id) {
     await this.hasPermission(id, user_id)
     return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_EXPIRE })
   }

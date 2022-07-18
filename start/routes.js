@@ -890,7 +890,7 @@ Route.group(() => {
     'valid:CreateEstateCurrentTenant,Id',
   ])
   Route.delete('/:id', 'EstateCurrentTenantController.delete').middleware(['valid:Id'])
-  Route.put('/expired/:id', 'EstateCurrentTenantController.expired').middleware(['valid:Id'])
+  Route.put('/expire/:id', 'EstateCurrentTenantController.expire').middleware(['valid:Id'])
   Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
     'valid:EstateCurrentTenantFilter',
   ])
