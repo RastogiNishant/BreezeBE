@@ -1531,7 +1531,7 @@ class MatchService {
     if (searchQuery) {
       query.where(function () {
         this.orWhere('estates.street', 'ilike', `%${searchQuery}%`)
-        this.orWhere('estates.property_id', 'ilike', `${searchQuery}%`)
+        this.orWhere('estates.property_id', 'ilike', `%${searchQuery}%`)
       })
     }
 
