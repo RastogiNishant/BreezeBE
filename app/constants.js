@@ -537,7 +537,7 @@ const constants = {
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
   SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
-  INVITE_OUTSIDE_TENANT : 'invite_outside_breeze',
+  INVITE_OUTSIDE_TENANT: 'invite_outside_breeze',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -642,7 +642,7 @@ const constants = {
     id: 0,
     firstname: 'Breeze',
     secondname: 'Monster',
-    avatar: '/img/brezeLogo.png',
+    avatar: '/img/breezeLogo.png',
   },
   TASK_STATUS_DRFAT: 100,
   TASK_STATUS_DELETE: 101,
