@@ -1083,11 +1083,6 @@ Route.list().forEach((r) => {
     }
   }
 })
-
-Route.group(() => {
-  Route.get('/landlord', 'ConnectController.landlordInfo').middleware(['auth:jwtLandlord'])
-  Route.get('/tenant', 'ConnectController.tenantInfo').middleware(['auth:jwt'])
-}).prefix('/api/v1/connect')
 /*
 const MatchService = use('App/Services/MatchService')
 const { omit } = require('lodash')
