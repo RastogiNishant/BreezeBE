@@ -41,7 +41,7 @@ definitions:
     in: formData
     description: multiple files to upload
 
-/api/v1/connect/task/:id :
+/api/v1/connect/task/:id/ :
   get: 
     tags: [Task - CRUD for task for Landlord]
     security: [bearerAuth: []]
@@ -121,7 +121,7 @@ definitions:
           schema:
             $ref: '#/components/schemas/TaskFilterSchema'
     responses: [200]
-/api/v1/connect/task/estate/with-filters: 
+/api/v1/connect/task/with-filters: 
   post: 
     tags: [Task - CRUD for task]
     security: [bearerAuth: []]
