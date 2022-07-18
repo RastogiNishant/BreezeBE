@@ -1,6 +1,5 @@
 const User = use('App/Models/User')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
-const EstateSevice = use('App/Services/EstateService')
 const MailService = use('App/Services/MailService')
 const Database = use('Database')
 const crypto = require('crypto')
@@ -13,9 +12,10 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DEFAULT_LANG,
-  STATUS_DELETE,
   DAY_FORMAT,
   SALUTATION_SIR_OR_MADAM,
+  STATUS_DELETE,
+  LETTING_TYPE_LET,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -24,7 +24,23 @@ const MatchService = use('App/Services/MatchService')
 const l = use('Localize')
 
 class EstateCurrentTenantService {
-  static async addCurrentTenant(data, estate_id) {
+  /**
+   * Right now there is no way to determine if the email address is the right tenant's email address or not
+   * So we can't prevent duplicated record for the same estate
+   * @param {*} param0
+   * @returns
+   */
+  static async addCurrentTenant({ data, estate_id, user_id }) {
+    const estate = require('./EstateService').getActiveEstateQuery()
+      .where('user_id', user_id)
+      .where('id', estate_id)
+      .where('letting_status', LETTING_TYPE_LET)
+      .first()
+
+    if (!estate) {
+      throw new HttpException('No permission to add current tenant')
+    }
+
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
     let currentTenant = new EstateCurrentTenant()
@@ -38,11 +54,32 @@ class EstateCurrentTenantService {
       status: STATUS_ACTIVE,
       salutation_int: data.salutation_int,
     })
+
     if (user) {
       currentTenant.user_id = user.id
     }
     await currentTenant.save()
     return currentTenant
+  }
+
+  /**
+   *
+   * we can use this function later to prevent duplicated tenants in the same estate
+   * but for now there are current active tenant though landlord is going to add another tenant
+   * In other words, there will be some periods exchanging tenants
+   * Probably we can decide with contract_end and status later
+   * @param {*} param0
+   * @returns
+   */
+  static async belongsToAnotherTenant({ user_id, estate_id, data }) {
+    const currentTenants = await this.getAll({ user_id, estate_id, status: [STATUS_ACTIVE] })
+    if (currentTenants && currentTenants.total) {
+      const anotherTenant = currentTenants.data.find((ct) => ct.email !== data.email)
+      if (anotherTenant) {
+        return false
+      }
+    }
+    return true
   }
 
   static async createOnFinalMatch(tenant_id, estate_id, trx) {
@@ -64,7 +101,9 @@ class EstateCurrentTenantService {
     return currentTenant
   }
 
-  static async updateCurrentTenant(data, estate_id) {
+  static async updateCurrentTenant({ id, data, estate_id, user_id }) {
+    await this.hasPermission(id, user_id)
+
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
     let currentTenant = await EstateCurrentTenant.query()
@@ -112,6 +151,64 @@ class EstateCurrentTenantService {
     }
   }
 
+  static async get(id) {
+    return await EstateCurrentTenant.query()
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .firstOrFail()
+  }
+
+  static async getAll({ user_id, estate_id, status, tenant_id, page = -1, limit = -1 }) {
+    const query = EstateCurrentTenant.query()
+      .select(
+        'estate_current_tenants.id as estate_current_tenant_id',
+        'estate_current_tenants.status as estate_current_tenant_status',
+        'estate_current_tenants.*'
+      )
+      .select('_e.*')
+      .whereNot('estate_current_tenants.status', STATUS_DELETE)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+      })
+
+    if (status) {
+      query.where('estate_current_tenants.status', status)
+    }
+
+    if (estate_id) {
+      query.where('estate_current_tenants.estate_id', estate_id)
+    }
+    if (tenant_id) {
+      query.where('estate_current_tenants.user_id', tenant_id)
+    }
+
+    if (limit === -1 || page === -1) {
+      return (await query.fetch()).rows
+    }
+
+    return await query.paginate(page, limit)
+  }
+
+  static async delete(id, user_id) {
+    await this.hasPermission(id, user_id)
+    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_DELETE })
+  }
+
+  static async hasPermission(id, user_id) {
+    const estateCurrentTeant = await this.get(id)
+
+    require('./EstateService').getActiveEstateQuery()
+      .where('user_id', user_id)
+      .where('id', estateCurrentTeant.estate_id)
+      .where('letting_status', LETTING_TYPE_LET)
+      .firstOrFail()
+  }
+
+  static async expire(id, user_id) {
+    await this.hasPermission(id, user_id)
+    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_EXPIRE })
+  }
+
   static async inviteTenantToAppByEmail({ id, estate_id, user_id }) {
     const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
       id,
@@ -147,7 +244,7 @@ class EstateCurrentTenantService {
   }
 
   static async createDynamicLink({ id, estate_id, user_id }) {
-    const estate = await EstateSevice.getEstateHasTenant({
+    const estate = await require('./EstateService').getEstateHasTenant({
       condition: { id: estate_id, user_id: user_id },
     })
 

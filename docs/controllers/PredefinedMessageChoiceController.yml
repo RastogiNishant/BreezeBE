@@ -1,0 +1,74 @@
+definitions:
+  id:
+    name: id
+    in: path
+    type: number
+    required: true
+
+  text:
+    name: text
+    in: formData
+    type: string
+    required: true
+
+  predefined_message_id:
+    name: predefined_message_id
+    in: formData
+    type: number
+    required: true
+
+  next_predefined_message_id:
+    name: next_predefined_message_id
+    in: formData
+    type: number
+
+/api/v1/administration/predefinedMessageChoice/:id:
+  get:
+    tags: [PredefinedMessageChoice-Admin]
+    security: [bearerAuth: []]
+    description: Get PredefinedMessage Choice By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]
+
+  put:
+    tags: [PredefinedMessageChoice-Admin]
+    security: [bearerAuth: []]
+    description: update PredefinedMessage Choice By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/text"
+      - $ref: "#/definitions/predefined_message_id"
+      - $ref: "#/definitions/next_predefined_message_id"
+    responses: [200]
+
+  delete: 
+    tags: [PredefinedMessageChoice-Admin]
+    security: [bearerAuth: []]  
+    description: delete PredefinedMessage Choice By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+
+/api/v1/administration/predefinedMessageChoice/:
+  get: 
+    tags: [PredefinedMessageChoice-Admin]
+    security: [bearerAuth: []]
+    description: get All predefined message choices 
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/predefined_message_id"
+      - $ref: "#/definitions/next_predefined_message_id"
+
+  post:
+    tags: [PredefinedMessageChoice-Admin]
+    security: [bearerAuth: []]
+    description: create predefined message choices
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/text"
+      - $ref: "#/definitions/predefined_message_id"
+      - $ref: "#/definitions/next_predefined_message_id"
+    responses: [200]
