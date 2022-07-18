@@ -1,0 +1,65 @@
+definitions:
+  id: 
+    name: id
+    in: path
+    type: number
+    required: true
+
+  task_id: 
+    name: task_id
+    in: formData
+    type: number
+    required: true
+
+  predefined_message_id:
+    name: predefined_message_id
+    in: formData
+    type: number
+    required: true
+
+  predefined_message_choice_id: 
+    name: predefined_message_choice_id
+    in: formData
+    type: number
+
+  text: 
+    name: text
+    in: formData
+    type: string
+
+/api/v1/connect/predefinedAnswer/:id: 
+  put: 
+    tags: [PredefinedAnswer - CRUD for saving answers from tenants according to automatic questions from frontend application]
+    security: [bearerAuth: []]
+    description: update PredefinedAnswer By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/task_id"
+      - $ref: "#/definitions/predefined_message_id"
+      - $ref: "#/definitions/predefined_message_choice_id"
+      - $ref: "#/definitions/text"
+    responses: [200]
+
+  delete: 
+    tags: [PredefinedAnswer - CRUD for saving answers from tenants according to automatic questions from frontend application]
+    security: [bearerAuth: []]
+    description: delete PredefinedAnswer By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]
+
+/api/v1/connect/predefinedAnswer: 
+
+  post: 
+    tags: [PredefinedAnswer - CRUD for saving answers from tenants according to automatic questions from frontend application]
+    security: [bearerAuth: []]
+    description: update PredefinedAnswer By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/task_id"
+      - $ref: "#/definitions/predefined_message_id"
+      - $ref: "#/definitions/predefined_message_choice_id"
+      - $ref: "#/definitions/text"
+    responses: [200]

@@ -69,6 +69,7 @@ class QueueService {
    *
    */
   static async sendEvery5Min() {
+    console.log('debug ->>> worked sendEvery5Min')
     return Promise.all([
       wrapException(QueueJobService.handleExpiredEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
