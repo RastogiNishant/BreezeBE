@@ -1522,6 +1522,22 @@ class MatchService {
     return query
   }
 
+  static searchForLandlord(userId, searchQuery) {
+    const query = EstateService.getEstates()
+      .select('*')
+      .where('estates.user_id', userId)
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+
+    if (searchQuery) {
+      query.where(function () {
+        this.orWhere('estates.street', 'ilike', `%${searchQuery}%`)
+        this.orWhere('estates.property_id', 'ilike', `${searchQuery}%`)
+      })
+    }
+
+    return query.fetch()
+  }
+
   /**
    * Get tenants matched to current estate
    */
@@ -2289,7 +2305,6 @@ class MatchService {
 
     return userIds
   }
-
 
   static async addFinalTenant({ user_id, estate_id }, trx = null) {
     await Database.table('matches')
