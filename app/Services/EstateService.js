@@ -252,10 +252,8 @@ class EstateService {
 
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
-    if (!fromImport) {
-      // Run processing estate geo nearest
-      QueueService.getEstatePoint(estate.id)
-    }
+    // Run processing estate geo nearest
+    QueueService.getEstatePoint(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
