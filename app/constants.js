@@ -439,6 +439,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 43,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -667,6 +668,31 @@ const constants = {
   //whether we deactivate landlord at end of day of his/her deactivation day
   //or at the moment his deactivation arrives.
   DEACTIVATE_LANDLORD_AT_END_OF_DAY: false,
+  //list of holidays in Germany
+  //FIXME: this should come from a db table or from an external api
+  GERMAN_HOLIDAYS: [
+    '2022-08-15', //assumption day
+    '2022-09-20', //world children day
+    '2022-10-03', //reformation day
+    '2022-11-01', //all saints day
+    '2022-12-25', //christmas
+    '2022-12-26', //seconday of christmas
+    '2023-01-01', //new year's day
+    '2023-01-06', //epiphany
+    '2023-03-08', //Weltfrauntag
+    '2023-04-07', //Good Friday
+    '2023-04-09', //Easter Sunday
+    '2023-04-10', //Easter Monday
+    '2023-05-01', //Labor day
+    '2023-05-29', //Whit Monday
+    '2023-06-08', //Corpus Cristi
+    '2023-08-15', //Assumption Day
+    '2023-09-20', //world children's day
+    '2023-10-03', //reformation day
+    '2023-11-01', //all saints' day
+    '2023-12-25', //christmas
+    '2023-12-26', //second day of christmas
+  ],
 }
 
 module.exports = constants
