@@ -537,6 +537,7 @@ const constants = {
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
   SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
+  INVITE_OUTSIDE_TENANT : 'invite_outside_breeze',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -628,11 +629,59 @@ const constants = {
   URGENCY_HIGH: 3,
   URGENCY_SUPER: 4,
 
+  URGENCY_LOW_LABEL: 'Low',
+  URGENCY_NORMAL_LABEL: 'Normal',
+  URGENCY_HIGH_LABEL: 'High',
+  URGENCY_SUPER_LABEL: 'Urgent',
+
+  URGENCIES: [
+    {
+      label: 'low_notification.message',
+      value: 1,
+    },
+    {
+      label: 'normal_notification.message',
+      value: 2,
+    },    
+    {
+      label: 'high_notification.message',
+      value: 3,
+    },
+    {
+      label: 'urgent_notification.message',
+      value: 4,
+    },
+  ],
   TASK_STATUS_NEW: 1,
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
   TASK_STATUS_CLOSED: 5,
+  TASK_STATUS_DRFAT: 100,
+  TASK_STATUS_DELETE: 101,
+
+  TASK_STATUS_NEW_LABEL: 'New',
+  TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
+  TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',
+  TASK_STATUS_RESOLVED_LABEL: 'Resolved',
+  TASK_STATUS_CLOSED_LABEL: 'Closed',
+
+  ADULT_MIN_AGE: 18,
+
+  ESTATE_FIELD_FOR_TASK: [
+    'id',
+    'coord',
+    'street',
+    'area',
+    'house_number',
+    'country',
+    'floor',
+    'number_floors',
+    'city',
+    'coord_raw',
+    'property_id',
+    'address',
+  ],
 }
 
 module.exports = constants

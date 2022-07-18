@@ -63,7 +63,7 @@ class EstateController {
     )
 
     if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate(request, data.landlord_id)
+      const estate = await EstateService.createEstate({ request, userId: data.landlord_id })
       response.res(estate)
     } else {
       throw new HttpException('Not Allowed', 400)
@@ -81,7 +81,7 @@ class EstateController {
         throw new HttpException('No permission to create estate')
       }
 
-      const estate = await EstateService.createEstate(request, auth.user.id)
+      const estate = await EstateService.createEstate({ request, userId: auth.user.id })
 
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
@@ -716,6 +716,11 @@ class EstateController {
     const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
+    }
+
+    // The landlord can't remove the slot if it is already started
+    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
+      throw new HttpException('Showing is already started', 500)
     }
 
     // If slot's end date is passed, we only delete the slot

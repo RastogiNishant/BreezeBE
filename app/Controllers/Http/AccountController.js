@@ -56,47 +56,12 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, firstname, from_web, ...userData } = request.all()
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
-    const role = userData.role
-    if (!roles.includes(role)) {
-      throw new HttpException('Invalid user role', 401)
-    }
-    if (role) {
-      roles = [role]
-    }
-
-    const availableUser = await User.query()
-      .where('email', email)
-      .whereIn('role', roles)
-      .orderBy('updated_at', 'desc')
-      .first()
-    if (availableUser) {
-      throw new HttpException('User already exists, can be switched', 400)
-    }
-
     try {
-      const { user } = await UserService.createUser({
-        ...userData,
-        email,
-        firstname,
-        status: STATUS_EMAIL_VERIFY,
-      })
-
-      Event.fire('mautic:createContact', user.id)
+      const user = await UserService.signUp({ email, firstname, from_web, ...userData })
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
-
-      if (user.role === ROLE_USER) {
-        //If user we look for his email on estate_current_tenant and make corresponding corrections
-        const currentTenant = await EstateCurrentTenant.query().where('email', user.email).first()
-        if (currentTenant) {
-          currentTenant.user_id = user.id
-          await currentTenant.save()
-        }
-      }
-      await UserService.sendConfirmEmail(user, from_web)
       response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
