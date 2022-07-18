@@ -634,6 +634,24 @@ const constants = {
   URGENCY_HIGH_LABEL: 'High',
   URGENCY_SUPER_LABEL: 'Urgent',
 
+  URGENCIES: [
+    {
+      label: 'low_notification.message',
+      value: 1,
+    },
+    {
+      label: 'normal_notification.message',
+      value: 2,
+    },    
+    {
+      label: 'high_notification.message',
+      value: 3,
+    },
+    {
+      label: 'urgent_notification.message',
+      value: 4,
+    },
+  ],
   TASK_STATUS_NEW: 1,
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
