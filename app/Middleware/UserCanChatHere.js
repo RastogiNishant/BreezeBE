@@ -2,7 +2,7 @@
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
-const { ROLE_LANDLORD } = require('../constants')
+const { ROLE_LANDLORD, STATUS_DRAFT, LETTING_TYPE_LET } = require('../constants')
 const CurrentTenant = use('App/Models/EstateCurrentTenant')
 const Task = use('App/Models/Task')
 const HttpException = use('App/Exceptions/HttpException')
@@ -48,6 +48,8 @@ class UserCanChatHere {
       .where('estate_id', estate_id)
       .leftJoin('estates', 'estate_current_tenants.estate_id', 'estates.id')
       .orderBy('estate_current_tenants.id', 'desc')
+      .where('estates.status', STATUS_DRAFT)
+      .where('estates.letting_type', LETTING_TYPE_LET)
     if (role === ROLE_LANDLORD) {
       currentTenant = await query.where('estates.user_id', user_id).first()
     } else {
