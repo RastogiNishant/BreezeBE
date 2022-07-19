@@ -46,14 +46,20 @@ class UserCanChatHere {
     let currentTenant
     let query = CurrentTenant.query()
       .where('estate_id', estate_id)
-      .leftJoin('estates', 'estate_current_tenants.estate_id', 'estates.id')
       .orderBy('estate_current_tenants.id', 'desc')
-      .where('estates.status', STATUS_DRAFT)
-      .where('estates.letting_type', LETTING_TYPE_LET)
+
     if (role === ROLE_LANDLORD) {
-      currentTenant = await query.where('estates.user_id', user_id).first()
+      currentTenant = await query
+        .leftJoin('estates', 'estate_current_tenants.estate_id', 'estates.id')
+        .where('estates.user_id', user_id)
+        .first()
     } else {
-      currentTenant = await query.where('estate_current_tenants.user_id', user_id).first()
+      currentTenant = await query.first()
+      if (currentTenant.user_id == user_id) {
+        return currentTenant
+      } else {
+        return false
+      }
     }
     return currentTenant
   }
