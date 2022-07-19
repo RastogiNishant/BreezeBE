@@ -976,6 +976,16 @@ class EstateController {
     await trx.commit()
     return response.res({ deleted: affectedRows })
   }
+
+  async getLatestEstates({ request, auth, response }) {
+    const { limit } = request.all()
+    const estates = await EstateService.getLatestEstates(limit)
+    const prospectCount = await UserService.getCountOfProspects()
+
+    response.res({
+      estates, prospectCount
+    })
+  }
 }
 
 module.exports = EstateController
