@@ -12,21 +12,6 @@ class TaskController extends BaseController {
     this.taskId = matches[1]
   }
 
-  //this is not needed anymore...
-  onTaskInit() {
-    let count = 0
-    let doMore = true
-    let qs = []
-    do {
-      if (origQuestions[count].type !== 'not-a-question') {
-        doMore = false
-      }
-      qs.push(origQuestions[count])
-      count++
-    } while (doMore)
-    this.broadcast(qs, 'question', 0)
-  }
-
   async onGetPreviousMessages({ lastId = 0 }) {
     const query = Chat.query()
       .select('chats.id as id')
