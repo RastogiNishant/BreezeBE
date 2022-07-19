@@ -21,6 +21,7 @@ const MailService = use('App/Services/MailService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const SMSService = use('App/Services/SMSService')
+const Event = use('Event')
 const Logger = use('Logger')
 const l = use('Localize')
 
@@ -28,7 +29,6 @@ const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 
 const {
-  STATUS_NEED_VERIFY,
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
   STATUS_DRAFT,
@@ -53,7 +53,7 @@ class UserService {
   /**
    * Create user flow
    */
-  static async createUser(userData) {
+  static async createUser(userData, trx = null) {
     //we need him to approve Terms and Privacy
     const latestTerm = await Term.query()
       .where('status', STATUS_ACTIVE)
@@ -66,18 +66,21 @@ class UserService {
     userData.terms_id = latestTerm.id
     userData.agreements_id = latestAgreement.id
 
-    const user = await User.createItem(userData)
+    const user = await User.createItem(userData, trx)
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
         const tenant = userData.signupData
-        await Tenant.createItem({
-          user_id: user.id,
-          coord: tenant?.address?.coord,
-          dist_type: tenant?.transport,
-          dist_min: tenant?.time,
-          address: tenant?.address.title,
-        })
+        await Tenant.createItem(
+          {
+            user_id: user.id,
+            coord: tenant?.address?.coord,
+            dist_type: tenant?.transport,
+            dist_min: tenant?.time,
+            address: tenant?.address?.title,
+          },
+          trx
+        )
       } catch (e) {
         console.log('createUser exception', e)
       }
@@ -359,11 +362,27 @@ class UserService {
   static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
+
     if (code !== userCode) {
       throw new AppException('Invalid code')
     }
     // TODO: check user status active is allow
     user.status = STATUS_ACTIVE
+
+    const trx = await Database.beginTransaction()
+    try {
+      if (user.role === ROLE_USER) {
+        //If user we look for his email on estate_current_tenant and make corresponding corrections
+        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(user, trx)
+      }
+
+      await user.save(trx)
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
+
     await DataStorage.remove(user.id, 'confirm_email')
 
     const localData = await UserService.getTokenWithLocale([user.id])
@@ -392,7 +411,7 @@ class UserService {
       lang: lang,
       forgotLink: forgotLink,
     })
-    return user.save()
+    return user
   }
 
   /**
@@ -853,6 +872,50 @@ class UserService {
       .where('id', id)
       .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
       .first()
+  }
+
+  static async signUp({ email, firstname, from_web, ...userData }, trx = null) {
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
+    const role = userData.role
+    if (!roles.includes(role)) {
+      throw new HttpException('Invalid user role', 401)
+    }
+    if (role) {
+      roles = [role]
+    }
+
+    const availableUser = await User.query()
+      .where('email', email)
+      .whereIn('role', roles)
+      .orderBy('updated_at', 'desc')
+      .first()
+
+    if (availableUser) {
+      throw new HttpException('User already exists, can be switched', 400)
+    }
+
+    try {
+      const { user } = await this.createUser(
+        {
+          ...userData,
+          email,
+          firstname,
+          status: STATUS_EMAIL_VERIFY,
+        },
+        trx
+      )
+
+      Event.fire('mautic:createContact', user.id)
+
+      await UserService.sendConfirmEmail(user, from_web)
+      return user
+    } catch (e) {
+      if (e.constraint === 'users_uid_unique') {
+        throw new HttpException('User already exists', 400)
+      }
+
+      throw e
+    }
   }
 }
 

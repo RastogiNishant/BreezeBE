@@ -1,0 +1,80 @@
+definitions:
+  id:
+    name: id
+    in: path
+    type: number
+    required: true
+  text:
+    name: text
+    in: formData
+    type: string
+    required: true
+  type:
+    name: type
+    in: formData
+    type: number
+    required: true
+    enum: ["1", "2", "3", "4", "5"]
+    description: "1: MULTIPLE_ANSWER_MULTIPLE_CHOICE, 2: MULTIPLE_ANSWER_SIGNLE_CHOICE, 3: OPEN_ENDED, 4: NOT_A_QUESTION, 5: LAST"
+  variable_to_update:
+    name: variable_to_update
+    in: formData
+    type: string
+    description: "variable name in db, so no space"
+  step:
+    name: step
+    in: formData
+    type: number
+    description: "order when it will be shown up for auto message"
+
+/api/v1/administration/predefinedMessage/:id:
+  get:
+    tags: [PredefinedMessage-Admin]
+    security: [bearerAuth: []]
+    description: Get PredefinedMessage By id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]
+
+  put:
+    tags: [PredefinedMessage-Admin]
+    security: [bearerAuth: []]
+    description: Update PredefinedMessage by id
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+      - $ref: "#/definitions/text"
+      - $ref: "#/definitions/type"
+      - $ref: "#/definitions/variable_to_update"
+      - $ref: "#/definitions/step"
+    responses: [200]
+
+  delete:
+    tags: [PredefinedMessage-Admin]  
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters: 
+      - $ref: "#/definitions/id"    
+
+/api/v1/administration/predefinedMessage:
+  get:
+    tags: [PredefinedMessage-Admin]
+    security: [bearerAuth: []]
+    description: Get All PredefinedMessages
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/id"
+    responses: [200]
+
+  post:
+    tags: [PredefinedMessage-Admin]
+    security: [bearerAuth: []]
+    description: Create a PredefinedMessage
+    produces: [application/json]
+    parameters:
+      - $ref: "#/definitions/text"
+      - $ref: "#/definitions/type"
+      - $ref: "#/definitions/variable_to_update"
+      - $ref: "#/definitions/step"
+    responses: [200]
