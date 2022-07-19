@@ -19,11 +19,11 @@ class Chat extends Model {
   }
 
   sourceUser() {
-    return this.belongsTo('App/Model/User', 'id', 'sender_id')
+    return this.belongsTo('App/Model/User', 'sender_id', 'id')
   }
 
   task() {
-    return this.belongsTo('App/Models/Task', 'id', 'task_id')
+    return this.belongsTo('App/Models/Task', 'task_id', 'id')
   }
 }
 
