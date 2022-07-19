@@ -640,7 +640,7 @@ const constants = {
     {
       label: 'normal_notification.message',
       value: 2,
-    },    
+    },
     {
       label: 'high_notification.message',
       value: 3,
@@ -688,6 +688,10 @@ const constants = {
     'property_id',
     'address',
   ],
+
+  CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_NOTIFICATION: 'notification',
+  CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
 }
 
 module.exports = constants

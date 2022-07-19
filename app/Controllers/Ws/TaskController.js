@@ -3,7 +3,11 @@ const BaseController = require('./BaseController')
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
 const { min } = require('lodash')
-const { CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL } = require('../../constants')
+const {
+  CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
+  CHAT_TYPE_MESSAGE,
+  CHAT_TYPE_LAST_READ_MARKER,
+} = require('../../constants')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -29,7 +33,7 @@ class TaskController extends BaseController {
         'chats.sender_id'
       )
       .where({
-        type: 'message',
+        type: CHAT_TYPE_MESSAGE,
         task_id: this.taskId,
       })
       .orderBy('created_at', 'desc')
@@ -44,7 +48,7 @@ class TaskController extends BaseController {
     const allCount = await Chat.query()
       .select(Database.raw(`count(*) as unread_messages`))
       .where('task_id', this.taskId)
-      .where('type', 'message')
+      .where('type', CHAT_TYPE_MESSAGE)
       .first()
 
     if (allCount) {
@@ -58,7 +62,7 @@ class TaskController extends BaseController {
         '>',
         Database.raw(
           `(select created_at from chats
-            where "type"='last-read-marker'
+            where "type"='${CHAT_TYPE_LAST_READ_MARKER}'
             and task_id='${this.taskId}'
             order by created_at desc
             limit 1
@@ -66,7 +70,7 @@ class TaskController extends BaseController {
         )
       )
       .where('task_id', this.taskId)
-      .where('type', 'message')
+      .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (unreadByMarker) {
       counts.push(parseInt(unreadByMarker.unread_messages))
@@ -79,7 +83,7 @@ class TaskController extends BaseController {
         '>',
         Database.raw(
           `(select created_at from chats
-            where "type"='message'
+            where "type"='${CHAT_TYPE_MESSAGE}'
             and "sender_id"='${this.user.id}'
             and task_id='${this.taskId}'
             order by created_at desc
@@ -87,7 +91,7 @@ class TaskController extends BaseController {
         )
       )
       .where('task_id', this.taskId)
-      .where('type', 'message')
+      .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (unreadByLastSent) {
       counts.push(parseInt(unreadByLastSent.unread_messages))

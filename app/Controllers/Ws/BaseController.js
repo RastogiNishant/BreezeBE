@@ -2,7 +2,11 @@
 
 const Ws = use('Ws')
 const { isNull } = require('lodash')
-const { BREEZE_BOT_USER } = require('../../constants')
+const {
+  BREEZE_BOT_USER,
+  CHAT_TYPE_LAST_READ_MARKER,
+  CHAT_TYPE_MESSAGE,
+} = require('../../constants')
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
 
@@ -93,7 +97,7 @@ class BaseController {
     try {
       await Chat.query()
         .where({
-          type: 'last-read-marker',
+          type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: this.user.id,
           task_id: taskId,
         })
@@ -101,7 +105,7 @@ class BaseController {
         .transacting(trx)
       await Chat.query().insert(
         {
-          type: 'last-read-marker',
+          type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: this.user.id,
           task_id: taskId,
         },
@@ -126,7 +130,7 @@ class BaseController {
     }
     data.task_id = taskId
     data.sender_id = this.user.id
-    data.type = 'message'
+    data.type = CHAT_TYPE_MESSAGE
     const chat = await Chat.create(data)
     return chat
   }
