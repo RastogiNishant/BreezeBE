@@ -41,6 +41,17 @@ definitions:
     in: formData
     description: multiple files to upload
 
+  page:
+    name: page
+    in: formData
+    type: number 
+    description: page = -1 means no pagination 
+
+  limit:
+    name: page
+    in: formData
+    type: number
+    description: limit = -1 means no pagination 
 /api/v1/connect/task/:id/ :
   get: 
     tags: [Task - CRUD for task for Landlord]
@@ -49,8 +60,6 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: "#/definitions/id"
-      - $ref: "#/definitions/estate_id"
-      - $ref: "#/definitions/status"
     responses: [200]
 
   put: 
@@ -84,13 +93,10 @@ definitions:
     description: update task By id
     produces: [application/json]
     parameters:
-      - $ref: "#/definitions/id"
-      - $ref: "#/definitions/title"
       - $ref: "#/definitions/estate_id"
-      - $ref: "#/definitions/urgency"
       - $ref: "#/definitions/status"
-      - $ref: "#/definitions/description"      
-      - $ref: "#/definitions/file"      
+      - $ref: "#/definitions/page"
+      - $ref: "#/definitions/limit"            
     responses: [200]
 
   post: 
@@ -99,7 +105,6 @@ definitions:
     description: create task
     produces: [application/json]
     parameters:
-      - $ref: "#/definitions/id"
       - $ref: "#/definitions/title"
       - $ref: "#/definitions/estate_id"
       - $ref: "#/definitions/urgency"
