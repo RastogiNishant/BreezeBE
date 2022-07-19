@@ -396,6 +396,11 @@ Route.group(() => {
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
 
+  Route.get(
+    '/latest',
+    'EstateController.getLatestEstates'
+  ).middleware(['valid:Pagination'])
+
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
 

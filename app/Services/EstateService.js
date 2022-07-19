@@ -213,7 +213,7 @@ class EstateService {
    */
   static async createEstate({ request, data, userId }, fromImport = false) {
     data = request ? request.all() : data
-    
+
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
@@ -1288,6 +1288,17 @@ class EstateService {
     query = filter.process()
     query.groupBy('estates.id')
     return await query
+  }
+
+  static async getLatestEstates(limit = 5) {
+
+    return (
+      await this.getQuery()
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .select('id', 'city', 'cover')
+        .orderBy('created_at', 'desc')        
+        .paginate(1, limit)
+    ).rows
   }
 }
 module.exports = EstateService
