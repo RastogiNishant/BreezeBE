@@ -213,7 +213,7 @@ class EstateService {
    */
   static async createEstate({ request, data, userId }, fromImport = false) {
     data = request ? request.all() : data
-    
+
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
@@ -242,7 +242,7 @@ class EstateService {
     }
 
     if (!fromImport) {
-      data.letting_type = null
+      data.letting_type = LETTING_TYPE_VOID
       data.letting_status = null
     }
 
@@ -1173,10 +1173,17 @@ class EstateService {
     let query = Estate.query()
       .with('current_tenant')
       .select(
-        'estates.id',
-        'estates.address',
-        'estates.property_id',
+        'estates.coord',
+        'estates.street',
+        'estates.area',
+        'estates.house_number',
+        'estates.country',
+        'estates.floor',
+        'estates.number_floors',
         'estates.city',
+        'estates.coord_raw',
+        'estates.property_id',
+        'estates.address',
         'tasks.id as tid',
         '_u.id as uid',
         '_u.firstname',
@@ -1288,6 +1295,17 @@ class EstateService {
     query = filter.process()
     query.groupBy('estates.id')
     return await query
+  }
+
+  static async getLatestEstates(limit = 5) {
+
+    return (
+      await this.getQuery()
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .select('id', 'city', 'cover')
+        .orderBy('created_at', 'desc')        
+        .paginate(1, limit)
+    ).rows
   }
 }
 module.exports = EstateService

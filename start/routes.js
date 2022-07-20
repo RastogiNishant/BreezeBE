@@ -396,6 +396,11 @@ Route.group(() => {
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
 
+  Route.get(
+    '/latest',
+    'EstateController.getLatestEstates'
+  ).middleware(['valid:Pagination'])
+
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
 
@@ -718,10 +723,10 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'TaskController.getTenantTasks').middleware(['valid:TenantTaskFilter'])
+  Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
 })
   .prefix('api/v1/connect/task')
-  .middleware(['auth:jwt'])
+  .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
   Route.post('/', 'PredefinedAnswerController.createPredefinedAnswer').middleware([
@@ -740,7 +745,7 @@ Route.group(() => {
   Route.get('/', 'Admin/PredefinedMessageController.getAll')
 })
   .prefix('api/v1/connect/predefinedMessage')
-  .middleware(['auth:jwt'])
+  .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
