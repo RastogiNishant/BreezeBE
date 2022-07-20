@@ -684,13 +684,49 @@ const constants = {
 
   DEFECT_TOPICS: [
     {
-      key: '',
-      text: 'Broken Door',
+      key: 'tenant.property.defect_class.Heating.message',
+      text: 'Heating',
     },
     {
-      key: '',
-      text: 'Water issue',
+      key: 'tenant.property.defect_class.Window.message',
+      text: 'Window',
     },
+    {
+      key: 'tenant.property.defect_class.Toilet.message',
+      text: 'Toilet',
+    },    
+    {
+      key: 'tenant.property.defect_class.Water tap.message',
+      text: 'Water tap',
+    },
+    {
+      key: 'tenant.property.defect_class.Electricity.message',
+      text: 'Electricity',
+    },
+    {
+      key: 'tenant.property.defect_class.Door.message',
+      text: 'Door',
+    },
+    {
+      key: 'tenant.property.defect_class.Unit.message',
+      text: 'Unit',
+    },
+    {
+      key: 'tenant.property.defect_class.Bath_Shower.message',
+      text: 'Bath Shower',
+    },
+    {
+      key: 'tenant.property.defect_class.Entrance.message',
+      text: 'Entrance',
+    },
+    {
+      key: 'tenant.property.defect_class.Outside.message',
+      text: 'Outside',
+    },
+    {
+      key: 'tenant.property.defect_class.Kitchen.message',
+      text: 'Kitchen',
+    },    
   ],
 }
 
