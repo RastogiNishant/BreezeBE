@@ -1173,10 +1173,17 @@ class EstateService {
     let query = Estate.query()
       .with('current_tenant')
       .select(
-        'estates.id',
-        'estates.address',
-        'estates.property_id',
+        'estates.coord',
+        'estates.street',
+        'estates.area',
+        'estates.house_number',
+        'estates.country',
+        'estates.floor',
+        'estates.number_floors',
         'estates.city',
+        'estates.coord_raw',
+        'estates.property_id',
+        'estates.address',
         'tasks.id as tid',
         '_u.id as uid',
         '_u.firstname',
