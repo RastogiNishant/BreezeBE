@@ -15,6 +15,7 @@ const {
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
   FILTER_CONSTRAINTS_MATCH_MODES,
+  LETTING_TYPE_NA,
 } = require('../constants')
 
 class EstateFilter extends Base {
@@ -156,7 +157,9 @@ class EstateFilter extends Base {
               PROPERTY_TYPE_SITE,
             ])
         ),
-      letting_type: yup.array().of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID])),
+      letting_type: yup
+        .array()
+        .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])),
       letting: yup.array().of(yup.string()),
     })
 }
