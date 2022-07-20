@@ -47,7 +47,7 @@ const {
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
-  TASK_STATUS_DRFAT,
+  TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
@@ -1216,7 +1216,7 @@ class EstateService {
 
     query.leftJoin('tasks', function () {
       this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
-        TASK_STATUS_DRFAT,
+        TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
 
@@ -1270,7 +1270,7 @@ class EstateService {
       .count('estates.*')
       .leftJoin('tasks', function () {
         this.on('estates.id', 'tasks.estate_id').on(
-          Database.raw(`tasks.status not in (${[TASK_STATUS_DRFAT, TASK_STATUS_DELETE]})`)
+          Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
       .innerJoin({ _ect: 'estate_current_tenants' }, function () {

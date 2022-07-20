@@ -40,7 +40,7 @@ const {
   MATCH_STATUS_FINISH,
   MATCH_STATUS_SHARE,
   TASK_STATUS_DELETE,
-  TASK_STATUS_DRFAT,
+  TASK_STATUS_DRAFT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -295,7 +295,7 @@ class Estate extends Model {
   tasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
       TASK_STATUS_DELETE,
-      TASK_STATUS_DRFAT,
+      TASK_STATUS_DRAFT,
     ])
   }
 
