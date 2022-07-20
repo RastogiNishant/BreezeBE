@@ -669,7 +669,6 @@ const constants = {
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
-    'id',
     'coord',
     'street',
     'area',
