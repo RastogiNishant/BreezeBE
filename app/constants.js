@@ -537,7 +537,7 @@ const constants = {
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
   SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
-  INVITE_OUTSIDE_TENANT : 'invite_outside_breeze',
+  INVITE_OUTSIDE_TENANT: 'invite_outside_breeze',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -642,7 +642,7 @@ const constants = {
     {
       label: 'normal_notification.message',
       value: 2,
-    },    
+    },
     {
       label: 'high_notification.message',
       value: 3,
@@ -680,6 +680,17 @@ const constants = {
     'coord_raw',
     'property_id',
     'address',
+  ],
+
+  DEFECT_TOPICS: [
+    {
+      key: '',
+      text: 'Broken Door',
+    },
+    {
+      key: '',
+      text: 'Water issue',
+    },
   ],
 }
 
