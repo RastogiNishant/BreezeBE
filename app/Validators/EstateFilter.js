@@ -159,7 +159,7 @@ class EstateFilter extends Base {
         ),
       letting_type: yup
         .array()
-        .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])),
+        .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]).nullable()),
       letting: yup.array().of(yup.string()),
     })
 }

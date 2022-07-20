@@ -242,7 +242,7 @@ class EstateService {
     }
 
     if (!fromImport) {
-      data.letting_type = null
+      data.letting_type = LETTING_TYPE_VOID
       data.letting_status = null
     }
 
