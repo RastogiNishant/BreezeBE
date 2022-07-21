@@ -616,8 +616,6 @@ const constants = {
     'lte',
   ],
 
-  ADULT_MIN_AGE: 18,
-
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
   PREDEFINED_MSG_OPEN_ENDED: 3,
@@ -657,6 +655,14 @@ const constants = {
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
   TASK_STATUS_CLOSED: 5,
+
+  BREEZE_BOT_USER: {
+    id: 0,
+    firstname: 'Breeze',
+    secondname: 'Monster',
+    avatar: '/img/breezeLogo.png',
+  },
+
   TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
@@ -666,6 +672,7 @@ const constants = {
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
+  CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL: 10,
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
@@ -683,6 +690,10 @@ const constants = {
     'address',
   ],
 
+  CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_NOTIFICATION: 'notification',
+  CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
+
   DEFECT_TOPICS: [
     {
       key: 'tenant.property.defect_class.Heating.message',
@@ -695,7 +706,7 @@ const constants = {
     {
       key: 'tenant.property.defect_class.Toilet.message',
       text: 'Toilet',
-    },    
+    },
     {
       key: 'tenant.property.defect_class.Water tap.message',
       text: 'Water tap',
@@ -727,7 +738,7 @@ const constants = {
     {
       key: 'tenant.property.defect_class.Kitchen.message',
       text: 'Kitchen',
-    },    
+    },
   ],
 }
 
