@@ -84,7 +84,7 @@ class BaseController {
   onMessage(message) {
     message.dateTime = message.dateTime ? message.dateTime : new Date()
     if (this.topic) {
-      this.broadcast(message, 'message')
+      this.broadcastToAll(message, 'message')
     }
   }
 
