@@ -4,7 +4,7 @@ const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE } = require('../constants')
 const { isArray } = require('lodash')
 const {
   TASK_STATUS_NEW,
-  TASK_STATUS_DRFAT,
+  TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   ESTATE_FIELD_FOR_TASK,
 } = require('../constants')
@@ -51,7 +51,7 @@ class TaskService {
 
   static async update({ user, task }, trx) {
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: estate_id, user_id: user.id })
+      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
 
     const query = Task.query().where('id', task.id).where('estate_id', task.estate_id)
@@ -108,29 +108,50 @@ class TaskService {
     return task
   }
 
-  static async getTenantAllTask({ tenant_id, estate_id, status }) {
-    let taskQuery = Task.query().where('tenant_id', tenant_id)
+  static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
+    let taskQuery = Task.query().select('tasks.*')
 
-    if (status) {
-      taskQuery.whereIn('status', status)
-    }
-    taskQuery
-      .with('estate', function (e) {
+    if (role === ROLE_USER) {
+      taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
-      .where('estate_id', estate_id)
-      .whereNot('status', TASK_STATUS_DELETE)
-      .orderBy('status', 'asc')
-      .orderBy('created_at', 'asc')
-      .orderBy('urgency', 'desc')
+    } else {
+      taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
+      })
+    }
 
-    let tasks = (await taskQuery.fetch()).rows
+    if (status) {
+      taskQuery.whereIn('tasks.status', status)
+    }
+    taskQuery
+      .where('tasks.estate_id', estate_id)
+      .whereNot('tasks.status', TASK_STATUS_DELETE)
+      .orderBy('tasks.status', 'asc')
+      .orderBy('tasks.created_at', 'desc')
+      .orderBy('tasks.urgency', 'desc')
+
+    let tasks = null
+
+    if (page === -1 || limit === -1) {
+      tasks = await taskQuery.fetch()
+    } else {
+      tasks = await taskQuery.paginate(page, limit)
+    }
+
+    const count = tasks.pages.total
+
     tasks = await Promise.all(
-      tasks.map(async (t) => {
+      tasks.rows.map(async (t) => {
         return await TaskService.getItemWithAbsoluteUrl(t)
       })
     )
-    return tasks
+
+    return {
+      tasks,
+      count: count,
+    }
   }
 
   static async count({ estate_id, status, urgency, role }) {
@@ -154,7 +175,7 @@ class TaskService {
     }
 
     if (role === ROLE_LANDLORD) {
-      query.whereNotIn('status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
+      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
     }
     return await query
   }
@@ -164,7 +185,7 @@ class TaskService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })

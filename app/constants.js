@@ -662,7 +662,8 @@ const constants = {
     secondname: 'Monster',
     avatar: '/img/breezeLogo.png',
   },
-  TASK_STATUS_DRFAT: 100,
+
+  TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
   TASK_STATUS_NEW_LABEL: 'New',
@@ -675,13 +676,13 @@ const constants = {
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
-    'id',
     'coord',
     'street',
     'area',
     'house_number',
     'country',
     'floor',
+    'rooms_number',
     'number_floors',
     'city',
     'coord_raw',
@@ -692,6 +693,53 @@ const constants = {
   CHAT_TYPE_MESSAGE: 'message',
   CHAT_TYPE_NOTIFICATION: 'notification',
   CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
+
+  DEFECT_TOPICS: [
+    {
+      key: 'tenant.property.defect_class.Heating.message',
+      text: 'Heating',
+    },
+    {
+      key: 'tenant.property.defect_class.Window.message',
+      text: 'Window',
+    },
+    {
+      key: 'tenant.property.defect_class.Toilet.message',
+      text: 'Toilet',
+    },
+    {
+      key: 'tenant.property.defect_class.Water tap.message',
+      text: 'Water tap',
+    },
+    {
+      key: 'tenant.property.defect_class.Electricity.message',
+      text: 'Electricity',
+    },
+    {
+      key: 'tenant.property.defect_class.Door.message',
+      text: 'Door',
+    },
+    {
+      key: 'tenant.property.defect_class.Unit.message',
+      text: 'Unit',
+    },
+    {
+      key: 'tenant.property.defect_class.Bath_Shower.message',
+      text: 'Bath Shower',
+    },
+    {
+      key: 'tenant.property.defect_class.Entrance.message',
+      text: 'Entrance',
+    },
+    {
+      key: 'tenant.property.defect_class.Outside.message',
+      text: 'Outside',
+    },
+    {
+      key: 'tenant.property.defect_class.Kitchen.message',
+      text: 'Kitchen',
+    },
+  ],
 }
 
 module.exports = constants

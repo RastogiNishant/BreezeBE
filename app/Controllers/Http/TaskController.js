@@ -38,14 +38,17 @@ class TaskController {
     response.res(await TaskService.delete({ id, estate_id, user: auth.user }))
   }
 
-  async getTenantTasks({ request, auth, response }) {
+  async getAllTasks({ request, auth, response }) {
     try {
-      const { estate_id, status } = request.all()
+      const { estate_id, status, page, limit } = request.all()
       response.res(
-        await TaskService.getTenantAllTask({
-          tenant_id: auth.user.id,
+        await TaskService.getAllTasks({
+          user_id: auth.user.id,
+          role: auth.user.role,
           estate_id: estate_id,
           status: status,
+          page,
+          limit,
         })
       )
     } catch (e) {
