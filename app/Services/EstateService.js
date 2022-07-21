@@ -242,8 +242,8 @@ class EstateService {
     }
 
     if (!fromImport) {
-      data.letting_type = LETTING_TYPE_VOID
-      data.letting_status = null
+      createData.letting_type = LETTING_TYPE_VOID
+      createData.letting_status = null
     }
 
     const estate = await Estate.createItem({
@@ -1301,7 +1301,6 @@ class EstateService {
   }
 
   static async getLatestEstates(limit = 5) {
-
     return (
       await this.getQuery()
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
