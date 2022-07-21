@@ -64,7 +64,7 @@ class EstateController {
     )
 
     if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate(request, data.landlord_id)
+      const estate = await EstateService.createEstate({ request, userId: data.landlord_id })
       response.res(estate)
     } else {
       throw new HttpException('Not Allowed', 400)
