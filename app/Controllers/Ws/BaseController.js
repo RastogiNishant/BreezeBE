@@ -93,7 +93,8 @@ class BaseController {
   }
 
   async _saveToChats(message, taskId = null) {
-    await ChatService.save(message, this.user.id, taskId)
+    let chat = await ChatService.save(message, this.user.id, taskId)
+    return chat
   }
 }
 
