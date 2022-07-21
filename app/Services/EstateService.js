@@ -180,13 +180,16 @@ class EstateService {
   /**
    *
    */
-  static async createEstate(request, userId) {
-    const data = request.all()
-    const files = await this.saveEnergyProof(request)
+  static async createEstate({ request, data, userId }, fromImport = false) {
+    data = request ? request.all() : data
 
     const propertyId = data.property_id
       ? data.property_id
       : Math.random().toString(36).substr(2, 8).toUpperCase()
+
+    if (!userId) {
+      throw new HttpException('No user Id passed')
+    }
 
     let createData = {
       ...omit(data, ['rooms']),
@@ -195,12 +198,21 @@ class EstateService {
       status: STATUS_DRAFT,
     }
 
-    if (files && files.energy_proof) {
-      createData = {
-        ...createData,
-        energy_proof: files.energy_proof,
-        energy_proof_original_file: files.original_energy_proof,
+    if (request) {
+      const files = await this.saveEnergyProof(request)
+
+      if (files && files.energy_proof) {
+        createData = {
+          ...createData,
+          energy_proof: files.energy_proof,
+          energy_proof_original_file: files.original_energy_proof,
+        }
       }
+    }
+
+    if (!fromImport) {
+      createData.letting_type = LETTING_TYPE_VOID
+      createData.letting_status = null
     }
 
     const estate = await Estate.createItem({
