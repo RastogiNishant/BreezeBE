@@ -1185,6 +1185,7 @@ class EstateService {
         'estates.house_number',
         'estates.country',
         'estates.floor',
+        'estates.rooms_number',        
         'estates.number_floors',
         'estates.city',
         'estates.coord_raw',

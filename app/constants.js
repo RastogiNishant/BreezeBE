@@ -675,6 +675,7 @@ const constants = {
     'house_number',
     'country',
     'floor',
+    'rooms_number',
     'number_floors',
     'city',
     'coord_raw',
