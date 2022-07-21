@@ -13,7 +13,7 @@ class BaseController {
     this.user = auth.user
     console.log('hererer')
   }
-  //this will broadcast to all including sender
+  //this will broadcast to all except sender
   broadcast(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
     if (this.topic && isNull(sender)) {
@@ -33,7 +33,7 @@ class BaseController {
       })
     }
   }
-  //this will broadcast to all except sender
+  //this will broadcast to all including sender
   broadcastToAll(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
     if (this.topic && isNull(sender)) {
