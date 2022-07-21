@@ -917,6 +917,10 @@ class UserService {
       throw e
     }
   }
+
+  static async getCountOfProspects() {
+    return await User.query().count('*').where('role', ROLE_USER)
+  }
 }
 
 module.exports = UserService

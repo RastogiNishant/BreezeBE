@@ -2313,6 +2313,7 @@ class MatchService {
         user_id: user_id,
         estate_id: estate_id,
         percent: 0,
+        final_match_date: moment.utc(new Date(), DATE_FORMAT),
         status: MATCH_STATUS_FINISH,
       })
       .transacting(trx)

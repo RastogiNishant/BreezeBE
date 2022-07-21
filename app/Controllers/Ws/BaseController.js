@@ -3,8 +3,7 @@
 const Ws = use('Ws')
 const { isNull } = require('lodash')
 const { BREEZE_BOT_USER } = require('../../constants')
-const Chat = use('App/Models/Chat')
-const Database = use('Database')
+const ChatService = use('App/Services/ChatService')
 
 class BaseController {
   constructor({ socket, auth, request, channel }) {
@@ -13,7 +12,7 @@ class BaseController {
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
   }
-  //this will broadcast to all including sender
+  //this will broadcast to all except sender
   broadcast(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
     if (this.topic && isNull(sender)) {
@@ -35,7 +34,7 @@ class BaseController {
       })
     }
   }
-  //this will broadcast to all except sender
+  //this will broadcast to all including sender
   broadcastToAll(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
     if (this.topic && isNull(sender)) {
@@ -90,7 +89,7 @@ class BaseController {
   onMessage(message) {
     message.dateTime = message.dateTime ? message.dateTime : new Date()
     if (this.topic) {
-      this.broadcast(message, 'message')
+      this.broadcastToAll(message, 'message')
     }
   }
 
@@ -99,45 +98,11 @@ class BaseController {
   }
 
   async _markLastRead(taskId) {
-    const trx = await Database.beginTransaction()
-    try {
-      await Chat.query()
-        .where({
-          type: 'last-read-marker',
-          sender_id: this.user.id,
-          task_id: taskId,
-        })
-        .delete()
-        .transacting(trx)
-      await Chat.query().insert(
-        {
-          type: 'last-read-marker',
-          sender_id: this.user.id,
-          task_id: taskId,
-        },
-        trx
-      )
-      await trx.commit()
-    } catch (err) {
-      console.log(err)
-      await trx.rollback()
-    }
+    await ChatService.markLastRead(this.user.id, taskId)
   }
 
   async _saveToChats(message, taskId = null) {
-    let data = {}
-    if (message.message) {
-      data.text = message.message
-    } else {
-      data.text = message
-    }
-    if (message.attachments) {
-      data.attachments = JSON.stringify(message.attachments)
-    }
-    data.task_id = taskId
-    data.sender_id = this.user.id
-    data.type = 'message'
-    const chat = await Chat.create(data)
+    let chat = await ChatService.save(message, this.user.id, taskId)
     return chat
   }
 }
