@@ -39,6 +39,8 @@ const {
   TENANT_MATCH_FIELDS,
   MATCH_STATUS_FINISH,
   MATCH_STATUS_SHARE,
+  TASK_STATUS_DELETE,
+  TASK_STATUS_DRAFT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -203,7 +205,6 @@ class Estate extends Model {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
     this.addHook('beforeSave', async (instance) => {
-
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord
@@ -292,7 +293,10 @@ class Estate extends Model {
   }
 
   tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
   }
 
   /**
@@ -326,7 +330,6 @@ class Estate extends Model {
   slots() {
     return this.hasMany('App/Models/TimeSlot').orderBy('end_at')
   }
-
 
   current_tenant() {
     return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)

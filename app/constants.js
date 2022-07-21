@@ -657,7 +657,7 @@ const constants = {
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
   TASK_STATUS_CLOSED: 5,
-  TASK_STATUS_DRFAT: 100,
+  TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
   TASK_STATUS_NEW_LABEL: 'New',
@@ -675,6 +675,7 @@ const constants = {
     'house_number',
     'country',
     'floor',
+    'rooms_number',
     'number_floors',
     'city',
     'coord_raw',

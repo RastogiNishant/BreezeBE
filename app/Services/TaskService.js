@@ -4,7 +4,7 @@ const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE } = require('../constants')
 const { isArray } = require('lodash')
 const {
   TASK_STATUS_NEW,
-  TASK_STATUS_DRFAT,
+  TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   ESTATE_FIELD_FOR_TASK,
 } = require('../constants')
@@ -51,7 +51,7 @@ class TaskService {
 
   static async update({ user, task }, trx) {
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: estate_id, user_id: user.id })
+      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
 
     const query = Task.query().where('id', task.id).where('estate_id', task.estate_id)
@@ -175,7 +175,7 @@ class TaskService {
     }
 
     if (role === ROLE_LANDLORD) {
-      query.whereNotIn('status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
+      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
     }
     return await query
   }
@@ -185,7 +185,7 @@ class TaskService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
