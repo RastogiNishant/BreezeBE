@@ -11,7 +11,6 @@ class BaseController {
     this.request = request
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
-    console.log('hererer')
   }
   //this will broadcast to all except sender
   broadcast(message, event = 'message', sender = null) {
