@@ -2,7 +2,7 @@
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
-const { ROLE_LANDLORD, STATUS_DRAFT, LETTING_TYPE_LET } = require('../constants')
+const { ROLE_LANDLORD } = require('../constants')
 const CurrentTenant = use('App/Models/EstateCurrentTenant')
 const Task = use('App/Models/Task')
 const HttpException = use('App/Exceptions/HttpException')
