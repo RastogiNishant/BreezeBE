@@ -64,7 +64,7 @@ class EstateController {
     )
 
     if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate(request, data.landlord_id)
+      const estate = await EstateService.createEstate({ request, userId: data.landlord_id })
       response.res(estate)
     } else {
       throw new HttpException('Not Allowed', 400)
@@ -82,7 +82,7 @@ class EstateController {
         throw new HttpException('No permission to create estate')
       }
 
-      const estate = await EstateService.createEstate(request, auth.user.id)
+      const estate = await EstateService.createEstate({ request, userId: auth.user.id })
 
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()

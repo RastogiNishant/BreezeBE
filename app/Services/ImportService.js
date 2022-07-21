@@ -84,7 +84,7 @@ class ImportService {
         data.avail_duration = 144
         data.status = STATUS_DRAFT
         data.available_date = data.available_date || moment().format(DATE_FORMAT)
-        estate = await EstateService.createEstate(data, userId)
+        estate = await EstateService.createEstate({ data, userId }, true)
 
         let rooms = []
         let found
