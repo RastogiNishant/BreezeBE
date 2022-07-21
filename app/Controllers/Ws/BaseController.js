@@ -2,13 +2,8 @@
 
 const Ws = use('Ws')
 const { isNull } = require('lodash')
-const {
-  BREEZE_BOT_USER,
-  CHAT_TYPE_LAST_READ_MARKER,
-  CHAT_TYPE_MESSAGE,
-} = require('../../constants')
-const Chat = use('App/Models/Chat')
-const Database = use('Database')
+const { BREEZE_BOT_USER } = require('../../constants')
+const ChatService = use('App/Services/ChatService')
 
 class BaseController {
   constructor({ socket, auth, request, channel }) {
@@ -16,6 +11,7 @@ class BaseController {
     this.request = request
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
+    console.log('hererer')
   }
   //this will broadcast to all including sender
   broadcast(message, event = 'message', sender = null) {
@@ -93,46 +89,11 @@ class BaseController {
   }
 
   async _markLastRead(taskId) {
-    const trx = await Database.beginTransaction()
-    try {
-      await Chat.query()
-        .where({
-          type: CHAT_TYPE_LAST_READ_MARKER,
-          sender_id: this.user.id,
-          task_id: taskId,
-        })
-        .delete()
-        .transacting(trx)
-      await Chat.query().insert(
-        {
-          type: CHAT_TYPE_LAST_READ_MARKER,
-          sender_id: this.user.id,
-          task_id: taskId,
-        },
-        trx
-      )
-      await trx.commit()
-    } catch (err) {
-      console.log(err)
-      await trx.rollback()
-    }
+    await ChatService.markLastRead(this.user.id, taskId)
   }
 
   async _saveToChats(message, taskId = null) {
-    let data = {}
-    if (message.message) {
-      data.text = message.message
-    } else {
-      data.text = message
-    }
-    if (message.attachments) {
-      data.attachments = message.attachments
-    }
-    data.task_id = taskId
-    data.sender_id = this.user.id
-    data.type = CHAT_TYPE_MESSAGE
-    const chat = await Chat.create(data)
-    return chat
+    await ChatService.save(message, taskId)
   }
 }
 
