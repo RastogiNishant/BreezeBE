@@ -51,7 +51,7 @@ class TaskService {
 
   static async update({ user, task }, trx) {
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: estate_id, user_id: user.id })
+      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
 
     const query = Task.query().where('id', task.id).where('estate_id', task.estate_id)
