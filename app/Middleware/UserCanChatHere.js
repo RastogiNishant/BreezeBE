@@ -38,6 +38,8 @@ class UserCanChatHere {
         throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
       request.task_id = task.id
+    } else {
+      throw new HttpException(`Task topic not valid.`, 403, 1104)
     }
     await next()
   }

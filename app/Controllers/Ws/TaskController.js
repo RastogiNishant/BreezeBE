@@ -1,12 +1,13 @@
 'use strict'
 const BaseController = require('./BaseController')
 const ChatService = use('App/Services/ChatService')
+const { isEmpty } = require('lodash')
+const HttpException = use('App/Exceptions/HttpException')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
-    const matches = this.socket.topic.match(/^task:[0-9]+brz([0-9]+)$/)
-    this.taskId = matches[1]
+    this.taskId = request.task_id
   }
 
   async onGetPreviousMessages({ lastId = 0 }) {
