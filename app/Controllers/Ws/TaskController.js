@@ -4,6 +4,7 @@ const ChatService = use('App/Services/ChatService')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
+    console.log('TaskController is Called...')
     super({ socket, request, auth })
     const matches = this.socket.topic.match(/^task:[0-9]+brz([0-9]+)$/)
     this.taskId = matches[1]

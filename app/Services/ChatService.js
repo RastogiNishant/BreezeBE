@@ -1,15 +1,15 @@
 'use strict'
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
-const [
+const {
   CHAT_TYPE_LAST_READ_MARKER,
   CHAT_TYPE_MESSAGE,
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
-] = require('../constants')
+} = require('../constants')
 const { min } = require('lodash')
 
 class ChatService {
-  async markLastRead(userId, taskId) {
+  static async markLastRead(userId, taskId) {
     const trx = await Database.beginTransaction()
     try {
       await Chat.query()
@@ -24,7 +24,7 @@ class ChatService {
       await Chat.query().insert(
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
-          sender_id: this.user.id,
+          sender_id: userId,
           task_id: taskId,
         },
         trx
@@ -36,7 +36,7 @@ class ChatService {
     }
   }
 
-  async save(message, taskId) {
+  static async save(message, userId, taskId) {
     let data = {}
     if (message.message) {
       data.text = message.message
@@ -47,13 +47,13 @@ class ChatService {
       data.attachments = message.attachments
     }
     data.task_id = taskId
-    data.sender_id = this.user.id
+    data.sender_id = userId
     data.type = CHAT_TYPE_MESSAGE
     const chat = await Chat.create(data)
     return chat
   }
 
-  async getPreviousMessages(taskId, lastId) {
+  static async getPreviousMessages(taskId, lastId) {
     const query = Chat.query()
       .select('chats.id as id')
       .select('text as message')
@@ -82,7 +82,7 @@ class ChatService {
     return lastMessages
   }
 
-  async getUnreadMessages(taskId, userId) {
+  static async getUnreadMessagesCount(taskId, userId) {
     //for unread messages
     let counts = []
     const allCount = await Chat.query()
@@ -103,14 +103,14 @@ class ChatService {
         Database.raw(
           `(select created_at from chats
             where "type"='${CHAT_TYPE_LAST_READ_MARKER}'
-            and task_id='${this.taskId}'
+            and task_id='${taskId}'
             and sender_id='${userId}'
             order by created_at desc
             limit 1
             )`
         )
       )
-      .where('task_id', this.taskId)
+      .where('task_id', taskId)
       .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (unreadByMarker) {
@@ -131,7 +131,7 @@ class ChatService {
             limit 1)`
         )
       )
-      .where('task_id', this.taskId)
+      .where('task_id', taskId)
       .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (unreadByLastSent) {

@@ -93,7 +93,7 @@ class BaseController {
   }
 
   async _saveToChats(message, taskId = null) {
-    await ChatService.save(message, taskId)
+    await ChatService.save(message, this.user.id, taskId)
   }
 }
 
