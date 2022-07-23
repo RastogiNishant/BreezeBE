@@ -55,6 +55,7 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
+  SHOW_ACTIVE_TASKS_COUNT,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1176,7 +1177,7 @@ class EstateService {
           u.select('id', 'firstname', 'secondname', 'avatar')
         })
       })
-      .with('tasks')
+      .with('activeTasks')
       .select(
         'estates.id',
         'estates.coord',
@@ -1185,7 +1186,7 @@ class EstateService {
         'estates.house_number',
         'estates.country',
         'estates.floor',
-        'estates.rooms_number',        
+        'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
         'estates.coord_raw',
@@ -1248,17 +1249,19 @@ class EstateService {
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
     const estate = result.map((r) => {
-      const mostUrgency = maxBy(r[0].tasks, (re) => {
+      const mostUrgency = maxBy(r[0].activeTasks, (re) => {
         return re.urgency
       })
 
+      let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
       return {
-        ...omit(r[0], ['tasks']),
-        task: {
-          taskCount: r[0].tasks.length || 0,
+        ...omit(r[0], ['activeTasks']),
+        activeTasks: activeTasks,
+        taskSummary: {
+          activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
           mostUrgencyCount: mostUrgency
-            ? countBy(r[0].tasks, (re) => re.urgency === mostUrgency.urgency).true || 0
+            ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
             : 0,
         },
       }
