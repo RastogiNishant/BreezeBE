@@ -2,7 +2,7 @@
 
 const Mail = use('Mail')
 const Config = use('Config')
-const { trim } = require('lodash')
+const { trim, capitalize } = require('lodash')
 const l = use('Localize')
 
 const sgMail = require('@sendgrid/mail')
@@ -389,7 +389,7 @@ class MailService {
 
     const intro = l
       .get('prospect.email_visit_invitation.intro.message', lang)
-      .replace(/\[[a-z1-9\s]+\]/, `<strong>${address}</strong>`)
+      .replace(/\[[a-z1-9\s]+\]/, `<strong>${address.replace(/\w+/g, capitalize)}</strong>`)
       .replace(/\n/g, '<br />')
     const final = l
       .get('prospect.email_visit_invitation.final.message', lang)
@@ -425,7 +425,6 @@ class MailService {
       },
     }
 
-    console.log('Mail body', msg)
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -447,7 +446,7 @@ class MailService {
 
     const intro = l
       .get('prospect.email_day_of_visit_reminder.intro.message', lang)
-      .replace(/\[[a-z1-9\s]+\]/, `<strong>${address}</strong>`)
+      .replace(/\[[a-z1-9\s]+\]/, `<strong>${address.replace(/\w+/g, capitalize)}</strong>`)
       .replace(/\n/g, '<br />')
 
     const final = l
@@ -501,6 +500,50 @@ class MailService {
       }
     )
   }
+
+  static async sendInvitationToOusideTenant(email, shortLink, lang = DEFAULT_LANG) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE    
+    const msg = {
+      to: trim(email),
+      from: FromEmail,
+      templateId: templateId,
+      dynamic_template_data: {
+        subject: l.get('tenant.email_landlord_invitation.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        intro: l.get('tenant.email_landlord_invitation.intro.message', lang),
+        CTA: l.get('tenant.email_landlord_invitation.CTA.message', lang),
+        link: shortLink,
+        final: l.get('tenant.email_landlord_invitation.final.message', lang),
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+      },    }
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }  
 }
 
 module.exports = MailService

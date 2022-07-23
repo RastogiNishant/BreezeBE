@@ -616,17 +616,7 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
 
-    if (!estate.full_address && estate.coord_raw) {
-      const coords = estate.coord_raw.split(',')
-      const lat = coords[0]
-      const lon = coords[1]
-      const isolinePoints = await GeoService.getOrCreateIsoline(
-        { lat, lon },
-        TRANSPORT_TYPE_WALK,
-        60
-      )
-      estate.isoline = isolinePoints?.toJSON()?.data || []
-    }
+    estate.isoline = await EstateService.getIsolines(estate)
 
     estate = estate.toJSON({ isShort: true, role: auth.user.role })
     estate = await EstateService.assignEstateAmenities(estate)
@@ -727,6 +717,11 @@ class EstateController {
     const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
+    }
+
+    // The landlord can't remove the slot if it is already started
+    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
+      throw new HttpException('Showing is already started', 500)
     }
 
     // If slot's end date is passed, we only delete the slot
@@ -981,6 +976,16 @@ class EstateController {
     }
     await trx.commit()
     return response.res({ deleted: affectedRows })
+  }
+
+  async getLatestEstates({ request, auth, response }) {
+    const { limit } = request.all()
+    const estates = await EstateService.getLatestEstates(limit)
+    const prospectCount = await UserService.getCountOfProspects()
+
+    response.res({
+      estates, prospectCount
+    })
   }
 }
 
