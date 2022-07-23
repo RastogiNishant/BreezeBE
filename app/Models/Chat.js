@@ -13,6 +13,7 @@ class Chat extends Model {
       'text',
       'attachments',
       'is_viewed',
+      'type',
       'created_at',
       'updated_at',
     ]

@@ -14,6 +14,7 @@ class Task extends Model {
       'status',
       'attachments',
       'description',
+      'next_predefined_message_id',
       'created_at',
       'updated_at',
     ]
