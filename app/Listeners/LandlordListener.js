@@ -1,12 +1,12 @@
 'use strict'
 
 const LandlordListener = (exports = module.exports = {})
-const Estate = require('App/Models/Estate')
-const { STATUS_ACTIVE, STATUS_DRAFT } = require('../constants')
+const Estate = use('App/Models/Estate')
+const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE } = require('../constants')
 
 LandlordListener.deactivate = async (userIds) => {
   await Estate.query()
     .whereIn('user_id', userIds)
-    .where('status', STATUS_ACTIVE)
+    .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
     .update({ status: STATUS_DRAFT })
 }
