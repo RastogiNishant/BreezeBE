@@ -537,6 +537,7 @@ const constants = {
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
   SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
+  INVITE_OUTSIDE_TENANT: 'invite_outside_breeze',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -615,8 +616,6 @@ const constants = {
     'lte',
   ],
 
-  ADULT_MIN_AGE: 18,
-
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
   PREDEFINED_MSG_OPEN_ENDED: 3,
@@ -633,12 +632,38 @@ const constants = {
   URGENCY_HIGH_LABEL: 'High',
   URGENCY_SUPER_LABEL: 'Urgent',
 
+  URGENCIES: [
+    {
+      label: 'low_notification.message',
+      value: 1,
+    },
+    {
+      label: 'normal_notification.message',
+      value: 2,
+    },
+    {
+      label: 'high_notification.message',
+      value: 3,
+    },
+    {
+      label: 'urgent_notification.message',
+      value: 4,
+    },
+  ],
   TASK_STATUS_NEW: 1,
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
   TASK_STATUS_CLOSED: 5,
-  TASK_STATUS_DRFAT: 100,
+
+  BREEZE_BOT_USER: {
+    id: 0,
+    firstname: 'Breeze',
+    secondname: 'Monster',
+    avatar: '/img/breezeLogo.png',
+  },
+
+  TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
   TASK_STATUS_NEW_LABEL: 'New',
@@ -647,21 +672,74 @@ const constants = {
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
+  CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL: 10,
+  SHOW_ACTIVE_TASKS_COUNT: 3,
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
-    'id',
     'coord',
     'street',
     'area',
     'house_number',
     'country',
     'floor',
+    'rooms_number',
     'number_floors',
     'city',
     'coord_raw',
     'property_id',
     'address',
+  ],
+
+  CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_NOTIFICATION: 'notification',
+  CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
+
+  DEFECT_TOPICS: [
+    {
+      key: 'tenant.property.defect_class.Heating.message',
+      text: 'Heating',
+    },
+    {
+      key: 'tenant.property.defect_class.Window.message',
+      text: 'Window',
+    },
+    {
+      key: 'tenant.property.defect_class.Toilet.message',
+      text: 'Toilet',
+    },
+    {
+      key: 'tenant.property.defect_class.Water tap.message',
+      text: 'Water tap',
+    },
+    {
+      key: 'tenant.property.defect_class.Electricity.message',
+      text: 'Electricity',
+    },
+    {
+      key: 'tenant.property.defect_class.Door.message',
+      text: 'Door',
+    },
+    {
+      key: 'tenant.property.defect_class.Unit.message',
+      text: 'Unit',
+    },
+    {
+      key: 'tenant.property.defect_class.Bath_Shower.message',
+      text: 'Bath Shower',
+    },
+    {
+      key: 'tenant.property.defect_class.Entrance.message',
+      text: 'Entrance',
+    },
+    {
+      key: 'tenant.property.defect_class.Outside.message',
+      text: 'Outside',
+    },
+    {
+      key: 'tenant.property.defect_class.Kitchen.message',
+      text: 'Kitchen',
+    },
   ],
 }
 
