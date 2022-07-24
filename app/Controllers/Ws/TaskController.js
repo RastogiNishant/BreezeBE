@@ -62,7 +62,7 @@ class TaskController extends BaseController {
       if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
         throw new AppException('Chat message not editable anymore.')
       }
-      await ChatService.removeChatMessage('id')
+      await ChatService.removeChatMessage(id)
       if (this.topic) {
         this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
       }
