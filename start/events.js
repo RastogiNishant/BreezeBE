@@ -13,6 +13,8 @@ if (!Helpers.isAceCommand()) {
   // Mautic Events
   Event.on('mautic:createContact', 'MauticListener.createContact')
   Event.on('mautic:syncContact', 'MauticListener.syncContact')
+
+  Event.on('landlord::deactivate', 'LandlordListener.deactivate')
 }
 
 /**
