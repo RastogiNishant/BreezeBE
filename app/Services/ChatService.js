@@ -140,6 +140,32 @@ class ChatService {
     const unreadMessagesCount = min(counts)
     return unreadMessagesCount
   }
+
+  static async getChatMessageAge(id) {
+    let ret = await Chat.query()
+      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .where('id', id)
+      .first()
+    if (!ret) {
+      //not found!
+      return false
+    }
+    return ret.difference
+  }
+
+  static async updateChatMessage(id, message, attachments) {
+    const result = await Chat.query()
+      .where('id', id)
+      .update({ text: message, attachments: JSON.stringify(attachments), edit_status: 'edited' })
+    return result
+  }
+
+  static async removeChatMessage(id) {
+    const result = await Chat.query()
+      .where('id', id)
+      .update({ text: '', attachments: null, edit_status: 'deleted' })
+    return result
+  }
 }
 
 module.exports = ChatService

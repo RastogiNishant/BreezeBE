@@ -5,6 +5,7 @@ const Chat = use('App/Models/Chat')
 const Database = use('Database')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
+const { isBoolean } = require('lodash')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -30,19 +31,14 @@ class TaskController extends BaseController {
 
   async onEditMessage({ message, attachments, id }) {
     try {
-      let result = await Chat.query()
-        .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
-        .where('id', id)
-        .first()
-      if (!result) {
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !messageAge) {
         throw new AppException('Chat message not found.')
       }
-      if (result.difference > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
         throw new AppException('Chat message not editable anymore.')
       }
-      result = await Chat.query()
-        .where('id', id)
-        .update({ text: message, attachments: JSON.stringify(attachments) })
+      await ChatService.updateChatMessage(id, message, attachments)
       if (this.topic) {
         this.topic.broadcast('messageEdited', {
           id,
@@ -59,20 +55,14 @@ class TaskController extends BaseController {
 
   async onRemoveMessage({ id }) {
     try {
-      let result = await Chat.query()
-        .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
-        .where('id', id)
-        .first()
-
-      if (!result) {
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !result) {
         throw new AppException('Chat message not found.')
       }
-      if (result.difference > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
         throw new AppException('Chat message not editable anymore.')
       }
-      result = await Chat.query()
-        .where('id', id)
-        .update({ text: '', attachments: null, edit_status: 'deleted' })
+      await ChatService.removeChatMessage('id')
       if (this.topic) {
         this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
       }
