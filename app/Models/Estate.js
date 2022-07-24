@@ -39,8 +39,8 @@ const {
   TENANT_MATCH_FIELDS,
   MATCH_STATUS_FINISH,
   MATCH_STATUS_SHARE,
-  TASK_STATUS_DELETE,
-  TASK_STATUS_DRAFT,
+  TASK_STATUS_NEW, 
+  TASK_STATUS_INPROGRESS
 } = require('../constants')
 
 class Estate extends Model {
@@ -292,11 +292,10 @@ class Estate extends Model {
     return this.hasMany('App/Models/Room')
   }
 
-  tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
-      TASK_STATUS_DELETE,
-      TASK_STATUS_DRAFT,
-    ])
+  activeTasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .orderBy('created_at', 'desc')
   }
 
   /**
