@@ -333,14 +333,14 @@ class EstateCurrentTenantService {
         password: password,
       }
 
-      await UserService.signUp(
+      const user = await UserService.signUp(
         { email: estateCurrentTenant.email, firstname: '', ...userData },
         trx
       )
-      trx.commit()
-      return true
+      await trx.commit()
+      return user.id
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(e.message, 500)
     }
   }
