@@ -74,6 +74,7 @@ class ChatService {
         task_id: taskId,
       })
       .orderBy('created_at', 'desc')
+      .orderBy('id', 'desc')
       .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
     if (lastId) {
       query.where('chats.id', '<', lastId)
