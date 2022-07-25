@@ -1108,6 +1108,9 @@ class MatchService {
     const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
 
     const query = Estate.query()
+      .with('slots', function (s) {
+        s.where(Database.raw(`start_at >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
+      })
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
@@ -1116,7 +1119,7 @@ class MatchService {
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
       })
     }
 
@@ -1134,10 +1137,10 @@ class MatchService {
         .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
-          this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+          this.on('_l.estate_id', 'estates.id').on('_l.user_id', userId)
         })
         .leftJoin({ _m: 'matches' }, function () {
-          this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+          this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
         })
         .where(function () {
           this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
@@ -1150,10 +1153,10 @@ class MatchService {
         .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
-          this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', userId)
+          this.on('_d.estate_id', 'estates.id').on('_d.user_id', userId)
         })
         .leftJoin({ _m: 'matches' }, function () {
-          this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+          this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
         })
         .where(function () {
           this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
@@ -1200,7 +1203,9 @@ class MatchService {
     }
 
     query.leftJoin({ _v: 'visits' }, function () {
-      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+      this.on('_v.user_id', '_m.user_id')
+        .on('_v.estate_id', '_m.estate_id')
+        .on('_v.user_id', userId)
     })
 
     query.select(
@@ -1237,7 +1242,7 @@ class MatchService {
         .on('_m.status', MATCH_STATUS_VISIT)
     })
     query.leftJoin({ _v: 'visits' }, function () {
-      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id').on('_v.user_id')
     })
 
     query.select(
