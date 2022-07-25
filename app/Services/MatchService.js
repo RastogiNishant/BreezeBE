@@ -1108,9 +1108,6 @@ class MatchService {
     const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
 
     const query = Estate.query()
-      .with('slots', function (s) {
-        s.where(Database.raw(`start_at >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
-      })
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
@@ -1165,11 +1162,25 @@ class MatchService {
       query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
+
+      query.innerJoin({ _t: 'time_slots' }, function () {
+        this.on('_t.estate_id', 'estates.id').on(
+          Database.raw(`start_at >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`)
+        )
+      })
     } else if (visit) {
       query.where((query) => {
         query
           .where('_m.status', MATCH_STATUS_VISIT)
           .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
+      })
+      query.innerJoin({
+        _v: 'visits',
+        function() {
+          this.on('_v.estate_id', 'estates.id')
+            .on('_v.user_id', userId)
+            .on(Database.raw(`end_date <= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
+        },
       })
     } else if (share) {
       query
@@ -1202,11 +1213,13 @@ class MatchService {
       throw new AppException('Invalid filter params')
     }
 
-    query.leftJoin({ _v: 'visits' }, function () {
-      this.on('_v.user_id', '_m.user_id')
-        .on('_v.estate_id', '_m.estate_id')
-        .on('_v.user_id', userId)
-    })
+    if( !visit ) {
+      query.leftJoin({ _v: 'visits' }, function () {
+        this.on('_v.user_id', '_m.user_id')
+          .on('_v.estate_id', '_m.estate_id')
+          .on('_v.user_id', userId)
+      })
+    }
 
     query.select(
       'estates.user_id',
