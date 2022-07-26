@@ -6,6 +6,7 @@ const PredefinedMessage = use('App/Models/PredefinedMessage')
 const Chat = use('App/Models/Chat')
 const PredefinedMessageChoice = use('App/Models/PredefinedMessageChoice')
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
+const l = use('Localize')
 
 const HttpException = require('../Exceptions/HttpException')
 
@@ -64,7 +65,7 @@ class PredefinedMessageService {
         task_id: task.id,
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
-        text: answer,
+        text: l.get(choice.text),
       },
       trx
     )
@@ -74,7 +75,7 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: answer,
+        text: l.get(choice.text),
         type: CHAT_TYPE_MESSAGE,
       },
       trx
