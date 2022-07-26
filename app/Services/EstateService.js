@@ -1134,9 +1134,7 @@ class EstateService {
   }
 
   static async getEstateHasTenant({ condition = {} }) {
-    let query = Estate.query()
-      .where('letting_status', LETTING_TYPE_LET)
-      .where('status', STATUS_DRAFT)
+    let query = Estate.query().where('letting_type', LETTING_TYPE_LET).where('status', STATUS_DRAFT)
     if (isEmpty(condition)) {
       return await query.first()
     }
