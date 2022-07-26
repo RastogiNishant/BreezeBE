@@ -1,10 +1,15 @@
 'use strict'
-const { CONNECT_MESSAGE_EDITABLE_TIME_LIMIT } = require('../../constants')
+const {
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
+  ROLE_LANDLORD,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_NEW,
+} = require('../../constants')
 const BaseController = require('./BaseController')
-const Chat = use('App/Models/Chat')
-const Database = use('Database')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
+const TaskService = use('App/Services/TaskService')
+const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
 
 class TaskController extends BaseController {
@@ -76,6 +81,22 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
+    let task
+    if (this.user.role === ROLE_LANDLORD) {
+      //we check whether this is in progress
+      task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
+      if (task.status == TASK_STATUS_INPROGRESS) {
+        //if in progress make it TASK_STATUS_NEW
+        await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_NEW })
+        if (this.topic) {
+          //Broadcast to those listening to this channel...
+          this.topic.broadcast('taskStatusUpdated', {
+            status: TASK_STATUS_NEW,
+            topic: this.socket.topic,
+          })
+        }
+      }
+    }
     const chat = await this._saveToChats(message, this.taskId)
     message.id = chat.id
     message.message = chat.text
