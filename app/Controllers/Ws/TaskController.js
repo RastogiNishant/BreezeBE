@@ -88,6 +88,12 @@ class TaskController extends BaseController {
       if (task.status == TASK_STATUS_INPROGRESS) {
         //if in progress make it TASK_STATUS_NEW
         await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_NEW })
+        if (this.topic) {
+          //Broadcast to those listening to this channel...
+          this.topic.broadcast('taskStatusUpdated', {
+            status: TASK_STATUS_NEW,
+          })
+        }
       }
     }
     const chat = await this._saveToChats(message, this.taskId)
