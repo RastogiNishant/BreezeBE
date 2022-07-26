@@ -1194,7 +1194,7 @@ class EstateService {
 
     query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
       if (params.only_outside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
       }
 
       if (params.only_inside_breeze) {
@@ -1277,7 +1277,7 @@ class EstateService {
       })
       .innerJoin({ _ect: 'estate_current_tenants' }, function () {
         if (params.only_outside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
         }
 
         if (params.only_inside_breeze) {
