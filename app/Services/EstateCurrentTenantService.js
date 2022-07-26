@@ -20,7 +20,7 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
-const MatchService = use('App/Services/MatchService')
+
 const l = use('Localize')
 
 class EstateCurrentTenantService {
