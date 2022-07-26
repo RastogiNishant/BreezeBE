@@ -856,7 +856,7 @@ class MatchController {
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true })
-    ).paginate(page, limit)
+    ).paginate(page, 100)
 
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
@@ -872,7 +872,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { buddy: true })
-    ).paginate(page, limit)
+    ).paginate(page, 100)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -886,7 +886,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
-    ).paginate(page, limit)
+    ).paginate(page, 100)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -900,7 +900,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
-    ).paginate(page, limit)
+    ).paginate(page, 100)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -914,7 +914,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { top: true })
-    ).paginate(page, limit)
+    ).paginate(page, 100)
 
     data = tenants.toJSON({ isShort: true, fields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -947,7 +947,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
-    ).paginate(page, limit)
+    ).paginate(page, 100)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))

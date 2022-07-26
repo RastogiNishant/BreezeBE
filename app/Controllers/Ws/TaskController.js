@@ -1,8 +1,16 @@
 'use strict'
+const {
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
+  ROLE_LANDLORD,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_NEW,
+} = require('../../constants')
 const BaseController = require('./BaseController')
+const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
-const { isEmpty } = require('lodash')
-const HttpException = use('App/Exceptions/HttpException')
+const TaskService = use('App/Services/TaskService')
+const Task = use('App/Models/Task')
+const { isBoolean } = require('lodash')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -26,11 +34,69 @@ class TaskController extends BaseController {
     }
   }
 
+  async onEditMessage({ message, attachments, id }) {
+    try {
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !messageAge) {
+        throw new AppException('Chat message not found.')
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      await ChatService.updateChatMessage(id, message, attachments)
+      if (this.topic) {
+        this.topic.broadcast('messageEdited', {
+          id,
+          message: message,
+          attachments: attachments,
+          edit_status: 'edited',
+          topic: this.socket.topic,
+        })
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
+
+  async onRemoveMessage({ id }) {
+    try {
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !result) {
+        throw new AppException('Chat message not found.')
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      await ChatService.removeChatMessage(id)
+      if (this.topic) {
+        this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
+
   async onMarkLastRead() {
     super._markLastRead(this.taskId)
   }
 
   async onMessage(message) {
+    let task
+    if (this.user.role === ROLE_LANDLORD) {
+      //we check whether this is in progress
+      task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
+      if (task.status == TASK_STATUS_INPROGRESS) {
+        //if in progress make it TASK_STATUS_NEW
+        await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_NEW })
+        if (this.topic) {
+          //Broadcast to those listening to this channel...
+          this.topic.broadcast('taskStatusUpdated', {
+            status: TASK_STATUS_NEW,
+            topic: this.socket.topic,
+          })
+        }
+      }
+    }
     const chat = await this._saveToChats(message, this.taskId)
     message.id = chat.id
     message.message = chat.text
@@ -41,6 +107,7 @@ class TaskController extends BaseController {
       secondname: this.user.secondname,
       avatar: this.user.avatar,
     }
+    message.topic = this.socket.topic
     super.onMessage(message)
   }
 }
