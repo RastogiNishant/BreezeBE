@@ -92,6 +92,7 @@ class TaskController extends BaseController {
           //Broadcast to those listening to this channel...
           this.topic.broadcast('taskStatusUpdated', {
             status: TASK_STATUS_NEW,
+            topic: this.socket.topic,
           })
         }
       }
