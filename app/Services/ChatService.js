@@ -5,6 +5,8 @@ const {
   CHAT_TYPE_LAST_READ_MARKER,
   CHAT_TYPE_MESSAGE,
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
+  CHAT_EDIT_STATUS_EDITED,
+  CHAT_EDIT_STATUS_DELETED,
 } = require('../constants')
 const { min } = require('lodash')
 
@@ -140,6 +142,36 @@ class ChatService {
     }
     const unreadMessagesCount = min(counts)
     return unreadMessagesCount
+  }
+
+  static async getChatMessageAge(id) {
+    let ret = await Chat.query()
+      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .where('id', id)
+      .first()
+    if (!ret) {
+      //not found!
+      return false
+    }
+    return ret.difference
+  }
+
+  static async updateChatMessage(id, message, attachments) {
+    const result = await Chat.query()
+      .where('id', id)
+      .update({
+        text: message,
+        attachments: JSON.stringify(attachments),
+        edit_status: CHAT_EDIT_STATUS_EDITED,
+      })
+    return result
+  }
+
+  static async removeChatMessage(id) {
+    const result = await Chat.query()
+      .where('id', id)
+      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+    return result
   }
 }
 

@@ -24,11 +24,13 @@ class BaseController {
           secondname: this.user.secondname,
           avatar: this.user.avatar,
         },
+        topic: this.socket.topic,
       })
     } else if (this.topic && sender == 0) {
       this.topic.broadcast(event, {
         message,
         sender: BREEZE_BOT_USER,
+        topic: this.socket.topic,
       })
     }
   }
@@ -44,11 +46,13 @@ class BaseController {
           secondname: this.user.secondname,
           avatar: this.user.avatar,
         },
+        topic: this.socket.topic,
       })
     } else if (this.topic && sender == 0) {
       this.topic.broadcastToAll(event, {
         message,
         sender: BREEZE_BOT_USER,
+        topic: this.socket.topic,
       })
     }
   }
@@ -65,6 +69,7 @@ class BaseController {
             secondname: this.user.secondname,
             avatar: this.user.avatar,
           },
+          topic: this.socket.topic,
         },
         [this.socket.id]
       )
@@ -74,6 +79,7 @@ class BaseController {
         {
           message,
           sender: BREEZE_BOT_USER,
+          topic: this.socket.topic,
         },
         [this.socket.id]
       )
@@ -85,6 +91,10 @@ class BaseController {
     if (this.topic) {
       this.broadcastToAll(message, 'message')
     }
+  }
+
+  emitError(message) {
+    this.topic.emitTo('error', { message }, [this.socket.id])
   }
 
   async _markLastRead(taskId) {

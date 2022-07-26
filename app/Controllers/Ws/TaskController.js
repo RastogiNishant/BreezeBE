@@ -1,8 +1,11 @@
 'use strict'
+const { CONNECT_MESSAGE_EDITABLE_TIME_LIMIT } = require('../../constants')
 const BaseController = require('./BaseController')
+const Chat = use('App/Models/Chat')
+const Database = use('Database')
+const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
-const { isEmpty } = require('lodash')
-const HttpException = use('App/Exceptions/HttpException')
+const { isBoolean } = require('lodash')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -26,6 +29,48 @@ class TaskController extends BaseController {
     }
   }
 
+  async onEditMessage({ message, attachments, id }) {
+    try {
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !messageAge) {
+        throw new AppException('Chat message not found.')
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      await ChatService.updateChatMessage(id, message, attachments)
+      if (this.topic) {
+        this.topic.broadcast('messageEdited', {
+          id,
+          message: message,
+          attachments: attachments,
+          edit_status: 'edited',
+          topic: this.socket.topic,
+        })
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
+
+  async onRemoveMessage({ id }) {
+    try {
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !result) {
+        throw new AppException('Chat message not found.')
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      await ChatService.removeChatMessage(id)
+      if (this.topic) {
+        this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
+
   async onMarkLastRead() {
     super._markLastRead(this.taskId)
   }
@@ -41,6 +86,7 @@ class TaskController extends BaseController {
       secondname: this.user.secondname,
       avatar: this.user.avatar,
     }
+    message.topic = this.socket.topic
     super.onMessage(message)
   }
 }
