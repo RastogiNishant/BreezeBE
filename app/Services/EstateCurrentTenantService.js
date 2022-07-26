@@ -197,7 +197,7 @@ class EstateCurrentTenantService {
   static async hasPermission(id, user_id) {
     const estateCurrentTeant = await this.get(id)
 
-    require('./EstateService').getActiveEstateQuery()
+    await require('./EstateService').getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estateCurrentTeant.estate_id)
       .where('letting_status', LETTING_TYPE_LET)
