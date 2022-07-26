@@ -15,6 +15,18 @@ class TaskController {
     }
   }
 
+  async init({ request, auth, response }) {
+    //FIXME: called by tenant to create task. Must be validated
+    //needs validator
+    const data = request.all()
+
+    try {
+      response.res(await TaskService.init(auth.user, data))
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
   async addImage({ request, auth, response }) {
     response.res(await TaskService.addImages(request, auth.user))
   }

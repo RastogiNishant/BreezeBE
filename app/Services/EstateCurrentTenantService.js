@@ -20,7 +20,7 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
-const MatchService = use('App/Services/MatchService')
+
 const l = use('Localize')
 
 class EstateCurrentTenantService {
@@ -197,7 +197,7 @@ class EstateCurrentTenantService {
   static async hasPermission(id, user_id) {
     const estateCurrentTeant = await this.get(id)
 
-    require('./EstateService').getActiveEstateQuery()
+    await require('./EstateService').getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estateCurrentTeant.estate_id)
       .where('letting_status', LETTING_TYPE_LET)
@@ -332,15 +332,15 @@ class EstateCurrentTenantService {
         phone: estateCurrentTenant.phone_number,
         password: password,
       }
-
-      await UserService.signUp(
+      const user = await UserService.signUp(
         { email: estateCurrentTenant.email, firstname: '', ...userData },
         trx
       )
-      trx.commit()
-      return true
+
+      await trx.commit()
+      return user.id
     } catch (e) {
-      trx.rollback()
+      await trx.rollback()
       throw new HttpException(e.message, 500)
     }
   }
@@ -386,10 +386,10 @@ class EstateCurrentTenantService {
 
     //if current tenant, he needs to save to match as a final match
     if (currentTenant.estate_id) {
-      const matches = await MatchService.getMatches(user.id, currentTenant.estate_id)
+      const matches = await require('./MatchService').getMatches(user.id, currentTenant.estate_id)
 
       if (!matches) {
-        await MatchService.addFinalTenant(
+        await require('./MatchService').addFinalTenant(
           { user_id: user.id, estate_id: currentTenant.estate_id },
           trx
         )

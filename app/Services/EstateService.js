@@ -47,7 +47,7 @@ const {
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
   MAX_SEARCH_ITEMS,
-  TASK_STATUS_DRFAT,
+  TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
@@ -55,6 +55,7 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
+  SHOW_ACTIVE_TASKS_COUNT,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1133,9 +1134,7 @@ class EstateService {
   }
 
   static async getEstateHasTenant({ condition = {} }) {
-    let query = Estate.query()
-      .where('letting_status', LETTING_TYPE_LET)
-      .where('status', STATUS_DRAFT)
+    let query = Estate.query().where('letting_type', LETTING_TYPE_LET).where('status', STATUS_DRAFT)
     if (isEmpty(condition)) {
       return await query.first()
     }
@@ -1171,30 +1170,31 @@ class EstateService {
 
   static async getEstatesWithTask(user, params, page, limit = -1) {
     let query = Estate.query()
-      .with('current_tenant')
+      .with('current_tenant', function (b) {
+        b.with('user', function (u) {
+          u.select('id', 'firstname', 'secondname', 'avatar')
+        })
+      })
+      .with('activeTasks')
       .select(
+        'estates.id',
         'estates.coord',
         'estates.street',
         'estates.area',
         'estates.house_number',
         'estates.country',
         'estates.floor',
+        'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
         'estates.coord_raw',
         'estates.property_id',
-        'estates.address',
-        'tasks.id as tid',
-        '_u.id as uid',
-        '_u.firstname',
-        '_u.secondname',
-        '_u.avatar',
-        'tasks.urgency as urgency'
+        'estates.address'
       )
 
     query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
       if (params.only_outside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
       }
 
       if (params.only_inside_breeze) {
@@ -1216,11 +1216,11 @@ class EstateService {
 
     query.leftJoin('tasks', function () {
       this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
-        TASK_STATUS_DRFAT,
+        TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
 
-      if (!params.status) {
+      if (params.status) {
         this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
       }
     })
@@ -1234,9 +1234,11 @@ class EstateService {
 
     const filter = new TaskFilters(params, query)
     query = filter.process()
-    query.groupBy('estates.id', '_u.id', 'tasks.id')
+
+    query.groupBy('estates.id')
+
     let result = null
-    if (limit == -1) {
+    if (limit === -1 || page === -1) {
       result = await query.fetch()
     } else {
       result = await query.paginate(page, limit)
@@ -1245,17 +1247,19 @@ class EstateService {
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
     const estate = result.map((r) => {
-      const mostUrgency = maxBy(r, (re) => {
+      const mostUrgency = maxBy(r[0].activeTasks, (re) => {
         return re.urgency
       })
 
+      let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
       return {
-        ...r[0],
-        task: {
-          taskCount: countBy(r, (re) => re.tid !== null).true || 0,
+        ...omit(r[0], ['activeTasks']),
+        activeTasks: activeTasks,
+        taskSummary: {
+          activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
           mostUrgencyCount: mostUrgency
-            ? countBy(r, (re) => re.urgency === mostUrgency.urgency).true || 0
+            ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
             : 0,
         },
       }
@@ -1268,12 +1272,12 @@ class EstateService {
       .count('estates.*')
       .leftJoin('tasks', function () {
         this.on('estates.id', 'tasks.estate_id').on(
-          Database.raw(`tasks.status not in (${[TASK_STATUS_DRFAT, TASK_STATUS_DELETE]})`)
+          Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
       .innerJoin({ _ect: 'estate_current_tenants' }, function () {
         if (params.only_outside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
         }
 
         if (params.only_inside_breeze) {

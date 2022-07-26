@@ -1,19 +1,40 @@
 'use strict'
-const { ROLE_LANDLORD, ROLE_USER, STATUS_DELETE } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  STATUS_DELETE,
+  STATUS_EXPIRE,
+  PREDEFINED_LAST,
+  TASK_STATUS_INPROGRESS,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE,
+  PREDEFINED_MSG_OPEN_ENDED,
+  CHAT_TYPE_MESSAGE,
+} = require('../constants')
+
+const l = use('Localize')
+const { rc } = require('../Libs/utils')
 
 const { isArray } = require('lodash')
 const {
   TASK_STATUS_NEW,
-  TASK_STATUS_DRFAT,
+  TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   ESTATE_FIELD_FOR_TASK,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
-const Drive = use('Drive')
+
+const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
+const Chat = use('App/Models/Chat')
+const PredefinedMessage = use('App/Models/PredefinedMessage')
+
 const File = use('App/Classes/File')
+
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
+const PredefinedMessageService = use('App/Services/PredefinedMessageService')
+
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 
@@ -49,9 +70,139 @@ class TaskService {
     return await Task.createItem(task, trx)
   }
 
+  static async init(user, data) {
+    const {
+      predefined_message_id,
+      predefined_message_choice_id,
+      estate_id,
+      task_id,
+      answer,
+      attachments,
+    } = data
+
+    const predefinedMessage = await PredefinedMessage.query()
+      .where('id', predefined_message_id)
+      .firstOrFail()
+
+    // Fetch estate and also check the tenant has valid "EstateCurrentTenant" for this estate
+    const estate = await Estate.query()
+      .whereNot('estates.status', STATUS_DELETE)
+      .select('estates.user_id')
+      .where('estates.id', estate_id)
+      .innerJoin('estate_current_tenants', function () {
+        this.on('estate_current_tenants.estate_id', 'estates.id').on(
+          'estate_current_tenants.user_id',
+          user.id
+        )
+      })
+      .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+      .first()
+
+    if (!estate) {
+      throw new HttpException('Estate not found', 404)
+    }
+
+    const trx = await Database.beginTransaction()
+
+    try {
+      let task = null
+
+      // Handle task here.
+      // If it is step 0, then create a task, else fetch the task
+      if (predefinedMessage.step === 0) {
+        if (task_id) throw new HttpException('There is already task. You can not create new task')
+        task = await TaskService.handleFirstStep(user.id, estate_id, trx)
+      } else {
+        if (!task_id)
+          throw new HttpException('You should have task to proceed with this predefined message')
+        task = await this.getTaskById({ id: task_id, user })
+      }
+
+      let nextPredefinedMessage = null
+      const messages = []
+
+      // Create chat message that sent by the landlord according to the predefined message
+      const landlordMessage = await Chat.createItem(
+        {
+          task_id: task.id,
+          sender_id: estate.user_id,
+          text: rc(l.get(predefinedMessage.text), [
+            { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
+          ]),
+          type: CHAT_TYPE_MESSAGE,
+        },
+        trx
+      )
+
+      messages.push(landlordMessage.toJSON())
+
+      if (predefinedMessage.type === PREDEFINED_LAST) {
+        task.status = TASK_STATUS_INPROGRESS
+      } else if (
+        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
+        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE
+      ) {
+        const resp = await PredefinedMessageService.handleMessageWithChoice(
+          {
+            answer,
+            task,
+            predefinedMessage,
+            predefined_message_choice_id,
+          },
+          trx
+        )
+
+        nextPredefinedMessage = resp.nextPredefinedMessage
+        task = resp.task
+        messages.push(resp.tenantMessage)
+      } else if (predefinedMessage.type === PREDEFINED_MSG_OPEN_ENDED) {
+        const resp = await PredefinedMessageService.handleOpenEndedMessage(
+          {
+            task,
+            predefinedMessage,
+            answer,
+            attachments,
+          },
+          trx
+        )
+
+        task = resp.task
+        messages.push(resp.tenantMessage)
+      }
+
+      // Find the next predefined message by step if not assigned yet and if it's not last message
+      if (!nextPredefinedMessage && predefinedMessage.type !== PREDEFINED_LAST) {
+        nextPredefinedMessage = await PredefinedMessage.query()
+          .where('step', predefinedMessage.step + 1)
+          .firstOrFail()
+      }
+
+      task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
+      await task.save(trx)
+      await trx.commit()
+      return { task, messages }
+    } catch (error) {
+      await trx.rollback()
+      throw error
+    }
+  }
+
+  static async handleFirstStep(tenant_id, estate_id, trx) {
+    const task = await Task.createItem(
+      {
+        estate_id,
+        tenant_id,
+        creator_role: ROLE_USER,
+        status: TASK_STATUS_DRAFT,
+      },
+      trx
+    )
+    return task
+  }
+
   static async update({ user, task }, trx) {
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: estate_id, user_id: user.id })
+      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
 
     const query = Task.query().where('id', task.id).where('estate_id', task.estate_id)
@@ -175,7 +326,7 @@ class TaskService {
     }
 
     if (role === ROLE_LANDLORD) {
-      query.whereNotIn('status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
+      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
     }
     return await query
   }
@@ -185,7 +336,7 @@ class TaskService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRFAT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })

@@ -16,7 +16,6 @@
 |     Also you can preload files by calling `preLoad('path/to/file')` method.
 |     Make sure to pass a relative path from the project root.
 */
-
 const { Ignitor } = require('@adonisjs/ignitor')
 const https = require('https')
 const fs = require('fs')
@@ -41,5 +40,6 @@ if (fs.existsSync(key)) {
 
 new Ignitor(require('@adonisjs/fold'))
   .appRoot(__dirname)
+  .wsServer() // boot the WebSocket server
   .fireHttpServer(handler)
   .catch(console.error)
