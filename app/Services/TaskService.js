@@ -12,6 +12,9 @@ const {
   CHAT_TYPE_MESSAGE,
 } = require('../constants')
 
+const l = use('Localize')
+const { rc } = require('../Libs/utils')
+
 const { isArray } = require('lodash')
 const {
   TASK_STATUS_NEW,
@@ -123,7 +126,9 @@ class TaskService {
         {
           task_id: task.id,
           sender_id: estate.user_id,
-          text: predefinedMessage.text,
+          text: rc(l.get(predefinedMessage.text), [
+            { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
+          ]),
           type: CHAT_TYPE_MESSAGE,
         },
         trx
@@ -173,7 +178,6 @@ class TaskService {
       }
 
       task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
-
       await task.save(trx)
       await trx.commit()
       return { task, messages }

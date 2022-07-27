@@ -64,6 +64,21 @@ class EstateCurrentTenantController {
     }
   }
 
+  async inviteTenantToAppByLetter({ request, auth, response }) {
+    const { estate_id, id } = request.all()
+    try {
+      response.res(
+        await EstateCurrentTenantService.createDynamicLink({
+          estate_id: estate_id,
+          id: id,
+          user_id: auth.user.id,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
   async acceptOutsideTenant({ request, response }) {
     const { data1, data2, password } = request.all()
 
