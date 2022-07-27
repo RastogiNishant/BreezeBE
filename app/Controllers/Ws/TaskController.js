@@ -2,9 +2,11 @@
 const {
   CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   ROLE_LANDLORD,
+  CHAT_EDIT_STATUS_EDITED,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_NEW,
 } = require('../../constants')
+
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
@@ -34,22 +36,22 @@ class TaskController extends BaseController {
     }
   }
 
-  async onEditMessage({ message, attachments, id }) {
+  async onEditMessage({ message, attachments, id, predefined_message_answer_id, choice_id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
-      if (isBoolean(messageAge) && !messageAge) {
-        throw new AppException('Chat message not found.')
-      }
-      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
-        throw new AppException('Chat message not editable anymore.')
-      }
-      await ChatService.updateChatMessage(id, message, attachments)
+      await ChatService.editMessage({
+        message,
+        attachments,
+        id,
+        predefined_message_answer_id,
+        choice_id,
+      })
+
       if (this.topic) {
         this.topic.broadcast('messageEdited', {
           id,
           message: message,
           attachments: attachments,
-          edit_status: 'edited',
+          edit_status: CHAT_EDIT_STATUS_EDITED,
           topic: this.socket.topic,
         })
       }
@@ -60,7 +62,8 @@ class TaskController extends BaseController {
 
   async onRemoveMessage({ id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const chat = await ChatService.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
       if (isBoolean(messageAge) && !result) {
         throw new AppException('Chat message not found.')
       }
@@ -85,7 +88,7 @@ class TaskController extends BaseController {
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
       task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-      if (task.status == TASK_STATUS_INPROGRESS) {
+      if (task.status === TASK_STATUS_INPROGRESS) {
         //if in progress make it TASK_STATUS_NEW
         await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_NEW })
         if (this.topic) {

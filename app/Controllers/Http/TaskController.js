@@ -4,7 +4,7 @@ const { count } = require('../../Services/TaskService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-const moment = require('moment')
+//const ChatService = use('App/Services/ChatService')
 
 class TaskController {
   async createTask({ request, auth, response }) {
@@ -135,6 +135,24 @@ class TaskController {
       throw new HttpException(e.message, 500)
     }
   }
+
+  // async onEditMessage({ request, auth, response }) {
+  //   try {
+  //     const { message, attachments, id, predefined_message_answer_id, choice_id } = request.all()
+
+  //     await ChatService.editMessage({
+  //       user: auth.user,
+  //       message,
+  //       attachments,
+  //       id,
+  //       predefined_message_answer_id,
+  //       choice_id,
+  //     })
+  //     response.res(true)
+  //   } catch (err) {
+  //     throw new HttpException(err.message)
+  //   }
+  // }
 }
 
 module.exports = TaskController

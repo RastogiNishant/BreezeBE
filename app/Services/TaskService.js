@@ -205,7 +205,10 @@ class TaskService {
       await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
 
-    const query = Task.query().where('id', task.id).where('estate_id', task.estate_id)
+    const query = Task.query().where('id', task.id)
+    if (task.estate_id) {
+      query.where('estate_id', task.estate_id)
+    }
 
     if (user.role === ROLE_USER) {
       query.where('tenant_id', user.id)

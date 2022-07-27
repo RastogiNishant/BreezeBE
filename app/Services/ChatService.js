@@ -5,10 +5,18 @@ const {
   CHAT_TYPE_LAST_READ_MARKER,
   CHAT_TYPE_MESSAGE,
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   CHAT_EDIT_STATUS_EDITED,
   CHAT_EDIT_STATUS_DELETED,
 } = require('../constants')
 const { min } = require('lodash')
+const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
+const PredefinedAnswerService = use('App/Services/PredefinedAnswerService')
+const PredefinedMessageService = use('App/Services/PredefinedMessageService')
+const PredefinedMessageChoiceService = use('App/Services/PredefinedMessageChoiceService')
+const TaskService = use('App/Services/TaskService')
+const { isBoolean } = require('lodash')
 
 class ChatService {
   static async markLastRead(userId, taskId) {
@@ -146,25 +154,25 @@ class ChatService {
 
   static async getChatMessageAge(id) {
     let ret = await Chat.query()
-      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .select('*', Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
       .where('id', id)
       .first()
-    if (!ret) {
-      //not found!
-      return false
-    }
-    return ret.difference
+    return ret
   }
 
-  static async updateChatMessage(id, message, attachments) {
-    const result = await Chat.query()
+  static async updateChatMessage({ id, message, attachments }, trx) {
+    const query = Chat.query()
       .where('id', id)
       .update({
         text: message,
         attachments: JSON.stringify(attachments),
         edit_status: CHAT_EDIT_STATUS_EDITED,
       })
-    return result
+
+    if (!trx) {
+      return await query
+    }
+    return query.transacting(trx)
   }
 
   static async removeChatMessage(id) {
@@ -172,6 +180,77 @@ class ChatService {
       .where('id', id)
       .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
     return result
+  }
+
+  static async editMessage({
+    user,
+    message,
+    attachments,
+    id,
+    predefined_message_answer_id,
+    choice_id,
+  }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const chat = await this.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
+      if (isBoolean(messageAge) && !messageAge) {
+        /**
+         *FIXME: we need to send status code, so we can check in the log system
+         * Probably we can check all exceptions to send crtical status code
+         */
+        throw new AppException('Chat message not found.', 404) // not found
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.', 403) //forbidden
+      }
+
+      if (predefined_message_answer_id) {
+        const predefinedAnswer = await PredefinedAnswerService.get(predefined_message_answer_id)
+
+        let predefinedMessageChoice = null
+        if (choice_id) {
+          predefinedMessageChoice =
+            await PredefinedMessageChoiceService.getWithPredefinedMessageId({
+              id: choice_id,
+              predefined_message_id: predefinedAnswer.predefined_message_id,
+            })
+
+          await PredefinedAnswerService.update(
+            user.id,
+            {
+              id: predefined_message_answer_id,
+              predefined_message_id: predefinedAnswer.predefined_message_id,
+              predefined_message_choice_id: choice_id,
+              chat_id: id,
+              task_id: chat.task_id,
+              text: message,
+            },
+            trx
+          )
+        }
+
+        const predefinedMessage = await PredefinedMessageService.get(
+          predefinedAnswer.predefined_message_id
+        )
+
+        if (predefinedMessage.variable_to_update) {
+          let task = {
+            id: chat.task_id,
+          }
+          task[predefinedMessage.variable_to_update] = predefinedMessageChoice?.value || message
+
+          await TaskService.update({ user, task }, trx)
+        }
+      }
+
+      await this.updateChatMessage({ id, message, attachments }, trx)
+
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e)
+    }
   }
 }
 
