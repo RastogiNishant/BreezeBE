@@ -8,6 +8,7 @@ const md5 = require('md5')
 const Notifications = use('Notifications')
 const l = use('Localize')
 const UserService = use('App/Services/UserService')
+const User = use('App/Models/User')
 const uTime = require('moment')().format('X')
 
 const { capitalize, rc } = require('../Libs/utils')
@@ -85,6 +86,8 @@ const {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH,
+
+  DEFAULT_LANG,
 } = require('../constants')
 const { lang } = require('moment')
 
@@ -766,6 +769,28 @@ class NotificationsService {
 
   static async sendZendeskNotification(notices, title, body) {
     return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyDeactivatedLandlords(userIds) {
+    const users = await User.query().select('device_token', 'lang').whereIn('id', userIds).fetch()
+    await P.map(users, async (user) => {
+      if (user.device_token) {
+        await NotificationsService.sendNotification(
+          [user.device_token],
+          NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW,
+          {
+            title: l.get(
+              'landlord.notification.event.profile_deactivated_now',
+              user.lang || DEFAULT_LANG
+            ),
+            body: l.get(
+              'landlord.notification.event.profile_deactivated_now.next.message',
+              user.lang || DEFAULT_LANG
+            ),
+          }
+        )
+      }
+    })
   }
 }
 
