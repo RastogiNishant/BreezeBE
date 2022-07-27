@@ -773,7 +773,7 @@ class NotificationsService {
 
   static async notifyDeactivatedLandlords(userIds) {
     const users = await User.query().select('device_token', 'lang').whereIn('id', userIds).fetch()
-    await P.map(users, async (user) => {
+    await P.map(users.toJSON(), async (user) => {
       if (user.device_token) {
         await NotificationsService.sendNotification(
           [user.device_token],

@@ -3,7 +3,7 @@
 const LandlordListener = (exports = module.exports = {})
 const Estate = use('App/Models/Estate')
 const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE } = require('../constants')
-const NoticeService = use('App/Services/NotificationsService')
+const NoticeService = use('App/Services/NoticeService')
 
 LandlordListener.deactivate = async (userIds) => {
   await Estate.query()

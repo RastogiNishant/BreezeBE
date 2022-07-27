@@ -83,7 +83,7 @@ const {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   DEFAULT_LANG,
-  NOTICE_TYPE_LANDLORD_DEACTIVATED_ID,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -984,14 +984,14 @@ class NoticeService {
   }
 
   static async landlordsDeactivated(userIds) {
-    const notices = userIds.reduce((notices, userId) => {
-      notices = [
+    const notices = await userIds.reduce((notices, userId) => {
+      return (notices = [
         ...notices,
         {
           user_id: userId,
           type: NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
         },
-      ]
+      ])
     }, [])
     await NoticeService.insertNotices(notices)
     await NotificationsService.notifyDeactivatedLandlords(userIds)
