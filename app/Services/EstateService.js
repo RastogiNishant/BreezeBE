@@ -1134,9 +1134,7 @@ class EstateService {
   }
 
   static async getEstateHasTenant({ condition = {} }) {
-    let query = Estate.query()
-      .where('letting_status', LETTING_TYPE_LET)
-      .where('status', STATUS_DRAFT)
+    let query = Estate.query().where('letting_type', LETTING_TYPE_LET).where('status', STATUS_DRAFT)
     if (isEmpty(condition)) {
       return await query.first()
     }
@@ -1196,7 +1194,7 @@ class EstateService {
 
     query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
       if (params.only_outside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
       }
 
       if (params.only_inside_breeze) {
@@ -1279,7 +1277,7 @@ class EstateService {
       })
       .innerJoin({ _ect: 'estate_current_tenants' }, function () {
         if (params.only_outside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
         }
 
         if (params.only_inside_breeze) {

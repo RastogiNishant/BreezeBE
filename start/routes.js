@@ -473,6 +473,12 @@ Route.group(() => {
     '/:estate_id/tenant/:id/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'
   ).middleware(['valid:EstateId,Id'])
+
+  Route.post(
+    '/:estate_id/tenant/:id/invite/letter',
+    'EstateCurrentTenantController.inviteTenantToAppByLetter'
+  ).middleware(['valid:EstateId,Id'])  
+  
   Route.post(
     '/:estate_id/tenant/:id/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
