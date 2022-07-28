@@ -544,6 +544,14 @@ class CreateEstate extends Base {
           otherwise: yup.number().min(0).max(1000000),
         })
         .nullable(),
+      is_new_tenenant_transfer: yup.boolean().default(false),
+      transfer_budget: yup.number().when(['is_new_tenenant_transfer'], {
+        is: (is_new_tenenant_transfer) => {
+          return is_new_tenenant_transfer
+        },
+        then: yup.number().integer().required(),
+        otherwise: yup.number().nullable(),
+      }),
     })
 }
 
