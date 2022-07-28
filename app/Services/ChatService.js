@@ -95,6 +95,7 @@ class ChatService {
       .first()
 
     if (allCount) {
+      if (allCount.unread_messages == 0) return 0
       counts.push(parseInt(allCount.unread_messages))
     }
 
@@ -117,6 +118,7 @@ class ChatService {
       .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (unreadByMarker) {
+      if (unreadByMarker.unread_messages == 0) return 0
       counts.push(parseInt(unreadByMarker.unread_messages))
     }
 
@@ -138,6 +140,7 @@ class ChatService {
       .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (unreadByLastSent) {
+      if (unreadByLastSent.unread_messages == 0) return 0
       counts.push(parseInt(unreadByLastSent.unread_messages))
     }
     const unreadMessagesCount = min(counts)
