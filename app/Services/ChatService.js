@@ -9,14 +9,13 @@ const {
   CHAT_EDIT_STATUS_EDITED,
   CHAT_EDIT_STATUS_DELETED,
 } = require('../constants')
-const { min } = require('lodash')
+const { min, isBoolean } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const PredefinedAnswerService = use('App/Services/PredefinedAnswerService')
 const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const PredefinedMessageChoiceService = use('App/Services/PredefinedMessageChoiceService')
 const TaskService = use('App/Services/TaskService')
-const { isBoolean } = require('lodash')
 
 class ChatService {
   static async markLastRead(userId, taskId) {
