@@ -100,17 +100,6 @@ class TaskController extends BaseController {
         }
       }
     }
-    //if landlord send to tenant or vice versa
-    //frontend should track this to update his list of unread task messages when the
-    //chatbox is NOT opened
-    this.broadcastToTopic(
-      `tenant:${this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id}`,
-      'receivedTaskMessage',
-      {
-        topic: this.socket.topic,
-      }
-    )
-
     const chat = await this._saveToChats(message, this.taskId)
     message.id = chat.id
     message.message = chat.text
@@ -122,7 +111,11 @@ class TaskController extends BaseController {
       avatar: this.user.avatar,
     }
     message.topic = this.socket.topic
-
+    const recipientTopic =
+      this.user.role === ROLE_LANDLORD
+        ? `tenant:${this.tenant_user_id}`
+        : `landlord:${this.estate_user_id}`
+    this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
     super.onMessage(message)
   }
 }

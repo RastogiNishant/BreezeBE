@@ -7,8 +7,16 @@ const {
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
   CHAT_EDIT_STATUS_EDITED,
   CHAT_EDIT_STATUS_DELETED,
+  STATUS_ACTIVE,
+  TASK_STATUS_RESOLVED,
+  TASK_STATUS_CLOSED,
+  TASK_STATUS_DELETE,
+  ROLE_LANDLORD,
+  ROLE_USER,
 } = require('../constants')
 const { min } = require('lodash')
+const Task = use('App/Models/Task')
+const Promise = require('bluebird')
 
 class ChatService {
   static async markLastRead(userId, taskId) {
@@ -175,6 +183,45 @@ class ChatService {
       .where('id', id)
       .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
     return result
+  }
+
+  static async getUserUnreadMessagesByTopic(userId, role) {
+    let taskEstates
+    let query = Task.query()
+      .select('tasks.id as task_id', 'estates.id as estate_id')
+      .leftJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('estate_current_tenants', function () {
+        this.on('tasks.tenant_id', 'estate_current_tenants.user_id').on(
+          'estate_current_tenants.estate_id',
+          'estates.id'
+        )
+      })
+      .whereNotIn('tasks.status', [TASK_STATUS_RESOLVED, TASK_STATUS_CLOSED, TASK_STATUS_DELETE])
+      .where('estate_current_tenants.status', STATUS_ACTIVE)
+    if (role == ROLE_LANDLORD) {
+      query.where('estates.user_id', userId)
+    } else if (role == ROLE_USER) {
+      query.where('estate_current_tenants.user_id', userId)
+    }
+    taskEstates = await query.fetch()
+    const unreadMessagesByTopic = await Promise.reduce(
+      taskEstates.toJSON(),
+      async (unreadMessagesByTopic, taskEstate) => {
+        const unreadMessagesCount = await ChatService.getUnreadMessagesCount(
+          taskEstate.task_id,
+          userId
+        )
+        return [
+          ...unreadMessagesByTopic,
+          {
+            topic: `task:${taskEstate.estate_id}brz${taskEstate.task_id}`,
+            unread: unreadMessagesCount,
+          },
+        ]
+      },
+      []
+    )
+    return unreadMessagesByTopic
   }
 }
 
