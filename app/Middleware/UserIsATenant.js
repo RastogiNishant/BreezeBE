@@ -30,10 +30,18 @@ class UserIsATenant {
     let matches
     if ((matches = socket.topic.match(/^tenant:([0-9]+)$/))) {
       if (auth.user.id !== parseInt(matches[1])) {
-        throw new HttpException('User is not allowed here')
+        throw new HttpException('User can only connect to tenant topic containing his id.')
+      }
+      let tenantEstates = await CurrentTenant.query()
+        .leftJoin('estates', 'estate_current_tenant.estates_id', 'estates.id')
+        .where('user_id', auth.user.id)
+        .where('estate_current_tenant.status', 'active')
+        .fetch()
+      if (!tenantEstates) {
+        throw new HttpException('Topic is only available to current tenants.')
       }
     } else {
-      throw new HttpException('Topic not allowed')
+      throw new HttpException('Topic not valid.')
     }
     await next()
   }
