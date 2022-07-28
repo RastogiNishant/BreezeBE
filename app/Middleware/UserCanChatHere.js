@@ -6,6 +6,7 @@ const { ROLE_LANDLORD } = require('../constants')
 const CurrentTenant = use('App/Models/EstateCurrentTenant')
 const Task = use('App/Models/Task')
 const HttpException = use('App/Exceptions/HttpException')
+const Database = use('Database')
 
 class UserCanChatHere {
   /**
@@ -38,6 +39,8 @@ class UserCanChatHere {
         throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
       request.task_id = task.id
+      request.tenant_user_id = currentTenant.tenant_user_id
+      request.estate_user_id = currentTenant.estate_user_id
     } else {
       throw new HttpException(`Task topic not valid.`, 403, 1104)
     }
@@ -47,17 +50,16 @@ class UserCanChatHere {
   async _getCurrentTenant(estate_id, user_id, role = ROLE_LANDLORD) {
     let currentTenant
     let query = CurrentTenant.query()
+      .select(Database.raw(`estate_current_tenants.user_id as tenant_user_id`))
+      .select(Database.raw(`estates.user_id as estate_user_id`))
       .where('estate_id', estate_id)
       .orderBy('estate_current_tenants.id', 'desc')
-
+      .leftJoin('estates', 'estate_current_tenants.estate_id', 'estates.id')
     if (role === ROLE_LANDLORD) {
-      currentTenant = await query
-        .leftJoin('estates', 'estate_current_tenants.estate_id', 'estates.id')
-        .where('estates.user_id', user_id)
-        .first()
+      currentTenant = await query.where('estates.user_id', user_id).first()
     } else {
       currentTenant = await query.first()
-      if (currentTenant.user_id == user_id) {
+      if (currentTenant.tenant_user_id == user_id) {
         return currentTenant
       } else {
         return false
