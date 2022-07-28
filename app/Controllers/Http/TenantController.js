@@ -86,13 +86,14 @@ class TenantController {
       await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
 
-      const updatedTenant = await Tenant.find(tenant.id)
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
       if (shouldDeactivateTenant) {
       } else {
       }
       await trx.commit()
+
+      const updatedTenant = await Tenant.find(tenant.id)
 
       // Add tenant anchor zone processing
       if (lat && lon && tenant.dist_type && tenant.dist_min) {
