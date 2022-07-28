@@ -89,6 +89,7 @@ class BaseController {
   onMessage(message) {
     message.dateTime = message.dateTime ? message.dateTime : new Date()
     if (this.topic) {
+      //FIXME: this will send sender twice on data...
       this.broadcastToAll(message, 'message')
     }
   }
@@ -104,6 +105,20 @@ class BaseController {
   async _saveToChats(message, taskId = null) {
     let chat = await ChatService.save(message, this.user.id, taskId)
     return chat
+  }
+
+  /**
+   *
+   * @param {String} topicString where to broadcast the event
+   * @param {String} event
+   * @param {Any} message
+   */
+  async broadcastToTopic(topicString, event, message) {
+    const matches = topicString.match(/([a-z]+):/i)
+    const topic = Ws.getChannel(`${matches[0]}*`).topic(topicString)
+    if (topic) {
+      topic.broadcast(event, message)
+    }
   }
 }
 
