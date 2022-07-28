@@ -7,7 +7,8 @@ class AddTransferPriceToTenantsSchema extends Schema {
   up () {
     this.table('tenants', (table) => {
       // alter table
-      table.integer('transfer_budget')
+      table.integer('transfer_budget_min')
+      table.integer('transfer_budget_max')
     })
   }
 
