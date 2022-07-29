@@ -47,7 +47,7 @@ class PredefinedMessageService {
   }
 
   static async handleMessageWithChoice(
-    { answer, task, predefinedMessage, predefined_message_choice_id },
+    { answer, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
     let nextPredefinedMessage
@@ -65,7 +65,7 @@ class PredefinedMessageService {
         task_id: task.id,
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
-        text: l.get(choice.text),
+        text: l.get(choice.text, lang),
       },
       trx
     )
@@ -75,7 +75,7 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: l.get(choice.text),
+        text: l.get(choice.text, lang),
         type: CHAT_TYPE_MESSAGE,
       },
       trx
