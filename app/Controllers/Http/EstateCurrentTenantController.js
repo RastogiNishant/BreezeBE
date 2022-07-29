@@ -50,12 +50,13 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToAppByEmail({ request, auth, response }) {
-    const { estate_id, id } = request.all()
+    const { estate_id, ids } = request.all()
+
     try {
       response.res(
         await EstateCurrentTenantService.inviteTenantToAppByEmail({
           estate_id: estate_id,
-          id: id,
+          ids: ids,
           user_id: auth.user.id,
         })
       )
@@ -65,12 +66,12 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToAppByLetter({ request, auth, response }) {
-    const { estate_id, id } = request.all()
+    const { estate_id, ids } = request.all()
     try {
       response.res(
-        await EstateCurrentTenantService.createDynamicLink({
+        await EstateCurrentTenantService.getDynamicLinks({
           estate_id: estate_id,
-          id: id,
+          ids: ids,
           user_id: auth.user.id,
         })
       )

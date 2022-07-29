@@ -31,7 +31,8 @@ class EstateCurrentTenantService {
    * @returns
    */
   static async addCurrentTenant({ data, estate_id, user_id }) {
-    const estate = require('./EstateService').getActiveEstateQuery()
+    const estate = require('./EstateService')
+      .getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estate_id)
       .where('letting_status', LETTING_TYPE_LET)
@@ -197,7 +198,8 @@ class EstateCurrentTenantService {
   static async hasPermission(id, user_id) {
     const estateCurrentTeant = await this.get(id)
 
-    await require('./EstateService').getActiveEstateQuery()
+    await require('./EstateService')
+      .getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estateCurrentTeant.estate_id)
       .where('letting_status', LETTING_TYPE_LET)
@@ -209,13 +211,13 @@ class EstateCurrentTenantService {
     return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_EXPIRE })
   }
 
-  static async inviteTenantToAppByEmail({ id, estate_id, user_id }) {
-    const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
-      id,
+  static async inviteTenantToAppByEmail({ ids, estate_id, user_id }) {
+    const links = await this.getDynamicLinks({
+      ids,
       estate_id,
       user_id,
     })
-    await MailService.sendInvitationToOusideTenant(estateCurrentTenant.email, shortLink)
+    await MailService.sendInvitationToOusideTenant(links)
   }
 
   static async inviteTenantToAppBySMS({ id, estate_id, user_id }) {
@@ -234,16 +236,16 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async getOutsideTenantByEstateId({ id, estate_id }) {
-    return await EstateCurrentTenant.query()
-      .where('id', id)
+  static async getOutsideTenantsByEstateId({ ids, estate_id }) {
+    return (await EstateCurrentTenant.query()
+      .whereIn('id', ids)
       .where('estate_id', estate_id)
       .whereNot('status', STATUS_DELETE)
       .whereNull('user_id')
-      .first()
+      .fetch()).rows
   }
 
-  static async createDynamicLink({ id, estate_id, user_id }) {
+  static async getDynamicLinks({ ids, estate_id, user_id }) {
     const estate = await require('./EstateService').getEstateHasTenant({
       condition: { id: estate_id, user_id: user_id },
     })
@@ -252,11 +254,21 @@ class EstateCurrentTenantService {
       throw new HttpException('No permission to invite')
     }
 
-    const estateCurrentTenant = await this.getOutsideTenantByEstateId({ id, estate_id })
-    if (!estateCurrentTenant) {
-      throw new HttpException('No record exists')
+    const estateCurrentTenants = await this.getOutsideTenantsByEstateId({ ids, estate_id })
+
+    if (!estateCurrentTenants || !estateCurrentTenants.length) {
+      throw new HttpException("You don't have permission for some estates")
     }
 
+    const links = await Promise.all(
+      estateCurrentTenants.map(async (ect) => {
+        return await EstateCurrentTenantService.createDynamicLink(ect)
+      })
+    )
+
+    return links
+  }
+  static async createDynamicLink(estateCurrentTenant) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -298,7 +310,7 @@ class EstateCurrentTenantService {
       },
     })
     return {
-      estateCurrentTenant,
+      email:estateCurrentTenant.email,
       shortLink,
     }
   }
@@ -306,7 +318,7 @@ class EstateCurrentTenantService {
   static async acceptOutsideTenant({ data1, data2, password }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
-    const estateCurrentTenant = await this.getOutsideTenantByEstateId({ id, estate_id })
+    const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
