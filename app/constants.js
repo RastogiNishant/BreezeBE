@@ -533,7 +533,7 @@ const constants = {
     'energy_proof',
     'energy_proof_original_file',
     'isoline',
-    'is_new_tenenant_transfer',
+    'is_new_tenant_transfer',
     'transfer_budget'
   ],
 

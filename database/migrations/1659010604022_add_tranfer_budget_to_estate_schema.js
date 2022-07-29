@@ -7,7 +7,7 @@ class AddTranferBudgetToEstateSchema extends Schema {
   up() {
     this.table('estates', (table) => {
       // alter table
-      table.boolean('is_new_tenenant_transfer').defaultTo(false)
+      table.boolean('is_new_tenant_transfer').defaultTo(false)
       table.integer('transfer_budget')
     })
   }
