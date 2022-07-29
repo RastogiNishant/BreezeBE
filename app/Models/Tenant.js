@@ -67,7 +67,8 @@ class Tenant extends Model {
       'match_type',
       'total_completed_proofs',
       'submitted_proofs',
-      'transfer_budget',
+      'transfer_budget_min',
+      'transfer_budget_max',
     ]
   }
 
