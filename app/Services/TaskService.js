@@ -10,7 +10,11 @@ const {
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE,
   PREDEFINED_MSG_OPEN_ENDED,
   CHAT_TYPE_MESSAGE,
+  DEFAULT_LANG,
 } = require('../constants')
+
+const l = use('Localize')
+const { rc } = require('../Libs/utils')
 
 const { isArray } = require('lodash')
 const {
@@ -77,6 +81,8 @@ class TaskService {
       attachments,
     } = data
 
+    const lang = user.lang ?? DEFAULT_LANG
+
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
@@ -123,7 +129,9 @@ class TaskService {
         {
           task_id: task.id,
           sender_id: estate.user_id,
-          text: predefinedMessage.text,
+          text: rc(l.get(predefinedMessage.text, lang), [
+            { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
+          ]),
           type: CHAT_TYPE_MESSAGE,
         },
         trx
@@ -143,6 +151,7 @@ class TaskService {
             task,
             predefinedMessage,
             predefined_message_choice_id,
+            lang,
           },
           trx
         )
@@ -173,7 +182,6 @@ class TaskService {
       }
 
       task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
-
       await task.save(trx)
       await trx.commit()
       return { task, messages }
