@@ -5,9 +5,11 @@ const ChatService = use('App/Services/ChatService')
 class TenantController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
-    this.taskId = request.taskId
   }
 
+  /**
+   * Event handler for getTaskUnreadMessages
+   */
   async onGetTaskUnreadMessages() {
     const userUnreadMessagesByTopic = await ChatService.getUserUnreadMessagesByTopic(
       this.user.id,
