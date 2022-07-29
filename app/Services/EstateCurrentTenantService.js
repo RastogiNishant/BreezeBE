@@ -220,29 +220,37 @@ class EstateCurrentTenantService {
     await MailService.sendInvitationToOusideTenant(links)
   }
 
-  static async inviteTenantToAppBySMS({ id, estate_id, user_id }) {
-    const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
-      id,
+  static async inviteTenantToAppBySMS({ ids, estate_id, user_id }) {
+    const links = await this.getDynamicLinks({
+      ids,
       estate_id,
       user_id,
     })
 
-    const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${shortLink}`
+    const errorPhoneNumbers = []
+    await Promise.all(
+      links.map(async (link) => {
+        const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${link.shortLink}`
 
-    if (estateCurrentTenant.phone_number) {
-      await SMSService.send({ to: estateCurrentTenant.phone_number, txt })
-    } else {
-      throw new HttpException('phone number no exist', 500)
-    }
+        if (link.phone_number) {
+          await SMSService.send({ to: link.phone_number, txt })
+        } else {
+          errorPhoneNumbers.push(link.phone_number)
+        }
+      })
+    )
+    return errorPhoneNumbers
   }
 
   static async getOutsideTenantsByEstateId({ ids, estate_id }) {
-    return (await EstateCurrentTenant.query()
-      .whereIn('id', ids)
-      .where('estate_id', estate_id)
-      .whereNot('status', STATUS_DELETE)
-      .whereNull('user_id')
-      .fetch()).rows
+    return (
+      await EstateCurrentTenant.query()
+        .whereIn('id', ids)
+        .where('estate_id', estate_id)
+        .whereNot('status', STATUS_DELETE)
+        .whereNull('user_id')
+        .fetch()
+    ).rows
   }
 
   static async getDynamicLinks({ ids, estate_id, user_id }) {
@@ -310,7 +318,8 @@ class EstateCurrentTenantService {
       },
     })
     return {
-      email:estateCurrentTenant.email,
+      email: estateCurrentTenant.email,
+      phone_number: estateCurrentTenant.phone_number,
       shortLink,
     }
   }

@@ -472,17 +472,17 @@ Route.group(() => {
   Route.post(
     '/:estate_id/tenant/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'
-  ).middleware(['valid:EstateId,Ids'])
+  ).middleware(['valid:EstateId,InvitationIds'])
 
   Route.post(
     '/:estate_id/tenant/invite/letter',
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
-  ).middleware(['valid:EstateId,Ids'])  
-  
+  ).middleware(['valid:EstateId,InvitationIds'])
+
   Route.post(
-    '/:estate_id/tenant/:id/invite/sms',
+    '/:estate_id/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
-  ).middleware(['valid:EstateId,Id'])
+  ).middleware(['valid:EstateId,InvitationIds'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])

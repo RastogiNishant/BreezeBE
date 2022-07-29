@@ -91,15 +91,20 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToAppBySMS({ request, auth, response }) {
-    const { estate_id, id } = request.all()
+    const { estate_id, ids } = request.all()
     try {
-      response.res(
-        await EstateCurrentTenantService.inviteTenantToAppBySMS({
-          estate_id: estate_id,
-          id: id,
-          user_id: auth.user.id,
-        })
-      )
+      const errorPhonNumbers = await EstateCurrentTenantService.inviteTenantToAppBySMS({
+        estate_id: estate_id,
+        ids: ids,
+        user_id: auth.user.id,
+      })
+
+      if (errorPhonNumbers && errorPhonNumbers.length) {
+        const msg = ` Not delivered to ` + errorPhonNumbers.join(',')
+        throw new HttpException(msg, 500)
+      }
+
+      response.res(true)
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
