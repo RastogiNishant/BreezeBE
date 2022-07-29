@@ -162,6 +162,7 @@ class ChatService {
   static async updateChatMessage({ id, message, attachments }, trx) {
     const query = Chat.query()
       .where('id', id)
+      .where('is_bot_message', false)
       .update({
         text: message,
         attachments: JSON.stringify(attachments),
@@ -181,71 +182,17 @@ class ChatService {
     return result
   }
 
-  static async editMessage({
-    user,
-    message,
-    attachments,
-    id,
-    predefined_message_answer_id,
-    choice_id,
-  }) {
+  static async editMessage({ message, attachments, id }) {
     const trx = await Database.beginTransaction()
     try {
-      const chat = await this.getChatMessageAge(id)
-      const messageAge = chat?.difference || false
+      let messageAge = await ChatService.getChatMessageAge(id)
       if (isBoolean(messageAge) && !messageAge) {
-        /**
-         *FIXME: we need to send status code, so we can check in the log system
-         * Probably we can check all exceptions to send crtical status code
-         */
-        throw new AppException('Chat message not found.', 404) // not found
+        throw new AppException('Chat message not found.')
       }
       if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
-        throw new AppException('Chat message not editable anymore.', 403) //forbidden
+        throw new AppException('Chat message not editable anymore.')
       }
-
-      if (predefined_message_answer_id) {
-        const predefinedAnswer = await PredefinedAnswerService.get(predefined_message_answer_id)
-
-        let predefinedMessageChoice = null
-        if (choice_id) {
-          predefinedMessageChoice =
-            await PredefinedMessageChoiceService.getWithPredefinedMessageId({
-              id: choice_id,
-              predefined_message_id: predefinedAnswer.predefined_message_id,
-            })
-
-          await PredefinedAnswerService.update(
-            user.id,
-            {
-              id: predefined_message_answer_id,
-              predefined_message_id: predefinedAnswer.predefined_message_id,
-              predefined_message_choice_id: choice_id,
-              chat_id: id,
-              task_id: chat.task_id,
-              text: message,
-            },
-            trx
-          )
-        }
-
-        const predefinedMessage = await PredefinedMessageService.get(
-          predefinedAnswer.predefined_message_id
-        )
-
-        if (predefinedMessage.variable_to_update) {
-          let task = {
-            id: chat.task_id,
-          }
-          task[predefinedMessage.variable_to_update] = predefinedMessageChoice?.value || message
-
-          await TaskService.update({ user, task }, trx)
-        }
-      }
-
-      await this.updateChatMessage({ id, message, attachments }, trx)
-
-      await trx.commit()
+      await ChatService.updateChatMessage({id, message, attachments})
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e)

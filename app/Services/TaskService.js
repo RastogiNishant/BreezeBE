@@ -10,6 +10,7 @@ const {
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE,
   PREDEFINED_MSG_OPEN_ENDED,
   CHAT_TYPE_MESSAGE,
+  DEFAULT_LANG,
 } = require('../constants')
 
 const l = use('Localize')
@@ -80,6 +81,8 @@ class TaskService {
       attachments,
     } = data
 
+    const lang = user.lang ?? DEFAULT_LANG
+
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
@@ -126,10 +129,11 @@ class TaskService {
         {
           task_id: task.id,
           sender_id: estate.user_id,
-          text: rc(l.get(predefinedMessage.text), [
+          text: rc(l.get(predefinedMessage.text, lang), [
             { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
           ]),
           type: CHAT_TYPE_MESSAGE,
+          is_bot_message: true,
         },
         trx
       )
@@ -148,6 +152,7 @@ class TaskService {
             task,
             predefinedMessage,
             predefined_message_choice_id,
+            lang,
           },
           trx
         )
@@ -205,10 +210,7 @@ class TaskService {
       await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
 
-    const query = Task.query().where('id', task.id)
-    if (task.estate_id) {
-      query.where('estate_id', task.estate_id)
-    }
+    const query = Task.query().where('id', task.id).where('estate_id', task.estate_id)
 
     if (user.role === ROLE_USER) {
       query.where('tenant_id', user.id)

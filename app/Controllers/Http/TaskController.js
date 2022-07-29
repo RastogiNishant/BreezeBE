@@ -138,15 +138,12 @@ class TaskController {
 
   // async onEditMessage({ request, auth, response }) {
   //   try {
-  //     const { message, attachments, id, predefined_message_answer_id, choice_id } = request.all()
+  //     const { message, attachments, id } = request.all()
 
   //     await ChatService.editMessage({
-  //       user: auth.user,
   //       message,
   //       attachments,
   //       id,
-  //       predefined_message_answer_id,
-  //       choice_id,
   //     })
   //     response.res(true)
   //   } catch (err) {

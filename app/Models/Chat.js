@@ -14,6 +14,7 @@ class Chat extends Model {
       'attachments',
       'is_viewed',
       'type',
+      'is_bot_message',
       'created_at',
       'updated_at',
     ]

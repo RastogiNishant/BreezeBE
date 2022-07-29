@@ -36,14 +36,15 @@ class TaskController extends BaseController {
     }
   }
 
-  async onEditMessage({ message, attachments, id, predefined_message_answer_id, choice_id }) {
+  async onEditMessage({ message, attachments, id }) {
     try {
+      //TODO: Do we need to check sender to check this message is owned by that person?
+      //Pros: can prevent illegal edit
+      //Cons: cause low response to others using websocket
       await ChatService.editMessage({
         message,
         attachments,
         id,
-        predefined_message_answer_id,
-        choice_id,
       })
 
       if (this.topic) {

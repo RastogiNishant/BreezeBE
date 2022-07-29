@@ -47,7 +47,7 @@ class PredefinedMessageService {
   }
 
   static async handleMessageWithChoice(
-    { answer, task, predefinedMessage, predefined_message_choice_id },
+    { answer, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
     let nextPredefinedMessage
@@ -59,24 +59,26 @@ class PredefinedMessageService {
 
     if (!choice) throw new HttpException('Wrong choice selected')
 
+    // Create chat message from tenant's answer
+    const tenantMessage = await Chat.createItem(
+      {
+        task_id: task.id,
+        sender_id: task.tenant_id,
+        text: l.get(choice.text, lang),
+        is_bot_message:true,        
+        type: CHAT_TYPE_MESSAGE,
+      },
+      trx
+    )
+
     // Create predefined message answer from tenant's answer
     await PredefinedMessageAnswer.createItem(
       {
         task_id: task.id,
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
-        text: l.get(choice.text),
-      },
-      trx
-    )
-
-    // Create chat message from tenant's answer
-    const tenantMessage = await Chat.createItem(
-      {
-        task_id: task.id,
-        sender_id: task.tenant_id,
-        text: l.get(choice.text),
-        type: CHAT_TYPE_MESSAGE,
+        text: l.get(choice.text, lang),
+        chat_id: tenantMessage.chat_id
       },
       trx
     )
@@ -100,15 +102,6 @@ class PredefinedMessageService {
   }
 
   static async handleOpenEndedMessage({ task, predefinedMessage, answer, attachments }, trx) {
-    // Create predefined message answer from tenant's answer
-    await PredefinedMessageAnswer.createItem(
-      {
-        task_id: task.id,
-        predefined_message_id: predefinedMessage.id,
-        text: answer,
-      },
-      trx
-    )
 
     // Create chat message from tenant's answer
     const tenantMessage = await Chat.createItem(
@@ -118,6 +111,18 @@ class PredefinedMessageService {
         text: answer,
         attachments,
         type: CHAT_TYPE_MESSAGE,
+        is_bot_message:true,
+      },
+      trx
+    )
+
+    // Create predefined message answer from tenant's answer
+    await PredefinedMessageAnswer.createItem(
+      {
+        task_id: task.id,
+        predefined_message_id: predefinedMessage.id,
+        text: answer,
+        chat_id: tenantMessage.chat_id,
       },
       trx
     )
