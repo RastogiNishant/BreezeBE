@@ -115,6 +115,8 @@ class TaskController extends BaseController {
       this.user.role === ROLE_LANDLORD
         ? `tenant:${this.tenant_user_id}`
         : `landlord:${this.estate_user_id}`
+
+    //broadcast taskMessageReceived event to either tenant or landlord
     this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
     super.onMessage(message)
   }
