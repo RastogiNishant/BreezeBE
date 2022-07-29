@@ -38,7 +38,8 @@ class Tenant extends Model {
       'rent_start',
       'minors_count',
       'members_count',
-      'transfer_budget',
+      'transfer_budget_min',
+      'transfer_budget_max',
     ]
   }
 
