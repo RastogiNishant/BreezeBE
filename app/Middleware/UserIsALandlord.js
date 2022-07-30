@@ -25,6 +25,7 @@ class UserIsALandlord {
    */
   async wsHandle({ socket, request, auth }, next) {
     // call next to advance the request
+    let matches
     if ((matches = socket.topic.match(/^landlord:([0-9]+)$/))) {
       if (auth.user.id !== parseInt(matches[1])) {
         throw new HttpException('User can only connect to a landlord topic containing his id.')
