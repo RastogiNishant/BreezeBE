@@ -107,49 +107,44 @@ class ChatService {
       counts.push(parseInt(allCount.unread_messages))
     }
 
-    const unreadByMarker = await Chat.query()
-      .select(Database.raw(`count(*) as unread_messages`))
-      .where(
-        'created_at',
-        '>',
-        Database.raw(
-          `(select created_at from chats
-            where "type"='${CHAT_TYPE_LAST_READ_MARKER}'
-            and task_id='${taskId}'
-            and sender_id='${userId}'
-            order by created_at desc
-            limit 1
-            )`
-        )
-      )
+    const lastReadMarkerDate = await Chat.query()
+      .select('created_at')
+      .where('type', CHAT_TYPE_LAST_READ_MARKER)
       .where('task_id', taskId)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .where('sender_id', userId)
+      .orderBy('created_at', 'desc')
       .first()
-    if (unreadByMarker) {
-      if (unreadByMarker.unread_messages == 0) return 0
-      counts.push(parseInt(unreadByMarker.unread_messages))
+
+    if (lastReadMarkerDate) {
+      const unreadByMarker = await Chat.query()
+        .select(Database.raw(`count(*) as unread_messages`))
+        .where('created_at', '>', lastReadMarkerDate.created_at)
+        .where('task_id', taskId)
+        .where('type', CHAT_TYPE_MESSAGE)
+        .first()
+      if (unreadByMarker) {
+        counts.push(parseInt(unreadByMarker.unread_messages))
+      }
     }
 
-    const unreadByLastSent = await Chat.query()
-      .select(Database.raw(`count(*) as unread_messages`))
-      .where(
-        'created_at',
-        '>',
-        Database.raw(
-          `(select created_at from chats
-            where "type"='${CHAT_TYPE_MESSAGE}'
-            and "sender_id"='${userId}'
-            and task_id='${taskId}'
-            order by created_at desc
-            limit 1)`
-        )
-      )
-      .where('task_id', taskId)
+    const lastSentDate = await Chat.query()
+      .select('created_at')
       .where('type', CHAT_TYPE_MESSAGE)
+      .where('task_id', taskId)
+      .where('sender_id', userId)
+      .orderBy('created_at', 'desc')
       .first()
-    if (unreadByLastSent) {
-      if (unreadByLastSent.unread_messages == 0) return 0
-      counts.push(parseInt(unreadByLastSent.unread_messages))
+
+    if (lastSentDate) {
+      const unreadByLastSent = await Chat.query()
+        .select(Database.raw(`count(*) as unread_messages`))
+        .where('created_at', '>', lastSentDate.created_at)
+        .where('task_id', taskId)
+        .where('type', CHAT_TYPE_MESSAGE)
+        .first()
+      if (unreadByLastSent) {
+        counts.push(parseInt(unreadByLastSent.unread_messages))
+      }
     }
     const unreadMessagesCount = min(counts)
     return unreadMessagesCount
