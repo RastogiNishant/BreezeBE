@@ -83,6 +83,15 @@ class TenantController {
 
     try {
       const tenant = await UserService.getOrCreateTenant(auth.user, trx)
+
+      if (
+        data.transfer_budget_min &&
+        data.transfer_budget_max &&
+        data.transfer_budget_min > data.transfer_budget_max
+      ) {
+        throw new HttpException('Transfer budget min has to be smaller than max', 400)
+      }
+
       await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
 
