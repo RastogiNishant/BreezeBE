@@ -199,7 +199,6 @@ class ChatService {
         TASK_STATUS_DELETE,
       ])
       .where('estate_current_tenants.status', STATUS_ACTIVE)
-    console.log(role, typeof role)
     if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
     } else if (role === ROLE_USER) {
