@@ -31,7 +31,8 @@ class EstateCurrentTenantService {
    * @returns
    */
   static async addCurrentTenant({ data, estate_id, user_id }) {
-    const estate = require('./EstateService').getActiveEstateQuery()
+    const estate = require('./EstateService')
+      .getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estate_id)
       .where('letting_status', LETTING_TYPE_LET)
@@ -102,7 +103,10 @@ class EstateCurrentTenantService {
   }
 
   static async updateCurrentTenant({ id, data, estate_id, user_id }) {
-    await this.hasPermission(id, user_id)
+    if (id) {
+      //This broke excel import which does not pass id to this method.
+      await this.hasPermission(id, user_id)
+    }
 
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 
@@ -197,7 +201,8 @@ class EstateCurrentTenantService {
   static async hasPermission(id, user_id) {
     const estateCurrentTeant = await this.get(id)
 
-    await require('./EstateService').getActiveEstateQuery()
+    await require('./EstateService')
+      .getActiveEstateQuery()
       .where('user_id', user_id)
       .where('id', estateCurrentTeant.estate_id)
       .where('letting_status', LETTING_TYPE_LET)
