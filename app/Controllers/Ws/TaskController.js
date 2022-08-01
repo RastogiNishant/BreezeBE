@@ -20,7 +20,11 @@ class TaskController extends BaseController {
     this.estate_user_id = request.estate_user_id
   }
 
-  async onGetPreviousMessages({ lastId = 0 }) {
+  async onGetPreviousMessages(data) {
+    let lastId = 0
+    if (data && data.lastId) {
+      lastId = data.lastId
+    }
     const previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
     const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
     if (this.topic) {

@@ -10,9 +10,11 @@ const {
   STATUS_ACTIVE,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
+  TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
+  ISO_DATE_FORMAT,
 } = require('../constants')
 const { min } = require('lodash')
 const Task = use('App/Models/Task')
@@ -101,14 +103,13 @@ class ChatService {
       .where('task_id', taskId)
       .where('type', CHAT_TYPE_MESSAGE)
       .first()
-
     if (allCount) {
       if (allCount.unread_messages == 0) return 0
       counts.push(parseInt(allCount.unread_messages))
     }
 
     const lastReadMarkerDate = await Chat.query()
-      .select('created_at')
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
       .where('type', CHAT_TYPE_LAST_READ_MARKER)
       .where('task_id', taskId)
       .where('sender_id', userId)
@@ -128,7 +129,7 @@ class ChatService {
     }
 
     const lastSentDate = await Chat.query()
-      .select('created_at')
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
       .where('type', CHAT_TYPE_MESSAGE)
       .where('task_id', taskId)
       .where('sender_id', userId)
@@ -191,7 +192,12 @@ class ChatService {
           'estates.id'
         )
       })
-      .whereNotIn('tasks.status', [TASK_STATUS_RESOLVED, TASK_STATUS_CLOSED, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [
+        TASK_STATUS_RESOLVED,
+        TASK_STATUS_DRAFT,
+        TASK_STATUS_CLOSED,
+        TASK_STATUS_DELETE,
+      ])
       .where('estate_current_tenants.status', STATUS_ACTIVE)
     if (role == ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
