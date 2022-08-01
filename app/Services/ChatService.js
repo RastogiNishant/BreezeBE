@@ -104,7 +104,7 @@ class ChatService {
       .where('type', CHAT_TYPE_MESSAGE)
       .first()
     if (allCount) {
-      if (allCount.unread_messages == 0) return 0
+      if (parseInt(allCount.unread_messages) === 0) return 0
       counts.push(parseInt(allCount.unread_messages))
     }
 
@@ -199,9 +199,10 @@ class ChatService {
         TASK_STATUS_DELETE,
       ])
       .where('estate_current_tenants.status', STATUS_ACTIVE)
-    if (role == ROLE_LANDLORD) {
+    console.log(role, typeof role)
+    if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
-    } else if (role == ROLE_USER) {
+    } else if (role === ROLE_USER) {
       query.where('estate_current_tenants.user_id', userId)
     }
     taskEstates = await query.fetch()
