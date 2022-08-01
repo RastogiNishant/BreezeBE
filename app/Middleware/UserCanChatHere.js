@@ -59,8 +59,7 @@ class UserCanChatHere {
       currentTenant = await query.where('estates.user_id', user_id).first()
     } else {
       currentTenant = await query.first()
-      console.log(currentTenant.tenant_user_id, typeof currentTenant.tenant_user_id, typeof user_id)
-      if (currentTenant.tenant_user_id == user_id) {
+      if (currentTenant.tenant_user_id === user_id) {
         return currentTenant
       } else {
         return false
