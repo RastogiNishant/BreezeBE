@@ -16,9 +16,15 @@ class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
     this.taskId = request.task_id
+    this.tenant_user_id = request.tenant_user_id
+    this.estate_user_id = request.estate_user_id
   }
 
-  async onGetPreviousMessages({ lastId = 0 }) {
+  async onGetPreviousMessages(data) {
+    let lastId = 0
+    if (data && data.lastId) {
+      lastId = data.lastId
+    }
     const previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
     const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
     if (this.topic) {
@@ -81,6 +87,7 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
+    //FIXME: make slim controller
     let task
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
@@ -108,6 +115,13 @@ class TaskController extends BaseController {
       avatar: this.user.avatar,
     }
     message.topic = this.socket.topic
+    const recipientTopic =
+      this.user.role === ROLE_LANDLORD
+        ? `tenant:${this.tenant_user_id}`
+        : `landlord:${this.estate_user_id}`
+
+    //broadcast taskMessageReceived event to either tenant or landlord
+    this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
     super.onMessage(message)
   }
 }
