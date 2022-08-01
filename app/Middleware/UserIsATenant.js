@@ -37,7 +37,7 @@ class UserIsATenant {
         .where('user_id', auth.user.id)
         .where('status', STATUS_ACTIVE)
         .fetch()
-      if (!tenantEstates) {
+      if (tenantEstates.toJSON().length < 1) {
         throw new HttpException('Topic is only available to current tenants.')
       }
     } else {

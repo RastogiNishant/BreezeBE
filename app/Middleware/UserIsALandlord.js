@@ -33,6 +33,8 @@ class UserIsALandlord {
       if (auth.user.role !== ROLE_LANDLORD) {
         throw new HttpException('User needs to be a landlord to access this.')
       }
+    } else {
+      throw new HttpException('Topic not valid.')
     }
     await next()
   }
