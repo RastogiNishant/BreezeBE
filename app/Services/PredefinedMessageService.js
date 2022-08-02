@@ -1,6 +1,6 @@
 'use strict'
 
-const { STATUS_DELETE, STATUS_EXPIRE, CHAT_TYPE_MESSAGE } = require('../constants')
+const { STATUS_DELETE, STATUS_EXPIRE, CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE } = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
 const Chat = use('App/Models/Chat')
@@ -65,8 +65,7 @@ class PredefinedMessageService {
         task_id: task.id,
         sender_id: task.tenant_id,
         text: l.get(choice.text, lang),
-        is_bot_message:true,        
-        type: CHAT_TYPE_MESSAGE,
+        type: CHAT_TYPE_BOT_MESSAGE,
       },
       trx
     )
@@ -78,7 +77,6 @@ class PredefinedMessageService {
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
         text: l.get(choice.text, lang),
-        chat_id: tenantMessage.chat_id
       },
       trx
     )
@@ -110,8 +108,7 @@ class PredefinedMessageService {
         sender_id: task.tenant_id,
         text: answer,
         attachments,
-        type: CHAT_TYPE_MESSAGE,
-        is_bot_message:true,
+        type: CHAT_TYPE_BOT_MESSAGE,
       },
       trx
     )
@@ -122,7 +119,6 @@ class PredefinedMessageService {
         task_id: task.id,
         predefined_message_id: predefinedMessage.id,
         text: answer,
-        chat_id: tenantMessage.chat_id,
       },
       trx
     )

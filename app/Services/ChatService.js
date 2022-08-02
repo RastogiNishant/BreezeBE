@@ -8,14 +8,11 @@ const {
   CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   CHAT_EDIT_STATUS_EDITED,
   CHAT_EDIT_STATUS_DELETED,
+  CHAT_TYPE_BOT_MESSAGE,
 } = require('../constants')
 const { min, isBoolean } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const PredefinedAnswerService = use('App/Services/PredefinedAnswerService')
-const PredefinedMessageService = use('App/Services/PredefinedMessageService')
-const PredefinedMessageChoiceService = use('App/Services/PredefinedMessageChoiceService')
-const TaskService = use('App/Services/TaskService')
 
 class ChatService {
   static async markLastRead(userId, taskId) {
@@ -79,9 +76,9 @@ class ChatService {
         'chats.sender_id'
       )
       .where({
-        type: CHAT_TYPE_MESSAGE,
         task_id: taskId,
       })
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
       .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
@@ -98,7 +95,7 @@ class ChatService {
     const allCount = await Chat.query()
       .select(Database.raw(`count(*) as unread_messages`))
       .where('task_id', taskId)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .first()
 
     if (allCount) {
@@ -121,7 +118,7 @@ class ChatService {
         )
       )
       .where('task_id', taskId)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .first()
     if (unreadByMarker) {
       counts.push(parseInt(unreadByMarker.unread_messages))
@@ -134,7 +131,7 @@ class ChatService {
         '>',
         Database.raw(
           `(select created_at from chats
-            where "type"='${CHAT_TYPE_MESSAGE}'
+            where "type" in ( '${CHAT_TYPE_MESSAGE}', '${CHAT_TYPE_BOT_MESSAGE}' )
             and "sender_id"='${userId}'
             and task_id='${taskId}'
             order by created_at desc
@@ -142,7 +139,7 @@ class ChatService {
         )
       )
       .where('task_id', taskId)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .first()
     if (unreadByLastSent) {
       counts.push(parseInt(unreadByLastSent.unread_messages))
@@ -162,7 +159,7 @@ class ChatService {
   static async updateChatMessage({ id, message, attachments }, trx) {
     const query = Chat.query()
       .where('id', id)
-      .where('is_bot_message', false)
+      .where('type', CHAT_TYPE_MESSAGE)
       .update({
         text: message,
         attachments: JSON.stringify(attachments),
@@ -192,7 +189,7 @@ class ChatService {
       if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
         throw new AppException('Chat message not editable anymore.')
       }
-      await ChatService.updateChatMessage({id, message, attachments})
+      await ChatService.updateChatMessage({ id, message, attachments })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e)
