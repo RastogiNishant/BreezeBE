@@ -347,18 +347,20 @@ class EstateService {
    */
   static async removeEstate(id, user_id) {
     // TODO: remove indexes
-    await Estate.findByOrFail({ id, user_id })    
+    await Estate.findByOrFail({ id, user_id })
     const trx = await Database.beginTransaction()
-    try{
-
-      const estate = await Estate.query().where('id', id).update({ status: STATUS_DELETE }).transacting(trx)
+    try {
+      const estate = await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_DELETE })
+        .transacting(trx)
 
       const taskService = require('./TaskService')
       await taskService.deleteByEstateById(id, trx)
 
       await trx.commit()
       return estate
-    }catch(e) {
+    } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
     }
