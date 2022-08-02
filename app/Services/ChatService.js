@@ -174,6 +174,18 @@ class ChatService {
     return result
   }
 
+  /**
+   * This function doesn't have to be called from controller directly without checking permission
+   * @param {*} taskIds
+   * @param {*} trx
+   * @returns
+   */
+  static async removeChatsByTaskIds(taskIds, trx) {
+    return await Chat.query()
+      .whereIn('task_id', taskIds)
+      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+      .transacting(trx)
+  }
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)

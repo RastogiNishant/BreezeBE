@@ -219,6 +219,29 @@ class TaskService {
     return await query.update({ ...task })
   }
 
+  /**
+   *
+   * @param {*} estate_id
+   * This function is only used when removing estate
+   * can't be used controller directly without checking permission
+   */
+  static async deleteByEstateById(estate_id, trx) {
+    const chatService = require('./ChatService')
+    const PredefinedAnswerService = require('./PredefinedAnswerService')
+    const tasks = (await Task.query().select('id').where('estate_id', estate_id).fetch()).rows
+
+    if (tasks && tasks.length) {
+      const taskIds = tasks.map((task) => task.id)
+      await chatService.removeChatsByTaskIds(taskIds, trx)
+      await PredefinedAnswerService.deleteByTaskIds(taskIds, trx)
+    }
+
+    return await Task.query()
+      .where('estate_id', estate_id)
+      .update({ status: TASK_STATUS_DELETE })
+      .transacting(trx)
+  }
+
   static async delete({ id, user }, trx) {
     const task = await this.get(id)
     if (
