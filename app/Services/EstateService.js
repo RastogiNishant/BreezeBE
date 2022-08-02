@@ -11,6 +11,8 @@ const {
   groupBy,
   countBy,
   maxBy,
+  orderBy,
+  trim,
 } = require('lodash')
 const { props } = require('bluebird')
 const Database = use('Database')
@@ -1189,7 +1191,8 @@ class EstateService {
         'estates.city',
         'estates.coord_raw',
         'estates.property_id',
-        'estates.address'
+        'estates.address',
+        Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
     query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
@@ -1232,10 +1235,19 @@ class EstateService {
       query.whereIn('estates.id', [params.estate_id])
     }
 
+    if (params.search_txt && trim(params.search_txt) !== '') {
+      query.andWhere(function (sq) {
+        sq.orWhere('_ect.email', 'ilike', `%${params.search_txt}%`)
+        sq.orWhere('estates.property_id', 'ilike', `%${params.search_txt}%`)
+        sq.orWhere('estates.address', 'ilike', `%${params.search_txt}%`)
+      })
+    }
+
     const filter = new TaskFilters(params, query)
     query = filter.process()
 
     query.groupBy('estates.id')
+    query.orderBy('mosturgency', 'desc')
 
     let result = null
     if (limit === -1 || page === -1) {
@@ -1246,7 +1258,7 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    const estate = result.map((r) => {
+    let estate = result.map((r) => {
       const mostUrgency = maxBy(r[0].activeTasks, (re) => {
         return re.urgency
       })
@@ -1264,6 +1276,8 @@ class EstateService {
         },
       }
     })
+
+    estate = orderBy(estate, ['mosturgency'], ['desc'])
     return estate
   }
 
@@ -1294,6 +1308,14 @@ class EstateService {
       })
       .where('estates.user_id', user_id)
       .whereNot('estates.status', STATUS_DELETE)
+
+    if (params.search_txt && trim(params.search_txt) !== '') {
+      query.andWhere(function (sq) {
+        sq.orWhere('_ect.email', 'ilike', `%${params.search_txt}%`)
+        sq.orWhere('estates.property_id', 'ilike', `%${params.search_txt}%`)
+        sq.orWhere('estates.address', 'ilike', `%${params.search_txt}%`)
+      })
+    }
 
     const filter = new TaskFilters(params, query)
     query = filter.process()

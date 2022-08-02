@@ -108,6 +108,7 @@ class TaskFilter extends Base {
             ])
         )
         .nullable(),
+      search_txt: yup.string()  
     })
 }
 
