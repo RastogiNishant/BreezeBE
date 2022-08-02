@@ -1013,7 +1013,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/ids'        
       responses:
         '200' :
@@ -1027,7 +1026,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/ids'        
       responses:
         '200' :
@@ -1041,7 +1039,6 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: '#/definitions/estate_id'
         - $ref: '#/definitions/ids'        
       responses:
         '200' :

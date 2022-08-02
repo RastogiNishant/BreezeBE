@@ -50,12 +50,11 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToAppByEmail({ request, auth, response }) {
-    const { estate_id, ids } = request.all()
+    const { ids } = request.all()
 
     try {
       response.res(
         await EstateCurrentTenantService.inviteTenantToAppByEmail({
-          estate_id: estate_id,
           ids: ids,
           user_id: auth.user.id,
         })
@@ -66,11 +65,10 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToAppByLetter({ request, auth, response }) {
-    const { estate_id, ids } = request.all()
+    const { ids } = request.all()
     try {
       response.res(
         await EstateCurrentTenantService.getDynamicLinks({
-          estate_id: estate_id,
           ids: ids,
           user_id: auth.user.id,
         })
@@ -91,10 +89,9 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToAppBySMS({ request, auth, response }) {
-    const { estate_id, ids } = request.all()
+    const { ids } = request.all()
     try {
       const errorPhonNumbers = await EstateCurrentTenantService.inviteTenantToAppBySMS({
-        estate_id: estate_id,
         ids: ids,
         user_id: auth.user.id,
       })
