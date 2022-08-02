@@ -57,16 +57,14 @@ class EstateFilters extends Filter {
     'customNumFloor',
     'rooms_number',
   ]
-  globalSearchFields = ['property_id', 'address']
+  globalSearchFields = ['property_id', 'address', 'six_char_code']
 
   constructor(params, query) {
     super(params, query)
     if (isEmpty(params)) {
       return
     }
-    //this.globalSearchFields = ['property_id', 'address']
     this.processGlobals()
-    return
     Filter.paramToField = {
       customArea: 'area',
       customFloor: 'floor',
