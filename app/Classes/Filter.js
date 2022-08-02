@@ -15,6 +15,9 @@ class Filter {
     this.query = query
   }
 
+  /**
+   * to use processGlobals, set this.globalSearchFields on the child class
+   */
   processGlobals() {
     if (this.params.global && this.params.global.value) {
       const globalSearchFields = this.globalSearchFields
