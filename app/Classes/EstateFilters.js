@@ -74,8 +74,6 @@ class EstateFilters extends Filter {
           this.orWhere(Database.raw(`${field} ilike '%${params.global.value}%'`))
         })
       })
-      //if global, we don't need to continue... just process immediately
-      return
     }
 
     Filter.paramToField = {
