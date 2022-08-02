@@ -57,11 +57,24 @@ class EstateFilters extends Filter {
     'customNumFloor',
     'rooms_number',
   ]
+  //fields used in global search
+  static globalSearchFields = ['property_id', 'address']
 
   constructor(params, query) {
     super(params, query)
 
     if (isEmpty(params)) {
+      return
+    }
+
+    /* globals */
+    if (params.global && params.global.value) {
+      this.query.where(function () {
+        EstateFilters.globalSearchFields.map((field) => {
+          this.orWhere(Database.raw(`${field} ilike '%${params.global.value}%'`))
+        })
+      })
+      //if global, we don't need to continue... just process immediately
       return
     }
 
