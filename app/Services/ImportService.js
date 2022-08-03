@@ -242,6 +242,9 @@ class ImportService {
     if (!estate) {
       throw new HttpException('estate no exists')
     }
+    if (!estate_data.letting_type) {
+      estate_data.letting_type = LETTING_TYPE_NA
+    }
     estate_data.id = estate.id
     estate.fill(estate_data)
     await estate.save()
