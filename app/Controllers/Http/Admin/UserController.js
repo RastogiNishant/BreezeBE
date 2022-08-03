@@ -93,9 +93,9 @@ class UserController {
     let affectedRows = 0
     const trx = await Database.beginTransaction()
 
-    try {
-      switch (action) {
-        case 'activate':
+    switch (action) {
+      case 'activate':
+        try {
           affectedRows = await User.query()
             .whereIn('id', ids)
             .update(
@@ -109,8 +109,15 @@ class UserController {
             )
           NoticeService.verifyUserByAdmin(ids)
           await UserDeactivationSchedule.whereIn('user_id', ids).delete(trx)
-          break
-        case 'deactivate':
+          trx.commit()
+          return response.res({ affectedRows })
+        } catch (err) {
+          console.log(err.message)
+          trx.rollback()
+        }
+        break
+      case 'deactivate':
+        try {
           affectedRows = await User.query().whereIn('id', ids).update(
             {
               activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
@@ -120,8 +127,14 @@ class UserController {
             },
             trx
           )
-          break
-        case 'deactivate-in-2-days':
+          trx.commit()
+        } catch (err) {
+          console.log(err.message)
+          trx.rollback()
+        }
+        break
+      case 'deactivate-in-2-days':
+        try {
           await Promise.map(ids, async (id) => {
             const user = await User.query()
               .select('device_token')
@@ -200,20 +213,16 @@ class UserController {
                 }
               )
             }
-            return response.res(true)
-          }).catch((err) => {
-            await trx.rollback()
-            throw new HttpException(err.message, 400)
           })
-          break
-        case 'deactivate-by-date':
-          return response.res({ message: 'action not implemented yet.' })
-      }
-      await trx.commit()
-      return response.res({ affectedRows })
-    } catch (err) {
-      console.log(err)
-      await trx.rollback()
+          await trx.commit()
+          return response.res(true)
+        } catch (err) {
+          console.log(err)
+          await trx.rollback()
+        }
+        break
+      case 'deactivate-by-date':
+        return response.res({ message: 'action not implemented yet.' })
     }
   }
 
