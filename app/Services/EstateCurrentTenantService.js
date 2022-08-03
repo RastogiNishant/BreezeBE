@@ -242,11 +242,11 @@ class EstateCurrentTenantService {
 
   static async getOutsideTenantsByEstateId({ id, estate_id }) {
     return await EstateCurrentTenant.query()
-        .where('id', id)
-        .where('estate_id', estate_id)
-        .whereNot('status', STATUS_DELETE)
-        .whereNull('user_id')
-        .first()
+      .where('id', id)
+      .where('estate_id', estate_id)
+      .whereNot('status', STATUS_DELETE)
+      .whereNull('user_id')
+      .first()
   }
 
   static async getOutsideTenantByIds(ids) {
@@ -334,7 +334,7 @@ class EstateCurrentTenantService {
   static async acceptOutsideTenant({ data1, data2, password }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
-    const estateCurrentTenant = await this.getOutsideTenantsByEstateId({id, estate_id})
+    const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
