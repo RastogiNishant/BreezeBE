@@ -1,4 +1,4 @@
-const { isEmpty } = require('lodash')
+const { isEmpty, trim } = require('lodash')
 const Filter = require('./Filter')
 const {
   URGENCY_LOW,
@@ -43,6 +43,14 @@ class TaskFilters extends Filter {
     }
 
     this.matchFilter(['address', 'city', 'urgency', 'status'], params)
+
+    if (params.search_txt && trim(params.search_txt) !== '') {
+      query.andWhere(function (sq) {
+        sq.orWhere('_ect.email', 'ilike', `%${params.search_txt}%`)
+        sq.orWhere('estates.property_id', 'ilike', `%${params.search_txt}%`)
+        sq.orWhere('estates.address', 'ilike', `%${params.search_txt}%`)
+      })
+    }
   }
 }
 

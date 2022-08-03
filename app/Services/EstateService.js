@@ -12,7 +12,6 @@ const {
   countBy,
   maxBy,
   orderBy,
-  trim,
 } = require('lodash')
 const { props } = require('bluebird')
 const Database = use('Database')
@@ -1235,14 +1234,6 @@ class EstateService {
       query.whereIn('estates.id', [params.estate_id])
     }
 
-    if (params.search_txt && trim(params.search_txt) !== '') {
-      query.andWhere(function (sq) {
-        sq.orWhere('_ect.email', 'ilike', `%${params.search_txt}%`)
-        sq.orWhere('estates.property_id', 'ilike', `%${params.search_txt}%`)
-        sq.orWhere('estates.address', 'ilike', `%${params.search_txt}%`)
-      })
-    }
-
     const filter = new TaskFilters(params, query)
     query = filter.process()
 
@@ -1308,14 +1299,6 @@ class EstateService {
       })
       .where('estates.user_id', user_id)
       .whereNot('estates.status', STATUS_DELETE)
-
-    if (params.search_txt && trim(params.search_txt) !== '') {
-      query.andWhere(function (sq) {
-        sq.orWhere('_ect.email', 'ilike', `%${params.search_txt}%`)
-        sq.orWhere('estates.property_id', 'ilike', `%${params.search_txt}%`)
-        sq.orWhere('estates.address', 'ilike', `%${params.search_txt}%`)
-      })
-    }
 
     const filter = new TaskFilters(params, query)
     query = filter.process()
