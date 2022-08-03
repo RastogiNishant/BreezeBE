@@ -22,6 +22,7 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ROLE_USER,
+  LETTING_TYPE_NA,
 } = require('../constants')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -84,6 +85,9 @@ class ImportService {
         data.avail_duration = 144
         data.status = STATUS_DRAFT
         data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        if (!data.letting_type) {
+          data.letting_type = LETTING_TYPE_NA
+        }
         estate = await EstateService.createEstate({ data, userId }, true)
 
         let rooms = []
