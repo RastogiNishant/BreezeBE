@@ -200,10 +200,11 @@ class UserController {
                 }
               )
             }
+            return response.res(true)
           }).catch((err) => {
+            await trx.rollback()
             throw new HttpException(err.message, 400)
           })
-          return response.res(true)
           break
         case 'deactivate-by-date':
           return response.res({ message: 'action not implemented yet.' })

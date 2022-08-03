@@ -186,18 +186,25 @@ class QueueJobService {
   }
 
   static async deactivateLandlord(deactivationId, userId) {
+    const trx = await Database.beginTransaction()
     const deactivationSchedule = await UserDeactivationSchedule.query()
       .where('id', deactivationId)
       .where('user_id', userId)
       .first()
     if (deactivationSchedule) {
-      await User.query().where('id', userId).update({
-        activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-      })
-      await UserDeactivationSchedule.query()
-        .where('id', deactivationId)
-        .where('user_id', userId)
-        .delete()
+      try {
+        await User.query().where('id', userId).update({
+          activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+        })
+        await UserDeactivationSchedule.query()
+          .where('id', deactivationId)
+          .where('user_id', userId)
+          .delete(trx)
+        await trx.commit()
+      } catch (err) {
+        await trx.rollback()
+        console.log(err.message)
+      }
     } else {
       console.log(`deactivating ${deactivationId} is not valid anymore.`)
     }
