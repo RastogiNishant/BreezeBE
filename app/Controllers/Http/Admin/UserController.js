@@ -91,110 +91,129 @@ class UserController {
   async updateActivationStatus({ request, auth, response }) {
     const { ids, action, id } = request.all()
     let affectedRows = 0
-    switch (action) {
-      case 'activate':
-        affectedRows = await User.query()
-          .whereIn('id', ids)
-          .update({
-            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-            is_verified: true,
-            verified_by: auth.user.id,
-            verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-          })
-        NoticeService.verifyUserByAdmin(ids)
-        break
-      case 'deactivate':
-        affectedRows = await User.query().whereIn('id', ids).update({
-          activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-          is_verified: false,
-          verified_by: null,
-          verified_date: null,
-        })
-        break
-      case 'deactivate-in-2-days':
-        await Promise.map(ids, async (id) => {
-          const user = await User.query()
-            .select('device_token')
-            .select('lang')
-            .where('id', id)
-            .where('role', ROLE_LANDLORD)
-            .first()
-          if (!user) {
-            throw new AppException('Landlord not found.')
-          }
-          //check if this user is already on deactivation schedule
-          const scheduled = await UserDeactivationSchedule.query().where('user_id', id).first()
-          if (scheduled) {
-            throw new AppException(`Landlord ${id} is already booked for deactivation`)
-          }
-          //FIXME: tzOffset should be coming from header or body of request
-          const tzOffset = 2
-          let workingDaysAdded = 0
-          let deactivateDateTime
-          let daysAdded = 0
-          //calculate when the deactivation will occur.
-          do {
-            daysAdded++
-            deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
-            if (
-              !(
-                isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
-                includes(['Saturday', 'Sunday'], deactivateDateTime.format('dddd'))
-              )
-            ) {
-              workingDaysAdded++
-            }
-          } while (workingDaysAdded < 2)
+    const trx = await Database.beginTransaction()
 
-          let delay
-          if (DEACTIVATE_LANDLORD_AT_END_OF_DAY) {
-            deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDT23:59:59+02:00')
-            delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
-          } else {
-            deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
-            delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
-          }
-          const deactivationSchedule = await UserDeactivationSchedule.create({
-            user_id: id,
-            deactivate_schedule: deactivateDateTime,
-          })
-          QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
-          //save to notices table
-          await NoticeService.insertNotices([
-            {
-              user_id: id,
-              type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
-              data: {
-                deactivateDateTimeTz: deactivateDateTime,
-              },
-            },
-          ])
-          //send notification...
-          if (user.device_token) {
-            await NotificationsService.sendNotification(
-              [user.device_token],
-              NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
+    try {
+      switch (action) {
+        case 'activate':
+          affectedRows = await User.query()
+            .whereIn('id', ids)
+            .update(
               {
-                title: l.get(
-                  'landlord.notification.event.profile_deactivated_two_days',
-                  user.lang || DEFAULT_LANG
-                ),
-                body: l.get(
-                  'landlord.notification.event.profile_deactivated_two_days.next.message',
-                  user.lang || DEFAULT_LANG
-                ),
-              }
+                activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+                is_verified: true,
+                verified_by: auth.user.id,
+                verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+              },
+              trx
             )
-          }
-        }).catch((err) => {
-          throw new HttpException(err.message, 400)
-        })
-        return response.res(true)
-        break
-      case 'deactivate-by-date':
-        return response.res({ message: 'action not implemented yet.' })
+          NoticeService.verifyUserByAdmin(ids)
+          await UserDeactivationSchedule.whereIn('user_id', ids).delete(trx)
+          break
+        case 'deactivate':
+          affectedRows = await User.query().whereIn('id', ids).update(
+            {
+              activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+              is_verified: false,
+              verified_by: null,
+              verified_date: null,
+            },
+            trx
+          )
+          break
+        case 'deactivate-in-2-days':
+          await Promise.map(ids, async (id) => {
+            const user = await User.query()
+              .select('device_token')
+              .select('lang')
+              .where('id', id)
+              .where('role', ROLE_LANDLORD)
+              .first()
+            if (!user) {
+              throw new AppException('Landlord not found.')
+            }
+            //check if this user is already on deactivation schedule
+            const scheduled = await UserDeactivationSchedule.query().where('user_id', id).first()
+            if (scheduled) {
+              throw new AppException(`Landlord ${id} is already booked for deactivation`)
+            }
+            //FIXME: tzOffset should be coming from header or body of request
+            const tzOffset = 2
+            let workingDaysAdded = 0
+            let deactivateDateTime
+            let daysAdded = 0
+            //calculate when the deactivation will occur.
+            do {
+              daysAdded++
+              deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
+              if (
+                !(
+                  isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
+                  includes(['Saturday', 'Sunday'], deactivateDateTime.format('dddd'))
+                )
+              ) {
+                workingDaysAdded++
+              }
+            } while (workingDaysAdded < 2)
+
+            let delay
+            if (DEACTIVATE_LANDLORD_AT_END_OF_DAY) {
+              deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDT23:59:59+02:00')
+              delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
+            } else {
+              deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
+              delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
+            }
+            const deactivationSchedule = await UserDeactivationSchedule.create(
+              {
+                user_id: id,
+                deactivate_schedule: deactivateDateTime,
+              },
+              trx
+            )
+            QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
+            //save to notices table
+            //FIXME: move to NoticeService
+            await NoticeService.insertNotices([
+              {
+                user_id: id,
+                type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+                data: {
+                  deactivateDateTimeTz: deactivateDateTime,
+                },
+              },
+            ])
+            //send notification...
+            if (user.device_token) {
+              await NotificationsService.sendNotification(
+                [user.device_token],
+                NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
+                {
+                  title: l.get(
+                    'landlord.notification.event.profile_deactivated_two_days',
+                    user.lang || DEFAULT_LANG
+                  ),
+                  body: l.get(
+                    'landlord.notification.event.profile_deactivated_two_days.next.message',
+                    user.lang || DEFAULT_LANG
+                  ),
+                }
+              )
+            }
+          }).catch((err) => {
+            throw new HttpException(err.message, 400)
+          })
+          return response.res(true)
+          break
+        case 'deactivate-by-date':
+          return response.res({ message: 'action not implemented yet.' })
+      }
+      await trx.commit()
+      return response.res({ affectedRows })
+    } catch (err) {
+      console.log(err)
+      await trx.rollback()
     }
-    return response.res({ affectedRows })
   }
 
   async getLandlords({ request, response }) {
