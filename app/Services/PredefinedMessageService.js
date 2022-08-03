@@ -7,7 +7,6 @@ const Chat = use('App/Models/Chat')
 const PredefinedMessageChoice = use('App/Models/PredefinedMessageChoice')
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
 const l = use('Localize')
-
 const HttpException = require('../Exceptions/HttpException')
 
 class PredefinedMessageService {
@@ -116,7 +115,7 @@ class PredefinedMessageService {
         task_id: task.id,
         sender_id: task.tenant_id,
         text: answer,
-        attachments,
+        attachments: attachments?JSON.stringify(attachments):null,
         type: CHAT_TYPE_MESSAGE,
       },
       trx

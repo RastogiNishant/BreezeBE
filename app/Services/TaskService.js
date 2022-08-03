@@ -72,16 +72,16 @@ class TaskService {
   }
 
   static async init(user, data) {
-    const {
-      predefined_message_id,
-      predefined_message_choice_id,
-      estate_id,
-      task_id,
-      answer,
-      attachments,
-    } = data
+    const { predefined_message_id, predefined_message_choice_id, estate_id, task_id, answer } = data
+    let { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
+
+    attachments =
+      attachments &&
+      attachments.map((attachment) => {
+        return { user_id: user.id, uri: attachment }
+      })
 
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
@@ -182,7 +182,9 @@ class TaskService {
       }
 
       task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
+      delete task.attachments
       await task.save(trx)
+
       await trx.commit()
       return { task, messages }
     } catch (error) {
@@ -419,13 +421,17 @@ class TaskService {
       const pathJSON = path.map((p) => {
         return { user_id: user.id, uri: p }
       })
+
       task = {
         ...task.toJSON(),
         attachments: JSON.stringify((task.toJSON().attachments || []).concat(pathJSON)),
       }
-      return await Task.query()
+
+      await Task.query()
         .where('id', id)
         .update({ ...task })
+
+      return files
     }
     throw new HttpException('Image Not saved', 500)
   }

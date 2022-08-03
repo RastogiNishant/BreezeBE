@@ -168,7 +168,7 @@ class ChatService {
       .where('id', id)
       .update({
         text: message,
-        attachments: JSON.stringify(attachments),
+        attachments: attachments ? JSON.stringify(attachments) : null,
         edit_status: CHAT_EDIT_STATUS_EDITED,
       })
     return result
