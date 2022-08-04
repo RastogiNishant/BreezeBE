@@ -108,7 +108,7 @@ class UserController {
               trx
             )
           NoticeService.verifyUserByAdmin(ids)
-          await UserDeactivationSchedule.whereIn('user_id', ids).delete(trx)
+          await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
           return response.res({ affectedRows })
         } catch (err) {
