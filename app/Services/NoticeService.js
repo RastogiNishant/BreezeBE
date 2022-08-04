@@ -994,7 +994,7 @@ class NoticeService {
       ])
     }, [])
     await NoticeService.insertNotices(notices)
-    await NotificationsService.notifyDeactivatedLandlords(userIds)
+    await NotificationsService.notifyDeactivatedLandlords(notices)
   }
 }
 

@@ -769,26 +769,11 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, body)
   }
 
-  static async notifyDeactivatedLandlords(userIds) {
-    const users = await User.query().select('device_token', 'lang').whereIn('id', userIds).fetch()
-    await P.map(users.toJSON(), async (user) => {
-      if (user.device_token) {
-        await NotificationsService.sendNotification(
-          [user.device_token],
-          NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW,
-          {
-            title: l.get(
-              'landlord.notification.event.profile_deactivated_now',
-              user.lang || DEFAULT_LANG
-            ),
-            body: l.get(
-              'landlord.notification.event.profile_deactivated_now.next.message',
-              user.lang || DEFAULT_LANG
-            ),
-          }
-        )
-      }
-    })
+  static async notifyDeactivatedLandlords(notices) {
+    const title = 'landlord.notification.event.profile_deactivated_now'
+    const body = 'landlord.notification.event.profile_deactivated_now.next.message'
+
+    return NotificationsService.sendNotes(notices, title, body)
   }
 }
 

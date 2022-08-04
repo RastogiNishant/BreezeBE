@@ -80,6 +80,7 @@ class UserController {
   async updateActivationStatus({ request, auth, response }) {
     const { ids, action } = request.all()
     let affectedRows = 0
+    const trx = await Database.beginTransaction()
     switch (action) {
       case 'activate':
         affectedRows = await User.query()
@@ -93,12 +94,30 @@ class UserController {
         NoticeService.verifyUserByAdmin(ids)
         break
       case 'deactivate':
-        affectedRows = await User.query().whereIn('id', ids).update({
-          activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-          is_verified: false,
-          verified_by: null,
-          verified_date: null,
-        })
+        try {
+          affectedRows = await User.query().whereIn('id', ids).update(
+            {
+              activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+              is_verified: false,
+              verified_by: null,
+              verified_date: null,
+            },
+            trx
+          )
+          await Estate.query()
+            .whereIn('user_id', ids)
+            .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+            .update({ status: STATUS_DRAFT }, trx)
+
+          await NoticeService.landlordsDeactivated(ids)
+
+          return response.res({
+            affectedRows,
+          })
+        } catch (err) {
+          console.log(err.message)
+          throw new HttpException(err.message, 422)
+        }
         break
     }
     return response.res({ affectedRows })
