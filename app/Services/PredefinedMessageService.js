@@ -115,7 +115,7 @@ class PredefinedMessageService {
         task_id: task.id,
         sender_id: task.tenant_id,
         text: answer,
-        attachments: attachments?JSON.stringify(attachments):null,
+        attachments: attachments ? JSON.stringify(attachments) : null,
         type: CHAT_TYPE_MESSAGE,
       },
       trx

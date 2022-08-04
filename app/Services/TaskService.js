@@ -77,12 +77,6 @@ class TaskService {
 
     const lang = user.lang ?? DEFAULT_LANG
 
-    attachments =
-      attachments &&
-      attachments.map((attachment) => {
-        return { user_id: user.id, uri: attachment }
-      })
-
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
