@@ -5,7 +5,7 @@ const yup = require('yup')
 class UpdateUserValidationStatus {
   static schema = () =>
     yup.object().shape({
-      action: yup.string().oneOf(['activate', 'deactivate', 'deactivate-in-2-days']),
+      action: yup.string().oneOf(['activate', 'deactivate', 'deactivate-in-2-days']).required(),
       ids: yup.array().of(yup.number().integer()).required(),
     })
 }
