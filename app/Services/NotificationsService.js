@@ -131,8 +131,7 @@ const mapping = [
 
 class NotificationsService {
   static async sendRaw(tokens, options) {
-    console.log({ tokens, options })
-    //return Notifications.send(tokens, options)
+    return Notifications.send(tokens, options)
   }
 
   /**
@@ -772,7 +771,7 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, body)
   }
 
-  static async notifyFollowUpVisit(notice) {
+  static async sendFollowUpVisit(notice) {
     const title = 'notification.txt_are_you_coming_notifications.title'
     const body = (data, lang) => {
       return (

@@ -1001,7 +1001,7 @@ class NoticeService {
       image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
-    await NotificationsService.notifyFollowupVisit(notice)
+    await NotificationsService.sendFollowUpVisit(notice)
   }
 }
 
