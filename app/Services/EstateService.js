@@ -1194,7 +1194,7 @@ class EstateService {
         Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
-    query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+    query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
       if (params.only_outside_breeze) {
         this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
       }
@@ -1229,7 +1229,7 @@ class EstateService {
 
     query.where('estates.user_id', user.id)
     query.whereNot('estates.status', STATUS_DELETE)
-
+    query.where('estates.letting_type', LETTING_TYPE_LET)
     if (params.estate_id) {
       query.whereIn('estates.id', [params.estate_id])
     }
@@ -1280,7 +1280,7 @@ class EstateService {
           Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
-      .innerJoin({ _ect: 'estate_current_tenants' }, function () {
+      .leftJoin({ _ect: 'estate_current_tenants' }, function () {
         if (params.only_outside_breeze) {
           this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
         }
@@ -1298,6 +1298,7 @@ class EstateService {
         }
       })
       .where('estates.user_id', user_id)
+      .where('estates.letting_type', LETTING_TYPE_LET)
       .whereNot('estates.status', STATUS_DELETE)
 
     const filter = new TaskFilters(params, query)
