@@ -193,9 +193,12 @@ class QueueJobService {
       .first()
     if (deactivationSchedule) {
       try {
-        await User.query().where('id', userId).update({
-          activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-        })
+        await User.query().where('id', userId).update(
+          {
+            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+          },
+          trx
+        )
         await UserDeactivationSchedule.query()
           .where('id', deactivationId)
           .where('user_id', userId)
