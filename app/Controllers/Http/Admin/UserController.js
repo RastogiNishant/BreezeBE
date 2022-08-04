@@ -2,6 +2,7 @@
 
 const User = use('App/Models/User')
 const Database = use('Database')
+const Estate = use('App/Models/Estate')
 const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
@@ -16,6 +17,7 @@ const {
   STATUS_DELETE,
   STATUS_ACTIVE,
   STATUS_DRAFT,
+  STATUS_EXPIRE,
 } = require('../../../constants')
 
 class UserController {
@@ -108,9 +110,7 @@ class UserController {
             .whereIn('user_id', ids)
             .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
             .update({ status: STATUS_DRAFT }, trx)
-
           await NoticeService.landlordsDeactivated(ids)
-
           return response.res({
             affectedRows,
           })
