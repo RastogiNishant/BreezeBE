@@ -189,7 +189,8 @@ class UserController {
             await NoticeService.deactivatingLandlordInTwoDays(
               id,
               deactivateDateTime,
-              user.device_token
+              user.device_token,
+              user.lang
             )
           })
           await trx.commit()
