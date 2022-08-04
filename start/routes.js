@@ -703,7 +703,7 @@ Route.group(() => {
 
 Route.group(() => {
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
-  Route.post('/init', 'TaskController.init')
+  Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
   Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
   Route.put('/:id/addImage', 'TaskController.addImage').middleware(['valid:Id'])
