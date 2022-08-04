@@ -89,7 +89,7 @@ class UserController {
   }
 
   async updateActivationStatus({ request, auth, response }) {
-    const { ids, action, id } = request.all()
+    const { ids, action } = request.all()
     let affectedRows = 0
     const trx = await Database.beginTransaction()
 
@@ -114,8 +114,9 @@ class UserController {
         } catch (err) {
           console.log(err.message)
           await trx.rollback()
+          throw new HttpException(err.message, 422)
         }
-        break
+
       case 'deactivate':
         try {
           affectedRows = await User.query().whereIn('id', ids).update(
@@ -132,52 +133,50 @@ class UserController {
         } catch (err) {
           console.log(err.message)
           await trx.rollback()
+          throw new HttpException(err.message, 422)
         }
-        break
+
       case 'deactivate-in-2-days':
         try {
           await Promise.map(ids, async (id) => {
-            const user = await User.query()
-              .select('device_token')
-              .select('lang')
-              .where('id', id)
-              .where('role', ROLE_LANDLORD)
-              .first()
+            const user = await User.query().where('id', id).where('role', ROLE_LANDLORD).first()
             if (!user) {
-              throw new AppException('Landlord not found.')
+              throw new AppException('Landlord not found.', 400)
             }
             //check if this user is already on deactivation schedule
             const scheduled = await UserDeactivationSchedule.query().where('user_id', id).first()
             if (scheduled) {
-              throw new AppException(`Landlord ${id} is already booked for deactivation`)
+              throw new AppException(`Landlord ${id} is already booked for deactivation`, 400)
             }
-            //FIXME: tzOffset should be coming from header or body of request
-            const tzOffset = 2
-            let workingDaysAdded = 0
-            let deactivateDateTime
-            let daysAdded = 0
-            //calculate when the deactivation will occur.
-            do {
-              daysAdded++
-              deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
-              if (
-                !(
-                  isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
-                  includes(['Saturday', 'Sunday'], deactivateDateTime.format('dddd'))
-                )
-              ) {
-                workingDaysAdded++
-              }
-            } while (workingDaysAdded < 2)
+          })
+          //FIXME: tzOffset should be coming from header or body of request
+          const tzOffset = 2
+          let workingDaysAdded = 0
+          let deactivateDateTime
+          let daysAdded = 0
+          //calculate when the deactivation will occur.
+          do {
+            daysAdded++
+            deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
+            if (
+              !(
+                isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
+                includes(['Saturday', 'Sunday'], deactivateDateTime.format('dddd'))
+              )
+            ) {
+              workingDaysAdded++
+            }
+          } while (workingDaysAdded < 2)
 
-            let delay
-            if (DEACTIVATE_LANDLORD_AT_END_OF_DAY) {
-              deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDT23:59:59+02:00')
-              delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
-            } else {
-              deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
-              delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
-            }
+          let delay
+          if (DEACTIVATE_LANDLORD_AT_END_OF_DAY) {
+            deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDT23:59:59+02:00')
+            delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
+          } else {
+            deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
+            delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
+          }
+          await Promise.map(ids, async (id) => {
             const deactivationSchedule = await UserDeactivationSchedule.create(
               {
                 user_id: id,
@@ -186,23 +185,19 @@ class UserController {
               trx
             )
             QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
-            await NoticeService.deactivatingLandlordInTwoDays(
-              id,
-              deactivateDateTime,
-              user.device_token,
-              user.lang
-            )
           })
+          await NoticeService.deactivatingLandlordsInTwoDays(ids, deactivateDateTime)
           await trx.commit()
           return response.res(true)
         } catch (err) {
           console.log(err)
           await trx.rollback()
+          throw new HttpException(err.message, 422)
         }
-        break
       case 'deactivate-by-date':
         return response.res({ message: 'action not implemented yet.' })
     }
+    await trx.rollback()
     response.res(false)
   }
 
