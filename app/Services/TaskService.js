@@ -140,7 +140,7 @@ class TaskService {
       messages.push(landlordMessage.toJSON())
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
-        task.status = TASK_STATUS_INPROGRESS
+        task.status = TASK_STATUS_NEW
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE
