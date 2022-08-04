@@ -186,7 +186,11 @@ class UserController {
               trx
             )
             QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
-            NoticeService.deactivatingLandlordInTwoDays(id, deactivateDateTime, user.device_token)
+            await NoticeService.deactivatingLandlordInTwoDays(
+              id,
+              deactivateDateTime,
+              user.device_token
+            )
           })
           await trx.commit()
           return response.res(true)

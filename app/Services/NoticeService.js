@@ -982,6 +982,42 @@ class NoticeService {
       notification.body
     )
   }
+
+  static async deactivatingLandlordInTwoDays(
+    userId,
+    deactivateDateTime,
+    device_token = null,
+    lang = 'de'
+  ) {
+    //save to notices table
+    //FIXME: move to NoticeService
+    await NoticeService.insertNotices([
+      {
+        user_id: userId,
+        type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+        data: {
+          deactivateDateTimeTz: deactivateDateTime,
+        },
+      },
+    ])
+    //send notification...
+    if (device_token) {
+      await NotificationsService.sendNotification(
+        [device_token],
+        NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
+        {
+          title: l.get(
+            'landlord.notification.event.profile_deactivated_two_days',
+            lang || DEFAULT_LANG
+          ),
+          body: l.get(
+            'landlord.notification.event.profile_deactivated_two_days.next.message',
+            lang || DEFAULT_LANG
+          ),
+        }
+      )
+    }
+  }
 }
 
 module.exports = NoticeService
