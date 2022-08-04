@@ -109,11 +109,11 @@ class UserController {
             )
           NoticeService.verifyUserByAdmin(ids)
           await UserDeactivationSchedule.whereIn('user_id', ids).delete(trx)
-          trx.commit()
+          await trx.commit()
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
-          trx.rollback()
+          await trx.rollback()
         }
         break
       case 'deactivate':
@@ -127,10 +127,11 @@ class UserController {
             },
             trx
           )
-          trx.commit()
+          await trx.commit()
+          return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
-          trx.rollback()
+          await trx.rollback()
         }
         break
       case 'deactivate-in-2-days':
@@ -185,34 +186,7 @@ class UserController {
               trx
             )
             QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
-            //save to notices table
-            //FIXME: move to NoticeService
-            await NoticeService.insertNotices([
-              {
-                user_id: id,
-                type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
-                data: {
-                  deactivateDateTimeTz: deactivateDateTime,
-                },
-              },
-            ])
-            //send notification...
-            if (user.device_token) {
-              await NotificationsService.sendNotification(
-                [user.device_token],
-                NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
-                {
-                  title: l.get(
-                    'landlord.notification.event.profile_deactivated_two_days',
-                    user.lang || DEFAULT_LANG
-                  ),
-                  body: l.get(
-                    'landlord.notification.event.profile_deactivated_two_days.next.message',
-                    user.lang || DEFAULT_LANG
-                  ),
-                }
-              )
-            }
+            NoticeService.deactivatingLandlordInTwoDays(id, deactivateDateTime, user.device_token)
           })
           await trx.commit()
           return response.res(true)
@@ -224,6 +198,7 @@ class UserController {
       case 'deactivate-by-date':
         return response.res({ message: 'action not implemented yet.' })
     }
+    response.res(false)
   }
 
   async getLandlords({ request, response }) {
