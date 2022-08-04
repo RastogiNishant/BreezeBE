@@ -276,12 +276,11 @@ class NotificationsService {
       notices,
       (data, lang) => {
         const total = get(data, 'total', '10')
-        title = `${title}.message`
         return `${total}/${total} ${l.get(title, lang)}`
       },
       (data, lang) => {
         const address = capitalize(get(data, 'estate_address', ''))
-        return address + ' \n' + l.get(`${subBody}.message`, lang) + ` ${data.date}`
+        return address + ' \n' + l.get(subBody, lang) + ` ${data.date}`
       }
     )
   }
@@ -385,11 +384,11 @@ class NotificationsService {
    *
    */
   static async sendProspectNewMatch(notices) {
-    const title = l.get('prospect.notification.event.new_match.message')
+    const title = 'prospect.notification.event.new_match.message'
 
     return NotificationsService.sendNotes(
       notices,
-      (data, lang) => `${data.match_count} ${l.get(`${title}`, lang)}`,
+      (data, lang) => `${data.match_count} ${l.get(`${title}`, lang, data.match_count)}`,
       (data, lang) => {
         return l.get('prospect.notification.next.new_match.message', lang)
       }
@@ -449,7 +448,6 @@ class NotificationsService {
   }
 
   static async sendChangeVisitTimeLandlord(notice) {
-    const title = 'notification.event.visit_delay'
     return NotificationsService.sendNotes(
       notice,
       (data, lang) => {
@@ -512,7 +510,7 @@ class NotificationsService {
     return NotificationsService.sendNotes(
       notice,
       (data, lang) => {
-        return l.get('prospect.notification.event.cancelled_visit_by_landlord'), lang
+        return l.get('prospect.notification.event.cancelled_visit_by_landlord', lang)
       },
       (data, lang) => {
         return (
@@ -737,7 +735,7 @@ class NotificationsService {
   }
 
   static async sendLandlordMovedProspectToTop(notices) {
-    const title = 'prospect.notification.event.moved_to_top'
+    const title = 'prospect.notification.event.moved_to_top.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
