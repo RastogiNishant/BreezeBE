@@ -92,13 +92,13 @@ class TaskController extends BaseController {
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
       task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-      if (task.status == TASK_STATUS_INPROGRESS) {
+      if (task.status === TASK_STATUS_NEW) {
         //if in progress make it TASK_STATUS_NEW
-        await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_NEW })
+        await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
         if (this.topic) {
           //Broadcast to those listening to this channel...
           this.topic.broadcast('taskStatusUpdated', {
-            status: TASK_STATUS_NEW,
+            status: TASK_STATUS_INPROGRESS,
             topic: this.socket.topic,
           })
         }
