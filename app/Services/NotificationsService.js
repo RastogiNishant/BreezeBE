@@ -351,7 +351,6 @@ class NotificationsService {
       const data = get(v, '0.data', {})
       const typeId = get(v, '0.type')
       const image = get(v, '0.image')
-
       try {
         return NotificationsService.sendNotification(
           tokens,
@@ -763,6 +762,13 @@ class NotificationsService {
   }
 
   static async sendZendeskNotification(notices, title, body) {
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyDeactivatingLandlordsInTwoDays(notices) {
+    const title = 'landlord.notification.event.profile_deactivated_two_days'
+    const body = 'landlord.notification.event.profile_deactivated_two_days.next.message'
+
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
