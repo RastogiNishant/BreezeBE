@@ -3,13 +3,31 @@ const HttpException = require('../Exceptions/HttpException')
 const Database = use('Database')
 
 class Filter {
+  params
   query = null
   paramToField = null
   MappingInfo = null
   TableInfo = null
+  globalSearchFields = []
 
   constructor(params, query) {
+    this.params = params
     this.query = query
+  }
+
+  /**
+   * to use processGlobals, set this.globalSearchFields on the child class
+   */
+  processGlobals() {
+    if (this.params.global && this.params.global.value) {
+      const globalSearchFields = this.globalSearchFields
+      const value = this.params.global.value
+      this.query.where(function () {
+        globalSearchFields.map((field) => {
+          this.orWhere(Database.raw(`${field} ilike '%${value}%'`))
+        })
+      })
+    }
   }
 
   matchFilter = (possibleStringParams, params) => {

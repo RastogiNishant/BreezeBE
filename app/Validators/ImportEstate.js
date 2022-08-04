@@ -505,12 +505,8 @@ class ImportEstate extends Base {
           LETTING_STATUS_STRUCTURAL_VACANCY,
           LETTING_STATUS_FIRST_TIME_USE,
           LETTING_STATUS_VACANCY,
-        ])
-        .required('Letting status is required.'),
-      letting_type: yup
-        .number()
-        .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA])
-        .required('Letting status is required.'),
+        ]),
+      letting_type: yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]),
       family_size_max: yup.number().integer().min(1).max(100).nullable(),
       family_size_min: yup.number().integer(),
       apartment_status: yup
