@@ -2,6 +2,7 @@ const moment = require('moment')
 const Database = use('Database')
 const { DATE_FORMAT } = require('../constants')
 const Visit = use('App/Models/Visit')
+const AppException = use('App/Exceptions/AppException')
 
 class VisitService {
   /**
@@ -29,15 +30,22 @@ class VisitService {
   }
 
   static async incrementFollowup(estate_id, user_id, actor = 'landlord') {
+    const trx = await Database.beginTransaction()
     try {
       await Visit.query()
         .where('estate_id', estate_id)
         .where('user_id', user_id)
-        .update({
-          [`${actor}_followup_count`]: Database.raw(`${actor}_followup_count + 1`),
-        })
+        .update(
+          {
+            [`${actor}_followup_count`]: Database.raw(`${actor}_followup_count + 1`),
+          },
+          trx
+        )
+      await trx.commit()
     } catch (err) {
+      await trx.rollback()
       console.log(err.message)
+      throw new AppException(err.message)
     }
   }
 }
