@@ -6,7 +6,6 @@ const UserService = use('App/Services/UserService')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-const Event = use('Event')
 const { isArray, isEmpty, find, get } = require('lodash')
 const {
   ROLE_ADMIN,
@@ -94,7 +93,6 @@ class UserController {
         NoticeService.verifyUserByAdmin(ids)
         break
       case 'deactivate':
-        Event.fire('landlord::deactivate', ids)
         affectedRows = await User.query().whereIn('id', ids).update({
           activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
           is_verified: false,
