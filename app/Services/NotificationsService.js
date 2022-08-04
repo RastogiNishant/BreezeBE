@@ -131,7 +131,8 @@ const mapping = [
 
 class NotificationsService {
   static async sendRaw(tokens, options) {
-    return Notifications.send(tokens, options)
+    console.log({ tokens, options })
+    //return Notifications.send(tokens, options)
   }
 
   /**
@@ -769,6 +770,18 @@ class NotificationsService {
 
   static async sendZendeskNotification(notices, title, body) {
     return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyFollowUpVisit(notice) {
+    const title = 'notification.txt_are_you_coming_notifications.title'
+    const body = (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('notification.txt_are_you_coming_notifications.message', lang)
+      )
+    }
+    return NotificationsService.sendNotes([notice], title, body)
   }
 }
 

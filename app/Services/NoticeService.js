@@ -38,6 +38,8 @@ const {
   NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -61,6 +63,8 @@ const {
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -981,6 +985,23 @@ class NoticeService {
       notification.title,
       notification.body
     )
+  }
+
+  static async followupVisit(recipient, actor, estate) {
+    const notice = {
+      user_id: recipient,
+      type:
+        actor == 'landlord'
+          ? NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID
+          : NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
+      data: {
+        actor,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.notifyFollowupVisit(notice)
   }
 }
 

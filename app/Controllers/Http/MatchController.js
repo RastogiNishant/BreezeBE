@@ -41,8 +41,6 @@ const {
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
   VISIT_MAX_ALLOWED_FOLLOWUPS,
-  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT,
-  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
 } = require('../../constants')
 const NotificationsService = require('../../Services/NotificationsService')
 
@@ -368,6 +366,7 @@ class MatchController {
         recipient = user_id
         break
       case ROLE_USER:
+        //this is NOT needed yet atm. Placeholder for now.
         let visit = await Visit.query()
           .where('user_id', auth.user.id)
           .where('estate_id', estate_id)
@@ -387,30 +386,17 @@ class MatchController {
       throw new HttpException(
         `You have already exceeded the maximum of 
         ${VISIT_MAX_ALLOWED_FOLLOWUPS} followups.`,
-        404
+        422
       )
     }
-    const notice = {
-      user_id: userId,
-      type:
-        actor == 'landlord'
-          ? NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT
-          : NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
-      data: {
-        actor,
-        estate_address: estate.address,
-      },
-      image: File.getPublicUrl(estate.cover),
-    }
 
-    await NoticeService.insertNotices([notice])
-    //notify
-    const tokens = await UserService.getTokenWithLocale([recipient])
-    await NotificationsService.sendNotification(tokens, type, {
-      body: l(),
-    })
-    await VisitService.incrementFollowup(estate_id, user_id, actor)
-    return response.res(true)
+    try {
+      await NoticeService.followupVisit(recipient, actor, estate)
+      await VisitService.incrementFollowup(estate_id, user_id, actor)
+      return response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 422)
+    }
   }
 
   /**
