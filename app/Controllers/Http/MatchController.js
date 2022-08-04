@@ -42,7 +42,6 @@ const {
   LOG_TYPE_GOT_INVITE,
   VISIT_MAX_ALLOWED_FOLLOWUPS,
 } = require('../../constants')
-const NotificationsService = require('../../Services/NotificationsService')
 
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
