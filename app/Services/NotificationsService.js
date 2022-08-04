@@ -465,11 +465,6 @@ class NotificationsService {
     )
   }
 
-  static async sendFollowUpMessage(notice) {
-    const title = 'notification.txt_are_you_coming_notifications.title'
-    return NotificationsService.sendNotes()
-  }
-
   static async sendProspectArrived(notice) {
     return NotificationsService.sendNotes(
       notice,
