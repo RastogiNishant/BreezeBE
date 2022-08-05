@@ -99,6 +99,10 @@ class TaskService {
       throw new HttpException('Estate not found', 404)
     }
 
+    if (predefinedMessage.step === undefined || predefinedMessage.step === null) {
+      throw new HttpException('Predefined message has to provide step ')
+    }
+
     const trx = await Database.beginTransaction()
 
     try {
