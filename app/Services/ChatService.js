@@ -88,6 +88,7 @@ class ChatService {
         task_id: taskId,
       })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
       .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
@@ -104,51 +105,57 @@ class ChatService {
     const allCount = await Chat.query()
       .select(Database.raw(`count(*) as unread_messages`))
       .where('task_id', taskId)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
     if (allCount) {
       if (parseInt(allCount.unread_messages) === 0) return 0
       counts.push(parseInt(allCount.unread_messages))
     }
 
-    const lastReadMarkerDate = await Chat.query()
-      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .where('type', CHAT_TYPE_LAST_READ_MARKER)
+    const unreadByMarker = await Chat.query()
+      .select(Database.raw(`count(*) as unread_messages`))
+      .where(
+        'created_at',
+        '>',
+        Database.raw(
+          `(select created_at from chats
+            where "type"='${CHAT_TYPE_LAST_READ_MARKER}'
+            and task_id='${taskId}'
+            and sender_id='${userId}'
+            order by created_at desc
+            limit 1
+            )`
+        )
+      )
       .where('task_id', taskId)
-      .where('sender_id', userId)
-      .orderBy('created_at', 'desc')
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
-
-    if (lastReadMarkerDate) {
-      const unreadByMarker = await Chat.query()
-        .select(Database.raw(`count(*) as unread_messages`))
-        .where('created_at', '>', lastReadMarkerDate.created_at)
-        .where('task_id', taskId)
-        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
-        .first()
-      if (unreadByMarker) {
-        counts.push(parseInt(unreadByMarker.unread_messages))
-      }
+    if (unreadByMarker) {
+      counts.push(parseInt(unreadByMarker.unread_messages))
     }
 
-    const lastSentDate = await Chat.query()
-      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+    const unreadByLastSent = await Chat.query()
+      .select(Database.raw(`count(*) as unread_messages`))
+      .where(
+        'created_at',
+        '>',
+        Database.raw(
+          `(select created_at from chats
+            where "type" in ( '${CHAT_TYPE_MESSAGE}', '${CHAT_TYPE_BOT_MESSAGE}' )
+            and "sender_id"='${userId}'
+            and task_id='${taskId}'
+            order by created_at desc
+            limit 1)`
+        )
+      )
       .where('task_id', taskId)
-      .where('sender_id', userId)
-      .orderBy('created_at', 'desc')
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
-
-    if (lastSentDate) {
-      const unreadByLastSent = await Chat.query()
-        .select(Database.raw(`count(*) as unread_messages`))
-        .where('created_at', '>', lastSentDate.created_at)
-        .where('task_id', taskId)
-        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
-        .first()
-      if (unreadByLastSent) {
-        counts.push(parseInt(unreadByLastSent.unread_messages))
-      }
+    if (unreadByLastSent) {
+      counts.push(parseInt(unreadByLastSent.unread_messages))
     }
     const unreadMessagesCount = min(counts)
     return unreadMessagesCount
@@ -232,7 +239,9 @@ class ChatService {
   static async editMessage({ message, attachments, id }) {
     const trx = await Database.beginTransaction()
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const chat = await ChatService.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
+
       if (isBoolean(messageAge) && !messageAge) {
         throw new AppException('Chat message not found.')
       }
