@@ -79,6 +79,7 @@ class ChatService {
         task_id: taskId,
       })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
       .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
@@ -96,6 +97,7 @@ class ChatService {
       .select(Database.raw(`count(*) as unread_messages`))
       .where('task_id', taskId)
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
 
     if (allCount) {
@@ -119,6 +121,7 @@ class ChatService {
       )
       .where('task_id', taskId)
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
     if (unreadByMarker) {
       counts.push(parseInt(unreadByMarker.unread_messages))
@@ -140,6 +143,7 @@ class ChatService {
       )
       .where('task_id', taskId)
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
     if (unreadByLastSent) {
       counts.push(parseInt(unreadByLastSent.unread_messages))
