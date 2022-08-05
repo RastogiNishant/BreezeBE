@@ -4,7 +4,6 @@ const { get, trim } = require('lodash')
 const Request = require('../../app/Libs/Request')
 
 const ROOT_LOCALISATION_API = 'https://api.phrase.com/v2'
-
 class Localization {
   constructor(settings) {
     this.settings = settings
@@ -60,9 +59,13 @@ class Localization {
   /**
    *
    */
-  get(key, locale = this.locales[0]) {
+  get(key, locale = this.locales[0], count = null) {
     if (!locale) {
       locale = 'de'
+    }
+
+    if (count !== null) {
+      key += count > 0 ? (count > 1 ? '.other' : '.one') : '.zero'
     }
     return get(this._data, [locale, key, 'message'], key)
   }
