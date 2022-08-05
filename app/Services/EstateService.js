@@ -11,6 +11,7 @@ const {
   groupBy,
   countBy,
   maxBy,
+  orderBy,
 } = require('lodash')
 const { props } = require('bluebird')
 const Database = use('Database')
@@ -319,6 +320,7 @@ class EstateService {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
+      .with('files')
 
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
@@ -1189,10 +1191,11 @@ class EstateService {
         'estates.city',
         'estates.coord_raw',
         'estates.property_id',
-        'estates.address'
+        'estates.address',
+        Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
-    query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+    query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
       if (params.only_outside_breeze) {
         this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
       }
@@ -1227,7 +1230,7 @@ class EstateService {
 
     query.where('estates.user_id', user.id)
     query.whereNot('estates.status', STATUS_DELETE)
-
+    query.where('estates.letting_type', LETTING_TYPE_LET)
     if (params.estate_id) {
       query.whereIn('estates.id', [params.estate_id])
     }
@@ -1236,6 +1239,7 @@ class EstateService {
     query = filter.process()
 
     query.groupBy('estates.id')
+    query.orderBy('mosturgency', 'desc')
 
     let result = null
     if (limit === -1 || page === -1) {
@@ -1246,7 +1250,7 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    const estate = result.map((r) => {
+    let estate = result.map((r) => {
       const mostUrgency = maxBy(r[0].activeTasks, (re) => {
         return re.urgency
       })
@@ -1264,6 +1268,8 @@ class EstateService {
         },
       }
     })
+
+    estate = orderBy(estate, ['mosturgency'], ['desc'])
     return estate
   }
 
@@ -1275,7 +1281,7 @@ class EstateService {
           Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
-      .innerJoin({ _ect: 'estate_current_tenants' }, function () {
+      .leftJoin({ _ect: 'estate_current_tenants' }, function () {
         if (params.only_outside_breeze) {
           this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
         }
@@ -1293,6 +1299,7 @@ class EstateService {
         }
       })
       .where('estates.user_id', user_id)
+      .where('estates.letting_type', LETTING_TYPE_LET)
       .whereNot('estates.status', STATUS_DELETE)
 
     const filter = new TaskFilters(params, query)

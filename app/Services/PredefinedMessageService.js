@@ -7,7 +7,6 @@ const Chat = use('App/Models/Chat')
 const PredefinedMessageChoice = use('App/Models/PredefinedMessageChoice')
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
 const l = use('Localize')
-
 const HttpException = require('../Exceptions/HttpException')
 
 class PredefinedMessageService {
@@ -59,17 +58,6 @@ class PredefinedMessageService {
 
     if (!choice) throw new HttpException('Wrong choice selected')
 
-    // Create chat message from tenant's answer
-    const tenantMessage = await Chat.createItem(
-      {
-        task_id: task.id,
-        sender_id: task.tenant_id,
-        text: l.get(choice.text, lang),
-        type: CHAT_TYPE_BOT_MESSAGE,
-      },
-      trx
-    )
-
     // Create predefined message answer from tenant's answer
     await PredefinedMessageAnswer.createItem(
       {
@@ -77,6 +65,17 @@ class PredefinedMessageService {
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
         text: l.get(choice.text, lang),
+      },
+      trx
+    )
+
+    // Create chat message from tenant's answer
+    const tenantMessage = await Chat.createItem(
+      {
+        task_id: task.id,
+        sender_id: task.tenant_id,
+        text: l.get(choice.text, lang),
+        type: CHAT_TYPE_MESSAGE,
       },
       trx
     )
@@ -100,25 +99,24 @@ class PredefinedMessageService {
   }
 
   static async handleOpenEndedMessage({ task, predefinedMessage, answer, attachments }, trx) {
-
-    // Create chat message from tenant's answer
-    const tenantMessage = await Chat.createItem(
-      {
-        task_id: task.id,
-        sender_id: task.tenant_id,
-        text: answer,
-        attachments,
-        type: CHAT_TYPE_BOT_MESSAGE,
-      },
-      trx
-    )
-
     // Create predefined message answer from tenant's answer
     await PredefinedMessageAnswer.createItem(
       {
         task_id: task.id,
         predefined_message_id: predefinedMessage.id,
         text: answer,
+      },
+      trx
+    )
+
+    // Create chat message from tenant's answer
+    const tenantMessage = await Chat.createItem(
+      {
+        task_id: task.id,
+        sender_id: task.tenant_id,        
+        text: answer,
+        attachments: attachments ? JSON.stringify(attachments) : null,
+        type: CHAT_TYPE_MESSAGE,
       },
       trx
     )

@@ -11,6 +11,7 @@ const {
   PREDEFINED_MSG_OPEN_ENDED,
   CHAT_TYPE_BOT_MESSAGE,
   DEFAULT_LANG,
+  CHAT_TYPE_MESSAGE,
 } = require('../constants')
 
 const l = use('Localize')
@@ -72,14 +73,8 @@ class TaskService {
   }
 
   static async init(user, data) {
-    const {
-      predefined_message_id,
-      predefined_message_choice_id,
-      estate_id,
-      task_id,
-      answer,
-      attachments,
-    } = data
+    const { predefined_message_id, predefined_message_choice_id, estate_id, task_id, answer } = data
+    let { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
 
@@ -103,6 +98,10 @@ class TaskService {
 
     if (!estate) {
       throw new HttpException('Estate not found', 404)
+    }
+
+    if (predefinedMessage.step === undefined || predefinedMessage.step === null) {
+      throw new HttpException('Predefined message has to provide step ')
     }
 
     const trx = await Database.beginTransaction()
@@ -140,7 +139,7 @@ class TaskService {
       messages.push(landlordMessage.toJSON())
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
-        task.status = TASK_STATUS_INPROGRESS
+        task.status = TASK_STATUS_NEW
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE
@@ -182,12 +181,15 @@ class TaskService {
       }
 
       task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
+
+      task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
+
       await trx.commit()
       return { task, messages }
     } catch (error) {
       await trx.rollback()
-      throw error
+      throw new HttpException(error.message)
     }
   }
 
@@ -419,13 +421,17 @@ class TaskService {
       const pathJSON = path.map((p) => {
         return { user_id: user.id, uri: p }
       })
+
       task = {
         ...task.toJSON(),
         attachments: JSON.stringify((task.toJSON().attachments || []).concat(pathJSON)),
       }
-      return await Task.query()
+
+      await Task.query()
         .where('id', id)
         .update({ ...task })
+
+      return files
     }
     throw new HttpException('Image Not saved', 500)
   }

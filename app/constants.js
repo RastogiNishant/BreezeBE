@@ -348,6 +348,7 @@ const constants = {
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
   DAY_FORMAT: 'YYYY-MM-DD',
+  ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -533,6 +534,8 @@ const constants = {
     'energy_proof',
     'energy_proof_original_file',
     'isoline',
+    'is_new_tenant_transfer',
+    'transfer_budget'
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
