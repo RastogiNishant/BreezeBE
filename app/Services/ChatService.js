@@ -154,7 +154,7 @@ class ChatService {
 
   static async getChatMessageAge(id) {
     let ret = await Chat.query()
-      .select('*', Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
       .where('id', id)
       .first()
     return ret
@@ -186,7 +186,9 @@ class ChatService {
   static async editMessage({ message, attachments, id }) {
     const trx = await Database.beginTransaction()
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const chat = await ChatService.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
+
       if (isBoolean(messageAge) && !messageAge) {
         throw new AppException('Chat message not found.')
       }
