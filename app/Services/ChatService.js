@@ -150,7 +150,7 @@ class ChatService {
 
   static async getChatMessageAge(id) {
     let ret = await Chat.query()
-      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .select('*', Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
       .where('id', id)
       .first()
     return ret
