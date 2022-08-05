@@ -176,14 +176,15 @@ class TaskService {
       }
 
       task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
-      delete task.attachments
+
+      task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
 
       await trx.commit()
       return { task, messages }
     } catch (error) {
       await trx.rollback()
-      throw error
+      throw new HttpException(error.message)
     }
   }
 
