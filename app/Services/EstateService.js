@@ -318,6 +318,7 @@ class EstateService {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
+      .with('files')
 
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
