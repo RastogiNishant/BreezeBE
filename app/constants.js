@@ -402,6 +402,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
+  NOTICE_TYPE_LANDLORD_SEND_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
+  NOTICE_TYPE_TENANT_SEND_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -439,6 +441,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID: 43,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID: 44,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -535,7 +539,7 @@ const constants = {
     'energy_proof_original_file',
     'isoline',
     'is_new_tenant_transfer',
-    'transfer_budget'
+    'transfer_budget',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

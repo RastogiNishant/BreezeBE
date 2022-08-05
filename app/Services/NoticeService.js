@@ -82,7 +82,11 @@ const {
   MATCH_STATUS_FINISH,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   DEFAULT_LANG,
+  ROLE_ADMIN,
+  ROLE_LANDLORD,
 } = require('../constants')
 
 class NoticeService {
@@ -981,6 +985,29 @@ class NoticeService {
       notification.title,
       notification.body
     )
+  }
+
+  async notifyTaskMessageSent(recipient_id, estate_id, task_id, myRole) {
+    let title = 'landlord.notification.event.message_got'
+    let type = NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID
+    if (myRole == ROLE_USER) {
+      title = 'tenant.notification.event.message_got'
+      type = NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID
+    }
+
+    const notice = {
+      user_id: recipient_id,
+      type,
+      data: {
+        estate_id,
+        task_id,
+      },
+    }
+    await NoticeService.insertNotices([notice])
+    //await NotificationsService.s
+    /*landlord.notification.event.message_got
+    estate_address \n + tenant.notification.next.message_got.message
+    estate_address \n + landlord.notification.next.message_got.message*/
   }
 }
 
