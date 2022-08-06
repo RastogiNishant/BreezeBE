@@ -773,6 +773,12 @@ class NotificationsService {
     const title = 'landlord.notification.event.profile_deactivated_now'
     const body = 'landlord.notification.event.profile_deactivated_now.next.message'
 
+    //return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyProspectThatLandlordDeactivated(notices) {
+    const title = ''
+    const body = (data, lang) => {}
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

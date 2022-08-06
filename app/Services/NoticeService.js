@@ -7,6 +7,7 @@ const File = use('App/Classes/File')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const User = use('App/Models/User')
+const Match = use('App/Models/Match')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
 const NotificationsService = use('App/Services/NotificationsService')
@@ -84,6 +85,8 @@ const {
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   DEFAULT_LANG,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
+  NOTICE_TYPE_PROSPECT_LANDLORD_DEACTIVATED_ID,
+  STATUS_EXPIRE,
 } = require('../constants')
 
 class NoticeService {
@@ -995,6 +998,30 @@ class NoticeService {
     }, [])
     await NoticeService.insertNotices(notices)
     await NotificationsService.notifyDeactivatedLandlords(notices)
+
+    const estateMatches = await Estate.query()
+      .select(Database.raw(`estates.id as estate_id`))
+      .select('estates.address')
+      .select(Database.raw(`matches.user_id as recipient_id`))
+      .whereIn('estates.user_id', userIds)
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .innerJoin('matches', 'estates.id', 'matches.estate_id')
+      .fetch()
+    const prospectNotices = await estateMatches.toJSON().reduce((notices, match) => {
+      return (notices = [
+        ...notices,
+        {
+          user_id: match.recipient_id,
+          type: NOTICE_TYPE_PROSPECT_LANDLORD_DEACTIVATED_ID,
+          data: {
+            estate_id: match.estate_id,
+            estate_address: match.address,
+          },
+        },
+      ])
+    }, [])
+    await NoticeService.insertNotices(prospectNotices)
+    await NotificationsService.notifyProspectThatLandlordDeactivated(prospectNotices)
   }
 }
 

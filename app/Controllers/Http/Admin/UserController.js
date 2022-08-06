@@ -106,11 +106,11 @@ class UserController {
             },
             trx
           )
+          await NoticeService.landlordsDeactivated(ids)
           await Estate.query()
             .whereIn('user_id', ids)
             .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
             .update({ status: STATUS_DRAFT }, trx)
-          await NoticeService.landlordsDeactivated(ids)
           return response.res({
             affectedRows,
           })
