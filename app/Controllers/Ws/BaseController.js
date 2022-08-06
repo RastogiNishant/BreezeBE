@@ -169,7 +169,6 @@ class BaseController {
       )
       return items
     } catch (e) {
-      console.log(e.message, 500)
       return null
     }
   }
