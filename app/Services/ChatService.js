@@ -56,7 +56,7 @@ class ChatService {
       data.text = message
     }
     if (message.attachments) {
-      data.attachments = message.attachments
+      data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
     }
     data.task_id = taskId
     data.sender_id = userId
