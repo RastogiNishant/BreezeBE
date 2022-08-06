@@ -441,6 +441,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 43,
+  NOTICE_TYPE_PROSPECT_LANDLORD_DEACTIVATED_ID: 44,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -537,7 +538,7 @@ const constants = {
     'energy_proof_original_file',
     'isoline',
     'is_new_tenant_transfer',
-    'transfer_budget'
+    'transfer_budget',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
