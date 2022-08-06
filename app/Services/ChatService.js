@@ -56,7 +56,7 @@ class ChatService {
       data.text = message
     }
     if (message.attachments) {
-      data.attachments = message.attachments
+      data.attachments = JSON.stringify(message.attachments)
     }
     data.task_id = taskId
     data.sender_id = userId
@@ -177,7 +177,7 @@ class ChatService {
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)
-      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+      .update({ edit_status: CHAT_EDIT_STATUS_DELETED })
     return result
   }
 
