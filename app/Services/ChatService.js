@@ -16,7 +16,7 @@ const {
   ROLE_USER,
   ISO_DATE_FORMAT,
 } = require('../constants')
-const { min } = require('lodash')
+const { min, isArray } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
 
@@ -56,7 +56,7 @@ class ChatService {
       data.text = message
     }
     if (message.attachments) {
-      data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
+      data.attachments = JSON.stringify(message.attachments)
     }
     data.task_id = taskId
     data.sender_id = userId
