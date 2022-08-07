@@ -73,6 +73,7 @@ class TaskController {
 
   async getEstateTasks({ request, auth, response }) {
     const params = request.post()
+    delete params.global
     const { id } = request.all()
     let estate = await EstateService.getEstateWithTenant(id, auth.user.id)
 
