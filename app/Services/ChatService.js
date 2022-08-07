@@ -19,6 +19,7 @@ const {
 const { min, isArray } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
+const HttpException = use('App/Exceptions/HttpException')
 
 class ChatService {
   static async markLastRead(userId, taskId) {
@@ -57,7 +58,7 @@ class ChatService {
     }
 
     if (message.attachments && !isArray(message.attachments)) {
-      throw new Error('Attachments must be an array')
+      throw new HttpException('Attachments must be an array', 400)
     }
 
     data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
