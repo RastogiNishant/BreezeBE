@@ -1196,21 +1196,7 @@ class EstateService {
       )
 
     query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
-      if (params.only_outside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
-      }
-
-      if (params.only_inside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
-      }
-
-      if (params.tenant_id) {
-        this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
-      }
-
-      if (!params.only_outside_breeze && !params.only_inside_breeze) {
-        this.on('_ect.estate_id', 'estates.id')
-      }
+      this.on('_ect.estate_id', 'estates.id')
     })
 
     query.leftJoin({ _u: 'users' }, function (m) {
@@ -1236,9 +1222,11 @@ class EstateService {
     }
 
     const filter = new TaskFilters(params, query)
-    query = filter.process()
 
     query.groupBy('estates.id')
+
+    filter.afterQuery()
+
     query.orderBy('mosturgency', 'desc')
 
     let result = null
@@ -1303,8 +1291,9 @@ class EstateService {
       .whereNot('estates.status', STATUS_DELETE)
 
     const filter = new TaskFilters(params, query)
-    query = filter.process()
     query.groupBy('estates.id')
+    filter.afterQuery()
+
     return await query
   }
 

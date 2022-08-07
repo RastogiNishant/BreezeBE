@@ -1,6 +1,8 @@
 const { toLower, isArray, isNull } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 const Database = use('Database')
+const moment = require('moment')
+const { DAY_FORMAT } = require('../constants')
 
 class Filter {
   params
@@ -77,7 +79,7 @@ class Filter {
 
   matchCountFilter = (possibleStringParams, params) => {
     possibleStringParams.forEach((param) => {
-      if (params[param]) {
+      if (typeof params[param] === 'number') {
         if (params[param].operator && params[param].constraints.length > 0) {
           this.query.having(function () {
             if (toLower(params[param].operator) === 'or') {
@@ -144,15 +146,15 @@ class Filter {
   static parseCountMode(param, value, matchMode) {
     switch (matchMode) {
       case 'startsWith':
-        return `${param} > '${value}%'`
+        return `${param} > ${value}`
       case 'contains':
-        return `${param} = '%${value}%'`
+        return `${param} = ${value}`
       case 'notContains':
-        return `${param} <> '%${value}%'`
+        return `${param} <> ${value}`
       case 'endsWith':
-        return `${param} < '%${value}'`
+        return `${param} < ${value}`
       case 'equals':
-        return `${param} = '${value}'`
+        return `${param} = ${value}`
       case 'notEquals':
         return `${param} <> '${value}'`
       case 'lt':
@@ -169,27 +171,31 @@ class Filter {
 
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
+    if (new Date(value).toString() !== 'Invalid Date') {
+      value = moment.utc(value, 'MM/DD/YYYY').format(DAY_FORMAT)
+    }
+
     switch (matchMode) {
       case 'startsWith':
-        return `${param} ilike '${value}%'`
+        return `${field} ilike '${value}%'`
       case 'contains':
-        return `${param} ilike '%${value}%'`
+        return `${field} ilike '%${value}%'`
       case 'notContains':
-        return `${param} not ilike '%${value}%'`
+        return `${field} not ilike '%${value}%'`
       case 'endsWith':
-        return `${param} ilike '%${value}'`
+        return `${field} ilike '%${value}'`
       case 'equals':
-        return `${param} = '${value}'`
+        return `${field} = '${value}'`
       case 'notEquals':
-        return `${param} <> '${value}'`
+        return `${field} <> '${value}'`
       case 'lt':
-        return `${param} < '${value}'`
+        return `${field} < '${value}'`
       case 'lte':
-        return `${param} <= '${value}'`
+        return `${field} <= '${value}'`
       case 'gt':
-        return `${param} > '${value}'`
+        return `${field} > '${value}'`
       case 'gte':
-        return `${param} >= '${value}'`
+        return `${field} >= '${value}'`
     }
     return false
   }

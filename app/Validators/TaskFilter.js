@@ -31,6 +31,13 @@ const {
 class TaskFilter extends Base {
   static schema = () =>
     yup.object().shape({
+      global: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup.string(),
+        })
+        .nullable(),
       status: yup
         .object()
         .shape({
@@ -74,15 +81,24 @@ class TaskFilter extends Base {
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
-          constraints: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
         })
         .nullable(),
       active_task: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
-          constraints: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-          value: yup.number().nullable(),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.number().nullable(),
+            })
+          ),
         })
         .nullable(),
       tenant_id: yup.array().of(id).nullable(),
@@ -138,6 +154,16 @@ class TaskFilter extends Base {
           })
         ),
       }),
+      contract_end: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            value: yup.date().typeError('please enter a valid date').required(),
+          })
+        ),
+      }),
+
       archived_status: yup
         .array()
         .of(
@@ -152,7 +178,6 @@ class TaskFilter extends Base {
             ])
         )
         .nullable(),
-      search_txt: yup.string(),
     })
 }
 
