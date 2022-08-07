@@ -55,9 +55,12 @@ class ChatService {
     } else {
       data.text = message
     }
-    if (message.attachments && isArray(message.attachments)) {
-      data.attachments = JSON.stringify(message.attachments)
+
+    if (message.attachments && !isArray(message.attachments)) {
+      throw new Error('Attachments must be an array')
     }
+
+    data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
     data.task_id = taskId
     data.sender_id = userId
     data.type = CHAT_TYPE_MESSAGE
