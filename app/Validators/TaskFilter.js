@@ -21,6 +21,10 @@ const {
   URGENCY_NORMAL_LABEL,
   URGENCY_HIGH_LABEL,
   URGENCY_SUPER_LABEL,
+
+  INSIDE_BREEZE_LABEL,
+  OUTSIDE_BREEZE_LABEL,
+
   FILTER_CONSTRAINTS_MATCH_MODES,
 } = require('../constants')
 
@@ -66,9 +70,32 @@ class TaskFilter extends Base {
             .nullable(),
         })
         .nullable(),
+      property_id: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+        })
+        .nullable(),
+      active_task: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+          value: yup.number().nullable(),
+        })
+        .nullable(),
       tenant_id: yup.array().of(id).nullable(),
-      only_inside_breeze: yup.boolean(),
-      only_outside_breeze: yup.boolean(),
+      breeze_type: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup
+            .array()
+            .of(yup.string().oneOf([INSIDE_BREEZE_LABEL, OUTSIDE_BREEZE_LABEL]))
+            .nullable(),
+        })
+        .nullable(),
       city: yup
         .object()
         .shape({
@@ -81,7 +108,6 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
-
       address: yup
         .object()
         .shape({
@@ -94,6 +120,24 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
+      phone_number: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            value: yup.string().nullable(),
+          })
+        ),
+      }),
+      email: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            value: yup.string().nullable(),
+          })
+        ),
+      }),
       archived_status: yup
         .array()
         .of(
@@ -108,7 +152,7 @@ class TaskFilter extends Base {
             ])
         )
         .nullable(),
-      search_txt: yup.string()  
+      search_txt: yup.string(),
     })
 }
 

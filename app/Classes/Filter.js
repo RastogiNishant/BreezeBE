@@ -75,6 +75,46 @@ class Filter {
     })
   }
 
+  matchCountFilter = (possibleStringParams, params) => {
+    possibleStringParams.forEach((param) => {
+      if (params[param]) {
+        if (params[param].operator && params[param].constraints.length > 0) {
+          this.query.having(function () {
+            if (toLower(params[param].operator) === 'or') {
+              params[param].constraints.map((constraint) => {
+                if (!isNull(constraint.value)) {
+                  this.orWhere(
+                    Database.raw(
+                      Filter.parseCountMode(
+                        Filter.mapParamToField(param),
+                        constraint.value,
+                        constraint.matchMode
+                      )
+                    )
+                  )
+                }
+              })
+            } else if (toLower(params[param].operator) === 'and') {
+              params[param].constraints.map((constraint) => {
+                if (!isNull(constraint.value)) {
+                  this.andWhere(
+                    Database.raw(
+                      Filter.parseCountMode(
+                        Filter.mapParamToField(param),
+                        constraint.value,
+                        constraint.matchMode
+                      )
+                    )
+                  )
+                }
+              })
+            }
+          })
+        }
+      }
+    })
+  }
+
   getValues = (param, values) => {
     if (!isArray(values)) values = [values]
 
@@ -100,6 +140,33 @@ class Filter {
       ? `${Filter.TableInfo[param]}.${param}`
       : param
   }
+
+  static parseCountMode(param, value, matchMode) {
+    switch (matchMode) {
+      case 'startsWith':
+        return `${param} > '${value}%'`
+      case 'contains':
+        return `${param} = '%${value}%'`
+      case 'notContains':
+        return `${param} <> '%${value}%'`
+      case 'endsWith':
+        return `${param} < '%${value}'`
+      case 'equals':
+        return `${param} = '${value}'`
+      case 'notEquals':
+        return `${param} <> '${value}'`
+      case 'lt':
+        return `${param} < '${value}'`
+      case 'lte':
+        return `${param} <= '${value}'`
+      case 'gt':
+        return `${param} > '${value}'`
+      case 'gte':
+        return `${param} >= '${value}'`
+    }
+    return false
+  }
+
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
     switch (matchMode) {

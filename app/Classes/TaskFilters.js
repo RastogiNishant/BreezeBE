@@ -13,12 +13,15 @@ const {
 } = require('../constants')
 
 class TaskFilters extends Filter {
+  globalSearchFields = ['_ect.email', 'estates.property_id', 'estates.address']
   constructor(params, query) {
     super(params, query)
 
     if (isEmpty(params)) {
       return
     }
+
+    this.processGlobals()
 
     Filter.MappingInfo = {
       urgency: {
@@ -36,21 +39,25 @@ class TaskFilters extends Filter {
       },
     }
     Filter.TableInfo = {
+      property_id: 'estates',
       address: 'estates',
       city: 'estates',
       urgency: 'tasks',
       status: 'tasks',
+      email: '_ect',
+      phone_number: '_ect',
     }
 
-    this.matchFilter(['address', 'city', 'urgency', 'status'], params)
-
-    if (params.search_txt && trim(params.search_txt) !== '') {
-      query.andWhere(function (sq) {
-        sq.orWhere('_ect.email', 'ilike', `%${params.search_txt}%`)
-        sq.orWhere('estates.property_id', 'ilike', `%${params.search_txt}%`)
-        sq.orWhere('estates.address', 'ilike', `%${params.search_txt}%`)
-      })
+    Filter.paramToField = {
+      active_task: 'count(tasks)',
     }
+
+    this.matchFilter(
+      ['property_id', 'address', 'city', 'urgency', 'email', 'phone_number', 'status'],
+      params
+    )
+
+    this.matchCountFilter([active_task], params)
   }
 }
 
