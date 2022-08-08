@@ -22,10 +22,12 @@ const {
   URGENCY_HIGH_LABEL,
   URGENCY_SUPER_LABEL,
 
-  INSIDE_BREEZE_LABEL,
-  OUTSIDE_BREEZE_LABEL,
+  IS_INSIDE_BREEZE,
+  IS_OUTSIDE_BREEZE,
 
   FILTER_CONSTRAINTS_MATCH_MODES,
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES,
+  FILTER_CONSTRAINTS_COUNT_MATCH_MODES
 } = require('../constants')
 
 class TaskFilter extends Base {
@@ -95,21 +97,29 @@ class TaskFilter extends Base {
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
-              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES),
               value: yup.number().nullable(),
             })
           ),
         })
         .nullable(),
-      tenant_id: yup.array().of(id).nullable(),
+      tenant: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
       breeze_type: yup
         .object()
         .shape({
           matchMode: yup.string().nullable(),
-          value: yup
-            .array()
-            .of(yup.string().oneOf([INSIDE_BREEZE_LABEL, OUTSIDE_BREEZE_LABEL]))
-            .nullable(),
+          value: yup.boolean().nullable(),
         })
         .nullable(),
       city: yup
@@ -158,7 +168,7 @@ class TaskFilter extends Base {
         operator: yup.string().oneOf(['and', 'or']),
         constraints: yup.array().of(
           yup.object().shape({
-            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES),
             value: yup.date().typeError('please enter a valid date').required(),
           })
         ),

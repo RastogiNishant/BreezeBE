@@ -535,7 +535,7 @@ const constants = {
     'energy_proof_original_file',
     'isoline',
     'is_new_tenant_transfer',
-    'transfer_budget'
+    'transfer_budget',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -619,6 +619,9 @@ const constants = {
     'lte',
   ],
 
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES: ['dateIs', 'dateIsNot', 'dateBefore', 'dateAfter'],
+  FILTER_CONSTRAINTS_COUNT_MATCH_MODES: ['equals', 'notEquals', 'gt', 'lt', 'gte', 'lte'],
+
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
   PREDEFINED_MSG_OPEN_ENDED: 3,
@@ -675,9 +678,8 @@ const constants = {
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
-  INSIDE_BREEZE_LABEL: 'In',
-  OUTSIDE_BREEZE_LABEL: 'Out',
-
+  IS_INSIDE_BREEZE: true,
+  IS_OUTSIDE_BREEZE_LABEL: false,
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
   CHAT_EDIT_STATUS_EDITED: 'edited',

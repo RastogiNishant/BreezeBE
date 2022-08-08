@@ -1208,10 +1208,6 @@ class EstateService {
         TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
-
-      if (params.status) {
-        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-      }
     })
 
     query.where('estates.user_id', user.id)
@@ -1270,21 +1266,10 @@ class EstateService {
         )
       })
       .leftJoin({ _ect: 'estate_current_tenants' }, function () {
-        if (params.only_outside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
-        }
-
-        if (params.only_inside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
-        }
-
-        if (params.tenant_id) {
-          this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
-        }
-
-        if (!params.only_outside_breeze && !params.only_inside_breeze) {
-          this.on('_ect.estate_id', 'estates.id')
-        }
+        this.on('_ect.estate_id', 'estates.id')
+      })
+      .leftJoin({ _u: 'users' }, function (m) {
+        m.on('_ect.user_id', '_u.id')
       })
       .where('estates.user_id', user_id)
       .where('estates.letting_type', LETTING_TYPE_LET)

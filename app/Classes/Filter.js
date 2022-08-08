@@ -87,7 +87,7 @@ class Filter {
                 if (!isNull(constraint.value)) {
                   this.orWhere(
                     Database.raw(
-                      Filter.parseCountMode(
+                      Filter.parseMatchMode(
                         Filter.mapParamToField(param),
                         constraint.value,
                         constraint.matchMode
@@ -101,7 +101,7 @@ class Filter {
                 if (!isNull(constraint.value)) {
                   this.andWhere(
                     Database.raw(
-                      Filter.parseCountMode(
+                      Filter.parseMatchMode(
                         Filter.mapParamToField(param),
                         constraint.value,
                         constraint.matchMode
@@ -143,58 +143,86 @@ class Filter {
       : param
   }
 
-  static parseCountMode(param, value, matchMode) {
-    switch (matchMode) {
-      case 'startsWith':
-        return `${param} > ${value}`
-      case 'contains':
-        return `${param} = ${value}`
-      case 'notContains':
-        return `${param} <> ${value}`
-      case 'endsWith':
-        return `${param} < ${value}`
-      case 'equals':
-        return `${param} = ${value}`
-      case 'notEquals':
-        return `${param} <> '${value}'`
-      case 'lt':
-        return `${param} < '${value}'`
-      case 'lte':
-        return `${param} <= '${value}'`
-      case 'gt':
-        return `${param} > '${value}'`
-      case 'gte':
-        return `${param} >= '${value}'`
-    }
-    return false
-  }
-
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
     if (new Date(value).toString() !== 'Invalid Date') {
-      value = moment.utc(value, 'MM/DD/YYYY').format(DAY_FORMAT)
+      value = moment.utc(value, DAY_FORMAT).format(DAY_FORMAT)
     }
 
     switch (matchMode) {
       case 'startsWith':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} ilike '${value}%'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} ilike '${value}%'`
       case 'contains':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} ilike '%${value}%'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} ilike '%${value}%'`
       case 'notContains':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} not ilike '%${value}%'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} not ilike '%${value}%'`
       case 'endsWith':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} ilike '%${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} ilike '%${value}'`
       case 'equals':
+      case 'dateIs':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} = '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} = '${value}'`
       case 'notEquals':
+      case 'dateIsNot':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} <> '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} <> '${value}'`
       case 'lt':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} < '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} < '${value}'`
       case 'lte':
+      case 'dateBefore':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} <= '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} <= '${value}'`
       case 'gt':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} > '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} > '${value}'`
       case 'gte':
+      case 'dateAfter':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} >= '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
         return `${field} >= '${value}'`
     }
     return false
