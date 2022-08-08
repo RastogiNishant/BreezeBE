@@ -27,15 +27,17 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "example@email.com"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "example@email.com"
         status:
           properties:
             matchMode:
@@ -52,15 +54,17 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
-                  example: "startsWith"
-                value:
-                  type: number
-                  example: 5
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
+                    example: "startsWith"
+                  value:
+                    type: number
+                    example: 5
         urgency:
           properties:
             matchMode:
@@ -76,7 +80,8 @@ components:
               value: "in"
             value:
               type: boolean
-              example: true, false, null
+              example: true
+          description: nullable
         tenant:
           type: object
           properties:
@@ -85,27 +90,29 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum:
-                    [
-                      "startsWith",
-                      "contains",
-                      "notContains",
-                      "endsWith",
-                      "equals",
-                      "notEquals",
-                      "gt",
-                      "lt",
-                      "gte",
-                      "lte",
-                    ]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "Jhon"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum:
+                      [
+                        "startsWith",
+                        "contains",
+                        "notContains",
+                        "endsWith",
+                        "equals",
+                        "notEquals",
+                        "gt",
+                        "lt",
+                        "gte",
+                        "lte",
+                      ]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "Jhon"
           description: Only for used for getting all estates
         city:
           type: object
@@ -115,27 +122,29 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum:
-                    [
-                      "startsWith",
-                      "contains",
-                      "notContains",
-                      "endsWith",
-                      "equals",
-                      "notEquals",
-                      "gt",
-                      "lt",
-                      "gte",
-                      "lte",
-                    ]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "berlin"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum:
+                      [
+                        "startsWith",
+                        "contains",
+                        "notContains",
+                        "endsWith",
+                        "equals",
+                        "notEquals",
+                        "gt",
+                        "lt",
+                        "gte",
+                        "lte",
+                      ]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "berlin"
         address:
           type: object
           properties:
@@ -144,27 +153,29 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum:
-                    [
-                      "startsWith",
-                      "contains",
-                      "notContains",
-                      "endsWith",
-                      "equals",
-                      "notEquals",
-                      "gt",
-                      "lt",
-                      "gte",
-                      "lte",
-                    ]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "berlin"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum:
+                      [
+                        "startsWith",
+                        "contains",
+                        "notContains",
+                        "endsWith",
+                        "equals",
+                        "notEquals",
+                        "gt",
+                        "lt",
+                        "gte",
+                        "lte",
+                      ]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "berlin"
         phone_number:
           type: object
           properties:
@@ -173,27 +184,29 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum:
-                    [
-                      "startsWith",
-                      "contains",
-                      "notContains",
-                      "endsWith",
-                      "equals",
-                      "notEquals",
-                      "gt",
-                      "lt",
-                      "gte",
-                      "lte",
-                    ]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "19"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum:
+                      [
+                        "startsWith",
+                        "contains",
+                        "notContains",
+                        "endsWith",
+                        "equals",
+                        "notEquals",
+                        "gt",
+                        "lt",
+                        "gte",
+                        "lte",
+                      ]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "19"
         email:
           type: object
           properties:
@@ -202,27 +215,29 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum:
-                    [
-                      "startsWith",
-                      "contains",
-                      "notContains",
-                      "endsWith",
-                      "equals",
-                      "notEquals",
-                      "gt",
-                      "lt",
-                      "gte",
-                      "lte",
-                    ]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "example@email.com"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum:
+                      [
+                        "startsWith",
+                        "contains",
+                        "notContains",
+                        "endsWith",
+                        "equals",
+                        "notEquals",
+                        "gt",
+                        "lt",
+                        "gte",
+                        "lte",
+                      ]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "example@email.com"
         contract_end:
           type: object
           properties:
@@ -231,15 +246,17 @@ components:
               enum: ["or", "and"]
               example: "or"
             constraints:
-              type: object
-              properties:
-                matchMode:
-                  type: string
-                  enum: ["dateIs", "dateIsNot", "dateBefore", "dateAfter"]
-                  example: "startsWith"
-                value:
-                  type: string
-                  example: "example@email.com"
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum: ["dateIs", "dateIsNot", "dateBefore", "dateAfter"]
+                    example: "startsWith"
+                  value:
+                    type: string
+                    example: "example@email.com"
         archived_status:
           type: array
           items:
