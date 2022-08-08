@@ -679,7 +679,7 @@ const constants = {
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
   IS_INSIDE_BREEZE: true,
-  IS_OUTSIDE_BREEZE_LABEL: false,
+  IS_OUTSIDE_BREEZE: false,
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
   CHAT_EDIT_STATUS_EDITED: 'edited',
