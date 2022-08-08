@@ -104,6 +104,11 @@ class BaseController {
 
   async _saveToChats(message, taskId = null) {
     let chat = await ChatService.save(message, this.user.id, taskId)
+
+    if (chat.success === false) {
+      this.emitError(chat.message)
+    }
+
     return chat
   }
 
