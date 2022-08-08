@@ -59,7 +59,7 @@ class ChatService {
     if (message.attachments && !isArray(message.attachments)) {
       return {
         success: false,
-        message: 'Attachments must be an array'
+        message: 'Attachments must be an array',
       }
     }
 
@@ -71,7 +71,7 @@ class ChatService {
     return chat
   }
 
-  static async getPreviousMessages(taskId, lastId) {
+  static async getPreviousMessages({ task_id, lastId, user_id, page = -1, limit = -1 }) {
     const query = Chat.query()
       .select('chats.id as id')
       .select('text as message')
@@ -89,14 +89,29 @@ class ChatService {
       )
       .where({
         type: CHAT_TYPE_MESSAGE,
-        task_id: taskId,
+        task_id: task_id,
+      })
+      .andWhere(function () {
+        this.orWhere('sender_id', user_id)
+        this.orWhere('receiver_id', user_id)
       })
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
-      .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
+
+    if (page !== -1) {
+      query.offset(page - 1)
+    }
+
+    if (limit !== -1) {
+      query.limit(limit)
+    } else {
+      query.limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
+    }
+
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
+    console.log('Hey there wrong here?')
     let lastMessages = await query.fetch()
     return lastMessages
   }

@@ -27,7 +27,13 @@ class TaskController extends BaseController {
       lastId = data.lastId
     }
     const previousMessages = await this.getItemsWithAbsoluteUrl(
-      (await ChatService.getPreviousMessages(this.taskId, lastId)).rows
+      (
+        await ChatService.getPreviousMessages({
+          task_id: this.taskId,
+          lastId,
+          user_id: this.user.id,
+        })
+      ).rows
     )
 
     const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)

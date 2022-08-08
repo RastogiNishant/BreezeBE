@@ -1,7 +1,10 @@
 'use strict'
 
+const ChatService = use('App/Services/ChatService')
+const File = use('App/Classes/File')
+
 class ChatController {
-  async onGetPreviousMessages({ request, auth, response }) {
+  async getByTaskId({ request, auth, response }) {
     const data = request.all()
 
     let lastId = 0
@@ -9,27 +12,28 @@ class ChatController {
     if (data && data.lastId) {
       lastId = data.lastId
     }
+
     const previousMessages = await this.getItemsWithAbsoluteUrl(
       (
-        await ChatService.getPreviousMessages(this.taskId, lastId)
+        await ChatService.getPreviousMessages({
+          task_id: data.task_id,
+          lastId,
+          user_id: auth.user.id,
+          page: data.page,
+          limit: data.limit,
+        })
       ).rows
     )
 
-    const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
-    if (this.topic) {
-      this.topic.emitTo(
-        'previousMessages',
-        {
-          messages: previousMessages,
-          topic: this.socket.topic,
-          unread: unreadMessages,
-        },
-        [this.socket.id]
-      )
-    }
+    const unreadMessages = await ChatService.getUnreadMessagesCount(data.task_id, auth.user.id)
+
+    response.res({
+      messages: previousMessages,
+      unread: unreadMessages,
+    })
   }
 
-  static async getAbsoluteUrl(attachments) {
+  async getAbsoluteUrl(attachments) {
     if (!attachments || !attachments.length) {
       return null
     }
@@ -60,11 +64,10 @@ class ChatController {
 
     return attachments
   }
-  static async getItemsWithAbsoluteUrl(items) {
+  async getItemsWithAbsoluteUrl(items) {
     if (!items || !items.length) {
       return null
     }
-
     try {
       items = await Promise.all(
         (items = items.map(async (item) => {
