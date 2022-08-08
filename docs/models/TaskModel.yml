@@ -75,14 +75,37 @@ components:
               type: string
               value: "in"
             value:
-              type: [string]
-              example: ["In", "Out"]
-
-        tenant_id:
-          type: array
-          items:
-            type: number
-          example: [1, 2]
+              type: boolean
+              example: true, false, null
+        tenant:
+          type: object
+          properties:
+            operator:
+              type: string
+              enum: ["or", "and"]
+              example: "or"
+            constraints:
+              type: object
+              properties:
+                matchMode:
+                  type: string
+                  enum:
+                    [
+                      "startsWith",
+                      "contains",
+                      "notContains",
+                      "endsWith",
+                      "equals",
+                      "notEquals",
+                      "gt",
+                      "lt",
+                      "gte",
+                      "lte",
+                    ]
+                  example: "startsWith"
+                value:
+                  type: string
+                  example: "Jhon"
           description: Only for used for getting all estates
         city:
           type: object
@@ -212,7 +235,7 @@ components:
               properties:
                 matchMode:
                   type: string
-                  enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
+                  enum: ["dateIs", "dateIsNot", "dateBefore", "dateAfter"]
                   example: "startsWith"
                 value:
                   type: string
