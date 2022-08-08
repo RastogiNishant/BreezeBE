@@ -183,7 +183,7 @@ class ChatService {
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)
-      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+      .update({ edit_status: CHAT_EDIT_STATUS_DELETED })
     return result
   }
 
