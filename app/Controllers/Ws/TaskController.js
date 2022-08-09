@@ -29,14 +29,12 @@ class TaskController extends BaseController {
     }
     let previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
     previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
-    //const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',
         {
           messages: previousMessages,
           topic: this.socket.topic,
-          unread: unreadMessages,
         },
         [this.socket.id]
       )
