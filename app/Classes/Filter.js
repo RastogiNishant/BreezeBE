@@ -79,7 +79,7 @@ class Filter {
 
   matchCountFilter = (possibleStringParams, params) => {
     possibleStringParams.forEach((param) => {
-      if (typeof params[param] === 'number') {
+      if (params[param]) {
         if (params[param].operator && params[param].constraints.length > 0) {
           this.query.having(function () {
             if (toLower(params[param].operator) === 'or') {
@@ -145,7 +145,7 @@ class Filter {
 
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
-    if (new Date(value).toString() !== 'Invalid Date') {
+    if (typeof value !== 'number' && new Date(value).toString() !== 'Invalid Date') {
       value = moment.utc(value, DAY_FORMAT).format(DAY_FORMAT)
     }
 
