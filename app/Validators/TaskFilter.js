@@ -36,14 +36,14 @@ class TaskFilter extends Base {
       global: yup
         .object()
         .shape({
-          matchMode: yup.string().nullable(),
+          matchMode: yup.string(),
           value: yup.string().nullable(),
         })
         .nullable(),
       status: yup
         .object()
         .shape({
-          matchMode: yup.string().nullable(),
+          matchMode: yup.string(),
           value: yup
             .array()
             .of(
@@ -63,7 +63,7 @@ class TaskFilter extends Base {
       urgency: yup
         .object()
         .shape({
-          matchMode: yup.string().nullable(),
+          matchMode: yup.string(),
           value: yup
             .array()
             .of(
@@ -85,7 +85,7 @@ class TaskFilter extends Base {
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
-              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES).required(),
               value: yup.string().nullable(),
             })
           ),
@@ -97,8 +97,8 @@ class TaskFilter extends Base {
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
-              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES),
-              value: yup.number().nullable(),
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES).required(),
+              value: yup.number().min(0).nullable(),
             })
           ),
         })
@@ -109,7 +109,7 @@ class TaskFilter extends Base {
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
-              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES).required(),
               value: yup.string().nullable(),
             })
           ),
@@ -118,7 +118,7 @@ class TaskFilter extends Base {
       breeze_type: yup
         .object()
         .shape({
-          matchMode: yup.string().nullable(),
+          matchMode: yup.string(),
           value: yup.boolean().nullable(),
         })
         .nullable(),
@@ -128,7 +128,7 @@ class TaskFilter extends Base {
           operator: yup.string().oneOf(['and', 'or']),
           constraints: yup.array().of(
             yup.object().shape({
-              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES).required(),
               value: yup.string().nullable(),
             })
           ),
@@ -150,7 +150,7 @@ class TaskFilter extends Base {
         operator: yup.string().oneOf(['and', 'or']),
         constraints: yup.array().of(
           yup.object().shape({
-            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES).required(),
             value: yup.string().nullable(),
           })
         ),
@@ -159,7 +159,7 @@ class TaskFilter extends Base {
         operator: yup.string().oneOf(['and', 'or']),
         constraints: yup.array().of(
           yup.object().shape({
-            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES).required(),
             value: yup.string().nullable(),
           })
         ),
@@ -168,7 +168,7 @@ class TaskFilter extends Base {
         operator: yup.string().oneOf(['and', 'or']),
         constraints: yup.array().of(
           yup.object().shape({
-            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES),
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES).required(),
             value: yup.date().typeError('please enter a valid date').nullable(),
           })
         ),

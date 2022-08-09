@@ -145,8 +145,8 @@ class Filter {
 
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
-    if (typeof value !== 'number' && new Date(value).toString() !== 'Invalid Date') {
-      value = moment.utc(value, DAY_FORMAT).format(DAY_FORMAT)
+    if (moment.utc(value, DAY_FORMAT, true).format(DAY_FORMAT) !== 'Invalid date') {
+      value = moment.utc(value, DAY_FORMAT, true).format(DAY_FORMAT)
     }
 
     switch (matchMode) {
