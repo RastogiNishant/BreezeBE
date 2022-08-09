@@ -169,7 +169,7 @@ class TaskFilter extends Base {
         constraints: yup.array().of(
           yup.object().shape({
             matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES),
-            value: yup.date().typeError('please enter a valid date').required(),
+            value: yup.date().typeError('please enter a valid date').nullable(),
           })
         ),
       }),
