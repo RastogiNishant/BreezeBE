@@ -1,6 +1,6 @@
 'use strict'
 
-const { STATUS_DELETE, STATUS_EXPIRE, CHAT_TYPE_MESSAGE } = require('../constants')
+const { STATUS_DELETE, STATUS_EXPIRE, CHAT_TYPE_MESSAGE, STATUS_ACTIVE } = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
 const Chat = use('App/Models/Chat')
@@ -49,22 +49,25 @@ class PredefinedMessageService {
     { answer, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
-    let nextPredefinedMessage
+    let nextPredefinedMessage, choice
 
-    const choice = await PredefinedMessageChoice.query()
-      .where({ id: predefined_message_choice_id, predefined_message_id: predefinedMessage.id })
-      .whereNot({ status: STATUS_DELETE })
-      .first()
+    if (predefined_message_choice_id) {
+      choice = await PredefinedMessageChoice.query()
+        .where({ id: predefined_message_choice_id, predefined_message_id: predefinedMessage.id })
+        .whereNot({ status: STATUS_DELETE })
+        .first()
 
-    if (!choice) throw new HttpException('Wrong choice selected')
+      if (!choice) throw new HttpException('Wrong choice selected')
 
-    // Create predefined message answer from tenant's answer
+      // Create predefined message answer from tenant's answer
+    }
+
     await PredefinedMessageAnswer.createItem(
       {
         task_id: task.id,
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
-        text: l.get(choice.text, lang),
+        text: choice ? l.get(choice.text, lang) : answer,
       },
       trx
     )
@@ -74,14 +77,25 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: l.get(choice.text, lang),
+        text: choice ? l.get(choice.text, lang) : answer,
         type: CHAT_TYPE_MESSAGE,
       },
       trx
     )
 
     if (predefinedMessage.variable_to_update) {
-      task[predefinedMessage.variable_to_update] = choice.value || answer
+      task[predefinedMessage.variable_to_update] = choice?.value || answer
+    }
+
+    //if there is not choice, we need to find one to get next predefined message
+    if (!choice || !choice.next_predefined_message_id) {
+      choice = await PredefinedMessageChoice.query()
+        .where({
+          predefined_message_id: predefinedMessage.id,
+          status: STATUS_ACTIVE,
+        })
+        .whereNotNull('next_predefined_message_id')
+        .first()
     }
 
     // Find the next predefined message
