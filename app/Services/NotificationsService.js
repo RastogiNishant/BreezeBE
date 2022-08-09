@@ -765,6 +765,17 @@ class NotificationsService {
   static async sendZendeskNotification(notices, title, body) {
     return NotificationsService.sendNotes(notices, title, body)
   }
+
+  static async notifyTaskMessageSent(notice) {
+    const title = 'tenant.notification.event.message_got'
+    if (notice.type == NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID) {
+      title = 'landlord.notification.event.message_got'
+    }
+
+    const body = (data, lang) => {}
+
+    return NotificationsService.sendNotes([notice], title, body)
+  }
 }
 
 module.exports = NotificationsService

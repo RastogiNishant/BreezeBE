@@ -988,10 +988,8 @@ class NoticeService {
   }
 
   async notifyTaskMessageSent(recipient_id, estate_id, task_id, myRole) {
-    let title = 'landlord.notification.event.message_got'
     let type = NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID
     if (myRole == ROLE_USER) {
-      title = 'tenant.notification.event.message_got'
       type = NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID
     }
 
@@ -1004,10 +1002,7 @@ class NoticeService {
       },
     }
     await NoticeService.insertNotices([notice])
-    //await NotificationsService.s
-    /*landlord.notification.event.message_got
-    estate_address \n + tenant.notification.next.message_got.message
-    estate_address \n + landlord.notification.next.message_got.message*/
+    await NotificationsService.notifyTaskMessageSent(notice)
   }
 }
 
