@@ -11,6 +11,7 @@ const {
   PREDEFINED_MSG_OPEN_ENDED,
   CHAT_TYPE_MESSAGE,
   DEFAULT_LANG,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
 } = require('../constants')
 
 const l = use('Localize')
@@ -141,7 +142,8 @@ class TaskService {
         task.status = TASK_STATUS_NEW
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
-        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE
+        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
+        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE
       ) {
         const resp = await PredefinedMessageService.handleMessageWithChoice(
           {

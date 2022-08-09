@@ -1,6 +1,11 @@
 'use strict'
 
-const { STATUS_DELETE, STATUS_EXPIRE, CHAT_TYPE_MESSAGE, STATUS_ACTIVE } = require('../constants')
+const {
+  STATUS_DELETE,
+  CHAT_TYPE_MESSAGE,
+  STATUS_ACTIVE,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+} = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
 const Chat = use('App/Models/Chat')
@@ -87,22 +92,20 @@ class PredefinedMessageService {
       task[predefinedMessage.variable_to_update] = choice?.value || answer
     }
 
-    //if there is not choice, we need to find one to get next predefined message
-    if (!choice || !choice.next_predefined_message_id) {
-      choice = await PredefinedMessageChoice.query()
-        .where({
-          predefined_message_id: predefinedMessage.id,
-          status: STATUS_ACTIVE,
-        })
-        .whereNotNull('next_predefined_message_id')
-        .first()
-    }
-
     // Find the next predefined message
-    if (choice.next_predefined_message_id) {
+    if (choice && choice.next_predefined_message_id) {
       nextPredefinedMessage = await PredefinedMessage.query()
         .where('id', choice.next_predefined_message_id)
         .firstOrFail()
+    } else {
+      //if there is not choice, we need to find one to get next predefined message
+      nextPredefinedMessage = await PredefinedMessage.query()
+        .where({
+          step: predefinedMessage.step + 1,
+          type: PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+          status: STATUS_ACTIVE,
+        })
+        .first()
     }
 
     return {
