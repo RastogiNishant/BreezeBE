@@ -33,7 +33,7 @@ class TaskFilters extends Filter {
         low: URGENCY_LOW,
         normal: URGENCY_NORMAL,
         high: URGENCY_HIGH,
-        super: URGENCY_SUPER,
+        urgent: URGENCY_SUPER,
       },
       status: {
         new: TASK_STATUS_NEW,

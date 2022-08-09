@@ -1257,7 +1257,7 @@ class EstateService {
     return estate
   }
 
-  static async getTotalLetCount(user_id, params) {
+  static async getTotalLetCount(user_id, params, filtering = true) {
     let query = Estate.query()
       .count('estates.*')
       .leftJoin('tasks', function () {
@@ -1275,6 +1275,10 @@ class EstateService {
       .where('estates.letting_type', LETTING_TYPE_LET)
       .whereNot('estates.status', STATUS_DELETE)
 
+    if (!filtering) {
+      query.groupBy('estates.id')
+      return await query
+    }
     const filter = new TaskFilters(params, query)
     query.groupBy('estates.id')
     filter.afterQuery()

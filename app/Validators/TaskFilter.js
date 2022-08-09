@@ -27,7 +27,7 @@ const {
 
   FILTER_CONSTRAINTS_MATCH_MODES,
   FILTER_CONSTRAINTS_DATE_MATCH_MODES,
-  FILTER_CONSTRAINTS_COUNT_MATCH_MODES
+  FILTER_CONSTRAINTS_COUNT_MATCH_MODES,
 } = require('../constants')
 
 class TaskFilter extends Base {
@@ -37,7 +37,7 @@ class TaskFilter extends Base {
         .object()
         .shape({
           matchMode: yup.string().nullable(),
-          value: yup.string(),
+          value: yup.string().nullable(),
         })
         .nullable(),
       status: yup
