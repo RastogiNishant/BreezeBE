@@ -8,7 +8,7 @@ const {
   CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   CHAT_EDIT_STATUS_EDITED,
   CHAT_EDIT_STATUS_DELETED,
-  CHAT_TYPE_BOT_MESSAGE,  
+  CHAT_TYPE_BOT_MESSAGE,
   STATUS_ACTIVE,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
@@ -16,7 +16,6 @@ const {
   TASK_STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
-  ISO_DATE_FORMAT,  
 } = require('../constants')
 const { min, isBoolean } = require('lodash')
 const Task = use('App/Models/Task')
@@ -172,7 +171,8 @@ class ChatService {
   static async updateChatMessage({ id, message, attachments }, trx) {
     const query = Chat.query()
       .where('id', id)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .update({
         text: message,
         attachments: attachments ? JSON.stringify(attachments) : null,
