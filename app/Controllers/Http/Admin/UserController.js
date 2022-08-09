@@ -106,16 +106,20 @@ class UserController {
             },
             trx
           )
+          //send notifications
           await NoticeService.landlordsDeactivated(ids)
+          //make owned estates draft
           await Estate.query()
             .whereIn('user_id', ids)
             .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
             .update({ status: STATUS_DRAFT }, trx)
+          await trx.commit()
           return response.res({
             affectedRows,
           })
         } catch (err) {
           console.log(err.message)
+          await trx.rollback()
           throw new HttpException(err.message, 422)
         }
         break
