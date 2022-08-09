@@ -987,19 +987,26 @@ class NoticeService {
     )
   }
 
-  async notifyTaskMessageSent(recipient_id, estate_id, task_id, myRole) {
+  static async notifyTaskMessageSent(recipient_id, estate_id, task_id, myRole) {
     let type = NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID
     if (myRole == ROLE_USER) {
       type = NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID
     }
+    const estate = await Estate.query()
+      .select('address', 'id', 'cover')
+      .where('id', estate_id)
+      .first()
 
     const notice = {
       user_id: recipient_id,
       type,
       data: {
         estate_id,
+        estate_address: estate.address,
         task_id,
+        topic: `task:${estate_id}brz${task_id}`,
       },
+      image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.notifyTaskMessageSent(notice)

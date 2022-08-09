@@ -29,7 +29,9 @@ class TaskController extends BaseController {
       lastId = data.lastId
     }
     const previousMessages = await this.getItemsWithAbsoluteUrl(
-      (await ChatService.getPreviousMessages(this.taskId, lastId)).rows
+      (
+        await ChatService.getPreviousMessages(this.taskId, lastId)
+      ).rows
     )
 
     const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
@@ -129,7 +131,8 @@ class TaskController extends BaseController {
 
     //broadcast taskMessageReceived event to either tenant or landlord
     this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
-    await NoticeService.notifyTaskMessageSent(this.estateId, this.taskId, this.user.role)
+    const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
+    await NoticeService.notifyTaskMessageSent(recipient, this.estateId, this.taskId, this.user.role)
     super.onMessage(message)
   }
 }

@@ -85,6 +85,10 @@ const {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE,
+  NOTICE_TYPE_LANDLORD_SEND_TASK_MESSAGE_ID,
+  NOTICE_TYPE_LANDLORD_SEND_TASK_MESSAGE,
 } = require('../constants')
 const { lang } = require('moment')
 
@@ -127,6 +131,8 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_ARRIVED_ID, NOTICE_TYPE_PROSPECT_ARRIVED],
   [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
+  [NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE],
+  [NOTICE_TYPE_LANDLORD_SEND_TASK_MESSAGE_ID, NOTICE_TYPE_LANDLORD_SEND_TASK_MESSAGE],
 ]
 
 class NotificationsService {
@@ -767,12 +773,15 @@ class NotificationsService {
   }
 
   static async notifyTaskMessageSent(notice) {
-    const title = 'tenant.notification.event.message_got'
-    if (notice.type == NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID) {
-      title = 'landlord.notification.event.message_got'
+    let recipient = 'tenant'
+    if (notice.type === NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID) {
+      recipient = 'landlord'
     }
-
-    const body = (data, lang) => {}
+    const title = `${recipient}.notification.next.message_got`
+    const body = (data, lang) => {
+      let bodyKey = `${recipient}.notification.next.message_got.message`
+      return `${data.estate_address}` + ' \n' + l.get(bodyKey, lang)
+    }
 
     return NotificationsService.sendNotes([notice], title, body)
   }
