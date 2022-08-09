@@ -86,10 +86,12 @@ const {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH,
-
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   DEFAULT_LANG,
 } = require('../constants')
-const { lang } = require('moment')
 
 const mapping = [
   [NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID, NOTICE_TYPE_LANDLORD_FILL_PROFILE],
@@ -130,6 +132,11 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_ARRIVED_ID, NOTICE_TYPE_PROSPECT_ARRIVED],
   [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
+  [NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW],
+  [
+    NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
+    NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
+  ],
 ]
 
 class NotificationsService {
@@ -773,12 +780,18 @@ class NotificationsService {
     const title = 'landlord.notification.event.profile_deactivated_now'
     const body = 'landlord.notification.event.profile_deactivated_now.next.message'
 
-    //return NotificationsService.sendNotes(notices, title, body)
+    return NotificationsService.sendNotes(notices, title, body)
   }
 
   static async notifyProspectThatLandlordDeactivated(notices) {
-    const title = ''
-    const body = (data, lang) => {}
+    const title = 'prospect.notification.event.landlord_deactivated'
+    const body = (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.event.landlord_deactivated.next.message', lang)
+      )
+    }
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
