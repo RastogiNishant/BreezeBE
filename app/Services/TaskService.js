@@ -99,6 +99,10 @@ class TaskService {
       throw new HttpException('Estate not found', 404)
     }
 
+    if (predefinedMessage.step === undefined || predefinedMessage.step === null) {
+      throw new HttpException('Predefined message has to provide step ')
+    }
+
     const trx = await Database.beginTransaction()
 
     try {
@@ -176,14 +180,15 @@ class TaskService {
       }
 
       task.next_predefined_message_id = nextPredefinedMessage ? nextPredefinedMessage.id : null
-      delete task.attachments
+
+      task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
 
       await trx.commit()
       return { task, messages }
     } catch (error) {
       await trx.rollback()
-      throw error
+      throw new HttpException(error.message)
     }
   }
 

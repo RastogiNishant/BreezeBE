@@ -16,7 +16,7 @@ const {
   ROLE_USER,
   ISO_DATE_FORMAT,
 } = require('../constants')
-const { min } = require('lodash')
+const { min, isArray } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
 
@@ -55,9 +55,15 @@ class ChatService {
     } else {
       data.text = message
     }
-    if (message.attachments) {
-      data.attachments = message.attachments
+
+    if (message.attachments && !isArray(message.attachments)) {
+      return {
+        success: false,
+        message: 'Attachments must be an array'
+      }
     }
+
+    data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
     data.task_id = taskId
     data.sender_id = userId
     data.type = CHAT_TYPE_MESSAGE
@@ -177,7 +183,7 @@ class ChatService {
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)
-      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+      .update({ edit_status: CHAT_EDIT_STATUS_DELETED })
     return result
   }
 
