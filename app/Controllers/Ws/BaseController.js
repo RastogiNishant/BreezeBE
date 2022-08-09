@@ -139,7 +139,6 @@ class BaseController {
                 `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
               )
             : ''
-
         if (attachment.search('http') !== 0) {
           return {
             url: await File.getProtectedUrl(attachment),

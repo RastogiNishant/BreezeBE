@@ -59,7 +59,7 @@ class ChatService {
     if (message.attachments && !isArray(message.attachments)) {
       return {
         success: false,
-        message: 'Attachments must be an array'
+        message: 'Attachments must be an array',
       }
     }
 
