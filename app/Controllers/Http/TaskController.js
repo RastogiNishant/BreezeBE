@@ -1,6 +1,5 @@
 'use strict'
 const { ROLE_LANDLORD } = require('../../constants')
-const { count } = require('../../Services/TaskService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
