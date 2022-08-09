@@ -137,8 +137,7 @@ const mapping = [
 
 class NotificationsService {
   static async sendRaw(tokens, options) {
-    console.log({ tokens, options })
-    //return Notifications.send(tokens, options)
+    return Notifications.send(tokens, options)
   }
 
   /**
