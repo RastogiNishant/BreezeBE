@@ -4,7 +4,6 @@ const { count } = require('../../Services/TaskService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-//const ChatService = use('App/Services/ChatService')
 
 class TaskController {
   async createTask({ request, auth, response }) {
