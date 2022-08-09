@@ -36,7 +36,7 @@ class TaskFilter extends Base {
       global: yup
         .object()
         .shape({
-          matchMode: yup.string().required(),
+          matchMode: yup.string(),
           value: yup.string().nullable(),
         })
         .nullable(),
@@ -63,7 +63,7 @@ class TaskFilter extends Base {
       urgency: yup
         .object()
         .shape({
-          matchMode: yup.string().required(),
+          matchMode: yup.string(),
           value: yup
             .array()
             .of(
@@ -118,7 +118,7 @@ class TaskFilter extends Base {
       breeze_type: yup
         .object()
         .shape({
-          matchMode: yup.string().required(),
+          matchMode: yup.string(),
           value: yup.boolean().nullable(),
         })
         .nullable(),
