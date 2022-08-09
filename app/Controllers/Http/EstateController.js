@@ -511,8 +511,7 @@ class EstateController {
    */
   async removeEstate({ request, auth, response }) {
     const { id } = request.all()
-    await Estate.findByOrFail({ id, user_id: auth.user.id })
-    await EstateService.removeEstate(id)
+    await EstateService.removeEstate(id, auth.user.id)
 
     response.res(true)
   }
