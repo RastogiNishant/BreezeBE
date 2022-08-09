@@ -25,11 +25,8 @@ class ChatController {
       ).rows
     )
 
-    const unreadMessages = await ChatService.getUnreadMessagesCount(data.task_id, auth.user.id)
-
     response.res({
-      messages: previousMessages,
-      unread: unreadMessages,
+      previousMessages,
     })
   }
 
