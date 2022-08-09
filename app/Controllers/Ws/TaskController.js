@@ -13,6 +13,7 @@ const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
+const Promise = require('bluebird')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -24,11 +25,13 @@ class TaskController extends BaseController {
 
   async onGetPreviousMessages(data) {
     let lastId = 0
+
     if (data && data.lastId) {
       lastId = data.lastId
     }
-    const previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
-    const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
+    let previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
+    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
+    //const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',
@@ -44,15 +47,15 @@ class TaskController extends BaseController {
 
   async onEditMessage({ message, attachments, id }) {
     try {
-      //TODO: Do we need to check sender to check this message is owned by that person?
-      //Pros: can prevent illegal edit
-      //Cons: cause low response to others using websocket
-      await ChatService.editMessage({
-        message,
-        attachments,
-        id,
-      })
-
+      let messageAge = await ChatService.getChatMessageAge(id)
+      if (isBoolean(messageAge) && !messageAge) {
+        throw new AppException('Chat message not found.')
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      await ChatService.updateChatMessage(id, message, attachments)
+      attachments = await this.getAbsoluteUrl(attachments)
       if (this.topic) {
         this.topic.broadcast('messageEdited', {
           id,
@@ -111,7 +114,7 @@ class TaskController extends BaseController {
     const chat = await this._saveToChats(message, this.taskId)
     message.id = chat.id
     message.message = chat.text
-    message.attachments = chat.attachments
+    message.attachments = await this.getAbsoluteUrl(chat.attachments)
     message.sender = {
       id: this.user.id,
       firstname: this.user.firstname,

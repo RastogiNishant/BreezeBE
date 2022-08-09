@@ -17,7 +17,7 @@ const {
   ROLE_LANDLORD,
   ROLE_USER,
 } = require('../constants')
-const { min, isBoolean } = require('lodash')
+const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
 const HttpException = use('App/Exceptions/HttpException')
@@ -57,9 +57,15 @@ class ChatService {
     } else {
       data.text = message
     }
-    if (message.attachments) {
-      data.attachments = message.attachments
+
+    if (message.attachments && !isArray(message.attachments)) {
+      return {
+        success: false,
+        message: 'Attachments must be an array',
+      }
     }
+
+    data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
     data.task_id = taskId
     data.sender_id = userId
     data.type = CHAT_TYPE_MESSAGE
@@ -112,27 +118,25 @@ class ChatService {
       counts.push(parseInt(allCount.unread_messages))
     }
 
-    const unreadByMarker = await Chat.query()
-      .select(Database.raw(`count(*) as unread_messages`))
-      .where(
-        'created_at',
-        '>',
-        Database.raw(
-          `(select created_at from chats
-            where "type"='${CHAT_TYPE_LAST_READ_MARKER}'
-            and task_id='${taskId}'
-            and sender_id='${userId}'
-            order by created_at desc
-            limit 1
-            )`
-        )
-      )
+    const lastReadMarkerDate = await Chat.query()
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .where('type', CHAT_TYPE_LAST_READ_MARKER)
       .where('task_id', taskId)
-      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
-      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+      .where('sender_id', userId)
+      .orderBy('created_at', 'desc')
       .first()
-    if (unreadByMarker) {
-      counts.push(parseInt(unreadByMarker.unread_messages))
+
+    if (lastReadMarkerDate) {
+      const unreadByMarker = await Chat.query()
+        .select(Database.raw(`count(*) as unread_messages`))
+        .where('created_at', '>', lastReadMarkerDate.created_at)
+        .where('task_id', taskId)
+        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+        .first()
+      if (unreadByMarker) {
+        counts.push(parseInt(unreadByMarker.unread_messages))
+      }
     }
 
     const unreadByLastSent = await Chat.query()
@@ -162,7 +166,7 @@ class ChatService {
 
   static async getChatMessageAge(id) {
     let ret = await Chat.query()
-      .select('*', Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
+      .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
       .where('id', id)
       .first()
     return ret
@@ -188,7 +192,7 @@ class ChatService {
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)
-      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+      .update({ edit_status: CHAT_EDIT_STATUS_DELETED })
     return result
   }
 

@@ -73,6 +73,7 @@ class TaskController {
 
   async getEstateTasks({ request, auth, response }) {
     const params = request.post()
+    delete params.global
     const { id } = request.all()
     let estate = await EstateService.getEstateWithTenant(id, auth.user.id)
 
@@ -105,7 +106,6 @@ class TaskController {
 
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
-
     try {
       const countResult = await EstateService.getTotalLetCount(auth.user.id, params)
       let estate = await EstateService.getEstatesWithTask(
