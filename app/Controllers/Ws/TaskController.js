@@ -11,6 +11,7 @@ const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
+const Promise = require('bluebird')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -26,11 +27,9 @@ class TaskController extends BaseController {
     if (data && data.lastId) {
       lastId = data.lastId
     }
-    const previousMessages = await this.getItemsWithAbsoluteUrl(
-      (await ChatService.getPreviousMessages(this.taskId, lastId)).rows
-    )
-
-    const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
+    let previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
+    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
+    //const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',

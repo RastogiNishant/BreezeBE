@@ -127,7 +127,7 @@ class BaseController {
     }
   }
 
-  static async getAbsoluteUrl(attachments) {
+  async getAbsoluteUrl(attachments) {
     if (!attachments || !attachments.length) {
       return null
     }
@@ -139,7 +139,6 @@ class BaseController {
                 `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
               )
             : ''
-
         if (attachment.search('http') !== 0) {
           return {
             url: await File.getProtectedUrl(attachment),
@@ -158,19 +157,20 @@ class BaseController {
 
     return attachments
   }
-  static async getItemsWithAbsoluteUrl(items) {
+
+  async getItemsWithAbsoluteUrl(items) {
     if (!items || !items.length) {
       return null
     }
 
     try {
       items = await Promise.all(
-        items = items.map(async (item) => {
+        (items = items.map(async (item) => {
           if (item.attachments) {
             item.attachments = await this.getAbsoluteUrl(item.attachments)
           }
           return item
-        })
+        }))
       )
       return items
     } catch (e) {
