@@ -19,9 +19,6 @@ const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
-  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
-  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
-  DEFAULT_LANG,
 } = require('../../../constants')
 const QueueService = use('App/Services/QueueService')
 const NotificationsService = use('App/Services/NotificationsService')
