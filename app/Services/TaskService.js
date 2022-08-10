@@ -38,6 +38,7 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
+const ChatService = require('./ChatService')
 
 class TaskService {
   static async create(request, user, trx) {
@@ -120,7 +121,7 @@ class TaskService {
       }
 
       let nextPredefinedMessage = null
-      const messages = []
+      let messages = []
 
       // Create chat message that sent by the landlord according to the predefined message
       const landlordMessage = await Chat.createItem(
@@ -184,6 +185,8 @@ class TaskService {
       task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
 
+      messages = await ChatService.getItemsWithAbsoluteUrl(messages)
+
       await trx.commit()
       return { task, messages }
     } catch (error) {
@@ -218,6 +221,29 @@ class TaskService {
 
     if (trx) return await query.update({ ...task }).transacting(trx)
     return await query.update({ ...task })
+  }
+
+  /**
+   *
+   * @param {*} estate_id
+   * This function is only used when removing estate
+   * can't be used controller directly without checking permission
+   */
+  static async deleteByEstateById(estate_id, trx) {
+    const chatService = require('./ChatService')
+    const PredefinedAnswerService = require('./PredefinedAnswerService')
+    const tasks = (await Task.query().select('id').where('estate_id', estate_id).fetch()).rows
+
+    if (tasks && tasks.length) {
+      const taskIds = tasks.map((task) => task.id)
+      await chatService.removeChatsByTaskIds(taskIds, trx)
+      await PredefinedAnswerService.deleteByTaskIds(taskIds, trx)
+    }
+
+    return await Task.query()
+      .where('estate_id', estate_id)
+      .update({ status: TASK_STATUS_DELETE })
+      .transacting(trx)
   }
 
   static async delete({ id, user }, trx) {
