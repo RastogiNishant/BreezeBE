@@ -107,15 +107,19 @@ class TaskController {
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
     try {
-      const countResult = await EstateService.getTotalLetCount(auth.user.id, params)
+      const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
+      const filterCountResult = await EstateService.getTotalLetCount(auth.user.id, params)
+
       let estate = await EstateService.getEstatesWithTask(
         auth.user,
         params,
         params.page || -1,
         params.limit || -1
       )
+
       const result = {
-        total: countResult.length || 0,
+        total: totalCountResult.length || 0,
+        filtered: filterCountResult.length || 0,
         estates: estate,
       }
 

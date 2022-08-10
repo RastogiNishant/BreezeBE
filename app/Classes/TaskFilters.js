@@ -33,7 +33,7 @@ class TaskFilters extends Filter {
         low: URGENCY_LOW,
         normal: URGENCY_NORMAL,
         high: URGENCY_HIGH,
-        super: URGENCY_SUPER,
+        urgent: URGENCY_SUPER,
       },
       status: {
         new: TASK_STATUS_NEW,
@@ -86,8 +86,15 @@ class TaskFilters extends Filter {
       })
     }
 
-    if (params && params['active_task']) {
-      this.query.whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+    const active_task_params = params['active_task']
+    if (active_task_params && active_task_params.constraints.length) {
+      const values = active_task_params.constraints.filter(
+        (c) => c.value !== null && c.value !== undefined
+      )
+
+      if (values.length) {
+        this.query.whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      }
     }
   }
 
