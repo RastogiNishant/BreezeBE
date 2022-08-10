@@ -755,6 +755,10 @@ const constants = {
       text: 'Kitchen',
     },
   ],
+
+  ESTATE_FLOOR_DIRECTION_LEFT: 1,
+  ESTATE_FLOOR_DIRECTION_RIGHT: 2,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT: 3,
 }
 
 module.exports = constants
