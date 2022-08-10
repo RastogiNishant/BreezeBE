@@ -146,7 +146,7 @@ class ChatService {
         '>',
         Database.raw(
           `(select created_at from chats
-            where "type" in ( '${CHAT_TYPE_MESSAGE}', '${CHAT_TYPE_BOT_MESSAGE}' )
+            where "type" in ( '${CHAT_TYPE_MESSAGE}', '${CHAT_TYPE_BOT_MESSAGE}' and not "edit_status" = ${CHAT_EDIT_STATUS_DELETED} )
             and "sender_id"='${userId}'
             and task_id='${taskId}'
             order by created_at desc
