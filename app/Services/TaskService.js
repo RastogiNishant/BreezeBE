@@ -38,6 +38,7 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
+const ChatService = require('./ChatService')
 
 class TaskService {
   static async create(request, user, trx) {
@@ -120,7 +121,7 @@ class TaskService {
       }
 
       let nextPredefinedMessage = null
-      const messages = []
+      let messages = []
 
       // Create chat message that sent by the landlord according to the predefined message
       const landlordMessage = await Chat.createItem(
@@ -183,6 +184,8 @@ class TaskService {
 
       task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
+
+      messages = await ChatService.getItemsWithAbsoluteUrl(messages)
 
       await trx.commit()
       return { task, messages }
