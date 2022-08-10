@@ -188,6 +188,9 @@ const {
   LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   PARKING_SPACE_TYPE_NO_PARKING,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -251,6 +254,14 @@ class CreateEstate extends Base {
       house_number: yup.string().min(1).max(255),
       country: yup.string().min(1).max(255),
       floor: yup.number().integer().min(-10).max(200),
+      floor_direction: yup
+        .number()
+        .integer()
+        .oneOf([
+          ESTATE_FLOOR_DIRECTION_LEFT,
+          ESTATE_FLOOR_DIRECTION_RIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT,
+        ]),
       number_floors: yup.number().integer().min(1).max(100),
       prices: yup.number().min(0).max(100000),
       net_rent: yup.number().min(0).max(100000),
