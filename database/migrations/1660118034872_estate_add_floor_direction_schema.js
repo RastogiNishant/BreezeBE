@@ -4,15 +4,16 @@
 const Schema = use('Schema')
 
 class EstateAddFloorDirectionSchema extends Schema {
-  up () {
-    this.table('estate_add_floor_directions', (table) => {
+  up() {
+    this.table('estates', (table) => {
       // alter table
+      table.smallint('floor_direction')
     })
   }
 
-  down () {
-    this.table('estate_add_floor_directions', (table) => {
-      // reverse alternations
+  down() {
+    this.table('estates', (table) => {
+      table.dropColumn('floor_direction')
     })
   }
 }
