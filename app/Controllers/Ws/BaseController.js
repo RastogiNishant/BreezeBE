@@ -131,6 +131,7 @@ class BaseController {
     if (!attachments || !attachments.length) {
       return null
     }
+    if (!Array.isArray(attachments)) attachments = JSON.parse(attachments)
     attachments = await Promise.all(
       attachments.map(async (attachment) => {
         const thumb =
