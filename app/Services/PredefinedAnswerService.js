@@ -70,6 +70,13 @@ class PredefinedAnswerService {
     ).rows
   }
 
+  static async deleteByTaskIds(taskIds, trx) {
+    return await PredefinedMessageAnswer.query()
+      .whereIn('task_id', taskIds)
+      .update({ is_deleted: true })
+      .transacting(trx)
+  }
+
   static async delete(id, user_id, trx) {
     const answer = await this.get(id)
     await TaskService.getWithTenantId({ id: answer.task_id, tenant_id: user_id })

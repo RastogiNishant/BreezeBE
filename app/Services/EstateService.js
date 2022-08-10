@@ -347,9 +347,25 @@ class EstateService {
   /**
    *
    */
-  static async removeEstate(id) {
+  static async removeEstate(id, user_id) {
     // TODO: remove indexes
-    return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
+    await Estate.findByOrFail({ id, user_id })
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_DELETE })
+        .transacting(trx)
+
+      const taskService = require('./TaskService')
+      await taskService.deleteByEstateById(id, trx)
+
+      await trx.commit()
+      return estate
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   static async completeRemoveEstate(id) {
@@ -1257,7 +1273,7 @@ class EstateService {
     return estate
   }
 
-  static async getTotalLetCount(user_id, params) {
+  static async getTotalLetCount(user_id, params, filtering = true) {
     let query = Estate.query()
       .count('estates.*')
       .leftJoin('tasks', function () {
@@ -1275,6 +1291,10 @@ class EstateService {
       .where('estates.letting_type', LETTING_TYPE_LET)
       .whereNot('estates.status', STATUS_DELETE)
 
+    if (!filtering) {
+      query.groupBy('estates.id')
+      return await query
+    }
     const filter = new TaskFilters(params, query)
     query.groupBy('estates.id')
     filter.afterQuery()

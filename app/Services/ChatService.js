@@ -1,6 +1,8 @@
 'use strict'
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
+const File = use('App/Classes/File')
+
 const {
   CHAT_TYPE_LAST_READ_MARKER,
   CHAT_TYPE_MESSAGE,
@@ -139,26 +141,26 @@ class ChatService {
       }
     }
 
-    const unreadByLastSent = await Chat.query()
-      .select(Database.raw(`count(*) as unread_messages`))
-      .where(
-        'created_at',
-        '>',
-        Database.raw(
-          `(select created_at from chats
-            where "type" in ( '${CHAT_TYPE_MESSAGE}', '${CHAT_TYPE_BOT_MESSAGE}' and not "edit_status" = ${CHAT_EDIT_STATUS_DELETED} )
-            and "sender_id"='${userId}'
-            and task_id='${taskId}'
-            order by created_at desc
-            limit 1)`
-        )
-      )
-      .where('task_id', taskId)
+    const lastSentDate = await Chat.query()
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+      .where('task_id', taskId)
+      .where('sender_id', userId)
+      .orderBy('created_at', 'desc')
       .first()
-    if (unreadByLastSent) {
-      counts.push(parseInt(unreadByLastSent.unread_messages))
+
+    if (lastSentDate) {
+      const unreadByLastSent = await Chat.query()
+        .select(Database.raw(`count(*) as unread_messages`))
+        .where('created_at', '>', lastSentDate.created_at)
+        .where('task_id', taskId)
+        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+        .first()
+      if (unreadByLastSent) {
+        counts.push(parseInt(unreadByLastSent.unread_messages))
+      }
     }
     const unreadMessagesCount = min(counts)
     return unreadMessagesCount
@@ -189,6 +191,18 @@ class ChatService {
     return query.transacting(trx)
   }
 
+  /**
+   * This function doesn't have to be called from controller directly without checking permission
+   * @param {*} taskIds
+   * @param {*} trx
+   * @returns
+   */
+  static async removeChatsByTaskIds(taskIds, trx) {
+    return await Chat.query()
+      .whereIn('task_id', taskIds)
+      .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
+      .transacting(trx)
+  }
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)
@@ -240,6 +254,65 @@ class ChatService {
     return unreadMessagesByTopic
   }
 
+
+  static async getAbsoluteUrl(attachments) {
+    try {
+      if (!attachments || !attachments.length) {
+        return null
+      }
+      if (!isArray(attachments)) {
+        attachments = JSON.parse(attachments)
+      }
+
+      attachments = await Promise.all(
+        attachments.map(async (attachment) => {
+          const thumb =
+            attachment.split('/').length === 2
+              ? await File.getProtectedUrl(
+                  `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
+                )
+              : ''
+
+          if (attachment.search('http') !== 0) {
+            return {
+              url: await File.getProtectedUrl(attachment),
+              uri: attachment,
+              thumb: thumb,
+            }
+          }
+
+          return {
+            url: attachment,
+            uri: attachment,
+            thumb: thumb,
+          }
+        })
+      )
+      return attachments
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+  static async getItemsWithAbsoluteUrl(items) {
+    if (!items || !items.length) {
+      return null
+    }
+    try {
+      items = await Promise.all(
+        (items = items.map(async (item) => {
+          if (item.attachments) {
+            item.attachments = await ChatService.getAbsoluteUrl(item.attachments)
+            console.log('getItemsWithAbsoluteUrl', item.attachments)
+          }
+          return item
+        }))
+      )
+      return items
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   static async editMessage({ message, attachments, id }) {
     const trx = await Database.beginTransaction()
     try {
@@ -257,7 +330,7 @@ class ChatService {
       await trx.rollback()
       throw new HttpException(e)
     }
-  }
+  }  
 }
 
 module.exports = ChatService
