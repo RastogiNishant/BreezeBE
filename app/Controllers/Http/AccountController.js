@@ -609,10 +609,7 @@ class AccountController {
       }
 
       if (data.email || data.sex || data.secondname) {
-        let ect = {
-          salutation: 'Mx.',
-          salutation_int: GENDER_ANY,
-        }
+        let ect = {}
 
         if (data.email) ect.email = data.email
 
