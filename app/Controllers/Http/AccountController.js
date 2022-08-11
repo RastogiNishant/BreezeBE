@@ -609,16 +609,16 @@ class AccountController {
       }
 
       if (data.email || data.sex || data.secondname) {
-        let ect = {}
+        let ect = {
+          salutation: 'Mx.',
+          salutation_int: GENDER_ANY,
+        }
 
         if (data.email) ect.email = data.email
 
         if (data.sex) {
-          ect.salutation = data.sex === 1 ? 'Mr.' : 'Ms.'
+          ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
           ect.salutation_int = data.sex
-        } else {
-          ect.salutation = 'Mx.'
-          ect.salutation_int = GENDER_ANY
         }
 
         if (data.secondname) ect.surname = data.secondname
