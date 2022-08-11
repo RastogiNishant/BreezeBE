@@ -53,10 +53,10 @@ class ChatService {
 
   static async save(message, userId, taskId) {
     let data = {}
-    if (message.message) {
-      data.text = message.message
-    } else {
+    if (typeof message.message == 'undefined') {
       data.text = message
+    } else {
+      data.text = message.message
     }
 
     if (message.attachments && !isArray(message.attachments)) {
