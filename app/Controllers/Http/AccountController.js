@@ -47,6 +47,7 @@ const {
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  GENDER_ANY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -607,13 +608,19 @@ class AccountController {
         user.company = null
       }
 
-      if (data.email || data.sex || data.lasname) {
+      if (data.email || data.sex || data.secondname) {
         let ect = {}
+
         if (data.email) ect.email = data.email
+
         if (data.sex) {
-          ect.salutation = data.sex === 1 ? 'Mr.' : 'Ms'
+          ect.salutation = data.sex === 1 ? 'Mr.' : 'Ms.'
           ect.salutation_int = data.sex
+        } else {
+          ect.salutation = 'Mx.'
+          ect.salutation_int = GENDER_ANY
         }
+
         if (data.secondname) ect.surname = data.secondname
 
         await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
