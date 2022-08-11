@@ -2,7 +2,7 @@
 
 const yup = require('yup')
 const Base = require('./Base')
-
+const moment = require('moment')
 const {
   STATUS_ACTIVE,
   STATUS_DELETE,
@@ -188,6 +188,7 @@ const {
   LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   PARKING_SPACE_TYPE_NO_PARKING,
+  DATE_FORMAT,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -341,6 +342,13 @@ class CreateEstate extends Base {
       avail_duration: yup.number().integer().positive().max(5000),
       from_date: yup.date().nullable(),
       to_date: yup.date(),
+      rent_end_at: yup
+        .date()
+        .nullable()
+        .transform((value, origin) => {
+          return moment.utc(origin, DATE_FORMAT).toDate()
+        }),
+
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
