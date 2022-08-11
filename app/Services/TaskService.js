@@ -5,11 +5,10 @@ const {
   STATUS_DELETE,
   STATUS_EXPIRE,
   PREDEFINED_LAST,
-  TASK_STATUS_INPROGRESS,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE,
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE,
   PREDEFINED_MSG_OPEN_ENDED,
-  CHAT_TYPE_MESSAGE,
+  CHAT_TYPE_BOT_MESSAGE,
   DEFAULT_LANG,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
 } = require('../constants')
@@ -132,7 +131,7 @@ class TaskService {
           text: rc(l.get(predefinedMessage.text, lang), [
             { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
           ]),
-          type: CHAT_TYPE_MESSAGE,
+          type: CHAT_TYPE_BOT_MESSAGE,
         },
         trx
       )
