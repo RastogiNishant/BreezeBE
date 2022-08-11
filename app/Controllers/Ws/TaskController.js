@@ -11,12 +11,13 @@ const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
-const Promise = require('bluebird')
+const NoticeService = use('App/Services/NoticeService')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
     this.taskId = request.task_id
+    this.estateId = request.estate_id
     this.tenant_user_id = request.tenant_user_id
     this.estate_user_id = request.estate_user_id
   }
@@ -124,6 +125,8 @@ class TaskController extends BaseController {
 
     //broadcast taskMessageReceived event to either tenant or landlord
     this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
+    const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
+    await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
     super.onMessage(message)
   }
 }

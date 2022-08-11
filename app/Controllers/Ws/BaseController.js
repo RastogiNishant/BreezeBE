@@ -158,7 +158,6 @@ class BaseController {
 
     return attachments
   }
-
   async getItemsWithAbsoluteUrl(items) {
     if (!items || !items.length) {
       return null
