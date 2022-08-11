@@ -53,8 +53,11 @@ class ChatService {
 
   static async save(message, userId, taskId) {
     let data = {}
-    if (message.message) {
+    if (typeof message === 'object' && typeof message.message === 'string') {
       data.text = message.message
+    } else if (typeof message === 'object') {
+      //message.message is not defined
+      data.text = ''
     } else {
       data.text = message
     }
