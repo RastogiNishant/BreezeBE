@@ -998,7 +998,8 @@ class NoticeService {
         'estates.address',
         'tasks.title',
         'tasks.description',
-        'tasks.urgency'
+        'tasks.urgency',
+        'tasks.estate_id'
       )
       .innerJoin('estates', 'estates.id', 'tasks.estate_id')
       .where('tasks.id', task_id)

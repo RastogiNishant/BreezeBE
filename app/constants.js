@@ -711,6 +711,7 @@ const constants = {
   ],
 
   CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_BOT_MESSAGE:'chatbot',
   CHAT_TYPE_NOTIFICATION: 'notification',
   CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
 

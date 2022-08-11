@@ -1257,7 +1257,7 @@ class EstateService {
 
       let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
       return {
-        ...omit(r[0], ['activeTasks']),
+        ...omit(r[0], ['activeTasks', 'mosturgency']),
         activeTasks: activeTasks,
         taskSummary: {
           activeTaskCount: r[0].activeTasks.length || 0,

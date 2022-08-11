@@ -5,6 +5,7 @@ const {
   CHAT_TYPE_MESSAGE,
   STATUS_ACTIVE,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+  CHAT_TYPE_BOT_MESSAGE
 } = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
@@ -130,7 +131,7 @@ class PredefinedMessageService {
     const tenantMessage = await Chat.createItem(
       {
         task_id: task.id,
-        sender_id: task.tenant_id,
+        sender_id: task.tenant_id,        
         text: answer,
         attachments: attachments ? JSON.stringify(attachments) : null,
         type: CHAT_TYPE_MESSAGE,
