@@ -60,6 +60,7 @@ class Estate extends Model {
       'house_number',
       'country',
       'floor',
+      'floor_direction',
       'number_floors',
       'prices',
       'net_rent',
