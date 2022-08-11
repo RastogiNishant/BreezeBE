@@ -103,7 +103,9 @@ class EstateCurrentTenantService {
   }
 
   static async updateCurrentTenant({ id, data, estate_id, user_id }) {
-    await this.hasPermission(id, user_id)
+    if (id) {
+      await this.hasPermission(id, user_id)
+    }
 
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
 

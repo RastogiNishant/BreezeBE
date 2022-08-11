@@ -87,8 +87,12 @@ const {
   NOTICE_TYPE_PROSPECT_SUPER_MATCH,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE,
+  URGENCIES,
 } = require('../constants')
-const { lang } = require('moment')
 
 const mapping = [
   [NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID, NOTICE_TYPE_LANDLORD_FILL_PROFILE],
@@ -130,6 +134,8 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
   [NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS],
+  [NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE],
+  [NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE],
 ]
 
 class NotificationsService {
@@ -773,6 +779,34 @@ class NotificationsService {
     const body = 'landlord.notification.event.profile_deactivated_two_days.next.message'
 
     return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyTaskMessageSent(notice) {
+    let recipient = 'tenant'
+    if (notice.type === NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID) {
+      recipient = 'landlord'
+    }
+    const title = `${recipient}.notification.event.message_got`
+    const body = (data) => {
+      if (recipient === 'landlord') {
+        let text = `${data.estate_address} \n}`
+
+        const urgency = URGENCIES.find(({ value }) => value == data.urgency)?.label
+
+        let trans = rc(l.get('landlord.notification.next.message_got.message', data.lang), [
+          { urgency: l.get(urgency, data.lang) },
+        ])
+        trans = rc(trans, [{ title: data.title }])
+        trans = rc(trans, [{ description: data.description }])
+
+        text += trans
+
+        return text
+      }
+      return data.message
+    }
+
+    return NotificationsService.sendNotes([notice], title, body)
   }
 }
 
