@@ -220,8 +220,10 @@ class TaskService {
       query.where('tenant_id', user.id)
     }
 
-    if (trx) return await query.update({ ...task }).transacting(trx)
-    return await query.update({ ...task })
+    const taskRow = await query.firstOrFail()
+
+    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
+    return await taskRow.updateItem({ ...task })
   }
 
   /**
