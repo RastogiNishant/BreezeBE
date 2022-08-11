@@ -402,7 +402,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
-  NOTICE_TYPE_LANDLORD_SEND_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,

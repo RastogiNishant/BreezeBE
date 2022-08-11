@@ -9,6 +9,7 @@ const UserService = use('App/Services/UserService')
 const User = use('App/Models/User')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
+const Task = use('App/Models/Task')
 const NotificationsService = use('App/Services/NotificationsService')
 const MailService = use('App/Services/MailService')
 const Logger = use('Logger')
@@ -85,8 +86,6 @@ const {
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   DEFAULT_LANG,
-  ROLE_ADMIN,
-  ROLE_LANDLORD,
 } = require('../constants')
 
 class NoticeService {
@@ -987,27 +986,40 @@ class NoticeService {
     )
   }
 
-  static async notifyTaskMessageSent(recipient_id, estate_id, task_id, myRole) {
+  static async notifyTaskMessageSent(recipient_id, message, task_id, myRole) {
     let type = NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID
     if (myRole == ROLE_USER) {
       type = NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID
     }
-    const estate = await Estate.query()
-      .select('address', 'id', 'cover')
-      .where('id', estate_id)
+
+    const task = await Task.query()
+      .select(
+        'estates.cover',
+        'estates.address',
+        'tasks.title',
+        'tasks.description',
+        'tasks.urgency'
+      )
+      .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+      .where('tasks.id', task_id)
       .first()
 
     const notice = {
       user_id: recipient_id,
       type,
       data: {
-        estate_id,
-        estate_address: estate.address,
+        estate_id: task.estate_id,
+        estate_address: task.address,
         task_id,
-        topic: `task:${estate_id}brz${task_id}`,
+        topic: `task:${task.estate_id}brz${task_id}`,
+        title: task.title,
+        description: task.description,
+        urgency: task.urgency,
+        message,
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(task.cover),
     }
+
     await NoticeService.insertNotices([notice])
     await NotificationsService.notifyTaskMessageSent(notice)
   }
