@@ -345,7 +345,11 @@ class CreateEstate extends Base {
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
       pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
-      gender: yup.number().integer().oneOf([GENDER_MALE, GENDER_FEMALE, null]).nullable(),
+      gender: yup
+        .number()
+        .integer()
+        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY, null])
+        .nullable(),
       monumental_protection: yup.boolean(),
       parking_space: yup.number().min(0).max(10),
       parking_space_type: yup
