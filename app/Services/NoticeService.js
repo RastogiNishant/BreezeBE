@@ -86,6 +86,7 @@ const {
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   DEFAULT_LANG,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -984,6 +985,20 @@ class NoticeService {
       notification.title,
       notification.body
     )
+  }
+
+  static async deactivatingLandlordsInTwoDays(userIds, deactivateDateTime) {
+    const notices = userIds.map(function (id) {
+      return {
+        user_id: id,
+        type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+        data: {
+          deactivateDateTimeTz: deactivateDateTime,
+        },
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyDeactivatingLandlordsInTwoDays(notices)
   }
 
   static async notifyTaskMessageSent(recipient_id, message, task_id, myRole) {
