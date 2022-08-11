@@ -402,6 +402,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -439,6 +441,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID: 43,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID: 44,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -535,7 +539,7 @@ const constants = {
     'energy_proof_original_file',
     'isoline',
     'is_new_tenant_transfer',
-    'transfer_budget'
+    'transfer_budget',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -619,8 +623,12 @@ const constants = {
     'lte',
   ],
 
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES: ['dateIs', 'dateIsNot', 'dateBefore', 'dateAfter'],
+  FILTER_CONSTRAINTS_COUNT_MATCH_MODES: ['equals', 'notEquals', 'gt', 'lt', 'gte', 'lte'],
+
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE: 6,
   PREDEFINED_MSG_OPEN_ENDED: 3,
   PREDEFINED_NOT_A_QUESTION: 4,
   PREDEFINED_LAST: 5,
@@ -674,6 +682,9 @@ const constants = {
   TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
+
+  IS_INSIDE_BREEZE: true,
+  IS_OUTSIDE_BREEZE: false,
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
   CHAT_EDIT_STATUS_EDITED: 'edited',

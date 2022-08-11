@@ -11,29 +11,31 @@ const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
+const NoticeService = use('App/Services/NoticeService')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
     this.taskId = request.task_id
+    this.estateId = request.estate_id
     this.tenant_user_id = request.tenant_user_id
     this.estate_user_id = request.estate_user_id
   }
 
   async onGetPreviousMessages(data) {
     let lastId = 0
+
     if (data && data.lastId) {
       lastId = data.lastId
     }
-    const previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
-    const unreadMessages = await ChatService.getUnreadMessagesCount(this.taskId, this.user.id)
+    let previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
+    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',
         {
           messages: previousMessages,
           topic: this.socket.topic,
-          unread: unreadMessages,
         },
         [this.socket.id]
       )
@@ -50,6 +52,7 @@ class TaskController extends BaseController {
         throw new AppException('Chat message not editable anymore.')
       }
       await ChatService.updateChatMessage(id, message, attachments)
+      attachments = await this.getAbsoluteUrl(attachments)
       if (this.topic) {
         this.topic.broadcast('messageEdited', {
           id,
@@ -107,7 +110,7 @@ class TaskController extends BaseController {
     const chat = await this._saveToChats(message, this.taskId)
     message.id = chat.id
     message.message = chat.text
-    message.attachments = chat.attachments
+    message.attachments = await this.getAbsoluteUrl(chat.attachments)
     message.sender = {
       id: this.user.id,
       firstname: this.user.firstname,
@@ -122,6 +125,8 @@ class TaskController extends BaseController {
 
     //broadcast taskMessageReceived event to either tenant or landlord
     this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
+    const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
+    await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
     super.onMessage(message)
   }
 }

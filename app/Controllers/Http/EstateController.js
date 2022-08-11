@@ -511,8 +511,7 @@ class EstateController {
    */
   async removeEstate({ request, auth, response }) {
     const { id } = request.all()
-    await Estate.findByOrFail({ id, user_id: auth.user.id })
-    await EstateService.removeEstate(id)
+    await EstateService.removeEstate(id, auth.user.id)
 
     response.res(true)
   }
@@ -934,7 +933,7 @@ class EstateController {
             }
           })
           row.rooms_parsed = rooms_parsed
-          row.deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
+          row.deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
           row.letting_status_merged = row.letting_status
             ? `${row.letting_type}.${row.letting_status}`
             : `${row.letting_type}`
@@ -953,7 +952,7 @@ class EstateController {
             }
           })
           rows[index].rooms_parsed = rooms_parsed
-          rows[index].deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
+          rows[index].deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
           rows[index].letting_status_merged = row.letting_status
             ? `${row.letting_type}.${row.letting_status}`
             : `${row.letting_type}`
@@ -983,7 +982,8 @@ class EstateController {
     const prospectCount = await UserService.getCountOfProspects()
 
     response.res({
-      estates, prospectCount
+      estates,
+      prospectCount,
     })
   }
 }
