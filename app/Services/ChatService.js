@@ -1,6 +1,8 @@
 'use strict'
 const Chat = use('App/Models/Chat')
 const Database = use('Database')
+const File = use('App/Classes/File')
+
 const {
   CHAT_TYPE_LAST_READ_MARKER,
   CHAT_TYPE_MESSAGE,
@@ -19,6 +21,7 @@ const {
 const { min, isArray } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
+const HttpException = require('../Exceptions/HttpException')
 
 class ChatService {
   static async markLastRead(userId, taskId) {
@@ -241,6 +244,64 @@ class ChatService {
       []
     )
     return unreadMessagesByTopic
+  }
+
+  static async getAbsoluteUrl(attachments) {
+    try {
+      if (!attachments || !attachments.length) {
+        return null
+      }
+      if (!isArray(attachments)) {
+        attachments = JSON.parse(attachments)
+      }
+
+      attachments = await Promise.all(
+        attachments.map(async (attachment) => {
+          const thumb =
+            attachment.split('/').length === 2
+              ? await File.getProtectedUrl(
+                  `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
+                )
+              : ''
+
+          if (attachment.search('http') !== 0) {
+            return {
+              url: await File.getProtectedUrl(attachment),
+              uri: attachment,
+              thumb: thumb,
+            }
+          }
+
+          return {
+            url: attachment,
+            uri: attachment,
+            thumb: thumb,
+          }
+        })
+      )
+      return attachments
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+  static async getItemsWithAbsoluteUrl(items) {
+    if (!items || !items.length) {
+      return null
+    }
+    try {
+      items = await Promise.all(
+        (items = items.map(async (item) => {
+          if (item.attachments) {
+            item.attachments = await ChatService.getAbsoluteUrl(item.attachments)
+            console.log('getItemsWithAbsoluteUrl', item.attachments)
+          }
+          return item
+        }))
+      )
+      return items
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 }
 
