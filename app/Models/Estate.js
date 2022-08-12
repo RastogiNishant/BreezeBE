@@ -400,12 +400,13 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate() {
-    await this.updateItem(
+  async publishEstate(trx) {
+    await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
         available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
+      trx,
       true
     )
   }
