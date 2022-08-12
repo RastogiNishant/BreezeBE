@@ -18,7 +18,7 @@ const {
 } = require('../constants')
 
 class TaskFilters extends Filter {
-  globalSearchFields = ['_ect.email', 'estates.property_id', 'estates.address', '_ect.phone_number']
+  globalSearchFields = ['_ect.email', 'estates.property_id', 'estates.address', '_ect.phone_number', '_ect.surname']
   constructor(params, query) {
     super(params, query)
 
