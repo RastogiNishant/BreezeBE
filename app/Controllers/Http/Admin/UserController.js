@@ -23,7 +23,6 @@ const {
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
 } = require('../../../constants')
 const QueueService = use('App/Services/QueueService')
-const NotificationsService = use('App/Services/NotificationsService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
 const Promise = require('bluebird')
