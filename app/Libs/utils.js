@@ -1,6 +1,12 @@
 const url = require('url')
-const { isString, get, isEmpty, capitalize } = require('lodash')
-const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN, ROLE_PROPERTY_MANAGER } = require('../constants')
+const { isString, get, isEmpty, capitalize, includes } = require('lodash')
+const {
+  ROLE_USER,
+  ROLE_LANDLORD,
+  ROLE_ADMIN,
+  ROLE_PROPERTY_MANAGER,
+  GERMAN_HOLIDAYS,
+} = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
   const base = url.parse(use('Env').get('APP_URL'))
@@ -83,6 +89,16 @@ const localeTemplateToValue = (str, values) => {
     .join('')
 }
 
+/**
+ * Checks if the given date is in the GERMAN_HOLIDAYS constant
+ *
+ * @param {*} date in the form yyyy-mm-dd
+ * @returns boolean
+ */
+const isHoliday = (date) => {
+  return includes(GERMAN_HOLIDAYS, date)
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -92,4 +108,5 @@ module.exports = {
   getAuthByRole,
   capitalize: capt,
   rc: localeTemplateToValue,
+  isHoliday,
 }

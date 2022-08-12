@@ -47,6 +47,7 @@ const {
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  GENDER_ANY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -539,65 +540,96 @@ class AccountController {
       ? delete data.prospect_visibility
       : data
 
+    const trx = await Database.beginTransaction()
     let company
-    if (request.header('content-type').match(/^multipart/)) {
-      //this is an upload
-      const fileSettings = { types: ['image'], size: '10mb' }
-      const filename = `${uuid.v4()}.png`
-      let avatarUrl, tmpFile
 
-      request.multipart.file(`file`, fileSettings, async (file) => {
-        tmpFile = await ImageService.resizeAvatar(file, filename)
-        const sourceStream = fs.createReadStream(tmpFile)
-        avatarUrl = await Drive.disk('s3public').put(
-          `${moment().format('YYYYMM')}/${filename}`,
-          sourceStream,
-          { ACL: 'public-read', ContentType: 'image/png' }
-        )
-      })
-      await request.multipart.process()
-      if (!avatarUrl) {
-        throw new HttpException('No file uploaded.')
+    try {
+      if (request.header('content-type').match(/^multipart/)) {
+        //this is an upload
+        const fileSettings = { types: ['image'], size: '10mb' }
+        const filename = `${uuid.v4()}.png`
+        let avatarUrl, tmpFile
+
+        request.multipart.file(`file`, fileSettings, async (file) => {
+          tmpFile = await ImageService.resizeAvatar(file, filename)
+          const sourceStream = fs.createReadStream(tmpFile)
+          avatarUrl = await Drive.disk('s3public').put(
+            `${moment().format('YYYYMM')}/${filename}`,
+            sourceStream,
+            { ACL: 'public-read', ContentType: 'image/png' }
+          )
+        })
+
+        await request.multipart.process()
+
+        if (!avatarUrl) {
+          throw new HttpException('No file uploaded.')
+        }
+
+        user.avatar = avatarUrl
+        await user.save(trx)
+
+        user = user.toJSON({ isOwner: true })
+      } else if (data.email) {
+        /**
+         * TODO:
+         * Do we need to update email????? if so we need 2 verifacations below
+         * Email unique checking,
+         * If new email, need to validate
+         */
+        user.email = data.email
+        await user.save(trx)
+
+        user = user.toJSON({ isOwner: true })
       } else {
-        auth.user.avatar = avatarUrl
-        await auth.user.save()
-        fs.unlink(tmpFile, () => {})
+        if (data.company_name && data.company_name.trim()) {
+          let company_name = data.company_name.trim()
+          company = await Company.findOrCreate(
+            { name: company_name, user_id: auth.user.id },
+            { name: company_name, user_id: auth.user.id }
+          )
+          _.unset(data, 'company_name')
+          data.company_id = company.id
+        }
+
+        await user.updateItemWithTrx(data, trx)
+        user = user.toJSON({ isOwner: true })
       }
-      user = await User.find(auth.user.id)
-      user.avatar = avatarUrl
-      await user.save()
-      user = user.toJSON({ isOwner: true })
-    } else if (data.email) {
-      user = await User.find(auth.user.id)
-      user.email = data.email
-      await user.save()
-      user = user.toJSON({ isOwner: true })
-    } else {
-      if (data.company_name && data.company_name.trim()) {
-        let company_name = data.company_name.trim()
-        company = await Company.findOrCreate(
-          { name: company_name, user_id: auth.user.id },
-          { name: company_name, user_id: auth.user.id }
-        )
-        _.unset(data, 'company_name')
-        data.company_id = company.id
+
+      if (user.company_id) {
+        company = await Company.query().where('id', user.company_id).first()
+        user.company_name = company.name
+        user.company = company
+      } else {
+        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
+        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
+        const company_name = `${company_firstname} ${company_secondname}`.trim()
+        user.company_name = company_name
+        user.company = null
       }
-      await user.updateItem(data)
-      user = user.toJSON({ isOwner: true })
+
+      if (data.email || data.sex || data.secondname) {
+        let ect = {}
+
+        if (data.email) ect.email = data.email
+
+        if (data.sex) {
+          ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+          ect.salutation_int = data.sex
+        }
+
+        if (data.secondname) ect.surname = data.secondname
+
+        await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
+      }
+
+      Event.fire('mautic:syncContact', user.id)
+      await trx.commit()
+      response.res(user)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 501)
     }
-    if (user.company_id) {
-      company = await Company.query().where('id', user.company_id).first()
-      user.company_name = company.name
-      user.company = company
-    } else {
-      const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
-      const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
-      const company_name = `${company_firstname} ${company_secondname}`.trim()
-      user.company_name = company_name
-      user.company = null
-    }
-    Event.fire('mautic:syncContact', user.id)
-    return response.res(user)
   }
 
   /**

@@ -1,6 +1,12 @@
 'use strict'
 
-const { STATUS_DELETE, STATUS_EXPIRE, CHAT_TYPE_MESSAGE } = require('../constants')
+const {
+  STATUS_DELETE,
+  CHAT_TYPE_MESSAGE,
+  STATUS_ACTIVE,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+  CHAT_TYPE_BOT_MESSAGE
+} = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
 const Chat = use('App/Models/Chat')
@@ -49,22 +55,25 @@ class PredefinedMessageService {
     { answer, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
-    let nextPredefinedMessage
+    let nextPredefinedMessage, choice
 
-    const choice = await PredefinedMessageChoice.query()
-      .where({ id: predefined_message_choice_id, predefined_message_id: predefinedMessage.id })
-      .whereNot({ status: STATUS_DELETE })
-      .first()
+    if (predefined_message_choice_id) {
+      choice = await PredefinedMessageChoice.query()
+        .where({ id: predefined_message_choice_id, predefined_message_id: predefinedMessage.id })
+        .whereNot({ status: STATUS_DELETE })
+        .first()
 
-    if (!choice) throw new HttpException('Wrong choice selected')
+      if (!choice) throw new HttpException('Wrong choice selected')
 
-    // Create predefined message answer from tenant's answer
+      // Create predefined message answer from tenant's answer
+    }
+
     await PredefinedMessageAnswer.createItem(
       {
         task_id: task.id,
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
-        text: l.get(choice.text, lang),
+        text: choice ? l.get(choice.text, lang) : answer,
       },
       trx
     )
@@ -74,21 +83,30 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: l.get(choice.text, lang),
+        text: choice ? l.get(choice.text, lang) : answer,
         type: CHAT_TYPE_MESSAGE,
       },
       trx
     )
 
     if (predefinedMessage.variable_to_update) {
-      task[predefinedMessage.variable_to_update] = choice.value || answer
+      task[predefinedMessage.variable_to_update] = choice?.value || answer
     }
 
     // Find the next predefined message
-    if (choice.next_predefined_message_id) {
+    if (choice && choice.next_predefined_message_id) {
       nextPredefinedMessage = await PredefinedMessage.query()
         .where('id', choice.next_predefined_message_id)
         .firstOrFail()
+    } else {
+      //if there is not choice, we need to find one to get next predefined message
+      nextPredefinedMessage = await PredefinedMessage.query()
+        .where({
+          step: predefinedMessage.step + 1,
+          type: PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+          status: STATUS_ACTIVE,
+        })
+        .first()
     }
 
     return {
@@ -113,7 +131,7 @@ class PredefinedMessageService {
     const tenantMessage = await Chat.createItem(
       {
         task_id: task.id,
-        sender_id: task.tenant_id,
+        sender_id: task.tenant_id,        
         text: answer,
         attachments: attachments ? JSON.stringify(attachments) : null,
         type: CHAT_TYPE_MESSAGE,

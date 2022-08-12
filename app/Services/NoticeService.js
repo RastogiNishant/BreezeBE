@@ -10,6 +10,7 @@ const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
+const Task = use('App/Models/Task')
 const NotificationsService = use('App/Services/NotificationsService')
 const MailService = use('App/Services/MailService')
 const Logger = use('Logger')
@@ -83,10 +84,13 @@ const {
   MATCH_STATUS_FINISH,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   DEFAULT_LANG,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   STATUS_EXPIRE,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -1024,6 +1028,59 @@ class NoticeService {
     }, [])
     await NoticeService.insertNotices(prospectNotices)
     await NotificationsService.notifyProspectThatLandlordDeactivated(prospectNotices)
+  }
+
+  static async deactivatingLandlordsInTwoDays(userIds, deactivateDateTime) {
+    const notices = userIds.map(function (id) {
+      return {
+        user_id: id,
+        type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+        data: {
+          deactivateDateTimeTz: deactivateDateTime,
+        },
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyDeactivatingLandlordsInTwoDays(notices)
+  }
+
+  static async notifyTaskMessageSent(recipient_id, message, task_id, myRole) {
+    let type = NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID
+    if (myRole == ROLE_USER) {
+      type = NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID
+    }
+
+    const task = await Task.query()
+      .select(
+        'estates.cover',
+        'estates.address',
+        'tasks.title',
+        'tasks.description',
+        'tasks.urgency',
+        'tasks.estate_id'
+      )
+      .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+      .where('tasks.id', task_id)
+      .first()
+
+    const notice = {
+      user_id: recipient_id,
+      type,
+      data: {
+        estate_id: task.estate_id,
+        estate_address: task.address,
+        task_id,
+        topic: `task:${task.estate_id}brz${task_id}`,
+        title: task.title,
+        description: task.description,
+        urgency: task.urgency,
+        message,
+      },
+      image: File.getPublicUrl(task.cover),
+    }
+
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.notifyTaskMessageSent(notice)
   }
 }
 
