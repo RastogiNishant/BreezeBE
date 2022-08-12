@@ -297,8 +297,8 @@ class Estate extends Model {
   activeTasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
       .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .orderBy('updated_at', 'desc')
       .orderBy('urgency', 'desc')
-      .orderBy('created_at', 'desc')
   }
 
   /**

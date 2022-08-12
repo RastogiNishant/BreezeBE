@@ -1255,10 +1255,15 @@ class EstateService {
         return re.urgency
       })
 
+      const mostUpdated =
+        r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+
       let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
       return {
         ...omit(r[0], ['activeTasks', 'mosturgency']),
         activeTasks: activeTasks,
+        mosturgency: mostUrgency?.urgency,
+        most_task_updated: mostUpdated,
         taskSummary: {
           activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
@@ -1269,7 +1274,7 @@ class EstateService {
       }
     })
 
-    estate = orderBy(estate, ['mosturgency'], ['desc'])
+    estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
     return estate
   }
 
