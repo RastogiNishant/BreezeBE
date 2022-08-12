@@ -104,7 +104,6 @@ class EstateCurrentTenantService {
 
   static async updateCurrentTenant({ id, data, estate_id, user_id }) {
     if (id) {
-      //This broke excel import which does not pass id to this method.
       await this.hasPermission(id, user_id)
     }
 
@@ -214,32 +213,36 @@ class EstateCurrentTenantService {
     return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_EXPIRE })
   }
 
-  static async inviteTenantToAppByEmail({ id, estate_id, user_id }) {
-    const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
-      id,
-      estate_id,
+  static async inviteTenantToAppByEmail({ ids, user_id }) {
+    const links = await this.getDynamicLinks({
+      ids,
       user_id,
     })
-    await MailService.sendInvitationToOusideTenant(estateCurrentTenant.email, shortLink)
+    await MailService.sendInvitationToOusideTenant(links)
   }
 
-  static async inviteTenantToAppBySMS({ id, estate_id, user_id }) {
-    const { estateCurrentTenant, shortLink } = await this.createDynamicLink({
-      id,
-      estate_id,
+  static async inviteTenantToAppBySMS({ ids, user_id }) {
+    const links = await this.getDynamicLinks({
+      ids,
       user_id,
     })
 
-    const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${shortLink}`
+    const errorPhoneNumbers = []
+    await Promise.all(
+      links.map(async (link) => {
+        const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${link.shortLink}`
 
-    if (estateCurrentTenant.phone_number) {
-      await SMSService.send({ to: estateCurrentTenant.phone_number, txt })
-    } else {
-      throw new HttpException('phone number no exist', 500)
-    }
+        if (link.phone_number) {
+          await SMSService.send({ to: link.phone_number, txt })
+        } else {
+          errorPhoneNumbers.push(link.phone_number)
+        }
+      })
+    )
+    return errorPhoneNumbers
   }
 
-  static async getOutsideTenantByEstateId({ id, estate_id }) {
+  static async getOutsideTenantsByEstateId({ id, estate_id }) {
     return await EstateCurrentTenant.query()
       .where('id', id)
       .where('estate_id', estate_id)
@@ -248,20 +251,41 @@ class EstateCurrentTenantService {
       .first()
   }
 
-  static async createDynamicLink({ id, estate_id, user_id }) {
-    const estate = await require('./EstateService').getEstateHasTenant({
-      condition: { id: estate_id, user_id: user_id },
-    })
+  static async getOutsideTenantByIds(ids) {
+    return (
+      await EstateCurrentTenant.query()
+        .whereIn('id', ids)
+        .whereNot('status', STATUS_DELETE)
+        .whereNull('user_id')
+        .fetch()
+    ).rows
+  }
 
-    if (!estate) {
-      throw new HttpException('No permission to invite')
-    }
+  static async getDynamicLinks({ ids, user_id }) {
+    const estateCurrentTenants = await this.getOutsideTenantByIds(ids)
 
-    const estateCurrentTenant = await this.getOutsideTenantByEstateId({ id, estate_id })
-    if (!estateCurrentTenant) {
-      throw new HttpException('No record exists')
-    }
+    const EstateService = require('./EstateService')
+    await Promise.all(
+      estateCurrentTenants.map(async (ect) => {
+        const estate = await EstateService.getEstateHasTenant({
+          condition: { id: ect.estate_id, user_id: user_id },
+        })
 
+        if (!estate) {
+          throw new HttpException('No permission to invite')
+        }
+      })
+    )
+
+    const links = await Promise.all(
+      estateCurrentTenants.map(async (ect) => {
+        return await EstateCurrentTenantService.createDynamicLink(ect)
+      })
+    )
+
+    return links
+  }
+  static async createDynamicLink(estateCurrentTenant) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -303,7 +327,8 @@ class EstateCurrentTenantService {
       },
     })
     return {
-      estateCurrentTenant,
+      email: estateCurrentTenant.email,
+      phone_number: estateCurrentTenant.phone_number,
       shortLink,
     }
   }
@@ -311,13 +336,12 @@ class EstateCurrentTenantService {
   static async acceptOutsideTenant({ data1, data2, password }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
-    const estateCurrentTenant = await this.getOutsideTenantByEstateId({ id, estate_id })
+    const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
 
     const preserved_code = estateCurrentTenant.code
-
     if (code !== preserved_code) {
       throw new HttpException('code is wrong', 500)
     }

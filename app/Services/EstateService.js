@@ -11,6 +11,7 @@ const {
   groupBy,
   countBy,
   maxBy,
+  orderBy,
 } = require('lodash')
 const { props } = require('bluebird')
 const Database = use('Database')
@@ -319,6 +320,7 @@ class EstateService {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
+      .with('files')
 
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
@@ -345,9 +347,25 @@ class EstateService {
   /**
    *
    */
-  static async removeEstate(id) {
+  static async removeEstate(id, user_id) {
     // TODO: remove indexes
-    return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
+    await Estate.findByOrFail({ id, user_id })
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_DELETE })
+        .transacting(trx)
+
+      const taskService = require('./TaskService')
+      await taskService.deleteByEstateById(id, trx)
+
+      await trx.commit()
+      return estate
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   static async completeRemoveEstate(id) {
@@ -1189,25 +1207,12 @@ class EstateService {
         'estates.city',
         'estates.coord_raw',
         'estates.property_id',
-        'estates.address'
+        'estates.address',
+        Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
-    query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
-      if (params.only_outside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
-      }
-
-      if (params.only_inside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
-      }
-
-      if (params.tenant_id) {
-        this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
-      }
-
-      if (!params.only_outside_breeze && !params.only_inside_breeze) {
-        this.on('_ect.estate_id', 'estates.id')
-      }
+    query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
+      this.on('_ect.estate_id', 'estates.id')
     })
 
     query.leftJoin({ _u: 'users' }, function (m) {
@@ -1219,23 +1224,22 @@ class EstateService {
         TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
-
-      if (params.status) {
-        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-      }
     })
 
     query.where('estates.user_id', user.id)
     query.whereNot('estates.status', STATUS_DELETE)
-
+    query.where('estates.letting_type', LETTING_TYPE_LET)
     if (params.estate_id) {
       query.whereIn('estates.id', [params.estate_id])
     }
 
     const filter = new TaskFilters(params, query)
-    query = filter.process()
 
     query.groupBy('estates.id')
+
+    filter.afterQuery()
+
+    query.orderBy('mosturgency', 'desc')
 
     let result = null
     if (limit === -1 || page === -1) {
@@ -1246,15 +1250,20 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    const estate = result.map((r) => {
+    let estate = result.map((r) => {
       const mostUrgency = maxBy(r[0].activeTasks, (re) => {
         return re.urgency
       })
 
+      const mostUpdated =
+        r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+
       let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
       return {
-        ...omit(r[0], ['activeTasks']),
+        ...omit(r[0], ['activeTasks', 'mosturgency']),
         activeTasks: activeTasks,
+        mosturgency: mostUrgency?.urgency,
+        most_task_updated: mostUpdated,
         taskSummary: {
           activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
@@ -1264,10 +1273,12 @@ class EstateService {
         },
       }
     })
+
+    estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
     return estate
   }
 
-  static async getTotalLetCount(user_id, params) {
+  static async getTotalLetCount(user_id, params, filtering = true) {
     let query = Estate.query()
       .count('estates.*')
       .leftJoin('tasks', function () {
@@ -1275,29 +1286,24 @@ class EstateService {
           Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
-      .innerJoin({ _ect: 'estate_current_tenants' }, function () {
-        if (params.only_outside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NULL'))
-        }
-
-        if (params.only_inside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
-        }
-
-        if (params.tenant_id) {
-          this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
-        }
-
-        if (!params.only_outside_breeze && !params.only_inside_breeze) {
-          this.on('_ect.estate_id', 'estates.id')
-        }
+      .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+        this.on('_ect.estate_id', 'estates.id')
+      })
+      .leftJoin({ _u: 'users' }, function (m) {
+        m.on('_ect.user_id', '_u.id')
       })
       .where('estates.user_id', user_id)
+      .where('estates.letting_type', LETTING_TYPE_LET)
       .whereNot('estates.status', STATUS_DELETE)
 
+    if (!filtering) {
+      query.groupBy('estates.id')
+      return await query
+    }
     const filter = new TaskFilters(params, query)
-    query = filter.process()
     query.groupBy('estates.id')
+    filter.afterQuery()
+
     return await query
   }
 

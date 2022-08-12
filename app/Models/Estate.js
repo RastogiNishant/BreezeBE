@@ -39,8 +39,8 @@ const {
   TENANT_MATCH_FIELDS,
   MATCH_STATUS_FINISH,
   MATCH_STATUS_SHARE,
-  TASK_STATUS_NEW, 
-  TASK_STATUS_INPROGRESS
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
 } = require('../constants')
 
 class Estate extends Model {
@@ -299,7 +299,8 @@ class Estate extends Model {
   activeTasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
       .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-      .orderBy('created_at', 'desc')
+      .orderBy('updated_at', 'desc')
+      .orderBy('urgency', 'desc')
   }
 
   /**

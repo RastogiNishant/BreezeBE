@@ -1,6 +1,7 @@
 const { pick, omit, isArray, each } = require('lodash')
 
 const Model = use('Model')
+const moment = require('moment')
 
 class BaseModel extends Model {
   static boot() {
@@ -19,13 +20,17 @@ class BaseModel extends Model {
           instance[k] = value
         }
       })
+
+      if (instance.updated_at) {
+        instance.updated_at = moment.utc(new Date())
+      }
     })
   }
 
   /**
    *
    */
-  static async createItem(data, trx=null) {
+  static async createItem(data, trx = null) {
     return this.create(omit(pick(data, this.columns || []), ['id']), trx)
   }
 
@@ -39,17 +44,17 @@ class BaseModel extends Model {
     return this.save()
   }
 
-  async updateItemWithTrx(data, trx, force = false ) {
+  async updateItemWithTrx(data, trx, force = false) {
     const exclude = force ? [] : this.constructor.readonly || []
     this.merge(omit(pick(data, this.constructor.columns || []), exclude))
 
-    return this.save(trx)    
+    return this.save(trx)
   }
 
-  async deleteItem(id, trx ) {
-    if( trx) {
+  async deleteItem(id, trx) {
+    if (trx) {
       return this.where('id', id).delete().transacting(trx)
-    }else {
+    } else {
       return this.where('id', id).delete()
     }
   }

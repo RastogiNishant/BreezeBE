@@ -470,19 +470,19 @@ Route.group(() => {
   ])
 
   Route.post(
-    '/:estate_id/tenant/:id/invite/email',
+    '/:estate_id/tenant/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'
-  ).middleware(['valid:EstateId,Id'])
+  ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/:id/invite/letter',
+    '/:estate_id/tenant/invite/letter',
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
-  ).middleware(['valid:EstateId,Id'])  
-  
+  ).middleware(['valid:InvitationIds'])
+
   Route.post(
-    '/:estate_id/tenant/:id/invite/sms',
+    '/:estate_id/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
-  ).middleware(['valid:EstateId,Id'])
+  ).middleware(['valid:InvitationIds'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
@@ -703,13 +703,15 @@ Route.group(() => {
 
 Route.group(() => {
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
-  Route.post('/init', 'TaskController.init')
+  Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
   Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
   Route.put('/:id/addImage', 'TaskController.addImage').middleware(['valid:Id'])
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
+
+  //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwt,jwtLandlord'])

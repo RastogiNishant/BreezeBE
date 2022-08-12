@@ -11,8 +11,13 @@ const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const schema = require('../Validators/CreateBuddy').schema()
-
-const { STATUS_DRAFT, DATE_FORMAT, BUDDY_STATUS_PENDING, STATUS_ACTIVE } = require('../constants')
+const {
+  STATUS_DRAFT,
+  DATE_FORMAT,
+  BUDDY_STATUS_PENDING,
+  STATUS_ACTIVE,
+  LETTING_TYPE_NA,
+} = require('../constants')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 /**
@@ -73,6 +78,9 @@ class ImportService {
         data.avail_duration = 144
         data.status = STATUS_DRAFT
         data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        if (!data.letting_type) {
+          data.letting_type = LETTING_TYPE_NA
+        }
         estate = await EstateService.createEstate({ data, userId }, true)
 
         let rooms = []
@@ -226,6 +234,9 @@ class ImportService {
     let estate = await Estate.query().where('six_char_code', six_char_code).first()
     if (!estate) {
       throw new HttpException('estate no exists')
+    }
+    if (!estate_data.letting_type) {
+      estate_data.letting_type = LETTING_TYPE_NA
     }
     estate_data.id = estate.id
     estate.fill(estate_data)
