@@ -402,6 +402,9 @@ const constants = {
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS: 'notification_landlord_deactivated_in_two_days',
   NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT: 'notification_landlord_followup_prospect',
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
 
@@ -441,8 +444,11 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
-  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID: 43,
-  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID: 44,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID: 43,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID: 44,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 45,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID: 46,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID: 47,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -541,7 +547,7 @@ const constants = {
     'energy_proof_original_file',
     'isoline',
     'is_new_tenant_transfer',
-    'transfer_budget'
+    'transfer_budget',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -625,8 +631,12 @@ const constants = {
     'lte',
   ],
 
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES: ['dateIs', 'dateIsNot', 'dateBefore', 'dateAfter'],
+  FILTER_CONSTRAINTS_COUNT_MATCH_MODES: ['equals', 'notEquals', 'gt', 'lt', 'gte', 'lte'],
+
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE: 6,
   PREDEFINED_MSG_OPEN_ENDED: 3,
   PREDEFINED_NOT_A_QUESTION: 4,
   PREDEFINED_LAST: 5,
@@ -681,6 +691,9 @@ const constants = {
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
+  IS_INSIDE_BREEZE: true,
+  IS_OUTSIDE_BREEZE: false,
+
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
   CHAT_EDIT_STATUS_EDITED: 'edited',
   CHAT_EDIT_STATUS_DELETED: 'deleted',
@@ -704,8 +717,36 @@ const constants = {
     'property_id',
     'address',
   ],
-
+  //whether we deactivate landlord at end of day of his/her deactivation day
+  //or at the moment his deactivation arrives.
+  DEACTIVATE_LANDLORD_AT_END_OF_DAY: false,
+  //list of holidays in Germany
+  //FIXME: this should come from a db table or from an external api
+  GERMAN_HOLIDAYS: [
+    '2022-08-15', //assumption day
+    '2022-09-20', //world children day
+    '2022-10-03', //reformation day
+    '2022-11-01', //all saints day
+    '2022-12-25', //christmas
+    '2022-12-26', //seconday of christmas
+    '2023-01-01', //new year's day
+    '2023-01-06', //epiphany
+    '2023-03-08', //Weltfrauntag
+    '2023-04-07', //Good Friday
+    '2023-04-09', //Easter Sunday
+    '2023-04-10', //Easter Monday
+    '2023-05-01', //Labor day
+    '2023-05-29', //Whit Monday
+    '2023-06-08', //Corpus Cristi
+    '2023-08-15', //Assumption Day
+    '2023-09-20', //world children's day
+    '2023-10-03', //reformation day
+    '2023-11-01', //all saints' day
+    '2023-12-25', //christmas
+    '2023-12-26', //second day of christmas
+  ],
   CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_BOT_MESSAGE: 'chatbot',
   CHAT_TYPE_NOTIFICATION: 'notification',
   CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
 

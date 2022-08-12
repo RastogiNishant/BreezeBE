@@ -714,6 +714,8 @@ Route.group(() => {
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
+
+  //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwt,jwtLandlord'])
