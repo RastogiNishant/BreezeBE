@@ -527,6 +527,7 @@ const constants = {
     'secondname',
     'phone',
     'avatar',
+    'sex',    
     'address',
     'user_id',
     'available_date',
