@@ -57,6 +57,7 @@ const {
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
+  LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1112,6 +1113,7 @@ class EstateService {
       .select(
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
   static async getFilteredCounts(userId, params) {
