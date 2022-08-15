@@ -1196,6 +1196,7 @@ class EstateService {
         })
       })
       .with('activeTasks')
+      .with('tasks')
       .select(
         'estates.id',
         'estates.coord',
@@ -1261,12 +1262,14 @@ class EstateService {
         r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
 
       let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
+      const taskCount = (r[0].tasks || []).length || 0
       return {
-        ...omit(r[0], ['activeTasks', 'mosturgency']),
+        ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
         activeTasks: activeTasks,
         mosturgency: mostUrgency?.urgency,
         most_task_updated: mostUpdated,
         taskSummary: {
+          taskCount,
           activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
           mostUrgencyCount: mostUrgency
