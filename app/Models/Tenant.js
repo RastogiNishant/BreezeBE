@@ -94,6 +94,9 @@ class Tenant extends Model {
       'rent_start',
       'address',
       'coord',
+      'transfer_budget_min',
+      'transfer_budget_max',
+      'residency_duration',      
     ]
   }
 
