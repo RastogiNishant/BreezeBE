@@ -36,6 +36,7 @@ class File {
     try {
       const options = { width: parseInt(process.env.THUMB_WIDTH || '100') }
       const thumbnail = await imageThumbnail(buffer, options)
+      console.log('thumbnail', thumbnail)
       return thumbnail
     } catch (e) {
       console.log('createThumbnail Error')
@@ -84,7 +85,7 @@ class File {
       await Drive.disk(disk).put(filePathName, img_data, options)
 
       let thumbnailFilePathName = null
-      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
+      if ([this.IMAGE_JPEG, this.IMAGE_PNG, this.IMAGE_PDF].includes(mime)) {
         thumbnailFilePathName = await File.saveThumbnailToDisk({
           image: img_data,
           fileName: filename,
