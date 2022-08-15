@@ -161,6 +161,14 @@ class EstateCurrentTenantService {
       .firstOrFail()
   }
 
+  static async getByEstateId(estate_id, user_id) {
+    return await EstateCurrentTenant.query()
+      .where('estate_id', estate_id)
+      .where('user_id', user_id)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+  }
+
   static async getAll({ user_id, estate_id, status, tenant_id, page = -1, limit = -1 }) {
     const query = EstateCurrentTenant.query()
       .select(

@@ -226,7 +226,7 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, ['rooms'], 'letting_type'),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -269,7 +269,7 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
       status: STATUS_DRAFT,
     }
 
@@ -763,7 +763,7 @@ class EstateService {
   }
 
   /**
-   * Get estates according to matches
+   * Get estates according to es
    */
   static getActiveMatchesQuery(userId, exclude = []) {
     /*
