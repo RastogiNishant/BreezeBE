@@ -16,6 +16,9 @@ const {
   SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
+  SALUTATION_MR_LABEL,
+  SALUTATION_MS_LABEL,
+  SALUTATION_SIR_OR_MADAM_LABEL,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -30,37 +33,43 @@ class EstateCurrentTenantService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id, user_id }) {
-    const estate = require('./EstateService')
-      .getActiveEstateQuery()
-      .where('user_id', user_id)
-      .where('id', estate_id)
-      .where('letting_status', LETTING_TYPE_LET)
-      .first()
-
-    if (!estate) {
-      throw new HttpException('No permission to add current tenant')
-    }
+  static async addCurrentTenant({ data, estate_id }) {
+    await EstateService.rentable(estateId)
 
     let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
+    const trx = await Database.beginTransaction()
 
-    let currentTenant = new EstateCurrentTenant()
-    currentTenant.fill({
-      estate_id,
-      salutation: data.txt_salutation || '',
-      surname: data.surname || '',
-      email: data.tenant_email,
-      contract_end: data.contract_end,
-      phone_number: data.tenant_tel,
-      status: STATUS_ACTIVE,
-      salutation_int: data.salutation_int,
-    })
+    try {
+      let currentTenant = new EstateCurrentTenant()
+      currentTenant.fill({
+        estate_id,
+        salutation: data.txt_salutation || '',
+        surname: data.surname || '',
+        email: data.tenant_email,
+        contract_end: data.contract_end,
+        phone_number: data.tenant_tel,
+        status: STATUS_ACTIVE,
+        salutation_int: data.salutation_int,
+      })
 
-    if (user) {
-      currentTenant.user_id = user.id
+      if (user) {
+        currentTenant.user_id = user.id
+        currentTenant.surname = user.secondname || currentTenant.surname
+        currentTenant.salutation_int = user.sex || currentTenant.salutation_int
+        currentTenant.salutation = user.sex === 1 ? SALUTATION_MR_LABEL : tenantUser.sex === 2 ? SALUTATION_MS_LABEL : SALUTATION_SIR_OR_MADAM_LABEL
+        await require('./TenantService').updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
+      }
+
+      await currentTenant.save(trx)
+      await require('./EstateService').rented(estateId, trx)
+
+      await trx.commit()
+
+      return currentTenant
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
     }
-    await currentTenant.save()
-    return currentTenant
   }
 
   /**
@@ -95,7 +104,8 @@ class EstateCurrentTenantService {
       contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
       phone_number: tenantUser.phone_number || '',
       status: STATUS_ACTIVE,
-      salutation_int: SALUTATION_SIR_OR_MADAM,
+      salutation: tenantUser.sex === 1 ? SALUTATION_MR_LABEL : tenantUser.sex === 2 ? SALUTATION_MS_LABEL : SALUTATION_SIR_OR_MADAM_LABEL,
+      salutation_int: tenantUser.sex || SALUTATION_SIR_OR_MADAM,
     })
 
     await currentTenant.save(trx)

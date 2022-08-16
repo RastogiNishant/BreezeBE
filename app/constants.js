@@ -522,7 +522,7 @@ const constants = {
     'secondname',
     'phone',
     'avatar',
-    'sex',    
+    'sex',
     'address',
     'user_id',
     'available_date',
@@ -595,6 +595,10 @@ const constants = {
   LETTING_STATUS_STRUCTURAL_VACANCY: 5,
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
+
+  SALUTATION_MR_LABEL: 'Mr.',
+  SALUTATION_MS_LABEL: 'Ms.',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
 
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,

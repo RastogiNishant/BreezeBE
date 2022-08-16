@@ -18,8 +18,11 @@ const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
+const Event = use('Event')
+const File = use('App/Classes/File')
 
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const TenantService = use('App/Services/TenantService')
 
 const {
   MATCH_STATUS_NEW,
@@ -59,7 +62,6 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
-  LETTING_TYPE_LET,
 } = require('../constants')
 const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
@@ -997,28 +999,42 @@ class MatchService {
   /**
    * Tenant confirmed final request
    */
-  static async finalConfirm(estateId, tenantId, trx) {
-    await Database.table('matches')
-      .where({
-        user_id: tenantId,
-        estate_id: estateId,
-        status: MATCH_STATUS_COMMIT,
-      })
-      .update({
-        status: MATCH_STATUS_FINISH,
-        final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
-      })
-      .transacting(trx)
+  static async finalConfirm(estateId, tenantId) {
 
-    // Make estate status DRAFT to hide from tenants' matches list
-    await Database.table('estates')
-      .where({ id: estateId })
-      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
-      .transacting(trx)
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await EstateService.rentable(estateId)
 
-    await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
+      await Database.table('matches')
+        .where({
+          user_id: tenantId,
+          estate_id: estateId,
+          status: MATCH_STATUS_COMMIT,
+        })
+        .update({
+          status: MATCH_STATUS_FINISH,
+          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+        })
+        .transacting(trx)
 
-    return NoticeService.estateFinalConfirm(estateId, tenantId)
+      await EstateService.rented(estateId, trx)
+      await TenantService.updateTenantAddress({ user_id: tenantId, address: estate.address }, trx)
+      await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
+
+      await trx.commit()
+      NoticeService.estateFinalConfirm(estateId, tenantId)
+      Event.fire('mautic:syncContact', tenantId, { finalmatchapproval_count: 1 })
+
+      let contact = await estate.getContacts()
+      if (contact) {
+        contact = contact.toJSON()
+        contact.avatar = File.getPublicUrl(contact.avatar)
+      }
+      return { contact, estate }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   /**

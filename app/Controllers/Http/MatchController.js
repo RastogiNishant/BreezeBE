@@ -502,18 +502,9 @@ class MatchController {
   async commitEstateRent({ request, auth, response }) {
     const userId = auth.user.id
     const { estate_id } = request.all()
-    const estate = await this.getActiveEstate(estate_id)
-
-    const trx = await Database.beginTransaction()
 
     try {
-      await MatchService.finalConfirm(estate_id, userId, trx)
-      await trx.commit()
-      let contact = await estate.getContacts()
-      if (contact) {
-        contact = contact.toJSON()
-        contact.avatar = File.getPublicUrl(contact.avatar)
-      }
+      const { estate, contact } = await MatchService.finalConfirm(estate_id, userId)
       logEvent(
         request,
         LOG_TYPE_FINAL_MATCH_APPROVAL,
@@ -521,15 +512,10 @@ class MatchController {
         { estate_id, role: ROLE_USER },
         false
       )
-      Event.fire('mautic:syncContact', userId, { finalmatchapproval_count: 1 })
       response.res({ estate, contact })
     } catch (e) {
-      await trx.rollback()
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, 500)
     }
   }
 

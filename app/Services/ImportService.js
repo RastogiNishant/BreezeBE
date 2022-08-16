@@ -109,7 +109,6 @@ class ImportService {
           await EstateCurrentTenantService.addCurrentTenant({
             data,
             estate_id: estate.id,
-            user_id: userId,
           })
         }
         if (warning) {

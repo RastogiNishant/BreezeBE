@@ -359,6 +359,16 @@ class TenantService {
 
     return tenant && tenant.selected_adults_count && member
   }
+
+  static async updateTenantAddress({ user_id, address }, trx) {
+    let tenant = await this.getTenant(user_id)
+    const { lon, lat } = await GeoService.geeGeoCoordByAddress(address)
+
+    tenant.address = address
+    tenant.coord = `${lat},${lon}`
+
+    await tenant.save(trx)
+  }
 }
 
 module.exports = TenantService

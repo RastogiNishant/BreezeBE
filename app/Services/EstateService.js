@@ -418,8 +418,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1320,6 +1320,23 @@ class EstateService {
         .orderBy('created_at', 'desc')
         .paginate(1, limit)
     ).rows
+  }
+
+  static async rented(estateId, trx) {
+    // Make estate status DRAFT to hide from tenants' matches list
+    await Database.table('estates')
+      .where({ id: estateId })
+      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .transacting(trx)
+  }
+
+  static async rentable(estateId) {
+    try {
+      return await Estate.query().where('id', estateId).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).whereNot('letting_type', LETTING_TYPE_LET).firstOrFail()
+    } catch (e) {
+      throw new HttpException('You can\'t rent this property because this property already has been delete or rented by someone else', 400)
+    }
+
   }
 }
 module.exports = EstateService
