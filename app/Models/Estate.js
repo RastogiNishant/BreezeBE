@@ -152,6 +152,7 @@ class Estate extends Model {
       'extra_address',
       'is_new_tenant_transfer',
       'transfer_budget',
+      'rent_end_at',
     ]
   }
 
