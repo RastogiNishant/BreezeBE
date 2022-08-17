@@ -12,6 +12,8 @@ const AppException = use('App/Exceptions/AppException')
 const imageminPngquant = require('imagemin-pngquant')
 const HttpException = use('App/Exceptions/HttpException')
 const imageThumbnail = require('image-thumbnail')
+const exec = require('node-async-exec');
+const fsPromise = require('fs/promises');
 
 class File {
   static IMAGE_JPG = 'image/jpg'
@@ -44,6 +46,18 @@ class File {
     }
   }
 
+  static async compressPDF(filePath) {
+    try {
+      // need to install ghostscript to linux so this shell will work.
+      // need to give read/write permission to tmp directly
+      const outputFileName = `${process.env.PDF_TEMP_DIR || '/tmp'}/output_${uuid.v4()}.pdf`
+      await exec({ cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}` })
+      const data = await fsPromise.readFile(outputFileName);
+      return data
+    } catch (e) {
+      throw new AppException(e.message, 400)
+    }
+  }
   /**
    *
    */
@@ -60,9 +74,9 @@ class File {
     }
 
     try {
-      let img_data = Drive.getStream(file.tmpPath)
-      const image_compress_tick = process.env.IMAGE_COMPRESS_TICK || 10000
+      let img_data
       if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
+        img_data = Drive.getStream(file.tmpPath)
         const imagemin = (await import('imagemin')).default
         const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
 
@@ -71,6 +85,10 @@ class File {
             plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
           })
         )[0].data
+      }
+
+      if ([this.IMAGE_PDF].includes(mime)) {
+        img_data = await this.compressPDF(file.tmpPath)
       }
 
       const filename = `${uuid.v4()}.${ext}`
@@ -85,7 +103,7 @@ class File {
       await Drive.disk(disk).put(filePathName, img_data, options)
 
       let thumbnailFilePathName = null
-      if ([this.IMAGE_JPEG, this.IMAGE_PNG, this.IMAGE_PDF].includes(mime)) {
+      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
         thumbnailFilePathName = await File.saveThumbnailToDisk({
           image: img_data,
           fileName: filename,
@@ -180,14 +198,14 @@ class File {
       (n, v) =>
         v
           ? {
-              ...n,
-              [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
-              [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
-              [`thumb_${v.field}`]:
-                v.thumbnailFilePathName.length > 1
-                  ? v.thumbnailFilePathName
-                  : v.thumbnailFilePathName[0],
-            }
+            ...n,
+            [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
+            [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
+            [`thumb_${v.field}`]:
+              v.thumbnailFilePathName.length > 1
+                ? v.thumbnailFilePathName
+                : v.thumbnailFilePathName[0],
+          }
           : n,
       {}
     )
