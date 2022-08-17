@@ -41,6 +41,8 @@ const {
   MATCH_STATUS_SHARE,
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
+  TASK_STATUS_DELETE,
+  TASK_STATUS_DRAFT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -150,6 +152,7 @@ class Estate extends Model {
       'extra_address',
       'is_new_tenant_transfer',
       'transfer_budget',
+      'rent_end_at',
     ]
   }
 
@@ -301,6 +304,13 @@ class Estate extends Model {
       .orderBy('urgency', 'desc')
   }
 
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
+  }
+
   /**
    *
    */
@@ -400,12 +410,13 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate() {
-    await this.updateItem(
+  async publishEstate(trx) {
+    await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
         available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
+      trx,
       true
     )
   }
