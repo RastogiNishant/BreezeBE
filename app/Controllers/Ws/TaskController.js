@@ -27,7 +27,7 @@ class TaskController extends BaseController {
     if (data && data.lastId) {
       lastId = data.lastId
     }
-    let previousMessages = await ChatService.getPreviousMessages(this.taskId, lastId)
+    let previousMessages = await ChatService.getPreviousMessages({ task_id: this.taskId, lastId, user_id: this.user.id })
     previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
     if (this.topic) {
       this.topic.emitTo(
