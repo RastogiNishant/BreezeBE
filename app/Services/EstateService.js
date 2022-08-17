@@ -25,6 +25,7 @@ const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
 
+const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
@@ -57,6 +58,7 @@ const {
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
+  LETTING_TYPE_NA,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -928,22 +930,41 @@ class EstateService {
    */
   static async publishEstate(estate, request) {
     //TODO: We must add transaction here
-    const User = use('App/Models/User')
-    const user = await User.query().where('id', estate.user_id).first()
-    if (!user) return
-    if (user.company_id != null) {
-      await CompanyService.validateUserContacts(estate.user_id)
+
+    const trx = await Database.beginTransaction()
+    try {
+      const user = await User.query().where('id', estate.user_id).first()
+      if (!user) return
+      if (user.company_id != null) {
+        await CompanyService.validateUserContacts(estate.user_id)
+      }
+      await props({
+        delMatches: Database.table('matches')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
+        delDislikes: Database.table('dislikes')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+      })
+      await estate.publishEstate(trx)
+      logEvent(
+        request,
+        LOG_TYPE_PUBLISHED_PROPERTY,
+        estate.user_id,
+        { estate_id: estate.id },
+        false
+      )
+      // Run match estate
+      Event.fire('match::estate', estate.id)
+      Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
     }
-    await props({
-      delMatches: Database.table('matches').where({ estate_id: estate.id }).delete(),
-      delLikes: Database.table('likes').where({ estate_id: estate.id }).delete(),
-      delDislikes: Database.table('dislikes').where({ estate_id: estate.id }).delete(),
-    })
-    await estate.publishEstate()
-    logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
-    // Run match estate
-    Event.fire('match::estate', estate.id)
-    Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
   }
 
   static async handleOfflineEstate(estateId, trx) {
@@ -1112,6 +1133,7 @@ class EstateService {
       .select(
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
   static async getFilteredCounts(userId, params) {
@@ -1194,6 +1216,7 @@ class EstateService {
         })
       })
       .with('activeTasks')
+      .with('tasks')
       .select(
         'estates.id',
         'estates.coord',
@@ -1205,6 +1228,7 @@ class EstateService {
         'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
+        'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
         'estates.address',
@@ -1255,11 +1279,18 @@ class EstateService {
         return re.urgency
       })
 
+      const mostUpdated =
+        r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+
       let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
+      const taskCount = (r[0].tasks || []).length || 0
       return {
-        ...omit(r[0], ['activeTasks', 'mosturgency']),
+        ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
         activeTasks: activeTasks,
+        mosturgency: mostUrgency?.urgency,
+        most_task_updated: mostUpdated,
         taskSummary: {
+          taskCount,
           activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
           mostUrgencyCount: mostUrgency
@@ -1269,7 +1300,7 @@ class EstateService {
       }
     })
 
-    estate = orderBy(estate, ['mosturgency'], ['desc'])
+    estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
     return estate
   }
 

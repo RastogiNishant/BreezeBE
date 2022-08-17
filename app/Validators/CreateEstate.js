@@ -2,7 +2,7 @@
 
 const yup = require('yup')
 const Base = require('./Base')
-
+const moment = require('moment')
 const {
   STATUS_ACTIVE,
   STATUS_DELETE,
@@ -191,6 +191,7 @@ const {
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  DATE_FORMAT,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -352,11 +353,22 @@ class CreateEstate extends Base {
       avail_duration: yup.number().integer().positive().max(5000),
       from_date: yup.date().nullable(),
       to_date: yup.date(),
+      rent_end_at: yup
+        .date()
+        .nullable()
+        .transform((value, origin) => {
+          return moment.utc(origin, DATE_FORMAT).toDate()
+        }),
+
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
       pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
-      gender: yup.number().integer().oneOf([GENDER_MALE, GENDER_FEMALE, null]).nullable(),
+      gender: yup
+        .number()
+        .integer()
+        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY, null])
+        .nullable(),
       monumental_protection: yup.boolean(),
       parking_space: yup.number().min(0).max(10),
       parking_space_type: yup

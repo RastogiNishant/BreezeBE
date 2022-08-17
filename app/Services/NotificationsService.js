@@ -85,6 +85,8 @@ const {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
@@ -131,6 +133,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_ARRIVED_ID, NOTICE_TYPE_PROSPECT_ARRIVED],
   [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
+  [NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS],
   [NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE],
   [NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE],
 ]
@@ -357,7 +360,6 @@ class NotificationsService {
       const data = get(v, '0.data', {})
       const typeId = get(v, '0.type')
       const image = get(v, '0.image')
-
       try {
         return NotificationsService.sendNotification(
           tokens,
@@ -769,6 +771,13 @@ class NotificationsService {
   }
 
   static async sendZendeskNotification(notices, title, body) {
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyDeactivatingLandlordsInTwoDays(notices) {
+    const title = 'landlord.notification.event.profile_deactivated_two_days'
+    const body = 'landlord.notification.event.profile_deactivated_two_days.next.message'
+
     return NotificationsService.sendNotes(notices, title, body)
   }
 

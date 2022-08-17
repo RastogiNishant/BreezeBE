@@ -220,8 +220,10 @@ class TaskService {
       query.where('tenant_id', user.id)
     }
 
-    if (trx) return await query.update({ ...task }).transacting(trx)
-    return await query.update({ ...task })
+    const taskRow = await query.firstOrFail()
+
+    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
+    return await taskRow.updateItem({ ...task })
   }
 
   /**
@@ -295,11 +297,13 @@ class TaskService {
     let taskQuery = Task.query().select('tasks.*')
 
     if (role === ROLE_USER) {
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
       taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
       })
@@ -310,7 +314,6 @@ class TaskService {
     }
     taskQuery
       .where('tasks.estate_id', estate_id)
-      .whereNot('tasks.status', TASK_STATUS_DELETE)
       .orderBy('tasks.status', 'asc')
       .orderBy('tasks.created_at', 'desc')
       .orderBy('tasks.urgency', 'desc')
@@ -487,10 +490,9 @@ class TaskService {
             const thumb =
               attachment.uri.split('/').length === 2
                 ? await File.getProtectedUrl(
-                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-                      attachment.uri.split('/')[1]
-                    }`
-                  )
+                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
+                  }`
+                )
                 : ''
 
             if (attachment.uri.search('http') !== 0) {
