@@ -421,6 +421,7 @@ class AccountController {
       .where('users.id', auth.current.user.id)
       .with('household')
       .with('plan')
+      .with('company')
       .with('tenantPaymentPlan')
       .firstOrFail()
 
@@ -438,21 +439,18 @@ class AccountController {
         email: user.email,
         role: user.role,
       })
-      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
-      if (!user.company_id) {
-        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
-        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
-        const company_name = `${company_firstname} ${company_secondname}`.trim()
-        user.company_name = company_name
-        user.company = null
-      } else {
-        let company = await Company.query().where('id', user.company_id).first()
-        user.company = company
-        user.company_name = company.name
-      }
+
       if (user.role == ROLE_LANDLORD) {
+        if (!user.company || !user.company.length) {
+          user.company = [{
+            name: `${_.isEmpty(user.firstname) ? '' : user.firstname} ${_.isEmpty(user.secondname) ? '' : user.secondname}`,
+            address: null,
+          }]
+        }
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
       }
+
+      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
     }
 
     if (tenant) {
@@ -537,8 +535,8 @@ class AccountController {
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
-      ? delete data.prospect_visibility
-      : data
+        ? delete data.prospect_visibility
+        : data
 
     const trx = await Database.beginTransaction()
     let company
@@ -691,7 +689,7 @@ class AccountController {
       auth.user.avatar = avatarUrl
       await auth.user.save()
     }
-    fs.unlink(tmpFile, () => {})
+    fs.unlink(tmpFile, () => { })
 
     response.res(auth.user)
   }
@@ -895,13 +893,13 @@ class AccountController {
       const data = {
         purchase: tenantPremiumPlans
           ? pick(tenantPremiumPlans.toJSON(), [
-              'id',
-              'plan_id',
-              'isCancelled',
-              'startDate',
-              'endDate',
-              'app',
-            ])
+            'id',
+            'plan_id',
+            'isCancelled',
+            'startDate',
+            'endDate',
+            'app',
+          ])
           : null,
       }
       response.res(data)
