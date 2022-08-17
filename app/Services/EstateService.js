@@ -418,8 +418,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1208,6 +1208,7 @@ class EstateService {
         'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
+        'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
         'estates.address',
