@@ -2,21 +2,24 @@
 const {
   CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   ROLE_LANDLORD,
+  CHAT_EDIT_STATUS_EDITED,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_NEW,
 } = require('../../constants')
+
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
-const Promise = require('bluebird')
+const NoticeService = use('App/Services/NoticeService')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
     this.taskId = request.task_id
+    this.estateId = request.estate_id
     this.tenant_user_id = request.tenant_user_id
     this.estate_user_id = request.estate_user_id
   }
@@ -57,7 +60,7 @@ class TaskController extends BaseController {
           id,
           message: message,
           attachments: attachments,
-          edit_status: 'edited',
+          edit_status: CHAT_EDIT_STATUS_EDITED,
           topic: this.socket.topic,
         })
       }
@@ -68,7 +71,8 @@ class TaskController extends BaseController {
 
   async onRemoveMessage({ id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const chat = await ChatService.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
       if (isBoolean(messageAge) && !result) {
         throw new AppException('Chat message not found.')
       }
@@ -124,6 +128,8 @@ class TaskController extends BaseController {
 
     //broadcast taskMessageReceived event to either tenant or landlord
     this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
+    const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
+    await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
     super.onMessage(message)
   }
 }

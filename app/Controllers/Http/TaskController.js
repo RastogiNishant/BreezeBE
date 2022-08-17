@@ -137,6 +137,21 @@ class TaskController {
       throw new HttpException(e.message, 500)
     }
   }
+
+  // async onEditMessage({ request, auth, response }) {
+  //   try {
+  //     const { message, attachments, id } = request.all()
+
+  //     await ChatService.editMessage({
+  //       message,
+  //       attachments,
+  //       id,
+  //     })
+  //     response.res(true)
+  //   } catch (err) {
+  //     throw new HttpException(err.message)
+  //   }
+  // }
 }
 
 module.exports = TaskController

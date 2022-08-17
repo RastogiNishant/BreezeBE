@@ -39,6 +39,7 @@ class UserCanChatHere {
         throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
       request.task_id = task.id
+      request.estate_id = matches[1]
       request.tenant_user_id = currentTenant.tenant_user_id
       request.estate_user_id = currentTenant.estate_user_id
     } else {

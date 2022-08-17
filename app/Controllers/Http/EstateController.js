@@ -42,6 +42,7 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
@@ -130,7 +131,7 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, ...data } = request.all()
+    const { id } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -235,23 +236,21 @@ class EstateController {
       //param is used
       if (params.letting_type) {
         //funnel filter was changed
-        switch (params.letting_type[0]) {
-          case LETTING_TYPE_LET:
-            result = {
-              ...result,
-              all_count: totalEstateCounts.all_count,
-              let_count: filteredCounts.let_count,
-              void_count: totalEstateCounts.void_count,
-            }
-            break
-          case LETTING_TYPE_VOID:
-            result = {
-              ...result,
-              all_count: totalEstateCounts.all_count,
-              let_count: totalEstateCounts.let_count,
-              void_count: filteredCounts.void_count,
-            }
-            break
+        result = {
+          ...result,
+          all_count: totalEstateCounts.all_count,
+          let_count:
+            params.letting_type[0] === LETTING_TYPE_LET
+              ? filteredCounts.let_count
+              : totalEstateCounts.let_count,
+          void_count:
+            params.letting_type[0] === LETTING_TYPE_VOID
+              ? filteredCounts.void_count
+              : totalEstateCounts.void_count,
+          na_count:
+            params.letting_type[0] === LETTING_TYPE_NA
+              ? filteredCounts.na_count
+              : totalEstateCounts.na_count,
         }
       } else {
         //All is selected...
@@ -259,7 +258,8 @@ class EstateController {
           ...result,
           all_count: filteredCounts.all_count,
           let_count: totalEstateCounts.let_count,
-          void_count: filteredCounts.void_count,
+          void_count: totalEstateCounts.void_count,
+          na_count: totalEstateCounts.na_count,
         }
       }
     }
