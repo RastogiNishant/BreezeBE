@@ -2,9 +2,11 @@
 const {
   CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   ROLE_LANDLORD,
+  CHAT_EDIT_STATUS_EDITED,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_NEW,
 } = require('../../constants')
+
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
@@ -58,7 +60,7 @@ class TaskController extends BaseController {
           id,
           message: message,
           attachments: attachments,
-          edit_status: 'edited',
+          edit_status: CHAT_EDIT_STATUS_EDITED,
           topic: this.socket.topic,
         })
       }
@@ -69,7 +71,8 @@ class TaskController extends BaseController {
 
   async onRemoveMessage({ id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const chat = await ChatService.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
       if (isBoolean(messageAge) && !result) {
         throw new AppException('Chat message not found.')
       }

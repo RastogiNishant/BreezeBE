@@ -7,8 +7,10 @@ const {
   CHAT_TYPE_LAST_READ_MARKER,
   CHAT_TYPE_MESSAGE,
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL,
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT,
   CHAT_EDIT_STATUS_EDITED,
   CHAT_EDIT_STATUS_DELETED,
+  CHAT_TYPE_BOT_MESSAGE,
   STATUS_ACTIVE,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
@@ -18,11 +20,11 @@ const {
   ROLE_USER,
   ISO_DATE_FORMAT,
 } = require('../constants')
-const { min, isArray } = require('lodash')
+const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
-const HttpException = require('../Exceptions/HttpException')
-
+const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
 class ChatService {
   static async markLastRead(userId, taskId) {
     const trx = await Database.beginTransaction()
@@ -94,9 +96,10 @@ class ChatService {
         'chats.sender_id'
       )
       .where({
-        type: CHAT_TYPE_MESSAGE,
         task_id: taskId,
       })
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
       .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
@@ -113,7 +116,8 @@ class ChatService {
     const allCount = await Chat.query()
       .select(Database.raw(`count(*) as unread_messages`))
       .where('task_id', taskId)
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .first()
     if (allCount) {
       if (parseInt(allCount.unread_messages) === 0) return 0
@@ -133,7 +137,8 @@ class ChatService {
         .select(Database.raw(`count(*) as unread_messages`))
         .where('created_at', '>', lastReadMarkerDate.created_at)
         .where('task_id', taskId)
-        .where('type', CHAT_TYPE_MESSAGE)
+        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
         .first()
       if (unreadByMarker) {
         counts.push(parseInt(unreadByMarker.unread_messages))
@@ -142,7 +147,8 @@ class ChatService {
 
     const lastSentDate = await Chat.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .where('type', CHAT_TYPE_MESSAGE)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .where('task_id', taskId)
       .where('sender_id', userId)
       .orderBy('created_at', 'desc')
@@ -153,7 +159,8 @@ class ChatService {
         .select(Database.raw(`count(*) as unread_messages`))
         .where('created_at', '>', lastSentDate.created_at)
         .where('task_id', taskId)
-        .where('type', CHAT_TYPE_MESSAGE)
+        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
         .first()
       if (unreadByLastSent) {
         counts.push(parseInt(unreadByLastSent.unread_messages))
@@ -168,22 +175,24 @@ class ChatService {
       .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
       .where('id', id)
       .first()
-    if (!ret) {
-      //not found!
-      return false
-    }
-    return ret.difference
+    return ret
   }
 
-  static async updateChatMessage(id, message, attachments) {
-    const result = await Chat.query()
+  static async updateChatMessage({ id, message, attachments }, trx) {
+    const query = Chat.query()
       .where('id', id)
+      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .update({
         text: message,
         attachments: attachments ? JSON.stringify(attachments) : null,
         edit_status: CHAT_EDIT_STATUS_EDITED,
       })
-    return result
+
+    if (!trx) {
+      return await query
+    }
+    return query.transacting(trx)
   }
 
   /**
@@ -304,6 +313,25 @@ class ChatService {
       return items
     } catch (e) {
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async editMessage({ message, attachments, id }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const chat = await ChatService.getChatMessageAge(id)
+      const messageAge = chat?.difference || false
+
+      if (isBoolean(messageAge) && !messageAge) {
+        throw new AppException('Chat message not found.')
+      }
+      if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
+        throw new AppException('Chat message not editable anymore.')
+      }
+      await ChatService.updateChatMessage({ id, message, attachments })
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e)
     }
   }
 }

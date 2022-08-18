@@ -5,11 +5,10 @@ const {
   STATUS_DELETE,
   STATUS_EXPIRE,
   PREDEFINED_LAST,
-  TASK_STATUS_INPROGRESS,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE,
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE,
   PREDEFINED_MSG_OPEN_ENDED,
-  CHAT_TYPE_MESSAGE,
+  CHAT_TYPE_BOT_MESSAGE,
   DEFAULT_LANG,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
 } = require('../constants')
@@ -132,7 +131,7 @@ class TaskService {
           text: rc(l.get(predefinedMessage.text, lang), [
             { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
           ]),
-          type: CHAT_TYPE_MESSAGE,
+          type: CHAT_TYPE_BOT_MESSAGE,
         },
         trx
       )
@@ -221,8 +220,10 @@ class TaskService {
       query.where('tenant_id', user.id)
     }
 
-    if (trx) return await query.update({ ...task }).transacting(trx)
-    return await query.update({ ...task })
+    const taskRow = await query.firstOrFail()
+
+    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
+    return await taskRow.updateItem({ ...task })
   }
 
   /**
@@ -296,11 +297,13 @@ class TaskService {
     let taskQuery = Task.query().select('tasks.*')
 
     if (role === ROLE_USER) {
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
       taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
       })
@@ -311,7 +314,6 @@ class TaskService {
     }
     taskQuery
       .where('tasks.estate_id', estate_id)
-      .whereNot('tasks.status', TASK_STATUS_DELETE)
       .orderBy('tasks.status', 'asc')
       .orderBy('tasks.created_at', 'desc')
       .orderBy('tasks.urgency', 'desc')
@@ -407,7 +409,7 @@ class TaskService {
   }
 
   static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
     const files = await File.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: false },
     ])
@@ -458,6 +460,9 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
+      files.attachments = await ChatService.getAbsoluteUrl(
+        Array.isArray(files.file) ? files.file : [files.file]
+      )
       return files
     }
     throw new HttpException('Image Not saved', 500)
@@ -469,7 +474,11 @@ class TaskService {
     const attachments = task
       .toJSON()
       .attachments.filter(
-        (attachment) => !(attachment.user_id === user.id && attachment.uri === uri)
+        (attachment) =>
+          !(
+            attachment.user_id === user.id &&
+            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
+          )
       )
 
     return await Task.query()

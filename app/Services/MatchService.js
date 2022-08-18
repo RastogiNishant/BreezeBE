@@ -1193,7 +1193,7 @@ class MatchService {
     } else if (final) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
-        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
+        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .whereIn('_m.status', [MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')

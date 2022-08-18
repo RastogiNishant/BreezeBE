@@ -404,6 +404,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS: 'notification_landlord_deactivated_in_two_days',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -443,6 +444,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID: 43,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID: 44,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 45,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -520,6 +522,7 @@ const constants = {
     'secondname',
     'phone',
     'avatar',
+    'sex',    
     'address',
     'user_id',
     'available_date',
@@ -709,8 +712,36 @@ const constants = {
     'property_id',
     'address',
   ],
-
+  //whether we deactivate landlord at end of day of his/her deactivation day
+  //or at the moment his deactivation arrives.
+  DEACTIVATE_LANDLORD_AT_END_OF_DAY: false,
+  //list of holidays in Germany
+  //FIXME: this should come from a db table or from an external api
+  GERMAN_HOLIDAYS: [
+    '2022-08-15', //assumption day
+    '2022-09-20', //world children day
+    '2022-10-03', //reformation day
+    '2022-11-01', //all saints day
+    '2022-12-25', //christmas
+    '2022-12-26', //seconday of christmas
+    '2023-01-01', //new year's day
+    '2023-01-06', //epiphany
+    '2023-03-08', //Weltfrauntag
+    '2023-04-07', //Good Friday
+    '2023-04-09', //Easter Sunday
+    '2023-04-10', //Easter Monday
+    '2023-05-01', //Labor day
+    '2023-05-29', //Whit Monday
+    '2023-06-08', //Corpus Cristi
+    '2023-08-15', //Assumption Day
+    '2023-09-20', //world children's day
+    '2023-10-03', //reformation day
+    '2023-11-01', //all saints' day
+    '2023-12-25', //christmas
+    '2023-12-26', //second day of christmas
+  ],
   CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_BOT_MESSAGE: 'chatbot',
   CHAT_TYPE_NOTIFICATION: 'notification',
   CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
 
@@ -760,6 +791,10 @@ const constants = {
       text: 'Kitchen',
     },
   ],
+
+  ESTATE_FLOOR_DIRECTION_LEFT: 1,
+  ESTATE_FLOOR_DIRECTION_RIGHT: 2,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT: 3,
 }
 
 module.exports = constants
