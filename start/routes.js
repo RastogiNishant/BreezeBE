@@ -28,6 +28,7 @@ Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
   'valid:CalcRentPrice',
 ])
 
+
 Route.get('/', () => {
   return {
     app: process.env.APP_NAME,
@@ -76,6 +77,10 @@ Route.group(() => {
 
   Route.post('/image/compress', 'ImageController.compressImage').middleware([
     'auth:jwtAdministrator',
+  ])
+
+  Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware([
+    'auth:jwt',
   ])
 
   //admin plan
