@@ -475,7 +475,7 @@ class TaskService {
         (attachment) =>
           !(
             attachment.user_id === user.id &&
-            (Array.isArray(uri) ? uri.includes(attachment.uri) : attachment.uri === uri)
+            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
           )
       )
 
