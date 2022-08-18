@@ -50,9 +50,9 @@ class File {
     try {
       // need to install ghostscript to linux so this shell will work.
       // need to give read/write permission to tmp directly
-throw new HttpException(`EVN is ${PDF_TEMP_PATH}`)      
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.pdf`
       await exec({ cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}` })
+      throw new HttpException(`EVN is ${PDF_TEMP_PATH}`)      
       const data = await fsPromise.readFile(outputFileName);
       fsPromise.unlink(outputFileName)
       return data
