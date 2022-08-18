@@ -28,9 +28,6 @@ Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
   'valid:CalcRentPrice',
 ])
 
-Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
-  'valid:CalcRentPrice',
-])
 
 Route.get('/', () => {
   return {
