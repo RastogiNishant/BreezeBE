@@ -145,6 +145,11 @@ Route.group(() => {
     '/predefinedMessageChoice/:id',
     'Admin/PredefinedMessageChoiceController.delete'
   ).middleware(['auth:jwtAdministrator', 'valid:Id'])
+
+  //estates
+  Route.get('/estates', 'Admin/PropertyController.getProperties').middleware([
+    'auth:jwtAdministrator',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
