@@ -52,7 +52,7 @@ class File {
       // need to give read/write permission to tmp directly
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.pdf`
-      await exec({ cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}` })
+      await exec({ cmd: `sudo gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}` })
       const data = await fsPromise.readFile(outputFileName);
       fsPromise.unlink(outputFileName)
       return data
