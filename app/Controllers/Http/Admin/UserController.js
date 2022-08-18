@@ -125,17 +125,26 @@ class UserController {
             },
             trx
           )
-          //send notifications
-          await NoticeService.landlordsDeactivated(ids)
           //make owned estates draft
-          await Estate.query()
-            .whereIn('user_id', ids)
-            .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-            .update({ status: STATUS_DRAFT }, trx)
+          const estateIds = (
+            await Estate.query()
+              .select('*')
+              .whereIn('user_id', ids)
+              .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+              .fetch()
+          ).rows.map((estate) => estate.id)
+
+          if (estateIds.length > 0) {
+            await Estate.query()
+              .whereIn('id', estateIds)
+              .update({ status: STATUS_DRAFT })
+              .transacting(trx)
+          }
+
           await trx.commit()
-          return response.res({
-            affectedRows,
-          })
+          //send notifications
+          NoticeService.landlordsDeactivated(ids, estateIds)
+          return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
           await trx.rollback()

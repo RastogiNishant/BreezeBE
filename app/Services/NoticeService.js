@@ -990,7 +990,7 @@ class NoticeService {
     )
   }
 
-  static async landlordsDeactivated(userIds) {
+  static async landlordsDeactivated(userIds, estateIds) {
     const notices = await userIds.reduce((notices, userId) => {
       return (notices = [
         ...notices,
@@ -1008,8 +1008,7 @@ class NoticeService {
       .select(Database.raw(`estates.cover`))
       .select('estates.address')
       .select(Database.raw(`matches.user_id as recipient_id`))
-      .whereIn('estates.user_id', userIds)
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('estates.id', estateIds)
       .innerJoin('matches', 'estates.id', 'matches.estate_id')
       .fetch()
     const prospectNotices = await estateMatches.toJSON().reduce((notices, match) => {
@@ -1026,6 +1025,7 @@ class NoticeService {
         },
       ])
     }, [])
+
     await NoticeService.insertNotices(prospectNotices)
     await NotificationsService.notifyProspectThatLandlordDeactivated(prospectNotices)
   }
