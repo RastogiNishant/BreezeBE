@@ -62,6 +62,7 @@ class Estate extends Model {
       'house_number',
       'country',
       'floor',
+      'floor_direction',
       'number_floors',
       'prices',
       'net_rent',
@@ -410,12 +411,13 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate() {
-    await this.updateItem(
+  async publishEstate(trx) {
+    await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
         available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
+      trx,
       true
     )
   }

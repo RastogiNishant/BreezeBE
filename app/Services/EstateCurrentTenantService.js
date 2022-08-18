@@ -16,6 +16,7 @@ const {
   SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
+  MATCH_STATUS_FINISH,
   SALUTATION_MR_LABEL,
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
@@ -346,12 +347,20 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async acceptOutsideTenant({ data1, data2, password }) {
+  static async acceptOutsideTenant({ data1, data2, password, email }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
 
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
+    }
+
+    if (!estateCurrentTenant.email && !email) {
+      throw new HttpException('Email must be provided!', 400)
+    }
+
+    if (estateCurrentTenant.email && estateCurrentTenant.email !== email) {
+      throw new HttpException('Emails do not match! Please contact to customer service', 400)
     }
 
     const preserved_code = estateCurrentTenant.code
@@ -375,7 +384,7 @@ class EstateCurrentTenantService {
         password: password,
       }
       const user = await UserService.signUp(
-        { email: estateCurrentTenant.email, firstname: '', ...userData },
+        { email: estateCurrentTenant.email || email, firstname: '', ...userData },
         trx
       )
 
@@ -435,6 +444,9 @@ class EstateCurrentTenantService {
           { user_id: user.id, estate_id: currentTenant.estate_id },
           trx
         )
+      } else {
+        matches.status = MATCH_STATUS_FINISH
+        matches.save(trx)
       }
     }
   }

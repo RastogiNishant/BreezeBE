@@ -131,7 +131,7 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, ...data } = request.all()
+    const { id } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)

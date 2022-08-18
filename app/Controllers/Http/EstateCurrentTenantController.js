@@ -78,13 +78,15 @@ class EstateCurrentTenantController {
   }
 
   async acceptOutsideTenant({ request, response }) {
-    const { data1, data2, password } = request.all()
+    const { data1, data2, password, email } = request.all()
 
     if (!data1 || !data2) {
       throw new HttpException('Not enough params', 500)
     }
 
-    response.res(await EstateCurrentTenantService.acceptOutsideTenant({ data1, data2, password }))
+    response.res(
+      await EstateCurrentTenantService.acceptOutsideTenant({ data1, data2, password, email })
+    )
   }
 
   async inviteTenantToAppBySMS({ request, auth, response }) {

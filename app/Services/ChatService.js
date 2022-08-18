@@ -18,6 +18,7 @@ const {
   TASK_STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
+  ISO_DATE_FORMAT,
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
@@ -257,7 +258,6 @@ class ChatService {
     return unreadMessagesByTopic
   }
 
-
   static async getAbsoluteUrl(attachments) {
     try {
       if (!attachments || !attachments.length) {
@@ -333,7 +333,7 @@ class ChatService {
       await trx.rollback()
       throw new HttpException(e)
     }
-  }  
+  }
 }
 
 module.exports = ChatService
