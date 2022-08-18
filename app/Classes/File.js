@@ -38,7 +38,6 @@ class File {
     try {
       const options = { width: parseInt(process.env.THUMB_WIDTH || '100') }
       const thumbnail = await imageThumbnail(buffer, options)
-      console.log('thumbnail', thumbnail)
       return thumbnail
     } catch (e) {
       console.log('createThumbnail Error')
@@ -53,6 +52,7 @@ class File {
       const outputFileName = `${process.env.PDF_TEMP_DIR || '/tmp'}/output_${uuid.v4()}.pdf`
       await exec({ cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}` })
       const data = await fsPromise.readFile(outputFileName);
+      fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
       throw new AppException(e.message, 400)
