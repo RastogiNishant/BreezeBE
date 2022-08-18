@@ -165,7 +165,7 @@ class EstateCurrentTenantService {
     return await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('user_id', user_id)
-      .whereNot('status', STATUS_DELETE)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
       .first()
   }
 
