@@ -460,7 +460,9 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
-      files.attachments = await ChatService.getAbsoluteUrl(files.file)
+      files.attachments = await ChatService.getAbsoluteUrl(
+        Array.isArray(files.file) ? files.file : [files.file]
+      )
       return files
     }
     throw new HttpException('Image Not saved', 500)
