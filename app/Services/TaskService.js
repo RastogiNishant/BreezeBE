@@ -460,6 +460,9 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
+      files.attachments = await ChatService.getAbsoluteUrl(
+        Array.isArray(files.file) ? files.file : [files.file]
+      )
       return files
     }
     throw new HttpException('Image Not saved', 500)
@@ -471,7 +474,11 @@ class TaskService {
     const attachments = task
       .toJSON()
       .attachments.filter(
-        (attachment) => !(attachment.user_id === user.id && attachment.uri === uri)
+        (attachment) =>
+          !(
+            attachment.user_id === user.id &&
+            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
+          )
       )
 
     return await Task.query()
@@ -490,9 +497,10 @@ class TaskService {
             const thumb =
               attachment.uri.split('/').length === 2
                 ? await File.getProtectedUrl(
-                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
-                  }`
-                )
+                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
+                      attachment.uri.split('/')[1]
+                    }`
+                  )
                 : ''
 
             if (attachment.uri.search('http') !== 0) {
