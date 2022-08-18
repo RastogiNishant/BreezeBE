@@ -2345,6 +2345,21 @@ class MatchService {
     }
     return (await query.fetch()).rows
   }
+
+  static async getMatchCount(id) {
+    return await this.matchCount(
+      [
+        MATCH_STATUS_KNOCK,
+        MATCH_STATUS_INVITE,
+        MATCH_STATUS_VISIT,
+        MATCH_STATUS_SHARE,
+        MATCH_STATUS_COMMIT,
+        MATCH_STATUS_TOP,
+        MATCH_STATUS_FINISH,
+      ],
+      [id]
+    )    
+  }
 }
 
 module.exports = MatchService

@@ -53,15 +53,18 @@ class EstateCurrentTenantService {
       })
 
       if (user) {
-        currentTenant.user_id = user.id
         currentTenant.surname = user.secondname || currentTenant.surname
         currentTenant.salutation_int = user.sex || currentTenant.salutation_int
         currentTenant.salutation = user.sex === 1 ? SALUTATION_MR_LABEL : tenantUser.sex === 2 ? SALUTATION_MS_LABEL : SALUTATION_SIR_OR_MADAM_LABEL
-        await require('./TenantService').updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
       }
 
       await currentTenant.save(trx)
-      await require('./EstateService').rented(estateId, trx)
+
+      const matchCount = await MatchService.getMatchCount(estateId)
+      // if there is match, that estate will be updated to rent
+      if (!matchCount || !matchCount.length || !parseInt(matchCount[0].count)) {
+        await require('./EstateService').rented(estateId, trx)
+      }
 
       await trx.commit()
 
