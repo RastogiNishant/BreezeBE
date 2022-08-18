@@ -1301,6 +1301,15 @@ class EstateService {
     })
 
     estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
+
+    for (let i = 0; i < estate.length; i++) {
+      for (let j = 0; j < estate[i].activeTasks.length; j++) {
+        estate[i].activeTasks[j] = await require('./TaskService').getItemWithAbsoluteUrl(
+          estate[i].activeTasks[j]
+        )
+      }
+    }
+
     return estate
   }
 
