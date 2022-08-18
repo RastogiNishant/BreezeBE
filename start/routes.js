@@ -748,7 +748,7 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll')
+  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware(['valid:PredefinedMessageFilter'])
 })
   .prefix('api/v1/connect/predefinedMessage')
   .middleware(['auth:jwt,jwtLandlord'])

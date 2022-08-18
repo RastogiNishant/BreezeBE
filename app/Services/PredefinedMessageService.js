@@ -24,14 +24,17 @@ class PredefinedMessageService {
       .firstOrFail()
   }
 
-  static async getAll() {
-    return (
-      await PredefinedMessage.query()
-        .with('choices')
-        .whereNot('status', STATUS_DELETE)
-        .orderBy('step', 'id')
-        .fetch()
-    ).rows
+  static async getAll({ type }) {
+    const query = PredefinedMessage.query()
+      .with('choices')
+      .whereNot('status', STATUS_DELETE)
+
+    if (type) {
+      query.whereIn('type', Array.isArray(type) ? type : [type])
+    }
+    return (await query.whereNot('status', STATUS_DELETE)
+      .orderBy('step', 'id')
+      .fetch()).rows
   }
 
   static async create(data) {
@@ -131,7 +134,7 @@ class PredefinedMessageService {
     const tenantMessage = await Chat.createItem(
       {
         task_id: task.id,
-        sender_id: task.tenant_id,        
+        sender_id: task.tenant_id,
         text: answer,
         attachments: attachments ? JSON.stringify(attachments) : null,
         type: CHAT_TYPE_MESSAGE,
