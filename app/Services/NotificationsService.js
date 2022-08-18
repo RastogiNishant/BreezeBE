@@ -477,7 +477,7 @@ class NotificationsService {
     return NotificationsService.sendNotes(
       notice,
       (data, lang) => {
-        return `${data.user_name} ${(l.get('prospect.notification.event.arrived'), lang)}`
+        return `${data.user_name} ${l.get('prospect.notification.event.arrived', lang)}`
       },
       (data, lang) => {
         return (
@@ -763,7 +763,7 @@ class NotificationsService {
   }
 
   static async sendProspectHouseholdDisconnected(notices) {
-    const title = 'prospect.notification.event.fellow_disconnected'
+    const title = 'prospect.notification.event.fellow_disconnected.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return l.get('prospect.notification.next.fellow_disconnected.message', lang)
