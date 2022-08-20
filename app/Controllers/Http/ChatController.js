@@ -23,10 +23,7 @@ class ChatController {
         })
       ).rows
     )
-
-    response.res({
-      previousMessages,
-    })
+    response.res(previousMessages || [])
   }
 }
 

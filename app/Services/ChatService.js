@@ -98,18 +98,10 @@ class ChatService {
       .where({
         task_id: task_id,
       })
-      .andWhere(function () {
-        this.orWhere('sender_id', user_id)
-        this.orWhere('receiver_id', user_id)
-      })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
-
-    if (page !== -1) {
-      query.offset(page - 1)
-    }
 
     if (limit !== -1) {
       query.limit(limit)
@@ -286,8 +278,8 @@ class ChatService {
           const thumb =
             attachment.split('/').length === 2
               ? await File.getProtectedUrl(
-                `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
-              )
+                  `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
+                )
               : ''
 
           if (attachment.search('http') !== 0) {
@@ -319,7 +311,6 @@ class ChatService {
         (items = items.map(async (item) => {
           if (item.attachments) {
             item.attachments = await ChatService.getAbsoluteUrl(item.attachments)
-            console.log('getItemsWithAbsoluteUrl', item.attachments)
           }
           return item
         }))

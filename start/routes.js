@@ -717,7 +717,7 @@ Route.group(() => {
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination'])
+  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
 })
   .prefix('api/v1/connect/chat')
   .middleware(['auth:jwt,jwtLandlord'])
