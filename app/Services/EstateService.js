@@ -419,8 +419,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
