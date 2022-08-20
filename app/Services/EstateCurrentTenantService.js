@@ -1,4 +1,5 @@
 const User = use('App/Models/User')
+const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const MailService = use('App/Services/MailService')
 const Database = use('Database')
@@ -310,8 +311,18 @@ class EstateCurrentTenantService {
     let encDst = cipher.update(txtSrc, 'utf8', 'base64')
     encDst += cipher.final('base64')
 
-    const uri =
+    let uri =
       `&data1=${encodeURIComponent(encDst)}` + `&data2=${encodeURIComponent(iv.toString('base64'))}`
+
+    if (estateCurrentTenant.email) {
+      uri += `&email=${estateCurrentTenant.email}`
+    }
+
+    const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
+    console.log({ existingUser })
+    if (existingUser) {
+      uri += `&user_id=${existingUser.id}`
+    }
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
@@ -334,20 +345,28 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async acceptOutsideTenant({ data1, data2, password, email }) {
+  static async acceptOutsideTenant({ data1, data2, password, email, user }) {
     const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
-
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
-
-    if (!estateCurrentTenant.email && !email) {
-      throw new HttpException('Email must be provided!', 400)
+    if (estateCurrentTenant.user_id) {
+      throw new HttpException('Invitation already accepted')
     }
 
-    if (estateCurrentTenant.email && estateCurrentTenant.email !== email) {
-      throw new HttpException('Emails do not match! Please contact to customer service', 400)
+    if (user) {
+      if (user.email !== estateCurrentTenant.email) {
+        throw new HttpException('Emails do not match! Please contact to customer service', 400)
+      }
+    } else {
+      if (!estateCurrentTenant.email && !email) {
+        throw new HttpException('Email must be provided!', 400)
+      }
+
+      if (estateCurrentTenant.email && estateCurrentTenant.email !== email) {
+        throw new HttpException('Emails do not match! Please contact to customer service', 400)
+      }
     }
 
     const preserved_code = estateCurrentTenant.code
@@ -364,17 +383,20 @@ class EstateCurrentTenantService {
 
     const trx = await Database.beginTransaction()
     try {
-      const userData = {
-        role: ROLE_USER,
-        secondname: estateCurrentTenant.surname,
-        phone: estateCurrentTenant.phone_number,
-        password: password,
+      if (user) {
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx)
+      } else {
+        const userData = {
+          role: ROLE_USER,
+          secondname: estateCurrentTenant.surname,
+          phone: estateCurrentTenant.phone_number,
+          password: password,
+        }
+        user = await UserService.signUp(
+          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
+          trx
+        )
       }
-      const user = await UserService.signUp(
-        { email: estateCurrentTenant.email || email, firstname: '', ...userData },
-        trx
-      )
-
       await trx.commit()
       return user.id
     } catch (e) {
@@ -420,20 +442,24 @@ class EstateCurrentTenantService {
       return
     }
     currentTenant.user_id = user.id
+    if (!currentTenant.email) {
+      currentTenant.email = user.email
+    }
     await currentTenant.save(trx)
 
     //if current tenant, he needs to save to match as a final match
     if (currentTenant.estate_id) {
-      const matches = await require('./MatchService').getMatches(user.id, currentTenant.estate_id)
-
-      if (!matches) {
+      const match = await require('./MatchService').getMatches(user.id, currentTenant.estate_id)
+      if (!match) {
         await require('./MatchService').addFinalTenant(
           { user_id: user.id, estate_id: currentTenant.estate_id },
           trx
         )
       } else {
-        matches.status = MATCH_STATUS_FINISH
-        matches.save(trx)
+        await Match.query()
+          .where({ user_id: match.user_id, estate_id: match.estate_id, status: match.status })
+          .update({ status: MATCH_STATUS_FINISH })
+          .transacting(trx)
       }
     }
   }

@@ -527,7 +527,7 @@ const constants = {
     'secondname',
     'phone',
     'avatar',
-    'sex',    
+    'sex',
     'address',
     'user_id',
     'available_date',
@@ -548,6 +548,7 @@ const constants = {
     'isoline',
     'is_new_tenant_transfer',
     'transfer_budget',
+    'rent_end_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

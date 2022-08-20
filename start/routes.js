@@ -28,7 +28,6 @@ Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
   'valid:CalcRentPrice',
 ])
 
-
 Route.get('/', () => {
   return {
     app: process.env.APP_NAME,
@@ -79,9 +78,7 @@ Route.group(() => {
     'auth:jwtAdministrator',
   ])
 
-  Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware([
-    'auth:jwt',
-  ])
+  Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware(['auth:jwt'])
 
   //admin plan
   //Controllers should be moved to app/Controllers/Http/Admin
@@ -497,6 +494,11 @@ Route.post(
   'EstateCurrentTenantController.acceptOutsideTenant'
 ).middleware(['valid:OutsideTenantInvite'])
 
+Route.post(
+  '/api/v1/accept/outside_tenant/already_registered',
+  'EstateCurrentTenantController.acceptAlreadyRegisterdOutsideTenant'
+).middleware(['auth:jwt', 'valid:AlreadyRegisteredOutsideTenantInvite'])
+
 // Change visits statuses
 Route.group(() => {
   Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([
@@ -719,6 +721,12 @@ Route.group(() => {
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
+  .middleware(['auth:jwt,jwtLandlord'])
+
+Route.group(() => {
+  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
+})
+  .prefix('api/v1/connect/chat')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {

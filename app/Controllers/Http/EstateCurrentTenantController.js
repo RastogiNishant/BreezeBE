@@ -86,7 +86,27 @@ class EstateCurrentTenantController {
     }
 
     response.res(
-      await EstateCurrentTenantService.acceptOutsideTenant({ data1, data2, password, email })
+      await EstateCurrentTenantService.acceptOutsideTenant({
+        data1,
+        data2,
+        password,
+        email,
+      })
+    )
+  }
+
+  async acceptAlreadyRegisterdOutsideTenant({ request, response, auth }) {
+    const { data1, data2 } = request.all()
+    if (!data1 || !data2) {
+      throw new HttpException('Not enough params', 500)
+    }
+
+    response.res(
+      await EstateCurrentTenantService.acceptOutsideTenant({
+        data1,
+        data2,
+        user: auth.user,
+      })
     )
   }
 
