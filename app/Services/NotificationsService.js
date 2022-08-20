@@ -789,7 +789,7 @@ class NotificationsService {
     const title = `${recipient}.notification.event.message_got`
     const body = (data) => {
       if (recipient === 'landlord') {
-        let text = `${data.estate_address} \n}`
+        let text = `${data.estate_address} \n`
 
         const urgency = URGENCIES.find(({ value }) => value == data.urgency)?.label
 
