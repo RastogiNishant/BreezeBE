@@ -12,8 +12,8 @@ const AppException = use('App/Exceptions/AppException')
 const imageminPngquant = require('imagemin-pngquant')
 const HttpException = use('App/Exceptions/HttpException')
 const imageThumbnail = require('image-thumbnail')
-const exec = require('node-async-exec');
-const fsPromise = require('fs/promises');
+const exec = require('node-async-exec')
+const fsPromise = require('fs/promises')
 const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
 
 class File {
@@ -52,8 +52,10 @@ class File {
       // need to give read/write permission to tmp directly
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.pdf`
-      await exec({ cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}` })
-      const data = await fsPromise.readFile(outputFileName);
+      await exec({
+        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}`,
+      })
+      const data = await fsPromise.readFile(outputFileName)
       fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
@@ -97,7 +99,6 @@ class File {
       const dir = moment().format('YYYYMM')
       const filePathName = `${dir}/${filename}`
       const disk = isPublic ? 's3public' : 's3'
-
       const options = { ContentType: file.headers['content-type'] }
       if (isPublic) {
         options.ACL = 'public-read'
@@ -200,14 +201,14 @@ class File {
       (n, v) =>
         v
           ? {
-            ...n,
-            [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
-            [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
-            [`thumb_${v.field}`]:
-              v.thumbnailFilePathName.length > 1
-                ? v.thumbnailFilePathName
-                : v.thumbnailFilePathName[0],
-          }
+              ...n,
+              [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
+              [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
+              [`thumb_${v.field}`]:
+                v.thumbnailFilePathName.length > 1
+                  ? v.thumbnailFilePathName
+                  : v.thumbnailFilePathName[0],
+            }
           : n,
       {}
     )
