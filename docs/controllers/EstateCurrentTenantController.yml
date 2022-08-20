@@ -8,7 +8,6 @@ definitions:
     name: tenant_email
     in: formData
     type: string
-    required: true
   surname: 
     name: surname 
     in: formData
@@ -16,7 +15,6 @@ definitions:
   phone_number:
     name: phone_number
     type: string
-    required: true
   estate_id: 
     name: estate_id
     type: string 
@@ -55,8 +53,8 @@ definitions:
       - $ref: "#/definitions/id"
     responses: [200]    
 
-  /api/v1/current_tenant/expire/:id:
-    put: 
+/api/v1/current_tenant/expire/:id:
+  put: 
     tags: [EstateCurrentTenant - CRUD for outside tenants]
     security: [bearerAuth: []]
     description: update tenant to expired
@@ -65,8 +63,8 @@ definitions:
       - $ref: "#/definitions/id"
     responses: [200]
 
-  /api/v1/current_tenant/:
-    post: 
+/api/v1/current_tenant:
+  post: 
     tags: [EstateCurrentTenant - CRUD for outside tenants]
     security: [bearerAuth: []]
     description: create current tenant outside of breeze

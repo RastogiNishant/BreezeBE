@@ -13,7 +13,7 @@ const {
   maxBy,
   orderBy,
 } = require('lodash')
-const { props } = require('bluebird')
+const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
@@ -25,7 +25,7 @@ const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
 
-const User = require('App/Models/User')
+const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
@@ -1301,6 +1301,16 @@ class EstateService {
     })
 
     estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
+
+    await Promise.all(
+      estate.map(async (est) => {
+        await est.activeTasks.map(async (task) => {
+          task = await require('./TaskService').getItemWithAbsoluteUrl(task)
+          return task
+        })
+      })
+    )
+
     return estate
   }
 

@@ -528,7 +528,7 @@ const constants = {
     'secondname',
     'phone',
     'avatar',
-    'sex',    
+    'sex',
     'address',
     'user_id',
     'available_date',
@@ -549,6 +549,7 @@ const constants = {
     'isoline',
     'is_new_tenant_transfer',
     'transfer_budget',
+    'rent_end_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -797,6 +798,10 @@ const constants = {
       text: 'Kitchen',
     },
   ],
+
+  ESTATE_FLOOR_DIRECTION_LEFT: 1,
+  ESTATE_FLOOR_DIRECTION_RIGHT: 2,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT: 3,
 }
 
 module.exports = constants

@@ -82,6 +82,7 @@
 		"md5": "^2.3.0",
 		"moment": "^2.24.0",
 		"moment-timezone": "^0.5.34",
+		"node-async-exec": "^1.2.0",
 		"node-fetch": "^2.6.7",
 		"node-geocoder": "^3.27.0",
 		"node-xlsx": "^0.21.0",

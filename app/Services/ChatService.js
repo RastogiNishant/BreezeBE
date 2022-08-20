@@ -18,6 +18,7 @@ const {
   TASK_STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
+  ISO_DATE_FORMAT,
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
@@ -78,7 +79,7 @@ class ChatService {
     return chat
   }
 
-  static async getPreviousMessages(taskId, lastId) {
+  static async getPreviousMessages({ task_id, lastId, user_id, page = -1, limit = -1 }) {
     const query = Chat.query()
       .select('chats.id as id')
       .select('text as message')
@@ -95,13 +96,19 @@ class ChatService {
         'chats.sender_id'
       )
       .where({
-        task_id: taskId,
+        task_id: task_id,
       })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
-      .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
+
+    if (limit !== -1) {
+      query.limit(limit)
+    } else {
+      query.limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
+    }
+
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
@@ -257,7 +264,6 @@ class ChatService {
     return unreadMessagesByTopic
   }
 
-
   static async getAbsoluteUrl(attachments) {
     try {
       if (!attachments || !attachments.length) {
@@ -305,7 +311,6 @@ class ChatService {
         (items = items.map(async (item) => {
           if (item.attachments) {
             item.attachments = await ChatService.getAbsoluteUrl(item.attachments)
-            console.log('getItemsWithAbsoluteUrl', item.attachments)
           }
           return item
         }))
@@ -333,7 +338,7 @@ class ChatService {
       await trx.rollback()
       throw new HttpException(e)
     }
-  }  
+  }
 }
 
 module.exports = ChatService
