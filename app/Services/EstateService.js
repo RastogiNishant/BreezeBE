@@ -1228,6 +1228,7 @@ class EstateService {
         'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
+        'estates.cover',
         'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
