@@ -147,6 +147,22 @@ Route.group(() => {
     '/predefinedMessageChoice/:id',
     'Admin/PredefinedMessageChoiceController.delete'
   ).middleware(['auth:jwtAdministrator', 'valid:Id'])
+
+  Route.get('/filterColumns', 'Admin/FilterColumnsController.getAll').middleware([
+    'auth:jwtAdministrator',
+  ])
+  Route.post('/filterColumns', 'Admin/FilterColumnsController.create').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreateFilterColumns',
+  ])
+  Route.put('/filterColumns/:id', 'Admin/FilterColumnsController.update').middleware([
+    'auth:jwtAdministrator',
+    'valid:CreateFilterColumns,Id',
+  ])
+  Route.delete('/filterColumns/:id', 'Admin/FilterColumnsController.delete').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -771,7 +787,7 @@ Route.group(() => {
 })
   .prefix('api/v1/connect/predefinedMessageChoice')
   .middleware(['auth:jwt,jwtLandlord'])
-  
+
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
@@ -1119,6 +1135,17 @@ Route.group(() => {
 Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
   'auth:jwtLandlord',
 ])
+
+Route.get('/api/v1/filterColumns', 'Admin/FilterColumnsController.getAll').middleware([
+  'auth:jwtLandlord', 'valid:FilterName'
+])
+
+Route.put('/api/v1/filterColumnsPreferences/:filter_columns_id', 'FilterColumnsPreferencesController.update').middleware([
+  'auth:jwtLandlord',
+  'valid:FilterColumnsPreferences',
+])
+
+
 
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests

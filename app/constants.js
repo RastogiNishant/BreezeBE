@@ -796,6 +796,10 @@ const constants = {
   ESTATE_FLOOR_DIRECTION_LEFT: 1,
   ESTATE_FLOOR_DIRECTION_RIGHT: 2,
   ESTATE_FLOOR_DIRECTION_STRAIGHT: 3,
+
+  FILTER_NAME_CONNECT: 'connect',
+  FILTER_NAME_ESTATE: 'estate',
+  FILTER_NAME_MATCH: 'match',
 }
 
 module.exports = constants
