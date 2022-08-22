@@ -119,7 +119,13 @@ class TaskFilter extends Base {
         .object()
         .shape({
           matchMode: yup.string(),
-          value: yup.boolean().nullable(),
+          value: yup
+            .array()
+            .of(
+              yup
+                .boolean().nullable()
+            )
+            .nullable(),
         })
         .nullable(),
       city: yup
