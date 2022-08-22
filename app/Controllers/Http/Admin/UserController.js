@@ -3,6 +3,7 @@
 const User = use('App/Models/User')
 const l = use('Localize')
 const Database = use('Database')
+const Estate = use('App/Models/Estate')
 const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
@@ -18,10 +19,10 @@ const {
   STATUS_DELETE,
   STATUS_ACTIVE,
   STATUS_DRAFT,
+  STATUS_EXPIRE,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
 } = require('../../../constants')
 const QueueService = use('App/Services/QueueService')
-const NotificationsService = use('App/Services/NotificationsService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
 const Promise = require('bluebird')
@@ -89,7 +90,6 @@ class UserController {
     const { ids, action } = request.all()
     let affectedRows = 0
     const trx = await Database.beginTransaction()
-
     switch (action) {
       case 'activate':
         try {
@@ -125,14 +125,31 @@ class UserController {
             },
             trx
           )
+          //make owned estates draft
+          const estateIds = (
+            await Estate.query()
+              .select('*')
+              .whereIn('user_id', ids)
+              .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+              .fetch()
+          ).rows.map((estate) => estate.id)
+
+          if (estateIds.length > 0) {
+            await Estate.query()
+              .whereIn('id', estateIds)
+              .update({ status: STATUS_DRAFT })
+              .transacting(trx)
+          }
+
           await trx.commit()
+          //send notifications
+          NoticeService.landlordsDeactivated(ids, estateIds)
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
           await trx.rollback()
           throw new HttpException(err.message, 422)
         }
-
       case 'deactivate-in-2-days':
         try {
           await Promise.map(ids, async (id) => {
@@ -183,8 +200,8 @@ class UserController {
             )
             QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
           })
-          await NoticeService.deactivatingLandlordsInTwoDays(ids, deactivateDateTime)
           await trx.commit()
+          await NoticeService.deactivatingLandlordsInTwoDays(ids, deactivateDateTime)
           return response.res(true)
         } catch (err) {
           console.log(err)
