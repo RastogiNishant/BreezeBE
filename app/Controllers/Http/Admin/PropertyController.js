@@ -23,7 +23,7 @@ class PropertyController {
       .select(Database.raw('coalesce(_v.visit_count, 0) as visit_count'))
       .select(Database.raw('coalesce(_i.invite_count, 0) as invite_count'))
       .select(Database.raw('coalesce(_f.match_count, 0) as final_match_count'))
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE])
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
       //owner
       .innerJoin(
         Database.raw(`(select
