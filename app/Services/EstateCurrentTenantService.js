@@ -18,6 +18,7 @@ const {
   STATUS_DELETE,
   LETTING_TYPE_LET,
   MATCH_STATUS_FINISH,
+  TENANT_INVITATION_EXPIRATION_DATE,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -375,7 +376,7 @@ class EstateCurrentTenantService {
     }
 
     const time = moment().utc()
-    const old_time = moment().utc(expired_time, 'YYYY-MM-DD HH:mm:ss').add(2, 'days')
+    const old_time = moment().utc(expired_time, 'YYYY-MM-DD HH:mm:ss').add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
 
     if (old_time < time) {
       throw new HttpException('Link has been expired', 500)

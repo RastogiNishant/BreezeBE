@@ -17,6 +17,7 @@ const {
   INSIDE_BREEZE_TEANT_LABEL,
   OUTSIDE_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
+  DATE_FORMAT,
 
 } = require('../constants')
 
@@ -79,17 +80,24 @@ class TaskFilters extends Filter {
     )
 
     if (
-      params.breeze_type && params.breeze_type.value !== undefined || params.breeze_type.value !== null || params.breeze_type.value.includes(ALL_BREEZE)
+      params.breeze_type && params.breeze_type.value !== undefined && params.breeze_type.value !== null && !params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
         if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
           this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
         }
-        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
-          this.query.orWhere(Database.raw('_ect.user_id IS NULL'))
-        }
-        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
 
+        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(
+            Database.raw(`
+              (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
+              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment.utc(new Date()).subtract(2, 'days').format(DATE_FORMAT)}' )`))
+        }
+
+        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(
+            Database.raw(`
+              _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment.utc(new Date()).subtract(2, 'days').format(DATE_FORMAT)}'`))
         }
       })
     }

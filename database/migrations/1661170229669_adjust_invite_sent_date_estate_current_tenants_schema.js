@@ -9,7 +9,7 @@ const { DATE_FORMAT } = require('../../app/constants')
 class AdjustInviteSentDateEstateCurrentTenantsSchema extends Schema {
   async up() {
     const date = moment.utc(new Date()).format(DATE_FORMAT)
-    await EstateCurrentTenant.query().whereNull('invite_sent_at').update({ invite_sent_at: date })
+    await EstateCurrentTenant.query().whereNotNull('code').whereNull('invite_sent_at').update({ invite_sent_at: date })
   }
 
   down() {
