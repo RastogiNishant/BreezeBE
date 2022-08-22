@@ -100,7 +100,7 @@ class TaskController extends BaseController {
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
       task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-      let newStatus = null
+
       if (task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_RESOLVED || task.status === TASK_STATUS_UNRESOLVED) {
         //if in progress make it TASK_STATUS_NEW
         newStatus = TASK_STATUS_INPROGRESS
