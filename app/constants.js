@@ -687,8 +687,10 @@ const constants = {
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
-  IS_INSIDE_BREEZE: true,
-  IS_OUTSIDE_BREEZE: false,
+  ALL_BREEZE: 'All',
+  INSIDE_BREEZE_TEANT_LABEL: 'Connected',
+  OUTSIDE_BREEZE_TEANT_LABEL: 'Not Connected',
+  PENDING_BREEZE_TEANT_LABEL: 'Pending',
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
   CHAT_EDIT_STATUS_EDITED: 'edited',

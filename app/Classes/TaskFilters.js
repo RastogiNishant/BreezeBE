@@ -13,8 +13,11 @@ const {
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
-  IS_INSIDE_BREEZE,
-  IS_OUTSIDE_BREEZE,
+  ALL_BREEZE,
+  INSIDE_BREEZE_TEANT_LABEL,
+  OUTSIDE_BREEZE_TEANT_LABEL,
+  PENDING_BREEZE_TEANT_LABEL,
+
 } = require('../constants')
 
 class TaskFilters extends Filter {
@@ -41,7 +44,7 @@ class TaskFilters extends Filter {
         resolved: TASK_STATUS_RESOLVED,
         unresolved: TASK_STATUS_UNRESOLVED,
         closed: TASK_STATUS_CLOSED,
-      },
+      }
     }
     Filter.TableInfo = {
       property_id: 'estates',
@@ -76,14 +79,17 @@ class TaskFilters extends Filter {
     )
 
     if (
-      params.breeze_type && params.breeze_type.value !== undefined || params.breeze_type.value !== null
+      params.breeze_type && params.breeze_type.value !== undefined || params.breeze_type.value !== null || params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value.includes(true)) {
+        if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
           this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
         }
-        if (params.breeze_type.value.includes(false)) {
+        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
           this.query.orWhere(Database.raw('_ect.user_id IS NULL'))
+        }
+        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
+
         }
       })
     }

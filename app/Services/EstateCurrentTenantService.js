@@ -299,7 +299,7 @@ class EstateCurrentTenantService {
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
     const code = uuid.v4()
-    await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code })
+    await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code, invite_sent_at: time })
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
