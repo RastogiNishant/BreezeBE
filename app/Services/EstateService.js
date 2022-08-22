@@ -100,17 +100,17 @@ class EstateService {
         Database.raw(`
           (select 
             users.id as user_id,
-            concat(coalesce(users.firstname,''), ' ', coalesce(users.secondname, '')) as owner_fullname,
+            concat(users.firstname, ' ', users.secondname) as owner_fullname,
             json_build_object('name', companies.name, 'address', companies.address) as company
           from users
-          inner join companies
+          left join companies
           on companies.id=users.company_id
           ) as _c`),
         function () {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
         }
       )
-      .where('id', id)
+      .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
