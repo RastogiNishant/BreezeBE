@@ -161,7 +161,7 @@ class EstateCurrentTenantService {
       .firstOrFail()
   }
 
-  static async getByEstateId(estate_id, user_id) {
+  static async getCurrentTenantByEstateId(estate_id, user_id) {
     return await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('user_id', user_id)
