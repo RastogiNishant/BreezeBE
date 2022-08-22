@@ -616,7 +616,11 @@ class EstateController {
 
     estate.isoline = await EstateService.getIsolines(estate)
 
-    estate = estate.toJSON({ isShort: true, role: auth.user.role })
+    estate = estate.toJSON({
+      isShort: true,
+      role: auth.user.role,
+      extraFields: ['company', 'owner'],
+    })
     estate = await EstateService.assignEstateAmenities(estate)
 
     response.res(estate)
