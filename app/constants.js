@@ -405,6 +405,9 @@ const constants = {
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS: 'notification_landlord_deactivated_in_two_days',
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW: 'notification_landlord_deactivated',
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED:
+    'notification_prospect_informed_landlord_deactivated',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -445,6 +448,8 @@ const constants = {
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID: 43,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID: 44,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 45,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 46,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID: 47,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -543,6 +548,7 @@ const constants = {
     'isoline',
     'is_new_tenant_transfer',
     'transfer_budget',
+    'rent_end_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

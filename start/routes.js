@@ -78,6 +78,8 @@ Route.group(() => {
     'auth:jwtAdministrator',
   ])
 
+  Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware(['auth:jwt'])
+
   //admin plan
   //Controllers should be moved to app/Controllers/Http/Admin
   Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
@@ -132,7 +134,7 @@ Route.group(() => {
   Route.get(
     '/predefinedMessageChoice',
     'Admin/PredefinedMessageChoiceController.getAll'
-  ).middleware(['auth:jwtAdministrator'])
+  ).middleware(['auth:jwtAdministrator', 'valid:PredefinedMessageChoiceFilter'])
   Route.post(
     '/predefinedMessageChoice',
     'Admin/PredefinedMessageChoiceController.create'
@@ -492,6 +494,11 @@ Route.post(
   'EstateCurrentTenantController.acceptOutsideTenant'
 ).middleware(['valid:OutsideTenantInvite'])
 
+Route.post(
+  '/api/v1/accept/outside_tenant/already_registered',
+  'EstateCurrentTenantController.acceptAlreadyRegisterdOutsideTenant'
+).middleware(['auth:jwt', 'valid:AlreadyRegisteredOutsideTenantInvite'])
+
 // Change visits statuses
 Route.group(() => {
   Route.put('/landlord', 'MatchController.updateVisitTimeslotLandlord').middleware([
@@ -717,6 +724,12 @@ Route.group(() => {
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
+  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
+})
+  .prefix('api/v1/connect/chat')
+  .middleware(['auth:jwt,jwtLandlord'])
+
+Route.group(() => {
   Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
     'valid:Pagination,Id,TaskFilter',
   ])
@@ -748,11 +761,17 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll')
+  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware(['valid:PredefinedMessageFilter'])
 })
   .prefix('api/v1/connect/predefinedMessage')
   .middleware(['auth:jwt,jwtLandlord'])
 
+Route.group(() => {
+  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware(['valid:PredefinedMessageChoiceFilter'])
+})
+  .prefix('api/v1/connect/predefinedMessageChoice')
+  .middleware(['auth:jwt,jwtLandlord'])
+  
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])

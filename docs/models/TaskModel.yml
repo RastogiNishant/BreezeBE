@@ -79,9 +79,8 @@ components:
               type: string
               value: "in"
             value:
-              type: boolean
-              example: true
-          description: nullable
+              type: [boolean]
+              example: [true,false]
         tenant:
           type: object
           properties:

@@ -2285,10 +2285,7 @@ class MatchService {
   }
 
   static async getMatches(userId, estateId) {
-    return await Database.query()
-      .from('matches')
-      .where({ user_id: userId, estate_id: estateId })
-      .first()
+    return await Match.query().where({ user_id: userId, estate_id: estateId }).first()
   }
 
   static async handleDeletedTimeSlotVisits({ estate_id, start_at, end_at }, trx) {

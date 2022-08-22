@@ -13,7 +13,7 @@ const {
   maxBy,
   orderBy,
 } = require('lodash')
-const { props } = require('bluebird')
+const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
@@ -1228,6 +1228,7 @@ class EstateService {
         'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
+        'estates.cover',
         'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
@@ -1301,6 +1302,16 @@ class EstateService {
     })
 
     estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
+
+    await Promise.all(
+      estate.map(async (est) => {
+        await est.activeTasks.map(async (task) => {
+          task = await require('./TaskService').getItemWithAbsoluteUrl(task)
+          return task
+        })
+      })
+    )
+
     return estate
   }
 
