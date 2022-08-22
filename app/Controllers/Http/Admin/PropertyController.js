@@ -23,17 +23,18 @@ class PropertyController {
         'estates.user_id',
         '_u.user_id'
       )
-      .with('visits')
-      .with('final')
-      .with('inviteBuddies')
-      .with('knocked')
+      .withCount('visits')
+      .withCount('final')
+      .withCount('inviteBuddies')
+      .withCount('knocked')
       .orderBy('estates.updated_at', 'desc')
       .fetch()
     estates = estates.toJSON().map((estate) => {
-      estate.visit_count = estate.visits.length
-      estate.final_match_count = estate.final.length
-      estate.invite_count = estate.knocked.length + estate.inviteBuddies.length
-      estate = omit(estate, ['visits', 'final', 'knocked', 'inviteBuddies'])
+      estate.invite_count =
+        parseInt(estate['__meta__'].knocked_count) +
+        parseInt(estate['__meta__'].inviteBuddies_count)
+      estate.visit_count = parseInt(estate['__meta__'].visits_count)
+      estate.final_match_count = parseInt(estate['__meta__'].final_count)
       return estate
     })
     return response.res(estates)
