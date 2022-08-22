@@ -93,6 +93,23 @@ class EstateService {
 
   static async getEstateWithDetails(id, user_id) {
     const estateQuery = Estate.query()
+      .select(Database.raw('estates.*'))
+      .select(Database.raw('_c.owner_fullname as owner'))
+      .select(Database.raw('_c.company'))
+      .leftJoin(
+        Database.raw(`
+          (select 
+            users.id as user_id,
+            concat(coalesce(users.firstname,''), ' ', coalesce(users.secondname, '')) as owner_fullname,
+            json_build_object('name', companies.name, 'address', companies.address) as company
+          from users
+          inner join companies
+          on companies.id=users.company_id
+          ) as _c`),
+        function () {
+          this.on('estates.user_id', '_c.user_id').on('estates.id', id)
+        }
+      )
       .where('id', id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
@@ -419,8 +436,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-          return r.favorite
-        })
+            return r.favorite
+          })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
