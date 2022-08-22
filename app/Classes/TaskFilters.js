@@ -76,13 +76,15 @@ class TaskFilters extends Filter {
     )
 
     if (
-      params.breeze_type &&
-      [IS_INSIDE_BREEZE, IS_OUTSIDE_BREEZE].includes(params.breeze_type.value)
+      params.breeze_type && params.breeze_type.value !== undefined && params.breeze_type.value !== null
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value) this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
-        if (params.breeze_type.value === false)
+        if (params.breeze_type.value.includes(true)) {
+          this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
+        }
+        if (params.breeze_type.value.includes(false)) {
           this.query.orWhere(Database.raw('_ect.user_id IS NULL'))
+        }
       })
     }
 

@@ -339,6 +339,8 @@ class EstateCurrentTenantService {
       },
     })
     return {
+      id: estateCurrentTenant.id,
+      estate_id: estateCurrentTenant.estate_id,
       email: estateCurrentTenant.email,
       phone_number: estateCurrentTenant.phone_number,
       shortLink,
