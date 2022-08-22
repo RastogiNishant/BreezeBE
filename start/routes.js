@@ -152,6 +152,10 @@ Route.group(() => {
   Route.get('/estates', 'Admin/PropertyController.getProperties').middleware([
     'auth:jwtAdministrator',
   ])
+  Route.put('/estates/publish-status', 'Admin/PropertyController.updatePublishStatus').middleware([
+    'auth:jwtAdministrator',
+    'valid:AdminUpdatePublishStatus',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */

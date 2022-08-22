@@ -9,6 +9,7 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_FINISH,
 } = require('../../../constants')
+const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
 
@@ -78,16 +79,38 @@ class PropertyController {
     return response.res(estates)
   }
 
-  async updatePropertyPublishStatus({ request, response }) {
+  async updatePublishStatus({ request, response }) {
     const { ids, action } = request.all()
     const trx = await Database.beginTransaction()
+    let affectedRows
     switch (action) {
       case 'publish':
-
+        try {
+          //what will happen to previous matches when it is published?
+          affectedRows = await Estate.query()
+            .whereIn('id', ids)
+            .update({ status: STATUS_ACTIVE }, trx)
+          await trx.commit()
+          return response.res(affectedRows)
+        } catch (error) {
+          await trx.rollback()
+          throw new HttpException(error.message, 422)
+        }
       case 'unpublish':
+        try {
+          //what will happen to previous matches when it is unpublished?
+          affectedRows = await Estate.query()
+            .whereIn('id', ids)
+            .update({ status: STATUS_DRAFT }, trx)
+          await trx.commit()
+          return response.res(affectedRows)
+        } catch (error) {
+          await trx.rollback()
+          throw new HttpException(error.message, 422)
+        }
     }
     await trx.rollback()
-    return response.res(true)
+    throw new HttpException('Action not allowed.')
   }
 }
 
