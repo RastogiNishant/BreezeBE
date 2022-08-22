@@ -76,7 +76,7 @@ class TaskFilters extends Filter {
     )
 
     if (
-      params.breeze_type && params.breeze_type.value !== undefined || params.breeze_type.value !== null
+      params.breeze_type && params.breeze_type.value !== undefined && params.breeze_type.value !== null
     ) {
       this.query.andWhere(function () {
         if (params.breeze_type.value.includes(true)) {
