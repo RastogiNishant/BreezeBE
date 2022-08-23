@@ -86,6 +86,7 @@ class ChatService {
       .select('attachments')
       .select('created_at as dateTime')
       .select(Database.raw(`senders.sender`))
+      .select('_t.urgency')
       .leftJoin(
         Database.raw(`(select id,
         json_build_object('id', users.id, 'firstname', users.firstname, 
@@ -94,6 +95,14 @@ class ChatService {
         from users group by id) as senders`),
         'senders.id',
         'chats.sender_id'
+      )
+      .leftJoin(
+        Database.raw(`(
+        select id, urgency from tasks where id='${task_id}'
+      ) as _t`),
+        function () {
+          this.on('_t.id', 'chats.task_id').on('_t.id', task_id)
+        }
       )
       .where({
         task_id: task_id,
