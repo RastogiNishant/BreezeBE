@@ -394,7 +394,7 @@ class EstateCurrentTenantService {
     const trx = await Database.beginTransaction()
     try {
       if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx)
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx, estate_id)
       } else {
         const userData = {
           role: ROLE_USER,
@@ -443,11 +443,17 @@ class EstateCurrentTenantService {
     await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
-  static async updateOutsideTenantInfo(user, trx = null) {
-    const currentTenant = await EstateCurrentTenant.query()
+  static async updateOutsideTenantInfo(user, trx = null, estate_id = null) {
+    const query = EstateCurrentTenant.query()
       .where('email', user.email)
       .whereNot('status', STATUS_DELETE)
-      .first()
+
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+
+    const currentTenant = await query.first()
+
     if (!currentTenant) {
       return
     }
