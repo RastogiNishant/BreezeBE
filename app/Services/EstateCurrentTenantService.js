@@ -35,11 +35,12 @@ class EstateCurrentTenantService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id }) {
-    await EstateService.rentable(estateId)
+  static async addCurrentTenant({ data, estate_id, trx }) {
+    const shouldCommitTrx = trx ? false : true
 
-    let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
-    const trx = await Database.beginTransaction()
+    if (!trx) {
+      trx = await Database.beginTransaction()
+    }
 
     try {
       let currentTenant = new EstateCurrentTenant()
@@ -54,12 +55,6 @@ class EstateCurrentTenantService {
         salutation_int: data.salutation_int,
       })
 
-      if (user) {
-        currentTenant.surname = user.secondname || currentTenant.surname
-        currentTenant.salutation_int = user.sex || currentTenant.salutation_int
-        currentTenant.salutation = user.sex === 1 ? SALUTATION_MR_LABEL : tenantUser.sex === 2 ? SALUTATION_MS_LABEL : SALUTATION_SIR_OR_MADAM_LABEL
-      }
-
       await currentTenant.save(trx)
 
       const matchCount = await MatchService.getMatchCount(estateId)
@@ -67,12 +62,15 @@ class EstateCurrentTenantService {
       if (!matchCount || !matchCount.length || !parseInt(matchCount[0].count)) {
         await require('./EstateService').rented(estateId, trx)
       }
-
-      await trx.commit()
+      if (shouldCommitTrx) {
+        await trx.commit()
+      }
 
       return currentTenant
     } catch (e) {
-      await trx.rollback()
+      if (shouldCommitTrx) {
+        await trx.rollback()
+      }
       throw new HttpException(e.message, 500)
     }
   }
@@ -109,7 +107,12 @@ class EstateCurrentTenantService {
       contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
       phone_number: tenantUser.phone_number || '',
       status: STATUS_ACTIVE,
-      salutation: tenantUser.sex === 1 ? SALUTATION_MR_LABEL : tenantUser.sex === 2 ? SALUTATION_MS_LABEL : SALUTATION_SIR_OR_MADAM_LABEL,
+      salutation:
+        tenantUser.sex === 1
+          ? SALUTATION_MR_LABEL
+          : tenantUser.sex === 2
+          ? SALUTATION_MS_LABEL
+          : SALUTATION_SIR_OR_MADAM_LABEL,
       salutation_int: tenantUser.sex || SALUTATION_SIR_OR_MADAM,
     })
 
@@ -122,8 +125,6 @@ class EstateCurrentTenantService {
       await this.hasPermission(id, user_id)
     }
 
-    let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
-
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('email', data.tenant_email)
@@ -131,40 +132,34 @@ class EstateCurrentTenantService {
 
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
+
+      const trx = await Database.beginTransaction()
+
       await Database.table('estate_current_tenants')
         .where('estate_id', estate_id)
         .update({ status: STATUS_EXPIRE })
+        .transacting(trx)
 
-      let newCurrentTenant = new EstateCurrentTenant()
-      newCurrentTenant.fill({
+      const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
+        data,
         estate_id,
-        salutation: data.txt_salutation || '',
-        surname: data.surname || '',
-        email: data.tenant_email,
-        contract_end: data.contract_end,
-        phone_number: data.tenant_tel,
-        status: STATUS_ACTIVE,
-        salutation_int: data.salutation_int,
+        trx,
       })
-      if (user) {
-        newCurrentTenant.user_id = user.id
-      }
-      await newCurrentTenant.save()
+
       return newCurrentTenant
     } else {
-      //update values except email...
-      currentTenant.fill({
-        id: currentTenant.id,
-        salutation: data.txt_salutation,
-        surname: data.surname,
-        contract_end: data.contract_end,
-        phone_number: data.tenant_tel,
-        salutation_int: data.salutation_int,
-      })
-      if (user) {
-        currentTenant.user_id = user.id
+      //update values except email if no registered user...
+      if (!currentTenant.user_id) {
+        currentTenant.fill({
+          id: currentTenant.id,
+          salutation: data.txt_salutation,
+          surname: data.surname,
+          contract_end: data.contract_end,
+          phone_number: data.tenant_tel,
+          salutation_int: data.salutation_int,
+        })
+        await currentTenant.save()
       }
-      await currentTenant.save()
       return currentTenant
     }
   }
@@ -460,6 +455,16 @@ class EstateCurrentTenantService {
     if (!currentTenant.email) {
       currentTenant.email = user.email
     }
+
+    currentTenant.surname = user.secondname || currentTenant.surname
+    currentTenant.salutation_int = user.sex || currentTenant.salutation_int
+    currentTenant.salutation =
+      user.sex === 1
+        ? SALUTATION_MR_LABEL
+        : tenantUser.sex === 2
+        ? SALUTATION_MS_LABEL
+        : SALUTATION_SIR_OR_MADAM_LABEL
+
     await currentTenant.save(trx)
 
     //if current tenant, he needs to save to match as a final match

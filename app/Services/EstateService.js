@@ -419,8 +419,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-          return r.favorite
-        })
+            return r.favorite
+          })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1364,11 +1364,17 @@ class EstateService {
 
   static async rentable(estateId) {
     try {
-      return await Estate.query().where('id', estateId).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).whereNot('letting_type', LETTING_TYPE_LET).firstOrFail()
+      return await Estate.query()
+        .where('id', estateId)
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereNot('letting_type', LETTING_TYPE_LET)
+        .firstOrFail()
     } catch (e) {
-      throw new HttpException('You can\'t rent this property because this property already has been delete or rented by someone else', 400)
+      throw new HttpException(
+        "You can't rent this property because this property already has been delete or rented by someone else",
+        400
+      )
     }
-
   }
 }
 module.exports = EstateService
