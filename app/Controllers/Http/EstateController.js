@@ -619,17 +619,9 @@ class EstateController {
     estate = estate.toJSON({
       isShort: true,
       role: auth.user.role,
-      extraFields: ['company', 'owner'],
+      extraFields: ['landlord_type'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
-    if (isNull(estate.company.name)) {
-      estate.company = {
-        name: estate.owner,
-        type: 'owner',
-      }
-    } else {
-      estate.company.type = 'company'
-    }
     response.res(estate)
   }
 
