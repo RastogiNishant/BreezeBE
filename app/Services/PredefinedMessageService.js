@@ -95,7 +95,6 @@ class PredefinedMessageService {
     if (predefinedMessage.variable_to_update) {
       task[predefinedMessage.variable_to_update] = choice?.value || answer
     }
-
     if( title ) {
       task.title = title
     }
