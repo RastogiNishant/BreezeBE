@@ -44,8 +44,6 @@ class EstateCurrentTenantService {
       throw new HttpException('No permission to add current tenant')
     }
 
-    let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
-
     let currentTenant = new EstateCurrentTenant()
     currentTenant.fill({
       estate_id,
@@ -58,9 +56,6 @@ class EstateCurrentTenantService {
       salutation_int: data.salutation_int,
     })
 
-    if (user) {
-      currentTenant.user_id = user.id
-    }
     await currentTenant.save()
     return currentTenant
   }
@@ -109,8 +104,6 @@ class EstateCurrentTenantService {
       await this.hasPermission(id, user_id)
     }
 
-    let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
-
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('email', data.tenant_email)
@@ -133,9 +126,7 @@ class EstateCurrentTenantService {
         status: STATUS_ACTIVE,
         salutation_int: data.salutation_int,
       })
-      if (user) {
-        newCurrentTenant.user_id = user.id
-      }
+
       await newCurrentTenant.save()
       return newCurrentTenant
     } else {
@@ -148,9 +139,7 @@ class EstateCurrentTenantService {
         phone_number: data.tenant_tel,
         salutation_int: data.salutation_int,
       })
-      if (user) {
-        currentTenant.user_id = user.id
-      }
+
       await currentTenant.save()
       return currentTenant
     }
@@ -319,7 +308,6 @@ class EstateCurrentTenantService {
     }
 
     const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
-    console.log({ existingUser })
     if (existingUser) {
       uri += `&user_id=${existingUser.id}`
     }
