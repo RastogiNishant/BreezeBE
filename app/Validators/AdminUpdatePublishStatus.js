@@ -5,7 +5,7 @@ const Base = require('./Base')
 class AdminUpdatePublishStatus extends Base {
   static schema = () =>
     yup.object().shape({
-      action: yup.string().oneOf(['publish', 'unpublish']),
+      action: yup.string().oneOf(['unpublish']),
       ids: yup
         .array()
         .of(yup.number().integer().positive())

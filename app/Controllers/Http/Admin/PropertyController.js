@@ -45,6 +45,7 @@ class PropertyController {
     const trx = await Database.beginTransaction()
     let affectedRows
     switch (action) {
+      /*
       case 'publish':
         try {
           //what will happen to previous matches when it is published?
@@ -56,7 +57,7 @@ class PropertyController {
         } catch (error) {
           await trx.rollback()
           throw new HttpException(error.message, 422)
-        }
+        }*/
       case 'unpublish':
         try {
           //what will happen to previous matches when it is unpublished?
