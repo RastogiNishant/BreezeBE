@@ -94,17 +94,15 @@ class EstateService {
   static async getEstateWithDetails(id, user_id) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
-      .select(Database.raw('_c.owner_fullname as owner'))
-      .select(Database.raw('_c.company'))
+      .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
       .leftJoin(
         Database.raw(`
           (select 
             users.id as user_id,
-            concat(users.firstname, ' ', users.secondname) as owner_fullname,
-            json_build_object('name', companies.name, 'address', companies.address) as company
+            companies.type as landlord_type
           from users
           left join companies
-          on companies.id=users.company_id
+          on companies.user_id=users.id
           ) as _c`),
         function () {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
@@ -146,7 +144,7 @@ class EstateService {
       })
 
     if (user_id) {
-      estateQuery.where('user_id', user_id)
+      estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
   }
