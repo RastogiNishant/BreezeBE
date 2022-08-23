@@ -327,7 +327,6 @@ class EstateCurrentTenantService {
     }
 
     const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
-    console.log({ existingUser })
     if (existingUser) {
       uri += `&user_id=${existingUser.id}`
     }
