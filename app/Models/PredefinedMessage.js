@@ -1,5 +1,6 @@
 'use strict'
 
+const { STATUS_DELETE } = require('../constants')
 const Model = require('./BaseModel')
 
 class PredefinedMessage extends Model {
@@ -16,7 +17,7 @@ class PredefinedMessage extends Model {
   }
 
   choices() {
-    return this.hasMany('App/Models/PredefinedMessageChoice')
+    return this.hasMany('App/Models/PredefinedMessageChoice', 'id', 'predefined_message_id').whereNotIn('status', [STATUS_DELETE])
   }
 }
 
