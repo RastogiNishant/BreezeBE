@@ -134,7 +134,7 @@ Route.group(() => {
   Route.get(
     '/predefinedMessageChoice',
     'Admin/PredefinedMessageChoiceController.getAll'
-  ).middleware(['auth:jwtAdministrator'])
+  ).middleware(['auth:jwtAdministrator', 'valid:PredefinedMessageChoiceFilter'])
   Route.post(
     '/predefinedMessageChoice',
     'Admin/PredefinedMessageChoiceController.create'
@@ -770,11 +770,17 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll')
+  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware(['valid:PredefinedMessageFilter'])
 })
   .prefix('api/v1/connect/predefinedMessage')
   .middleware(['auth:jwt,jwtLandlord'])
 
+Route.group(() => {
+  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware(['valid:PredefinedMessageChoiceFilter'])
+})
+  .prefix('api/v1/connect/predefinedMessageChoice')
+  .middleware(['auth:jwt,jwtLandlord'])
+  
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
