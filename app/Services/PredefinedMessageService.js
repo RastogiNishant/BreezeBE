@@ -55,7 +55,7 @@ class PredefinedMessageService {
   }
 
   static async handleMessageWithChoice(
-    { answer, task, predefinedMessage, predefined_message_choice_id, lang },
+    { answer, title, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
     let nextPredefinedMessage, choice
@@ -94,6 +94,9 @@ class PredefinedMessageService {
 
     if (predefinedMessage.variable_to_update) {
       task[predefinedMessage.variable_to_update] = choice?.value || answer
+    }
+    if (title) {
+      task.title = title
     }
 
     // Find the next predefined message
