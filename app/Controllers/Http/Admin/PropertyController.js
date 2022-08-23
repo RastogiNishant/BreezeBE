@@ -1,7 +1,8 @@
 'use strict'
 const Database = use('Database')
-const { omit } = require('lodash')
+const EstateService = use('App/Services/EstateService')
 const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE } = require('../../../constants')
+const Promise = require('bluebird')
 const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
@@ -60,7 +61,9 @@ class PropertyController {
         }*/
       case 'unpublish':
         try {
-          //what will happen to previous matches when it is unpublished?
+          await Promise.map(ids, async (id) => {
+            await EstateService.handleOfflineEstate(id, trx)
+          })
           affectedRows = await Estate.query()
             .whereIn('id', ids)
             .update({ status: STATUS_DRAFT }, trx)
