@@ -18,6 +18,9 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  ESTATE_VALID_ADDRESS_LABEL,
+  ESTATE_INVALID_ADDRESS_LABEL,
+  ESTATE_ALL_ADDRESS_LABEL,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -93,10 +96,20 @@ class EstateFilters extends Filter {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified_address && isBoolean(params.verified_address.value)) {
-      query.andWhere(
-        Database.raw(EstateFilters.whereQueryForVerifiedAddress(params.verified_address.value))
-      )
+    if (params.verified_address
+      && params.verified_address.value
+      && Array.isArray(params.verified_address.value)
+      && params.verified_address.value.length
+      && !params.verified_address.value.includes(ESTATE_ALL_ADDRESS_LABEL)) {
+      this.query.where(function () {
+        if (params.verified_address.value.includes(ESTATE_VALID_ADDRESS_LABEL)) {
+          this.orWhere(Database.raw(`coord_raw is not null`))
+        }
+        if (params.verified_address.value.includes(ESTATE_INVALID_ADDRESS_LABEL)) {
+          this.orWhere(Database.raw(`coord_raw is null`))
+        }
+      })
+
     }
     /* query */
     if (params.query) {
@@ -158,10 +171,6 @@ class EstateFilters extends Filter {
     letting_type = EstateFilters.lettingTypeString[letting_type]
     letting_status = letting_status ? EstateFilters.lettingStatusString[letting_status] : null
     return { letting_type, letting_status }
-  }
-
-  static whereQueryForVerifiedAddress(value) {
-    return value ? `coord_raw is not null` : `coord_raw is null`
   }
 
   static customStatusesToValue(statuses) {
