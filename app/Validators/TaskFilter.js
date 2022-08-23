@@ -22,8 +22,10 @@ const {
   URGENCY_HIGH_LABEL,
   URGENCY_SUPER_LABEL,
 
-  IS_INSIDE_BREEZE,
-  IS_OUTSIDE_BREEZE,
+  ALL_BREEZE,
+  INSIDE_BREEZE_TEANT_LABEL,
+  OUTSIDE_BREEZE_TEANT_LABEL,
+  PENDING_BREEZE_TEANT_LABEL,
 
   FILTER_CONSTRAINTS_MATCH_MODES,
   FILTER_CONSTRAINTS_DATE_MATCH_MODES,
@@ -123,7 +125,12 @@ class TaskFilter extends Base {
             .array()
             .of(
               yup
-                .boolean().nullable()
+                .string().oneOf([
+                  ALL_BREEZE,
+                  INSIDE_BREEZE_TEANT_LABEL,
+                  OUTSIDE_BREEZE_TEANT_LABEL,
+                  PENDING_BREEZE_TEANT_LABEL
+                ])
             )
             .nullable(),
         })
