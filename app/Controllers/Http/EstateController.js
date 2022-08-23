@@ -47,7 +47,7 @@ const {
   USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim, isNull } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
