@@ -498,10 +498,9 @@ class TaskService {
             const thumb =
               attachment.uri.split('/').length === 2
                 ? await File.getProtectedUrl(
-                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-                      attachment.uri.split('/')[1]
-                    }`
-                  )
+                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
+                  }`
+                )
                 : ''
 
             if (attachment.uri.search('http') !== 0) {
