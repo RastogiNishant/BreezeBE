@@ -73,11 +73,19 @@ class TaskService {
   }
 
   static async init(user, data) {
-    const { predefined_message_id, title, predefined_message_choice_id, estate_id, task_id, answer } = data
+    const {
+      predefined_message_id,
+      title,
+      predefined_message_choice_id,
+      estate_id,
+      task_id,
+      answer,
+    } = data
     let { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
 
+    //FIXME: predefined_message_id should be required?
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
@@ -135,7 +143,6 @@ class TaskService {
         },
         trx
       )
-
       messages.push(landlordMessage.toJSON())
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
@@ -498,9 +505,10 @@ class TaskService {
             const thumb =
               attachment.uri.split('/').length === 2
                 ? await File.getProtectedUrl(
-                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
-                  }`
-                )
+                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
+                      attachment.uri.split('/')[1]
+                    }`
+                  )
                 : ''
 
             if (attachment.uri.search('http') !== 0) {

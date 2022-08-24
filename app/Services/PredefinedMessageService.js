@@ -5,7 +5,7 @@ const {
   CHAT_TYPE_MESSAGE,
   STATUS_ACTIVE,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
-  CHAT_TYPE_BOT_MESSAGE
+  CHAT_TYPE_BOT_MESSAGE,
 } = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
@@ -25,16 +25,12 @@ class PredefinedMessageService {
   }
 
   static async getAll({ type }) {
-    const query = PredefinedMessage.query()
-      .with('choices')
-      .whereNot('status', STATUS_DELETE)
+    const query = PredefinedMessage.query().with('choices').whereNot('status', STATUS_DELETE)
 
     if (type) {
       query.whereIn('type', Array.isArray(type) ? type : [type])
     }
-    return (await query.whereNot('status', STATUS_DELETE)
-      .orderBy('step', 'id')
-      .fetch()).rows
+    return (await query.whereNot('status', STATUS_DELETE).orderBy('step', 'id').fetch()).rows
   }
 
   static async create(data) {
@@ -71,16 +67,6 @@ class PredefinedMessageService {
       // Create predefined message answer from tenant's answer
     }
 
-    await PredefinedMessageAnswer.createItem(
-      {
-        task_id: task.id,
-        predefined_message_choice_id,
-        predefined_message_id: predefinedMessage.id,
-        text: choice ? l.get(choice.text, lang) : answer,
-      },
-      trx
-    )
-
     // Create chat message from tenant's answer
     const tenantMessage = await Chat.createItem(
       {
@@ -88,6 +74,16 @@ class PredefinedMessageService {
         sender_id: task.tenant_id,
         text: choice ? l.get(choice.text, lang) : answer,
         type: CHAT_TYPE_MESSAGE,
+      },
+      trx
+    )
+    await PredefinedMessageAnswer.createItem(
+      {
+        task_id: task.id,
+        predefined_message_choice_id,
+        predefined_message_id: predefinedMessage.id,
+        text: choice ? l.get(choice.text, lang) : answer,
+        chat_id: tenantMessage.id,
       },
       trx
     )
@@ -123,16 +119,6 @@ class PredefinedMessageService {
   }
 
   static async handleOpenEndedMessage({ task, predefinedMessage, answer, attachments }, trx) {
-    // Create predefined message answer from tenant's answer
-    await PredefinedMessageAnswer.createItem(
-      {
-        task_id: task.id,
-        predefined_message_id: predefinedMessage.id,
-        text: answer,
-      },
-      trx
-    )
-
     // Create chat message from tenant's answer
     const tenantMessage = await Chat.createItem(
       {
@@ -141,6 +127,16 @@ class PredefinedMessageService {
         text: answer,
         attachments: attachments ? JSON.stringify(attachments) : null,
         type: CHAT_TYPE_MESSAGE,
+      },
+      trx
+    )
+    // Create predefined message answer from tenant's answer
+    await PredefinedMessageAnswer.createItem(
+      {
+        task_id: task.id,
+        predefined_message_id: predefinedMessage.id,
+        text: answer,
+        chat_id: tenantMessage.id,
       },
       trx
     )
