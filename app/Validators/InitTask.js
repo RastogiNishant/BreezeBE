@@ -13,7 +13,7 @@ class InitTask extends Base {
       estate_id: yup.number().positive().required(),
       task_id: yup.number().nullable(),
       answer: yup.string(),
-      title: yup.string(),
+      prev_predefined_message_id: yup.string(),
       attachments: yup.array().of(yup.string()).nullable(),
     })
 }
