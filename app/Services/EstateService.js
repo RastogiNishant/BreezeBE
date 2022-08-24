@@ -338,7 +338,6 @@ class EstateService {
         q.with('room_amenities').with('images')
       })
       .with('files')
-
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
