@@ -9,6 +9,7 @@ const Logger = use('Logger')
 const { isEmpty } = require('lodash')
 const {
   STATUS_ACTIVE,
+  STATUS_DRAFT,
   STATUS_EXPIRE,
   DATE_FORMAT,
   MATCH_STATUS_INVITE,
@@ -199,6 +200,12 @@ class QueueJobService {
           },
           trx
         )
+
+        await Estate.query()
+          .whereIn('user_id', userId)
+          .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+          .update({ status: STATUS_DRAFT }, trx)
+
         await UserDeactivationSchedule.query()
           .where('id', deactivationId)
           .where('user_id', userId)

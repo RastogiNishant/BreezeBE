@@ -9,7 +9,9 @@ class PredefinedMessageController {
   }
 
   async getAll({ request, auth, response }) {
-    response.res(await PredefinedMessageService.getAll())
+    const { type } = request.all()
+    console.log('GetAll type', type)
+    response.res(await PredefinedMessageService.getAll({ type }))
   }
 
   async create({ request, auth, response }) {

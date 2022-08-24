@@ -24,14 +24,17 @@ class PredefinedMessageService {
       .firstOrFail()
   }
 
-  static async getAll() {
-    return (
-      await PredefinedMessage.query()
-        .with('choices')
-        .whereNot('status', STATUS_DELETE)
-        .orderBy('step', 'id')
-        .fetch()
-    ).rows
+  static async getAll({ type }) {
+    const query = PredefinedMessage.query()
+      .with('choices')
+      .whereNot('status', STATUS_DELETE)
+
+    if (type) {
+      query.whereIn('type', Array.isArray(type) ? type : [type])
+    }
+    return (await query.whereNot('status', STATUS_DELETE)
+      .orderBy('step', 'id')
+      .fetch()).rows
   }
 
   static async create(data) {
@@ -52,7 +55,7 @@ class PredefinedMessageService {
   }
 
   static async handleMessageWithChoice(
-    { answer, task, predefinedMessage, predefined_message_choice_id, lang },
+    { answer, title, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
     let nextPredefinedMessage, choice
@@ -91,6 +94,9 @@ class PredefinedMessageService {
 
     if (predefinedMessage.variable_to_update) {
       task[predefinedMessage.variable_to_update] = choice?.value || answer
+    }
+    if (title) {
+      task.title = title
     }
 
     // Find the next predefined message
@@ -131,7 +137,7 @@ class PredefinedMessageService {
     const tenantMessage = await Chat.createItem(
       {
         task_id: task.id,
-        sender_id: task.tenant_id,        
+        sender_id: task.tenant_id,
         text: answer,
         attachments: attachments ? JSON.stringify(attachments) : null,
         type: CHAT_TYPE_MESSAGE,
