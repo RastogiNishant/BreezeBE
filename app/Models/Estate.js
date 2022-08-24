@@ -45,6 +45,7 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
+  ROLE_LANDLORD,
 } = require('../constants')
 
 class Estate extends Model {
@@ -305,6 +306,7 @@ class Estate extends Model {
         this.orWhereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
         this.orWhere(function () {
           this.where('status', TASK_STATUS_RESOLVED)
+          this.where('status_changed_by', ROLE_LANDLORD)
           this.where('updated_at', '>=', moment.utc().subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd').format(DATE_FORMAT))
         })
       })

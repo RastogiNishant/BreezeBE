@@ -54,6 +54,7 @@ class TaskService {
       creator_role: user.role,
       tenant_id: tenant_id,
       status: TASK_STATUS_NEW,
+      status_changed_by: user.role,
     }
 
     const files = await TaskService.saveTaskImages(request)
@@ -222,6 +223,7 @@ class TaskService {
 
     const taskRow = await query.firstOrFail()
 
+    task.status_changed_by = user.role
     if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
     return await taskRow.updateItem({ ...task })
   }
