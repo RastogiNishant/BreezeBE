@@ -1,5 +1,6 @@
 'use strict'
 
+const { trim } = require('lodash')
 const {
   STATUS_DELETE,
   CHAT_TYPE_MESSAGE,
@@ -51,9 +52,10 @@ class PredefinedMessageService {
   }
 
   static async handleMessageWithChoice(
-    { answer, title, task, predefinedMessage, predefined_message_choice_id, lang },
+    { answer, prev_predefined_message_id, task, predefinedMessage, predefined_message_choice_id, lang },
     trx
   ) {
+
     let nextPredefinedMessage, choice
 
     if (predefined_message_choice_id) {
@@ -72,7 +74,7 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: choice ? l.get(choice.text, lang) : answer,
+        text: answer && trim(answer) !== '' ? answer : (choice ? l.get(choice.text, lang) : ''),
         type: CHAT_TYPE_MESSAGE,
       },
       trx
@@ -89,10 +91,15 @@ class PredefinedMessageService {
     )
 
     if (predefinedMessage.variable_to_update) {
-      task[predefinedMessage.variable_to_update] = choice?.value || answer
+      task[predefinedMessage.variable_to_update] = choice?.value || prev_predefined_message_id && answer.split(':').length == 2 ? answer.split(':')[1] : answer
     }
-    if (title) {
-      task.title = title
+
+    //auto complete message
+    if (prev_predefined_message_id) {
+      const prevPredefinedMessage = await PredefinedMessage.query().where('id', prev_predefined_message_id).firstOrFail()
+      if (prevPredefinedMessage.variable_to_update) {
+        task[prevPredefinedMessage.variable_to_update] = choice?.value || answer.split(':')[0]
+      }
     }
 
     // Find the next predefined message
