@@ -87,16 +87,13 @@ class EstateController {
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
-            country || 'Germany'
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'
           }`
         ).toLowerCase()
 
-        const txt = `The landlord '${
-          user.email
-        }' created a property with an address '${address}' in ${
-          process.env.NODE_ENV || 'local'
-        } environment`
+        const txt = `The landlord '${user.email
+          }' created a property with an address '${address}' in ${process.env.NODE_ENV || 'local'
+          } environment`
 
         await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
@@ -616,9 +613,12 @@ class EstateController {
 
     estate.isoline = await EstateService.getIsolines(estate)
 
-    estate = estate.toJSON({ isShort: true, role: auth.user.role })
+    estate = estate.toJSON({
+      isShort: true,
+      role: auth.user.role,
+      extraFields: ['landlord_type'],
+    })
     estate = await EstateService.assignEstateAmenities(estate)
-
     response.res(estate)
   }
 
@@ -821,7 +821,7 @@ class EstateController {
     response.res(!(estate.row_count > 0))
   }
 
-  async getInviteToViewCode({ request, auth, response }) {}
+  async getInviteToViewCode({ request, auth, response }) { }
 
   async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
@@ -912,7 +912,7 @@ class EstateController {
                 //key value pairs
                 row[attribute] =
                   reverseMap[attribute][
-                    isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                   ]
               }
             }
