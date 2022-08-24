@@ -73,7 +73,7 @@ class TaskService {
   }
 
   static async init(user, data) {
-    const { predefined_message_id, title, predefined_message_choice_id, estate_id, task_id, answer } = data
+    const { predefined_message_id, prev_predefined_message_id, predefined_message_choice_id, estate_id, task_id, answer } = data
     let { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
@@ -148,7 +148,7 @@ class TaskService {
         const resp = await PredefinedMessageService.handleMessageWithChoice(
           {
             answer,
-            title,
+            prev_predefined_message_id,
             task,
             predefinedMessage,
             predefined_message_choice_id,
