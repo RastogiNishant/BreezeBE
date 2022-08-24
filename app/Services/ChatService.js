@@ -80,8 +80,8 @@ class ChatService {
     return chat
   }
 
-  static async getPreviousMessages({ task_id, lastId, user_id, page = -1, limit = -1 }) {
-    let answers = await PredefinedMessageAnswer.query()
+  static async getTaskVariables(task_id) {
+    await PredefinedMessageAnswer.query()
       .select(Database.raw(`predefined_messages.variable_to_update as variable`))
       .select(Database.raw(`predefined_message_answers.chat_id`))
       .innerJoin(
@@ -91,8 +91,17 @@ class ChatService {
       )
       .where('task_id', task_id)
       .fetch()
-    answers = answers.toJSON()
-    console.log(answers)
+    answers = answers.toJSON().reduce((answers, answer) => {
+      if (answer.variable) {
+        return { ...answers, [answer.chat_id]: answer.variable }
+      }
+      return answers
+    }, {})
+    return answers
+  }
+
+  static async getPreviousMessages({ task_id, lastId, user_id, page = -1, limit = -1 }) {
+    let answers = await ChatService.getTaskVariables(task_id)
     const query = Chat.query()
       .select('chats.id as id')
       .select('text as message')
@@ -126,7 +135,13 @@ class ChatService {
       query.where('chats.id', '<', lastId)
     }
     let lastMessages = await query.fetch()
-
+    lastMessages = lastMessages.toJSON().reduce((lastMessages, message) => {
+      message.variable = null
+      if (answers[`${message.id}`]) {
+        message.variable = answers[`${message.id}`]
+      }
+      return [...lastMessages, message]
+    }, [])
     return lastMessages
   }
 
