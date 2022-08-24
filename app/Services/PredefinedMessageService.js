@@ -1,5 +1,6 @@
 'use strict'
 
+const { trim } = require('lodash')
 const {
   STATUS_DELETE,
   CHAT_TYPE_MESSAGE,
@@ -87,7 +88,7 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: answer || (choice ? l.get(choice.text, lang) : ''),
+        text: answer && trim(answer) !== '' ? answer : (choice ? l.get(choice.text, lang) : ''),
         type: CHAT_TYPE_MESSAGE,
       },
       trx
