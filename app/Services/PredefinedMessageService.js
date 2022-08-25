@@ -95,7 +95,7 @@ class PredefinedMessageService {
     )
 
     if (predefinedMessage.variable_to_update) {
-      task[predefinedMessage.variable_to_update] = choice?.value || prev_predefined_message_id && answer.split(':').length == 2 ? trim(answer.split(':')[1]) : answer
+      task[predefinedMessage.variable_to_update] = choice?.value || (prev_predefined_message_id && answer.split(':').length == 2 ? trim(answer.split(':')[1]) : answer)
     }
 
     //auto complete message
