@@ -93,7 +93,22 @@ class EstateService {
 
   static async getEstateWithDetails(id, user_id) {
     const estateQuery = Estate.query()
-      .where('id', id)
+      .select(Database.raw('estates.*'))
+      .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
+      .leftJoin(
+        Database.raw(`
+          (select 
+            users.id as user_id,
+            companies.type as landlord_type
+          from users
+          left join companies
+          on companies.user_id=users.id
+          ) as _c`),
+        function () {
+          this.on('estates.user_id', '_c.user_id').on('estates.id', id)
+        }
+      )
+      .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
@@ -129,7 +144,7 @@ class EstateService {
       })
 
     if (user_id) {
-      estateQuery.where('user_id', user_id)
+      estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
   }
@@ -323,7 +338,6 @@ class EstateService {
         q.with('room_amenities').with('images')
       })
       .with('files')
-
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
@@ -419,8 +433,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-          return r.favorite
-        })
+            return r.favorite
+          })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
