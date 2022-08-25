@@ -33,8 +33,9 @@ class FilterColumnsController {
   }
 
   async getAll({ request, auth, response }) {
-    const { ...filter } = request.all()
-    response.res(await FilterColumnsService.getAll(auth.user.id, filter))
+    let { ...filter } = request.all()
+    filter.is_used_filter = [false]
+    response.res(await FilterColumnsService.getAll({ user_id: auth.user.id, filter }))
   }
 }
 
