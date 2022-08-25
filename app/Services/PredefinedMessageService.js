@@ -95,14 +95,14 @@ class PredefinedMessageService {
     )
 
     if (predefinedMessage.variable_to_update) {
-      task[predefinedMessage.variable_to_update] = choice?.value || prev_predefined_message_id && answer.split(':').length == 2 ? answer.split(':')[1] : answer
+      task[predefinedMessage.variable_to_update] = choice?.value || prev_predefined_message_id && answer.split(':').length == 2 ? trim(answer.split(':')[1]) : answer
     }
 
     //auto complete message
     if (prev_predefined_message_id) {
       const prevPredefinedMessage = await PredefinedMessage.query().where('id', prev_predefined_message_id).firstOrFail()
       if (prevPredefinedMessage.variable_to_update) {
-        task[prevPredefinedMessage.variable_to_update] = choice?.value || answer.split(':')[0]
+        task[prevPredefinedMessage.variable_to_update] = choice?.value || trim(answer.split(':')[0])
       }
     }
 
