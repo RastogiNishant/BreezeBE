@@ -161,6 +161,7 @@ const {
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_NA,
 } = require('../constants')
 
 escapeStr = (v) => {
@@ -919,11 +920,13 @@ class EstateAttributeTranslations {
       },
       floor_direction: {
         keys: [
+          'property.attribute.LETTING_TYPE.NA.message',
           'property.attribute.floor_direction.left.message',
           'property.attribute.floor_direction.right.message',
           'property.attribute.floor_direction.straight.message',
         ],
         values: [
+          ESTATE_FLOOR_DIRECTION_NA,
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,

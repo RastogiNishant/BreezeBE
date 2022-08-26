@@ -12,8 +12,11 @@ const {
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
-  IS_INSIDE_BREEZE,
-  IS_OUTSIDE_BREEZE,
+  ALL_BREEZE,
+  INSIDE_BREEZE_TEANT_LABEL,
+  OUTSIDE_BREEZE_TEANT_LABEL,
+  PENDING_BREEZE_TEANT_LABEL,
+  DATE_FORMAT,
   FILTER_NAME_CONNECT
 } = require('../constants')
 
@@ -60,13 +63,36 @@ class TaskFilters extends Filter {
     this.processGlobals()
 
     if (
-      params.breeze_type && this.isExist('breeze_type') &&
-      [IS_INSIDE_BREEZE, IS_OUTSIDE_BREEZE].includes(params.breeze_type.value)
+      params.breeze_type &&
+      params.breeze_type.value !== undefined &&
+      params.breeze_type.value !== null &&
+      !params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value) this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
-        if (params.breeze_type.value === false)
-          this.query.orWhere(Database.raw('_ect.user_id IS NULL'))
+        if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
+        }
+
+        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(
+            Database.raw(`
+              (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
+              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+                .utc(new Date())
+                .subtract(2, 'days')
+                .format(DATE_FORMAT)}' )`)
+          )
+        }
+
+        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(
+            Database.raw(`
+              _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
+                .utc(new Date())
+                .subtract(2, 'days')
+                .format(DATE_FORMAT)}'`)
+          )
+        }
       })
     }
 
@@ -83,8 +109,8 @@ class TaskFilters extends Filter {
   }
 
   afterQuery() {
-    // const matchCountFilterFields = this.isExist('active_task') ? ['active_task'] : []
-    // this.matchCountFilter(matchCountFilterFields, this.params)
+    const matchCountFilterFields = this.isExist('active_task') ? ['active_task'] : []
+    this.matchCountFilter(matchCountFilterFields, this.params)
     return this.query
   }
 }

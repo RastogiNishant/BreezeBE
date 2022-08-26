@@ -1,14 +1,16 @@
 'use strict'
 
 const User = use('App/Models/User')
-const l = use('Localize')
 const Database = use('Database')
+const Estate = use('App/Models/Estate')
+const Event = use('Event')
+
 const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-const { isArray, isEmpty, find, get, includes } = require('lodash')
+const { isArray, isEmpty, includes } = require('lodash')
 const {
   ROLE_ADMIN,
   ROLE_LANDLORD,
@@ -18,10 +20,10 @@ const {
   STATUS_DELETE,
   STATUS_ACTIVE,
   STATUS_DRAFT,
+  STATUS_EXPIRE,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
 } = require('../../../constants')
 const QueueService = use('App/Services/QueueService')
-const NotificationsService = use('App/Services/NotificationsService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
 const Promise = require('bluebird')
@@ -89,7 +91,6 @@ class UserController {
     const { ids, action } = request.all()
     let affectedRows = 0
     const trx = await Database.beginTransaction()
-
     switch (action) {
       case 'activate':
         try {
@@ -107,6 +108,9 @@ class UserController {
           NoticeService.verifyUserByAdmin(ids)
           await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
+          ids.map((id) => {
+            Event.fire('mautic:syncContact', id, { admin_approval_date: new Date() })
+          })
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -125,14 +129,35 @@ class UserController {
             },
             trx
           )
+          //make owned estates draft
+          const estateIds = (
+            await Estate.query()
+              .select('*')
+              .whereIn('user_id', ids)
+              .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+              .fetch()
+          ).rows.map((estate) => estate.id)
+
+          if (estateIds.length > 0) {
+            await Estate.query()
+              .whereIn('id', estateIds)
+              .update({ status: STATUS_DRAFT })
+              .transacting(trx)
+          }
+
+          //TODO: we should delete user deactivation schedule here also
           await trx.commit()
+          ids.map((id) => {
+            Event.fire('mautic:syncContact', id, { admin_approval_date: null })
+          })
+          //send notifications
+          NoticeService.landlordsDeactivated(ids, estateIds)
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
           await trx.rollback()
           throw new HttpException(err.message, 422)
         }
-
       case 'deactivate-in-2-days':
         try {
           await Promise.map(ids, async (id) => {
@@ -183,8 +208,8 @@ class UserController {
             )
             QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
           })
-          await NoticeService.deactivatingLandlordsInTwoDays(ids, deactivateDateTime)
           await trx.commit()
+          await NoticeService.deactivatingLandlordsInTwoDays(ids, deactivateDateTime)
           return response.res(true)
         } catch (err) {
           console.log(err)

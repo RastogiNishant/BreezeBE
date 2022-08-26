@@ -18,7 +18,9 @@ const {
   STATUS_DELETE,
   LETTING_TYPE_LET,
   MATCH_STATUS_FINISH,
+  TENANT_INVITATION_EXPIRATION_DATE,
 } = require('../constants')
+const Event = use('Event')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -299,7 +301,9 @@ class EstateCurrentTenantService {
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
     const code = uuid.v4()
-    await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code })
+    await EstateCurrentTenant.query()
+      .where('id', estateCurrentTenant.id)
+      .update({ code: code, invite_sent_at: time })
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
@@ -339,6 +343,8 @@ class EstateCurrentTenantService {
       },
     })
     return {
+      id: estateCurrentTenant.id,
+      estate_id: estateCurrentTenant.estate_id,
       email: estateCurrentTenant.email,
       phone_number: estateCurrentTenant.phone_number,
       shortLink,
@@ -375,7 +381,9 @@ class EstateCurrentTenantService {
     }
 
     const time = moment().utc()
-    const old_time = moment().utc(expired_time, 'YYYY-MM-DD HH:mm:ss').add(2, 'days')
+    const old_time = moment()
+      .utc(expired_time, 'YYYY-MM-DD HH:mm:ss')
+      .add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
 
     if (old_time < time) {
       throw new HttpException('Link has been expired', 500)
@@ -398,6 +406,7 @@ class EstateCurrentTenantService {
         )
       }
       await trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return user.id
     } catch (e) {
       await trx.rollback()
