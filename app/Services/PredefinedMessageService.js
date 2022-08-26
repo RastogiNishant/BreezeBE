@@ -63,10 +63,6 @@ class PredefinedMessageService {
     trx
   ) {
     let nextPredefinedMessage, choice
-    let answerForChat =
-      predefinedMessage.variable_to_update === 'urgency'
-        ? `{{{urgency-${answer}}}}${answer}`
-        : answer
     if (predefined_message_choice_id) {
       choice = await PredefinedMessageChoice.query()
         .where({ id: predefined_message_choice_id, predefined_message_id: predefinedMessage.id })
@@ -79,16 +75,17 @@ class PredefinedMessageService {
     }
 
     // Create chat message from tenant's answer
+    let answerForChat =
+      answer && trim(answer) !== '' ? answer : choice ? l.get(choice.text, lang) : ''
+    if (predefinedMessage.variable_to_update === 'urgency') {
+      answerForChat = `{{{urgency-${answer}}}}${answerForChat}`
+    }
+
     const tenantMessage = await Chat.createItem(
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text:
-          answerForChat && trim(answerForChat) !== ''
-            ? answerForChat
-            : choice
-            ? l.get(choice.text, lang)
-            : '',
+        text: answerForChat,
         type: CHAT_TYPE_MESSAGE,
       },
       trx
