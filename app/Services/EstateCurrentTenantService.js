@@ -489,6 +489,25 @@ class EstateCurrentTenantService {
       ).rows
     )
   }
+
+  static async disconnect(user_id, ids) {
+    ids = Array.isArray(ids) ? ids : [ids]
+
+    const estateCurrentTenants = await EstateCurrentTenant.query()
+      .select('estate_current_tenants.id')
+      .whereIn('id', ids)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+      })
+      .fetch()
+
+    if (estateCurrentTenants && estateCurrentTenants.length) {
+      const ids = estateCurrentTenants.map(tenant => tenant.id)
+      await EstateCurrentTenant.query().whereIn('id', ids).update({ user_id: null, code: null, invite_sent_at: null })
+    }
+
+    return { successCount: (estateCurrentTenants.length || 0), failureCount: (ids.length - estateCurrentTenants.length || 0) }
+  }
 }
 
 module.exports = EstateCurrentTenantService

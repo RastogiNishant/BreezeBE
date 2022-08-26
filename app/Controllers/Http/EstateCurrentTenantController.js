@@ -60,7 +60,7 @@ class EstateCurrentTenantController {
         })
       )
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -74,7 +74,7 @@ class EstateCurrentTenantController {
         })
       )
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -82,7 +82,7 @@ class EstateCurrentTenantController {
     const { data1, data2, password, email } = request.all()
 
     if (!data1 || !data2) {
-      throw new HttpException('Not enough params', 500)
+      throw new HttpException('Not enough params', 400)
     }
 
     response.res(
@@ -98,7 +98,7 @@ class EstateCurrentTenantController {
   async acceptAlreadyRegisterdOutsideTenant({ request, response, auth }) {
     const { data1, data2 } = request.all()
     if (!data1 || !data2) {
-      throw new HttpException('Not enough params', 500)
+      throw new HttpException('Not enough params', 400)
     }
 
     response.res(
@@ -120,12 +120,21 @@ class EstateCurrentTenantController {
 
       if (errorPhonNumbers && errorPhonNumbers.length) {
         const msg = ` Not delivered to ` + errorPhonNumbers.join(',')
-        throw new HttpException(msg, 500)
+        throw new HttpException(msg, 400)
       }
 
       response.res(true)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async disconnect({ request, auth, response }) {
+    const { ids } = request.all()
+    try {
+
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
 }
