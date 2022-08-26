@@ -132,7 +132,7 @@ class EstateCurrentTenantController {
   async disconnect({ request, auth, response }) {
     const { ids } = request.all()
     try {
-
+      response.res(await EstateCurrentTenantService.disconnect(auth.user.id, ids))
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
