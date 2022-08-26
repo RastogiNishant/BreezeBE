@@ -58,11 +58,6 @@ class EstateCurrentTenantService {
 
       await currentTenant.save(trx)
 
-      const matchCount = await MatchService.getMatchCount(estateId)
-      // if there is match, that estate will be updated to rent
-      if (!matchCount || !matchCount.length || !parseInt(matchCount[0].count)) {
-        await require('./EstateService').rented(estateId, trx)
-      }
       if (shouldCommitTrx) {
         await trx.commit()
       }
@@ -364,7 +359,39 @@ class EstateCurrentTenantService {
   }
 
   static async acceptOutsideTenant({ data1, data2, password, email, user }) {
-    const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
+      ...rest,
+      estate_id,
+      email,
+      user,
+    })
+
+    const trx = await Database.beginTransaction()
+    try {
+      if (user) {
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx, estate_id)
+      } else {
+        const userData = {
+          role: ROLE_USER,
+          secondname: estateCurrentTenant.surname,
+          phone: estateCurrentTenant.phone_number,
+          password: password,
+        }
+        user = await UserService.signUp(
+          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
+          trx
+        )
+      }
+      await trx.commit()
+      return user.id
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
@@ -399,28 +426,7 @@ class EstateCurrentTenantService {
       throw new HttpException('Link has been expired', 500)
     }
 
-    const trx = await Database.beginTransaction()
-    try {
-      if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx, estate_id)
-      } else {
-        const userData = {
-          role: ROLE_USER,
-          secondname: estateCurrentTenant.surname,
-          phone: estateCurrentTenant.phone_number,
-          password: password,
-        }
-        user = await UserService.signUp(
-          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
-          trx
-        )
-      }
-      await trx.commit()
-      return user.id
-    } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 500)
-    }
+    return estateCurrentTenant
   }
 
   static decryptDynamicLink({ data1, data2 }) {
@@ -488,18 +494,7 @@ class EstateCurrentTenantService {
 
     //if current tenant, he needs to save to match as a final match
     if (currentTenant.estate_id) {
-      const match = await require('./MatchService').getMatches(user.id, currentTenant.estate_id)
-      if (!match) {
-        await require('./MatchService').addFinalTenant(
-          { user_id: user.id, estate_id: currentTenant.estate_id },
-          trx
-        )
-      } else {
-        await Match.query()
-          .where({ user_id: match.user_id, estate_id: match.estate_id, status: match.status })
-          .update({ status: MATCH_STATUS_FINISH })
-          .transacting(trx)
-      }
+      await require('./MatchService').handleFinalMatch(currentTenant.estate_id, user, true, trx)
     }
   }
 

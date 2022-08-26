@@ -996,29 +996,60 @@ class MatchService {
       .delete()
   }
 
+  static async handleFinalMatch(estate_id, user, fromInvitation, trx) {
+    const estate = await EstateService.rentable(estate_id, fromInvitation)
+
+    const existingMatch = await Database.table('matches')
+      .where('user_id', user.id)
+      .where('estate_id', estate_id)
+      .first()
+
+    // 2 cases:
+    // There should not be a match with status finish for this user and estate
+    // If the final match not from invitation, there should be match with status COMMIT
+    if (
+      existingMatch?.status === MATCH_STATUS_FINISH ||
+      (!fromInvitation && existingMatch?.status !== MATCH_STATUS_COMMIT)
+    ) {
+      throw new AppException('Invalid match status')
+    }
+
+    if (existingMatch) {
+      await Database.table('matches')
+        .update({ status: MATCH_STATUS_FINISH })
+        .where({
+          user_id: user.id,
+          estate_id: estate_id,
+          status: existingMatch.status,
+        })
+        .transacting(trx)
+    } else {
+      await Database.table('matches')
+        .insert({
+          user_id: user.id,
+          estate_id: estate_id,
+          percent: 0,
+          final_match_date: moment.utc(new Date(), DATE_FORMAT),
+          status: MATCH_STATUS_FINISH,
+        })
+        .transacting(trx)
+    }
+
+    await EstateService.rented(estate_id, trx)
+    await TenantService.updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
+    if (!fromInvitation) {
+      await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
+    }
+    return estate
+  }
+
   /**
    * Tenant confirmed final request
    */
   static async finalConfirm(estateId, user) {
     const trx = await Database.beginTransaction()
     try {
-      const estate = await EstateService.rentable(estateId)
-
-      await Database.table('matches')
-        .where({
-          user_id: user.id,
-          estate_id: estateId,
-          status: MATCH_STATUS_COMMIT,
-        })
-        .update({
-          status: MATCH_STATUS_FINISH,
-          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
-        })
-        .transacting(trx)
-
-      await EstateService.rented(estateId, trx)
-      await TenantService.updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
-      await EstateCurrentTenantService.createOnFinalMatch(user, estateId, trx)
+      const estate = await MatchService.handleFinalMatch(estateId, user, false, trx)
 
       await trx.commit()
       NoticeService.estateFinalConfirm(estateId, user.id)
