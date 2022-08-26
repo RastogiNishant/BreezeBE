@@ -127,6 +127,7 @@ class UserService {
       email: user.email,
       method,
     })
+    Event.fire('mautic:createContact', user.id)
 
     return user
   }
@@ -905,7 +906,7 @@ class UserService {
         trx
       )
 
-      if(!trx){
+      if (!trx) {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
