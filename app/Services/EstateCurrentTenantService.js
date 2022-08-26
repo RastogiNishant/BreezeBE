@@ -2,6 +2,7 @@ const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const MailService = use('App/Services/MailService')
+const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
 const crypto = require('crypto')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
@@ -101,6 +102,8 @@ class EstateCurrentTenantService {
       .update({ status: STATUS_EXPIRE })
       .transacting(trx)
 
+    const member = await MemberService.getMember(null, user.id, user.owner_id)
+
     const currentTenant = new EstateCurrentTenant()
     currentTenant.fill({
       estate_id,
@@ -108,7 +111,9 @@ class EstateCurrentTenantService {
       surname: user.secondname || '',
       email: user.email,
       contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
-      phone_number: user.phone_number || '',
+      phone_number:
+        //TODO: add user's phone verification logic here when we have phone verification flow for user
+        member?.phone && member?.phone_verified ? member.phone : user.phone_number || '',
       status: STATUS_ACTIVE,
       salutation:
         user.sex === 1
@@ -460,6 +465,13 @@ class EstateCurrentTenantService {
     if (!currentTenant) {
       return
     }
+
+    //TODO: add user's phone verification logic here when we have phone verification flow for user
+    const member = await MemberService.getMember(null, user.id, user.owner_id)
+    if (member?.phone && member?.phone_verified) {
+      currentTenant.phone_number = member.phone
+    }
+
     currentTenant.user_id = user.id
     currentTenant.email = user.email
 
