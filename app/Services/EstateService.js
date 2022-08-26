@@ -1363,25 +1363,19 @@ class EstateService {
       .transacting(trx)
   }
 
-  static async rentable(estateId) {
-    try {
-      return await Estate.query()
-        .where('id', estateId)
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .where(function () {
-          this.whereNot('letting_type', LETTING_TYPE_LET).where(
-            'letting_status',
-            LETTING_STATUS_NORMAL
-          )
-        })
+  static async rentable(estateId, fromInvitation) {
+    const estate = await Estate.query().where('id', estateId).firstOrFail()
 
-        .firstOrFail()
-    } catch (e) {
-      throw new HttpException(
-        "You can't rent this property because this property already has been delete or rented by someone else",
-        400
+    if (
+      !fromInvitation &&
+      (estate.letting_type === LETTING_TYPE_LET ||
+        ![STATUS_ACTIVE, STATUS_EXPIRE].includes(estate.status))
+    ) {
+      throw new Error(
+        "You can't rent this property because this property already has been delete or rented by someone else"
       )
     }
+    return estate
   }
 }
 module.exports = EstateService
