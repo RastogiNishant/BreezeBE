@@ -22,7 +22,6 @@ const {
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
-const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
 const Promise = require('bluebird')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
@@ -87,6 +86,7 @@ class ChatService {
       .select('attachments')
       .select('created_at as dateTime')
       .select(Database.raw(`senders.sender`))
+      .select('_t.urgency')
       .leftJoin(
         Database.raw(`(select id,
         json_build_object('id', users.id, 'firstname', users.firstname, 
@@ -95,6 +95,14 @@ class ChatService {
         from users group by id) as senders`),
         'senders.id',
         'chats.sender_id'
+      )
+      .leftJoin(
+        Database.raw(`(
+        select id, urgency from tasks where id='${task_id}'
+      ) as _t`),
+        function () {
+          this.on('_t.id', 'chats.task_id').on('_t.id', task_id)
+        }
       )
       .where({
         task_id: task_id,
