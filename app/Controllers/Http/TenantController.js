@@ -130,7 +130,7 @@ class TenantController {
     try {
       await TenantService.activateTenant(tenant)
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
-      Event.fire('mautic:syncContact', auth.user.id, { last_signin_date: new Date() })
+      Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)

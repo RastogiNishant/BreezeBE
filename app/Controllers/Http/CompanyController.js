@@ -99,7 +99,7 @@ class CompanyController {
       throw new HttpException('only 1 contact can be added', 400)
     }
     const contacts = await CompanyService.createContact(data, auth.user.id)
-
+    Event.fire('mautic:syncContact', auth.user.id)
     return response.res(contacts)
   }
 
@@ -109,7 +109,7 @@ class CompanyController {
   async updateContact({ request, auth, response }) {
     const { id, ...data } = request.all()
     const contact = await CompanyService.updateContact(id, auth.user.id, data)
-
+    Event.fire('mautic:syncContact', auth.user.id)
     return response.res(contact)
   }
 
@@ -119,7 +119,7 @@ class CompanyController {
   async removeContact({ request, auth, response }) {
     const { id } = request.all()
     await CompanyService.removeContact(id, auth.user.id)
-
+    Event.fire('mautic:syncContact', auth.user.id)
     return response.res(true)
   }
 
