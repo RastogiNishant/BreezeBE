@@ -21,6 +21,10 @@ const {
   ESTATE_VALID_ADDRESS_LABEL,
   ESTATE_INVALID_ADDRESS_LABEL,
   ESTATE_ALL_ADDRESS_LABEL,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_NA,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -45,6 +49,14 @@ class EstateFilters extends Filter {
     offline: STATUS_DRAFT,
     expired: STATUS_EXPIRE,
   }
+
+  static floorDirectionStringToValMap = {
+    na: ESTATE_FLOOR_DIRECTION_NA,
+    left: ESTATE_FLOOR_DIRECTION_LEFT,
+    right: ESTATE_FLOOR_DIRECTION_RIGHT,
+    straight: ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  }
+
   static propertyTypeStringToValMap = {
     apartment: PROPERTY_TYPE_APARTMENT,
     room: PROPERTY_TYPE_ROOM,
@@ -96,11 +108,13 @@ class EstateFilters extends Filter {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified_address
-      && params.verified_address.value
-      && Array.isArray(params.verified_address.value)
-      && params.verified_address.value.length
-      && !params.verified_address.value.includes(ESTATE_ALL_ADDRESS_LABEL)) {
+    if (
+      params.verified_address &&
+      params.verified_address.value &&
+      Array.isArray(params.verified_address.value) &&
+      params.verified_address.value.length &&
+      !params.verified_address.value.includes(ESTATE_ALL_ADDRESS_LABEL)
+    ) {
       this.query.where(function () {
         if (params.verified_address.value.includes(ESTATE_VALID_ADDRESS_LABEL)) {
           this.orWhere(Database.raw(`coord_raw is not null`))
@@ -109,7 +123,6 @@ class EstateFilters extends Filter {
           this.orWhere(Database.raw(`coord_raw is null`))
         }
       })
-
     }
     /* query */
     if (params.query) {
@@ -127,6 +140,12 @@ class EstateFilters extends Filter {
 
     if (params.status) {
       this.query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
+    }
+
+    /* floor direction */
+    if (params.floor_direction && params.floor_direction.value) {
+      let floor_directions = EstateFilters.customFloorDirectionToValue(params.floor_direction.value)
+      this.query.whereIn('estates.floor_direction', floor_directions)
     }
 
     /* property_type */
@@ -176,6 +195,16 @@ class EstateFilters extends Filter {
   static customStatusesToValue(statuses) {
     return statuses.reduce(
       (statuses, status) => [...statuses, EstateFilters.statusStringToValMap[toLower(status)]],
+      []
+    )
+  }
+
+  static customFloorDirectionToValue(directions) {
+    return directions.reduce(
+      (directions, direction) => [
+        ...directions,
+        EstateFilters.floorDirectionStringToValMap[toLower(direction)],
+      ],
       []
     )
   }
