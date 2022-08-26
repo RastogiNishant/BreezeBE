@@ -36,7 +36,7 @@ class Filter {
 
     this.columns = (await FilterColumnsService.getAll({ user_id: this.user_id, filter: { filterName: this.filterName } })).toJSON({ isOwner: true })
     const globalSearchColumns = (this.columns || []).filter(column => column.used_global_search && column.visible)
-    //this.globalSearchFields = globalSearchColumns.map(column => column.fieldName)
+    this.globalSearchFields = globalSearchColumns.map(column => `${column.tableAlias || column.tableName}.${column.fieldName}`)
   }
 
   isExist(fieldName) {
