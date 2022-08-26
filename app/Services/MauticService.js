@@ -110,9 +110,11 @@ class MauticService {
       user.mautic_id = data.contact.id
       MauticService.addContactToSegment(user.role, user.mautic_id)
       await user.save()
-      console.log(`${user.email} synced with ID = ${user.mautic_id}`)
+      //TODO: implement logging here (graylog)
+      // console.log(`${user.email} synced with ID = ${user.mautic_id}`)
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
     }
   }
 
@@ -142,9 +144,11 @@ class MauticService {
         },
       })
 
-      console.log(`${contactId} added to segment ${segmentId}`)
+      //TODO: implement logging here (graylog)
+      // console.log(`${contactId} added to segment ${segmentId}`)
     } catch (err) {
-      console.log('Mautic segment adding Failed : Contact Id = ' + contactId, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic segment adding Failed : Contact Id = ' + contactId, err)
     }
   }
 
@@ -207,7 +211,8 @@ class MauticService {
         },
       })
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
     }
   }
 }
