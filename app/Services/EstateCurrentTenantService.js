@@ -457,9 +457,7 @@ class EstateCurrentTenantService {
       return
     }
     currentTenant.user_id = user.id
-    if (!currentTenant.email) {
-      currentTenant.email = user.email
-    }
+    currentTenant.email = user.email
 
     currentTenant.surname = user.secondname || currentTenant.surname
     currentTenant.salutation_int = user.sex || currentTenant.salutation_int
