@@ -35,7 +35,7 @@ class TaskController extends BaseController {
       lastId,
       user_id: this.user.id,
     })
-    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages)
+    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
     if (this.topic) {
       this.topic.emitTo(
         'previousMessages',

@@ -19,7 +19,7 @@ class ChatController {
         user_id: auth.user.id,
         page: data.page,
         limit: data.limit,
-      })
+      }).rows
     )
     response.res(previousMessages || [])
   }
