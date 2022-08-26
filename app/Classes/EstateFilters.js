@@ -59,8 +59,8 @@ class EstateFilters extends Filter {
   ]
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
-  constructor(params, query) {
-    super(params, query)
+  constructor(params, query, user_id = null) {
+    super(params, query, user_id)
     if (isEmpty(params)) {
       return
     }

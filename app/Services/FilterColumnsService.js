@@ -19,22 +19,32 @@ class FilterColumnsService {
     return await FilterColumns.query().where('id', id).update({ 'status': STATUS_DELETE })
   }
 
-  static async getAll(user_id, filter) {
-    const query = FilterColumns.query()
+  static async getAll({ user_id = null, filter }) {
+    let query = FilterColumns.query()
       .select('filter_columns.*')
-      .select(Database.raw('COALESCE(_fcp.order, 1) as real_order'), Database.raw('COALESCE(_fcp.visible, true) as visible'))
-      .leftJoin({ '_fcp': 'filter_columns_preferences' }, function () {
-        this.on('filter_columns.id', '_fcp.filter_columns_id').on('_fcp.user_id', user_id)
-      })
-      .whereNot('status', STATUS_DELETE)
+
+    if (user_id) {
+      query.select(Database.raw('COALESCE(_fcp.order, filter_columns.order, 1) as real_order'), Database.raw('COALESCE(_fcp.visible, filter_columns.default_visible, false) as visible'))
+        .leftJoin({ '_fcp': 'filter_columns_preferences' }, function () {
+          this.on('filter_columns.id', '_fcp.filter_columns_id').on('_fcp.user_id', user_id)
+        })
+    }
+    query.whereNot('status', STATUS_DELETE)
 
     if (filter.filterName) {
       query.where('filterName', filter.filterName)
     }
 
-    query.orderBy('real_order', 'desc')
+    if (filter.is_used_filter) {
+      query.whereIn('is_used_filter', Array.isArray(filter.is_used_filter) ? filter.is_used_filter : [filter.is_used_filter])
+    }
+
+    if (user_id) {
+      query.orderBy('real_order', 'desc')
+    }
+
     query.orderBy('id', 'asc')
-    return (await query.fetch()).rows
+    return await query.fetch()
   }
 
   static async get(id) {

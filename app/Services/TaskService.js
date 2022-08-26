@@ -376,7 +376,7 @@ class TaskService {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
 
-    const filter = new TaskFilters(param, query)
+    const filter = new TaskFilters(param, query, user_id)
     query = filter.process()
 
     query.orderBy('tasks.updated_at')
@@ -497,10 +497,9 @@ class TaskService {
             const thumb =
               attachment.uri.split('/').length === 2
                 ? await File.getProtectedUrl(
-                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-                      attachment.uri.split('/')[1]
-                    }`
-                  )
+                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
+                  }`
+                )
                 : ''
 
             if (attachment.uri.search('http') !== 0) {

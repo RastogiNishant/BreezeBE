@@ -308,7 +308,7 @@ class EstateService {
   /**
    *
    */
-  static getEstates(params = {}) {
+  static getEstates(params = {}, user_id = null) {
     let query = Estate.query()
       .withCount('visits')
       .withCount('knocked')
@@ -324,7 +324,7 @@ class EstateService {
       })
       .with('files')
 
-    const Filter = new EstateFilters(params, query)
+    const Filter = new EstateFilters(params, query, user_id)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }
@@ -991,16 +991,16 @@ class EstateService {
     NoticeService.prospectPropertDeactivated(matches.rows)
   }
 
-  static async getEstatesByUserId(ids, limit, page, params) {
+  static async getEstatesByUserId({ landlordIds, limit, page, params, user_id }) {
     if (params.return_all && params.return_all == 1) {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(params, user_id)
+        .whereIn('user_id', landlordIds)
         .whereNot('estates.status', STATUS_DELETE)
         .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
-      return await this.getEstates(params)
+      return await this.getEstates(params, user_id)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
@@ -1257,7 +1257,8 @@ class EstateService {
       query.whereIn('estates.id', [params.estate_id])
     }
 
-    const filter = new TaskFilters(params, query)
+    const filter = new TaskFilters(params, query, user.id)
+    await filter.init()
 
     query.groupBy('estates.id')
 
@@ -1336,7 +1337,9 @@ class EstateService {
       query.groupBy('estates.id')
       return await query
     }
-    const filter = new TaskFilters(params, query)
+    const filter = new TaskFilters(params, query, user_id)
+    await filter.init()
+
     query.groupBy('estates.id')
     filter.afterQuery()
 

@@ -15,18 +15,23 @@ const {
   TASK_STATUS_CLOSED,
   IS_INSIDE_BREEZE,
   IS_OUTSIDE_BREEZE,
+  FILTER_NAME_CONNECT
 } = require('../constants')
 
 class TaskFilters extends Filter {
   globalSearchFields = ['_ect.email', 'estates.property_id', 'estates.address', '_ect.phone_number', '_ect.surname']
-  constructor(params, query) {
-    super(params, query)
+  constructor(params, query, user_id) {
+    super(params, query, user_id, FILTER_NAME_CONNECT)
 
     if (isEmpty(params)) {
       return
     }
+  }
 
-    this.processGlobals()
+  async init() {
+    await super.init()
+
+    const params = this.params
 
     Filter.MappingInfo = {
       urgency: {
@@ -43,6 +48,7 @@ class TaskFilters extends Filter {
         closed: TASK_STATUS_CLOSED,
       },
     }
+
     Filter.TableInfo = {
       property_id: 'estates',
       address: 'estates',
@@ -60,6 +66,7 @@ class TaskFilters extends Filter {
       active_task: 'count(tasks.id)',
       tenant: ['firstname', 'secondname', 'surname'],
     }
+
     this.matchFilter(
       [
         'property_id',
@@ -69,14 +76,17 @@ class TaskFilters extends Filter {
         'email',
         'phone_number',
         'status',
+        'active_task',
         'contract_end',
         'tenant',
       ],
       params
     )
 
+    this.processGlobals()
+
     if (
-      params.breeze_type &&
+      params.breeze_type && this.isExist('breeze_type') &&
       [IS_INSIDE_BREEZE, IS_OUTSIDE_BREEZE].includes(params.breeze_type.value)
     ) {
       this.query.andWhere(function () {
@@ -87,7 +97,7 @@ class TaskFilters extends Filter {
     }
 
     const active_task_params = params['active_task']
-    if (active_task_params && active_task_params.constraints.length) {
+    if (active_task_params && this.isExist('active_task') && active_task_params.constraints.length) {
       const values = active_task_params.constraints.filter(
         (c) => c.value !== null && c.value !== undefined
       )
@@ -99,7 +109,8 @@ class TaskFilters extends Filter {
   }
 
   afterQuery() {
-    this.matchCountFilter(['active_task'], this.params)
+    const matchCountFilterFields = this.isExist('active_task') ? ['active_task'] : []
+    this.matchCountFilter(matchCountFilterFields, this.params)
     return this.query
   }
 }

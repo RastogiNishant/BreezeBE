@@ -87,16 +87,13 @@ class EstateController {
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
-            country || 'Germany'
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'
           }`
         ).toLowerCase()
 
-        const txt = `The landlord '${
-          user.email
-        }' created a property with an address '${address}' in ${
-          process.env.NODE_ENV || 'local'
-        } environment`
+        const txt = `The landlord '${user.email
+          }' created a property with an address '${address}' in ${process.env.NODE_ENV || 'local'
+          } environment`
 
         await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
@@ -213,7 +210,7 @@ class EstateController {
       auth.user.id,
       PROPERTY_MANAGE_ALLOWED
     )
-    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    const result = await EstateService.getEstatesByUserId({ user_id: auth.user.id, landlordIds, limit, page, params })
     response.res(result)
   }
   /**
@@ -225,7 +222,7 @@ class EstateController {
       params = request.post()
     }
     // Update expired estates status to unpublished
-    let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
+    let result = await EstateService.getEstatesByUserId({ user_id: auth.user.id, landlordIds: [auth.user.id], limit, page, params })
     result = result.toJSON()
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
@@ -821,7 +818,7 @@ class EstateController {
     response.res(!(estate.row_count > 0))
   }
 
-  async getInviteToViewCode({ request, auth, response }) {}
+  async getInviteToViewCode({ request, auth, response }) { }
 
   async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
@@ -896,7 +893,7 @@ class EstateController {
   async export({ request, auth, response }) {
     const { lang } = request.params
 
-    let result = await EstateService.getEstatesByUserId([auth.user.id], 0, 0, { return_all: 1 })
+    let result = await EstateService.getEstatesByUserId({ landlordIds: [auth.user.id], limit: 0, page: 0, params: { return_all: 1 } })
     let rows = []
 
     if (lang) {
@@ -912,7 +909,7 @@ class EstateController {
                 //key value pairs
                 row[attribute] =
                   reverseMap[attribute][
-                    isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                   ]
               }
             }

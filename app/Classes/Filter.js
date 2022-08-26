@@ -1,8 +1,9 @@
-const { toLower, isArray, isNull } = require('lodash')
+const { toLower, isArray, isNull, trim } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 const Database = use('Database')
 const moment = require('moment')
 const { DAY_FORMAT } = require('../constants')
+const FilterColumnsService = use('App/Services/FilterColumnsService')
 
 class Filter {
   params
@@ -12,14 +13,36 @@ class Filter {
   TableInfo = null
   globalSearchFields = []
 
-  constructor(params, query) {
+  user_id = null
+  filterName = ''
+  columns = []
+
+
+  constructor(params, query, user_id, filterName = '') {
     this.params = params
     this.query = query
+    this.filterName = filterName
+    this.user_id = user_id
   }
 
   /**
    * to use processGlobals, set this.globalSearchFields on the child class
    */
+
+  async init() {
+    if (!this.user_id || !this.filterName || trim(this.filterName) === '') {
+      return
+    }
+
+    this.columns = (await FilterColumnsService.getAll({ user_id: this.user_id, filter: { filterName: this.filterName } })).toJSON({ isOwner: true })
+    const globalSearchColumns = (this.columns || []).filter(column => column.used_global_search && column.visible)
+    //this.globalSearchFields = globalSearchColumns.map(column => column.fieldName)
+  }
+
+  isExist(fieldName) {
+    return this.columns.find(column => column.fieldName === fieldName && column.visible)
+  }
+
   processGlobals() {
     if (this.params.global && this.params.global.value) {
       const globalSearchFields = this.globalSearchFields
