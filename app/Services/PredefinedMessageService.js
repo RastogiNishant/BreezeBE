@@ -63,7 +63,7 @@ class PredefinedMessageService {
     trx
   ) {
     let nextPredefinedMessage, choice
-    answer =
+    let answerForChat =
       predefinedMessage.variable_to_update === 'urgency'
         ? `{{{urgency-${answer}}}}${answer}`
         : answer
@@ -83,7 +83,12 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: answer && trim(answer) !== '' ? answer : choice ? l.get(choice.text, lang) : '',
+        text:
+          answerForChat && trim(answerForChat) !== ''
+            ? answerForChat
+            : choice
+            ? l.get(choice.text, lang)
+            : '',
         type: CHAT_TYPE_MESSAGE,
       },
       trx
@@ -140,10 +145,6 @@ class PredefinedMessageService {
   }
 
   static async handleOpenEndedMessage({ task, predefinedMessage, answer, attachments }, trx) {
-    answer =
-      predefinedMessage.variable_to_update === 'urgency'
-        ? `{{{urgency-${answer}}}}${answer}`
-        : answer
     // Create chat message from tenant's answer
     const tenantMessage = await Chat.createItem(
       {
