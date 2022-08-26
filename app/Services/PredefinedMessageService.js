@@ -77,8 +77,9 @@ class PredefinedMessageService {
     // Create chat message from tenant's answer
     let answerForChat =
       answer && trim(answer) !== '' ? answer : choice ? l.get(choice.text, lang) : ''
+
     if (predefinedMessage.variable_to_update === 'urgency') {
-      answerForChat = `{{{urgency-${answer}}}}${answerForChat}`
+      answerForChat = `{{{urgency-${choice.value}}}}${answerForChat}`
     }
 
     const tenantMessage = await Chat.createItem(
