@@ -365,7 +365,7 @@ class TenantService {
     const { lon, lat } = await GeoService.geeGeoCoordByAddress(address)
 
     tenant.address = address
-    tenant.coord = `${lat},${lon}`
+    tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
 
     await tenant.save(trx)
   }
