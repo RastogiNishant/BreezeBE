@@ -1,7 +1,6 @@
 const { isEmpty, without } = require('lodash')
 const Filter = require('./Filter')
 const Database = use('Database')
-const moment = require('moment')
 
 const {
   URGENCY_LOW,
@@ -54,24 +53,9 @@ class TaskFilters extends Filter {
       tenant: ['firstname', 'secondname', 'surname'],
     }
 
-    this.matchFilters = without(this.matchFilters, 'active_task')
+    this.matchFilters = without(this.matchFilters, 'active_task', 'breeze_type')
 
-    //this.matchFilter(this.matchFilters, params)
-
-    this.matchFilter(
-      [
-        'property_id',
-        'address',
-        'city',
-        'urgency',
-        'email',
-        'phone_number',
-        'status',
-        'contract_end',
-        'tenant',
-      ],
-      params
-    )
+    this.matchFilter(this.matchFilters, params)
 
     this.processGlobals()
 

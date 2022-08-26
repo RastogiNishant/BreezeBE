@@ -38,7 +38,7 @@ class Filter {
     this.columns = (await FilterColumnsService.getAll({ user_id: this.user_id, filter: { filterName: this.filterName } })).toJSON({ isOwner: true })
     this.globalSearchFields = (this.columns || []).filter(column => column.used_global_search && column.visible).map(column => `${column.tableAlias || column.tableName}.${column.fieldName}`)
     this.matchFilters = (this.columns || []).filter(column => !column.is_used_filter && column.visible).map(column => column.fieldName)
-    console.log('this.globalSearchFields', this.matchFilters)
+
     this.TableInfo = (this.columns || []).reduce(
       (tableInfo, column) => {
         const fieldName = column.fieldName
