@@ -38,7 +38,7 @@ class EstateCurrentTenantService {
   static async addCurrentTenant({ data, estate_id, trx }) {
     const shouldCommitTrx = trx ? false : true
 
-    if (!trx) {
+    if (shouldCommitTrx) {
       trx = await Database.beginTransaction()
     }
 
