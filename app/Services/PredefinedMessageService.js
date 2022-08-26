@@ -52,12 +52,21 @@ class PredefinedMessageService {
   }
 
   static async handleMessageWithChoice(
-    { answer, prev_predefined_message_id, task, predefinedMessage, predefined_message_choice_id, lang },
+    {
+      answer,
+      prev_predefined_message_id,
+      task,
+      predefinedMessage,
+      predefined_message_choice_id,
+      lang,
+    },
     trx
   ) {
-
     let nextPredefinedMessage, choice
-
+    answer =
+      predefinedMessage.variable_to_update === 'urgency'
+        ? `{{{urgency-${answer}}}}${answer}`
+        : answer
     if (predefined_message_choice_id) {
       choice = await PredefinedMessageChoice.query()
         .where({ id: predefined_message_choice_id, predefined_message_id: predefinedMessage.id })
@@ -74,7 +83,7 @@ class PredefinedMessageService {
       {
         task_id: task.id,
         sender_id: task.tenant_id,
-        text: answer && trim(answer) !== '' ? answer : (choice ? l.get(choice.text, lang) : ''),
+        text: answer && trim(answer) !== '' ? answer : choice ? l.get(choice.text, lang) : '',
         type: CHAT_TYPE_MESSAGE,
       },
       trx
@@ -91,12 +100,17 @@ class PredefinedMessageService {
     )
 
     if (predefinedMessage.variable_to_update) {
-      task[predefinedMessage.variable_to_update] = choice?.value || prev_predefined_message_id && answer.split(':').length == 2 ? answer.split(':')[1] : answer
+      task[predefinedMessage.variable_to_update] =
+        choice?.value || (prev_predefined_message_id && answer.split(':').length == 2)
+          ? answer.split(':')[1]
+          : answer
     }
 
     //auto complete message
     if (prev_predefined_message_id) {
-      const prevPredefinedMessage = await PredefinedMessage.query().where('id', prev_predefined_message_id).firstOrFail()
+      const prevPredefinedMessage = await PredefinedMessage.query()
+        .where('id', prev_predefined_message_id)
+        .firstOrFail()
       if (prevPredefinedMessage.variable_to_update) {
         task[prevPredefinedMessage.variable_to_update] = choice?.value || answer.split(':')[0]
       }
@@ -126,6 +140,10 @@ class PredefinedMessageService {
   }
 
   static async handleOpenEndedMessage({ task, predefinedMessage, answer, attachments }, trx) {
+    answer =
+      predefinedMessage.variable_to_update === 'urgency'
+        ? `{{{urgency-${answer}}}}${answer}`
+        : answer
     // Create chat message from tenant's answer
     const tenantMessage = await Chat.createItem(
       {
