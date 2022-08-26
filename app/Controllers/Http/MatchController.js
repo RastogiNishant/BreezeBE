@@ -500,15 +500,14 @@ class MatchController {
    * Accept rent
    */
   async commitEstateRent({ request, auth, response }) {
-    const userId = auth.user.id
     const { estate_id } = request.all()
 
     try {
-      const { estate, contact } = await MatchService.finalConfirm(estate_id, userId)
+      const { estate, contact } = await MatchService.finalConfirm(estate_id, auth.user)
       logEvent(
         request,
         LOG_TYPE_FINAL_MATCH_APPROVAL,
-        userId,
+        auth.user.id,
         { estate_id, role: ROLE_USER },
         false
       )

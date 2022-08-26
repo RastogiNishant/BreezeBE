@@ -999,15 +999,14 @@ class MatchService {
   /**
    * Tenant confirmed final request
    */
-  static async finalConfirm(estateId, tenantId) {
-
+  static async finalConfirm(estateId, user) {
     const trx = await Database.beginTransaction()
     try {
       const estate = await EstateService.rentable(estateId)
 
       await Database.table('matches')
         .where({
-          user_id: tenantId,
+          user_id: user.id,
           estate_id: estateId,
           status: MATCH_STATUS_COMMIT,
         })
@@ -1018,12 +1017,12 @@ class MatchService {
         .transacting(trx)
 
       await EstateService.rented(estateId, trx)
-      await TenantService.updateTenantAddress({ user_id: tenantId, address: estate.address }, trx)
-      await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
+      await TenantService.updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
+      await EstateCurrentTenantService.createOnFinalMatch(user, estateId, trx)
 
       await trx.commit()
-      NoticeService.estateFinalConfirm(estateId, tenantId)
-      Event.fire('mautic:syncContact', tenantId, { finalmatchapproval_count: 1 })
+      NoticeService.estateFinalConfirm(estateId, user.id)
+      Event.fire('mautic:syncContact', user.id, { finalmatchapproval_count: 1 })
 
       let contact = await estate.getContacts()
       if (contact) {
@@ -2355,7 +2354,7 @@ class MatchService {
         MATCH_STATUS_FINISH,
       ],
       [id]
-    )    
+    )
   }
 }
 

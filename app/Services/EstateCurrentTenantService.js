@@ -95,25 +95,28 @@ class EstateCurrentTenantService {
     return true
   }
 
-  static async createOnFinalMatch(tenant_id, estate_id, trx) {
-    const tenantUser = await User.query().where('id', tenant_id).firstOrFail()
+  static async createOnFinalMatch(user, estate_id, trx) {
+    await Database.table('estate_current_tenants')
+      .where('estate_id', estate_id)
+      .update({ status: STATUS_EXPIRE })
+      .transacting(trx)
 
     const currentTenant = new EstateCurrentTenant()
     currentTenant.fill({
       estate_id,
-      user_id: tenant_id,
-      surname: tenantUser.secondname || '',
-      email: tenantUser.email,
+      user_id: user.id,
+      surname: user.secondname || '',
+      email: user.email,
       contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
-      phone_number: tenantUser.phone_number || '',
+      phone_number: user.phone_number || '',
       status: STATUS_ACTIVE,
       salutation:
-        tenantUser.sex === 1
+        user.sex === 1
           ? SALUTATION_MR_LABEL
-          : tenantUser.sex === 2
+          : user.sex === 2
           ? SALUTATION_MS_LABEL
           : SALUTATION_SIR_OR_MADAM_LABEL,
-      salutation_int: tenantUser.sex || SALUTATION_SIR_OR_MADAM,
+      salutation_int: user.sex || SALUTATION_SIR_OR_MADAM,
     })
 
     await currentTenant.save(trx)
@@ -127,6 +130,7 @@ class EstateCurrentTenantService {
 
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
+      .where('status', STATUS_ACTIVE)
       .where('email', data.tenant_email)
       .first()
 
@@ -464,7 +468,7 @@ class EstateCurrentTenantService {
     currentTenant.salutation =
       user.sex === 1
         ? SALUTATION_MR_LABEL
-        : tenantUser.sex === 2
+        : user.sex === 2
         ? SALUTATION_MS_LABEL
         : SALUTATION_SIR_OR_MADAM_LABEL
 

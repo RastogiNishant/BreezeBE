@@ -59,6 +59,7 @@ const {
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
   LETTING_TYPE_NA,
+  LETTING_STATUS_NORMAL,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1367,7 +1368,13 @@ class EstateService {
       return await Estate.query()
         .where('id', estateId)
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .whereNot('letting_type', LETTING_TYPE_LET)
+        .where(function () {
+          this.whereNot('letting_type', LETTING_TYPE_LET).where(
+            'letting_status',
+            LETTING_STATUS_NORMAL
+          )
+        })
+
         .firstOrFail()
     } catch (e) {
       throw new HttpException(
