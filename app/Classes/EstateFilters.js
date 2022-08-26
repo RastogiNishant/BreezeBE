@@ -203,7 +203,7 @@ class EstateFilters extends Filter {
     return directions.reduce(
       (directions, direction) => [
         ...directions,
-        EstateFilters.floorDirectionStringToValMap[toLower(direction)],
+        EstateFilters.floorDirectionStringToValMap[toLower(direction.replace(/\./g, ''))],
       ],
       []
     )
