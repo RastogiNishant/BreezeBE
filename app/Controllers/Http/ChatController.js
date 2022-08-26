@@ -13,13 +13,15 @@ class ChatController {
     }
 
     const previousMessages = await ChatService.getItemsWithAbsoluteUrl(
-      await ChatService.getPreviousMessages({
-        task_id: data.task_id,
-        lastId,
-        user_id: auth.user.id,
-        page: data.page,
-        limit: data.limit,
-      }).rows
+      (
+        await ChatService.getPreviousMessages({
+          task_id: data.task_id,
+          lastId,
+          user_id: auth.user.id,
+          page: data.page,
+          limit: data.limit,
+        })
+      ).rows
     )
     response.res(previousMessages || [])
   }
