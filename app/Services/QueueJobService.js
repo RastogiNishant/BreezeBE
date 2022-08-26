@@ -211,6 +211,7 @@ class QueueJobService {
           .where('user_id', userId)
           .delete(trx)
         await trx.commit()
+        Event.fire('mautic:syncContact', userId, { admin_approval_date: null })
       } catch (err) {
         await trx.rollback()
         console.log(err.message)

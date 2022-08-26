@@ -1,15 +1,16 @@
 'use strict'
 
 const User = use('App/Models/User')
-const l = use('Localize')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
+const Event = use('Event')
+
 const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-const { isArray, isEmpty, find, get, includes } = require('lodash')
+const { isArray, isEmpty, includes } = require('lodash')
 const {
   ROLE_ADMIN,
   ROLE_LANDLORD,
@@ -107,6 +108,9 @@ class UserController {
           NoticeService.verifyUserByAdmin(ids)
           await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
+          ids.map((id) => {
+            Event.fire('mautic:syncContact', id, { admin_approval_date: new Date() })
+          })
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -141,7 +145,11 @@ class UserController {
               .transacting(trx)
           }
 
+          //TODO: we should delete user deactivation schedule here also
           await trx.commit()
+          ids.map((id) => {
+            Event.fire('mautic:syncContact', id, { admin_approval_date: null })
+          })
           //send notifications
           NoticeService.landlordsDeactivated(ids, estateIds)
           return response.res({ affectedRows })

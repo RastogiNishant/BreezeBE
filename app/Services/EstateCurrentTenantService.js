@@ -19,10 +19,8 @@ const {
   STATUS_DELETE,
   LETTING_TYPE_LET,
   MATCH_STATUS_FINISH,
-  SALUTATION_MR_LABEL,
-  SALUTATION_MS_LABEL,
-  SALUTATION_SIR_OR_MADAM_LABEL,
 } = require('../constants')
+const Event = use('Event')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -311,7 +309,9 @@ class EstateCurrentTenantService {
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
     const code = uuid.v4()
-    await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code })
+    await EstateCurrentTenant.query()
+      .where('id', estateCurrentTenant.id)
+      .update({ code: code, invite_sent_at: time })
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
@@ -420,13 +420,36 @@ class EstateCurrentTenantService {
     }
 
     const time = moment().utc()
-    const old_time = moment().utc(expired_time, 'YYYY-MM-DD HH:mm:ss').add(2, 'days')
+    const old_time = moment()
+      .utc(expired_time, 'YYYY-MM-DD HH:mm:ss')
+      .add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
 
     if (old_time < time) {
       throw new HttpException('Link has been expired', 500)
     }
 
-    return estateCurrentTenant
+    const trx = await Database.beginTransaction()
+    try {
+      if (user) {
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx)
+      } else {
+        const userData = {
+          role: ROLE_USER,
+          secondname: estateCurrentTenant.surname,
+          phone: estateCurrentTenant.phone_number,
+          password: password,
+        }
+        user = await UserService.signUp(
+          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
+          trx
+        )
+      }
+      await trx.commit()
+      return user.id
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   static decryptDynamicLink({ data1, data2 }) {

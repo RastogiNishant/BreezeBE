@@ -299,6 +299,8 @@ class AccountController {
       throw new HttpException(e.message, 400)
     }
 
+    Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
+
     if (!from_web) {
       return response.res(true)
     }
@@ -442,10 +444,14 @@ class AccountController {
 
       if (user.role == ROLE_LANDLORD) {
         if (!user.company || !user.company.length) {
-          user.company = [{
-            name: `${_.isEmpty(user.firstname) ? '' : user.firstname} ${_.isEmpty(user.secondname) ? '' : user.secondname}`,
-            address: null,
-          }]
+          user.company = [
+            {
+              name: `${_.isEmpty(user.firstname) ? '' : user.firstname} ${
+                _.isEmpty(user.secondname) ? '' : user.secondname
+              }`,
+              address: null,
+            },
+          ]
         }
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
       }
@@ -535,8 +541,8 @@ class AccountController {
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
-        ? delete data.prospect_visibility
-        : data
+      ? delete data.prospect_visibility
+      : data
 
     const trx = await Database.beginTransaction()
     let company
@@ -689,7 +695,7 @@ class AccountController {
       auth.user.avatar = avatarUrl
       await auth.user.save()
     }
-    fs.unlink(tmpFile, () => { })
+    fs.unlink(tmpFile, () => {})
 
     response.res(auth.user)
   }
@@ -893,13 +899,13 @@ class AccountController {
       const data = {
         purchase: tenantPremiumPlans
           ? pick(tenantPremiumPlans.toJSON(), [
-            'id',
-            'plan_id',
-            'isCancelled',
-            'startDate',
-            'endDate',
-            'app',
-          ])
+              'id',
+              'plan_id',
+              'isCancelled',
+              'startDate',
+              'endDate',
+              'app',
+            ])
           : null,
       }
       response.res(data)

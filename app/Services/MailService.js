@@ -292,7 +292,6 @@ class MailService {
       },
     }
 
-    console.log('Mail body', msg)
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -484,7 +483,6 @@ class MailService {
       },
     }
 
-    console.log('Mail body', msg)
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
