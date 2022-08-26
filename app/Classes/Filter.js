@@ -10,8 +10,9 @@ class Filter {
   query = null
   paramToField = null
   MappingInfo = null
-  TableInfo = null
+  TableInfo = {}
   globalSearchFields = []
+  matchFilters = []
 
   user_id = null
   filterName = ''
@@ -35,8 +36,19 @@ class Filter {
     }
 
     this.columns = (await FilterColumnsService.getAll({ user_id: this.user_id, filter: { filterName: this.filterName } })).toJSON({ isOwner: true })
-    const globalSearchColumns = (this.columns || []).filter(column => column.used_global_search && column.visible)
-    this.globalSearchFields = globalSearchColumns.map(column => `${column.tableAlias || column.tableName}.${column.fieldName}`)
+    this.globalSearchFields = (this.columns || []).filter(column => column.used_global_search && column.visible).map(column => `${column.tableAlias || column.tableName}.${column.fieldName}`)
+    this.matchFilters = (this.columns || []).filter(column => !column.is_used_filter && column.visible).map(column => column.fieldName)
+    console.log('this.globalSearchFields', this.matchFilters)
+    this.TableInfo = (this.columns || []).reduce(
+      (tableInfo, column) => {
+        const fieldName = column.fieldName
+        return {
+          ...tableInfo,
+          [fieldName]: (column.tableAlias || column.tableName)
+        }
+      },
+      {}
+    );
   }
 
   isExist(fieldName) {
@@ -161,8 +173,8 @@ class Filter {
   }
 
   static getField(param) {
-    return Filter.TableInfo && Filter.TableInfo[param]
-      ? `${Filter.TableInfo[param]}.${param}`
+    return this.TableInfo && this.TableInfo[param]
+      ? `${this.TableInfo[param]}.${param}`
       : param
   }
 

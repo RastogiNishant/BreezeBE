@@ -1,4 +1,4 @@
-const { isEmpty, trim, lowerCase } = require('lodash')
+const { isEmpty, without } = require('lodash')
 const Filter = require('./Filter')
 const Database = use('Database')
 const moment = require('moment')
@@ -19,7 +19,7 @@ const {
 } = require('../constants')
 
 class TaskFilters extends Filter {
-  globalSearchFields = ['_ect.email', 'estates.property_id', 'estates.address', '_ect.phone_number', '_ect.surname']
+
   constructor(params, query, user_id) {
     super(params, query, user_id, FILTER_NAME_CONNECT)
 
@@ -49,23 +49,14 @@ class TaskFilters extends Filter {
       },
     }
 
-    Filter.TableInfo = {
-      property_id: 'estates',
-      address: 'estates',
-      city: 'estates',
-      urgency: 'tasks',
-      status: 'tasks',
-      email: '_ect',
-      phone_number: '_ect',
-      surname: '_ect',
-      firstname: '_u',
-      secondname: '_u',
-    }
-
-    Filter.paramToField = {
+    this.paramToField = {
       active_task: 'count(tasks.id)',
       tenant: ['firstname', 'secondname', 'surname'],
     }
+
+    this.matchFilters = without(this.matchFilters, 'active_task')
+
+    //this.matchFilter(this.matchFilters, params)
 
     this.matchFilter(
       [
@@ -76,7 +67,6 @@ class TaskFilters extends Filter {
         'email',
         'phone_number',
         'status',
-        'active_task',
         'contract_end',
         'tenant',
       ],
@@ -109,8 +99,8 @@ class TaskFilters extends Filter {
   }
 
   afterQuery() {
-    const matchCountFilterFields = this.isExist('active_task') ? ['active_task'] : []
-    this.matchCountFilter(matchCountFilterFields, this.params)
+    // const matchCountFilterFields = this.isExist('active_task') ? ['active_task'] : []
+    // this.matchCountFilter(matchCountFilterFields, this.params)
     return this.query
   }
 }
