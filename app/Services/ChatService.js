@@ -101,7 +101,6 @@ class ChatService {
   }
 
   static async getPreviousMessages({ task_id, lastId, user_id, page = -1, limit = -1 }) {
-    let answers = await ChatService.getTaskVariableChatIds(task_id)
     const query = Chat.query()
       .select('chats.id as id')
       .select('text as message')
@@ -135,13 +134,6 @@ class ChatService {
       query.where('chats.id', '<', lastId)
     }
     let lastMessages = await query.fetch()
-    lastMessages = lastMessages.toJSON().reduce((lastMessages, message) => {
-      message.variable = null
-      if (answers[`${message.id}`]) {
-        message.variable = answers[`${message.id}`]
-      }
-      return [...lastMessages, message]
-    }, [])
     return lastMessages
   }
 
