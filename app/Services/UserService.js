@@ -128,6 +128,8 @@ class UserService {
       method,
     })
 
+    Event.fire('mautic:createContact', user.id)
+
     return user
   }
 

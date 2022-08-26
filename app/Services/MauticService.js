@@ -2,9 +2,11 @@ const fetch = require('node-fetch')
 const Env = use('Env')
 const MAUTIC_API_URL = Env.get('MAUTIC_API_URL')
 const MAUTIC_AUTH_TOKEN = Env.get('MAUTIC_AUTH_TOKEN')
+const LANDLORD_WELCOME_SEGMENT_ID = Env.get('LANDLORD_WELCOME_SEGMENT_ID')
+const TENANT_WELCOME_SEGMENT_ID = Env.get('TENANT_WELCOME_SEGMENT_ID')
 const User = use('App/Models/User')
 const Company = use('App/Models/Company')
-const { ROLE_LANDLORD } = require('../constants')
+const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
 
 const getCity = (address) => {
   if (!address) return null
@@ -87,7 +89,14 @@ class MauticService {
     }
     const user = await User.query().where('id', userId).first()
     try {
-      const body = JSON.stringify(await getUserData(user))
+      const userData = await getUserData(user)
+      // We have addresses with the country name = "Deutschland" in our database
+      // But Mautic doesn't accept it, it only accepts English country names
+      // TODO: Find a dynamic solution for every country name
+      if (userData?.country === 'Deutschland') {
+        userData.country = 'Germany'
+      }
+      const body = JSON.stringify(userData)
       const response = await fetch(`${MAUTIC_API_URL}/contacts/new`, {
         method: 'POST',
         body,
@@ -99,10 +108,47 @@ class MauticService {
 
       const data = await response.json()
       user.mautic_id = data.contact.id
+      MauticService.addContactToSegment(user.role, user.mautic_id)
       await user.save()
-      console.log(`${user.email} synced with ID = ${user.mautic_id}`)
+      //TODO: implement logging here (graylog)
+      // console.log(`${user.email} synced with ID = ${user.mautic_id}`)
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+    }
+  }
+
+  static async addContactToSegment(role, contactId) {
+    if (
+      (process.env.DEV && process.env.DEV.trim() == 'true') ||
+      !MAUTIC_API_URL ||
+      !MAUTIC_AUTH_TOKEN
+    ) {
+      return true
+    }
+    try {
+      if (
+        (role === ROLE_LANDLORD && !LANDLORD_WELCOME_SEGMENT_ID) ||
+        (role === ROLE_USER && !TENANT_WELCOME_SEGMENT_ID)
+      ) {
+        return true
+      }
+      const segmentId =
+        role === ROLE_LANDLORD ? LANDLORD_WELCOME_SEGMENT_ID : TENANT_WELCOME_SEGMENT_ID
+
+      await fetch(`${MAUTIC_API_URL}/segments/${segmentId}/contact/${contactId}/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: MAUTIC_AUTH_TOKEN,
+        },
+      })
+
+      //TODO: implement logging here (graylog)
+      // console.log(`${contactId} added to segment ${segmentId}`)
+    } catch (err) {
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic segment adding Failed : Contact Id = ' + contactId, err)
     }
   }
 
@@ -165,7 +211,8 @@ class MauticService {
         },
       })
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
     }
   }
 }
