@@ -1029,7 +1029,7 @@ class MatchService {
           user_id: user.id,
           estate_id: estate_id,
           percent: 0,
-          final_match_date: moment.utc(new Date(), DATE_FORMAT),
+          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
           status: MATCH_STATUS_FINISH,
         })
         .transacting(trx)
@@ -2348,18 +2348,6 @@ class MatchService {
       .transacting(trx)
 
     return userIds
-  }
-
-  static async addFinalTenant({ user_id, estate_id }, trx = null) {
-    await Database.table('matches')
-      .insert({
-        user_id: user_id,
-        estate_id: estate_id,
-        percent: 0,
-        final_match_date: moment.utc(new Date(), DATE_FORMAT),
-        status: MATCH_STATUS_FINISH,
-      })
-      .transacting(trx)
   }
 
   static async getEstatesByStatus({ estate_id, status }) {

@@ -137,17 +137,9 @@ class EstateCurrentTenantService {
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
 
-      const trx = await Database.beginTransaction()
-
-      await Database.table('estate_current_tenants')
-        .where('estate_id', estate_id)
-        .update({ status: STATUS_EXPIRE })
-        .transacting(trx)
-
       const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
         data,
         estate_id,
-        trx,
       })
 
       return newCurrentTenant
