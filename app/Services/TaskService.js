@@ -11,10 +11,15 @@ const {
   CHAT_TYPE_BOT_MESSAGE,
   DEFAULT_LANG,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_RESOLVED,
+  DATE_FORMAT,
+  TASK_RESOLVE_HISTORY_PERIOD
 } = require('../constants')
 
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
+const moment = require('moment')
 
 const { isArray } = require('lodash')
 const {
@@ -297,7 +302,13 @@ class TaskService {
   }
 
   static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
-    let taskQuery = Task.query().select('tasks.*')
+    let taskQuery = Task.query()
+      .select('tasks.*')
+      .select(Database.raw(`coalesce(
+        ("tasks"."status">= ${TASK_STATUS_INPROGRESS}  
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
+          and "tasks"."updated_at" > '${moment.utc().subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd').format(DATE_FORMAT)}' 
+          and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`))
 
     if (role === ROLE_USER) {
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
@@ -313,7 +324,7 @@ class TaskService {
     }
 
     if (status) {
-      taskQuery.whereIn('tasks.status', status)
+      taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
     }
     taskQuery
       .where('tasks.estate_id', estate_id)
