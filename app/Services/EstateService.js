@@ -1329,9 +1329,10 @@ class EstateService {
         0 + parseInt(estate.__meta__.invite_count) ||
         0 + parseInt(estate.__meta__.final_count) ||
         0
+
       return {
         ...estate,
-        canChangeLettingType: isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
+        canChangeLettingType: (isMatchCountValidToChangeLettinType || estate.current_tenant) ? false : true,
       }
     })
   }
