@@ -22,6 +22,7 @@ const {
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
   TENANT_INVITATION_EXPIRATION_DATE,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -509,6 +510,51 @@ class EstateCurrentTenantService {
           .fetch()
       ).rows
     )
+  }
+
+  static async disconnect(user_id, ids) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    const trx = await Database.beginTransaction()
+
+    try {
+      let estateCurrentTenants = await EstateCurrentTenant.query()
+        .select('estate_current_tenants.id', 'estate_current_tenants.estate_id', 'estate_current_tenants.user_id')
+        .whereIn('estate_current_tenants.id', ids)
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+        })
+        .fetch()
+
+      estateCurrentTenants = estateCurrentTenants?.toJSON() || []
+      const valid_ids = estateCurrentTenants.map(tenant => tenant.id)
+      if (valid_ids && valid_ids.length) {
+        const estate_ids = estateCurrentTenants.map(tenant => tenant.estate_id)
+
+        await require('./EstateService').unrented(estate_ids, trx)
+
+        await Promise.all(estateCurrentTenants.map(async (tenant) => {
+          if (tenant.user_id) { // need to revert final status to new, because it's not final status any more
+            await Match.query()
+              .where('user_id', tenant.user_id)
+              .where('estate_id', tenant.estate_id)
+              .where('status', MATCH_STATUS_FINISH)
+              .update({ status: MATCH_STATUS_NEW }).transacting(trx)
+          }
+        }))
+
+        await EstateCurrentTenant.query()
+          .whereIn('id', valid_ids)
+          .update({ user_id: null, code: null, invite_sent_at: null }).transacting(trx)
+
+        await trx.commit()
+      }
+
+      return { successCount: (estateCurrentTenants.length || 0), failureCount: (ids.length - (estateCurrentTenants.length || 0)) }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 }
 

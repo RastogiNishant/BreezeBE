@@ -121,11 +121,18 @@ class EstateFilter extends Base {
         .object()
         .shape({
           matchMode: yup.string().nullable(),
-          value: yup.array().of(yup.string().oneOf([
-            ESTATE_VALID_ADDRESS_LABEL,
-            ESTATE_INVALID_ADDRESS_LABEL,
-            ESTATE_ALL_ADDRESS_LABEL,
-          ])).nullable(),
+          value: yup
+            .array()
+            .of(
+              yup
+                .string()
+                .oneOf([
+                  ESTATE_VALID_ADDRESS_LABEL,
+                  ESTATE_INVALID_ADDRESS_LABEL,
+                  ESTATE_ALL_ADDRESS_LABEL,
+                ])
+            )
+            .nullable(),
         })
         .nullable(),
       customStatus: yup
@@ -168,6 +175,13 @@ class EstateFilter extends Base {
         .array()
         .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]).nullable()),
       letting: yup.array().of(yup.string()),
+      floor_direction: yup
+        .object()
+        .shape({
+          matchMode: yup.string().nullable(),
+          value: yup.array().of(yup.string()).nullable(),
+        })
+        .nullable(),
     })
 }
 
