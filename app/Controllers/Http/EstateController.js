@@ -218,6 +218,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
     response.res(result)
   }
   /**

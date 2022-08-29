@@ -1321,8 +1321,6 @@ class EstateService {
   }
 
   static async checkCanChangeLettingStatus(result) {
-    const estate_ids = (result.data || []).map(estate => estate.id)
-    const currentTenants = estate_ids && estate_ids.length ? await EstateCurrentTenantService.getAllInsideCurrentTenant(estate_ids) : []
     return (result.data || []).map(estate => {
       const isMatchCountValidToChangeLettinType =
         0 + parseInt(estate.__meta__.visits_count) ||
@@ -1331,10 +1329,9 @@ class EstateService {
         0 + parseInt(estate.__meta__.invite_count) ||
         0 + parseInt(estate.__meta__.final_count) ||
         0
-      const currentIdx = (currentTenants || []).findIndex(tenant => tenant.estate_id === estate.id)
       return {
         ...estate,
-        canChangeLettingType: isMatchCountValidToChangeLettinType || currentIdx !== -1 ? false : true,
+        canChangeLettingType: isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
       }
     })
   }
