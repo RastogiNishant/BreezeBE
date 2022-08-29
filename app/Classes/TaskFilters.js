@@ -14,10 +14,11 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
   ALL_BREEZE,
-  INSIDE_BREEZE_TEANT_LABEL,
+  CONNECTED_BREEZE_TEANT_LABEL,
   OUTSIDE_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
   DATE_FORMAT,
+  STATUS_ACTIVE,
 } = require('../constants')
 
 class TaskFilters extends Filter {
@@ -91,8 +92,8 @@ class TaskFilters extends Filter {
       !params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
-          this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
+        if (params.breeze_type.value.includes(CONNECTED_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(Database.raw(`_ect.user_id IS NOT NULL and _ect.status = ${STATUS_ACTIVE}`))
         }
 
         if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {

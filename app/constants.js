@@ -697,7 +697,8 @@ const constants = {
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
   ALL_BREEZE: 'All',
-  INSIDE_BREEZE_TEANT_LABEL: 'Connected',
+  CONNECTED_BREEZE_TEANT_LABEL: 'Connected',
+  INSIDE_BREEZE_TEANT_LABEL: 'Not Connected(Breeze)',
   OUTSIDE_BREEZE_TEANT_LABEL: 'Not Connected',
   PENDING_BREEZE_TEANT_LABEL: 'Pending',
 
