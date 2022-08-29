@@ -481,18 +481,23 @@ Route.group(() => {
   ])
 
   Route.post(
-    '/:estate_id/tenant/invite/email',
+    '/tenant/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'
   ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/invite/letter',
+    '/tenant/invite/letter',
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
   ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/invite/sms',
+    '/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
+  ).middleware(['valid:InvitationIds'])
+
+  Route.post(
+    '/tenant/disconnect',
+    'EstateCurrentTenantController.disconnect'
   ).middleware(['valid:InvitationIds'])
 })
   .prefix('/api/v1/estates')
@@ -780,7 +785,7 @@ Route.group(() => {
 })
   .prefix('api/v1/connect/predefinedMessageChoice')
   .middleware(['auth:jwt,jwtLandlord'])
-  
+
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
