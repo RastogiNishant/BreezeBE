@@ -121,7 +121,7 @@ class User extends Model {
    *
    */
   company() {
-    return this.hasMany('App/Models/Company', 'id', 'user_id')
+    return this.belongsTo('App/Models/Company', 'company_id', 'id')
   }
 
   /**
