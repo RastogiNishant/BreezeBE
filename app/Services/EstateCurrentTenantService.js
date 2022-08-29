@@ -227,14 +227,14 @@ class EstateCurrentTenantService {
       user_id,
     })
 
-    const validlinks = links.filter(
+    const validLinks = links.filter(
       (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
     )
 
-    failureCount += (links.length || 0) - (validlinks.length || 0)
+    failureCount += (links.length || 0) - (validLinks.length || 0)
     const successCount = (ids.length || 0) - failureCount
 
-    MailService.sendInvitationToOusideTenant(links)
+    MailService.sendInvitationToOusideTenant(validLinks)
 
     return { successCount, failureCount }
   }
