@@ -314,7 +314,7 @@ class EstateCurrentTenantService {
       })
     )
 
-    return { failureCount: failureCount, links }
+    return { failureCount, links }
   }
   static async createDynamicLink(estateCurrentTenant) {
     const iv = crypto.randomBytes(16)
