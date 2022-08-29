@@ -60,6 +60,7 @@ const {
   SHOW_ACTIVE_TASKS_COUNT,
   LETTING_TYPE_NA,
   LETTING_STATUS_NORMAL,
+  ROLE_USER,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -434,8 +435,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1227,7 +1228,10 @@ class EstateService {
     let query = Estate.query()
       .with('current_tenant', function (b) {
         b.with('user', function (u) {
-          u.select('id', 'firstname', 'secondname', 'avatar')
+          u.select('id', 'firstname', 'secondname', 'email', 'avatar')
+        })
+        b.with('inside_breeze', function (iu) {
+          iu.select('id', 'email')
         })
       })
       .with('activeTasks')
@@ -1255,8 +1259,12 @@ class EstateService {
       this.on('_ect.estate_id', 'estates.id')
     })
 
-    query.leftJoin({ _u: 'users' }, function (m) {
-      m.on('_ect.user_id', '_u.id')
+    query.leftJoin({ _u: 'users' }, function () {
+      this.on('_ect.user_id', '_u.id')
+    })
+
+    query.leftJoin({ _iu: 'users' }, function () {
+      this.on('_ect.email', '_iu.email').on('_iu.role', ROLE_USER)
     })
 
     query.leftJoin('tasks', function () {
@@ -1305,6 +1313,7 @@ class EstateService {
         activeTasks: activeTasks,
         mosturgency: mostUrgency?.urgency,
         most_task_updated: mostUpdated,
+        is_breeze_user: (r[0].current_tenant && r[0].current_tenant.inside_breeze) ? true : false,
         taskSummary: {
           taskCount,
           activeTaskCount: r[0].activeTasks.length || 0,
@@ -1341,8 +1350,11 @@ class EstateService {
       .leftJoin({ _ect: 'estate_current_tenants' }, function () {
         this.on('_ect.estate_id', 'estates.id')
       })
-      .leftJoin({ _u: 'users' }, function (m) {
-        m.on('_ect.user_id', '_u.id')
+      .leftJoin({ _u: 'users' }, function () {
+        this.on('_ect.user_id', '_u.id')
+      })
+      .leftJoin({ _iu: 'users' }, function () {
+        this.on('_ect.email', '_iu.email').on('_iu.role', ROLE_USER)
       })
       .where('estates.user_id', user_id)
       .where('estates.letting_type', LETTING_TYPE_LET)
