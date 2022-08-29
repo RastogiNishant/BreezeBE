@@ -2,6 +2,7 @@ const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const MailService = use('App/Services/MailService')
+const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
 const crypto = require('crypto')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
@@ -17,11 +18,12 @@ const {
   SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
-  MATCH_STATUS_FINISH,
+  SALUTATION_MR_LABEL,
+  SALUTATION_MS_LABEL,
+  SALUTATION_SIR_OR_MADAM_LABEL,
   TENANT_INVITATION_EXPIRATION_DATE,
   MATCH_STATUS_NEW,
 } = require('../constants')
-const Event = use('Event')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -35,37 +37,39 @@ class EstateCurrentTenantService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id, user_id }) {
-    const estate = require('./EstateService')
-      .getActiveEstateQuery()
-      .where('user_id', user_id)
-      .where('id', estate_id)
-      .where('letting_status', LETTING_TYPE_LET)
-      .first()
+  static async addCurrentTenant({ data, estate_id, trx }) {
+    const shouldCommitTrx = trx ? false : true
 
-    if (!estate) {
-      throw new HttpException('No permission to add current tenant')
+    if (shouldCommitTrx) {
+      trx = await Database.beginTransaction()
     }
 
-    let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
+    try {
+      let currentTenant = new EstateCurrentTenant()
+      currentTenant.fill({
+        estate_id,
+        salutation: data.txt_salutation || '',
+        surname: data.surname || '',
+        email: data.tenant_email,
+        contract_end: data.contract_end,
+        phone_number: data.tenant_tel,
+        status: STATUS_ACTIVE,
+        salutation_int: data.salutation_int,
+      })
 
-    let currentTenant = new EstateCurrentTenant()
-    currentTenant.fill({
-      estate_id,
-      salutation: data.txt_salutation || '',
-      surname: data.surname || '',
-      email: data.tenant_email,
-      contract_end: data.contract_end,
-      phone_number: data.tenant_tel,
-      status: STATUS_ACTIVE,
-      salutation_int: data.salutation_int,
-    })
+      await currentTenant.save(trx)
 
-    if (user) {
-      currentTenant.user_id = user.id
+      if (shouldCommitTrx) {
+        await trx.commit()
+      }
+
+      return currentTenant
+    } catch (e) {
+      if (shouldCommitTrx) {
+        await trx.rollback()
+      }
+      throw new HttpException(e.message, 500)
     }
-    await currentTenant.save()
-    return currentTenant
   }
 
   /**
@@ -88,19 +92,32 @@ class EstateCurrentTenantService {
     return true
   }
 
-  static async createOnFinalMatch(tenant_id, estate_id, trx) {
-    const tenantUser = await User.query().where('id', tenant_id).firstOrFail()
+  static async createOnFinalMatch(user, estate_id, trx) {
+    await Database.table('estate_current_tenants')
+      .where('estate_id', estate_id)
+      .update({ status: STATUS_EXPIRE })
+      .transacting(trx)
+
+    const member = await MemberService.getMember(null, user.id, user.owner_id)
 
     const currentTenant = new EstateCurrentTenant()
     currentTenant.fill({
       estate_id,
-      user_id: tenant_id,
-      surname: tenantUser.secondname || '',
-      email: tenantUser.email,
+      user_id: user.id,
+      surname: user.secondname || '',
+      email: user.email,
       contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
-      phone_number: tenantUser.phone_number || '',
+      phone_number:
+        //TODO: add user's phone verification logic here when we have phone verification flow for user
+        member?.phone && member?.phone_verified ? member.phone : user.phone_number || '',
       status: STATUS_ACTIVE,
-      salutation_int: SALUTATION_SIR_OR_MADAM,
+      salutation:
+        user.sex === 1
+          ? SALUTATION_MR_LABEL
+          : user.sex === 2
+          ? SALUTATION_MS_LABEL
+          : SALUTATION_SIR_OR_MADAM_LABEL,
+      salutation_int: user.sex || SALUTATION_SIR_OR_MADAM,
     })
 
     await currentTenant.save(trx)
@@ -112,49 +129,34 @@ class EstateCurrentTenantService {
       await this.hasPermission(id, user_id)
     }
 
-    let user = await User.query().where('email', data.tenant_email).where('role', ROLE_USER).first()
-
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
+      .where('status', STATUS_ACTIVE)
       .where('email', data.tenant_email)
       .first()
 
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
-      await Database.table('estate_current_tenants')
-        .where('estate_id', estate_id)
-        .update({ status: STATUS_EXPIRE })
 
-      let newCurrentTenant = new EstateCurrentTenant()
-      newCurrentTenant.fill({
+      const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
+        data,
         estate_id,
-        salutation: data.txt_salutation || '',
-        surname: data.surname || '',
-        email: data.tenant_email,
-        contract_end: data.contract_end,
-        phone_number: data.tenant_tel,
-        status: STATUS_ACTIVE,
-        salutation_int: data.salutation_int,
       })
-      if (user) {
-        newCurrentTenant.user_id = user.id
-      }
-      await newCurrentTenant.save()
+
       return newCurrentTenant
     } else {
-      //update values except email...
-      currentTenant.fill({
-        id: currentTenant.id,
-        salutation: data.txt_salutation,
-        surname: data.surname,
-        contract_end: data.contract_end,
-        phone_number: data.tenant_tel,
-        salutation_int: data.salutation_int,
-      })
-      if (user) {
-        currentTenant.user_id = user.id
+      //update values except email if no registered user...
+      if (!currentTenant.user_id) {
+        currentTenant.fill({
+          id: currentTenant.id,
+          salutation: data.txt_salutation,
+          surname: data.surname,
+          contract_end: data.contract_end,
+          phone_number: data.tenant_tel,
+          salutation_int: data.salutation_int,
+        })
+        await currentTenant.save()
       }
-      await currentTenant.save()
       return currentTenant
     }
   }
@@ -324,7 +326,6 @@ class EstateCurrentTenantService {
     }
 
     const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
-    console.log({ existingUser })
     if (existingUser) {
       uri += `&user_id=${existingUser.id}`
     }
@@ -353,7 +354,39 @@ class EstateCurrentTenantService {
   }
 
   static async acceptOutsideTenant({ data1, data2, password, email, user }) {
-    const { id, estate_id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
+      ...rest,
+      estate_id,
+      email,
+      user,
+    })
+
+    const trx = await Database.beginTransaction()
+    try {
+      if (user) {
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx, estate_id)
+      } else {
+        const userData = {
+          role: ROLE_USER,
+          secondname: estateCurrentTenant.surname,
+          phone: estateCurrentTenant.phone_number,
+          password: password,
+        }
+        user = await UserService.signUp(
+          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
+          trx
+        )
+      }
+      await trx.commit()
+      return user.id
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
@@ -390,29 +423,7 @@ class EstateCurrentTenantService {
       throw new HttpException('Link has been expired', 500)
     }
 
-    const trx = await Database.beginTransaction()
-    try {
-      if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx)
-      } else {
-        const userData = {
-          role: ROLE_USER,
-          secondname: estateCurrentTenant.surname,
-          phone: estateCurrentTenant.phone_number,
-          password: password,
-        }
-        user = await UserService.signUp(
-          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
-          trx
-        )
-      }
-      await trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return user.id
-    } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 500)
-    }
+    return estateCurrentTenant
   }
 
   static decryptDynamicLink({ data1, data2 }) {
@@ -443,34 +454,44 @@ class EstateCurrentTenantService {
     await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
-  static async updateOutsideTenantInfo(user, trx = null) {
-    const currentTenant = await EstateCurrentTenant.query()
+  static async updateOutsideTenantInfo(user, trx = null, estate_id = null) {
+    const query = EstateCurrentTenant.query()
       .where('email', user.email)
       .whereNot('status', STATUS_DELETE)
-      .first()
+
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+
+    const currentTenant = await query.first()
+
     if (!currentTenant) {
       return
     }
-    currentTenant.user_id = user.id
-    if (!currentTenant.email) {
-      currentTenant.email = user.email
+
+    //TODO: add user's phone verification logic here when we have phone verification flow for user
+    const member = await MemberService.getMember(null, user.id, user.owner_id)
+    if (member?.phone && member?.phone_verified) {
+      currentTenant.phone_number = member.phone
     }
+
+    currentTenant.user_id = user.id
+    currentTenant.email = user.email
+
+    currentTenant.surname = user.secondname || currentTenant.surname
+    currentTenant.salutation_int = user.sex || currentTenant.salutation_int
+    currentTenant.salutation =
+      user.sex === 1
+        ? SALUTATION_MR_LABEL
+        : user.sex === 2
+        ? SALUTATION_MS_LABEL
+        : SALUTATION_SIR_OR_MADAM_LABEL
+
     await currentTenant.save(trx)
 
     //if current tenant, he needs to save to match as a final match
     if (currentTenant.estate_id) {
-      const match = await require('./MatchService').getMatches(user.id, currentTenant.estate_id)
-      if (!match) {
-        await require('./MatchService').addFinalTenant(
-          { user_id: user.id, estate_id: currentTenant.estate_id },
-          trx
-        )
-      } else {
-        await Match.query()
-          .where({ user_id: match.user_id, estate_id: match.estate_id, status: match.status })
-          .update({ status: MATCH_STATUS_FINISH })
-          .transacting(trx)
-      }
+      await require('./MatchService').handleFinalMatch(currentTenant.estate_id, user, true, trx)
     }
   }
 

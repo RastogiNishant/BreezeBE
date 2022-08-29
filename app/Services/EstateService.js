@@ -59,6 +59,7 @@ const {
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
   LETTING_TYPE_NA,
+  LETTING_STATUS_NORMAL,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -433,8 +434,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-          return r.favorite
-        })
+            return r.favorite
+          })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1366,6 +1367,29 @@ class EstateService {
         .orderBy('created_at', 'desc')
         .paginate(1, limit)
     ).rows
+  }
+
+  static async rented(estateId, trx) {
+    // Make estate status DRAFT to hide from tenants' matches list
+    await Database.table('estates')
+      .where({ id: estateId })
+      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .transacting(trx)
+  }
+
+  static async rentable(estateId, fromInvitation) {
+    const estate = await Estate.query().where('id', estateId).firstOrFail()
+
+    if (
+      !fromInvitation &&
+      (estate.letting_type === LETTING_TYPE_LET ||
+        ![STATUS_ACTIVE, STATUS_EXPIRE].includes(estate.status))
+    ) {
+      throw new Error(
+        "You can't rent this property because this property already has been delete or rented by someone else"
+      )
+    }
+    return estate
   }
 
   static async unrented(estate_ids, trx = null) {
