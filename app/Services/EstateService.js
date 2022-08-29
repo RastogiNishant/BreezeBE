@@ -24,6 +24,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
@@ -418,8 +419,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1317,6 +1318,25 @@ class EstateService {
         .orderBy('created_at', 'desc')
         .paginate(1, limit)
     ).rows
+  }
+
+  static async checkCanChangeLettingStatus(result) {
+    const estate_ids = (result.data || []).map(estate => estate.id)
+    const currentTenants = estate_ids && estate_ids.length ? await EstateCurrentTenantService.getAllInsideCurrentTenant(estate_ids) : []
+    return (result.data || []).map(estate => {
+      const isMatchCountValidToChangeLettinType =
+        0 + parseInt(estate.__meta__.visits_count) ||
+        0 + parseInt(estate.__meta__.knocked_count) ||
+        0 + parseInt(estate.__meta__.decided_count) ||
+        0 + parseInt(estate.__meta__.invite_count) ||
+        0 + parseInt(estate.__meta__.final_count) ||
+        0
+      const currentIdx = (currentTenants || []).findIndex(tenant => tenant.estate_id === estate.id)
+      return {
+        ...estate,
+        canChangeLettingType: isMatchCountValidToChangeLettinType || currentIdx !== -1 ? false : true,
+      }
+    })
   }
 }
 module.exports = EstateService

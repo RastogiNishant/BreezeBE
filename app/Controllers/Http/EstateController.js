@@ -231,24 +231,9 @@ class EstateController {
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
-    const estate_ids = (result.data || []).map(estate => estate.id)
 
-    const currentTenants = estate_ids && estate_ids.length ? await EstateCurrentTenantService.getAllInsideCurrentTenant(estate_ids) : []
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
 
-    result.data = (result.data || []).map(estate => {
-      const canChangeLettingType =
-        0 + parseInt(estate.__meta__.visits_count) ||
-        0 + parseInt(estate.__meta__.knocked_count) ||
-        0 + parseInt(estate.__meta__.decided_count) ||
-        0 + parseInt(estate.__meta__.invite_count) ||
-        0 + parseInt(estate.__meta__.final_count) ||
-        0
-      const currentIdx = (currentTenants || []).findIndex(tenant => tenant.estate_id === estate.id)
-      return {
-        ...estate,
-        can_change_letting_type: canChangeLettingType || currentIdx !== -1 ? false : true,
-      }
-    })
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
