@@ -202,7 +202,7 @@ class QueueJobService {
         )
 
         await Estate.query()
-          .whereIn('user_id', userId)
+          .where('user_id', userId)
           .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
           .update({ status: STATUS_DRAFT }, trx)
 
