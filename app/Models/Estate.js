@@ -302,7 +302,7 @@ class Estate extends Model {
 
   activeTasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
-      .whereIn([TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
       .orderBy('updated_at', 'desc')
       .orderBy('urgency', 'desc')
   }
