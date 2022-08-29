@@ -135,7 +135,7 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, ...data } = request.all()
+    const { id } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -624,9 +624,12 @@ class EstateController {
 
     estate.isoline = await EstateService.getIsolines(estate)
 
-    estate = estate.toJSON({ isShort: true, role: auth.user.role })
+    estate = estate.toJSON({
+      isShort: true,
+      role: auth.user.role,
+      extraFields: ['landlord_type'],
+    })
     estate = await EstateService.assignEstateAmenities(estate)
-
     response.res(estate)
   }
 

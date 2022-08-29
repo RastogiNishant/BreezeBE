@@ -13,12 +13,21 @@ const {
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
-  IS_INSIDE_BREEZE,
-  IS_OUTSIDE_BREEZE,
+  ALL_BREEZE,
+  INSIDE_BREEZE_TEANT_LABEL,
+  OUTSIDE_BREEZE_TEANT_LABEL,
+  PENDING_BREEZE_TEANT_LABEL,
+  DATE_FORMAT,
 } = require('../constants')
 
 class TaskFilters extends Filter {
-  globalSearchFields = ['_ect.email', 'estates.property_id', 'estates.address', '_ect.phone_number', '_ect.surname']
+  globalSearchFields = [
+    '_ect.email',
+    'estates.property_id',
+    'estates.address',
+    '_ect.phone_number',
+    '_ect.surname',
+  ]
   constructor(params, query) {
     super(params, query)
 
@@ -77,12 +86,35 @@ class TaskFilters extends Filter {
 
     if (
       params.breeze_type &&
-      [IS_INSIDE_BREEZE, IS_OUTSIDE_BREEZE].includes(params.breeze_type.value)
+      params.breeze_type.value !== undefined &&
+      params.breeze_type.value !== null &&
+      !params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value) this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
-        if (params.breeze_type.value === false)
-          this.query.orWhere(Database.raw('_ect.user_id IS NULL'))
+        if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
+        }
+
+        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(
+            Database.raw(`
+              (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
+              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+                .utc(new Date())
+                .subtract(2, 'days')
+                .format(DATE_FORMAT)}' )`)
+          )
+        }
+
+        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
+          this.query.orWhere(
+            Database.raw(`
+              _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
+                .utc(new Date())
+                .subtract(2, 'days')
+                .format(DATE_FORMAT)}'`)
+          )
+        }
       })
     }
 

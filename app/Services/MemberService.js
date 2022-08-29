@@ -277,11 +277,9 @@ class MemberService {
   static async getMember(id, user_id, owner_id) {
     let member
     if (!owner_id) {
-      member = await Member.query()
-        .where('id', id)
-        .whereNull('owner_user_id')
-        .where('user_id', user_id)
-        .first()
+      const query = Member.query().whereNull('owner_user_id').where('user_id', user_id)
+      if (id) query.where('id', id)
+      member = await query.first()
     } else {
       member = await Member.query().where('id', id).where('owner_user_id', user_id).first()
     }

@@ -105,11 +105,10 @@ class ImportService {
         QueueService.getEstateCoords(estate.id)
         //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
-        if (data.tenant_email) {
+        if (data.surname) {
           await EstateCurrentTenantService.addCurrentTenant({
             data,
             estate_id: estate.id,
-            user_id: userId,
           })
         }
         if (warning) {

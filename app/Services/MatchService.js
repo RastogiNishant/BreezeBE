@@ -18,8 +18,11 @@ const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
+const Event = use('Event')
+const File = use('App/Classes/File')
 
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const TenantService = use('App/Services/TenantService')
 
 const {
   MATCH_STATUS_NEW,
@@ -59,7 +62,6 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
-  LETTING_TYPE_LET,
 } = require('../constants')
 const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
@@ -994,31 +996,75 @@ class MatchService {
       .delete()
   }
 
+  static async handleFinalMatch(estate_id, user, fromInvitation, trx) {
+    const estate = await EstateService.rentable(estate_id, fromInvitation)
+
+    const existingMatch = await Database.table('matches')
+      .where('user_id', user.id)
+      .where('estate_id', estate_id)
+      .first()
+
+    // 2 cases:
+    // There should not be a match with status finish for this user and estate
+    // If the final match not from invitation, there should be match with status COMMIT
+    if (
+      existingMatch?.status === MATCH_STATUS_FINISH ||
+      (!fromInvitation && existingMatch?.status !== MATCH_STATUS_COMMIT)
+    ) {
+      throw new AppException('Invalid match status')
+    }
+
+    if (existingMatch) {
+      await Database.table('matches')
+        .update({ status: MATCH_STATUS_FINISH })
+        .where({
+          user_id: user.id,
+          estate_id: estate_id,
+          status: existingMatch.status,
+        })
+        .transacting(trx)
+    } else {
+      await Database.table('matches')
+        .insert({
+          user_id: user.id,
+          estate_id: estate_id,
+          percent: 0,
+          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+          status: MATCH_STATUS_FINISH,
+        })
+        .transacting(trx)
+    }
+
+    await EstateService.rented(estate_id, trx)
+    await TenantService.updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
+    if (!fromInvitation) {
+      await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
+    }
+    return estate
+  }
+
   /**
    * Tenant confirmed final request
    */
-  static async finalConfirm(estateId, tenantId, trx) {
-    await Database.table('matches')
-      .where({
-        user_id: tenantId,
-        estate_id: estateId,
-        status: MATCH_STATUS_COMMIT,
-      })
-      .update({
-        status: MATCH_STATUS_FINISH,
-        final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
-      })
-      .transacting(trx)
+  static async finalConfirm(estateId, user) {
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await MatchService.handleFinalMatch(estateId, user, false, trx)
 
-    // Make estate status DRAFT to hide from tenants' matches list
-    await Database.table('estates')
-      .where({ id: estateId })
-      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
-      .transacting(trx)
+      await trx.commit()
+      NoticeService.estateFinalConfirm(estateId, user.id)
+      Event.fire('mautic:syncContact', user.id, { finalmatchapproval_count: 1 })
 
-    await EstateCurrentTenantService.createOnFinalMatch(tenantId, estateId, trx)
-
-    return NoticeService.estateFinalConfirm(estateId, tenantId)
+      let contact = await estate.getContacts()
+      if (contact) {
+        contact = contact.toJSON()
+        contact.avatar = File.getPublicUrl(contact.avatar)
+      }
+      return { contact, estate }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   /**
@@ -2269,10 +2315,7 @@ class MatchService {
   }
 
   static async getMatches(userId, estateId) {
-    return await Database.query()
-      .from('matches')
-      .where({ user_id: userId, estate_id: estateId })
-      .first()
+    return await Match.query().where({ user_id: userId, estate_id: estateId }).first()
   }
 
   static async handleDeletedTimeSlotVisits({ estate_id, start_at, end_at }, trx) {
@@ -2307,18 +2350,6 @@ class MatchService {
     return userIds
   }
 
-  static async addFinalTenant({ user_id, estate_id }, trx = null) {
-    await Database.table('matches')
-      .insert({
-        user_id: user_id,
-        estate_id: estate_id,
-        percent: 0,
-        final_match_date: moment.utc(new Date(), DATE_FORMAT),
-        status: MATCH_STATUS_FINISH,
-      })
-      .transacting(trx)
-  }
-
   static async getEstatesByStatus({ estate_id, status }) {
     let query = Match.query()
     if (estate_id) {
@@ -2328,6 +2359,21 @@ class MatchService {
       query.where('status', status)
     }
     return (await query.fetch()).rows
+  }
+
+  static async getMatchCount(id) {
+    return await this.matchCount(
+      [
+        MATCH_STATUS_KNOCK,
+        MATCH_STATUS_INVITE,
+        MATCH_STATUS_VISIT,
+        MATCH_STATUS_SHARE,
+        MATCH_STATUS_COMMIT,
+        MATCH_STATUS_TOP,
+        MATCH_STATUS_FINISH,
+      ],
+      [id]
+    )
   }
 }
 

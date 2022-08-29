@@ -1024,7 +1024,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CommonReturn"
 
-  /api/v1/estates/:estate_id/tenant/invite/letter:
+  /api/v1/estates/tenant/invite/letter :
     post:
       summary: response shortLink for creating QR code from frontend
       tags:
@@ -1037,7 +1037,7 @@ paths:
         "200":
         description: OK
 
-  /api/v1/estates/:estate_id/tenant/invite/email:
+  /api/v1/estates/tenant/invite/email :
     post:
       summary: send invitation to tenant outside of breeze via email
       tags:
@@ -1050,7 +1050,7 @@ paths:
         "200":
         description: OK
 
-  /api/v1/estates/:estate_id/tenant/invite/sms:
+  /api/v1/estates/tenant/invite/sms :
     post:
       summary: send invitation to tenant outside of breeze via sms
       tags:
@@ -1058,12 +1058,25 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - $ref: "#/definitions/ids"
+        - $ref: '#/definitions/ids'        
       responses:
-        "200":
+        '200' :
         description: OK
 
-  /api/v1/accept/outside_tenant:
+  /api/v1/estates/tenant/invite/disconnect :
+    post:
+      summary: disconnect tenant 
+      tags: 
+        - Disconnect breeze
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/definitions/ids'        
+      responses:
+        '200' :
+        description: OK
+
+  /api/v1/accept/outside_tenant :
     post:
       summary: Tenant Accept invitation
       tags:
