@@ -28,7 +28,6 @@ const {
   EQUIPMENT_GUEST_WC,
   EQUIPMENT_WG_SUITABLE,
 
-  STATUS_DRAFT,
   STATUS_ACTIVE,
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -43,6 +42,10 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_DELETE,
   TASK_STATUS_DRAFT,
+  TASK_STATUS_RESOLVED,
+  DATE_FORMAT,
+  TASK_RESOLVE_HISTORY_PERIOD,
+  ROLE_LANDLORD,
 } = require('../constants')
 
 class Estate extends Model {
@@ -219,8 +222,7 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = trim(
-          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
-            instance.city || ''
+          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${instance.city || ''
           }, ${instance.country || ''}`,
           ', '
         ).toLowerCase()
@@ -228,7 +230,7 @@ class Estate extends Model {
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (instance.dirty?.parking_space === 0) {
@@ -391,9 +393,9 @@ class Estate extends Model {
   getLatLon() {
     const toCoord = (str, reverse = true) => {
       let [lat, lon] = String(str || '').split(',')
-      ;[lat, lon] = reverse
-        ? [parseFloat(lon), parseFloat(lat)]
-        : [parseFloat(lat), parseFloat(lon)]
+        ;[lat, lon] = reverse
+          ? [parseFloat(lon), parseFloat(lat)]
+          : [parseFloat(lat), parseFloat(lon)]
 
       return { lat: lat || 0, lon: lon || 0 }
     }

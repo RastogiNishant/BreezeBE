@@ -5,6 +5,8 @@ const {
   CHAT_EDIT_STATUS_EDITED,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_NEW,
+  TASK_STATUS_RESOLVED,
+  TASK_STATUS_UNRESOLVED,
 } = require('../../constants')
 
 const BaseController = require('./BaseController')
@@ -102,8 +104,10 @@ class TaskController extends BaseController {
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
       task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-      if (task.status === TASK_STATUS_NEW) {
+
+      if (task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_RESOLVED || task.status === TASK_STATUS_UNRESOLVED) {
         //if in progress make it TASK_STATUS_NEW
+        newStatus = TASK_STATUS_INPROGRESS
         await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
         if (this.topic) {
           //Broadcast to those listening to this channel...

@@ -17,6 +17,7 @@ class Task extends Model {
       'next_predefined_message_id',
       'created_at',
       'updated_at',
+      'status_changed_by',
     ]
   }
   static get readonly() {
