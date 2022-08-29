@@ -198,9 +198,11 @@ class MemberController {
       if (data?.phone !== member.phone) {
         newData.phone_verified = false
       }
-      await member.updateItemWithTrx({ ...newData, ...files }, trx)
-      member = member.toJSON()
+      const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)
       await trx.commit()
+
+      member = await MemberService.getMemberWithPassport(member.id)
+
       Event.fire('tenant::update', member.user_id)
       return response.res(member)
     } catch (e) {
