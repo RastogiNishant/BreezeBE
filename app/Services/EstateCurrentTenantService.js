@@ -21,7 +21,9 @@ const {
   TENANT_INVITATION_EXPIRATION_DATE,
   EMAIL_REG_EXP,
   PHONE_REG_EXP,
+  MATCH_STATUS_NEW,
 } = require('../constants')
+const Event = use('Event')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -225,7 +227,9 @@ class EstateCurrentTenantService {
       user_id,
     })
 
-    const validlinks = links.filter(link => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email))
+    const validlinks = links.filter(
+      (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
+    )
 
     failureCount += (links.length || 0) - (validlinks.length || 0)
     const successCount = (ids.length || 0) - failureCount
@@ -241,7 +245,10 @@ class EstateCurrentTenantService {
       user_id,
     })
 
-    const validLinks = links.filter(link => link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number))
+    const validLinks = links.filter(
+      (link) =>
+        link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
+    )
     failureCount += (links.length || 0) - (validLinks.length || 0)
 
     await Promise.all(
@@ -299,7 +306,7 @@ class EstateCurrentTenantService {
       })
     )
 
-    estateCurrentTenants = estateCurrentTenants.filter(ect => ect)
+    estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
 
     const links = await Promise.all(
       estateCurrentTenants.map(async (ect) => {
@@ -321,7 +328,9 @@ class EstateCurrentTenantService {
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
     const code = uuid.v4()
-    await EstateCurrentTenant.query().where('id', estateCurrentTenant.id).update({ code: code, invite_sent_at: time })
+    await EstateCurrentTenant.query()
+      .where('id', estateCurrentTenant.id)
+      .update({ code: code, invite_sent_at: time })
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
@@ -399,7 +408,9 @@ class EstateCurrentTenantService {
     }
 
     const time = moment().utc()
-    const old_time = moment().utc(expired_time, 'YYYY-MM-DD HH:mm:ss').add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+    const old_time = moment()
+      .utc(expired_time, 'YYYY-MM-DD HH:mm:ss')
+      .add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
 
     if (old_time < time) {
       throw new HttpException('Link has been expired', 500)
@@ -422,6 +433,7 @@ class EstateCurrentTenantService {
         )
       }
       await trx.commit()
+      Event.fire('mautic:createContact', user.id)
       return user.id
     } catch (e) {
       await trx.rollback()
@@ -503,6 +515,63 @@ class EstateCurrentTenantService {
           .fetch()
       ).rows
     )
+  }
+
+  static async disconnect(user_id, ids) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    const trx = await Database.beginTransaction()
+
+    try {
+      let estateCurrentTenants = await EstateCurrentTenant.query()
+        .select(
+          'estate_current_tenants.id',
+          'estate_current_tenants.estate_id',
+          'estate_current_tenants.user_id'
+        )
+        .whereIn('estate_current_tenants.id', ids)
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+        })
+        .fetch()
+
+      estateCurrentTenants = estateCurrentTenants?.toJSON() || []
+      const valid_ids = estateCurrentTenants.map((tenant) => tenant.id)
+      if (valid_ids && valid_ids.length) {
+        const estate_ids = estateCurrentTenants.map((tenant) => tenant.estate_id)
+
+        await require('./EstateService').unrented(estate_ids, trx)
+
+        await Promise.all(
+          estateCurrentTenants.map(async (tenant) => {
+            if (tenant.user_id) {
+              // need to revert final status to new, because it's not final status any more
+              await Match.query()
+                .where('user_id', tenant.user_id)
+                .where('estate_id', tenant.estate_id)
+                .where('status', MATCH_STATUS_FINISH)
+                .update({ status: MATCH_STATUS_NEW })
+                .transacting(trx)
+            }
+          })
+        )
+
+        await EstateCurrentTenant.query()
+          .whereIn('id', valid_ids)
+          .update({ user_id: null, code: null, invite_sent_at: null })
+          .transacting(trx)
+
+        await trx.commit()
+      }
+
+      return {
+        successCount: estateCurrentTenants.length || 0,
+        failureCount: ids.length - (estateCurrentTenants.length || 0),
+      }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 }
 

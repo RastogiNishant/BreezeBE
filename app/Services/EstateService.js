@@ -433,8 +433,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -1366,6 +1366,19 @@ class EstateService {
         .orderBy('created_at', 'desc')
         .paginate(1, limit)
     ).rows
+  }
+
+  static async unrented(estate_ids, trx = null) {
+    let query = Estate.query()
+      .whereIn('id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+      .whereNot('status', STATUS_DELETE)
+      .where('letting_type', LETTING_TYPE_LET)
+      .update({ letting_type: LETTING_TYPE_VOID })
+
+    if (!trx) {
+      return await query
+    }
+    return await query.transacting(trx)
   }
 }
 module.exports = EstateService
