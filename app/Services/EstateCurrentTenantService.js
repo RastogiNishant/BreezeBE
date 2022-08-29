@@ -18,10 +18,13 @@ const {
   SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
+  MATCH_STATUS_FINISH,  
   SALUTATION_MR_LABEL,
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
   TENANT_INVITATION_EXPIRATION_DATE,
+  EMAIL_REG_EXP,
+  PHONE_REG_EXP,
   MATCH_STATUS_NEW,
 } = require('../constants')
 
@@ -29,6 +32,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
 
 const l = use('Localize')
+const { trim } = require('lodash')
 
 class EstateCurrentTenantService {
   /**
@@ -221,32 +225,49 @@ class EstateCurrentTenantService {
   }
 
   static async inviteTenantToAppByEmail({ ids, user_id }) {
-    const links = await this.getDynamicLinks({
+    let { failureCount, links } = await this.getDynamicLinks({
       ids,
       user_id,
     })
-    await MailService.sendInvitationToOusideTenant(links)
+
+    const validLinks = links.filter(
+      (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
+    )
+
+    failureCount += (links.length || 0) - (validLinks.length || 0)
+    const successCount = (ids.length || 0) - failureCount
+
+    MailService.sendInvitationToOusideTenant(validLinks)
+
+    return { successCount, failureCount }
   }
 
   static async inviteTenantToAppBySMS({ ids, user_id }) {
-    const links = await this.getDynamicLinks({
+    let { failureCount, links } = await this.getDynamicLinks({
       ids,
       user_id,
     })
 
-    const errorPhoneNumbers = []
-    await Promise.all(
-      links.map(async (link) => {
-        const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${link.shortLink}`
+    const validLinks = links.filter(
+      (link) =>
+        link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
+    )
+    failureCount += (links.length || 0) - (validLinks.length || 0)
 
-        if (link.phone_number) {
+    await Promise.all(
+      validLinks.map(async (link) => {
+        try {
+          const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${link.shortLink}`
           await SMSService.send({ to: link.phone_number, txt })
-        } else {
-          errorPhoneNumbers.push(link.phone_number)
+        } catch (e) {
+          failureCount++
         }
       })
     )
-    return errorPhoneNumbers
+
+    const successCount = (ids.length || 0) - failureCount
+
+    return { successCount, failureCount }
   }
 
   static async getOutsideTenantsByEstateId({ id, estate_id }) {
@@ -269,20 +290,26 @@ class EstateCurrentTenantService {
   }
 
   static async getDynamicLinks({ ids, user_id }) {
-    const estateCurrentTenants = await this.getOutsideTenantByIds(ids)
+    let estateCurrentTenants = await this.getOutsideTenantByIds(ids)
 
     const EstateService = require('./EstateService')
-    await Promise.all(
-      estateCurrentTenants.map(async (ect) => {
+    let failureCount = (ids.length || 0) - (estateCurrentTenants.length || 0)
+
+    estateCurrentTenants = await Promise.all(
+      (estateCurrentTenants || []).map(async (ect) => {
         const estate = await EstateService.getEstateHasTenant({
           condition: { id: ect.estate_id, user_id: user_id },
         })
-
         if (!estate) {
-          throw new HttpException('No permission to invite')
+          failureCount++
+          return null
+        } else {
+          return ect.toJSON()
         }
       })
     )
+
+    estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
 
     const links = await Promise.all(
       estateCurrentTenants.map(async (ect) => {
@@ -290,7 +317,7 @@ class EstateCurrentTenantService {
       })
     )
 
-    return links
+    return { failureCount, links }
   }
   static async createDynamicLink(estateCurrentTenant) {
     const iv = crypto.randomBytes(16)
@@ -326,6 +353,7 @@ class EstateCurrentTenantService {
     }
 
     const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
+
     if (existingUser) {
       uri += `&user_id=${existingUser.id}`
     }
@@ -518,7 +546,11 @@ class EstateCurrentTenantService {
 
     try {
       let estateCurrentTenants = await EstateCurrentTenant.query()
-        .select('estate_current_tenants.id', 'estate_current_tenants.estate_id', 'estate_current_tenants.user_id')
+        .select(
+          'estate_current_tenants.id',
+          'estate_current_tenants.estate_id',
+          'estate_current_tenants.user_id'
+        )
         .whereIn('estate_current_tenants.id', ids)
         .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
         .innerJoin({ _e: 'estates' }, function () {
@@ -527,30 +559,38 @@ class EstateCurrentTenantService {
         .fetch()
 
       estateCurrentTenants = estateCurrentTenants?.toJSON() || []
-      const valid_ids = estateCurrentTenants.map(tenant => tenant.id)
+      const valid_ids = estateCurrentTenants.map((tenant) => tenant.id)
       if (valid_ids && valid_ids.length) {
-        const estate_ids = estateCurrentTenants.map(tenant => tenant.estate_id)
+        const estate_ids = estateCurrentTenants.map((tenant) => tenant.estate_id)
 
         await require('./EstateService').unrented(estate_ids, trx)
 
-        await Promise.all(estateCurrentTenants.map(async (tenant) => {
-          if (tenant.user_id) { // need to revert final status to new, because it's not final status any more
-            await Match.query()
-              .where('user_id', tenant.user_id)
-              .where('estate_id', tenant.estate_id)
-              .where('status', MATCH_STATUS_FINISH)
-              .update({ status: MATCH_STATUS_NEW }).transacting(trx)
-          }
-        }))
+        await Promise.all(
+          estateCurrentTenants.map(async (tenant) => {
+            if (tenant.user_id) {
+              // need to revert final status to new, because it's not final status any more
+              await Match.query()
+                .where('user_id', tenant.user_id)
+                .where('estate_id', tenant.estate_id)
+                .where('status', MATCH_STATUS_FINISH)
+                .update({ status: MATCH_STATUS_NEW })
+                .transacting(trx)
+            }
+          })
+        )
 
         await EstateCurrentTenant.query()
           .whereIn('id', valid_ids)
-          .update({ user_id: null, code: null, invite_sent_at: null }).transacting(trx)
+          .update({ user_id: null, code: null, invite_sent_at: null })
+          .transacting(trx)
 
         await trx.commit()
       }
 
-      return { successCount: (estateCurrentTenants.length || 0), failureCount: (ids.length - (estateCurrentTenants.length || 0)) }
+      return {
+        successCount: estateCurrentTenants.length || 0,
+        failureCount: ids.length - (estateCurrentTenants.length || 0),
+      }
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)

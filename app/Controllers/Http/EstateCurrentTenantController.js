@@ -66,12 +66,16 @@ class EstateCurrentTenantController {
   async inviteTenantToAppByLetter({ request, auth, response }) {
     const { ids } = request.all()
     try {
-      response.res(
-        await EstateCurrentTenantService.getDynamicLinks({
-          ids: ids,
-          user_id: auth.user.id,
-        })
-      )
+      const { failureCount, links } = await EstateCurrentTenantService.getDynamicLinks({
+        ids: ids,
+        user_id: auth.user.id,
+      })
+
+      response.res({
+        successCount: (ids.length || 0) - failureCount,
+        failureCount,
+        links,
+      })
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -112,17 +116,12 @@ class EstateCurrentTenantController {
   async inviteTenantToAppBySMS({ request, auth, response }) {
     const { ids } = request.all()
     try {
-      const errorPhonNumbers = await EstateCurrentTenantService.inviteTenantToAppBySMS({
-        ids: ids,
-        user_id: auth.user.id,
-      })
-
-      if (errorPhonNumbers && errorPhonNumbers.length) {
-        const msg = ` Not delivered to ` + errorPhonNumbers.join(',')
-        throw new HttpException(msg, 400)
-      }
-
-      response.res(true)
+      response.res(
+        await EstateCurrentTenantService.inviteTenantToAppBySMS({
+          ids: ids,
+          user_id: auth.user.id,
+        })
+      )
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
