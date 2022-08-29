@@ -45,6 +45,12 @@ const {
   LETTING_TYPE_NA,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -52,6 +58,7 @@ const EstateAttributeTranslations = require('../../Classes/EstateAttributeTransl
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
+const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
 const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -211,6 +218,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
     response.res(result)
   }
   /**
@@ -224,6 +232,9 @@ class EstateController {
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
+
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
+
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
@@ -985,6 +996,46 @@ class EstateController {
       estates,
       prospectCount,
     })
+  }
+
+  async changeLettingType({ request, auth, response }) {
+    const { id, letting_type } = request.all()
+    const matchCount = await MatchService.matchCount(
+      [
+        MATCH_STATUS_KNOCK,
+        MATCH_STATUS_INVITE,
+        MATCH_STATUS_VISIT,
+        MATCH_STATUS_SHARE,
+        MATCH_STATUS_COMMIT,
+        MATCH_STATUS_TOP,
+        MATCH_STATUS_FINISH,
+      ],
+      [id]
+    )
+
+    if (matchCount && matchCount.length && parseInt(matchCount[0].count)) {
+      throw new HttpException(
+        "There is a match for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId(id)
+
+    if (estateCurrentTenant) {
+      throw new HttpException(
+        "There is a tenant for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    await Estate.query()
+      .where('id', id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ letting_type: letting_type })
+
+    response.res(true)
   }
 }
 

@@ -172,6 +172,20 @@ class EstateCurrentTenantService {
       .firstOrFail()
   }
 
+  static async getCurrentTenantByEstateId(estate_id) {
+    return await EstateCurrentTenant.query()
+      .where('estate_id', estate_id)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
+      .first()
+  }
+
+  static async getAllInsideCurrentTenant(estate_ids) {
+    return (await EstateCurrentTenant.query()
+      .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
+      .fetch()).rows
+  }
+
   static async getAll({ user_id, estate_id, status, tenant_id, page = -1, limit = -1 }) {
     const query = EstateCurrentTenant.query()
       .select(
