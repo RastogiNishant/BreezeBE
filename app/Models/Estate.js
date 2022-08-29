@@ -302,14 +302,7 @@ class Estate extends Model {
 
   activeTasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
-      .andWhere(function () {
-        this.orWhereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-        this.orWhere(function () {
-          this.where('status', TASK_STATUS_RESOLVED)
-          this.where('status_changed_by', ROLE_LANDLORD)
-          this.where('updated_at', '>=', moment.utc().subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd').format(DATE_FORMAT))
-        })
-      })
+      .whereIn([TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
       .orderBy('updated_at', 'desc')
       .orderBy('urgency', 'desc')
   }
