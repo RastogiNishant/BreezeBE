@@ -83,16 +83,26 @@ class TenantController {
 
     try {
       const tenant = await UserService.getOrCreateTenant(auth.user, trx)
+
+      if (
+        data.transfer_budget_min &&
+        data.transfer_budget_max &&
+        data.transfer_budget_min > data.transfer_budget_max
+      ) {
+        throw new HttpException('Transfer budget min has to be smaller than max', 400)
+      }
+
       await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
 
-      const updatedTenant = await Tenant.find(tenant.id)
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
       if (shouldDeactivateTenant) {
       } else {
       }
       await trx.commit()
+
+      const updatedTenant = await Tenant.find(tenant.id)
 
       // Add tenant anchor zone processing
       if (lat && lon && tenant.dist_type && tenant.dist_min) {
@@ -120,7 +130,7 @@ class TenantController {
     try {
       await TenantService.activateTenant(tenant)
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
-      Event.fire('mautic:syncContact', auth.user.id, { last_signin_date: new Date() })
+      Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)

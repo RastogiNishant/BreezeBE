@@ -9,16 +9,20 @@ const Logger = use('Logger')
 const { isEmpty } = require('lodash')
 const {
   STATUS_ACTIVE,
+  STATUS_DRAFT,
   STATUS_EXPIRE,
   DATE_FORMAT,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_KNOCK,
   MIN_TIME_SLOT,
   MATCH_STATUS_NEW,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
 } = require('../constants')
 const Promise = require('bluebird')
+const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
 const ImageService = use('App/Services/ImageService')
 const MemberService = use('App/Services/MemberService')
+const User = use('App/Models/User')
 
 class QueueJobService {
   static async updateEstatePoint(estateId) {
@@ -180,6 +184,41 @@ class QueueJobService {
     await Promise.all([ImageService.createThumbnail(), MemberService.createThumbnail()])
     console.log('End time', new Date().getTime())
     console.log('Creating thumbnails completed!!!!')
+  }
+
+  static async deactivateLandlord(deactivationId, userId) {
+    const trx = await Database.beginTransaction()
+    const deactivationSchedule = await UserDeactivationSchedule.query()
+      .where('id', deactivationId)
+      .where('user_id', userId)
+      .first()
+    if (deactivationSchedule) {
+      try {
+        await User.query().where('id', userId).update(
+          {
+            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+          },
+          trx
+        )
+
+        await Estate.query()
+          .where('user_id', userId)
+          .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+          .update({ status: STATUS_DRAFT }, trx)
+
+        await UserDeactivationSchedule.query()
+          .where('id', deactivationId)
+          .where('user_id', userId)
+          .delete(trx)
+        await trx.commit()
+        Event.fire('mautic:syncContact', userId, { admin_approval_date: null })
+      } catch (err) {
+        await trx.rollback()
+        console.log(err.message)
+      }
+    } else {
+      console.log(`deactivating ${deactivationId} is not valid anymore.`)
+    }
   }
 }
 

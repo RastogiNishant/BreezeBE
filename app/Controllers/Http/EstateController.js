@@ -42,8 +42,15 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -51,6 +58,7 @@ const EstateAttributeTranslations = require('../../Classes/EstateAttributeTransl
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
+const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
 const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -86,16 +94,13 @@ class EstateController {
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
-            country || 'Germany'
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'
           }`
         ).toLowerCase()
 
-        const txt = `The landlord '${
-          user.email
-        }' created a property with an address '${address}' in ${
-          process.env.NODE_ENV || 'local'
-        } environment`
+        const txt = `The landlord '${user.email
+          }' created a property with an address '${address}' in ${process.env.NODE_ENV || 'local'
+          } environment`
 
         await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
@@ -130,7 +135,7 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, ...data } = request.all()
+    const { id } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -213,6 +218,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
     response.res(result)
   }
   /**
@@ -226,6 +232,9 @@ class EstateController {
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
+
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
+
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
@@ -235,23 +244,21 @@ class EstateController {
       //param is used
       if (params.letting_type) {
         //funnel filter was changed
-        switch (params.letting_type[0]) {
-          case LETTING_TYPE_LET:
-            result = {
-              ...result,
-              all_count: totalEstateCounts.all_count,
-              let_count: filteredCounts.let_count,
-              void_count: totalEstateCounts.void_count,
-            }
-            break
-          case LETTING_TYPE_VOID:
-            result = {
-              ...result,
-              all_count: totalEstateCounts.all_count,
-              let_count: totalEstateCounts.let_count,
-              void_count: filteredCounts.void_count,
-            }
-            break
+        result = {
+          ...result,
+          all_count: totalEstateCounts.all_count,
+          let_count:
+            params.letting_type[0] === LETTING_TYPE_LET
+              ? filteredCounts.let_count
+              : totalEstateCounts.let_count,
+          void_count:
+            params.letting_type[0] === LETTING_TYPE_VOID
+              ? filteredCounts.void_count
+              : totalEstateCounts.void_count,
+          na_count:
+            params.letting_type[0] === LETTING_TYPE_NA
+              ? filteredCounts.na_count
+              : totalEstateCounts.na_count,
         }
       } else {
         //All is selected...
@@ -259,7 +266,8 @@ class EstateController {
           ...result,
           all_count: filteredCounts.all_count,
           let_count: totalEstateCounts.let_count,
-          void_count: filteredCounts.void_count,
+          void_count: totalEstateCounts.void_count,
+          na_count: totalEstateCounts.na_count,
         }
       }
     }
@@ -511,8 +519,7 @@ class EstateController {
    */
   async removeEstate({ request, auth, response }) {
     const { id } = request.all()
-    await Estate.findByOrFail({ id, user_id: auth.user.id })
-    await EstateService.removeEstate(id)
+    await EstateService.removeEstate(id, auth.user.id)
 
     response.res(true)
   }
@@ -617,9 +624,12 @@ class EstateController {
 
     estate.isoline = await EstateService.getIsolines(estate)
 
-    estate = estate.toJSON({ isShort: true, role: auth.user.role })
+    estate = estate.toJSON({
+      isShort: true,
+      role: auth.user.role,
+      extraFields: ['landlord_type'],
+    })
     estate = await EstateService.assignEstateAmenities(estate)
-
     response.res(estate)
   }
 
@@ -822,7 +832,7 @@ class EstateController {
     response.res(!(estate.row_count > 0))
   }
 
-  async getInviteToViewCode({ request, auth, response }) {}
+  async getInviteToViewCode({ request, auth, response }) { }
 
   async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
@@ -913,7 +923,7 @@ class EstateController {
                 //key value pairs
                 row[attribute] =
                   reverseMap[attribute][
-                    isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                   ]
               }
             }
@@ -934,7 +944,7 @@ class EstateController {
             }
           })
           row.rooms_parsed = rooms_parsed
-          row.deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
+          row.deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
           row.letting_status_merged = row.letting_status
             ? `${row.letting_type}.${row.letting_status}`
             : `${row.letting_type}`
@@ -953,7 +963,7 @@ class EstateController {
             }
           })
           rows[index].rooms_parsed = rooms_parsed
-          rows[index].deposit_multiplier = Number(row.deposit) / Number(row.net_rent)
+          rows[index].deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
           rows[index].letting_status_merged = row.letting_status
             ? `${row.letting_type}.${row.letting_status}`
             : `${row.letting_type}`
@@ -983,8 +993,49 @@ class EstateController {
     const prospectCount = await UserService.getCountOfProspects()
 
     response.res({
-      estates, prospectCount
+      estates,
+      prospectCount,
     })
+  }
+
+  async changeLettingType({ request, auth, response }) {
+    const { id, letting_type } = request.all()
+    const matchCount = await MatchService.matchCount(
+      [
+        MATCH_STATUS_KNOCK,
+        MATCH_STATUS_INVITE,
+        MATCH_STATUS_VISIT,
+        MATCH_STATUS_SHARE,
+        MATCH_STATUS_COMMIT,
+        MATCH_STATUS_TOP,
+        MATCH_STATUS_FINISH,
+      ],
+      [id]
+    )
+
+    if (matchCount && matchCount.length && parseInt(matchCount[0].count)) {
+      throw new HttpException(
+        "There is a match for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId(id)
+
+    if (estateCurrentTenant) {
+      throw new HttpException(
+        "There is a tenant for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    await Estate.query()
+      .where('id', id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ letting_type: letting_type })
+
+    response.res(true)
   }
 }
 

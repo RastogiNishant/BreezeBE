@@ -11,8 +11,9 @@ const {
   groupBy,
   countBy,
   maxBy,
+  orderBy,
 } = require('lodash')
-const { props } = require('bluebird')
+const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
@@ -23,7 +24,9 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
+const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
@@ -55,6 +58,8 @@ const {
   SHOW_ACTIVE_TASKS_COUNT,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_VISIT,
+  LETTING_TYPE_NA,
+  LETTING_STATUS_NORMAL,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -89,7 +94,22 @@ class EstateService {
 
   static async getEstateWithDetails(id, user_id) {
     const estateQuery = Estate.query()
-      .where('id', id)
+      .select(Database.raw('estates.*'))
+      .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
+      .leftJoin(
+        Database.raw(`
+          (select 
+            users.id as user_id,
+            companies.type as landlord_type
+          from users
+          left join companies
+          on companies.user_id=users.id
+          ) as _c`),
+        function () {
+          this.on('estates.user_id', '_c.user_id').on('estates.id', id)
+        }
+      )
+      .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
@@ -125,7 +145,7 @@ class EstateService {
       })
 
     if (user_id) {
-      estateQuery.where('user_id', user_id)
+      estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
   }
@@ -223,7 +243,7 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, ['rooms'], 'letting_type'),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -266,7 +286,7 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
       status: STATUS_DRAFT,
     }
 
@@ -318,7 +338,7 @@ class EstateService {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
-
+      .with('files')
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
@@ -344,9 +364,25 @@ class EstateService {
   /**
    *
    */
-  static async removeEstate(id) {
+  static async removeEstate(id, user_id) {
     // TODO: remove indexes
-    return Estate.query().update({ status: STATUS_DELETE }).where('id', id)
+    await Estate.findByOrFail({ id, user_id })
+    const trx = await Database.beginTransaction()
+    try {
+      const estate = await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_DELETE })
+        .transacting(trx)
+
+      const taskService = require('./TaskService')
+      await taskService.deleteByEstateById(id, trx)
+
+      await trx.commit()
+      return estate
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   static async completeRemoveEstate(id) {
@@ -743,7 +779,7 @@ class EstateService {
   }
 
   /**
-   * Get estates according to matches
+   * Get estates according to es
    */
   static getActiveMatchesQuery(userId, exclude = []) {
     /*
@@ -909,22 +945,41 @@ class EstateService {
    */
   static async publishEstate(estate, request) {
     //TODO: We must add transaction here
-    const User = use('App/Models/User')
-    const user = await User.query().where('id', estate.user_id).first()
-    if (!user) return
-    if (user.company_id != null) {
-      await CompanyService.validateUserContacts(estate.user_id)
+
+    const trx = await Database.beginTransaction()
+    try {
+      const user = await User.query().where('id', estate.user_id).first()
+      if (!user) return
+      if (user.company_id != null) {
+        await CompanyService.validateUserContacts(estate.user_id)
+      }
+      await props({
+        delMatches: Database.table('matches')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
+        delDislikes: Database.table('dislikes')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+      })
+      await estate.publishEstate(trx)
+      logEvent(
+        request,
+        LOG_TYPE_PUBLISHED_PROPERTY,
+        estate.user_id,
+        { estate_id: estate.id },
+        false
+      )
+      // Run match estate
+      Event.fire('match::estate', estate.id)
+      Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
     }
-    await props({
-      delMatches: Database.table('matches').where({ estate_id: estate.id }).delete(),
-      delLikes: Database.table('likes').where({ estate_id: estate.id }).delete(),
-      delDislikes: Database.table('dislikes').where({ estate_id: estate.id }).delete(),
-    })
-    await estate.publishEstate()
-    logEvent(request, LOG_TYPE_PUBLISHED_PROPERTY, estate.user_id, { estate_id: estate.id }, false)
-    // Run match estate
-    Event.fire('match::estate', estate.id)
-    Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
   }
 
   static async handleOfflineEstate(estateId, trx) {
@@ -1093,6 +1148,7 @@ class EstateService {
       .select(
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
+      .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
   static async getFilteredCounts(userId, params) {
@@ -1133,9 +1189,7 @@ class EstateService {
   }
 
   static async getEstateHasTenant({ condition = {} }) {
-    let query = Estate.query()
-      .where('letting_status', LETTING_TYPE_LET)
-      .where('status', STATUS_DRAFT)
+    let query = Estate.query().where('letting_type', LETTING_TYPE_LET).where('status', STATUS_DRAFT)
     if (isEmpty(condition)) {
       return await query.first()
     }
@@ -1177,6 +1231,7 @@ class EstateService {
         })
       })
       .with('activeTasks')
+      .with('tasks')
       .select(
         'estates.id',
         'estates.coord',
@@ -1188,27 +1243,16 @@ class EstateService {
         'estates.rooms_number',
         'estates.number_floors',
         'estates.city',
+        'estates.cover',
+        'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
-        'estates.address'
+        'estates.address',
+        Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
-    query.innerJoin({ _ect: 'estate_current_tenants' }, function () {
-      if (params.only_outside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
-      }
-
-      if (params.only_inside_breeze) {
-        this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
-      }
-
-      if (params.tenant_id) {
-        this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
-      }
-
-      if (!params.only_outside_breeze && !params.only_inside_breeze) {
-        this.on('_ect.estate_id', 'estates.id')
-      }
+    query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
+      this.on('_ect.estate_id', 'estates.id')
     })
 
     query.leftJoin({ _u: 'users' }, function (m) {
@@ -1220,23 +1264,22 @@ class EstateService {
         TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
-
-      if (params.status) {
-        this.onIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-      }
     })
 
     query.where('estates.user_id', user.id)
     query.whereNot('estates.status', STATUS_DELETE)
-
+    query.where('estates.letting_type', LETTING_TYPE_LET)
     if (params.estate_id) {
       query.whereIn('estates.id', [params.estate_id])
     }
 
     const filter = new TaskFilters(params, query)
-    query = filter.process()
 
     query.groupBy('estates.id')
+
+    filter.afterQuery()
+
+    query.orderBy('mosturgency', 'desc')
 
     let result = null
     if (limit === -1 || page === -1) {
@@ -1247,16 +1290,23 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    const estate = result.map((r) => {
+    let estate = result.map((r) => {
       const mostUrgency = maxBy(r[0].activeTasks, (re) => {
         return re.urgency
       })
 
+      const mostUpdated =
+        r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+
       let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
+      const taskCount = (r[0].tasks || []).length || 0
       return {
-        ...omit(r[0], ['activeTasks']),
+        ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
         activeTasks: activeTasks,
+        mosturgency: mostUrgency?.urgency,
+        most_task_updated: mostUpdated,
         taskSummary: {
+          taskCount,
           activeTaskCount: r[0].activeTasks.length || 0,
           mostUrgency: mostUrgency?.urgency || null,
           mostUrgencyCount: mostUrgency
@@ -1265,10 +1315,22 @@ class EstateService {
         },
       }
     })
+
+    estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
+
+    await Promise.all(
+      estate.map(async (est) => {
+        await est.activeTasks.map(async (task) => {
+          task = await require('./TaskService').getItemWithAbsoluteUrl(task)
+          return task
+        })
+      })
+    )
+
     return estate
   }
 
-  static async getTotalLetCount(user_id, params) {
+  static async getTotalLetCount(user_id, params, filtering = true) {
     let query = Estate.query()
       .count('estates.*')
       .leftJoin('tasks', function () {
@@ -1276,29 +1338,24 @@ class EstateService {
           Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
-      .innerJoin({ _ect: 'estate_current_tenants' }, function () {
-        if (params.only_outside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on('_ect.user_id', Database.raw('null'))
-        }
-
-        if (params.only_inside_breeze) {
-          this.on('_ect.estate_id', 'estates.id').on(Database.raw('_ect.user_id IS NOT NULL'))
-        }
-
-        if (params.tenant_id) {
-          this.on('_ect.estate_id', 'estates.id').onIn('_ect.user_id', params.tenant_id)
-        }
-
-        if (!params.only_outside_breeze && !params.only_inside_breeze) {
-          this.on('_ect.estate_id', 'estates.id')
-        }
+      .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+        this.on('_ect.estate_id', 'estates.id')
+      })
+      .leftJoin({ _u: 'users' }, function (m) {
+        m.on('_ect.user_id', '_u.id')
       })
       .where('estates.user_id', user_id)
+      .where('estates.letting_type', LETTING_TYPE_LET)
       .whereNot('estates.status', STATUS_DELETE)
 
+    if (!filtering) {
+      query.groupBy('estates.id')
+      return await query
+    }
     const filter = new TaskFilters(params, query)
-    query = filter.process()
     query.groupBy('estates.id')
+    filter.afterQuery()
+
     return await query
   }
 

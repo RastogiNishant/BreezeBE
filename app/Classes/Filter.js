@@ -1,15 +1,35 @@
 const { toLower, isArray, isNull } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 const Database = use('Database')
+const moment = require('moment')
+const { DAY_FORMAT } = require('../constants')
 
 class Filter {
+  params
   query = null
   paramToField = null
   MappingInfo = null
   TableInfo = null
+  globalSearchFields = []
 
   constructor(params, query) {
+    this.params = params
     this.query = query
+  }
+
+  /**
+   * to use processGlobals, set this.globalSearchFields on the child class
+   */
+  processGlobals() {
+    if (this.params.global && this.params.global.value) {
+      const globalSearchFields = this.globalSearchFields
+      const value = this.params.global.value
+      this.query.where(function () {
+        globalSearchFields.map((field) => {
+          this.orWhere(Database.raw(`${field} ilike '%${value}%'`))
+        })
+      })
+    }
   }
 
   matchFilter = (possibleStringParams, params) => {
@@ -57,6 +77,46 @@ class Filter {
     })
   }
 
+  matchCountFilter = (possibleStringParams, params) => {
+    possibleStringParams.forEach((param) => {
+      if (params[param]) {
+        if (params[param].operator && params[param].constraints.length > 0) {
+          this.query.having(function () {
+            if (toLower(params[param].operator) === 'or') {
+              params[param].constraints.map((constraint) => {
+                if (!isNull(constraint.value)) {
+                  this.orWhere(
+                    Database.raw(
+                      Filter.parseMatchMode(
+                        Filter.mapParamToField(param),
+                        constraint.value,
+                        constraint.matchMode
+                      )
+                    )
+                  )
+                }
+              })
+            } else if (toLower(params[param].operator) === 'and') {
+              params[param].constraints.map((constraint) => {
+                if (!isNull(constraint.value)) {
+                  this.andWhere(
+                    Database.raw(
+                      Filter.parseMatchMode(
+                        Filter.mapParamToField(param),
+                        constraint.value,
+                        constraint.matchMode
+                      )
+                    )
+                  )
+                }
+              })
+            }
+          })
+        }
+      }
+    })
+  }
+
   getValues = (param, values) => {
     if (!isArray(values)) values = [values]
 
@@ -82,29 +142,88 @@ class Filter {
       ? `${Filter.TableInfo[param]}.${param}`
       : param
   }
+
   static parseMatchMode(param, value, matchMode) {
     const field = this.getField(param)
+    if (moment.utc(value, DAY_FORMAT, true).format(DAY_FORMAT) !== 'Invalid date') {
+      value = moment.utc(value, DAY_FORMAT, true).format(DAY_FORMAT)
+    }
+
     switch (matchMode) {
       case 'startsWith':
-        return `${param} ilike '${value}%'`
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} ilike '${value}%'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} ilike '${value}%'`
       case 'contains':
-        return `${param} ilike '%${value}%'`
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} ilike '%${value}%'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} ilike '%${value}%'`
       case 'notContains':
-        return `${param} not ilike '%${value}%'`
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} not ilike '%${value}%'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} not ilike '%${value}%'`
       case 'endsWith':
-        return `${param} ilike '%${value}'`
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} ilike '%${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} ilike '%${value}'`
       case 'equals':
-        return `${param} = '${value}'`
+      case 'dateIs':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} = '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} = '${value}'`
       case 'notEquals':
-        return `${param} <> '${value}'`
+      case 'dateIsNot':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} <> '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} <> '${value}'`
       case 'lt':
-        return `${param} < '${value}'`
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} < '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} < '${value}'`
       case 'lte':
-        return `${param} <= '${value}'`
+      case 'dateBefore':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} <= '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} <= '${value}'`
       case 'gt':
-        return `${param} > '${value}'`
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} > '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} > '${value}'`
       case 'gte':
-        return `${param} >= '${value}'`
+      case 'dateAfter':
+        if (isArray(field)) {
+          const filterList = field.map((f) => `${this.getField(f)} >= '${value}'`)
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} >= '${value}'`
     }
     return false
   }

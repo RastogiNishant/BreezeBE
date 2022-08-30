@@ -121,7 +121,7 @@ class User extends Model {
    *
    */
   company() {
-    return this.hasOne('App/Models/Company', 'id', 'user_id')
+    return this.hasMany('App/Models/Company', 'id', 'user_id')
   }
 
   /**
@@ -162,6 +162,10 @@ class User extends Model {
 
   estates() {
     return this.hasMany('App/Models/Estate', 'id', 'user_id')
+  }
+
+  deactivationSchedule() {
+    return this.hasOne('App/Models/UserDeactivationSchedule', 'id', 'user_id')
   }
 }
 
