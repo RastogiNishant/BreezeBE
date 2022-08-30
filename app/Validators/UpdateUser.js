@@ -15,6 +15,8 @@ const {
   LANDLORD_SIZE_SMALL,
   LANDLORD_SIZE_MID,
   LANDLORD_SIZE_LARGE,
+  CONNECT_SERVICE_INDEX,
+  MATCH_SERVICE_INDEX,
 } = require('../constants')
 
 class UpdateUser extends Base {
@@ -43,6 +45,7 @@ class UpdateUser extends Base {
       landlord_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
       company_name: yup.string().min(1).max(255),
       lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
+      preferred_services: yup.array().of(yup.number().oneOf([CONNECT_SERVICE_INDEX, MATCH_SERVICE_INDEX])).required(),
     })
 }
 

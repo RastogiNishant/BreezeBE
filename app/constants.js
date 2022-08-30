@@ -819,6 +819,12 @@ const constants = {
 
   //Date period
   TASK_RESOLVE_HISTORY_PERIOD: 3,
+
+  CONNECT_SERVICE_INDEX: 1,
+  MATCH_SERVICE_INDEX: 2,
+
+  PASS_ONBOARDING_STEP_COMPANY: 1,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES: 2,
 }
 
 module.exports = constants
