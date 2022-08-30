@@ -699,7 +699,7 @@ const constants = {
   ALL_BREEZE: 'All',
   CONNECTED_BREEZE_TEANT_LABEL: 'Connected',
   INSIDE_BREEZE_TEANT_LABEL: 'Not Connected(Breeze)',
-  OUTSIDE_BREEZE_TEANT_LABEL: 'Not Connected',
+  OUTSIDE_BREEZE_TEANT_LABEL: 'Not Connected(New)',
   PENDING_BREEZE_TEANT_LABEL: 'Pending',
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
