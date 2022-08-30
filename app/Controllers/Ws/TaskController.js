@@ -105,11 +105,7 @@ class TaskController extends BaseController {
       //we check whether this is in progress
       task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
 
-      if (
-        task.status === TASK_STATUS_NEW ||
-        task.status === TASK_STATUS_RESOLVED ||
-        task.status === TASK_STATUS_UNRESOLVED
-      ) {
+      if ([TASK_STATUS_NEW, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED].includes(task.status)) {
         //if in progress make it TASK_STATUS_NEW
         await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
         if (this.topic) {
