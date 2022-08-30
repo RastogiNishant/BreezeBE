@@ -8,7 +8,6 @@ class AddPreferredServicesSchema extends Schema {
     this.table('users', (table) => {
       // alter table
       table.string('preferred_services', 50)
-      table.integer('onboarding_step').defaultTo(0)
     })
   }
 
@@ -16,7 +15,6 @@ class AddPreferredServicesSchema extends Schema {
     this.table('users', (table) => {
       // reverse alternations
       table.dropColumn('preferred_services')
-      table.dropColumn('onboarding_step')
     })
   }
 }

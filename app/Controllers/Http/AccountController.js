@@ -28,7 +28,7 @@ const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { pick } = require('lodash')
+const { pick, trim } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -444,6 +444,12 @@ class AccountController {
 
       if (user.role == ROLE_LANDLORD) {
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
+        user.onboarding_step = 1
+        if (user.company_id && (!user.preferred_service || trim(user.preferred_service) !== '')) {
+          user.onboarding_step = 2
+        } else if (user.company_id && user.preferred_service && trim(user.preferred_service) !== '') {
+          user.onboarding_step = 3
+        }
       }
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
@@ -590,16 +596,11 @@ class AccountController {
         user = user.toJSON({ isOwner: true })
       }
 
+      user.company = null
+
       if (user.company_id) {
         company = await Company.query().where('id', user.company_id).first()
-        user.company_name = company.name
         user.company = company
-      } else {
-        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
-        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
-        const company_name = `${company_firstname} ${company_secondname}`.trim()
-        user.company_name = company_name
-        user.company = null
       }
 
       if (data.email || data.sex || data.secondname) {

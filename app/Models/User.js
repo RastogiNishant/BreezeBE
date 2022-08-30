@@ -51,7 +51,6 @@ class User extends Model {
       'is_landlord_verification_onboarded',
       'activation_status',
       'preferred_services',
-      'onboarding_step'
     ]
   }
 
