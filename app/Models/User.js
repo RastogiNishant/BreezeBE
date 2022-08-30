@@ -50,6 +50,8 @@ class User extends Model {
       'is_household_invitation_onboarded',
       'is_landlord_verification_onboarded',
       'activation_status',
+      'preferred_services',
+      'onboarding_step'
     ]
   }
 
