@@ -48,6 +48,8 @@ const {
   ERROR_USER_NOT_VERIFIED_LOGIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
   GENDER_ANY,
+  PASS_ONBOARDING_STEP_COMPANY,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -444,11 +446,11 @@ class AccountController {
 
       if (user.role == ROLE_LANDLORD) {
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
-        user.onboarding_step = 1
-        if (user.company_id && (!user.preferred_service || trim(user.preferred_service) !== '')) {
-          user.onboarding_step = 2
+        user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
+        if (user.company_id && (!user.preferred_service || trim(user.preferred_service) === '')) {
+          user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
         } else if (user.company_id && user.preferred_service && trim(user.preferred_service) !== '') {
-          user.onboarding_step = 3
+          user.onboarding_step = null
         }
       }
 
