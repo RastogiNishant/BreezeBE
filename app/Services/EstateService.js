@@ -103,7 +103,7 @@ class EstateService {
             companies.type as landlord_type
           from users
           left join companies
-          on companies.user_id=users.id
+          on companies.id=users.company_id
           ) as _c`),
         function () {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
