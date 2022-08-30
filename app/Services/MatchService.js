@@ -1211,7 +1211,7 @@ class MatchService {
 
       query.innerJoin({ _t: 'time_slots' }, function () {
         this.on('_t.estate_id', 'estates.id').on(
-          Database.raw(`start_at >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`)
+          Database.raw(`end_at >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`)
         )
       })
     } else if (visit) {
@@ -1220,13 +1220,10 @@ class MatchService {
           .where('_m.status', MATCH_STATUS_VISIT)
           .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
       })
-      query.innerJoin({
-        _v: 'visits',
-        function() {
-          this.on('_v.estate_id', 'estates.id')
-            .on('_v.user_id', userId)
-            .on(Database.raw(`end_date <= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
-        },
+      query.innerJoin({ _v: 'visits' }, function () {
+        this.on('_v.estate_id', 'estates.id')
+          .on('_v.user_id', userId)
+          .on(Database.raw(`start_date >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
       })
     } else if (share) {
       query
@@ -1259,11 +1256,9 @@ class MatchService {
       throw new AppException('Invalid filter params')
     }
 
-    if( !visit ) {
+    if (!visit) {
       query.leftJoin({ _v: 'visits' }, function () {
-        this.on('_v.user_id', '_m.user_id')
-          .on('_v.estate_id', '_m.estate_id')
-          .on('_v.user_id', userId)
+        this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
       })
     }
 
@@ -1474,27 +1469,41 @@ class MatchService {
     return data
   }
 
+  // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId, estateIds) {
-    const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_INVITE })
-      .whereIn('estate_id', estateIds)
+    const data = await Estate.query()
+      .whereIn('id', estateIds)
+      .whereHas('matches', (query) => {
+        query.where('user_id', userId).where('status', MATCH_STATUS_INVITE)
+      })
+      .whereHas('slots', (query) => {
+        query.where('time_slots.end_at', '>', moment().utc(new Date()).format(DATE_FORMAT))
+      })
       .count('*')
     return data
   }
 
+  // 2 cases:
+  // Match status should be VISIT and there should be a visit that date is greater than current date
+  // Match status should be SHARE and share should not be cancelled
   static async getTenantVisitsCount(userId, estateIds) {
-    const data = await Database.table('matches')
-      .where((query) => {
-        query
-          .where('user_id', userId)
-          .where('status', MATCH_STATUS_VISIT)
-          .whereIn('estate_id', estateIds)
+    const data = await Estate.query()
+      .where((estateQuery) => {
+        estateQuery
+          .whereIn('id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('user_id', userId).where('status', MATCH_STATUS_VISIT)
+          })
+          .whereHas('visit_relations', (query) => {
+            query
+              .where('visits.user_id', userId)
+              .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
       })
-      .orWhere((query) => {
-        query
-          .where('user_id', userId)
-          .where({ status: MATCH_STATUS_SHARE, share: true })
-          .whereIn('estate_id', estateIds)
+      .orWhere((estateQuery) => {
+        estateQuery.whereIn('id', estateIds).whereHas('matches', (query) => {
+          query.where({ status: MATCH_STATUS_SHARE, share: true })
+        })
       })
       .count('*')
 
