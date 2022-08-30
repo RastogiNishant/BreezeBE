@@ -7,6 +7,7 @@ const Company = use('App/Models/Company')
 const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
+const Database = use('Database')
 
 // const CreateCompany = require('../Validators/CreateCompany')
 // const CreateContact = require('../Validators/CreateContact')
@@ -82,7 +83,16 @@ class CompanyService {
       throw HttpException('No permission to delete')
     }
 
-    return await Company.query().where('id', companyId).update({ status: STATUS_DELETE })
+    const trx = await Database.beginTransaction()
+    try {
+      await User.query().update({ company_id: null }).where('company_id', companyId)
+      const company = await Company.query().where('id', companyId).update({ status: STATUS_DELETE })
+      await trx.commit()
+      return company
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   /**

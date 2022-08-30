@@ -927,7 +927,7 @@ class UserService {
   }
 
   static async updateCompany({ user_id, company_id }, trx) {
-    let query = User.query().where('id', user_id).update({ company_id: company_id })
+    let query = User.query().where('id', user_id).update({ company_id })
 
     if (trx) {
       return await query.transacting(trx)
