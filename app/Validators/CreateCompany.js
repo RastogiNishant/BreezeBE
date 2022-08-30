@@ -8,7 +8,7 @@ const UpdateCompany = require('./UpdateCompany')
 class CreateCompany extends Base {
   static schema = () => {
     const schema = UpdateCompany.schema().clone()
-    const required = ['type', 'address', 'name']
+    const required = ['address', 'name']
     schema.fields = reduce(
       schema.fields,
       (n, v, k) => {
