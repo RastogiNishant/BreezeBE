@@ -11,14 +11,12 @@ const Contact = use('App/Models/Contact')
 class AdjustCompanySchema extends Schema {
   async up() {
 
-    let users = await User.query().fetch()
+    let users = await User.query().fetch().whereNotNull('company_id')
 
     await Promise.all(users.toJSON().map(async (user) => {
-      if (user.company_id) {
-        const company = await Company.query().where('id', user.company_id).whereNot('status', STATUS_DELETE).first()
-        if (!company) {
-          await User.query().update({ company_id: null }).where('id', user.id)
-        }
+      const company = await Company.query().where('id', user.company_id).whereNot('status', STATUS_DELETE).first()
+      if (!company) {
+        await User.query().update({ company_id: null }).where('id', user.id)
       }
     }))
 
@@ -34,9 +32,9 @@ class AdjustCompanySchema extends Schema {
 
     const contacts = await Contact.query().fetch()
     await Promise.all(contacts.toJSON().map(async (contact) => {
-      const user = users.filter(user => user.id === contact.user_id && user.company_id)
-      if (user && user.length) {
-        await Contact.query().where('user_id', contact.user_id).update({ company_id: user[0].company_id })
+      const user = users.find(user => user.id === contact.user_id && user.company_id)
+      if (user) {
+        await Contact.query().where('user_id', contact.user_id).update({ company_id: user.company_id })
       } else {
         await Contact.query().where('user_id', contact.user_id).update({ status: STATUS_DELETE })
       }
