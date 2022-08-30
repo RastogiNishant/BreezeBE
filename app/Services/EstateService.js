@@ -24,6 +24,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
@@ -243,7 +244,7 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, ['rooms'], 'letting_type'),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -286,7 +287,7 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
       status: STATUS_DRAFT,
     }
 
@@ -434,8 +435,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
+          return r.favorite
+        })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -779,7 +780,7 @@ class EstateService {
   }
 
   /**
-   * Get estates according to matches
+   * Get estates according to es
    */
   static getActiveMatchesQuery(userId, exclude = []) {
     /*
@@ -1403,6 +1404,23 @@ class EstateService {
       return await query
     }
     return await query.transacting(trx)
+  }
+
+  static async checkCanChangeLettingStatus(result) {
+    return (result.data || []).map(estate => {
+      const isMatchCountValidToChangeLettinType =
+        0 + parseInt(estate.__meta__.visits_count) ||
+        0 + parseInt(estate.__meta__.knocked_count) ||
+        0 + parseInt(estate.__meta__.decided_count) ||
+        0 + parseInt(estate.__meta__.invite_count) ||
+        0 + parseInt(estate.__meta__.final_count) ||
+        0
+
+      return {
+        ...estate,
+        canChangeLettingType: (isMatchCountValidToChangeLettinType || estate.current_tenant) ? false : true,
+      }
+    })
   }
 }
 module.exports = EstateService

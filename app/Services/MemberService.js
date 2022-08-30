@@ -162,8 +162,8 @@ class MemberService {
             minors_count > 0
               ? FAMILY_STATUS_WITH_CHILD
               : members_count < 2
-              ? FAMILY_STATUS_SINGLE
-              : FAMILY_STATUS_NO_CHILD
+                ? FAMILY_STATUS_SINGLE
+                : FAMILY_STATUS_NO_CHILD
 
           const updatingFields = {
             members_count,
@@ -287,7 +287,7 @@ class MemberService {
   }
 
   static async allowEditMemberByPermission(user, memberId) {
-    const member = await Member.query().where('id', memberId).with('passports').firstOrFail()
+    const member = await this.getMemberWithPassport(memberId)
     const isEditingOwnMember = user.owner_id
       ? member.owner_user_id === user.id
       : member.user_id === user.id
@@ -305,6 +305,11 @@ class MemberService {
       }
       return member
     }
+  }
+
+  static async getMemberWithPassport(memberId) {
+    const member = await Member.query().where('id', memberId).with('passports').firstOrFail()
+    return member
   }
 
   /**

@@ -499,6 +499,8 @@ Route.group(() => {
     '/tenant/disconnect',
     'EstateCurrentTenantController.disconnect'
   ).middleware(['valid:InvitationIds'])
+
+  Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])

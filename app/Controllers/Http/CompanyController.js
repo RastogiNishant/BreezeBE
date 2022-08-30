@@ -1,6 +1,8 @@
 const File = use('App/Classes/File')
+const UserService = use("App/Services/UserService")
 const CompanyService = use('App/Services/CompanyService')
 const HttpException = use('App/Exceptions/HttpException')
+const Database = use('Database')
 const Event = use('Event')
 class CompanyController {
   /**
@@ -21,15 +23,21 @@ class CompanyController {
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])
+
     if (files.avatar) {
       data.avatar = files.avatar
     }
 
     try {
-      const company = await CompanyService.createCompany(data, auth.user.id)
+      const trx = await Database.beginTransaction()
+      const company = await CompanyService.createCompany(data, auth.user.id, trx)
+      await UserService.updateCompany({ user_id: auth.user.id, company_id: company.id }, trx)
+
+      await trx.commit()
       Event.fire('mautic:syncContact', auth.user.id)
       return response.res(company)
     } catch (e) {
+      await trx.rollback()
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 400)
       }
@@ -94,10 +102,11 @@ class CompanyController {
       data.avatar = files.avatar
     }
 
-    const currentContacts = await CompanyService.getContacts(auth.user.id)
-    if (currentContacts?.rows?.length > 0) {
-      throw new HttpException('only 1 contact can be added', 400)
+    if (!auth.user.company_id) {
+      throw new HttpException('Please add company first', 400)
     }
+
+    data.company_id = auth.user.company_id
     const contacts = await CompanyService.createContact(data, auth.user.id)
     Event.fire('mautic:syncContact', auth.user.id)
     return response.res(contacts)
