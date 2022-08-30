@@ -166,6 +166,8 @@ class MemberController {
    *
    */
   async updateMember({ request, auth, response }) {
+    //FIXME: id must be checked whether this id is a member of the current user
+    //this will cause sql query if NOT.
     const { id, ...data } = request.all()
     let files
     try {
@@ -519,7 +521,7 @@ class MemberController {
     }
   }
 
-  async removeInviteConnection({ request, auth, response }) { }
+  async removeInviteConnection({ request, auth, response }) {}
 
   async prepareHouseholdInvitationDetails({ auth, response }) {
     const userEmail = auth.user.email
