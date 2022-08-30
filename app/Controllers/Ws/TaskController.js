@@ -31,6 +31,28 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
+    //FIXME: make slim controller
+    let task
+    if (this.user.role === ROLE_LANDLORD) {
+      //we check whether this is in progress
+      task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
+
+      if (
+        task.status === TASK_STATUS_NEW ||
+        task.status === TASK_STATUS_RESOLVED ||
+        task.status === TASK_STATUS_UNRESOLVED
+      ) {
+        //if in progress make it TASK_STATUS_NEW
+        await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
+        if (this.topic) {
+          //Broadcast to those listening to this channel...
+          this.topic.broadcast('taskStatusUpdated', {
+            status: TASK_STATUS_INPROGRESS,
+            topic: this.socket.topic,
+          })
+        }
+      }
+    }
     const chat = await this._saveToChats(message, this.taskId)
     message.id = chat.id
     message.message = chat.text

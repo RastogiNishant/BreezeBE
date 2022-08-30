@@ -46,16 +46,15 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
-  MAX_SEARCH_ITEMS,
   TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
-  TASK_STATUS_NEW,
-  TASK_STATUS_INPROGRESS,
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1311,6 +1310,60 @@ class EstateService {
         .orderBy('created_at', 'desc')
         .paginate(1, limit)
     ).rows
+  }
+
+  static async rented(estateId, trx) {
+    // Make estate status DRAFT to hide from tenants' matches list
+    await Database.table('estates')
+      .where({ id: estateId })
+      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .transacting(trx)
+  }
+
+  static async rentable(estateId, fromInvitation) {
+    const estate = await Estate.query().where('id', estateId).firstOrFail()
+
+    if (
+      !fromInvitation &&
+      (estate.letting_type === LETTING_TYPE_LET ||
+        ![STATUS_ACTIVE, STATUS_EXPIRE].includes(estate.status))
+    ) {
+      throw new Error(
+        "You can't rent this property because this property already has been delete or rented by someone else"
+      )
+    }
+    return estate
+  }
+
+  static async unrented(estate_ids, trx = null) {
+    let query = Estate.query()
+      .whereIn('id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+      .whereNot('status', STATUS_DELETE)
+      .where('letting_type', LETTING_TYPE_LET)
+      .update({ letting_type: LETTING_TYPE_VOID })
+
+    if (!trx) {
+      return await query
+    }
+    return await query.transacting(trx)
+  }
+
+  static async checkCanChangeLettingStatus(result) {
+    return (result.data || []).map((estate) => {
+      const isMatchCountValidToChangeLettinType =
+        0 + parseInt(estate.__meta__.visits_count) ||
+        0 + parseInt(estate.__meta__.knocked_count) ||
+        0 + parseInt(estate.__meta__.decided_count) ||
+        0 + parseInt(estate.__meta__.invite_count) ||
+        0 + parseInt(estate.__meta__.final_count) ||
+        0
+
+      return {
+        ...estate,
+        canChangeLettingType:
+          isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
+      }
+    })
   }
 }
 module.exports = EstateService
