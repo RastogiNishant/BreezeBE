@@ -438,7 +438,10 @@ class Estate extends Model {
     const contact = await Contact.query()
       .select('contacts.*', '_c.avatar')
       .innerJoin({ _c: 'companies' }, '_c.id', 'contacts.company_id')
-      .where('_c.user_id', this.user_id)
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', '_c.id').on('_u.id', this.user_id)
+
+      })
       .orderBy('contacts.id')
       .first()
 
