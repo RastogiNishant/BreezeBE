@@ -829,8 +829,10 @@ class EstateService {
 
   static async getTenantTrashEstates(userId) {
     // 2 cases for trash estates
-    // Find the estates that user has match, but rented by another user
-    // Find the estates that user shared the info first, and then cancelled the share
+    // Find the estates which the user has a match, but rented by another user
+    // Find the estates which the user shared the info first, and then canceled the share
+    // Find the estates which the user has been invited but there is no available time slot anymore
+    // Find the estates which the user has a missed visit
 
     const allActiveMatches = await Match.query()
       .select('estate_id')
@@ -851,6 +853,28 @@ class EstateService {
           .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
           .andWhere('matches.share', false)
           .andWhere('matches.user_id', userId)
+      })
+      .orWhere((estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+          })
+          .whereDoesntHave('slots', (query) => {
+            query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
+      })
+      .orWhere((estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
+          })
+          .whereDoesntHave('visit_relations', (query) => {
+            query
+              .where('visits.user_id', userId)
+              .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
       })
       .fetch()
     return trashedEstates
