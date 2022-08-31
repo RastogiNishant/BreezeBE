@@ -1162,7 +1162,7 @@ class MatchService {
 
     if (!like && !dislike) {
       query.innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
       })
     }
 
@@ -1180,10 +1180,10 @@ class MatchService {
         .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
-          this.on('_l.estate_id', 'estates.id').onIn('_l.user_id', userId)
+          this.on('_l.estate_id', 'estates.id').on('_l.user_id', userId)
         })
         .leftJoin({ _m: 'matches' }, function () {
-          this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+          this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
         })
         .where(function () {
           this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
@@ -1196,10 +1196,10 @@ class MatchService {
         .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
-          this.on('_d.estate_id', 'estates.id').onIn('_d.user_id', userId)
+          this.on('_d.estate_id', 'estates.id').on('_d.user_id', userId)
         })
         .leftJoin({ _m: 'matches' }, function () {
-          this.on('_m.estate_id', 'estates.id').onIn('_m.user_id', userId)
+          this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
         })
         .where(function () {
           this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
@@ -1208,11 +1208,22 @@ class MatchService {
       query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
+
+      query.innerJoin({ _t: 'time_slots' }, function () {
+        this.on('_t.estate_id', 'estates.id').on(
+          Database.raw(`end_at >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`)
+        )
+      })
     } else if (visit) {
       query.where((query) => {
         query
           .where('_m.status', MATCH_STATUS_VISIT)
           .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
+      })
+      query.innerJoin({ _v: 'visits' }, function () {
+        this.on('_v.estate_id', 'estates.id')
+          .on('_v.user_id', userId)
+          .on(Database.raw(`start_date >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
       })
     } else if (share) {
       query
@@ -1245,9 +1256,11 @@ class MatchService {
       throw new AppException('Invalid filter params')
     }
 
-    query.leftJoin({ _v: 'visits' }, function () {
-      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
-    })
+    if (!visit) {
+      query.leftJoin({ _v: 'visits' }, function () {
+        this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+      })
+    }
 
     query.select(
       'estates.user_id',
@@ -1456,27 +1469,41 @@ class MatchService {
     return data
   }
 
+  // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId, estateIds) {
-    const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_INVITE })
-      .whereIn('estate_id', estateIds)
+    const data = await Estate.query()
+      .whereIn('id', estateIds)
+      .whereHas('matches', (query) => {
+        query.where('user_id', userId).where('status', MATCH_STATUS_INVITE)
+      })
+      .whereHas('slots', (query) => {
+        query.where('time_slots.end_at', '>', moment().utc(new Date()).format(DATE_FORMAT))
+      })
       .count('*')
     return data
   }
 
+  // 2 cases:
+  // Match status should be VISIT and there should be a visit that date is greater than current date
+  // Match status should be SHARE and share should not be cancelled
   static async getTenantVisitsCount(userId, estateIds) {
-    const data = await Database.table('matches')
-      .where((query) => {
-        query
-          .where('user_id', userId)
-          .where('status', MATCH_STATUS_VISIT)
-          .whereIn('estate_id', estateIds)
+    const data = await Estate.query()
+      .where((estateQuery) => {
+        estateQuery
+          .whereIn('id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('user_id', userId).where('status', MATCH_STATUS_VISIT)
+          })
+          .whereHas('visit_relations', (query) => {
+            query
+              .where('visits.user_id', userId)
+              .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
       })
-      .orWhere((query) => {
-        query
-          .where('user_id', userId)
-          .where({ status: MATCH_STATUS_SHARE, share: true })
-          .whereIn('estate_id', estateIds)
+      .orWhere((estateQuery) => {
+        estateQuery.whereIn('id', estateIds).whereHas('matches', (query) => {
+          query.where({ status: MATCH_STATUS_SHARE, share: true })
+        })
       })
       .count('*')
 

@@ -222,7 +222,8 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = trim(
-          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${instance.city || ''
+          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
+            instance.city || ''
           }, ${instance.country || ''}`,
           ', '
         ).toLowerCase()
@@ -230,7 +231,7 @@ class Estate extends Model {
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
-        } catch (e) { }
+        } catch (e) {}
       }
 
       if (instance.dirty?.parking_space === 0) {
@@ -335,6 +336,13 @@ class Estate extends Model {
   /**
    *
    */
+  visit_relations() {
+    return this.hasMany('App/Models/Visit')
+  }
+
+  /**
+   *
+   */
   matches() {
     return this.hasMany('App/Models/Match')
   }
@@ -393,9 +401,9 @@ class Estate extends Model {
   getLatLon() {
     const toCoord = (str, reverse = true) => {
       let [lat, lon] = String(str || '').split(',')
-        ;[lat, lon] = reverse
-          ? [parseFloat(lon), parseFloat(lat)]
-          : [parseFloat(lat), parseFloat(lon)]
+      ;[lat, lon] = reverse
+        ? [parseFloat(lon), parseFloat(lat)]
+        : [parseFloat(lat), parseFloat(lon)]
 
       return { lat: lat || 0, lon: lon || 0 }
     }

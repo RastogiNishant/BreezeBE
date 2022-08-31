@@ -49,16 +49,15 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
-  MAX_SEARCH_ITEMS,
   TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
-  TASK_STATUS_NEW,
-  TASK_STATUS_INPROGRESS,
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
   LETTING_TYPE_NA,
   LETTING_STATUS_NORMAL,
 } = require('../constants')
@@ -435,8 +434,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-          return r.favorite
-        })
+            return r.favorite
+          })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -830,8 +829,10 @@ class EstateService {
 
   static async getTenantTrashEstates(userId) {
     // 2 cases for trash estates
-    // Find the estates that user has match, but rented by another user
-    // Find the estates that user shared the info first, and then cancelled the share
+    // Find the estates which the user has a match, but rented by another user
+    // Find the estates which the user shared the info first, and then canceled the share
+    // Find the estates which the user has been invited but there is no available time slot anymore
+    // Find the estates which the user has a missed visit
 
     const allActiveMatches = await Match.query()
       .select('estate_id')
@@ -852,6 +853,28 @@ class EstateService {
           .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
           .andWhere('matches.share', false)
           .andWhere('matches.user_id', userId)
+      })
+      .orWhere((estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+          })
+          .whereDoesntHave('slots', (query) => {
+            query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
+      })
+      .orWhere((estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
+          })
+          .whereDoesntHave('visit_relations', (query) => {
+            query
+              .where('visits.user_id', userId)
+              .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
       })
       .fetch()
     return trashedEstates
@@ -1407,7 +1430,7 @@ class EstateService {
   }
 
   static async checkCanChangeLettingStatus(result) {
-    return (result.data || []).map(estate => {
+    return (result.data || []).map((estate) => {
       const isMatchCountValidToChangeLettinType =
         0 + parseInt(estate.__meta__.visits_count) ||
         0 + parseInt(estate.__meta__.knocked_count) ||
@@ -1418,7 +1441,8 @@ class EstateService {
 
       return {
         ...estate,
-        canChangeLettingType: (isMatchCountValidToChangeLettinType || estate.current_tenant) ? false : true,
+        canChangeLettingType:
+          isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
       }
     })
   }
