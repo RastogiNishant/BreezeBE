@@ -5,6 +5,8 @@ const {
   CHAT_EDIT_STATUS_EDITED,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_NEW,
+  TASK_STATUS_RESOLVED,
+  TASK_STATUS_UNRESOLVED,
 } = require('../../constants')
 
 const BaseController = require('./BaseController')
@@ -30,7 +32,11 @@ class TaskController extends BaseController {
     if (data && data.lastId) {
       lastId = data.lastId
     }
-    let previousMessages = await ChatService.getPreviousMessages({ task_id: this.taskId, lastId, user_id: this.user.id })
+    let previousMessages = await ChatService.getPreviousMessages({
+      task_id: this.taskId,
+      lastId,
+      user_id: this.user.id,
+    })
     previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
     if (this.topic) {
       this.topic.emitTo(
@@ -98,7 +104,8 @@ class TaskController extends BaseController {
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
       task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-      if (task.status === TASK_STATUS_NEW) {
+
+      if ([TASK_STATUS_NEW, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED].includes(task.status)) {
         //if in progress make it TASK_STATUS_NEW
         await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
         if (this.topic) {

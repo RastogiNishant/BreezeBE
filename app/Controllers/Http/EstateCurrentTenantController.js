@@ -10,7 +10,6 @@ class EstateCurrentTenantController {
     const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
       data,
       estate_id,
-      user_id: auth.user.id,
     })
     response.res(estateCurrentTenant)
   }
@@ -60,21 +59,25 @@ class EstateCurrentTenantController {
         })
       )
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, 400)
     }
   }
 
   async inviteTenantToAppByLetter({ request, auth, response }) {
     const { ids } = request.all()
     try {
-      response.res(
-        await EstateCurrentTenantService.getDynamicLinks({
-          ids: ids,
-          user_id: auth.user.id,
-        })
-      )
+      const { failureCount, links } = await EstateCurrentTenantService.getDynamicLinks({
+        ids: ids,
+        user_id: auth.user.id,
+      })
+
+      response.res({
+        successCount: (ids.length || 0) - failureCount,
+        failureCount,
+        links,
+      })
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -82,7 +85,7 @@ class EstateCurrentTenantController {
     const { data1, data2, password, email } = request.all()
 
     if (!data1 || !data2) {
-      throw new HttpException('Not enough params', 500)
+      throw new HttpException('Not enough params', 400)
     }
 
     response.res(
@@ -98,7 +101,7 @@ class EstateCurrentTenantController {
   async acceptAlreadyRegisterdOutsideTenant({ request, response, auth }) {
     const { data1, data2 } = request.all()
     if (!data1 || !data2) {
-      throw new HttpException('Not enough params', 500)
+      throw new HttpException('Not enough params', 400)
     }
 
     response.res(
@@ -113,19 +116,23 @@ class EstateCurrentTenantController {
   async inviteTenantToAppBySMS({ request, auth, response }) {
     const { ids } = request.all()
     try {
-      const errorPhonNumbers = await EstateCurrentTenantService.inviteTenantToAppBySMS({
-        ids: ids,
-        user_id: auth.user.id,
-      })
-
-      if (errorPhonNumbers && errorPhonNumbers.length) {
-        const msg = ` Not delivered to ` + errorPhonNumbers.join(',')
-        throw new HttpException(msg, 500)
-      }
-
-      response.res(true)
+      response.res(
+        await EstateCurrentTenantService.inviteTenantToAppBySMS({
+          ids: ids,
+          user_id: auth.user.id,
+        })
+      )
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async disconnect({ request, auth, response }) {
+    const { ids } = request.all()
+    try {
+      response.res(await EstateCurrentTenantService.disconnect(auth.user.id, ids))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
 }

@@ -28,7 +28,7 @@ const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { pick } = require('lodash')
+const { pick, trim } = require('lodash')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -48,6 +48,8 @@ const {
   ERROR_USER_NOT_VERIFIED_LOGIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
   GENDER_ANY,
+  PASS_ONBOARDING_STEP_COMPANY,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -299,6 +301,8 @@ class AccountController {
       throw new HttpException(e.message, 400)
     }
 
+    Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
+
     if (!from_web) {
       return response.res(true)
     }
@@ -421,7 +425,9 @@ class AccountController {
       .where('users.id', auth.current.user.id)
       .with('household')
       .with('plan')
-      .with('company')
+      .with('company', function (query) {
+        query.with('contacts')
+      })
       .with('tenantPaymentPlan')
       .firstOrFail()
 
@@ -441,13 +447,17 @@ class AccountController {
       })
 
       if (user.role == ROLE_LANDLORD) {
-        if (!user.company || !user.company.length) {
-          user.company = [{
-            name: `${_.isEmpty(user.firstname) ? '' : user.firstname} ${_.isEmpty(user.secondname) ? '' : user.secondname}`,
-            address: null,
-          }]
-        }
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
+        user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
+        if (user.company_id && (!user.preferred_service || trim(user.preferred_service) === '')) {
+          user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
+        } else if (
+          user.company_id &&
+          user.preferred_service &&
+          trim(user.preferred_service) !== ''
+        ) {
+          user.onboarding_step = null
+        }
       }
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
@@ -535,8 +545,8 @@ class AccountController {
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
-        ? delete data.prospect_visibility
-        : data
+      ? delete data.prospect_visibility
+      : data
 
     const trx = await Database.beginTransaction()
     let company
@@ -594,16 +604,11 @@ class AccountController {
         user = user.toJSON({ isOwner: true })
       }
 
+      user.company = null
+
       if (user.company_id) {
         company = await Company.query().where('id', user.company_id).first()
-        user.company_name = company.name
         user.company = company
-      } else {
-        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
-        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
-        const company_name = `${company_firstname} ${company_secondname}`.trim()
-        user.company_name = company_name
-        user.company = null
       }
 
       if (data.email || data.sex || data.secondname) {
@@ -689,7 +694,7 @@ class AccountController {
       auth.user.avatar = avatarUrl
       await auth.user.save()
     }
-    fs.unlink(tmpFile, () => { })
+    fs.unlink(tmpFile, () => {})
 
     response.res(auth.user)
   }
@@ -893,13 +898,13 @@ class AccountController {
       const data = {
         purchase: tenantPremiumPlans
           ? pick(tenantPremiumPlans.toJSON(), [
-            'id',
-            'plan_id',
-            'isCancelled',
-            'startDate',
-            'endDate',
-            'app',
-          ])
+              'id',
+              'plan_id',
+              'isCancelled',
+              'startDate',
+              'endDate',
+              'app',
+            ])
           : null,
       }
       response.res(data)

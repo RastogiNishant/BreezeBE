@@ -50,6 +50,7 @@ class User extends Model {
       'is_household_invitation_onboarded',
       'is_landlord_verification_onboarded',
       'activation_status',
+      'preferred_services',
     ]
   }
 
@@ -121,7 +122,7 @@ class User extends Model {
    *
    */
   company() {
-    return this.hasMany('App/Models/Company', 'id', 'user_id')
+    return this.belongsTo('App/Models/Company', 'company_id', 'id')
   }
 
   /**

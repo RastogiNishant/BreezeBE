@@ -24,6 +24,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
@@ -48,17 +49,17 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   MATCH_STATUS_FINISH,
-  MAX_SEARCH_ITEMS,
   TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
-  TASK_STATUS_NEW,
-  TASK_STATUS_INPROGRESS,
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   TRANSPORT_TYPE_WALK,
   SHOW_ACTIVE_TASKS_COUNT,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
   LETTING_TYPE_NA,
+  LETTING_STATUS_NORMAL,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -93,7 +94,22 @@ class EstateService {
 
   static async getEstateWithDetails(id, user_id) {
     const estateQuery = Estate.query()
-      .where('id', id)
+      .select(Database.raw('estates.*'))
+      .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
+      .leftJoin(
+        Database.raw(`
+          (select 
+            users.id as user_id,
+            companies.type as landlord_type
+          from users
+          left join companies
+          on companies.id=users.company_id
+          ) as _c`),
+        function () {
+          this.on('estates.user_id', '_c.user_id').on('estates.id', id)
+        }
+      )
+      .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
       .with('files')
@@ -129,7 +145,7 @@ class EstateService {
       })
 
     if (user_id) {
-      estateQuery.where('user_id', user_id)
+      estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
   }
@@ -227,7 +243,7 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, ['rooms'], 'letting_type'),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -270,7 +286,7 @@ class EstateService {
     const { ...data } = request.all()
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
       status: STATUS_DRAFT,
     }
 
@@ -323,7 +339,6 @@ class EstateService {
         q.with('room_amenities').with('images')
       })
       .with('files')
-
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
@@ -419,8 +434,8 @@ class EstateService {
       const favoriteRooms = room.favorite
         ? [room]
         : filter(rooms.toJSON(), function (r) {
-          return r.favorite
-        })
+            return r.favorite
+          })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
 
@@ -764,7 +779,7 @@ class EstateService {
   }
 
   /**
-   * Get estates according to matches
+   * Get estates according to es
    */
   static getActiveMatchesQuery(userId, exclude = []) {
     /*
@@ -814,8 +829,10 @@ class EstateService {
 
   static async getTenantTrashEstates(userId) {
     // 2 cases for trash estates
-    // Find the estates that user has match, but rented by another user
-    // Find the estates that user shared the info first, and then cancelled the share
+    // Find the estates which the user has a match, but rented by another user
+    // Find the estates which the user shared the info first, and then canceled the share
+    // Find the estates which the user has been invited but there is no available time slot anymore
+    // Find the estates which the user has a missed visit
 
     const allActiveMatches = await Match.query()
       .select('estate_id')
@@ -836,6 +853,28 @@ class EstateService {
           .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
           .andWhere('matches.share', false)
           .andWhere('matches.user_id', userId)
+      })
+      .orWhere((estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+          })
+          .whereDoesntHave('slots', (query) => {
+            query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
+      })
+      .orWhere((estateQuery) => {
+        estateQuery
+          .whereIn('estates.id', estateIds)
+          .whereHas('matches', (query) => {
+            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
+          })
+          .whereDoesntHave('visit_relations', (query) => {
+            query
+              .where('visits.user_id', userId)
+              .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+          })
       })
       .fetch()
     return trashedEstates
@@ -1352,6 +1391,60 @@ class EstateService {
         .orderBy('created_at', 'desc')
         .paginate(1, limit)
     ).rows
+  }
+
+  static async rented(estateId, trx) {
+    // Make estate status DRAFT to hide from tenants' matches list
+    await Database.table('estates')
+      .where({ id: estateId })
+      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .transacting(trx)
+  }
+
+  static async rentable(estateId, fromInvitation) {
+    const estate = await Estate.query().where('id', estateId).firstOrFail()
+
+    if (
+      !fromInvitation &&
+      (estate.letting_type === LETTING_TYPE_LET ||
+        ![STATUS_ACTIVE, STATUS_EXPIRE].includes(estate.status))
+    ) {
+      throw new Error(
+        "You can't rent this property because this property already has been delete or rented by someone else"
+      )
+    }
+    return estate
+  }
+
+  static async unrented(estate_ids, trx = null) {
+    let query = Estate.query()
+      .whereIn('id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+      .whereNot('status', STATUS_DELETE)
+      .where('letting_type', LETTING_TYPE_LET)
+      .update({ letting_type: LETTING_TYPE_VOID })
+
+    if (!trx) {
+      return await query
+    }
+    return await query.transacting(trx)
+  }
+
+  static async checkCanChangeLettingStatus(result) {
+    return (result.data || []).map((estate) => {
+      const isMatchCountValidToChangeLettinType =
+        0 + parseInt(estate.__meta__.visits_count) ||
+        0 + parseInt(estate.__meta__.knocked_count) ||
+        0 + parseInt(estate.__meta__.decided_count) ||
+        0 + parseInt(estate.__meta__.invite_count) ||
+        0 + parseInt(estate.__meta__.final_count) ||
+        0
+
+      return {
+        ...estate,
+        canChangeLettingType:
+          isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
+      }
+    })
   }
 }
 module.exports = EstateService

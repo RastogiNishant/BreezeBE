@@ -127,6 +127,7 @@ class UserService {
       email: user.email,
       method,
     })
+    Event.fire('mautic:createContact', user.id)
 
     return user
   }
@@ -207,10 +208,10 @@ class UserService {
       const lang = paramLang
         ? paramLang
         : data && data.length && data[0].lang
-        ? data[0].lang
-        : user.lang
-        ? user.lang
-        : DEFAULT_LANG
+          ? data[0].lang
+          : user.lang
+            ? user.lang
+            : DEFAULT_LANG
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -905,7 +906,10 @@ class UserService {
         trx
       )
 
-      Event.fire('mautic:createContact', user.id)
+      if (!trx) {
+        // If there is trx, we should fire this event after the transaction is committed
+        Event.fire('mautic:createContact', user.id)
+      }
 
       await UserService.sendConfirmEmail(user, from_web)
       return user
@@ -920,6 +924,17 @@ class UserService {
 
   static async getCountOfProspects() {
     return await User.query().count('*').where('role', ROLE_USER)
+  }
+
+  static async updateCompany({ user_id, company_id }, trx) {
+    let query = User.query().where('id', user_id).update({ company_id })
+
+    if (trx) {
+      return await query.transacting(trx)
+    }
+
+    return await query
+
   }
 }
 

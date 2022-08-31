@@ -602,6 +602,10 @@ const constants = {
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
 
+  SALUTATION_MR_LABEL: 'Mr.',
+  SALUTATION_MS_LABEL: 'Ms.',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
+
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
   SALUTATION_SIR_OR_MADAM: 3,
@@ -674,7 +678,6 @@ const constants = {
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
-  TASK_STATUS_CLOSED: 5,
 
   BREEZE_BOT_USER: {
     id: 0,
@@ -692,8 +695,10 @@ const constants = {
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
   TASK_STATUS_CLOSED_LABEL: 'Closed',
 
-  IS_INSIDE_BREEZE: true,
-  IS_OUTSIDE_BREEZE: false,
+  ALL_BREEZE: 'All',
+  INSIDE_BREEZE_TEANT_LABEL: 'Connected',
+  OUTSIDE_BREEZE_TEANT_LABEL: 'Not Connected',
+  PENDING_BREEZE_TEANT_LABEL: 'Pending',
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
   CHAT_EDIT_STATUS_EDITED: 'edited',
@@ -798,9 +803,28 @@ const constants = {
     },
   ],
 
-  ESTATE_FLOOR_DIRECTION_LEFT: 1,
-  ESTATE_FLOOR_DIRECTION_RIGHT: 2,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT: 3,
+  ESTATE_FLOOR_DIRECTION_NA: 1,
+  ESTATE_FLOOR_DIRECTION_LEFT: 2,
+  ESTATE_FLOOR_DIRECTION_RIGHT: 3,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT: 4,
+
+  TENANT_INVITATION_EXPIRATION_DATE: 2,
+
+  ESTATE_VALID_ADDRESS_LABEL: 'Valid',
+  ESTATE_INVALID_ADDRESS_LABEL: 'Error',
+  ESTATE_ALL_ADDRESS_LABEL: 'All',
+
+  EMAIL_REG_EXP: /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
+  PHONE_REG_EXP: /^\+[1-9]{1,2}[0-9]{9,11}$/,
+
+  //Date period
+  TASK_RESOLVE_HISTORY_PERIOD: 3,
+
+  CONNECT_SERVICE_INDEX: 1,
+  MATCH_SERVICE_INDEX: 2,
+
+  PASS_ONBOARDING_STEP_COMPANY: 1,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES: 2,
 }
 
 module.exports = constants
