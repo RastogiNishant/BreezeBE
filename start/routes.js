@@ -495,10 +495,9 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
 
-  Route.post(
-    '/tenant/disconnect',
-    'EstateCurrentTenantController.disconnect'
-  ).middleware(['valid:InvitationIds'])
+  Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
+    'valid:InvitationIds',
+  ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
 })
@@ -733,7 +732,7 @@ Route.group(() => {
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
-
+  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
@@ -752,7 +751,6 @@ Route.group(() => {
   Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
     'valid:Pagination,TaskFilter',
   ])
-  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -777,13 +775,17 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware(['valid:PredefinedMessageFilter'])
+  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware([
+    'valid:PredefinedMessageFilter',
+  ])
 })
   .prefix('api/v1/connect/predefinedMessage')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware(['valid:PredefinedMessageChoiceFilter'])
+  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware([
+    'valid:PredefinedMessageChoiceFilter',
+  ])
 })
   .prefix('api/v1/connect/predefinedMessageChoice')
   .middleware(['auth:jwt,jwtLandlord'])
