@@ -18,7 +18,7 @@ const {
   SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
-  MATCH_STATUS_FINISH,  
+  MATCH_STATUS_FINISH,
   SALUTATION_MR_LABEL,
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
@@ -180,10 +180,12 @@ class EstateCurrentTenantService {
   }
 
   static async getAllInsideCurrentTenant(estate_ids) {
-    return (await EstateCurrentTenant.query()
-      .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
-      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
-      .fetch()).rows
+    return (
+      await EstateCurrentTenant.query()
+        .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+        .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
+        .fetch()
+    ).rows
   }
 
   static async getAll({ user_id, estate_id, status, tenant_id, page = -1, limit = -1 }) {
@@ -367,7 +369,6 @@ class EstateCurrentTenantService {
     }
 
     const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
-
     if (existingUser) {
       uri += `&user_id=${existingUser.id}`
     }
