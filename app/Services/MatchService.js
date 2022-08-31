@@ -1215,15 +1215,28 @@ class MatchService {
         )
       })
     } else if (visit) {
+      // 2 conditions here
+      // 1. There is a match with status VISIT and there is a not passed visit
+      // 2. There is a match with status SHARE, match's share column is true (not cancelled), there is at least 1 visit
       query.where((query) => {
         query
-          .where('_m.status', MATCH_STATUS_VISIT)
-          .orWhere({ '_m.status': MATCH_STATUS_SHARE, share: true })
-      })
-      query.innerJoin({ _v: 'visits' }, function () {
-        this.on('_v.estate_id', 'estates.id')
-          .on('_v.user_id', userId)
-          .on(Database.raw(`start_date >= '${moment().utc(new Date()).format(DATE_FORMAT)}'`))
+          .where((innerQuery) => {
+            innerQuery
+              .where('_m.status', MATCH_STATUS_VISIT)
+              .whereHas('visit_relations', (query) => {
+                query
+                  .where('visits.user_id', userId)
+                  .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
+              })
+          })
+          .orWhere((innerQuery) => {
+            innerQuery
+              .where('_m.status', MATCH_STATUS_SHARE)
+              .andWhere('_m.share', true)
+              .whereHas('visit_relations', (query) => {
+                query.where('visits.user_id', userId)
+              })
+          })
       })
     } else if (share) {
       query
@@ -1256,11 +1269,9 @@ class MatchService {
       throw new AppException('Invalid filter params')
     }
 
-    if (!visit) {
-      query.leftJoin({ _v: 'visits' }, function () {
-        this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
-      })
-    }
+    query.leftJoin({ _v: 'visits' }, function () {
+      this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
+    })
 
     query.select(
       'estates.user_id',
@@ -1474,7 +1485,7 @@ class MatchService {
     const data = await Estate.query()
       .whereIn('id', estateIds)
       .whereHas('matches', (query) => {
-        query.where('user_id', userId).where('status', MATCH_STATUS_INVITE)
+        query.where('matches.user_id', userId).where('matches.status', MATCH_STATUS_INVITE)
       })
       .whereHas('slots', (query) => {
         query.where('time_slots.end_at', '>', moment().utc(new Date()).format(DATE_FORMAT))
@@ -1485,14 +1496,14 @@ class MatchService {
 
   // 2 cases:
   // Match status should be VISIT and there should be a visit that date is greater than current date
-  // Match status should be SHARE and share should not be cancelled
+  // Match status should be SHARE, share should not be cancelled and there should be at least 1 visit
   static async getTenantVisitsCount(userId, estateIds) {
     const data = await Estate.query()
       .where((estateQuery) => {
         estateQuery
           .whereIn('id', estateIds)
           .whereHas('matches', (query) => {
-            query.where('user_id', userId).where('status', MATCH_STATUS_VISIT)
+            query.where('matches.user_id', userId).where('matches.status', MATCH_STATUS_VISIT)
           })
           .whereHas('visit_relations', (query) => {
             query
@@ -1501,9 +1512,17 @@ class MatchService {
           })
       })
       .orWhere((estateQuery) => {
-        estateQuery.whereIn('id', estateIds).whereHas('matches', (query) => {
-          query.where({ status: MATCH_STATUS_SHARE, share: true })
-        })
+        estateQuery
+          .whereIn('id', estateIds)
+          .whereHas('matches', (query) => {
+            query
+              .where('matches.status', MATCH_STATUS_SHARE)
+              .where('matches.share', true)
+              .where('matches.user_id', userId)
+          })
+          .whereHas('visit_relations', (query) => {
+            query.where('visits.user_id', userId)
+          })
       })
       .count('*')
 
