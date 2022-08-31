@@ -425,7 +425,9 @@ class AccountController {
       .where('users.id', auth.current.user.id)
       .with('household')
       .with('plan')
-      .with('company')
+      .with('company', function (query) {
+        query.with('contacts')
+      })
       .with('tenantPaymentPlan')
       .firstOrFail()
 
@@ -449,7 +451,11 @@ class AccountController {
         user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
         if (user.company_id && (!user.preferred_service || trim(user.preferred_service) === '')) {
           user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
-        } else if (user.company_id && user.preferred_service && trim(user.preferred_service) !== '') {
+        } else if (
+          user.company_id &&
+          user.preferred_service &&
+          trim(user.preferred_service) !== ''
+        ) {
           user.onboarding_step = null
         }
       }
@@ -539,8 +545,8 @@ class AccountController {
     auth.user.role === ROLE_USER
       ? delete data.landlord_visibility
       : auth.user.role === ROLE_LANDLORD
-        ? delete data.prospect_visibility
-        : data
+      ? delete data.prospect_visibility
+      : data
 
     const trx = await Database.beginTransaction()
     let company
@@ -688,7 +694,7 @@ class AccountController {
       auth.user.avatar = avatarUrl
       await auth.user.save()
     }
-    fs.unlink(tmpFile, () => { })
+    fs.unlink(tmpFile, () => {})
 
     response.res(auth.user)
   }
@@ -892,13 +898,13 @@ class AccountController {
       const data = {
         purchase: tenantPremiumPlans
           ? pick(tenantPremiumPlans.toJSON(), [
-            'id',
-            'plan_id',
-            'isCancelled',
-            'startDate',
-            'endDate',
-            'app',
-          ])
+              'id',
+              'plan_id',
+              'isCancelled',
+              'startDate',
+              'endDate',
+              'app',
+            ])
           : null,
       }
       response.res(data)
