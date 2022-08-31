@@ -14,10 +14,12 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_CLOSED,
   ALL_BREEZE,
+  CONNECTED_BREEZE_TEANT_LABEL,
   INSIDE_BREEZE_TEANT_LABEL,
   OUTSIDE_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
   DATE_FORMAT,
+  STATUS_ACTIVE,
 } = require('../constants')
 
 class TaskFilters extends Filter {
@@ -91,22 +93,25 @@ class TaskFilters extends Filter {
       !params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
-          this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
+        if (params.breeze_type.value.findIndex(v => v === CONNECTED_BREEZE_TEANT_LABEL) !== -1) {
+          this.query.orWhere(Database.raw(`_ect.user_id IS NOT NULL and _ect.status = ${STATUS_ACTIVE}`))
         }
 
-        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
+        if (params.breeze_type.value.findIndex(v => v === INSIDE_BREEZE_TEANT_LABEL) !== -1) {
           this.query.orWhere(
             Database.raw(`
-              (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
-              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
-                .utc(new Date())
-                .subtract(2, 'days')
-                .format(DATE_FORMAT)}' )`)
+              _ect.user_id is null and _iu.email is not null AND (_ect.code IS NULL OR (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment.utc(new Date()).subtract(2, 'days').format(DATE_FORMAT)}' )) `)
           )
         }
 
-        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
+        if (params.breeze_type.value.findIndex(v => v === OUTSIDE_BREEZE_TEANT_LABEL) !== -1) {
+          this.query.orWhere(
+            Database.raw(`
+            _ect.user_id is null and _iu.email is null AND (_ect.code IS NULL OR (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment.utc(new Date()).subtract(2, 'days').format(DATE_FORMAT)}' ))`)
+          )
+        }
+
+        if (params.breeze_type.value.findIndex(v => v === PENDING_BREEZE_TEANT_LABEL) !== -1) {
           this.query.orWhere(
             Database.raw(`
               _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
