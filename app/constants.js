@@ -693,7 +693,6 @@ const constants = {
   TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
   TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
-  TASK_STATUS_CLOSED_LABEL: 'Closed',
 
   ALL_BREEZE: 'All',
   CONNECTED_BREEZE_TEANT_LABEL: 'Connected',

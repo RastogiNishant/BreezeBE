@@ -9,13 +9,11 @@ const {
   TASK_STATUS_INPROGRESS_LABEL,
   TASK_STATUS_UNRESOLVED_LABEL,
   TASK_STATUS_RESOLVED_LABEL,
-  TASK_STATUS_CLOSED_LABEL,
 
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
 
   URGENCY_LOW_LABEL,
   URGENCY_NORMAL_LABEL,
@@ -57,7 +55,6 @@ class TaskFilter extends Base {
                   TASK_STATUS_INPROGRESS_LABEL,
                   TASK_STATUS_UNRESOLVED_LABEL,
                   TASK_STATUS_RESOLVED_LABEL,
-                  TASK_STATUS_CLOSED_LABEL,
                 ])
             )
             .nullable(),
@@ -199,7 +196,6 @@ class TaskFilter extends Base {
               TASK_STATUS_INPROGRESS,
               TASK_STATUS_RESOLVED,
               TASK_STATUS_UNRESOLVED,
-              TASK_STATUS_CLOSED,
             ])
         )
         .nullable(),
