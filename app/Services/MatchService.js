@@ -2428,7 +2428,6 @@ class MatchService {
         .where('status', MATCH_STATUS_FINISH)
         .where('user_id', user_id)
         .count('*')
-      console.log({ count })
       return parseInt(count) > 0
     } catch (e) {
       console.log(e)
