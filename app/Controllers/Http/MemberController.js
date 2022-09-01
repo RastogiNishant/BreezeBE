@@ -25,6 +25,12 @@ const {
   STATUS_ACTIVE,
   STATUS_DELETE,
   MEMBER_FILE_TYPE_PASSPORT,
+  MEMBER_FILE_TYPE_DEBT,
+  MEMBER_FILE_RENT_ARREARS_DOC,
+  MEMBER_FILE_DEBT_PROOFS_DOC,
+  MEMBER_FILE_PASSPORT_DOC,
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
 } = require('../../constants')
 /**
  *
@@ -173,9 +179,9 @@ class MemberController {
     try {
       files = await File.saveRequestFiles(request, [
         { field: 'avatar', mime: imageMimes, isPublic: true },
-        { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
-        { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: imageMimes, isPublic: false },
+        { field: MEMBER_FILE_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: imageMimes, isPublic: false },
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)
@@ -463,6 +469,13 @@ class MemberController {
       if (!member) {
         throw new HttpException('No permission to add passport')
       }
+
+      files = await File.saveRequestFiles(request, [
+        { field: 'avatar', mime: imageMimes, isPublic: true },
+        { field: MEMBER_FILE_EXTRA_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: imageMimes, isPublic: false },
+      ])
 
       const files = await File.saveRequestFiles(request, [
         { field: 'passport', mime: imageMimes, isPublic: false },
