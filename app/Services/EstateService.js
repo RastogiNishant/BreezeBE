@@ -60,6 +60,7 @@ const {
   MATCH_STATUS_VISIT,
   LETTING_TYPE_NA,
   LETTING_STATUS_NORMAL,
+  ROLE_USER,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1251,7 +1252,7 @@ class EstateService {
     let query = Estate.query()
       .with('current_tenant', function (b) {
         b.with('user', function (u) {
-          u.select('id', 'firstname', 'secondname', 'avatar')
+          u.select('id', 'firstname', 'secondname', 'email', 'avatar')
         })
       })
       .with('activeTasks')
@@ -1279,8 +1280,8 @@ class EstateService {
       this.on('_ect.estate_id', 'estates.id')
     })
 
-    query.leftJoin({ _u: 'users' }, function (m) {
-      m.on('_ect.user_id', '_u.id')
+    query.leftJoin({ _u: 'users' }, function () {
+      this.on('_ect.user_id', '_u.id')
     })
 
     query.leftJoin('tasks', function () {
@@ -1365,8 +1366,8 @@ class EstateService {
       .leftJoin({ _ect: 'estate_current_tenants' }, function () {
         this.on('_ect.estate_id', 'estates.id')
       })
-      .leftJoin({ _u: 'users' }, function (m) {
-        m.on('_ect.user_id', '_u.id')
+      .leftJoin({ _u: 'users' }, function () {
+        this.on('_ect.user_id', '_u.id')
       })
       .where('estates.user_id', user_id)
       .where('estates.letting_type', LETTING_TYPE_LET)

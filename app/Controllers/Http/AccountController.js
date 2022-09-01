@@ -448,16 +448,11 @@ class AccountController {
 
       if (user.role == ROLE_LANDLORD) {
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
-        user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
-        if (user.company_id && (!user.preferred_service || trim(user.preferred_service) === '')) {
-          user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
-        } else if (
-          user.company_id &&
-          user.preferred_service &&
-          trim(user.preferred_service) !== ''
-        ) {
-          user.onboarding_step = null
-        }
+        user = UserService.setOnboardingStep(user)
+      } else if (user.role == ROLE_USER) {
+        user.has_final_match = await require('../../Services/MatchService').checkUserHasFinalMatch(
+          user.id
+        )
       }
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
@@ -466,8 +461,15 @@ class AccountController {
     if (tenant) {
       user.tenant = tenant
     }
+
+    if (user.preferred_services) {
+      console.log('user.preferred_services', user)
+      user.preferred_services = JSON.parse(user.preferred_services)
+    }
+
     user = user.toJSON({ isOwner: true })
     user.is_admin = false
+
     return response.res(user)
   }
 
@@ -625,6 +627,7 @@ class AccountController {
 
         await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
       }
+      user = UserService.setOnboardingStep(user)
 
       Event.fire('mautic:syncContact', user.id)
       await trx.commit()

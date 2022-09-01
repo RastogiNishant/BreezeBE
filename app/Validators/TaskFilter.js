@@ -9,13 +9,11 @@ const {
   TASK_STATUS_INPROGRESS_LABEL,
   TASK_STATUS_UNRESOLVED_LABEL,
   TASK_STATUS_RESOLVED_LABEL,
-  TASK_STATUS_CLOSED_LABEL,
 
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
 
   URGENCY_LOW_LABEL,
   URGENCY_NORMAL_LABEL,
@@ -23,8 +21,8 @@ const {
   URGENCY_SUPER_LABEL,
 
   ALL_BREEZE,
-  INSIDE_BREEZE_TEANT_LABEL,
-  OUTSIDE_BREEZE_TEANT_LABEL,
+  CONNECTED_BREEZE_TEANT_LABEL,
+  NOT_CONNECTED_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
 
   FILTER_CONSTRAINTS_MATCH_MODES,
@@ -56,7 +54,6 @@ class TaskFilter extends Base {
                   TASK_STATUS_INPROGRESS_LABEL,
                   TASK_STATUS_UNRESOLVED_LABEL,
                   TASK_STATUS_RESOLVED_LABEL,
-                  TASK_STATUS_CLOSED_LABEL,
                 ])
             )
             .nullable(),
@@ -125,11 +122,12 @@ class TaskFilter extends Base {
             .array()
             .of(
               yup
-                .string().oneOf([
+                .string()
+                .oneOf([
                   ALL_BREEZE,
-                  INSIDE_BREEZE_TEANT_LABEL,
-                  OUTSIDE_BREEZE_TEANT_LABEL,
-                  PENDING_BREEZE_TEANT_LABEL
+                  CONNECTED_BREEZE_TEANT_LABEL,
+                  NOT_CONNECTED_BREEZE_TEANT_LABEL,
+                  PENDING_BREEZE_TEANT_LABEL,
                 ])
             )
             .nullable(),
@@ -197,7 +195,6 @@ class TaskFilter extends Base {
               TASK_STATUS_INPROGRESS,
               TASK_STATUS_RESOLVED,
               TASK_STATUS_UNRESOLVED,
-              TASK_STATUS_CLOSED,
             ])
         )
         .nullable(),

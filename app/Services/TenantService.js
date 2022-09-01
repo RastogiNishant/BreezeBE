@@ -360,8 +360,8 @@ class TenantService {
     return tenant && tenant.selected_adults_count && member
   }
 
-  static async updateTenantAddress({ user_id, address }, trx) {
-    let tenant = await this.getTenant(user_id)
+  static async updateTenantAddress({ user, address }, trx) {
+    let tenant = await getOrCreateTenant(user, trx)
     const { lon, lat } = await GeoService.geeGeoCoordByAddress(address)
 
     tenant.address = address

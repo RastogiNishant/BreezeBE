@@ -94,6 +94,9 @@ class User extends Model {
       if (userInstance.dirty.email || userInstance.dirty.role) {
         userInstance.uid = User.getHash(userInstance.email, userInstance.role)
       }
+      if (userInstance.preferred_services && Array.isArray(userInstance.preferred_services)) {
+        userInstance.preferred_services = JSON.stringify(userInstance.preferred_services)
+      }
     })
   }
 
