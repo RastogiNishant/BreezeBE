@@ -244,7 +244,7 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms'], 'letting_type'),
+      ...omit(data, ['rooms']),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
