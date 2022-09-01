@@ -1036,7 +1036,7 @@ class MatchService {
     }
 
     await EstateService.rented(estate_id, trx)
-    await TenantService.updateTenantAddress({ user_id: user.id, address: estate.address }, trx)
+    await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
     }
@@ -2420,6 +2420,20 @@ class MatchService {
       ],
       [id]
     )
+  }
+
+  static async checkUserHasFinalMatch(user_id) {
+    try {
+      const [{ count }] = await Database.table('matches')
+        .where('status', MATCH_STATUS_FINISH)
+        .where('user_id', user_id)
+        .count('*')
+      console.log({ count })
+      return parseInt(count) > 0
+    } catch (e) {
+      console.log(e)
+      return false
+    }
   }
 }
 
