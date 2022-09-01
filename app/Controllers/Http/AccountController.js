@@ -459,6 +459,10 @@ class AccountController {
         ) {
           user.onboarding_step = null
         }
+      } else if (user.role == ROLE_USER) {
+        user.has_final_match = await require('../../Services/MatchService').checkUserHasFinalMatch(
+          user.id
+        )
       }
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
