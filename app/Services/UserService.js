@@ -208,10 +208,10 @@ class UserService {
       const lang = paramLang
         ? paramLang
         : data && data.length && data[0].lang
-          ? data[0].lang
-          : user.lang
-            ? user.lang
-            : DEFAULT_LANG
+        ? data[0].lang
+        : user.lang
+        ? user.lang
+        : DEFAULT_LANG
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -514,6 +514,8 @@ class UserService {
       .with('members.incomes')
       .with('members.incomes.proofs')
       .with('members.passports')
+      .with('extra_residency_proof')
+      .with('extra_score_proof')
 
     const tenant = await tenantQuery.first()
     if (!tenant) {
@@ -934,7 +936,6 @@ class UserService {
     }
 
     return await query
-
   }
 }
 

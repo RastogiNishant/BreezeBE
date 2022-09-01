@@ -94,13 +94,16 @@ class EstateController {
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
+            country || 'Germany'
           }`
         ).toLowerCase()
 
-        const txt = `The landlord '${user.email
-          }' created a property with an address '${address}' in ${process.env.NODE_ENV || 'local'
-          } environment`
+        const txt = `The landlord '${
+          user.email
+        }' created a property with an address '${address}' in ${
+          process.env.NODE_ENV || 'local'
+        } environment`
 
         await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
@@ -157,46 +160,10 @@ class EstateController {
       let members = await MemberService.getMembers(tenant_id)
       const company = await CompanyService.getUserCompany(auth.user.id)
       if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
-        members = members.toJSON().map((member) => pick(member, Member.limitFieldsList))
-        tenant = tenant.toJSON({ isShort: true })
-      } else {
-        members = await Promise.all(
-          members.toJSON().map(async (member) => {
-            const incomes = await Promise.all(
-              member.incomes.map(async (income) => {
-                const proofs = await Promise.all(
-                  income.proofs.map(async (proof) => {
-                    if (!proof.file) return proof
-                    proof.file = await FileBucket.getProtectedUrl(proof.file)
-                    return proof
-                  })
-                )
-                income = {
-                  ...income,
-                  proofs: proofs,
-                }
-                return income
-              })
-            )
-
-            const passports = await Promise.all(
-              member.passports.map(async (passport) => {
-                if (!passport.file) return passport
-                passport.file = await FileBucket.getProtectedUrl(passport.file)
-                return passport
-              })
-            )
-
-            member = {
-              ...member,
-              rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-              debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-              incomes: incomes,
-              passports: passports,
-            }
-            return member
-          })
+        members = (members.toJSON() || members).map((member) =>
+          pick(member, Member.limitFieldsList)
         )
+        tenant = tenant.toJSON({ isShort: true })
       }
 
       const result = {
@@ -832,7 +799,7 @@ class EstateController {
     response.res(!(estate.row_count > 0))
   }
 
-  async getInviteToViewCode({ request, auth, response }) { }
+  async getInviteToViewCode({ request, auth, response }) {}
 
   async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
@@ -923,7 +890,7 @@ class EstateController {
                 //key value pairs
                 row[attribute] =
                   reverseMap[attribute][
-                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                    isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                   ]
               }
             }
