@@ -449,12 +449,13 @@ class AccountController {
       if (user.role == ROLE_LANDLORD) {
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
         user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
-        if (user.company_id && (!user.preferred_service || trim(user.preferred_service) === '')) {
+
+        if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
           user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
         } else if (
           user.company_id &&
-          user.preferred_service &&
-          trim(user.preferred_service) !== ''
+          user.preferred_services &&
+          trim(user.preferred_services) !== ''
         ) {
           user.onboarding_step = null
         }
@@ -470,8 +471,15 @@ class AccountController {
     if (tenant) {
       user.tenant = tenant
     }
+
+    if (user.preferred_services) {
+      console.log('user.preferred_services', user)
+      user.preferred_services = JSON.parse(user.preferred_services)
+    }
+
     user = user.toJSON({ isOwner: true })
     user.is_admin = false
+
     return response.res(user)
   }
 
