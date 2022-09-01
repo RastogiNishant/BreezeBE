@@ -24,13 +24,12 @@ const {
 
   ALL_BREEZE,
   CONNECTED_BREEZE_TEANT_LABEL,
-  OUTSIDE_BREEZE_TEANT_LABEL,
+  NOT_CONNECTED_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
 
   FILTER_CONSTRAINTS_MATCH_MODES,
   FILTER_CONSTRAINTS_DATE_MATCH_MODES,
   FILTER_CONSTRAINTS_COUNT_MATCH_MODES,
-  INSIDE_BREEZE_TEANT_LABEL,
 } = require('../constants')
 
 class TaskFilter extends Base {
@@ -126,12 +125,12 @@ class TaskFilter extends Base {
             .array()
             .of(
               yup
-                .string().oneOf([
+                .string()
+                .oneOf([
                   ALL_BREEZE,
                   CONNECTED_BREEZE_TEANT_LABEL,
-                  INSIDE_BREEZE_TEANT_LABEL,
-                  OUTSIDE_BREEZE_TEANT_LABEL,
-                  PENDING_BREEZE_TEANT_LABEL
+                  NOT_CONNECTED_BREEZE_TEANT_LABEL,
+                  PENDING_BREEZE_TEANT_LABEL,
                 ])
             )
             .nullable(),
