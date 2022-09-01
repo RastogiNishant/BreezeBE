@@ -13,7 +13,6 @@ const {
   CHAT_TYPE_BOT_MESSAGE,
   STATUS_ACTIVE,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
   TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   ROLE_LANDLORD,
@@ -240,12 +239,7 @@ class ChatService {
           'estates.id'
         )
       })
-      .whereNotIn('tasks.status', [
-        TASK_STATUS_RESOLVED,
-        TASK_STATUS_DRAFT,
-        TASK_STATUS_CLOSED,
-        TASK_STATUS_DELETE,
-      ])
+      .whereNotIn('tasks.status', [TASK_STATUS_RESOLVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .where('estate_current_tenants.status', STATUS_ACTIVE)
     if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)

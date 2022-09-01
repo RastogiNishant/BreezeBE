@@ -8,7 +8,6 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
 } = require('../constants')
 class TenantTaskFilter extends Base {
   static schema = () =>
@@ -24,7 +23,6 @@ class TenantTaskFilter extends Base {
               TASK_STATUS_INPROGRESS,
               TASK_STATUS_UNRESOLVED,
               TASK_STATUS_RESOLVED,
-              TASK_STATUS_CLOSED,
             ])
         ),
     })

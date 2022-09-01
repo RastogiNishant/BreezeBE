@@ -12,7 +12,6 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
   ALL_BREEZE,
   CONNECTED_BREEZE_TEANT_LABEL,
   NOT_CONNECTED_BREEZE_TEANT_LABEL,
@@ -51,7 +50,6 @@ class TaskFilters extends Filter {
         inprogress: TASK_STATUS_INPROGRESS,
         resolved: TASK_STATUS_RESOLVED,
         unresolved: TASK_STATUS_UNRESOLVED,
-        closed: TASK_STATUS_CLOSED,
       },
     }
     Filter.TableInfo = {
