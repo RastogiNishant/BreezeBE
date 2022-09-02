@@ -1055,7 +1055,7 @@ class MatchService {
       NoticeService.estateFinalConfirm(estateId, user.id)
       Event.fire('mautic:syncContact', user.id, { finalmatchapproval_count: 1 })
 
-      let contact = await estate.getContacts()
+      let contact = await estate.getContacts(user.id)
       if (contact) {
         contact = contact.toJSON()
         contact.avatar = File.getPublicUrl(contact.avatar)
