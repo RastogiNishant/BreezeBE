@@ -157,10 +157,11 @@ class EstateController {
         tenant_id
       )
       let tenant = await TenantService.getTenant(tenant_id)
-      let members = await MemberService.getMembers(tenant_id)
+      let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
+
       if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
-        members = (members.toJSON() || members).map((member) =>
+        members = (members || members.toJSON() || []).map((member) =>
           pick(member, Member.limitFieldsList)
         )
         tenant = tenant.toJSON({ isShort: true })

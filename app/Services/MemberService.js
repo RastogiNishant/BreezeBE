@@ -108,7 +108,7 @@ class MemberService {
     return members
   }
 
-  static async getMembers(householdId) {
+  static async getMembers(householdId, includes_absolute_url = false) {
     const query = Member.query()
       .select('members.*')
       .where('members.user_id', householdId)
@@ -120,67 +120,70 @@ class MemberService {
       .with('extra_score_proofs')
       .orderBy('id', 'asc')
 
-    let members = await query.fetch()
+    if (!includes_absolute_url) {
+      return await query.fetch()
+    } else {
+      let members = await query.fetch()
 
-    members = await Promise.all(
-      members.toJSON().map(async (member) => {
-        const incomes = await Promise.all(
-          member.incomes.map(async (income) => {
-            const proofs = await Promise.all(
-              income.proofs.map(async (proof) => {
-                if (!proof.file) return proof
-                proof.file = await FileBucket.getProtectedUrl(proof.file)
-                return proof
-              })
-            )
-            income = {
-              ...income,
-              proofs: proofs,
-            }
-            return income
-          })
-        )
+      members = await Promise.all(
+        members.toJSON().map(async (member) => {
+          const incomes = await Promise.all(
+            member.incomes.map(async (income) => {
+              const proofs = await Promise.all(
+                income.proofs.map(async (proof) => {
+                  if (!proof.file) return proof
+                  proof.file = await FileBucket.getProtectedUrl(proof.file)
+                  return proof
+                })
+              )
+              income = {
+                ...income,
+                proofs: proofs,
+              }
+              return income
+            })
+          )
 
-        const passports = await Promise.all(
-          (member.passports || []).map(async (passport) => {
-            if (!passport.file) return passport
-            passport.file = await FileBucket.getProtectedUrl(passport.file)
-            return passport
-          })
-        )
+          const passports = await Promise.all(
+            (member.passports || []).map(async (passport) => {
+              if (!passport.file) return passport
+              passport.file = await FileBucket.getProtectedUrl(passport.file)
+              return passport
+            })
+          )
 
-        const extra_residency_proofs = await Promise.all(
-          (member.extra_residency_proofs || []).map(async (extra_residency_proof) => {
-            if (!extra_residency_proof.file) return extra_residency_proof
-            extra_residency_proof.file = await FileBucket.getProtectedUrl(
-              extra_residency_proof.file
-            )
-            return extra_residency_proof
-          })
-        )
+          const extra_residency_proofs = await Promise.all(
+            (member.extra_residency_proofs || []).map(async (extra_residency_proof) => {
+              if (!extra_residency_proof.file) return extra_residency_proof
+              extra_residency_proof.file = await FileBucket.getProtectedUrl(
+                extra_residency_proof.file
+              )
+              return extra_residency_proof
+            })
+          )
 
-        const extra_score_proofs = await Promise.all(
-          (member.extra_score_proofs || []).map(async (extra_score_proof) => {
-            if (!extra_score_proof.file) return extra_score_proof
-            extra_score_proof.file = await FileBucket.getProtectedUrl(extra_score_proof.file)
-            return extra_score_proof
-          })
-        )
+          const extra_score_proofs = await Promise.all(
+            (member.extra_score_proofs || []).map(async (extra_score_proof) => {
+              if (!extra_score_proof.file) return extra_score_proof
+              extra_score_proof.file = await FileBucket.getProtectedUrl(extra_score_proof.file)
+              return extra_score_proof
+            })
+          )
 
-        member = {
-          ...member,
-          rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-          debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-          incomes: incomes,
-          passports: passports,
-          extra_residency_proofs: extra_residency_proofs,
-          extra_score_proofs: extra_score_proofs,
-        }
-        return member
-      })
-    )
-
-    return members
+          member = {
+            ...member,
+            rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
+            debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
+            incomes: incomes,
+            passports: passports,
+            extra_residency_proofs: extra_residency_proofs,
+            extra_score_proofs: extra_score_proofs,
+          }
+          return member
+        })
+      )
+      return members
+    }
   }
 
   static async getMembersByHousehold(householdId) {
