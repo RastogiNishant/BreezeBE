@@ -55,25 +55,21 @@ class TaskFilters extends Filter {
     Filter.TableInfo = {
       property_id: 'estates',
       address: 'estates',
-      city: 'estates',
       urgency: 'tasks',
       status: 'tasks',
       email: '_ect',
       phone_number: '_ect',
       surname: '_ect',
-      firstname: '_u',
-      secondname: '_u',
     }
 
     Filter.paramToField = {
       active_task: 'count(tasks.id)',
-      tenant: ['firstname', 'secondname', 'surname'],
+      tenant: ['surname'],
     }
     this.matchFilter(
       [
         'property_id',
         'address',
-        'city',
         'urgency',
         'email',
         'phone_number',
