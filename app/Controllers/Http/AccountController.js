@@ -609,7 +609,7 @@ class AccountController {
       user.company = null
 
       if (user.company_id) {
-        company = await Company.query().where('id', user.company_id).first()
+        company = await Company.query().where('id', user.company_id).with('contacts').first()
         user.company = company
       }
 
