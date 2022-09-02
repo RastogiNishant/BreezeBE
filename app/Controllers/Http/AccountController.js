@@ -463,7 +463,6 @@ class AccountController {
     }
 
     if (user.preferred_services) {
-      console.log('user.preferred_services', user)
       user.preferred_services = JSON.parse(user.preferred_services)
     }
 
