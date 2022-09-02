@@ -14,7 +14,7 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
-  TASK_RESOLVE_HISTORY_PERIOD
+  TASK_RESOLVE_HISTORY_PERIOD,
 } = require('../constants')
 
 const l = use('Localize')
@@ -311,11 +311,16 @@ class TaskService {
   static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
     let taskQuery = Task.query()
       .select('tasks.*')
-      .select(Database.raw(`coalesce(
+      .select(
+        Database.raw(`coalesce(
         ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}  
           or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
-          and "tasks"."updated_at" > '${moment.utc().subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd').format(DATE_FORMAT)}' 
-          and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`))
+          and "tasks"."updated_at" > '${moment
+            .utc()
+            .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
+            .format(DATE_FORMAT)}' 
+          and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`)
+      )
 
     if (role === ROLE_USER) {
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
@@ -335,8 +340,8 @@ class TaskService {
     }
     taskQuery
       .where('tasks.estate_id', estate_id)
+      .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
-      .orderBy('tasks.created_at', 'desc')
       .orderBy('tasks.urgency', 'desc')
 
     let tasks = null
@@ -518,9 +523,10 @@ class TaskService {
             const thumb =
               attachment.uri.split('/').length === 2
                 ? await File.getProtectedUrl(
-                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
-                  }`
-                )
+                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
+                      attachment.uri.split('/')[1]
+                    }`
+                  )
                 : ''
 
             if (attachment.uri.search('http') !== 0) {
