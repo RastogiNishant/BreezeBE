@@ -9,7 +9,7 @@ class CreateEstateCurrentTenant extends Base {
     yup.object().shape({
       tenant_email: yup.string().email().max('255'),
       surname: yup.string().required(),
-      phone_number: phoneSchema.notRequired().nullable(),
+      phone_number: phoneSchema.nullable(),
       estate_id: id.required(),
       contract_end: yup.date(),
       salutation_int: yup
