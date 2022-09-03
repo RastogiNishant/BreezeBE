@@ -1,6 +1,12 @@
 'use strict'
 
-const { STATUS_ACTIVE, MEMBER_FILE_TYPE_PASSPORT } = require('../constants')
+const {
+  STATUS_ACTIVE,
+  MEMBER_FILE_TYPE_PASSPORT,
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+} = require('../constants')
 const Model = require('./BaseModel')
 
 class Member extends Model {
@@ -65,6 +71,18 @@ class Member extends Model {
   passports() {
     return this.hasMany('App/Models/MemberFile')
       .where('type', MEMBER_FILE_TYPE_PASSPORT)
+      .where('status', STATUS_ACTIVE)
+  }
+
+  extra_residency_proofs() {
+    return this.hasMany('App/Models/MemberFile')
+      .where('type', MEMBER_FILE_TYPE_EXTRA_RENT)
+      .where('status', STATUS_ACTIVE)
+  }
+
+  extra_score_proofs() {
+    return this.hasMany('App/Models/MemberFile')
+      .where('type', MEMBER_FILE_TYPE_EXTRA_DEBT)
       .where('status', STATUS_ACTIVE)
   }
 

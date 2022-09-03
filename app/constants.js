@@ -32,6 +32,15 @@ const constants = {
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
   MEMBER_FILE_TYPE_PASSPORT: 'passport',
 
+  MEMBER_FILE_TYPE_EXTRA_RENT: 'extra_rent_proof',
+  MEMBER_FILE_TYPE_EXTRA_DEBT: 'extra_debt_proof',
+
+  MEMBER_FILE_RENT_ARREARS_DOC: 'rent_arrears_doc',
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC: 'extra_rent_arrears_doc',
+  MEMBER_FILE_DEBT_PROOFS_DOC: 'debt_proof',
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC: 'extra_debt_proof',
+  MEMBER_FILE_PASSPORT_DOC: 'passport',
+
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
 
