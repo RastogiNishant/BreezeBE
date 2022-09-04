@@ -558,6 +558,7 @@ const constants = {
     'is_new_tenant_transfer',
     'transfer_budget',
     'rent_end_at',
+    'knocked_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',

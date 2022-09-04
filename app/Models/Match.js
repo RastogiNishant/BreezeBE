@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class Match extends Model {
   static get columns() {
-    return ['estate_id', 'user_id', 'status', 'percentage', 'final_match_date']
+    return ['estate_id', 'user_id', 'status', 'percentage', 'knocked_at', 'final_match_date']
   }
 
   user() {
