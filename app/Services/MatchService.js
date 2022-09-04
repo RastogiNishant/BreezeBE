@@ -574,22 +574,29 @@ class MatchService {
       if (match.status === MATCH_STATUS_NEW) {
         // Update match to knock
 
-        await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
-          user_id: userId,
-          estate_id: estateId,
-        })
+        await Database.table('matches')
+          .update({
+            status: MATCH_STATUS_KNOCK,
+            knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+          })
+          .where({
+            user_id: userId,
+            estate_id: estateId,
+          })
         return true
       }
 
       throw new AppException('Invalid match stage')
     }
 
+    //FIXME: why percent is 0? It can have value if there is a like
     if (like || knock_anyway) {
       await Database.into('matches').insert({
         status: MATCH_STATUS_KNOCK,
         user_id: userId,
         estate_id: estateId,
         percent: 0,
+        knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
 
       return true
@@ -1283,6 +1290,7 @@ class MatchService {
       '_m.status as status',
       '_m.buddy',
       '_m.share',
+      '_m.knocked_at',
       '_v.date',
       '_v.start_date AS visit_start_date',
       '_v.end_date AS visit_end_date',
