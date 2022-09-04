@@ -23,10 +23,11 @@ class UpdateCompany extends Base {
       name: yup.string().max(255),
       address: yup
         .string()
-        .matches(
-          /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)\s+\d+[\-]{0,1}\d*(,\s)(\d){4,5}([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)(,\s*[A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)?$/,
-          'Address format is wrong'
-        )
+        // .matches(
+        //   /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)\s+\d+[\-]{0,1}\d*(,\s)(\d){4,5}([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)(,\s*[A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)?$/,
+        //   'Address format is wrong'
+        // )
+        .min(10)
         .lowercase()
         .required(),
       tax_number: yup.string().max(255),
