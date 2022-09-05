@@ -29,7 +29,7 @@ definitions:
     in: formData/path
     type: number 
     enum: ["1", "2", "3", "4", "5"]
-    description: "1: STATUS_NEW, 2: STATUS_INPROGRESS, 3:STATUS_UNRESOLVED, 4:STATUS_RESOLVED, 5:STATUS_CLOSED,"
+    description: "1: STATUS_NEW, 2: STATUS_INPROGRESS, 3:STATUS_UNRESOLVED, 4:STATUS_RESOLVED"
 
   description:
     name: description
@@ -51,7 +51,8 @@ definitions:
     name: page
     in: formData
     type: number
-    description: limit = -1 means no pagination 
+    description: limit = -1 means no pagination
+
 /api/v1/connect/task/:id/ :
   get: 
     tags: [Task - CRUD for task for Landlord]
@@ -138,3 +139,17 @@ definitions:
           type: object
           schema:
             $ref: '#/components/schemas/TaskFilterSchema'
+
+
+/api/v1/connect/task/:id/addImage: 
+  put: 
+    tags: [Task - CRUD for task]
+    security: [bearerAuth: []]
+    description: upload multiple image for a specific task
+    produces: [application/json]    
+    requestBody:
+      content:
+        application/json:
+          type: object
+          schema: 
+            $ref: "#/definitions/file"

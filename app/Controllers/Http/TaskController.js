@@ -1,15 +1,25 @@
 'use strict'
 const { ROLE_LANDLORD } = require('../../constants')
-const { count } = require('../../Services/TaskService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-const moment = require('moment')
 
 class TaskController {
   async createTask({ request, auth, response }) {
     try {
       response.res(await TaskService.create(request, auth.user))
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  async init({ request, auth, response }) {
+    //FIXME: called by tenant to create task. Must be validated
+    //needs validator
+    const data = request.all()
+
+    try {
+      response.res(await TaskService.init(auth.user, data))
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
@@ -63,6 +73,7 @@ class TaskController {
 
   async getEstateTasks({ request, auth, response }) {
     const params = request.post()
+    delete params.global
     const { id } = request.all()
     let estate = await EstateService.getEstateWithTenant(id, auth.user.id)
 
@@ -95,17 +106,20 @@ class TaskController {
 
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
-
     try {
-      const countResult = await EstateService.getTotalLetCount(auth.user.id, params)
+      const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
+      const filterCountResult = await EstateService.getTotalLetCount(auth.user.id, params)
+
       let estate = await EstateService.getEstatesWithTask(
         auth.user,
         params,
         params.page || -1,
         params.limit || -1
       )
+
       const result = {
-        total: countResult.length || 0,
+        total: totalCountResult.length || 0,
+        filtered: filterCountResult.length || 0,
         estates: estate,
       }
 
@@ -123,6 +137,21 @@ class TaskController {
       throw new HttpException(e.message, 500)
     }
   }
+
+  // async onEditMessage({ request, auth, response }) {
+  //   try {
+  //     const { message, attachments, id } = request.all()
+
+  //     await ChatService.editMessage({
+  //       message,
+  //       attachments,
+  //       id,
+  //     })
+  //     response.res(true)
+  //   } catch (err) {
+  //     throw new HttpException(err.message)
+  //   }
+  // }
 }
 
 module.exports = TaskController
