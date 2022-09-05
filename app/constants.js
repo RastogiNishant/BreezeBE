@@ -348,6 +348,7 @@ const constants = {
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
   DAY_FORMAT: 'YYYY-MM-DD',
+  ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -401,6 +402,12 @@ const constants = {
   NOTICE_TYPE_PROSPECT_ARRIVED: 'notification_prospect_arrived',
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED: 'notification_prospect_property_deactivated',
   NOTICE_TYPE_PROSPECT_SUPER_MATCH: 'notification_prospect_super_match',
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE: 'notification_type_landlord_sent_task_message',
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE: 'notification_type_tenant_sent_task_message',
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS: 'notification_landlord_deactivated_in_two_days',
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW: 'notification_landlord_deactivated',
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED:
+    'notification_prospect_informed_landlord_deactivated',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -438,6 +445,11 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID: 40,
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID: 41,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID: 42,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID: 43,
+  NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID: 44,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 45,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 46,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID: 47,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -515,6 +527,7 @@ const constants = {
     'secondname',
     'phone',
     'avatar',
+    'sex',
     'address',
     'user_id',
     'available_date',
@@ -533,11 +546,15 @@ const constants = {
     'energy_proof',
     'energy_proof_original_file',
     'isoline',
+    'is_new_tenant_transfer',
+    'transfer_budget',
+    'rent_end_at',
+    'knocked_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
   SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
-  INVITE_OUTSIDE_TENANT : 'invite_outside_breeze',
+  INVITE_OUTSIDE_TENANT: 'invite_outside_breeze',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -586,6 +603,10 @@ const constants = {
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
 
+  SALUTATION_MR_LABEL: 'Mr.',
+  SALUTATION_MS_LABEL: 'Ms.',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
+
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
   SALUTATION_SIR_OR_MADAM: 3,
@@ -616,10 +637,12 @@ const constants = {
     'lte',
   ],
 
-  ADULT_MIN_AGE: 18,
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES: ['dateIs', 'dateIsNot', 'dateBefore', 'dateAfter'],
+  FILTER_CONSTRAINTS_COUNT_MATCH_MODES: ['equals', 'notEquals', 'gt', 'lt', 'gte', 'lte'],
 
   PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE: 1,
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE: 2,
+  PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE: 6,
   PREDEFINED_MSG_OPEN_ENDED: 3,
   PREDEFINED_NOT_A_QUESTION: 4,
   PREDEFINED_LAST: 5,
@@ -642,7 +665,7 @@ const constants = {
     {
       label: 'normal_notification.message',
       value: 2,
-    },    
+    },
     {
       label: 'high_notification.message',
       value: 3,
@@ -656,16 +679,34 @@ const constants = {
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
-  TASK_STATUS_CLOSED: 5,
-  TASK_STATUS_DRFAT: 100,
+
+  BREEZE_BOT_USER: {
+    id: 0,
+    firstname: 'Breeze',
+    secondname: 'Monster',
+    avatar: '/img/breezeLogo.png',
+  },
+
+  TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
   TASK_STATUS_NEW_LABEL: 'New',
   TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
   TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
-  TASK_STATUS_CLOSED_LABEL: 'Closed',
 
+  ALL_BREEZE: 'All',
+  CONNECTED_BREEZE_TEANT_LABEL: 'Connected',
+  NOT_CONNECTED_BREEZE_TEANT_LABEL: 'Not Connected',
+  PENDING_BREEZE_TEANT_LABEL: 'Pending',
+
+  CHAT_EDIT_STATUS_UNEDITED: 'unedited',
+  CHAT_EDIT_STATUS_EDITED: 'edited',
+  CHAT_EDIT_STATUS_DELETED: 'deleted',
+
+  CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL: 10,
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT: 3600, //seconds
+  SHOW_ACTIVE_TASKS_COUNT: 3,
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
@@ -675,12 +716,116 @@ const constants = {
     'house_number',
     'country',
     'floor',
+    'rooms_number',
     'number_floors',
     'city',
     'coord_raw',
     'property_id',
     'address',
   ],
+  //whether we deactivate landlord at end of day of his/her deactivation day
+  //or at the moment his deactivation arrives.
+  DEACTIVATE_LANDLORD_AT_END_OF_DAY: false,
+  //list of holidays in Germany
+  //FIXME: this should come from a db table or from an external api
+  GERMAN_HOLIDAYS: [
+    '2022-08-15', //assumption day
+    '2022-09-20', //world children day
+    '2022-10-03', //reformation day
+    '2022-11-01', //all saints day
+    '2022-12-25', //christmas
+    '2022-12-26', //seconday of christmas
+    '2023-01-01', //new year's day
+    '2023-01-06', //epiphany
+    '2023-03-08', //Weltfrauntag
+    '2023-04-07', //Good Friday
+    '2023-04-09', //Easter Sunday
+    '2023-04-10', //Easter Monday
+    '2023-05-01', //Labor day
+    '2023-05-29', //Whit Monday
+    '2023-06-08', //Corpus Cristi
+    '2023-08-15', //Assumption Day
+    '2023-09-20', //world children's day
+    '2023-10-03', //reformation day
+    '2023-11-01', //all saints' day
+    '2023-12-25', //christmas
+    '2023-12-26', //second day of christmas
+  ],
+  CHAT_TYPE_MESSAGE: 'message',
+  CHAT_TYPE_BOT_MESSAGE: 'chatbot',
+  CHAT_TYPE_NOTIFICATION: 'notification',
+  CHAT_TYPE_LAST_READ_MARKER: 'last-read-marker',
+
+  DEFECT_TOPICS: [
+    {
+      key: 'tenant.property.defect_class.Heating.message',
+      text: 'Heating',
+    },
+    {
+      key: 'tenant.property.defect_class.Window.message',
+      text: 'Window',
+    },
+    {
+      key: 'tenant.property.defect_class.Toilet.message',
+      text: 'Toilet',
+    },
+    {
+      key: 'tenant.property.defect_class.Water tap.message',
+      text: 'Water tap',
+    },
+    {
+      key: 'tenant.property.defect_class.Electricity.message',
+      text: 'Electricity',
+    },
+    {
+      key: 'tenant.property.defect_class.Door.message',
+      text: 'Door',
+    },
+    {
+      key: 'tenant.property.defect_class.Unit.message',
+      text: 'Unit',
+    },
+    {
+      key: 'tenant.property.defect_class.Bath_Shower.message',
+      text: 'Bath Shower',
+    },
+    {
+      key: 'tenant.property.defect_class.Entrance.message',
+      text: 'Entrance',
+    },
+    {
+      key: 'tenant.property.defect_class.Outside.message',
+      text: 'Outside',
+    },
+    {
+      key: 'tenant.property.defect_class.Kitchen.message',
+      text: 'Kitchen',
+    },
+  ],
+
+  ESTATE_FLOOR_DIRECTION_NA: 1,
+  ESTATE_FLOOR_DIRECTION_LEFT: 2,
+  ESTATE_FLOOR_DIRECTION_RIGHT: 3,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT: 4,
+
+  TENANT_INVITATION_EXPIRATION_DATE: 2,
+
+  ESTATE_VALID_ADDRESS_LABEL: 'Valid',
+  ESTATE_INVALID_ADDRESS_LABEL: 'Error',
+  ESTATE_ALL_ADDRESS_LABEL: 'All',
+
+  EMAIL_REG_EXP:
+    /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
+  PHONE_REG_EXP: /^\+[1-9]{1,2}[0-9]{9,11}$/,
+
+  //Date period
+  TASK_RESOLVE_HISTORY_PERIOD: 3,
+
+  CONNECT_SERVICE_INDEX: 1,
+  MATCH_SERVICE_INDEX: 2,
+
+  PASS_ONBOARDING_STEP_COMPANY: 1,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES: 2,
 }
 
 module.exports = constants

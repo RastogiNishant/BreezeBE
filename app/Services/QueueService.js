@@ -13,6 +13,7 @@ const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
+const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 
 const {
   SCHEDULED_EVERY_5M_JOB,
@@ -65,11 +66,14 @@ class QueueService {
     Queue.addJob(CREATE_THUMBNAIL_IMAGES, {}, { delay: 1 })
   }
 
+  static deactivateLandlord(deactivationId, userId, delay) {
+    Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
+  }
+
   /**
    *
    */
   static async sendEvery5Min() {
-    console.log('debug ->>> worked sendEvery5Min')
     return Promise.all([
       wrapException(QueueJobService.handleExpiredEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
@@ -142,6 +146,8 @@ class QueueService {
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
           return QueueJobService.createThumbnailImages()
+        case DEACTIVATE_LANDLORD:
+          return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

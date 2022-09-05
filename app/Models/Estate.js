@@ -28,7 +28,6 @@ const {
   EQUIPMENT_GUEST_WC,
   EQUIPMENT_WG_SUITABLE,
 
-  STATUS_DRAFT,
   STATUS_ACTIVE,
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -39,6 +38,14 @@ const {
   TENANT_MATCH_FIELDS,
   MATCH_STATUS_FINISH,
   MATCH_STATUS_SHARE,
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_DELETE,
+  TASK_STATUS_DRAFT,
+  TASK_STATUS_RESOLVED,
+  DATE_FORMAT,
+  TASK_RESOLVE_HISTORY_PERIOD,
+  ROLE_LANDLORD,
 } = require('../constants')
 
 class Estate extends Model {
@@ -58,6 +65,7 @@ class Estate extends Model {
       'house_number',
       'country',
       'floor',
+      'floor_direction',
       'number_floors',
       'prices',
       'net_rent',
@@ -146,6 +154,9 @@ class Estate extends Model {
       'apartment_status',
       'extra_costs',
       'extra_address',
+      'is_new_tenant_transfer',
+      'transfer_budget',
+      'rent_end_at',
     ]
   }
 
@@ -203,7 +214,6 @@ class Estate extends Model {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
     this.addHook('beforeSave', async (instance) => {
-
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord
@@ -291,8 +301,18 @@ class Estate extends Model {
     return this.hasMany('App/Models/Room')
   }
 
-  tasks() {
+  activeTasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .orderBy('updated_at', 'desc')
+      .orderBy('urgency', 'desc')
+  }
+
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
   }
 
   /**
@@ -316,6 +336,13 @@ class Estate extends Model {
   /**
    *
    */
+  visit_relations() {
+    return this.hasMany('App/Models/Visit')
+  }
+
+  /**
+   *
+   */
   matches() {
     return this.hasMany('App/Models/Match')
   }
@@ -326,7 +353,6 @@ class Estate extends Model {
   slots() {
     return this.hasMany('App/Models/TimeSlot').orderBy('end_at')
   }
-
 
   current_tenant() {
     return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
@@ -395,12 +421,13 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate() {
-    await this.updateItem(
+  async publishEstate(trx) {
+    await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
         available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
+      trx,
       true
     )
   }
@@ -415,11 +442,13 @@ class Estate extends Model {
   /**
    *
    */
-  async getContacts() {
+  async getContacts(user_id) {
     const contact = await Contact.query()
       .select('contacts.*', '_c.avatar')
       .innerJoin({ _c: 'companies' }, '_c.id', 'contacts.company_id')
-      .where('_c.user_id', this.user_id)
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', '_c.id').on('_u.id', user_id)
+      })
       .orderBy('contacts.id')
       .first()
 

@@ -1,3 +1,4 @@
+const { isString, isNil } = require('lodash')
 const fetch = require('node-fetch')
 const Env = use('Env')
 const MAUTIC_API_URL = Env.get('MAUTIC_API_URL')
@@ -6,7 +7,21 @@ const LANDLORD_WELCOME_SEGMENT_ID = Env.get('LANDLORD_WELCOME_SEGMENT_ID')
 const TENANT_WELCOME_SEGMENT_ID = Env.get('TENANT_WELCOME_SEGMENT_ID')
 const User = use('App/Models/User')
 const Company = use('App/Models/Company')
-const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  STATUS_ACTIVE,
+  USER_ACTIVATION_STATUS_ACTIVATED,
+} = require('../constants')
+
+const checkLandlordProfileStatus = ({ contactPoints, name, stockSize, type }) => {
+  const contactPointsFilled = Array.isArray(contactPoints) && contactPoints.length > 0
+  const nameFilled = isString(name) && name.length > 0
+  const stockSizeFilled = isString(stockSize) && stockSize.length > 0
+  const typeFilled = !isNil(type)
+
+  return contactPointsFilled && nameFilled && stockSizeFilled && typeFilled
+}
 
 const getCity = (address) => {
   if (!address) return null
@@ -22,7 +37,7 @@ const getCountry = (address) => {
   return arr[arr.length - 1].replace(/[0-9]/g, '').trim()
 }
 
-const getUserData = async (user) => {
+const getUserData = async (user, mauticPrevData) => {
   let body = {
     firstname: user.firstname,
     lastname: user.secondname,
@@ -32,18 +47,48 @@ const getUserData = async (user) => {
     signup_date: user.created_at,
   }
 
-  if (user.role === ROLE_LANDLORD && user.company_id) {
-    let company = await Company.query().where('id', user.company_id).first()
+  if (user.status === STATUS_ACTIVE) {
+    body.email_verification_date = mauticPrevData.email_verification_date || new Date()
+  }
+  if (user.role === ROLE_LANDLORD) {
+    let company = await Company.query().where('user_id', user.id).first()
     if (company) {
       body.city = getCity(company.address)
       body.country = getCountry(company.address)
       body.address = company.address
       body.company = company.name
+
+      const companyContacts = await company.contacts().fetch()
+
+      if (companyContacts) {
+        const profileStatus = checkLandlordProfileStatus({
+          name: company.name,
+          contactPoints: companyContacts.rows,
+          stockSize: company.size,
+          type: company.type,
+        })
+        if (profileStatus) {
+          // landload profile is activated.
+          body.activated_profile_date = mauticPrevData.activated_profile_date || new Date()
+        } else {
+          // profile not activated any more
+          body.activated_profile_date = null
+        }
+      } else {
+        // profile not activated any more
+        body.activated_profile_date = null
+      }
     } else {
       body.city = ''
       body.country = ''
       body.address = ''
       body.company = ''
+      // profile not activated any more
+      body.activated_profile_date = null
+    }
+
+    if (user.activation_status === USER_ACTIVATION_STATUS_ACTIVATED) {
+      body.admin_approval_date = mauticPrevData.admin_approval_date || new Date()
     }
   } else {
     const tenant = await user.tenant().fetch()
@@ -51,6 +96,9 @@ const getUserData = async (user) => {
       body.city = getCity(tenant.address)
       body.country = getCountry(tenant.address)
       body.address = tenant.address
+      if (tenant.status === STATUS_ACTIVE) {
+        body.activated_profile_date = mauticPrevData.activated_profile_date || new Date()
+      }
     } else {
       body.city = ''
       body.country = ''
@@ -152,6 +200,38 @@ class MauticService {
     }
   }
 
+  static async addContactToSegment(role, contactId) {
+    if (
+      (process.env.DEV && process.env.DEV.trim() == 'true') ||
+      !MAUTIC_API_URL ||
+      !MAUTIC_AUTH_TOKEN
+    ) {
+      return true
+    }
+    try {
+      if (
+        (role === ROLE_LANDLORD && !LANDLORD_WELCOME_SEGMENT_ID) ||
+        (role === ROLE_USER && !TENANT_WELCOME_SEGMENT_ID)
+      ) {
+        return true
+      }
+      const segmentId =
+        role === ROLE_LANDLORD ? LANDLORD_WELCOME_SEGMENT_ID : TENANT_WELCOME_SEGMENT_ID
+
+      await fetch(`${MAUTIC_API_URL}/segments/${segmentId}/contact/${contactId}/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: MAUTIC_AUTH_TOKEN,
+        },
+      })
+
+      console.log(`${contactId} added to segment ${segmentId}`)
+    } catch (err) {
+      console.log('Mautic segment adding Failed : Contact Id = ' + contactId, err)
+    }
+  }
+
   static async syncContact(userId, payload = {}) {
     if (
       (process.env.DEV && process.env.DEV.trim() == 'true') ||
@@ -163,7 +243,7 @@ class MauticService {
     const user = await User.query().where('id', userId).first()
     try {
       const mauticPrevData = await getMauticContact(user.mautic_id)
-      const userData = await getUserData(user)
+      const userData = await getUserData(user, mauticPrevData)
       const body = {
         ...mauticPrevData,
         ...userData,

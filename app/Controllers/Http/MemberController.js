@@ -166,6 +166,8 @@ class MemberController {
    *
    */
   async updateMember({ request, auth, response }) {
+    //FIXME: id must be checked whether this id is a member of the current user
+    //this will cause sql query if NOT.
     const { id, ...data } = request.all()
     let files
     try {
@@ -180,7 +182,6 @@ class MemberController {
     }
 
     const trx = await Database.beginTransaction()
-
     try {
       if (files.passport) {
         let memberFile = new MemberFile()
@@ -199,9 +200,11 @@ class MemberController {
       if (data?.phone !== member.phone) {
         newData.phone_verified = false
       }
-      await member.updateItemWithTrx({ ...newData, ...files }, trx)
-      member = member.toJSON()
+      const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)
       await trx.commit()
+
+      member = await MemberService.getMemberWithPassport(member.id)
+
       Event.fire('tenant::update', member.user_id)
       return response.res(member)
     } catch (e) {

@@ -2,11 +2,15 @@
 
 const User = use('App/Models/User')
 const Database = use('Database')
+const Estate = use('App/Models/Estate')
+const Event = use('Event')
+
 const UserService = use('App/Services/UserService')
+const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const moment = require('moment')
-const { isArray, isEmpty, find, get } = require('lodash')
+const { isArray, isEmpty, includes } = require('lodash')
 const {
   ROLE_ADMIN,
   ROLE_LANDLORD,
@@ -16,7 +20,13 @@ const {
   STATUS_DELETE,
   STATUS_ACTIVE,
   STATUS_DRAFT,
+  STATUS_EXPIRE,
+  DEACTIVATE_LANDLORD_AT_END_OF_DAY,
 } = require('../../../constants')
+const QueueService = use('App/Services/QueueService')
+const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
+const { isHoliday } = require('../../../Libs/utils')
+const Promise = require('bluebird')
 
 class UserController {
   /**
@@ -80,28 +90,137 @@ class UserController {
   async updateActivationStatus({ request, auth, response }) {
     const { ids, action } = request.all()
     let affectedRows = 0
+    const trx = await Database.beginTransaction()
     switch (action) {
       case 'activate':
-        affectedRows = await User.query()
-          .whereIn('id', ids)
-          .update({
-            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-            is_verified: true,
-            verified_by: auth.user.id,
-            verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        try {
+          affectedRows = await User.query()
+            .whereIn('id', ids)
+            .update(
+              {
+                activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+                is_verified: true,
+                verified_by: auth.user.id,
+                verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+              },
+              trx
+            )
+          NoticeService.verifyUserByAdmin(ids)
+          await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
+          await trx.commit()
+          ids.map((id) => {
+            Event.fire('mautic:syncContact', id, { admin_approval_date: new Date() })
           })
-        NoticeService.verifyUserByAdmin(ids)
-        break
+          return response.res({ affectedRows })
+        } catch (err) {
+          console.log(err.message)
+          await trx.rollback()
+          throw new HttpException(err.message, 422)
+        }
+
       case 'deactivate':
-        affectedRows = await User.query().whereIn('id', ids).update({
-          activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-          is_verified: false,
-          verified_by: null,
-          verified_date: null,
-        })
-        break
+        try {
+          affectedRows = await User.query().whereIn('id', ids).update(
+            {
+              activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+              is_verified: false,
+              verified_by: null,
+              verified_date: null,
+            },
+            trx
+          )
+          //make owned estates draft
+          const estateIds = (
+            await Estate.query()
+              .select('*')
+              .whereIn('user_id', ids)
+              .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+              .fetch()
+          ).rows.map((estate) => estate.id)
+
+          if (estateIds.length > 0) {
+            await Estate.query()
+              .whereIn('id', estateIds)
+              .update({ status: STATUS_DRAFT })
+              .transacting(trx)
+          }
+
+          //TODO: we should delete user deactivation schedule here also
+          await trx.commit()
+          ids.map((id) => {
+            Event.fire('mautic:syncContact', id, { admin_approval_date: null })
+          })
+          //send notifications
+          NoticeService.landlordsDeactivated(ids, estateIds)
+          return response.res({ affectedRows })
+        } catch (err) {
+          console.log(err.message)
+          await trx.rollback()
+          throw new HttpException(err.message, 422)
+        }
+      case 'deactivate-in-2-days':
+        try {
+          await Promise.map(ids, async (id) => {
+            const user = await User.query().where('id', id).where('role', ROLE_LANDLORD).first()
+            if (!user) {
+              throw new AppException('Landlord not found.', 400)
+            }
+            //check if this user is already on deactivation schedule
+            const scheduled = await UserDeactivationSchedule.query().where('user_id', id).first()
+            if (scheduled) {
+              throw new AppException(`Landlord ${id} is already booked for deactivation`, 400)
+            }
+          })
+          //FIXME: tzOffset should be coming from header or body of request
+          const tzOffset = 2
+          let workingDaysAdded = 0
+          let deactivateDateTime
+          let daysAdded = 0
+          //calculate when the deactivation will occur.
+          do {
+            daysAdded++
+            deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
+            if (
+              !(
+                isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
+                includes(['Saturday', 'Sunday'], deactivateDateTime.format('dddd'))
+              )
+            ) {
+              workingDaysAdded++
+            }
+          } while (workingDaysAdded < 2)
+
+          let delay
+          if (DEACTIVATE_LANDLORD_AT_END_OF_DAY) {
+            deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDT23:59:59+02:00')
+            delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
+          } else {
+            deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
+            delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
+          }
+          await Promise.map(ids, async (id) => {
+            const deactivationSchedule = await UserDeactivationSchedule.create(
+              {
+                user_id: id,
+                deactivate_schedule: deactivateDateTime,
+              },
+              trx
+            )
+            QueueService.deactivateLandlord(deactivationSchedule.id, id, delay)
+          })
+          await trx.commit()
+          await NoticeService.deactivatingLandlordsInTwoDays(ids, deactivateDateTime)
+          return response.res(true)
+        } catch (err) {
+          console.log(err)
+          await trx.rollback()
+          throw new HttpException(err.message, 422)
+        }
+      case 'deactivate-by-date':
+        return response.res({ message: 'action not implemented yet.' })
     }
-    return response.res({ affectedRows })
+    await trx.rollback()
+    response.res(false)
   }
 
   async getLandlords({ request, response }) {
@@ -130,6 +249,7 @@ class UserController {
       .with('company', function (query) {
         query.with('contacts')
       })
+      .with('deactivationSchedule')
     if (query) {
       landlordQuery.andWhere(function (d) {
         d.orWhere('email', 'ilike', `${query}%`)

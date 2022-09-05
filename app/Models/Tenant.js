@@ -38,6 +38,9 @@ class Tenant extends Model {
       'rent_start',
       'minors_count',
       'members_count',
+      'transfer_budget_min',
+      'transfer_budget_max',
+      'residency_duration',
     ]
   }
 
@@ -65,6 +68,9 @@ class Tenant extends Model {
       'match_type',
       'total_completed_proofs',
       'submitted_proofs',
+      'transfer_budget_min',
+      'transfer_budget_max',
+      'residency_duration',
     ]
   }
 
@@ -88,6 +94,9 @@ class Tenant extends Model {
       'rent_start',
       'address',
       'coord',
+      'transfer_budget_min',
+      'transfer_budget_max',
+      'residency_duration',      
     ]
   }
 

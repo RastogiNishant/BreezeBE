@@ -50,6 +50,7 @@ class User extends Model {
       'is_household_invitation_onboarded',
       'is_landlord_verification_onboarded',
       'activation_status',
+      'preferred_services',
     ]
   }
 
@@ -93,6 +94,9 @@ class User extends Model {
       if (userInstance.dirty.email || userInstance.dirty.role) {
         userInstance.uid = User.getHash(userInstance.email, userInstance.role)
       }
+      if (userInstance.preferred_services && Array.isArray(userInstance.preferred_services)) {
+        userInstance.preferred_services = JSON.stringify(userInstance.preferred_services)
+      }
     })
   }
 
@@ -121,7 +125,7 @@ class User extends Model {
    *
    */
   company() {
-    return this.hasOne('App/Models/Company', 'id', 'user_id')
+    return this.belongsTo('App/Models/Company', 'company_id', 'id')
   }
 
   /**
@@ -162,6 +166,10 @@ class User extends Model {
 
   estates() {
     return this.hasMany('App/Models/Estate', 'id', 'user_id')
+  }
+
+  deactivationSchedule() {
+    return this.hasOne('App/Models/UserDeactivationSchedule', 'id', 'user_id')
   }
 }
 

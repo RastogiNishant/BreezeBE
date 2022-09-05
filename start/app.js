@@ -21,6 +21,7 @@ providers.push('@adonisjs/drive/providers/DriveProvider')
 providers.push('@adonisjs/antl/providers/AntlProvider')
 providers.push('@adonisjs/mail/providers/MailProvider')
 providers.push('adonis-twilio-node/providers/TwilioProvider')
+providers.push('@adonisjs/websocket/providers/WsProvider')
 
 providers.push('adonis-cache/providers/CacheProvider')
 
@@ -41,11 +42,11 @@ providers.push(path.join(__dirname, '..', 'providers', 'Zendesk/Provider'))
 providers.push('barudo-adonis-swagger/providers/SwaggerProvider')
 
 const aceProviders = [
-	'@adonisjs/lucid/providers/MigrationsProvider',
-	'adonis-acl/providers/CommandsProvider',
-	'@adonisjs/vow/providers/VowProvider',
-	'adonis-cache/providers/CommandsProvider',
-	'adonis-twilio-node/providers/TwilioProvider'
+  '@adonisjs/lucid/providers/MigrationsProvider',
+  'adonis-acl/providers/CommandsProvider',
+  '@adonisjs/vow/providers/VowProvider',
+  'adonis-cache/providers/CommandsProvider',
+  'adonis-twilio-node/providers/TwilioProvider',
 ]
 
 /*
@@ -61,15 +62,15 @@ const aceProviders = [
 |
 */
 const aliases = {
-	Role: 'Adonis/Acl/Role',
-	Permission: 'Adonis/Acl/Permission',
-	Cache: 'Adonis/Addons/Cache',
+  Role: 'Adonis/Acl/Role',
+  Permission: 'Adonis/Acl/Permission',
+  Cache: 'Adonis/Addons/Cache',
 }
 
 const commands = ['App/Commands/CreateAdmin', 'App/Commands/ClearCache', 'App/Commands/Recalc']
 
 const http = {
-	loggerEnv: ['development', 'production'],
+  loggerEnv: ['development', 'production'],
 }
 
 module.exports = { providers, aceProviders, aliases, commands, http }
