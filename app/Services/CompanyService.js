@@ -128,9 +128,13 @@ class CompanyService {
     }
 
     const user = await require('./UserService').getById(userId)
+    if (!user) {
+      throw new HttpException('User not exists', 500)
+    }
+
     return await Contact.createItem({
       ...data,
-      company_id: user?.company_id,
+      company_id: user.company_id,
       user_id: userId,
     })
   }
