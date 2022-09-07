@@ -37,7 +37,8 @@ class CompanyService {
       .innerJoin({ _u: 'users' }, function () {
         this.on('_u.company_id', 'companies.id').on('_u.id', userId)
       })
-      .whereNot('companies.status', STATUS_DELETE).with('contacts')
+      .whereNot('companies.status', STATUS_DELETE)
+      .with('contacts')
 
     if (companyId) {
       query.where('companies.id', companyId)
@@ -50,10 +51,13 @@ class CompanyService {
    *
    */
   static async createCompany(data, userId, trx) {
-    return Company.createItem({
-      ...data,
-      user_id: userId,
-    }, trx)
+    return Company.createItem(
+      {
+        ...data,
+        user_id: userId,
+      },
+      trx
+    )
   }
 
   /**
@@ -68,7 +72,7 @@ class CompanyService {
 
     userCompany = {
       ...userCompany.toJSON(),
-      ...data
+      ...data,
     }
 
     return userCompany
@@ -117,15 +121,16 @@ class CompanyService {
    *
    */
   static async createContact(data, userId) {
-
     const currentContacts = await this.getContacts(userId)
 
     if (currentContacts?.rows?.length > 0) {
       throw new HttpException('only 1 contact can be added', 400)
     }
 
+    const user = await require('./UserService').getById(userId)
     return await Contact.createItem({
       ...data,
+      company_id: user.company_id,
       user_id: userId,
     })
   }
@@ -138,12 +143,12 @@ class CompanyService {
       .select('contacts.*')
       .where({ 'contacts.id': id, 'contacts.user_id': userId })
       .innerJoin({ _cm: 'companies' }, function () {
-        this.on('_cm.id', 'contacts.company_id').onNotIn('status', [STATUS_DELETE])
+        this.on('_cm.id', 'contacts.company_id').onNotIn('_cm.status', [STATUS_DELETE])
       })
       .first()
 
     if (!contact) {
-      throw new AppException('Invalid contact')
+      throw new AppException('No contact exist', 400)
     }
     await contact.updateItem(data)
 
@@ -154,7 +159,9 @@ class CompanyService {
    *
    */
   static async removeContact(id, userId) {
-    return await Contact.query().where({ 'contacts.id': id, 'contacts.user_id': userId }).update({ status: STATUS_DELETE })
+    return await Contact.query()
+      .where({ 'contacts.id': id, 'contacts.user_id': userId })
+      .update({ status: STATUS_DELETE })
   }
 
   /**
