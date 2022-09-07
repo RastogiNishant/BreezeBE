@@ -835,6 +835,9 @@ const constants = {
 
   PASS_ONBOARDING_STEP_COMPANY: 1,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES: 2,
+
+  INCOME_NORMAL_TYPE: 'normal',
+  INCOME_EXTRA_TYPE: 'extra',
 }
 
 module.exports = constants
