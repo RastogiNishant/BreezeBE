@@ -130,7 +130,7 @@ class CompanyService {
     const user = await require('./UserService').getById(userId)
     return await Contact.createItem({
       ...data,
-      company_id: user.company_id,
+      company_id: user?.company_id,
       user_id: userId,
     })
   }
