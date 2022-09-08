@@ -641,6 +641,7 @@ Route.group(() => {
 // TENANT
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
+  'valid:ProtectedFile',
 ])
 
 // Tenant members
