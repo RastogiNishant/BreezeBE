@@ -54,6 +54,7 @@ const {
   INCOME_TYPE_TRAINEE,
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 
@@ -74,6 +75,7 @@ class TenantService {
         MEMBER_FILE_TYPE_PASSPORT,
         MEMBER_FILE_TYPE_EXTRA_RENT,
         MEMBER_FILE_TYPE_EXTRA_DEBT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
       ].includes(fileType)
     ) {
       const passport = await MemberFile.query()

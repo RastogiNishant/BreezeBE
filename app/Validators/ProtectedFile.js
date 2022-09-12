@@ -10,6 +10,7 @@ const {
   MEMBER_FILE_TYPE_INCOME,
   MEMBER_FILE_TYPE_DEBT,
   MEMBER_FILE_TYPE_RENT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../constants')
 
 class ProtectedFile extends Base {
@@ -23,6 +24,7 @@ class ProtectedFile extends Base {
           MEMBER_FILE_TYPE_PASSPORT,
           MEMBER_FILE_TYPE_EXTRA_RENT,
           MEMBER_FILE_TYPE_EXTRA_DEBT,
+          MEMBER_FILE_TYPE_EXTRA_PASSPORT,
           MEMBER_FILE_TYPE_INCOME,
           MEMBER_FILE_TYPE_DEBT,
           MEMBER_FILE_TYPE_RENT,

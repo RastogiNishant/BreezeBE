@@ -20,6 +20,7 @@ const {
   MEMBER_FILE_TYPE_PASSPORT,
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -54,6 +55,7 @@ class TenantController {
     if (
       [
         MEMBER_FILE_TYPE_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
         MEMBER_FILE_TYPE_EXTRA_RENT,
         MEMBER_FILE_TYPE_EXTRA_DEBT,
         MEMBER_FILE_TYPE_INCOME,
