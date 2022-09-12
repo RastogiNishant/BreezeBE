@@ -516,6 +516,7 @@ class UserService {
       .with('members.incomes')
       .with('members.incomes.proofs')
       .with('members.passports')
+      .with('members.extra_passports')
       .with('members.extra_residency_proofs')
       .with('members.extra_score_proofs')
 

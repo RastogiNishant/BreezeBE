@@ -39,6 +39,8 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   STATUS_ACTIVE,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  MEMBER_FILE_EXTRA_PASSPORT_DOC,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -116,6 +118,7 @@ class MemberService {
         b.with('proofs')
       })
       .with('passports')
+      .with('extra_passports')
       .with('extra_residency_proofs')
       .with('extra_score_proofs')
       .orderBy('id', 'asc')
@@ -152,6 +155,14 @@ class MemberService {
             })
           )
 
+          const extra_passports = await Promise.all(
+            (member.extra_passports || []).map(async (extra_passport) => {
+              if (!extra_passport.file) return extra_passport
+              extra_passport.file = await FileBucket.getProtectedUrl(extra_passport.file)
+              return extra_passport
+            })
+          )
+
           const extra_residency_proofs = await Promise.all(
             (member.extra_residency_proofs || []).map(async (extra_residency_proof) => {
               if (!extra_residency_proof.file) return extra_residency_proof
@@ -174,10 +185,11 @@ class MemberService {
             ...member,
             rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
             debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-            incomes: incomes,
-            passports: passports,
-            extra_residency_proofs: extra_residency_proofs,
-            extra_score_proofs: extra_score_proofs,
+            incomes,
+            extra_passports,
+            passports,
+            extra_residency_proofs,
+            extra_score_proofs,
           }
           return member
         })
@@ -752,6 +764,9 @@ class MemberService {
         break
       case MEMBER_FILE_TYPE_EXTRA_DEBT:
         doc = MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC
+        break
+      case MEMBER_FILE_TYPE_EXTRA_PASSPORT:
+        doc = MEMBER_FILE_EXTRA_PASSPORT_DOC
         break
       default:
         doc = MEMBER_FILE_PASSPORT_DOC
