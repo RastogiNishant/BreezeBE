@@ -89,8 +89,8 @@ const {
   DEFAULT_LANG,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
-  STATUS_EXPIRE,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -1081,6 +1081,26 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.notifyTaskMessageSent(notice)
+  }
+
+  static async notifyTenantDisconnected(tenants = []) {
+    const estateIds = tenants.map(({ estate_id }) => estate_id)
+    const estates = (await Estate.query().whereIn('id', estateIds).fetch()).rows
+
+    const notices = tenants.map(({ estate_id, user_id }) => {
+      const estate = estates.find(({ id }) => id === estate_id)
+      return {
+        user_id,
+        type: NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+        data: {
+          estate_id,
+          estate_address: estate.address,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyTenantDisconnected(notices)
   }
 }
 
