@@ -128,6 +128,10 @@ class User extends Model {
     return this.belongsTo('App/Models/Company', 'company_id', 'id')
   }
 
+  letter_template() {
+    return this.hasOne('App/Models/LetterTemplate', 'id', 'user_id')
+  }
+
   /**
    *
    */

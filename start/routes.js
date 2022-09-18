@@ -1112,6 +1112,14 @@ Route.group(() => {
   ])
 }).prefix('api/v1/estatePermission')
 
+Route.group(() => {
+  Route.get('/', 'LetterTemplateController.get')
+  Route.post('/', 'LetterTemplateController.update').middleware(['valid:LetterTemplate'])
+  Route.put('/:id/delete_logo', 'LetterTemplateController.deleteLogo').middleware(['valid:Id'])
+})
+  .prefix('/api/v1/letter_template')
+  .middleware(['auth:jwtLandlord'])
+
 // Estate management by property manager
 Route.group(() => {
   Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
