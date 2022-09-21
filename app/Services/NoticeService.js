@@ -1,6 +1,6 @@
 'use strict'
 
-const { isEmpty, chunk } = require('lodash')
+const { isEmpty, chunk, isArray } = require('lodash')
 const moment = require('moment')
 const P = require('bluebird')
 const File = use('App/Classes/File')
@@ -91,6 +91,8 @@ const {
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
 } = require('../constants')
 
 class NoticeService {
@@ -462,11 +464,45 @@ class NoticeService {
     }
 
     await NoticeService.insertNotices([notice])
+
     if (userId) {
       await NotificationsService.sendLandlordCancelVisit([notice])
     } else {
       await NotificationsService.sendProspectCancelVisit([notice])
     }
+  }
+
+  static async updatedTimeSlot(estateId, tenantIds) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    if (!estate || !estate.user_id) {
+      Logger.error('knockToLandloard', `there is no estate for${estateId}`)
+      throw new AppException('there is no estate')
+    }
+
+    tenantIds = tenantIds && !Array.isArray(tenantIds) ? [tenantIds] : []
+    tenantIds.map(async (tenantId) => {
+      const notificationUser = tenantId
+        ? await User.query().where('id', tenantId).firstOrFail()
+        : null
+
+      const notice = {
+        user_id: estate.user_id,
+        type: NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+        data: {
+          estate_id: estate.id,
+          estate_address: estate.address,
+          user_name: tenantId ? `${notificationUser.firstname || ''}` : null,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+
+      await NoticeService.insertNotices([notice])
+
+      await NotificationsService.sendTenantUpdatedTimeSlot([notice])
+    })
   }
 
   /**
@@ -732,6 +768,7 @@ class NoticeService {
    */
   static async sendTestNotification(userId, type, estateId, extraData = {}) {
     const estate = await Database.table('estates').where('id', estateId).first()
+
     const notice = {
       user_id: userId,
       type: NotificationsService.getIdByType(type),
@@ -789,9 +826,11 @@ class NoticeService {
         notice.user_id = estate.user_id
         return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_VISIT_DELAY:
-        return NotificationsService.sendChangeVisitTime([notice])
+        return NotificationsService.sendChangeVisitTimeProspect([notice])
       case NOTICE_TYPE_VISIT_DELAY_LANDLORD:
-        return NotificationsService.sendChangeVisitTime([notice])
+        return NotificationsService.sendChangeVisitTimeLandlord([notice])
+      case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
+        return NotificationsService.sendTenantUpdatedTimeSlot([notice])
     }
   }
 

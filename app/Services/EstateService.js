@@ -601,8 +601,12 @@ class EstateService {
   /**
    * Check if existing slot after update will not cross another existing slots
    */
-  static async updateSlot(slot, data) {
+  static async updateSlot(slot, data, trx = null) {
+    const slotJSON = slot.toJSON()
+    slot.prev_start_at = moment(slotJSON?.start_at).format(DATE_FORMAT)
+    slot.prev_end_at = moment(slotJSON?.end_at).format(DATE_FORMAT)
     slot.merge(data)
+
     if (slot.slot_length) {
       const minDiff = moment.utc(slot.end_at).diff(moment.utc(slot.start_at), 'minutes')
       if (minDiff % slot.slot_length !== 0) {
@@ -620,8 +624,7 @@ class EstateService {
     if (crossingSlot) {
       throw new AppException('Time slot crossing existing')
     }
-    await slot.save()
-
+    await slot.save(trx)
     return slot
   }
 

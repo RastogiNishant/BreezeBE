@@ -421,6 +421,8 @@ const constants = {
     'notification_prospect_informed_landlord_deactivated',
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT:'notification_landlord_update_slot',
+
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
   NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID: 4,
@@ -463,6 +465,8 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 46,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID: 47,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID: 48,
+
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID: 49, // landlord updated timeslot
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',

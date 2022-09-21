@@ -677,10 +677,34 @@ class EstateController {
       throw new HttpException('Time slot not found', 404)
     }
 
+    const trx = await Database.beginTransaction()
     try {
-      const updatedSlot = await EstateService.updateSlot(slot, rest)
-      return response.res(updatedSlot)
+      const updatedSlot = await EstateService.updateSlot(slot, rest, trx)
+
+      const removeVisitsAt = MatchService.getNotCrossRange({
+        start_at: updatedSlot.start_at,
+        end_at: updatedSlot.end_at,
+        prev_start_at: updatedSlot.prev_start_at,
+        prev_end_at: updatedSlot.prev_end_at,
+      })
+
+      await Promise.all(
+        (removeVisitsAt || []).map(async (rvAt) => {
+          const visitsIn =
+            (await MatchService.getVisitsIn({
+              estate_id,
+              start_at: rvAt.start_at,
+              end_at: rvAt.end_at,
+            })) || []
+
+          const userIds = visitsIn.map((v) => v.user_id)
+          await MatchService.updatedTimeSlot(estate_id, userIds, trx)
+        })
+      )
+      await trx.commit()
+      response.res(updatedSlot)
     } catch (e) {
+      await trx.rollback()
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }

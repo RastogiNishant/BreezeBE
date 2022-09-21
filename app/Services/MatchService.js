@@ -62,6 +62,7 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
+  TIMESLOT_STATUS_REJECT,
 } = require('../constants')
 const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
@@ -770,7 +771,7 @@ class MatchService {
     })
   }
 
-  static async cancelVisit(estateId, userId) {
+  static async cancelVisit(estateId, userId, trx = null) {
     const match = await Database.query()
       .table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_VISIT, estate_id: estateId })
@@ -780,17 +781,61 @@ class MatchService {
       throw new AppException('Invalid match stage')
     }
 
-    const deleteVisit = Database.table('visits')
-      .where({ estate_id: estateId, user_id: userId })
-      .delete()
-    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+    const deleteVisit = trx
+      ? Visit.query().where({ estate_id: estateId, user_id: userId }).delete()
+      : Visit.query().where({ estate_id: estateId, user_id: userId }).delete().transacting(trx)
+
+    const updateMatch = trx
+      ? Match.query().update({ status: MATCH_STATUS_INVITE }).where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+      : Match.query()
+          .update({ status: MATCH_STATUS_INVITE })
+          .where({
+            user_id: userId,
+            estate_id: estateId,
+          })
+          .transacting(trx)
 
     await Promise.all([deleteVisit, updateMatch])
-
     NoticeService.cancelVisit(estateId, null, userId)
+  }
+
+  static async updatedTimeSlot(estateId, userIds, trx) {
+    userIds = !Array.isArray(userIds) ? [userIds] : userIds
+    const match = await Match.query()
+      .table('matches')
+      .whereIn('user_id', userIds)
+      .whereIn('status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
+      .where('estate_id', estateId)
+      .fetch()
+
+    if (!match) {
+      throw new AppException('Invalid match stage')
+    }
+
+    const deleteVisit = trx
+      ? Visit.query().where('estate_id', estateId).whereIn('user_id', userIds).delete()
+      : Visit.query()
+          .where('estate_id', estateId)
+          .whereIn('user_id', userIds)
+          .delete()
+          .transacting(trx)
+
+    const updateMatch = trx
+      ? Match.query()
+          .update({ status: MATCH_STATUS_INVITE })
+          .whereIn('user_id', userIds)
+          .where('estate_id', estateId)
+      : Match.query()
+          .update({ status: MATCH_STATUS_INVITE })
+          .whereIn('user_id', userIds)
+          .where('estate_id', estateId)
+          .transacting(trx)
+
+    await Promise.all([deleteVisit, updateMatch])
+    NoticeService.updatedTimeSlot(estateId, userIds)
   }
 
   /**
@@ -2441,6 +2486,57 @@ class MatchService {
       console.log(e)
       return false
     }
+  }
+
+  static getNotCrossRange({ start_at, end_at, prev_start_at, prev_end_at }) {
+    const ret = []
+    if (prev_start_at < start_at && prev_end_at > end_at) {
+      ret.push({ start_at: end_at, end_at: prev_end_at })
+    } else if (prev_start_at > start_at && prev_end_at < end_at) {
+      ret.push({ start_at: prev_start_at, end_at: start_at })
+    } else if (prev_start_at < start_at && prev_end_at > end_at) {
+      ret.push({ start_at: prev_start_at, end_at: start_at })
+      ret.push({ start_at: end_at, end_at: prev_end_at })
+    } else {
+      ret.push({ start_at: prev_start_at, end_at: prev_end_at })
+    }
+
+    return ret
+  }
+
+  static async getVisitsIn({ estate_id, start_at, end_at }) {
+    const startAt = Database.raw(
+      `_v.start_date + GREATEST(_v.tenant_delay, _v.lord_delay) * INTERVAL '1 minute'`
+    )
+    const endAt = Database.raw(
+      `_v.end_date + GREATEST(_v.tenant_delay, _v.lord_delay) * INTERVAL '1 minute'`
+    )
+
+    const visits = (
+      await Match.query()
+        .select('matches.user_id', 'matches.estate_id', '_v.start_date', '_v.end_date')
+        .where('matches.estate_id', estate_id)
+        .whereIn('matches.status', [MATCH_STATUS_VISIT, MATCH_STATUS_INVITE])
+        .innerJoin({ _v: 'visits' }, function () {
+          this.on('matches.user_id', '_v.user_id').onNotIn('_v.tenant_status', [
+            TIMESLOT_STATUS_REJECT,
+          ])
+        })
+        .where(function () {
+          this.orWhere(function () {
+            this.where(startAt, '>', start_at).where(startAt, '<', end_at)
+          })
+            .orWhere(function () {
+              this.where(endAt, '>', start_at).where(endAt, '<', end_at)
+            })
+            .orWhere(function () {
+              this.where(startAt, '<=', start_at).where(endAt, '>=', end_at)
+            })
+        })
+        .fetch()
+    ).rows
+
+    return visits
   }
 }
 
