@@ -28,7 +28,6 @@ const {
   EQUIPMENT_GUEST_WC,
   EQUIPMENT_WG_SUITABLE,
 
-  STATUS_DRAFT,
   STATUS_ACTIVE,
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -41,6 +40,12 @@ const {
   MATCH_STATUS_SHARE,
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
+  TASK_STATUS_DELETE,
+  TASK_STATUS_DRAFT,
+  TASK_STATUS_RESOLVED,
+  DATE_FORMAT,
+  TASK_RESOLVE_HISTORY_PERIOD,
+  ROLE_LANDLORD,
 } = require('../constants')
 
 class Estate extends Model {
@@ -60,6 +65,7 @@ class Estate extends Model {
       'house_number',
       'country',
       'floor',
+      'floor_direction',
       'number_floors',
       'prices',
       'net_rent',
@@ -150,6 +156,7 @@ class Estate extends Model {
       'extra_address',
       'is_new_tenant_transfer',
       'transfer_budget',
+      'rent_end_at',
     ]
   }
 
@@ -303,6 +310,13 @@ class Estate extends Model {
       .orderBy('urgency', 'desc')
   }
 
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
+  }
+
   /**
    *
    */
@@ -319,6 +333,13 @@ class Estate extends Model {
       MATCH_STATUS_VISIT,
       MATCH_STATUS_SHARE,
     ])
+  }
+
+  /**
+   *
+   */
+  visit_relations() {
+    return this.hasMany('App/Models/Visit')
   }
 
   /**
@@ -402,12 +423,13 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate() {
-    await this.updateItem(
+  async publishEstate(trx) {
+    await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
         available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
+      trx,
       true
     )
   }
@@ -422,11 +444,13 @@ class Estate extends Model {
   /**
    *
    */
-  async getContacts() {
+  async getContacts(user_id) {
     const contact = await Contact.query()
       .select('contacts.*', '_c.avatar')
       .innerJoin({ _c: 'companies' }, '_c.id', 'contacts.company_id')
-      .where('_c.user_id', this.user_id)
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', '_c.id').on('_u.id', user_id)
+      })
       .orderBy('contacts.id')
       .first()
 

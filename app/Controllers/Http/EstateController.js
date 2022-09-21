@@ -42,8 +42,15 @@ const {
   ROLE_USER,
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -51,6 +58,7 @@ const EstateAttributeTranslations = require('../../Classes/EstateAttributeTransl
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
+const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
 const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
 
@@ -130,7 +138,7 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id, ...data } = request.all()
+    const { id } = request.all()
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -149,49 +157,14 @@ class EstateController {
         tenant_id
       )
       let tenant = await TenantService.getTenant(tenant_id)
-      let members = await MemberService.getMembers(tenant_id)
+      let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
+
       if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
-        members = members.toJSON().map((member) => pick(member, Member.limitFieldsList))
-        tenant = tenant.toJSON({ isShort: true })
-      } else {
-        members = await Promise.all(
-          members.toJSON().map(async (member) => {
-            const incomes = await Promise.all(
-              member.incomes.map(async (income) => {
-                const proofs = await Promise.all(
-                  income.proofs.map(async (proof) => {
-                    if (!proof.file) return proof
-                    proof.file = await FileBucket.getProtectedUrl(proof.file)
-                    return proof
-                  })
-                )
-                income = {
-                  ...income,
-                  proofs: proofs,
-                }
-                return income
-              })
-            )
-
-            const passports = await Promise.all(
-              member.passports.map(async (passport) => {
-                if (!passport.file) return passport
-                passport.file = await FileBucket.getProtectedUrl(passport.file)
-                return passport
-              })
-            )
-
-            member = {
-              ...member,
-              rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-              debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-              incomes: incomes,
-              passports: passports,
-            }
-            return member
-          })
+        members = (members || members.toJSON() || []).map((member) =>
+          pick(member, Member.limitFieldsList)
         )
+        tenant = tenant.toJSON({ isShort: true })
       }
 
       const result = {
@@ -213,6 +186,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
     response.res(result)
   }
   /**
@@ -226,6 +200,9 @@ class EstateController {
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
     result = result.toJSON()
+
+    result.data = await EstateService.checkCanChangeLettingStatus(result)
+
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
@@ -235,23 +212,21 @@ class EstateController {
       //param is used
       if (params.letting_type) {
         //funnel filter was changed
-        switch (params.letting_type[0]) {
-          case LETTING_TYPE_LET:
-            result = {
-              ...result,
-              all_count: totalEstateCounts.all_count,
-              let_count: filteredCounts.let_count,
-              void_count: totalEstateCounts.void_count,
-            }
-            break
-          case LETTING_TYPE_VOID:
-            result = {
-              ...result,
-              all_count: totalEstateCounts.all_count,
-              let_count: totalEstateCounts.let_count,
-              void_count: filteredCounts.void_count,
-            }
-            break
+        result = {
+          ...result,
+          all_count: totalEstateCounts.all_count,
+          let_count:
+            params.letting_type[0] === LETTING_TYPE_LET
+              ? filteredCounts.let_count
+              : totalEstateCounts.let_count,
+          void_count:
+            params.letting_type[0] === LETTING_TYPE_VOID
+              ? filteredCounts.void_count
+              : totalEstateCounts.void_count,
+          na_count:
+            params.letting_type[0] === LETTING_TYPE_NA
+              ? filteredCounts.na_count
+              : totalEstateCounts.na_count,
         }
       } else {
         //All is selected...
@@ -259,7 +234,8 @@ class EstateController {
           ...result,
           all_count: filteredCounts.all_count,
           let_count: totalEstateCounts.let_count,
-          void_count: filteredCounts.void_count,
+          void_count: totalEstateCounts.void_count,
+          na_count: totalEstateCounts.na_count,
         }
       }
     }
@@ -616,9 +592,12 @@ class EstateController {
 
     estate.isoline = await EstateService.getIsolines(estate)
 
-    estate = estate.toJSON({ isShort: true, role: auth.user.role })
+    estate = estate.toJSON({
+      isShort: true,
+      role: auth.user.role,
+      extraFields: ['landlord_type'],
+    })
     estate = await EstateService.assignEstateAmenities(estate)
-
     response.res(estate)
   }
 
@@ -985,6 +964,46 @@ class EstateController {
       estates,
       prospectCount,
     })
+  }
+
+  async changeLettingType({ request, auth, response }) {
+    const { id, letting_type } = request.all()
+    const matchCount = await MatchService.matchCount(
+      [
+        MATCH_STATUS_KNOCK,
+        MATCH_STATUS_INVITE,
+        MATCH_STATUS_VISIT,
+        MATCH_STATUS_SHARE,
+        MATCH_STATUS_COMMIT,
+        MATCH_STATUS_TOP,
+        MATCH_STATUS_FINISH,
+      ],
+      [id]
+    )
+
+    if (matchCount && matchCount.length && parseInt(matchCount[0].count)) {
+      throw new HttpException(
+        "There is a match for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId(id)
+
+    if (estateCurrentTenant) {
+      throw new HttpException(
+        "There is a tenant for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    await Estate.query()
+      .where('id', id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ letting_type: letting_type })
+
+    response.res(true)
   }
 }
 

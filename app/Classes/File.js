@@ -12,6 +12,9 @@ const AppException = use('App/Exceptions/AppException')
 const imageminPngquant = require('imagemin-pngquant')
 const HttpException = use('App/Exceptions/HttpException')
 const imageThumbnail = require('image-thumbnail')
+const exec = require('node-async-exec')
+const fsPromise = require('fs/promises')
+const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
 
 class File {
   static IMAGE_JPG = 'image/jpg'
@@ -43,6 +46,22 @@ class File {
     }
   }
 
+  static async compressPDF(filePath) {
+    try {
+      // need to install ghostscript to linux so this shell will work.
+      // need to give read/write permission to tmp directly
+
+      const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.pdf`
+      await exec({
+        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}`,
+      })
+      const data = await fsPromise.readFile(outputFileName)
+      fsPromise.unlink(outputFileName)
+      return data
+    } catch (e) {
+      throw new AppException(e.message, 400)
+    }
+  }
   /**
    *
    */
@@ -59,9 +78,9 @@ class File {
     }
 
     try {
-      let img_data = Drive.getStream(file.tmpPath)
-      const image_compress_tick = process.env.IMAGE_COMPRESS_TICK || 10000
+      let img_data
       if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
+        img_data = Drive.getStream(file.tmpPath)
         const imagemin = (await import('imagemin')).default
         const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
 
@@ -72,11 +91,14 @@ class File {
         )[0].data
       }
 
+      if ([this.IMAGE_PDF].includes(mime)) {
+        img_data = await this.compressPDF(file.tmpPath)
+      }
+
       const filename = `${uuid.v4()}.${ext}`
       const dir = moment().format('YYYYMM')
       const filePathName = `${dir}/${filename}`
       const disk = isPublic ? 's3public' : 's3'
-
       const options = { ContentType: file.headers['content-type'] }
       if (isPublic) {
         options.ACL = 'public-read'

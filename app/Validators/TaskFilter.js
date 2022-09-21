@@ -9,21 +9,21 @@ const {
   TASK_STATUS_INPROGRESS_LABEL,
   TASK_STATUS_UNRESOLVED_LABEL,
   TASK_STATUS_RESOLVED_LABEL,
-  TASK_STATUS_CLOSED_LABEL,
 
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
 
   URGENCY_LOW_LABEL,
   URGENCY_NORMAL_LABEL,
   URGENCY_HIGH_LABEL,
   URGENCY_SUPER_LABEL,
 
-  IS_INSIDE_BREEZE,
-  IS_OUTSIDE_BREEZE,
+  ALL_BREEZE,
+  CONNECTED_BREEZE_TEANT_LABEL,
+  NOT_CONNECTED_BREEZE_TEANT_LABEL,
+  PENDING_BREEZE_TEANT_LABEL,
 
   FILTER_CONSTRAINTS_MATCH_MODES,
   FILTER_CONSTRAINTS_DATE_MATCH_MODES,
@@ -54,7 +54,6 @@ class TaskFilter extends Base {
                   TASK_STATUS_INPROGRESS_LABEL,
                   TASK_STATUS_UNRESOLVED_LABEL,
                   TASK_STATUS_RESOLVED_LABEL,
-                  TASK_STATUS_CLOSED_LABEL,
                 ])
             )
             .nullable(),
@@ -119,7 +118,19 @@ class TaskFilter extends Base {
         .object()
         .shape({
           matchMode: yup.string(),
-          value: yup.boolean().nullable(),
+          value: yup
+            .array()
+            .of(
+              yup
+                .string()
+                .oneOf([
+                  ALL_BREEZE,
+                  CONNECTED_BREEZE_TEANT_LABEL,
+                  NOT_CONNECTED_BREEZE_TEANT_LABEL,
+                  PENDING_BREEZE_TEANT_LABEL,
+                ])
+            )
+            .nullable(),
         })
         .nullable(),
       city: yup
@@ -184,7 +195,6 @@ class TaskFilter extends Base {
               TASK_STATUS_INPROGRESS,
               TASK_STATUS_RESOLVED,
               TASK_STATUS_UNRESOLVED,
-              TASK_STATUS_CLOSED,
             ])
         )
         .nullable(),

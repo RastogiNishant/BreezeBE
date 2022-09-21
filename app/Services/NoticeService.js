@@ -7,6 +7,7 @@ const File = use('App/Classes/File')
 const Database = use('Database')
 const UserService = use('App/Services/UserService')
 const User = use('App/Models/User')
+const Match = use('App/Models/Match')
 const Notice = use('App/Models/Notice')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
@@ -86,7 +87,10 @@ const {
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   DEFAULT_LANG,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -978,13 +982,52 @@ class NoticeService {
         },
       }
     })
-
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendZendeskNotification(
       notices,
       notification.title,
       notification.body
     )
+  }
+
+  static async landlordsDeactivated(userIds, estateIds) {
+    const notices = await userIds.reduce((notices, userId) => {
+      return (notices = [
+        ...notices,
+        {
+          user_id: userId,
+          type: NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
+        },
+      ])
+    }, [])
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyDeactivatedLandlords(notices)
+
+    const estateMatches = await Estate.query()
+      .select(Database.raw(`estates.id as estate_id`))
+      .select(Database.raw(`estates.cover`))
+      .select('estates.address')
+      .select(Database.raw(`matches.user_id as recipient_id`))
+      .whereIn('estates.id', estateIds)
+      .innerJoin('matches', 'estates.id', 'matches.estate_id')
+      .fetch()
+    const prospectNotices = await estateMatches.toJSON().reduce((notices, match) => {
+      return (notices = [
+        ...notices,
+        {
+          user_id: match.recipient_id,
+          type: NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
+          data: {
+            estate_id: match.estate_id,
+            estate_address: match.address,
+            image: File.getPublicUrl(match.cover),
+          },
+        },
+      ])
+    }, [])
+
+    await NoticeService.insertNotices(prospectNotices)
+    await NotificationsService.notifyProspectThatLandlordDeactivated(prospectNotices)
   }
 
   static async deactivatingLandlordsInTwoDays(userIds, deactivateDateTime) {
@@ -1038,6 +1081,26 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.notifyTaskMessageSent(notice)
+  }
+
+  static async notifyTenantDisconnected(tenants = []) {
+    const estateIds = tenants.map(({ estate_id }) => estate_id)
+    const estates = (await Estate.query().whereIn('id', estateIds).fetch()).rows
+
+    const notices = tenants.map(({ estate_id, user_id }) => {
+      const estate = estates.find(({ id }) => id === estate_id)
+      return {
+        user_id,
+        type: NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+        data: {
+          estate_id,
+          estate_address: estate.address,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyTenantDisconnected(notices)
   }
 }
 

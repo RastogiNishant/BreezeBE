@@ -4,7 +4,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq, pick } = require('lodash')
+const { get, isArray, isEmpty, uniq, pick, trim } = require('lodash')
 const Promise = require('bluebird')
 
 const Role = use('Role')
@@ -45,6 +45,8 @@ const {
   SIGN_IN_METHOD_GOOGLE,
   USER_ACTIVATION_STATUS_ACTIVATED,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+  PASS_ONBOARDING_STEP_COMPANY,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -127,6 +129,7 @@ class UserService {
       email: user.email,
       method,
     })
+    Event.fire('mautic:createContact', user.id)
 
     return user
   }
@@ -513,6 +516,9 @@ class UserService {
       .with('members.incomes')
       .with('members.incomes.proofs')
       .with('members.passports')
+      .with('members.extra_passports')
+      .with('members.extra_residency_proofs')
+      .with('members.extra_score_proofs')
 
     const tenant = await tenantQuery.first()
     if (!tenant) {
@@ -905,7 +911,10 @@ class UserService {
         trx
       )
 
-      Event.fire('mautic:createContact', user.id)
+      if (!trx) {
+        // If there is trx, we should fire this event after the transaction is committed
+        Event.fire('mautic:createContact', user.id)
+      }
 
       await UserService.sendConfirmEmail(user, from_web)
       return user
@@ -920,6 +929,30 @@ class UserService {
 
   static async getCountOfProspects() {
     return await User.query().count('*').where('role', ROLE_USER)
+  }
+
+  static async updateCompany({ user_id, company_id }, trx) {
+    let query = User.query().where('id', user_id).update({ company_id })
+
+    if (trx) {
+      return await query.transacting(trx)
+    }
+
+    return await query
+  }
+
+  static setOnboardingStep(user) {
+    if (!user) {
+      throw new HttpException('No User passed', 500)
+    }
+    user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
+    if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
+      user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
+    } else if (user.company_id && user.preferred_services && trim(user.preferred_services) !== '') {
+      user.onboarding_step = null
+    }
+
+    return user
   }
 }
 

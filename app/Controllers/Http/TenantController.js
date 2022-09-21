@@ -18,6 +18,9 @@ const {
   STATUS_ACTIVE,
   LOG_TYPE_ACTIVATED_PROFILE,
   MEMBER_FILE_TYPE_PASSPORT,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -49,7 +52,15 @@ class TenantController {
       throw new HttpException('No access', 403)
     }
 
-    if (file_type === MEMBER_FILE_TYPE_INCOME || file_type === MEMBER_FILE_TYPE_PASSPORT) {
+    if (
+      [
+        MEMBER_FILE_TYPE_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_RENT,
+        MEMBER_FILE_TYPE_EXTRA_DEBT,
+        MEMBER_FILE_TYPE_INCOME,
+      ].includes(file_type)
+    ) {
       if (!file_id) {
         throw new HttpException('File id required', 400)
       }
@@ -130,7 +141,7 @@ class TenantController {
     try {
       await TenantService.activateTenant(tenant)
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
-      Event.fire('mautic:syncContact', auth.user.id, { last_signin_date: new Date() })
+      Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
       console.log(e.message)
       throw new HttpException(e.message, 400, e.code)

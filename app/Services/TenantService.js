@@ -52,6 +52,9 @@ const {
   INCOME_TYPE_HOUSE_WORK,
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_TRAINEE,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 
@@ -67,11 +70,18 @@ class TenantService {
    *
    */
   static async getProtectedFileLink(userId, fileId, fileType, memberId) {
-    if (fileType === MEMBER_FILE_TYPE_PASSPORT) {
+    if (
+      [
+        MEMBER_FILE_TYPE_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_RENT,
+        MEMBER_FILE_TYPE_EXTRA_DEBT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+      ].includes(fileType)
+    ) {
       const passport = await MemberFile.query()
         .where('member_id', memberId)
         .where('id', fileId)
-        .where('type', MEMBER_FILE_TYPE_PASSPORT)
+        .where('type', fileType)
         .where('status', STATUS_ACTIVE)
         .first()
       if (!passport) {
@@ -358,6 +368,16 @@ class TenantService {
     const member = await Member.query().where({ user_id: userId, child: false }).first()
 
     return tenant && tenant.selected_adults_count && member
+  }
+
+  static async updateTenantAddress({ user, address }, trx) {
+    let tenant = await getOrCreateTenant(user, trx)
+    const { lon, lat } = await GeoService.geeGeoCoordByAddress(address)
+
+    tenant.address = address
+    tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
+
+    await tenant.save(trx)
   }
 }
 

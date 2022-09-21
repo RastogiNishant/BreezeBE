@@ -78,6 +78,8 @@ Route.group(() => {
     'auth:jwtAdministrator',
   ])
 
+  Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware(['auth:jwt'])
+
   //admin plan
   //Controllers should be moved to app/Controllers/Http/Admin
   Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
@@ -132,7 +134,7 @@ Route.group(() => {
   Route.get(
     '/predefinedMessageChoice',
     'Admin/PredefinedMessageChoiceController.getAll'
-  ).middleware(['auth:jwtAdministrator'])
+  ).middleware(['auth:jwtAdministrator', 'valid:PredefinedMessageChoiceFilter'])
   Route.post(
     '/predefinedMessageChoice',
     'Admin/PredefinedMessageChoiceController.create'
@@ -145,6 +147,15 @@ Route.group(() => {
     '/predefinedMessageChoice/:id',
     'Admin/PredefinedMessageChoiceController.delete'
   ).middleware(['auth:jwtAdministrator', 'valid:Id'])
+
+  //estates
+  Route.get('/estates', 'Admin/PropertyController.getProperties').middleware([
+    'auth:jwtAdministrator',
+  ])
+  Route.put('/estates/publish-status', 'Admin/PropertyController.updatePublishStatus').middleware([
+    'auth:jwtAdministrator',
+    'valid:AdminUpdatePublishStatus',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -470,19 +481,25 @@ Route.group(() => {
   ])
 
   Route.post(
-    '/:estate_id/tenant/invite/email',
+    '/tenant/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'
   ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/invite/letter',
+    '/tenant/invite/letter',
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
   ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/invite/sms',
+    '/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
+
+  Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
+    'valid:InvitationIds',
+  ])
+
+  Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
@@ -491,6 +508,11 @@ Route.post(
   '/api/v1/accept/outside_tenant',
   'EstateCurrentTenantController.acceptOutsideTenant'
 ).middleware(['valid:OutsideTenantInvite'])
+
+Route.post(
+  '/api/v1/accept/outside_tenant/already_registered',
+  'EstateCurrentTenantController.acceptAlreadyRegisterdOutsideTenant'
+).middleware(['auth:jwt', 'valid:AlreadyRegisteredOutsideTenantInvite'])
 
 // Change visits statuses
 Route.group(() => {
@@ -619,6 +641,7 @@ Route.group(() => {
 // TENANT
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
+  'valid:ProtectedFile',
 ])
 
 // Tenant members
@@ -658,10 +681,16 @@ Route.group(() => {
   Route.delete('/:id/income/:income_id', 'MemberController.removeMemberIncome').middleware([
     'valid:Id,IncomeId',
   ])
-  Route.delete('/:id/passport/:passport_id', 'MemberController.deletePassportImage').middleware([
-    'valid:Id,PassportId',
+  Route.delete('/:id/passport/:member_file_id', 'MemberController.deleteExtraImage').middleware([
+    'valid:Id,MemberFileId',
+  ])
+  Route.delete('/:id/extraproof/:member_file_id', 'MemberController.deleteExtraImage').middleware([
+    'valid:Id,MemberFileId',
   ])
   Route.post('/:id/passport', 'MemberController.addPassportImage').middleware(['valid:Id'])
+  Route.post('/:id/extraproof', 'MemberController.addPassportImage').middleware([
+    'valid:Id,ExtraFileType',
+  ])
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
   Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
     'valid:MemberId,Phone',
@@ -710,10 +739,16 @@ Route.group(() => {
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
-
+  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
+  .middleware(['auth:jwt,jwtLandlord'])
+
+Route.group(() => {
+  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
+})
+  .prefix('api/v1/connect/chat')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
@@ -723,7 +758,6 @@ Route.group(() => {
   Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
     'valid:Pagination,TaskFilter',
   ])
-  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -748,9 +782,19 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll')
+  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware([
+    'valid:PredefinedMessageFilter',
+  ])
 })
   .prefix('api/v1/connect/predefinedMessage')
+  .middleware(['auth:jwt,jwtLandlord'])
+
+Route.group(() => {
+  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware([
+    'valid:PredefinedMessageChoiceFilter',
+  ])
+})
+  .prefix('api/v1/connect/predefinedMessageChoice')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {

@@ -158,6 +158,10 @@ const {
   SALUTATION_MR,
   SALUTATION_MS,
   SALUTATION_SIR_OR_MADAM,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_NA,
 } = require('../constants')
 
 escapeStr = (v) => {
@@ -913,6 +917,20 @@ class EstateAttributeTranslations {
           'landlord.profile.user_details.salut.sir_madam.message',
         ],
         values: [SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM],
+      },
+      floor_direction: {
+        keys: [
+          'property.attribute.LETTING_TYPE.NA.message',
+          'property.attribute.floor_direction.left.message',
+          'property.attribute.floor_direction.right.message',
+          'property.attribute.floor_direction.straight.message',
+        ],
+        values: [
+          ESTATE_FLOOR_DIRECTION_NA,
+          ESTATE_FLOOR_DIRECTION_LEFT,
+          ESTATE_FLOOR_DIRECTION_RIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT,
+        ],
       },
     }
     this.dataMap = dataMap

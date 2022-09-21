@@ -85,6 +85,10 @@ const {
   NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
   NOTICE_TYPE_PROSPECT_SUPER_MATCH,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
+  NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
@@ -92,6 +96,8 @@ const {
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE,
   URGENCIES,
+  NOTICE_TYPE_TENANT_DISCONNECTION,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID,
 } = require('../constants')
 
 const mapping = [
@@ -136,6 +142,12 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS],
   [NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE],
   [NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE],
+  [NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW],
+  [
+    NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
+    NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
+  ],
+  [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
 ]
 
 class NotificationsService {
@@ -477,7 +489,7 @@ class NotificationsService {
     return NotificationsService.sendNotes(
       notice,
       (data, lang) => {
-        return `${data.user_name} ${(l.get('prospect.notification.event.arrived'), lang)}`
+        return `${data.user_name} ${l.get('prospect.notification.event.arrived', lang)}`
       },
       (data, lang) => {
         return (
@@ -763,7 +775,7 @@ class NotificationsService {
   }
 
   static async sendProspectHouseholdDisconnected(notices) {
-    const title = 'prospect.notification.event.fellow_disconnected'
+    const title = 'prospect.notification.event.fellow_disconnected.message'
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return l.get('prospect.notification.next.fellow_disconnected.message', lang)
@@ -774,10 +786,27 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, body)
   }
 
+  static async notifyDeactivatedLandlords(notices) {
+    const title = 'landlord.notification.event.profile_deactivated_now'
+    const body = 'landlord.notification.event.profile_deactivated_now.next.message'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
   static async notifyDeactivatingLandlordsInTwoDays(notices) {
     const title = 'landlord.notification.event.profile_deactivated_two_days'
     const body = 'landlord.notification.event.profile_deactivated_two_days.next.message'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
 
+  static async notifyProspectThatLandlordDeactivated(notices) {
+    const title = 'prospect.notification.event.landlord_deactivated'
+    const body = (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.event.landlord_deactivated.next.message', lang)
+      )
+    }
     return NotificationsService.sendNotes(notices, title, body)
   }
 
@@ -789,7 +818,7 @@ class NotificationsService {
     const title = `${recipient}.notification.event.message_got`
     const body = (data) => {
       if (recipient === 'landlord') {
-        let text = `${data.estate_address} \n}`
+        let text = `${data.estate_address} \n`
 
         const urgency = URGENCIES.find(({ value }) => value == data.urgency)?.label
 
@@ -805,8 +834,13 @@ class NotificationsService {
       }
       return data.message
     }
-
     return NotificationsService.sendNotes([notice], title, body)
+  }
+
+  static async notifyTenantDisconnected(notices) {
+    const title = 'tenant.notification.event.tenant_disconnected'
+    const body = 'tenant.notification.next.tenant_disconnected'
+    return NotificationsService.sendNotes(notices, title, body)
   }
 }
 

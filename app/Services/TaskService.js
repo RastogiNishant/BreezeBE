@@ -11,10 +11,15 @@ const {
   CHAT_TYPE_BOT_MESSAGE,
   DEFAULT_LANG,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_RESOLVED,
+  DATE_FORMAT,
+  TASK_RESOLVE_HISTORY_PERIOD,
 } = require('../constants')
 
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
+const moment = require('moment')
 
 const { isArray } = require('lodash')
 const {
@@ -54,6 +59,7 @@ class TaskService {
       creator_role: user.role,
       tenant_id: tenant_id,
       status: TASK_STATUS_NEW,
+      status_changed_by: user.role,
     }
 
     const files = await TaskService.saveTaskImages(request)
@@ -73,11 +79,19 @@ class TaskService {
   }
 
   static async init(user, data) {
-    const { predefined_message_id, predefined_message_choice_id, estate_id, task_id, answer } = data
+    const {
+      predefined_message_id,
+      prev_predefined_message_id,
+      predefined_message_choice_id,
+      estate_id,
+      task_id,
+      answer,
+    } = data
     let { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
 
+    //FIXME: predefined_message_id should be required?
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
@@ -135,7 +149,6 @@ class TaskService {
         },
         trx
       )
-
       messages.push(landlordMessage.toJSON())
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
@@ -148,6 +161,7 @@ class TaskService {
         const resp = await PredefinedMessageService.handleMessageWithChoice(
           {
             answer,
+            prev_predefined_message_id,
             task,
             predefinedMessage,
             predefined_message_choice_id,
@@ -222,6 +236,7 @@ class TaskService {
 
     const taskRow = await query.firstOrFail()
 
+    task.status_changed_by = user.role
     if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
     return await taskRow.updateItem({ ...task })
   }
@@ -294,27 +309,39 @@ class TaskService {
   }
 
   static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
-    let taskQuery = Task.query().select('tasks.*')
+    let taskQuery = Task.query()
+      .select('tasks.*')
+      .select(
+        Database.raw(`coalesce(
+        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}  
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
+          and "tasks"."updated_at" > '${moment
+            .utc()
+            .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
+            .format(DATE_FORMAT)}' 
+          and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`)
+      )
 
     if (role === ROLE_USER) {
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
       taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
       })
     }
 
     if (status) {
-      taskQuery.whereIn('tasks.status', status)
+      taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
     }
     taskQuery
       .where('tasks.estate_id', estate_id)
-      .whereNot('tasks.status', TASK_STATUS_DELETE)
+      .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
-      .orderBy('tasks.created_at', 'desc')
       .orderBy('tasks.urgency', 'desc')
 
     let tasks = null
@@ -408,7 +435,7 @@ class TaskService {
   }
 
   static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
+    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
     const files = await File.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: false },
     ])
@@ -459,6 +486,9 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
+      files.attachments = await ChatService.getAbsoluteUrl(
+        Array.isArray(files.file) ? files.file : [files.file]
+      )
       return files
     }
     throw new HttpException('Image Not saved', 500)
@@ -470,7 +500,11 @@ class TaskService {
     const attachments = task
       .toJSON()
       .attachments.filter(
-        (attachment) => !(attachment.user_id === user.id && attachment.uri === uri)
+        (attachment) =>
+          !(
+            attachment.user_id === user.id &&
+            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
+          )
       )
 
     return await Task.query()

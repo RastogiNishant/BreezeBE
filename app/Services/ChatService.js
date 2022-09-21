@@ -13,11 +13,11 @@ const {
   CHAT_TYPE_BOT_MESSAGE,
   STATUS_ACTIVE,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
   TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
+  ISO_DATE_FORMAT,
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
@@ -78,13 +78,14 @@ class ChatService {
     return chat
   }
 
-  static async getPreviousMessages(taskId, lastId) {
+  static async getPreviousMessages({ task_id, lastId, user_id, page = -1, limit = -1 }) {
     const query = Chat.query()
       .select('chats.id as id')
       .select('text as message')
       .select('attachments')
       .select('created_at as dateTime')
       .select(Database.raw(`senders.sender`))
+      .select('_t.urgency')
       .leftJoin(
         Database.raw(`(select id,
         json_build_object('id', users.id, 'firstname', users.firstname, 
@@ -94,14 +95,28 @@ class ChatService {
         'senders.id',
         'chats.sender_id'
       )
+      .leftJoin(
+        Database.raw(`(
+        select id, urgency from tasks where id='${task_id}'
+      ) as _t`),
+        function () {
+          this.on('_t.id', 'chats.task_id').on('_t.id', task_id)
+        }
+      )
       .where({
-        task_id: taskId,
+        task_id: task_id,
       })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
-      .limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
+
+    if (limit !== -1) {
+      query.limit(limit)
+    } else {
+      query.limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
+    }
+
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
@@ -224,12 +239,7 @@ class ChatService {
           'estates.id'
         )
       })
-      .whereNotIn('tasks.status', [
-        TASK_STATUS_RESOLVED,
-        TASK_STATUS_DRAFT,
-        TASK_STATUS_CLOSED,
-        TASK_STATUS_DELETE,
-      ])
+      .whereNotIn('tasks.status', [TASK_STATUS_RESOLVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .where('estate_current_tenants.status', STATUS_ACTIVE)
     if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
@@ -256,7 +266,6 @@ class ChatService {
     )
     return unreadMessagesByTopic
   }
-
 
   static async getAbsoluteUrl(attachments) {
     try {
@@ -305,7 +314,6 @@ class ChatService {
         (items = items.map(async (item) => {
           if (item.attachments) {
             item.attachments = await ChatService.getAbsoluteUrl(item.attachments)
-            console.log('getItemsWithAbsoluteUrl', item.attachments)
           }
           return item
         }))
@@ -333,7 +341,7 @@ class ChatService {
       await trx.rollback()
       throw new HttpException(e)
     }
-  }  
+  }
 }
 
 module.exports = ChatService
