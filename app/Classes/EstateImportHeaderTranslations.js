@@ -147,8 +147,8 @@ class EstateImportHeaderTranslations {
     'pets_allowed',
     'txt_salutation',
     'minors',
-    'tenant_tel',
-    'tenant_email',
+    'phone_number',
+    'email',
     'heating_costs',
     'landlord_email',
   ]

@@ -233,8 +233,8 @@ class ImportService {
       'txt_salutation',
       'surname',
       'contract_end',
-      'tenant_tel',
-      'tenant_email',
+      'phone_number',
+      'email',
       'salutation_int',
     ])
     let estate = await Estate.query().where('six_char_code', six_char_code).first()
@@ -248,7 +248,7 @@ class ImportService {
     estate.fill(estate_data)
     await estate.save()
 
-    if (data.tenant_email) {
+    if (data.email) {
       await EstateCurrentTenantService.updateCurrentTenant({
         data,
         estate_id: estate.id,
@@ -270,7 +270,7 @@ class ImportService {
     // Run task to separate get coords and point of estate
     QueueService.getEstateCoords(estate.id)
     //await EstateService.updateEstateCoord(estate.id)
-    // if (data.tenant_email) {
+    // if (data.email) {
     //   await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
     // }
     return estate
