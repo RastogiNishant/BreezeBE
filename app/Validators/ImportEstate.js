@@ -189,6 +189,7 @@ const {
   LETTING_STATUS_VACANCY,
   PARKING_SPACE_TYPE_NO_PARKING,
 
+  ESTATE_FLOOR_DIRECTION_NA,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
@@ -260,6 +261,7 @@ class ImportEstate extends Base {
         .number()
         .integer()
         .oneOf([
+          ESTATE_FLOOR_DIRECTION_NA,
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
@@ -487,7 +489,7 @@ class ImportEstate extends Base {
       city: yup.string().max(40).required('City is required.'),
       zip: yup.string().max(8).required('Post Code is required.'),
       budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().integer().min(0).max(100),
+      credit_score: yup.number().min(0).max(100),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),

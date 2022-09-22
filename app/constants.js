@@ -32,6 +32,17 @@ const constants = {
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
   MEMBER_FILE_TYPE_PASSPORT: 'passport',
 
+  MEMBER_FILE_TYPE_EXTRA_RENT: 'extra_rent_proof',
+  MEMBER_FILE_TYPE_EXTRA_DEBT: 'extra_debt_proof',
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT: 'extra_passport',
+
+  MEMBER_FILE_RENT_ARREARS_DOC: 'rent_arrears_doc',
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC: 'extra_rent_arrears_doc',
+  MEMBER_FILE_DEBT_PROOFS_DOC: 'debt_proof',
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC: 'extra_debt_proof',
+  MEMBER_FILE_PASSPORT_DOC: 'passport',
+  MEMBER_FILE_EXTRA_PASSPORT_DOC: 'extra_passport',
+
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
 
@@ -408,8 +419,12 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW: 'notification_landlord_deactivated',
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED:
     'notification_prospect_informed_landlord_deactivated',
+<<<<<<< HEAD
   NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT: 'notification_landlord_followup_prospect',
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
+=======
+  NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
+>>>>>>> development
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -452,8 +467,12 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 45,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 46,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID: 47,
+<<<<<<< HEAD
   NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID: 48,
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID: 49,
+=======
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID: 48,
+>>>>>>> development
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -555,6 +574,7 @@ const constants = {
     'is_new_tenant_transfer',
     'transfer_budget',
     'rent_end_at',
+    'knocked_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -607,6 +627,10 @@ const constants = {
   LETTING_STATUS_STRUCTURAL_VACANCY: 5,
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
+
+  SALUTATION_MR_LABEL: 'Mr.',
+  SALUTATION_MS_LABEL: 'Ms.',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
 
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
@@ -680,7 +704,6 @@ const constants = {
   TASK_STATUS_INPROGRESS: 2,
   TASK_STATUS_UNRESOLVED: 3,
   TASK_STATUS_RESOLVED: 4,
-  TASK_STATUS_CLOSED: 5,
 
   BREEZE_BOT_USER: {
     id: 0,
@@ -696,11 +719,10 @@ const constants = {
   TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
   TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',
   TASK_STATUS_RESOLVED_LABEL: 'Resolved',
-  TASK_STATUS_CLOSED_LABEL: 'Closed',
 
   ALL_BREEZE: 'All',
-  INSIDE_BREEZE_TEANT_LABEL: 'Connected',
-  OUTSIDE_BREEZE_TEANT_LABEL: 'Not Connected',
+  CONNECTED_BREEZE_TEANT_LABEL: 'Connected',
+  NOT_CONNECTED_BREEZE_TEANT_LABEL: 'Not Connected',
   PENDING_BREEZE_TEANT_LABEL: 'Pending',
 
   CHAT_EDIT_STATUS_UNEDITED: 'unedited',
@@ -806,15 +828,32 @@ const constants = {
     },
   ],
 
-  ESTATE_FLOOR_DIRECTION_LEFT: 1,
-  ESTATE_FLOOR_DIRECTION_RIGHT: 2,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT: 3,
+  ESTATE_FLOOR_DIRECTION_NA: 1,
+  ESTATE_FLOOR_DIRECTION_LEFT: 2,
+  ESTATE_FLOOR_DIRECTION_RIGHT: 3,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT: 4,
 
   TENANT_INVITATION_EXPIRATION_DATE: 2,
 
   ESTATE_VALID_ADDRESS_LABEL: 'Valid',
   ESTATE_INVALID_ADDRESS_LABEL: 'Error',
   ESTATE_ALL_ADDRESS_LABEL: 'All',
+
+  EMAIL_REG_EXP:
+    /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
+  PHONE_REG_EXP: /^\+[1-9]{1,2}[0-9]{9,11}$/,
+
+  //Date period
+  TASK_RESOLVE_HISTORY_PERIOD: 3,
+
+  CONNECT_SERVICE_INDEX: 1,
+  MATCH_SERVICE_INDEX: 2,
+
+  PASS_ONBOARDING_STEP_COMPANY: 1,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES: 2,
+
+  INCOME_NORMAL_TYPE: 'normal',
+  INCOME_EXTRA_TYPE: 'extra',
 }
 
 module.exports = constants

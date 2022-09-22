@@ -202,7 +202,7 @@ class QueueJobService {
         )
 
         await Estate.query()
-          .whereIn('user_id', userId)
+          .where('user_id', userId)
           .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
           .update({ status: STATUS_DRAFT }, trx)
 
@@ -211,6 +211,7 @@ class QueueJobService {
           .where('user_id', userId)
           .delete(trx)
         await trx.commit()
+        Event.fire('mautic:syncContact', userId, { admin_approval_date: null })
       } catch (err) {
         await trx.rollback()
         console.log(err.message)

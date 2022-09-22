@@ -12,12 +12,13 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
   ALL_BREEZE,
-  INSIDE_BREEZE_TEANT_LABEL,
-  OUTSIDE_BREEZE_TEANT_LABEL,
+  CONNECTED_BREEZE_TEANT_LABEL,
+  NOT_CONNECTED_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
   DATE_FORMAT,
+  STATUS_ACTIVE,
+  TENANT_INVITATION_EXPIRATION_DATE,
 } = require('../constants')
 
 class TaskFilters extends Filter {
@@ -49,31 +50,26 @@ class TaskFilters extends Filter {
         inprogress: TASK_STATUS_INPROGRESS,
         resolved: TASK_STATUS_RESOLVED,
         unresolved: TASK_STATUS_UNRESOLVED,
-        closed: TASK_STATUS_CLOSED,
       },
     }
     Filter.TableInfo = {
       property_id: 'estates',
       address: 'estates',
-      city: 'estates',
       urgency: 'tasks',
       status: 'tasks',
       email: '_ect',
       phone_number: '_ect',
       surname: '_ect',
-      firstname: '_u',
-      secondname: '_u',
     }
 
     Filter.paramToField = {
       active_task: 'count(tasks.id)',
-      tenant: ['firstname', 'secondname', 'surname'],
+      tenant: ['surname'],
     }
     this.matchFilter(
       [
         'property_id',
         'address',
-        'city',
         'urgency',
         'email',
         'phone_number',
@@ -91,27 +87,31 @@ class TaskFilters extends Filter {
       !params.breeze_type.value.includes(ALL_BREEZE)
     ) {
       this.query.andWhere(function () {
-        if (params.breeze_type.value.includes(INSIDE_BREEZE_TEANT_LABEL)) {
-          this.query.orWhere(Database.raw('_ect.user_id IS NOT NULL'))
-        }
-
-        if (params.breeze_type.value.includes(OUTSIDE_BREEZE_TEANT_LABEL)) {
+        if (params.breeze_type.value.findIndex((v) => v === CONNECTED_BREEZE_TEANT_LABEL) !== -1) {
           this.query.orWhere(
-            Database.raw(`
-              (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
-              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
-                .utc(new Date())
-                .subtract(2, 'days')
-                .format(DATE_FORMAT)}' )`)
+            Database.raw(`_ect.user_id IS NOT NULL and _ect.status = ${STATUS_ACTIVE}`)
           )
         }
 
-        if (params.breeze_type.value.includes(PENDING_BREEZE_TEANT_LABEL)) {
+        if (
+          params.breeze_type.value.findIndex((v) => v === NOT_CONNECTED_BREEZE_TEANT_LABEL) !== -1
+        ) {
+          this.query.orWhere(
+            Database.raw(`
+            (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
+            (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+              .utc(new Date())
+              .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+              .format(DATE_FORMAT)}' )`)
+          )
+        }
+
+        if (params.breeze_type.value.findIndex((v) => v === PENDING_BREEZE_TEANT_LABEL) !== -1) {
           this.query.orWhere(
             Database.raw(`
               _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
                 .utc(new Date())
-                .subtract(2, 'days')
+                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
                 .format(DATE_FORMAT)}'`)
           )
         }

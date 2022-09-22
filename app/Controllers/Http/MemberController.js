@@ -25,6 +25,12 @@ const {
   STATUS_ACTIVE,
   STATUS_DELETE,
   MEMBER_FILE_TYPE_PASSPORT,
+  MEMBER_FILE_TYPE_DEBT,
+  MEMBER_FILE_RENT_ARREARS_DOC,
+  MEMBER_FILE_DEBT_PROOFS_DOC,
+  MEMBER_FILE_PASSPORT_DOC,
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
 } = require('../../constants')
 /**
  *
@@ -40,7 +46,7 @@ class MemberController {
       userId = owner.owner_id
     }
 
-    let members = (await MemberService.getMembers(userId)).toJSON()
+    let members = await MemberService.getMembers(userId)
     const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
     let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
@@ -166,21 +172,22 @@ class MemberController {
    *
    */
   async updateMember({ request, auth, response }) {
+    //FIXME: id must be checked whether this id is a member of the current user
+    //this will cause sql query if NOT.
     const { id, ...data } = request.all()
     let files
     try {
       files = await File.saveRequestFiles(request, [
         { field: 'avatar', mime: imageMimes, isPublic: true },
-        { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
-        { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: imageMimes, isPublic: false },
+        { field: MEMBER_FILE_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: imageMimes, isPublic: false },
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
 
     const trx = await Database.beginTransaction()
-
     try {
       if (files.passport) {
         let memberFile = new MemberFile()
@@ -199,9 +206,11 @@ class MemberController {
       if (data?.phone !== member.phone) {
         newData.phone_verified = false
       }
-      await member.updateItemWithTrx({ ...newData, ...files }, trx)
-      member = member.toJSON()
+      const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)
       await trx.commit()
+
+      member = await MemberService.getMemberWithPassport(member.id)
+
       Event.fire('tenant::update', member.user_id)
       return response.res(member)
     } catch (e) {
@@ -454,31 +463,8 @@ class MemberController {
 
   async addPassportImage({ request, auth, response }) {
     try {
-      const { id } = request.all()
-
-      const member = await MemberService.allowEditMemberByPermission(auth.user, id)
-      if (!member) {
-        throw new HttpException('No permission to add passport')
-      }
-
-      const files = await File.saveRequestFiles(request, [
-        { field: 'passport', mime: imageMimes, isPublic: false },
-      ])
-
-      if (files.passport) {
-        let memberFile = new MemberFile()
-        memberFile.merge({
-          file: files.passport,
-          type: MEMBER_FILE_TYPE_PASSPORT,
-          status: STATUS_ACTIVE,
-          member_id: id,
-        })
-
-        const ret = await memberFile.save()
-        response.res(ret)
-      } else {
-        throw new HttpException('Failure uploading image', 422)
-      }
+      const ret = await MemberService.addExtraProofs(request, auth.user)
+      response.res(ret)
     } catch (e) {
       throw new HttpException(e.message, 422)
     }
@@ -557,12 +543,16 @@ class MemberController {
     }
   }
 
-  async deletePassportImage({ request, auth, response }) {
-    const { passport_id, id } = request.all()
+  async deleteExtraImage({ request, auth, response }) {
+    const { member_file_id, id } = request.all()
+    const member = await MemberService.allowEditMemberByPermission(auth.user, id)
+    if (!member) {
+      throw new HttpException('No permission to delete passport')
+    }
+
     const affected_rows = await MemberFile.query()
       .update({ status: STATUS_DELETE })
-      .where('type', MEMBER_FILE_TYPE_PASSPORT)
-      .where('id', passport_id)
+      .where('id', member_file_id)
       .where('member_id', id)
     return response.res({ deleted: affected_rows })
   }

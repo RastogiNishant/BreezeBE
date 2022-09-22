@@ -8,7 +8,6 @@ const md5 = require('md5')
 const Notifications = use('Notifications')
 const l = use('Localize')
 const UserService = use('App/Services/UserService')
-const User = use('App/Models/User')
 const uTime = require('moment')().format('X')
 
 const { capitalize, rc } = require('../Libs/utils')
@@ -90,7 +89,6 @@ const {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
-  DEFAULT_LANG,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
@@ -102,6 +100,8 @@ const {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
   URGENCIES,
+  NOTICE_TYPE_TENANT_DISCONNECTION,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID,
 } = require('../constants')
 
 const mapping = [
@@ -153,6 +153,7 @@ const mapping = [
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   ],
+  [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
 ]
 
 class NotificationsService {
@@ -852,6 +853,12 @@ class NotificationsService {
       return data.message
     }
     return NotificationsService.sendNotes([notice], title, body)
+  }
+
+  static async notifyTenantDisconnected(notices) {
+    const title = 'tenant.notification.event.tenant_disconnected'
+    const body = 'tenant.notification.next.tenant_disconnected'
+    return NotificationsService.sendNotes(notices, title, body)
   }
 }
 

@@ -481,19 +481,25 @@ Route.group(() => {
   ])
 
   Route.post(
-    '/:estate_id/tenant/invite/email',
+    '/tenant/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'
   ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/invite/letter',
+    '/tenant/invite/letter',
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
   ).middleware(['valid:InvitationIds'])
 
   Route.post(
-    '/:estate_id/tenant/invite/sms',
+    '/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
+
+  Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
+    'valid:InvitationIds',
+  ])
+
+  Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
@@ -639,6 +645,7 @@ Route.group(() => {
 // TENANT
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
+  'valid:ProtectedFile',
 ])
 
 // Tenant members
@@ -678,10 +685,16 @@ Route.group(() => {
   Route.delete('/:id/income/:income_id', 'MemberController.removeMemberIncome').middleware([
     'valid:Id,IncomeId',
   ])
-  Route.delete('/:id/passport/:passport_id', 'MemberController.deletePassportImage').middleware([
-    'valid:Id,PassportId',
+  Route.delete('/:id/passport/:member_file_id', 'MemberController.deleteExtraImage').middleware([
+    'valid:Id,MemberFileId',
+  ])
+  Route.delete('/:id/extraproof/:member_file_id', 'MemberController.deleteExtraImage').middleware([
+    'valid:Id,MemberFileId',
   ])
   Route.post('/:id/passport', 'MemberController.addPassportImage').middleware(['valid:Id'])
+  Route.post('/:id/extraproof', 'MemberController.addPassportImage').middleware([
+    'valid:Id,ExtraFileType',
+  ])
   Route.post('/invite/:id', 'MemberController.sendInviteCode').middleware(['valid:Id'])
   Route.post('/sendsms', 'MemberController.sendUserConfirmBySMS').middleware([
     'valid:MemberId,Phone',
@@ -730,7 +743,7 @@ Route.group(() => {
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
-
+  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
@@ -749,7 +762,6 @@ Route.group(() => {
   Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
     'valid:Pagination,TaskFilter',
   ])
-  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -774,17 +786,21 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/:id', 'Admin/PredefinedMessageController.get').middleware(['valid:Id'])
-  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware(['valid:PredefinedMessageFilter'])
+  Route.get('/', 'Admin/PredefinedMessageController.getAll').middleware([
+    'valid:PredefinedMessageFilter',
+  ])
 })
   .prefix('api/v1/connect/predefinedMessage')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware(['valid:PredefinedMessageChoiceFilter'])
+  Route.get('/', 'Admin/PredefinedMessageChoiceController.getAll').middleware([
+    'valid:PredefinedMessageChoiceFilter',
+  ])
 })
   .prefix('api/v1/connect/predefinedMessageChoice')
   .middleware(['auth:jwt,jwtLandlord'])
-  
+
 Route.group(() => {
   Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
@@ -1099,6 +1115,14 @@ Route.group(() => {
     'valid:EstatePermissionFilter,Pagination',
   ])
 }).prefix('api/v1/estatePermission')
+
+Route.group(() => {
+  Route.get('/', 'LetterTemplateController.get')
+  Route.post('/', 'LetterTemplateController.update').middleware(['valid:LetterTemplate'])
+  Route.put('/:id/delete_logo', 'LetterTemplateController.deleteLogo').middleware(['valid:Id'])
+})
+  .prefix('/api/v1/letter_template')
+  .middleware(['auth:jwtLandlord'])
 
 // Estate management by property manager
 Route.group(() => {
