@@ -428,6 +428,7 @@ class AccountController {
       .with('company', function (query) {
         query.with('contacts')
       })
+      .with('letter_template')
       .with('tenantPaymentPlan')
       .firstOrFail()
 

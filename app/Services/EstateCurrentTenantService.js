@@ -30,6 +30,7 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
+const NoticeService = use('App/Services/NoticeService')
 
 const l = use('Localize')
 const { trim } = require('lodash')
@@ -600,6 +601,7 @@ class EstateCurrentTenantService {
 
         await trx.commit()
       }
+      NoticeService.notifyTenantDisconnected(estateCurrentTenants)
 
       return {
         successCount: estateCurrentTenants.length || 0,

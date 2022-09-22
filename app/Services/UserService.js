@@ -516,6 +516,9 @@ class UserService {
       .with('members.incomes')
       .with('members.incomes.proofs')
       .with('members.passports')
+      .with('members.extra_passports')
+      .with('members.extra_residency_proofs')
+      .with('members.extra_score_proofs')
 
     const tenant = await tenantQuery.first()
     if (!tenant) {
@@ -943,7 +946,6 @@ class UserService {
       throw new HttpException('No User passed', 500)
     }
     user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
-
     if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
       user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
     } else if (user.company_id && user.preferred_services && trim(user.preferred_services) !== '') {

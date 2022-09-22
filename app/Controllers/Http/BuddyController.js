@@ -15,12 +15,12 @@ class BuddyController {
   }
 
   async getBuddies({ request, auth, response }) {
-    const { limit, page, ...params } = request.all()
+    const { limit, page } = request.all()
     const userId = auth.current.user.id
     const query = Buddy.query()
     query.where('user_id', userId)
     let buddies
-    if (params.return_all && params.return_all == 1) {
+    if (!page || page == -1 || !limit || limit === -1) {
       buddies = await query.orderBy('id', 'desc').fetch()
     } else {
       buddies = await query.orderBy('id', 'desc').paginate(page, limit)

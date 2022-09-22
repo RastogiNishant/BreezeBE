@@ -32,6 +32,17 @@ const constants = {
   MEMBER_FILE_TYPE_INCOME: 'income_proof',
   MEMBER_FILE_TYPE_PASSPORT: 'passport',
 
+  MEMBER_FILE_TYPE_EXTRA_RENT: 'extra_rent_proof',
+  MEMBER_FILE_TYPE_EXTRA_DEBT: 'extra_debt_proof',
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT: 'extra_passport',
+
+  MEMBER_FILE_RENT_ARREARS_DOC: 'rent_arrears_doc',
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC: 'extra_rent_arrears_doc',
+  MEMBER_FILE_DEBT_PROOFS_DOC: 'debt_proof',
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC: 'extra_debt_proof',
+  MEMBER_FILE_PASSPORT_DOC: 'passport',
+  MEMBER_FILE_EXTRA_PASSPORT_DOC: 'extra_passport',
+
   DEVICE_TYPE_ANDROID: 'android',
   DEVICE_TYPE_IOS: 'ios',
 
@@ -408,6 +419,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW: 'notification_landlord_deactivated',
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED:
     'notification_prospect_informed_landlord_deactivated',
+  NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -450,6 +462,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID: 45,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 46,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID: 47,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID: 48,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -826,6 +839,9 @@ const constants = {
 
   PASS_ONBOARDING_STEP_COMPANY: 1,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES: 2,
+
+  INCOME_NORMAL_TYPE: 'normal',
+  INCOME_EXTRA_TYPE: 'extra',
 }
 
 module.exports = constants

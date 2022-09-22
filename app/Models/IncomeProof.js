@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class IncomeProof extends Model {
   static get columns() {
-    return ['id', 'income_id', 'file', 'expire_date']
+    return ['id', 'income_id', 'file', 'type', 'expire_date']
   }
 
   static get readonly() {

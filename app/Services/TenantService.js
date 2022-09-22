@@ -52,6 +52,9 @@ const {
   INCOME_TYPE_HOUSE_WORK,
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_TRAINEE,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 
@@ -67,11 +70,18 @@ class TenantService {
    *
    */
   static async getProtectedFileLink(userId, fileId, fileType, memberId) {
-    if (fileType === MEMBER_FILE_TYPE_PASSPORT) {
+    if (
+      [
+        MEMBER_FILE_TYPE_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_RENT,
+        MEMBER_FILE_TYPE_EXTRA_DEBT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+      ].includes(fileType)
+    ) {
       const passport = await MemberFile.query()
         .where('member_id', memberId)
         .where('id', fileId)
-        .where('type', MEMBER_FILE_TYPE_PASSPORT)
+        .where('type', fileType)
         .where('status', STATUS_ACTIVE)
         .first()
       if (!passport) {
