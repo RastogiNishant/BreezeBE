@@ -199,7 +199,7 @@ class EstateController {
       params = request.post()
     }
     // Update expired estates status to unpublished
-    const result = await EstateService.getEstatesByUserId({
+    let result = await EstateService.getEstatesByUserId({
       ids: [auth.user.id],
       limit,
       page,
