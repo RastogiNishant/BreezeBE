@@ -185,8 +185,9 @@ class EstateController {
       auth.user.id,
       PROPERTY_MANAGE_ALLOWED
     )
-    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
+    const result = await EstateService.getEstatesByUserId({ ids: landlordIds, limit, page, params })
     result.data = await EstateService.checkCanChangeLettingStatus(result)
+    delete result.rows
     response.res(result)
   }
   /**
@@ -198,10 +199,15 @@ class EstateController {
       params = request.post()
     }
     // Update expired estates status to unpublished
-    let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
-    result = result.toJSON()
+    const result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+      limit,
+      page,
+      params,
+    })
 
     result.data = await EstateService.checkCanChangeLettingStatus(result)
+    delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
@@ -875,7 +881,9 @@ class EstateController {
   async export({ request, auth, response }) {
     const { lang } = request.params
 
-    let result = await EstateService.getEstatesByUserId([auth.user.id], 0, 0, { return_all: 1 })
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+    })
     let rows = []
 
     if (lang) {
