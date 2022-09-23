@@ -55,9 +55,9 @@ class EstateCurrentTenantService {
         estate_id,
         salutation: data.txt_salutation || '',
         surname: data.surname || '',
-        email: data.tenant_email,
+        email: data.email,
         contract_end: data.contract_end,
-        phone_number: data.tenant_tel,
+        phone_number: data.phone_number,
         status: STATUS_ACTIVE,
         salutation_int: data.salutation_int,
       })
@@ -137,7 +137,7 @@ class EstateCurrentTenantService {
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('status', STATUS_ACTIVE)
-      .where('email', data.tenant_email)
+      .where('email', data.email)
       .first()
 
     if (!currentTenant) {
@@ -157,7 +157,7 @@ class EstateCurrentTenantService {
           salutation: data.txt_salutation,
           surname: data.surname,
           contract_end: data.contract_end,
-          phone_number: data.tenant_tel,
+          phone_number: data.phone_number,
           salutation_int: data.salutation_int,
         })
         await currentTenant.save()

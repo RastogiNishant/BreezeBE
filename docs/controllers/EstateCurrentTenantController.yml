@@ -4,8 +4,8 @@ definitions:
     in: path
     type: number
     required: true
-  tenant_email:
-    name: tenant_email
+  email:
+    name: email
     in: formData
     type: string
   surname: 
@@ -36,7 +36,7 @@ definitions:
     produces: [application/json]
     parameters:
       - $ref: "#/definitions/id"
-      - $ref: "#/definitions/tenant_email"
+      - $ref: "#/definitions/email"
       - $ref: "#/definitions/surname"
       - $ref: "#/definitions/phone_number"
       - $ref: "#/definitions/estate_id"
@@ -70,7 +70,7 @@ definitions:
     description: create current tenant outside of breeze
     produces: [application/json]
     parameters:
-      - $ref: "#/definitions/tenant_email"
+      - $ref: "#/definitions/email"
       - $ref: "#/definitions/surname"
       - $ref: "#/definitions/phone_number"
       - $ref: "#/definitions/estate_id"
