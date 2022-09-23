@@ -2,7 +2,12 @@ const Suite = use('Test/Suite')('User')
 const { test } = Suite
 
 const UserService = use('App/Services/UserService')
-const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY, STATUS_ACTIVE } = require('../../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  STATUS_EMAIL_VERIFY,
+  STATUS_ACTIVE,
+} = require('../../app/constants')
 const DataStorage = use('DataStorage')
 const GoogleAuth = use('GoogleAuth')
 const Config = use('Config')
@@ -71,14 +76,15 @@ after(async () => {
 })
 
 test('Sign up with email', async ({ assert }) => {
-  const { user } = await UserService.signUp({
+  signUpUser = await UserService.signUp({
     ...dummyUserData,
     status: STATUS_EMAIL_VERIFY,
   })
 
-  signUpUser = user
   assert.notEqual(signUpUser, null)
-})
+}).timeout(0)
+
+test('Send ConfirmEmail', async ({ assert }) => {})
 
 test('Sign in failure before activation', async ({ assert }) => {
   try {

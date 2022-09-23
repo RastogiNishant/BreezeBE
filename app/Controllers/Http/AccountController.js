@@ -154,7 +154,15 @@ class AccountController {
    */
   async login({ request, response }) {
     try {
-      const token = await UserService.login(request)
+      let { email, role, password, device_token } = request.all()
+      const token = await UserService.login({ email, role, password, device_token })
+      if (token[is_admin] === false) {
+        logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
+          method: SIGN_IN_METHOD_EMAIL,
+          role,
+          email: user.email,
+        })
+      }
       response.res(token)
     } catch (e) {
       throw new HttpException(e.message, e.code)

@@ -50,6 +50,7 @@ const {
   ERROR_USER_NOT_VERIFIED_LOGIN,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
+  TEST_ENVIRONMENT,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -292,6 +293,10 @@ class UserService {
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
       const forgotLink = await UserService.getForgotShortLink(from_web)
+
+      if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+        return code
+      }
 
       await MailService.sendUserConfirmation(user.email, {
         code,
@@ -878,12 +883,10 @@ class UserService {
         },
         trx
       )
-
-      if (!trx && process.env.NODE_ENV !== 'test') {
+      if (!trx && process.env.NODE_ENV !== TEST_ENVIRONMENT) {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
-
       await UserService.sendConfirmEmail(user, from_web)
       return user
     } catch (e) {
@@ -923,9 +926,7 @@ class UserService {
     return user
   }
 
-  static async login(request) {
-    let { email, role, password, device_token } = request.all()
-
+  static async login({ email, role, password, device_token }) {
     // Select role if not set, (allows only for non-admin users)
     let user
     let authenticator
@@ -967,6 +968,7 @@ class UserService {
         parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
       )
     }
+
     try {
       if (!authenticator) {
         authenticator = getAuthByRole(auth, user.role)
@@ -988,11 +990,6 @@ class UserService {
       if (device_token) {
         await User.query().where({ id: user.id }).update({ device_token })
       }
-      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
-        method: SIGN_IN_METHOD_EMAIL,
-        role,
-        email: user.email,
-      })
       Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
       token['is_admin'] = false
     } else {
