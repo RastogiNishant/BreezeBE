@@ -152,20 +152,37 @@ class AccountController {
   /**
    *
    */
-  async login({ request, response }) {
+  async login({ request, auth, response }) {
     try {
       let { email, role, password, device_token } = request.all()
-      const token = await UserService.login({ email, role, password, device_token })
-      if (token[is_admin] === false) {
-        logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
-          method: SIGN_IN_METHOD_EMAIL,
-          role,
-          email: user.email,
-        })
+
+      let user, authenticator, token
+      try {
+        user = await UserService.login({ email, role, password, device_token })
+      } catch (e) {}
+      try {
+        authenticator = getAuthByRole(auth, role)
+      } catch (e) {
+        throw new HttpException(e.message, 403)
       }
-      response.res(token)
+
+      const uid = User.getHash(email, role)
+      try {
+        token = await authenticator.attempt(uid, password)
+      } catch (e) {
+        const [message] = e.message.split(':')
+        throw new HttpException(message, 401)
+      }
+
+      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
+        method: SIGN_IN_METHOD_EMAIL,
+        role,
+        email: user.email,
+      })
+
+      return response.res(token)
     } catch (e) {
-      throw new HttpException(e.message, e.code)
+      throw new HttpException(e.message, e.code || 400)
     }
   }
 

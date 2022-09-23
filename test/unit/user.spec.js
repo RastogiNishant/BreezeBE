@@ -137,15 +137,6 @@ test('sign up token expiration with Google oAuth', async ({ assert }) => {
 }).timeout(0)
 
 test('sign up with Google oAuth', async ({ assert }) => {
-  googleSignupUser = await UserService.createUserFromOAuth({ ...googleDummyUserData })
+  googleSignupUser = await UserService.createUserFromOAuth(null, { ...googleDummyUserData })
   assert.notEqual(googleSignupUser, null)
 })
-
-// test('sign in with Google oAuth', async ({ assert }) => {
-//   console.log('Google oAuth', googleDummyUserData.email)
-//   googleSignupUser = await UserService.authorizeUser(
-//     googleDummyUserData.email,
-//     googleDummyUserData.role
-//   )
-//   assert.notEqual(googleSignupUser, null)
-// })

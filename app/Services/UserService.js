@@ -102,6 +102,7 @@ class UserService {
     { email, name, role, google_id, ...data },
     method = SIGN_IN_METHOD_GOOGLE
   ) {
+    console.log('createUserFromOAuth=', email)
     const [firstname, secondname] = name.split(' ')
     const password = `${google_id}#${Env.get('APP_NAME')}`
 
@@ -128,13 +129,17 @@ class UserService {
 
     const { user } = await UserService.createUser(userData)
 
-    logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
-      role: user.role,
-      email: user.email,
-      method,
-    })
-    Event.fire('mautic:createContact', user.id)
+    if (request) {
+      logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
+        role: user.role,
+        email: user.email,
+        method,
+      })
+    }
 
+    if (process.env.NODE_ENV !== TEST_ENVIRONMENT) {
+      Event.fire('mautic:createContact', user.id)
+    }
     return user
   }
 
@@ -927,38 +932,23 @@ class UserService {
   }
 
   static async login({ email, role, password, device_token }) {
-    // Select role if not set, (allows only for non-admin users)
-    let user
-    let authenticator
-    let uid
-    if (role === ROLE_LANDLORD) {
-      //lets make this admin has a role of landlord for now
-      user = await Admin.query()
-        .select('admins.*')
-        .select(Database.raw(`${ROLE_LANDLORD} as role`))
-        .select(Database.raw(`true as is_admin`))
-        .select(Database.raw(`${STATUS_ACTIVE} as status`))
-        .select(Database.raw(`true as real_admin`))
-        .where('email', email)
-        .first()
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
+    if (role) {
+      roles = [role]
     }
-    if (!user) {
-      user = await User.query()
-        .select('users.*', Database.raw(`false as is_admin`))
-        .where('email', email)
-        .where('role', role)
-        .first()
-      uid = User.getHash(email, role)
-    } else {
-      authenticator = auth.authenticator('jwtAdministrator')
-      uid = Admin.getHash(email)
-    }
+    const user = await User.query()
+      .select('*')
+      .where('email', email)
+      .whereIn('role', roles)
+      .orderBy('updated_at', 'desc')
+      .first()
 
     if (!user) {
       throw new HttpException('User not found', 404)
     }
+
     if (user.status !== STATUS_ACTIVE) {
-      await UserService.sendConfirmEmail(user)
+      await UserService.sendConfirmEmail(user.toJSON({ isOwner: true }))
       /* @description */
       // Merge error code and user id and send as a response
       // Because client needs user id to call verify code endpoint
@@ -968,34 +958,15 @@ class UserService {
         parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
       )
     }
+    role = user.role
 
-    try {
-      if (!authenticator) {
-        authenticator = getAuthByRole(auth, user.role)
-      }
-    } catch (e) {
-      throw new HttpException('Wrong authentication', 403)
+    await User.query().where({ email }).update({ device_token: null })
+    if (device_token) {
+      await User.query().where({ id: user.id }).update({ device_token })
     }
 
-    let token
-    try {
-      token = await authenticator.attempt(uid, password)
-    } catch (e) {
-      const [error, message] = e.message.split(':')
-      throw new HttpException(message, 401)
-    }
-    if (!user.is_admin) {
-      //we don't have device_token on admins table hence the test...
-      await User.query().where({ email }).update({ device_token: null })
-      if (device_token) {
-        await User.query().where({ id: user.id }).update({ device_token })
-      }
-      Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
-      token['is_admin'] = false
-    } else {
-      token['is_admin'] = true
-    }
-    return token
+    Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
+    return user
   }
 
   /**
