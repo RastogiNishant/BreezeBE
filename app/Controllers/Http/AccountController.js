@@ -7,13 +7,8 @@ const Promise = require('bluebird')
 const Event = use('Event')
 const User = use('App/Models/User')
 const Admin = use('App/Models/Admin')
-const Member = use('App/Models/Member')
-const EstateViewInvite = use('App/Models/EstateViewInvite')
-const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
-const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const Company = use('App/Models/Company')
 const Tenant = use('App/Models/Tenant')
-const Buddy = use('App/Models/Buddy')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Hash = use('Hash')
 const Drive = use('Drive')
@@ -22,8 +17,6 @@ const Database = use('Database')
 const Logger = use('Logger')
 
 const UserService = use('App/Services/UserService')
-const ZendeskService = use('App/Services/ZendeskService')
-const MemberService = use('App/Services/MemberService')
 const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -36,13 +29,11 @@ const { getAuthByRole } = require('../../Libs/utils')
 const {
   ROLE_LANDLORD,
   ROLE_USER,
-  STATUS_EMAIL_VERIFY,
   STATUS_DELETE,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
-  BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
@@ -74,37 +65,15 @@ class AccountController {
   async housekeeperSignup({ request, response }) {
     const { firstname, email, password, code, lang } = request.all()
     try {
-      const member = await Member.query()
-        .select('user_id', 'id')
-        .where('email', email)
-        .where('code', code)
-        .firstOrFail()
-
-      const member_id = member.id
-
-      // if (owner_id.toString() !== member.user_id.toString()) {
-      //   throw new HttpException('Not allowed', 400)
-      // }
-
-      // Check user not exists
-      const availableUser = await User.query().where('email', email).first()
-      if (availableUser) {
-        throw new HttpException('User already exists, can be switched', 400)
-      }
-
-      const user = await UserService.housekeeperSignup(
-        member.user_id,
+      const user = await UserService.housekeeperSignup({
+        code,
         email,
         password,
         firstname,
-        lang
-      )
+        lang,
+      })
 
-      if (user) {
-        await MemberService.setMemberOwner(member_id, user.id)
-      }
-      Event.fire('mautic:createContact', user.id)
-      return response.res(user)
+      response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException('User already exists', 400)
@@ -123,7 +92,7 @@ class AccountController {
       }
 
       await UserService.sendSMS(availableUser.id, phone, lang)
-      return response.res(true)
+      response.res(true)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -133,7 +102,7 @@ class AccountController {
     const { email, phone, code } = request.all()
     try {
       await UserService.confirmSMS(email, phone, code)
-      return response.res(true)
+      response.res(true)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -145,8 +114,7 @@ class AccountController {
   async resendUserConfirm({ request, response }) {
     const { user_id } = request.all()
     const result = await UserService.resendUserConfirm(user_id)
-
-    return response.res(result)
+    response.res(result)
   }
 
   /**
@@ -154,9 +122,11 @@ class AccountController {
    */
   async confirmEmail({ request, auth, response }) {
     const { code, user_id, from_web } = request.all()
-    let user
     try {
-      user = await User.findOrFail(user_id)
+      const user = await User.find(user_id)
+      if (!user) {
+        throw new HttpException('No user exists', 400)
+      }
       await UserService.confirmEmail(user, code)
     } catch (e) {
       Logger.error(e)
@@ -176,88 +146,19 @@ class AccountController {
       throw new HttpException(e.message, 403)
     }
     const token = await authenticator.generate(user)
-    return response.res(token)
+    response.res(token)
   }
 
   /**
    *
    */
-  async login({ request, auth, response }) {
-    let { email, role, password, device_token } = request.all()
-
-    // Select role if not set, (allows only for non-admin users)
-    let user
-    let authenticator
-    let uid
-    if (role === ROLE_LANDLORD) {
-      //lets make this admin has a role of landlord for now
-      user = await Admin.query()
-        .select('admins.*')
-        .select(Database.raw(`${ROLE_LANDLORD} as role`))
-        .select(Database.raw(`true as is_admin`))
-        .select(Database.raw(`${STATUS_ACTIVE} as status`))
-        .select(Database.raw(`true as real_admin`))
-        .where('email', email)
-        .first()
-    }
-    if (!user) {
-      user = await User.query()
-        .select('users.*', Database.raw(`false as is_admin`))
-        .where('email', email)
-        .where('role', role)
-        .first()
-      uid = User.getHash(email, role)
-    } else {
-      authenticator = auth.authenticator('jwtAdministrator')
-      uid = Admin.getHash(email)
-    }
-
-    if (!user) {
-      throw new HttpException('User not found', 404)
-    }
-    if (user.status !== STATUS_ACTIVE) {
-      await UserService.sendConfirmEmail(user)
-      /* @description */
-      // Merge error code and user id and send as a response
-      // Because client needs user id to call verify code endpoint
-      throw new HttpException(
-        'User has not been verified yet',
-        400,
-        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
-      )
-    }
+  async login({ request, response }) {
     try {
-      if (!authenticator) {
-        authenticator = getAuthByRole(auth, user.role)
-      }
+      const token = await UserService.login(request)
+      response.res(token)
     } catch (e) {
-      throw new HttpException(e.message, 403)
+      throw new HttpException(e.message, e.code)
     }
-
-    let token
-    try {
-      token = await authenticator.attempt(uid, password)
-    } catch (e) {
-      const [error, message] = e.message.split(':')
-      throw new HttpException(message, 401)
-    }
-    if (!user.is_admin) {
-      //we don't have device_token on admins table hence the test...
-      await User.query().where({ email }).update({ device_token: null })
-      if (device_token) {
-        await User.query().where({ id: user.id }).update({ device_token })
-      }
-      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
-        method: SIGN_IN_METHOD_EMAIL,
-        role,
-        email: user.email,
-      })
-      Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
-      token['is_admin'] = false
-    } else {
-      token['is_admin'] = true
-    }
-    return response.res(token)
   }
 
   /**

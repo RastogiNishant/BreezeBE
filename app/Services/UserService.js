@@ -24,10 +24,10 @@ const SMSService = use('App/Services/SMSService')
 const Event = use('Event')
 const Logger = use('Logger')
 const l = use('Localize')
-
+const MemberService = use('App/Services/MemberService')
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
-
+const Admin = use('App/Models/Admin')
 const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
@@ -47,6 +47,9 @@ const {
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   PASS_ONBOARDING_STEP_COMPANY,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
+  ERROR_USER_NOT_VERIFIED_LOGIN,
+  LOG_TYPE_SIGN_IN,
+  SIGN_IN_METHOD_EMAIL,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -714,8 +717,28 @@ class UserService {
     return (await User.query().select('*').where('role', role).fetch()).rows
   }
 
-  static async housekeeperSignup(ownerId, email, password, firstname, lang) {
-    await User.query().where('id', ownerId).firstOrFail()
+  static async housekeeperSignup({ code, email, password, firstname, lang }) {
+    const member = await Member.query()
+      .select('user_id', 'id')
+      .where('email', email)
+      .where('code', code)
+      .first()
+
+    if (!member) {
+      throw new HttpException("Member doesn't exist", 400)
+    }
+
+    const ownerId = member.id
+
+    // Check user not exists
+    const availableUser = await User.query().where('email', email).first()
+    if (availableUser) {
+      throw new HttpException('User already exists, can be switched', 400)
+    }
+
+    if (!(await User.query().where('id', ownerId).first())) {
+      throw new HttpException("Household doesn't exit", 400)
+    }
 
     const trx = await Database.beginTransaction()
     try {
@@ -736,8 +759,14 @@ class UserService {
 
       await Tenant.create({ user_id: user.id }, trx)
 
-      await UserService.sendConfirmEmail(user)
+      await this.sendConfirmEmail(user)
       await trx.commit()
+
+      if (user) {
+        await MemberService.setMemberOwner(member_id, user.id)
+      }
+      Event.fire('mautic:createContact', user.id)
+
       return user
     } catch (e) {
       await trx.rollback()
@@ -850,7 +879,7 @@ class UserService {
         trx
       )
 
-      if (!trx) {
+      if (!trx && process.env.NODE_ENV !== 'test') {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
@@ -892,6 +921,93 @@ class UserService {
     }
 
     return user
+  }
+
+  static async login(request) {
+    let { email, role, password, device_token } = request.all()
+
+    // Select role if not set, (allows only for non-admin users)
+    let user
+    let authenticator
+    let uid
+    if (role === ROLE_LANDLORD) {
+      //lets make this admin has a role of landlord for now
+      user = await Admin.query()
+        .select('admins.*')
+        .select(Database.raw(`${ROLE_LANDLORD} as role`))
+        .select(Database.raw(`true as is_admin`))
+        .select(Database.raw(`${STATUS_ACTIVE} as status`))
+        .select(Database.raw(`true as real_admin`))
+        .where('email', email)
+        .first()
+    }
+    if (!user) {
+      user = await User.query()
+        .select('users.*', Database.raw(`false as is_admin`))
+        .where('email', email)
+        .where('role', role)
+        .first()
+      uid = User.getHash(email, role)
+    } else {
+      authenticator = auth.authenticator('jwtAdministrator')
+      uid = Admin.getHash(email)
+    }
+
+    if (!user) {
+      throw new HttpException('User not found', 404)
+    }
+    if (user.status !== STATUS_ACTIVE) {
+      await UserService.sendConfirmEmail(user)
+      /* @description */
+      // Merge error code and user id and send as a response
+      // Because client needs user id to call verify code endpoint
+      throw new HttpException(
+        'User has not been verified yet',
+        400,
+        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
+      )
+    }
+    try {
+      if (!authenticator) {
+        authenticator = getAuthByRole(auth, user.role)
+      }
+    } catch (e) {
+      throw new HttpException('Wrong authentication', 403)
+    }
+
+    let token
+    try {
+      token = await authenticator.attempt(uid, password)
+    } catch (e) {
+      const [error, message] = e.message.split(':')
+      throw new HttpException(message, 401)
+    }
+    if (!user.is_admin) {
+      //we don't have device_token on admins table hence the test...
+      await User.query().where({ email }).update({ device_token: null })
+      if (device_token) {
+        await User.query().where({ id: user.id }).update({ device_token })
+      }
+      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
+        method: SIGN_IN_METHOD_EMAIL,
+        role,
+        email: user.email,
+      })
+      Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
+      token['is_admin'] = false
+    } else {
+      token['is_admin'] = true
+    }
+    return token
+  }
+
+  /**
+   *
+   * @param {*} id
+   * This function only has to be used deleting fake user
+   */
+  static async removeUser(id) {
+    await User.query().delete().where('id', id)
   }
 }
 
