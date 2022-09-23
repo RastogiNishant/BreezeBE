@@ -235,10 +235,6 @@ Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').m
   'guest',
   'valid:HosekeeperSignUp',
 ])
-Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
-  'guest',
-  'valid:ResendSMS,Lang',
-])
 Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
   'guest',
   'valid:ConfirmSMS',
