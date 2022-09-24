@@ -383,6 +383,7 @@ class UserService {
           user.source_estate_id,
           trx
         )
+        user.source_estate_id = null
       }
 
       await user.save(trx)
