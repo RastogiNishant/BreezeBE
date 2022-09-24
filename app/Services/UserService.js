@@ -374,9 +374,13 @@ class UserService {
 
     const trx = await Database.beginTransaction()
     try {
-      if (user.role === ROLE_USER) {
+      if (user.role === ROLE_USER && user.source_estate_id) {
         //If user we look for his email on estate_current_tenant and make corresponding corrections
-        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(user, trx)
+        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
+          user,
+          user.source_estate_id,
+          trx
+        )
       }
 
       await user.save(trx)
@@ -880,7 +884,10 @@ class UserService {
       .first()
   }
 
-  static async signUp({ email, firstname, from_web, ...userData }, trx = null) {
+  static async signUp(
+    { email, firstname, from_web, source_estate_id = null, ...userData },
+    trx = null
+  ) {
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {
@@ -907,6 +914,7 @@ class UserService {
           email,
           firstname,
           status: STATUS_EMAIL_VERIFY,
+          source_estate_id,
         },
         trx
       )
