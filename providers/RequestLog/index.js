@@ -145,15 +145,19 @@ class Logger {
     const headers = this.request.headers()
     const ip = get(headers, 'x-real-ip') || this.request.ip()
     onFinished(this.res, (error, res) => {
-      grayLog.log(url, {
-        start,
-        url,
-        method,
-        headers,
-        ip,
-        user,
-        res,
-      })
+      try {
+        grayLog.log(url, {
+          start,
+          url,
+          method,
+          headers,
+          ip,
+          user,
+          res,
+        })
+      } catch (e) {
+        console.log(e)
+      }
       this.log(url, method, res.statusCode, start, error ? error.code : null, ip)
     })
   }
