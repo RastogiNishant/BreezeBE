@@ -14,6 +14,7 @@ class EstateCurrentTenant extends Model {
       'contract_end',
       'status',
       'salutation_int',
+      'user_id',
     ]
   }
 
