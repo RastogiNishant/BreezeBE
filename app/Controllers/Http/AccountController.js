@@ -174,60 +174,12 @@ class AccountController {
    *
    */
   async me({ auth, response, request }) {
-    if (auth.current.user instanceof Admin) {
-      let admin = JSON.parse(JSON.stringify(auth.current.user))
-      admin.is_admin = true
-      return response.res(admin)
-    }
-    let user = await User.query()
-      .where('users.id', auth.current.user.id)
-      .with('household')
-      .with('plan')
-      .with('company', function (query) {
-        query.with('contacts')
-      })
-      .with('letter_template')
-      .with('tenantPaymentPlan')
-      .firstOrFail()
-
-    const tenant = await Tenant.query()
-      .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
-      .first()
-
     const { pushToken } = request.all()
-
-    if (user) {
-      if (pushToken && user.device_token !== pushToken) {
-        await user.updateItem({ device_token: pushToken })
-      }
-      logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
-        email: user.email,
-        role: user.role,
-      })
-
-      if (user.role == ROLE_LANDLORD) {
-        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
-        user = UserService.setOnboardingStep(user)
-      } else if (user.role == ROLE_USER) {
-        user.has_final_match = await require('../../Services/MatchService').checkUserHasFinalMatch(
-          user.id
-        )
-      }
-
-      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
-    }
-
-    if (tenant) {
-      user.tenant = tenant
-    }
-
-    if (user.preferred_services) {
-      user.preferred_services = JSON.parse(user.preferred_services)
-    }
-
-    user = user.toJSON({ isOwner: true })
-    user.is_admin = false
-
+    const user = await UserService.me(auth.current.user, pushToken)
+    logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
+      email: user.email,
+      role: user.role,
+    })
     return response.res(user)
   }
 
@@ -245,20 +197,8 @@ class AccountController {
    *
    */
   async closeAccount({ auth, response }) {
-    const user = await User.query().where('id', auth.user.id).first()
-    const email = user.email
-    const newEmail = email.concat('_breezeClose')
-    user.email = newEmail
-    user.firstname = ' USER'
-    user.secondname = ' DELETED'
-    user.approved_landlord = false
-    user.is_admin = false
-    user.device_token = null
-    user.google_id = null
-    user.status = STATUS_DELETE
-    user.save()
-
-    return response.res({ message: 'User Account Closed' })
+    await UserService.closeAccount(auth.user)
+    response.res({ message: 'User Account Closed' })
   }
 
   async onboard({ auth, response }) {

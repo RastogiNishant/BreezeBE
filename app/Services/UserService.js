@@ -51,6 +51,7 @@ const {
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   TEST_ENVIRONMENT,
+  STATUS_DELETE,
 } = require('../constants')
 
 const { logEvent } = require('./TrackingService.js')
@@ -801,6 +802,43 @@ class UserService {
     return User.query().where('id', user_id).update({ owner_id: null }, trx)
   }
 
+  static async confirmSMS(email, phone, code) {
+    const user = await User.query()
+      .select('id')
+      .where('email', email)
+      .where('phone', phone)
+      .firstOrFail()
+
+    const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
+
+    if (!data) {
+      throw new HttpException('No code', 400)
+    }
+
+    if (parseInt(data.code) !== parseInt(code)) {
+      await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+
+      if (parseInt(data.count) <= 0) {
+        throw new HttpException('Your code invalid any more', 400)
+      }
+
+      await DataStorage.setItem(
+        user.id,
+        { code: data.code, count: parseInt(data.count) - 1 },
+        SMS_VERIFY_PREFIX,
+        { ttl: 3600 }
+      )
+      throw new HttpException('Not Correct', 400)
+    }
+
+    await User.query().where({ id: user.id }).update({
+      status: STATUS_ACTIVE,
+    })
+
+    await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
+    return true
+  }
+
   static async proceedBuddyInviteLink(uid, tenantId) {
     const landlord = await Database.table('users')
       .select('id as landlordId')
@@ -976,6 +1014,68 @@ class UserService {
    */
   static async removeUser(id) {
     await User.query().delete().where('id', id)
+  }
+
+  static async me(user, pushToken) {
+    user = await User.query()
+      .where('users.id', user.id)
+      .with('household')
+      .with('plan')
+      .with('company', function (query) {
+        query.with('contacts')
+      })
+      .with('letter_template')
+      .with('tenantPaymentPlan')
+      .first()
+
+    if (!user) {
+      throw new HttpException('No user exists')
+    }
+
+    const tenant = await require('./TenantService').getTenant(user.owner_id ?? user.id)
+
+    if (user) {
+      if (pushToken && user.device_token !== pushToken) {
+        await user.updateItem({ device_token: pushToken })
+      }
+
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
+        user = this.setOnboardingStep(user)
+      } else if (user.role == ROLE_USER) {
+        user.has_final_match = await require('./MatchService').checkUserHasFinalMatch(user.id)
+      }
+
+      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
+    }
+
+    if (tenant) {
+      user.tenant = tenant
+    }
+
+    if (user.preferred_services) {
+      user.preferred_services = JSON.parse(user.preferred_services)
+    }
+
+    user = user.toJSON({ isOwner: true })
+    user.is_admin = false
+    return user
+  }
+
+  static async closeAccount(user) {
+    user = await User.query().where('id', user.id).first()
+    const email = user.email
+    const newEmail = email.concat('_breezeClose')
+    user.email = newEmail
+    user.firstname = ' USER'
+    user.secondname = ' DELETED'
+    user.approved_landlord = false
+    user.is_admin = false
+    user.device_token = null
+    user.google_id = null
+    user.status = STATUS_DELETE
+    await user.save()
+    return user
   }
 }
 

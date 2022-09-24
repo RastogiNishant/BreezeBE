@@ -11,7 +11,7 @@ const {
 const DataStorage = use('DataStorage')
 const GoogleAuth = use('GoogleAuth')
 const Config = use('Config')
-const { get } = require('lodash')
+const { get, result } = require('lodash')
 const Hash = use('Hash')
 const Env = use('Env')
 
@@ -139,4 +139,47 @@ test('sign up token expiration with Google oAuth', async ({ assert }) => {
 test('sign up with Google oAuth', async ({ assert }) => {
   googleSignupUser = await UserService.createUserFromOAuth(null, { ...googleDummyUserData })
   assert.notEqual(googleSignupUser, null)
+})
+
+//TODO: We need to implement this one right after implementing memerber unit test
+test('sign up with housekeeper', async ({ assert }) => {
+  //add member first
+  //MemberService.addMember
+  // send invitation
+  //Need to use MemberService.sendInvitationCode
+  //housekeeper signup
+})
+
+test('Fail with verified user to resend User Confirm', async ({ assert }) => {
+  try {
+    const result = await UserService.resendUserConfirm(signUpUser.id)
+    assert.equal(result, false)
+  } catch (e) {
+    assert.fail('Not passed resending user confirmation')
+  }
+})
+
+test('Get Me', async ({ assert }) => {
+  try {
+    let user = await UserService.getByEmailWithRole(['it@bits1.ventures'], ROLE_USER)
+    if (!user || !user.rows || !user.rows.length) {
+      user = signUpUser
+    }
+    user = await UserService.me(user.rows ? user.rows[0] : user)
+    assert.notEqual(user.id, null)
+    assert.notEqual(user.email, null)
+  } catch (e) {
+    assert.fail('Not passed Get Me for UserService')
+  }
+})
+
+test('Close Account', async ({ assert }) => {
+  try {
+    const closedUser = await UserService.closeAccount(signUpUser)
+    assert.notEqual(closedUser.email, null)
+    const isClosed = closedUser.email.includes('_breezeClose') ? true : false
+    assert.equal(isClosed, true)
+  } catch (e) {
+    assert.fail('Failed close Account')
+  }
 })
