@@ -1430,8 +1430,8 @@ class EstateService {
     return await query.transacting(trx)
   }
 
-  static async checkCanChangeLettingStatus(result) {
-    result = result.toJSON().data || result.toJSON() || []
+  static async checkCanChangeLettingStatus(result, option = {}) {
+    result = result.toJSON(option).data || result.toJSON(option) || []
 
     return result.map((estate) => {
       const isMatchCountValidToChangeLettinType =
