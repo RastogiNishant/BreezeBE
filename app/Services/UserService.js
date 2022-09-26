@@ -251,30 +251,6 @@ class UserService {
     await DataStorage.remove(user.id, 'forget_password')
   }
 
-  /**
-   * Reset password to all users with same email
-   */
-  static async resetPassword(code, password) {
-    const data = await DataStorage.getItem(code, 'reset_password')
-    const userId = get(data, 'userId')
-    if (!userId) {
-      throw new AppException('Invalid confirmation code')
-    }
-
-    const usersToUpdate = await User.query()
-      .whereIn('email', function () {
-        this.select('email').where('id', userId)
-      })
-      .limit(3)
-      .fetch()
-
-    if (!isEmpty(usersToUpdate.rows)) {
-      await Promise.map(usersToUpdate.rows, (u) => u.updateItem({ password }, true))
-    }
-
-    await DataStorage.remove(code, 'reset_password')
-  }
-
   static async getHousehouseId(user_id) {
     try {
       const owner = await User.query().select('owner_id').where('id', user_id).firstOrFail()
@@ -785,43 +761,6 @@ class UserService {
     const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
     await SMSService.send({ to: phone, txt: txt })
-  }
-
-  static async confirmSMS(email, phone, code) {
-    const user = await User.query()
-      .select('id')
-      .where('email', email)
-      .where('phone', phone)
-      .firstOrFail()
-
-    const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
-
-    if (!data) {
-      throw new HttpException('No code', 400)
-    }
-
-    if (parseInt(data.code) !== parseInt(code)) {
-      await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
-
-      if (parseInt(data.count) <= 0) {
-        throw new HttpException('Your code invalid any more', 400)
-      }
-
-      await DataStorage.setItem(
-        user.id,
-        { code: data.code, count: parseInt(data.count) - 1 },
-        SMS_VERIFY_PREFIX,
-        { ttl: 3600 }
-      )
-      throw new HttpException('Not Correct', 400)
-    }
-
-    await User.query().where({ id: user.id }).update({
-      status: STATUS_ACTIVE,
-    })
-
-    await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
-    return true
   }
 
   static async removeUserOwnerId(user_id, trx) {

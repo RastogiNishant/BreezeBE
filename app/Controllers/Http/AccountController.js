@@ -38,7 +38,6 @@ const {
   ROLE_USER,
   STATUS_EMAIL_VERIFY,
   STATUS_DELETE,
-  ROLE_PROPERTY_MANAGER,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
@@ -47,9 +46,6 @@ const {
   STATUS_ACTIVE,
   ERROR_USER_NOT_VERIFIED_LOGIN,
   USER_ACTIVATION_STATUS_ACTIVATED,
-  GENDER_ANY,
-  PASS_ONBOARDING_STEP_COMPANY,
-  PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -72,140 +68,6 @@ class AccountController {
       }
 
       throw e
-    }
-  }
-
-  /**
-   * Signup prospect with code we email to him.
-   */
-  async signupProspectWithViewEstateInvitation({ request, response }) {
-    //create user
-    const { email, phone, role, password, ...userData } = request.all()
-    const trx = await Database.beginTransaction()
-    try {
-      //add this user
-      let user = await User.create(
-        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
-        trx
-      )
-      if (role === ROLE_USER) {
-        await Tenant.create(
-          {
-            user_id: user.id,
-          },
-          trx
-        )
-      }
-      //include him on estate_view_invited_users with sticky set to true
-      //this will add him even if he's not invited.
-      //Probably a situation where he has mail forwarded from a different email
-      const invitedUser = new EstateViewInvitedUser()
-      invitedUser.user_id = user.id
-      invitedUser.sticky = true
-      invitedUser.estate_view_invite_id = request.estate_view_invite_id
-      await invitedUser.save(trx)
-
-      //lets find other estates he's invited to view
-      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
-        .where('email', email)
-        .fetch()
-      await Promise.all(
-        myInvitesToViewEstates.toJSON().map(async (invite) => {
-          await EstateViewInvitedUser.findOrCreate(
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            trx
-          )
-        })
-      )
-      //send email for confirmation
-      await UserService.sendConfirmEmail(user)
-      await trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return response.res(true)
-    } catch (e) {
-      console.log(e)
-      await trx.rollback()
-      throw new HttpException('Signup failed.', 412)
-    }
-  }
-
-  /**
-   * Signup user with hash
-   */
-  async signupProspectWithHash({ request, response }) {
-    //create user
-    const { email, phone, role, password, ...userData } = request.all()
-    const trx = await Database.beginTransaction()
-    try {
-      //add this user
-      let user = await User.create(
-        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
-        trx
-      )
-      let tenant
-      if (role === ROLE_USER) {
-        if (userData.signupData) {
-          tenant = await Tenant.findOrCreate(
-            { user_id: user.id },
-            {
-              user_id: user.id,
-              coord: userData.signupData.address.coord,
-              dist_type: userData.signupData.transport,
-              dist_min: userData.signupData.time,
-              address: userData.signupData.address.title,
-            }
-          )
-        } else {
-          tenant = await Tenant.findOrCreate({ user_id: user.id }, { user_id: user.id }, trx)
-        }
-      }
-      //add to estate_view_invites
-      let invitation = await EstateViewInvite.findOrCreate(
-        { code: request.estate.hash },
-        {
-          invited_by: request.estate.user_id,
-          estate_id: request.estate.id,
-          code: request.estate.hash,
-        },
-        trx
-      )
-      //include him on estate_view_invited_users with sticky set to true
-      const invitedUser = new EstateViewInvitedUser()
-      invitedUser.user_id = user.id
-      invitedUser.sticky = true
-      invitedUser.estate_view_invite_id = invitation.id
-      await invitedUser.save(trx)
-      //lets find other estates he's invited to view
-      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
-        .where('email', email)
-        .fetch()
-      await Promise.all(
-        myInvitesToViewEstates.toJSON().map(async (invite) => {
-          await EstateViewInvitedUser.findOrCreate(
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            trx
-          )
-        })
-      )
-      //add user to buddies
-      await Buddy.create({
-        user_id: invitation.invited_by,
-        email,
-        phone,
-        tenant_id: tenant.id,
-        status: BUDDY_STATUS_PENDING,
-      })
-      //send email for confirmation
-      await UserService.sendConfirmEmail(user)
-      await trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return response.res(true)
-    } catch (e) {
-      console.log(e)
-      await trx.rollback()
-      throw new HttpException('Signup failed.', 412)
     }
   }
 
@@ -396,20 +258,6 @@ class AccountController {
       token['is_admin'] = true
     }
     return response.res(token)
-  }
-
-  async createZendeskToken({ request, auth, response }) {
-    try {
-      const user = await User.query().where('users.id', auth.current.user.id).firstOrFail()
-      const token = await ZendeskService.createToken(
-        user.id,
-        user.email,
-        `${user.firstname} ${user.lastname}`
-      )
-      return response.res(token)
-    } catch (e) {
-      throw new HttpException(e.message, 400)
-    }
   }
 
   /**
@@ -703,20 +551,6 @@ class AccountController {
   }
 
   /**
-   * Password recover send email with code
-   */
-  async passwordReset({ request, response }) {
-    let { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
-    // Send email with reset password code
-    //await UserService.requestPasswordReset(email)
-    if (from_web === undefined) {
-      from_web = false
-    }
-    await UserService.requestSendCodeForgotPassword(email, lang, from_web)
-    return response.res()
-  }
-
-  /**
    *  send email with code for forget Password
    */
   async sendCodeForgotPassword({ request, response }) {
@@ -750,61 +584,6 @@ class AccountController {
     }
 
     return response.res()
-  }
-
-  /**
-   * Confirm user password change with secret code
-   */
-  async passwordConfirm({ request, response }) {
-    const { code, password } = request.only(['code', 'password'])
-    try {
-      await UserService.resetPassword(code, password)
-    } catch (e) {
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
-    }
-
-    return response.res()
-  }
-
-  /**
-   *
-   */
-  async switchAccount({ auth, response }) {
-    const roleToSwitch = auth.user.role === ROLE_USER ? ROLE_LANDLORD : ROLE_USER
-    let userTarget = await User.query()
-      .where('email', auth.user.email)
-      .where('role', roleToSwitch)
-      .first()
-
-    const { id, ...data } = auth.user.toJSON({ isOwner: true })
-    if (!userTarget) {
-      const { user } = await UserService.createUser({
-        ...data,
-        password: String(new Date().getTime()),
-        role: roleToSwitch,
-      })
-      // Direct copy user password
-      await Database.raw(
-        'UPDATE users set password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
-        [id, user.id]
-      )
-
-      userTarget = user
-    }
-    let authenticator
-    try {
-      authenticator = getAuthByRole(auth, roleToSwitch)
-    } catch (e) {
-      throw new HttpException(e.message, 403)
-    }
-    const token = await authenticator.generate(userTarget)
-    // Switch device_token
-    await UserService.switchDeviceToken(userTarget.id, userTarget.email)
-
-    response.res(token)
   }
 
   /**
