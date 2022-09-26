@@ -294,10 +294,6 @@ Route.put('/api/v1/users/password', 'AccountController.changePassword').middlewa
   'auth:jwt,jwtLandlord',
   'valid:ChangePassword',
 ])
-Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware([
-  'auth:jwtLandlord,jwt',
-])
-
 Route.group(() => {
   Route.get('/tenant/:id', 'AccountController.getTenantProfile').middleware([
     'auth:jwtLandlord',

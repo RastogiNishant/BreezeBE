@@ -589,44 +589,6 @@ class AccountController {
   /**
    *
    */
-  async switchAccount({ auth, response }) {
-    const roleToSwitch = auth.user.role === ROLE_USER ? ROLE_LANDLORD : ROLE_USER
-    let userTarget = await User.query()
-      .where('email', auth.user.email)
-      .where('role', roleToSwitch)
-      .first()
-
-    const { id, ...data } = auth.user.toJSON({ isOwner: true })
-    if (!userTarget) {
-      const { user } = await UserService.createUser({
-        ...data,
-        password: String(new Date().getTime()),
-        role: roleToSwitch,
-      })
-      // Direct copy user password
-      await Database.raw(
-        'UPDATE users set password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
-        [id, user.id]
-      )
-
-      userTarget = user
-    }
-    let authenticator
-    try {
-      authenticator = getAuthByRole(auth, roleToSwitch)
-    } catch (e) {
-      throw new HttpException(e.message, 403)
-    }
-    const token = await authenticator.generate(userTarget)
-    // Switch device_token
-    await UserService.switchDeviceToken(userTarget.id, userTarget.email)
-
-    response.res(token)
-  }
-
-  /**
-   *
-   */
   async getTenantProfile({ request, auth, response }) {
     const { id } = request.all()
     try {
