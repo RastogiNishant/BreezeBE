@@ -771,7 +771,24 @@ class MatchService {
     })
   }
 
+  static async deleteVisit(estate_id, user_id, trx) {
+    await Visit.query().where({ estate_id, user_id }).delete().transacting(trx)
+  }
+
+  static async matchToInvite(estate_id, user_id, trx) {
+    await Match.query()
+      .update({ status: MATCH_STATUS_INVITE })
+      .where({
+        user_id,
+        estate_id,
+      })
+      .transacting(trx)
+  }
+
   static async cancelVisit(estateId, userId, trx = null) {
+    if (!trx) {
+      trx = await Database.beginTransaction()
+    }
     const match = await Database.query()
       .table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_VISIT, estate_id: estateId })
@@ -781,25 +798,15 @@ class MatchService {
       throw new AppException('Invalid match stage')
     }
 
-    const deleteVisit = trx
-      ? Visit.query().where({ estate_id: estateId, user_id: userId }).delete()
-      : Visit.query().where({ estate_id: estateId, user_id: userId }).delete().transacting(trx)
-
-    const updateMatch = trx
-      ? Match.query().update({ status: MATCH_STATUS_INVITE }).where({
-          user_id: userId,
-          estate_id: estateId,
-        })
-      : Match.query()
-          .update({ status: MATCH_STATUS_INVITE })
-          .where({
-            user_id: userId,
-            estate_id: estateId,
-          })
-          .transacting(trx)
-
-    await Promise.all([deleteVisit, updateMatch])
-    NoticeService.cancelVisit(estateId, null, userId)
+    try {
+      await deleteVisit(estateId, userId, trx)
+      await matchToInvite(esateId, userId, trx)
+      await trx.commit()
+      NoticeService.cancelVisit(estateId, null, userId)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException('Failed to cancel visit', 500)
+    }
   }
 
   static async updatedTimeSlot(estateId, userIds, trx) {
@@ -815,27 +822,15 @@ class MatchService {
       throw new AppException('Invalid match stage')
     }
 
-    const deleteVisit = trx
-      ? Visit.query().where('estate_id', estateId).whereIn('user_id', userIds).delete()
-      : Visit.query()
-          .where('estate_id', estateId)
-          .whereIn('user_id', userIds)
-          .delete()
-          .transacting(trx)
-
-    const updateMatch = trx
-      ? Match.query()
-          .update({ status: MATCH_STATUS_INVITE })
-          .whereIn('user_id', userIds)
-          .where('estate_id', estateId)
-      : Match.query()
-          .update({ status: MATCH_STATUS_INVITE })
-          .whereIn('user_id', userIds)
-          .where('estate_id', estateId)
-          .transacting(trx)
-
-    await Promise.all([deleteVisit, updateMatch])
-    NoticeService.updatedTimeSlot(estateId, userIds)
+    try {
+      await deleteVisit(estateId, userId, trx)
+      await matchToInvite(esateId, userId, trx)
+      await trx.commit()
+      NoticeService.updatedTimeSlot(estateId, userIds)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException('Failed to cancel visit', 500)
+    }
   }
 
   /**
@@ -2489,19 +2484,19 @@ class MatchService {
   }
 
   static getNotCrossRange({ start_at, end_at, prev_start_at, prev_end_at }) {
-    const ret = []
+    const removeVisitRanges = []
     if (prev_start_at < start_at && prev_end_at > end_at) {
-      ret.push({ start_at: end_at, end_at: prev_end_at })
+      removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
     } else if (prev_start_at > start_at && prev_end_at < end_at) {
-      ret.push({ start_at: prev_start_at, end_at: start_at })
+      removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
     } else if (prev_start_at < start_at && prev_end_at > end_at) {
-      ret.push({ start_at: prev_start_at, end_at: start_at })
-      ret.push({ start_at: end_at, end_at: prev_end_at })
+      removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
+      removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
     } else {
-      ret.push({ start_at: prev_start_at, end_at: prev_end_at })
+      removeVisitRanges.push({ start_at: prev_start_at, end_at: prev_end_at })
     }
 
-    return ret
+    return removeVisitRanges
   }
 
   static async getVisitsIn({ estate_id, start_at, end_at }) {

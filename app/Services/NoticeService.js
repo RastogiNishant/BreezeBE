@@ -482,27 +482,20 @@ class NoticeService {
       throw new AppException('there is no estate')
     }
 
-    tenantIds = tenantIds && !Array.isArray(tenantIds) ? [tenantIds] : []
-    tenantIds.map(async (tenantId) => {
-      const notificationUser = tenantId
-        ? await User.query().where('id', tenantId).firstOrFail()
-        : null
-
-      const notice = {
-        user_id: estate.user_id,
+    tenantIds = tenantIds ? (Array.isArray(tenantIds) ? tenantIds : [tenantIds]) : []
+    const notices = tenantIds.map((tenantId) => {
+      return {
+        user_id: tenantId,
         type: NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
         data: {
           estate_id: estate.id,
           estate_address: estate.address,
-          user_name: tenantId ? `${notificationUser.firstname || ''}` : null,
         },
         image: File.getPublicUrl(estate.cover),
       }
-
-      await NoticeService.insertNotices([notice])
-
-      await NotificationsService.sendTenantUpdatedTimeSlot([notice])
     })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendTenantUpdatedTimeSlot(notices)
   }
 
   /**
