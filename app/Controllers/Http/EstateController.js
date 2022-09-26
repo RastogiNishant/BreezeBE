@@ -186,7 +186,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const result = await EstateService.getEstatesByUserId({ ids: landlordIds, limit, page, params })
-    result.data = await EstateService.checkCanChangeLettingStatus(result)
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
     delete result.rows
     response.res(result)
   }
@@ -206,7 +206,7 @@ class EstateController {
       params,
     })
 
-    result.data = await EstateService.checkCanChangeLettingStatus(result)
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
     delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
