@@ -809,7 +809,7 @@ class MatchService {
     }
   }
 
-  static async updatedTimeSlot(estateId, userIds, trx) {
+  static async updateTimeSlot(estateId, userIds, trx) {
     userIds = !Array.isArray(userIds) ? [userIds] : userIds
     const match = await Match.query()
       .table('matches')
@@ -826,7 +826,7 @@ class MatchService {
       await deleteVisit(estateId, userId, trx)
       await matchToInvite(esateId, userId, trx)
       await trx.commit()
-      NoticeService.updatedTimeSlot(estateId, userIds)
+      NoticeService.updateTimeSlot(estateId, userIds)
     } catch (e) {
       await trx.rollback()
       throw new HttpException('Failed to cancel visit', 500)

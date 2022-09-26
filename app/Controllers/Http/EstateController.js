@@ -698,7 +698,7 @@ class EstateController {
             })) || []
 
           const userIds = visitsIn.map((v) => v.user_id)
-          await MatchService.updatedTimeSlot(estate_id, userIds, trx)
+          await MatchService.updateTimeSlot(estate_id, userIds, trx)
         })
       )
       await trx.commit()

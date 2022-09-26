@@ -472,7 +472,7 @@ class NoticeService {
     }
   }
 
-  static async updatedTimeSlot(estateId, tenantIds) {
+  static async updateTimeSlot(estateId, tenantIds) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover', 'user_id')
       .where('id', estateId)
@@ -495,7 +495,7 @@ class NoticeService {
       }
     })
     await NoticeService.insertNotices(notices)
-    await NotificationsService.sendTenantUpdatedTimeSlot(notices)
+    await NotificationsService.sendTenantUpdateTimeSlot(notices)
   }
 
   /**
@@ -823,7 +823,7 @@ class NoticeService {
       case NOTICE_TYPE_VISIT_DELAY_LANDLORD:
         return NotificationsService.sendChangeVisitTimeLandlord([notice])
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
-        return NotificationsService.sendTenantUpdatedTimeSlot([notice])
+        return NotificationsService.sendTenantUpdateTimeSlot([notice])
     }
   }
 

@@ -556,7 +556,7 @@ class NotificationsService {
     })
   }
 
-  static async sendTenantUpdatedTimeSlot(notice) {
+  static async sendTenantUpdateTimeSlot(notice) {
     const title = 'tenant.notification.event.visit_changed'
     return NotificationsService.sendNotes(notice, title, (data, lang) => {
       return (
