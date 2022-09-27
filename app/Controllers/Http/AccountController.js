@@ -226,7 +226,7 @@ class AccountController {
   async updateProfile({ request, auth, response }) {
     const trx = await Database.beginTransaction()
     try {
-      UserService.updateProfile(request, auth.user, trx)
+      const user = await UserService.updateProfile(request, auth.user, trx)
       await trx.commit()
       response.res(user)
     } catch (e) {

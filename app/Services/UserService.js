@@ -159,7 +159,6 @@ class UserService {
       user.status = STATUS_EMAIL_VERIFY
       user.save(trx)
       await UserService.sendConfirmEmail(user, from_web)
-      await trx.commit()
     } catch (e) {
       await trx.rollback()
       throw e
@@ -1087,6 +1086,7 @@ class UserService {
 
   static async updateProfile(request, user, trx) {
     const data = request.all()
+    console.log('data update', data)
     let company
     user.role === ROLE_USER
       ? delete data.landlord_visibility
@@ -1095,6 +1095,7 @@ class UserService {
       : data
 
     const avatarUrl = await this.uploadAvatar(request)
+
     if (avatarUrl) user.avatar = avatarUrl
 
     if (data.email) {
@@ -1115,10 +1116,11 @@ class UserService {
     user = user.toJSON({ isOwner: true })
 
     await this.updateEstateTenant(data, user)
-    user = await this.setOnboardingStep(user)
-    user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+    user = this.setOnboardingStep(user)
 
+    user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
     Event.fire('mautic:syncContact', user.id)
+    return user
   }
 
   static async updateEstateTenant(data, user) {
@@ -1149,7 +1151,11 @@ class UserService {
   }
 
   static async uploadAvatar(request) {
-    if (request.header('content-type').match(/^multipart/)) {
+    if (
+      request &&
+      request.header('content-type') &&
+      request.header('content-type').match(/^multipart/)
+    ) {
       //this is an upload
       const fileSettings = { types: ['image'], size: '10mb' }
       const filename = `${uuid.v4()}.png`
@@ -1172,6 +1178,7 @@ class UserService {
       }
       return avatarUrl
     }
+
     return null
   }
 

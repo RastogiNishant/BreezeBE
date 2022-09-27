@@ -46,8 +46,7 @@ class UpdateUser extends Base {
       lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
       preferred_services: yup
         .array()
-        .of(yup.number().oneOf([CONNECT_SERVICE_INDEX, MATCH_SERVICE_INDEX]))
-        .required(),
+        .of(yup.number().oneOf([CONNECT_SERVICE_INDEX, MATCH_SERVICE_INDEX])),
     })
 }
 
