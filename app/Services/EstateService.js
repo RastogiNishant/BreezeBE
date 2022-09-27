@@ -1471,6 +1471,8 @@ class EstateService {
       prev_end_at: updatedSlot.prev_end_at,
     })
 
+    this.updateTimeSlotToInvite(estate_id)
+
     await Promise.all(
       (removeVisitsAt || []).map(async (rvAt) => {
         const visitsIn =
@@ -1480,12 +1482,13 @@ class EstateService {
             end_at: rvAt.end_at,
           })) || []
 
-        const userIds = visitsIn.map((v) => v.user_id)
-        await MatchService.updateTimeSlot(estate_id, userIds, trx)
+        if (visitsIn && visitsIn.length) {
+          const userIds = visitsIn.map((v) => v.user_id)
+          await MatchService.updateTimeSlot(estate_id, userIds, trx)
+        }
       })
     )
 
-    this.updateTimeSlotToInvite(estate_id)
     return updatedSlot
   }
 
