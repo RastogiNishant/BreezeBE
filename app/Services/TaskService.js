@@ -345,14 +345,15 @@ class TaskService {
       .orderBy('tasks.urgency', 'desc')
 
     let tasks = null
+    let count = 0
 
     if (page === -1 || limit === -1) {
       tasks = await taskQuery.fetch()
+      count = tasks.rows.length
     } else {
       tasks = await taskQuery.paginate(page, limit)
+      count = tasks.pages.total
     }
-
-    const count = tasks.pages.total
 
     tasks = await Promise.all(
       tasks.rows.map(async (t) => {
@@ -362,7 +363,7 @@ class TaskService {
 
     return {
       tasks,
-      count: count,
+      count,
     }
   }
 
