@@ -95,6 +95,10 @@ const {
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
   URGENCIES,
   NOTICE_TYPE_TENANT_DISCONNECTION,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
@@ -139,6 +143,8 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_ARRIVED_ID, NOTICE_TYPE_PROSPECT_ARRIVED],
   [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
+  [NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID, NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT],
+  [NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID, NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD],
   [NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS],
   [NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE],
   [NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE],
@@ -346,7 +352,6 @@ class NotificationsService {
     if (!isArray(notes) || isEmpty(notes)) {
       return false
     }
-
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
@@ -784,6 +789,18 @@ class NotificationsService {
 
   static async sendZendeskNotification(notices, title, body) {
     return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendFollowUpVisit(notice) {
+    const title = 'notification.txt_are_you_coming_notifications.title'
+    const body = (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('notification.txt_are_you_coming_notifications.message', lang)
+      )
+    }
+    return NotificationsService.sendNotes([notice], title, body)
   }
 
   static async notifyDeactivatedLandlords(notices) {
