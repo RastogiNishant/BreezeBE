@@ -350,48 +350,8 @@ class MatchController {
 
   async followupVisit({ request, auth, response }) {
     let { estate_id, user_id } = request.all()
-    const { role } = auth.user
-
-    let actor = 'landlord'
-    let estate
-    let recipient
-    switch (role) {
-      case ROLE_LANDLORD:
-        estate = await this.getOwnEstate(estate_id, auth.user.id)
-        if (!estate) {
-          throw new HttpException('Invalid Estate', 404)
-        }
-        //recipient is the prospect of this visit
-        recipient = user_id
-        break
-      case ROLE_USER:
-        //this is NOT needed yet atm. Placeholder for now.
-        let visit = await Visit.query()
-          .where('user_id', auth.user.id)
-          .where('estate_id', estate_id)
-          .first()
-        if (!visit) {
-          throw new HttpException('Not allowed', 404)
-        }
-        user_id = auth.user.id
-        actor = 'prospect'
-        //recipient is the estate owner
-        estate = await Estate.query().where('id', estate_id)
-        recipient = estate.user_id
-        break
-    }
-    const followupCount = await VisitService.getFollowupCount(estate_id, user_id, actor)
-    if (followupCount >= VISIT_MAX_ALLOWED_FOLLOWUPS) {
-      throw new HttpException(
-        `You have already exceeded the maximum of 
-        ${VISIT_MAX_ALLOWED_FOLLOWUPS} followups.`,
-        422
-      )
-    }
-
     try {
-      await NoticeService.followupVisit(recipient, actor, estate)
-      await VisitService.incrementFollowup(estate_id, user_id, actor)
+      await VisitService.followupVisit(estate_id, user_id, auth)
       return response.res(true)
     } catch (err) {
       throw new HttpException(err.message, 422)
