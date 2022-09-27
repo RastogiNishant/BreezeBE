@@ -1,5 +1,4 @@
 const Suite = use('Test/Suite')('User')
-
 const { test } = Suite
 
 const UserService = use('App/Services/UserService')
@@ -39,7 +38,7 @@ before(async () => {
   }
 
   dummyLandlordUserData = {
-    email: `landlord_test_${new Date().getTime().toString()}@gmail.com`,
+    email: `test_${new Date().getTime().toString()}@gmail.com`,
     role: ROLE_LANDLORD,
     password: '12345678',
     sex: '1',
@@ -196,27 +195,34 @@ test('Get Me', async ({ assert }) => {
 
 test('Update Profile', async ({ assert }) => {})
 test('Change Password', async ({ assert }) => {
+  const newPassword = 'newpassword'
   const changed = await UserService.changePassword(
     signUpProspectUser,
     dummyProspectUserData.password,
-    'newpassword'
+    newPassword
   )
   assert.equal(changed, true)
 
-  const prospect = await UserService.getByEmailWithRole([signUpProspectUser.email], ROLE_USER)
+  const prospect = await UserService.getById(signUpProspectUser.id)
+
   assert.isNotNull(prospect)
   assert.notEqual(signUpProspectUser.password, prospect.password)
+  let verifyPassword = await Hash.verify(newPassword, prospect.password)
+  assert.isNotNull(verifyPassword)
 
-  const landlord = await UserService.getByEmailWithRole([signUpLandlordUser.email], ROLE_LANDLORD)
+  const landlord = await UserService.getById(signUpLandlordUser.id)
   assert.isNotNull(landlord)
   assert.notEqual(signUpLandlordUser.password, landlord.password)
+  verifyPassword = await Hash.verify(newPassword, landlord.password)
+  assert.isNotNull(verifyPassword)
 }).timeout(0)
 
 test('Change device token', async ({ assert }) => {
   try {
     const device_token = '123453453222'
-    const updated = await UserService.updateDeviceToken(signUpProspectUser.id, device_token)
-    assert.equal(updated, 1)
+    await UserService.updateDeviceToken(signUpProspectUser.id, device_token)
+    const prospect = await UserService.getById(signUpProspectUser.id)
+    assert.equal(prospect.device_token, device_token)
   } catch (e) {
     assert.fail('Failed to change device token', e)
   }
