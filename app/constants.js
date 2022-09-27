@@ -848,6 +848,9 @@ const constants = {
 
   INCOME_NORMAL_TYPE: 'normal',
   INCOME_EXTRA_TYPE: 'extra',
+
+  PROSPECT_ACTOR: 'prospect',
+  LANDLORD_ACTOR: 'landlord',
 }
 
 module.exports = constants
