@@ -993,7 +993,7 @@ class NoticeService {
     )
   }
 
-  static async followupVisit(recipient, actor, estate) {
+  static async sendFollowUpVisit(recipient, actor, estate) {
     const notice = {
       user_id: recipient,
       type:

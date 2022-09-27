@@ -49,7 +49,7 @@ class VisitService {
         422
       )
     }
-    await NoticeService.followupVisit(recipient, actor, estate)
+    await NoticeService.sendFollowUpVisit(recipient, actor, estate)
     await VisitService.incrementFollowup(estate_id, user_id, actor)
   }
 
