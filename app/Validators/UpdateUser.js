@@ -39,13 +39,15 @@ class UpdateUser extends Base {
       firstname: yup.string().min(2).max(254),
       secondname: yup.string().min(2).max(254),
       lang: yup.string().oneOf(['en', 'de']),
-      avatar: yup.string().max(512),
       notice: yup.boolean(),
       prospect_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
       landlord_visibility: yup.number().oneOf([IS_PRIVATE, IS_PUBLIC]),
       company_name: yup.string().min(1).max(255),
       lord_size: yup.number().oneOf([LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL]),
-      preferred_services: yup.array().of(yup.number().oneOf([CONNECT_SERVICE_INDEX, MATCH_SERVICE_INDEX])).required(),
+      preferred_services: yup
+        .array()
+        .of(yup.number().oneOf([CONNECT_SERVICE_INDEX, MATCH_SERVICE_INDEX]))
+        .required(),
     })
 }
 

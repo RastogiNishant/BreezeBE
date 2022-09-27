@@ -15,8 +15,10 @@ const { get, result } = require('lodash')
 const Hash = use('Hash')
 const Env = use('Env')
 
-let signUpUser,
-  dummyUserData,
+let signUpProspectUser,
+  dummyProspectUserData,
+  signupLandlordUser,
+  dummyLandlordUserData,
   signInUser,
   code,
   googleDummyUserData,
@@ -26,9 +28,18 @@ let signUpUser,
 const { before, beforeEach, after, afterEach } = Suite
 
 before(async () => {
-  dummyUserData = {
+  dummyProspectUserData = {
     email: `test_${new Date().getTime().toString()}@gmail.com`,
     role: ROLE_USER,
+    password: '12345678',
+    sex: '1',
+    birthday: '1990-01-01',
+    lang: 'en',
+  }
+
+  dummyLandlordUserData = {
+    email: `landlord_test_${new Date().getTime().toString()}@gmail.com`,
+    role: ROLE_LANDLORD,
     password: '12345678',
     sex: '1',
     birthday: '1990-01-01',
@@ -66,8 +77,8 @@ before(async () => {
 googleDummyUserData = {}
 
 after(async () => {
-  if (signUpUser) {
-    await UserService.removeUser(signUpUser.id)
+  if (signUpProspectUser) {
+    await UserService.removeUser(signUpProspectUser.id)
   }
 
   if (googleSignupUser) {
@@ -76,12 +87,12 @@ after(async () => {
 })
 
 test('Sign up with email', async ({ assert }) => {
-  signUpUser = await UserService.signUp({
-    ...dummyUserData,
+  signUpProspectUser = await UserService.signUp({
+    ...dummyProspectUserData,
     status: STATUS_EMAIL_VERIFY,
   })
 
-  assert.notEqual(signUpUser, null)
+  assert.notEqual(signUpProspectUser, null)
 }).timeout(0)
 
 test('Send ConfirmEmail', async ({ assert }) => {})
@@ -89,9 +100,9 @@ test('Send ConfirmEmail', async ({ assert }) => {})
 test('Sign in failure before activation', async ({ assert }) => {
   try {
     signInUser = await UserService.login({
-      email: dummyUserData.email,
-      password: dummyUserData.password,
-      role: dummyUserData.role,
+      email: dummyProspectUserData.email,
+      password: dummyProspectUserData.password,
+      role: dummyProspectUserData.role,
     })
     assert.equal(signInUser, null)
   } catch (e) {
@@ -100,13 +111,13 @@ test('Sign in failure before activation', async ({ assert }) => {
 }).timeout(0)
 
 test('Send signup confirm email', async ({ assert }) => {
-  code = await UserService.sendConfirmEmail(signUpUser)
+  code = await UserService.sendConfirmEmail(signUpProspectUser)
   assert.equal(code.length, 4)
 }).timeout(0)
 
 test('Activate account', async ({ assert }) => {
   try {
-    await UserService.confirmEmail(signUpUser, code)
+    await UserService.confirmEmail(signUpProspectUser, code)
     assert.isOk(true)
   } catch (e) {
     assert.fail(e.message || e)
@@ -115,9 +126,9 @@ test('Activate account', async ({ assert }) => {
 
 test('login with email', async ({ assert }) => {
   signInUser = await UserService.login({
-    email: dummyUserData.email,
-    password: dummyUserData.password,
-    role: dummyUserData.role,
+    email: dummyProspectUserData.email,
+    password: dummyProspectUserData.password,
+    role: dummyProspectUserData.role,
   })
 
   assert.notEqual(signInUser, null)
@@ -152,7 +163,7 @@ test('sign up with housekeeper', async ({ assert }) => {
 
 test('Fail with verified user to resend User Confirm', async ({ assert }) => {
   try {
-    const result = await UserService.resendUserConfirm(signUpUser.id)
+    const result = await UserService.resendUserConfirm(signUpProspectUser.id)
     assert.equal(result, false)
   } catch (e) {
     assert.fail('Not passed resending user confirmation')
@@ -163,7 +174,7 @@ test('Get Me', async ({ assert }) => {
   try {
     let user = await UserService.getByEmailWithRole(['it@bits1.ventures'], ROLE_USER)
     if (!user || !user.rows || !user.rows.length) {
-      user = signUpUser
+      user = signUpProspectUser
     }
     user = await UserService.me(user.rows ? user.rows[0] : user)
     assert.notEqual(user.id, null)
@@ -173,9 +184,48 @@ test('Get Me', async ({ assert }) => {
   }
 })
 
+test('Update Profile', async ({ assert }) => {})
+test('Change Password', async ({ assert }) => {})
+test('Change device token', async ({ assert }) => {
+  try {
+    const device_token = '123453453222'
+    const updated = await UserService.updateDeviceToken(signUpProspectUser.id, device_token)
+    assert.equal(updated, 1)
+  } catch (e) {
+    assert.fail('Failed to change device token', e)
+  }
+})
+
+test('requestSendCodeForgotPassword', async ({ assert }) => {
+  let shortLink = await UserService.requestSendCodeForgotPassword(signUpProspectUser.email, 'de')
+  assert.isNotNull(shortLink, 'Failed sending forget password for mobile')
+  shortLink = await UserService.requestSendCodeForgotPassword(signUpProspectUser.email, 'de', true)
+  assert.isNotNull(shortLink, 'Failed sending forget password for frontend')
+}).timeout(0)
+
+test('get Tenant Info', async ({ assert }) => {
+  // try {
+  //   const tenantInfo = await UserService.getTenantInfo(id, signUpProspectUser.id)
+  //   console.log()
+  //   assert.isNotNull(tenantInfo.id, 'Failed to get tenant info')
+  // } catch (e) {
+  //   assert.fail('Failed to get tenant info')
+  // }
+})
+
+test('get Landlord Info', async ({ assert }) => {
+  //UserService.getLandlordProfile ()
+})
+
+test('resetUnreadNotificationCount', async ({ assert }) => {})
+
+test('updateTenantPremiumPlan', async ({ assert }) => {})
+
+test('getTenantPremiumPlans', async ({ assert }) => {})
+
 test('Close Account', async ({ assert }) => {
   try {
-    const closedUser = await UserService.closeAccount(signUpUser)
+    const closedUser = await UserService.closeAccount(signUpProspectUser)
     assert.notEqual(closedUser.email, null)
     const isClosed = closedUser.email.includes('_breezeClose') ? true : false
     assert.equal(isClosed, true)

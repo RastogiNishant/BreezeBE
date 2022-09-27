@@ -6,7 +6,7 @@ const uuid = require('uuid')
 const moment = require('moment')
 const { get, isArray, isEmpty, uniq, pick, trim } = require('lodash')
 const Promise = require('bluebird')
-
+const fs = require('fs')
 const Role = use('Role')
 const Env = use('Env')
 const Database = use('Database')
@@ -28,6 +28,9 @@ const MemberService = use('App/Services/MemberService')
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
 const Admin = use('App/Models/Admin')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const Drive = use('Drive')
+const Company = use('App/Models/Company')
 const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
@@ -152,10 +155,9 @@ class UserService {
     const trx = await Database.beginTransaction()
     try {
       user.email = email
-      user.confirm = false
+      user.status = STATUS_EMAIL_VERIFY
       user.save(trx)
-      await DataStorage.setItem(code, { userId: user.id }, 'change_email', { ttl: 3600 })
-      await MailService.sendChangeEmailConfirmation(email, code, user.role)
+      await UserService.sendConfirmEmail(user, from_web)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -224,6 +226,10 @@ class UserService {
         : user.lang
         ? user.lang
         : DEFAULT_LANG
+
+      if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+        return shortLink
+      }
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -969,7 +975,7 @@ class UserService {
     return user
   }
 
-  static async login({ email, role, password, device_token }) {
+  static async login({ email, role, device_token }) {
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     if (role) {
       roles = [role]
@@ -1076,6 +1082,96 @@ class UserService {
     user.status = STATUS_DELETE
     await user.save()
     return user
+  }
+
+  static async updateProfile(request, user, trx) {
+    const data = request.all()
+    let company
+    user.role === ROLE_USER
+      ? delete data.landlord_visibility
+      : user.role === ROLE_LANDLORD
+      ? delete data.prospect_visibility
+      : data
+
+    const avatarUrl = await this.uploadAvatar(request, user)
+    if (avatarUrl) user.avatar = avatarUrl
+
+    if (data.email) {
+      await this.changeEmail(user, data.email)
+    }
+
+    if (data.company_name && data.company_name.trim()) {
+      let company_name = data.company_name.trim()
+      company = await Company.findOrCreate(
+        { name: company_name, user_id: auth.user.id },
+        { name: company_name, user_id: auth.user.id }
+      )
+      _.unset(data, 'company_name')
+      data.company_id = company.id
+    }
+
+    await user.updateItemWithTrx(data, trx)
+    user = user.toJSON({ isOwner: true })
+
+    await this.updateEstateTenant(data, user)
+    user = await this.setOnboardingStep(user)
+    user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+
+    Event.fire('mautic:syncContact', user.id)
+  }
+
+  static async updateEstateTenant(data, user) {
+    if (data.email || data.sex || data.secondname) {
+      let ect = {}
+
+      if (data.email) ect.email = data.email
+
+      if (data.sex) {
+        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation_int = data.sex
+      }
+
+      if (data.secondname) ect.surname = data.secondname
+
+      await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
+    }
+  }
+
+  static async updateAvatar(request, user) {
+    const avatarUrl = await this.uploadAvatar(request, user)
+    if (avatarUrl) {
+      user.avatar = avatarUrl
+      await user.save()
+    }
+    fs.unlink(tmpFile, () => {})
+    return user
+  }
+
+  static async uploadAvatar(request, user) {
+    if (request.header('content-type').match(/^multipart/)) {
+      //this is an upload
+      const fileSettings = { types: ['image'], size: '10mb' }
+      const filename = `${uuid.v4()}.png`
+      let avatarUrl, tmpFile
+
+      request.multipart.file(`file`, fileSettings, async (file) => {
+        tmpFile = await require('./ImageService').resizeAvatar(file, filename)
+        const sourceStream = fs.createReadStream(tmpFile)
+        avatarUrl = await Drive.disk('s3public').put(
+          `${moment().format('YYYYMM')}/${filename}`,
+          sourceStream,
+          { ACL: 'public-read', ContentType: 'image/png' }
+        )
+      })
+
+      await request.multipart.process()
+
+      if (!avatarUrl) {
+        throw new HttpException('No file uploaded.')
+      }
+      return avatarUrl
+    }
+    return null
   }
 }
 
