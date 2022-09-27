@@ -352,7 +352,6 @@ class NotificationsService {
     if (!isArray(notes) || isEmpty(notes)) {
       return false
     }
-
     // Users tokens and lang
     const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
     // Mixin token data to existing data
