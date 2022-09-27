@@ -31,6 +31,7 @@ const Admin = use('App/Models/Admin')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Drive = use('Drive')
 const Company = use('App/Models/Company')
+const Hash = use('Hash')
 const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
@@ -1093,7 +1094,7 @@ class UserService {
       ? delete data.prospect_visibility
       : data
 
-    const avatarUrl = await this.uploadAvatar(request, user)
+    const avatarUrl = await this.uploadAvatar(request)
     if (avatarUrl) user.avatar = avatarUrl
 
     if (data.email) {
@@ -1138,7 +1139,7 @@ class UserService {
   }
 
   static async updateAvatar(request, user) {
-    const avatarUrl = await this.uploadAvatar(request, user)
+    const avatarUrl = await this.uploadAvatar(request)
     if (avatarUrl) {
       user.avatar = avatarUrl
       await user.save()
@@ -1147,7 +1148,7 @@ class UserService {
     return user
   }
 
-  static async uploadAvatar(request, user) {
+  static async uploadAvatar(request) {
     if (request.header('content-type').match(/^multipart/)) {
       //this is an upload
       const fileSettings = { types: ['image'], size: '10mb' }
@@ -1167,11 +1168,30 @@ class UserService {
       await request.multipart.process()
 
       if (!avatarUrl) {
-        throw new HttpException('No file uploaded.')
+        return null
       }
       return avatarUrl
     }
     return null
+  }
+
+  static async changePassword(user, current_password, new_password) {
+    const verifyPassword = await Hash.verify(current_password, user.password)
+
+    if (!verifyPassword) {
+      throw new HttpException('Current password could not be verified! Please try again.', 400)
+    }
+    const users = (
+      await User.query()
+        .where('email', user.email)
+        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+        .limit(2)
+        .fetch()
+    ).rows
+
+    const updatePass = async (user) => user.updateItem({ password: new_password }, true)
+    await Promise.map(users, updatePass)
+    return true
   }
 }
 

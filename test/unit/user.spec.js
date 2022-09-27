@@ -1,4 +1,5 @@
 const Suite = use('Test/Suite')('User')
+
 const { test } = Suite
 
 const UserService = use('App/Services/UserService')
@@ -17,7 +18,7 @@ const Env = use('Env')
 
 let signUpProspectUser,
   dummyProspectUserData,
-  signupLandlordUser,
+  signUpLandlordUser,
   dummyLandlordUserData,
   signInUser,
   code,
@@ -81,6 +82,10 @@ after(async () => {
     await UserService.removeUser(signUpProspectUser.id)
   }
 
+  if (signUpLandlordUser) {
+    await UserService.removeUser(signUpLandlordUser.id)
+  }
+
   if (googleSignupUser) {
     await UserService.removeUser(googleSignupUser.id)
   }
@@ -89,6 +94,11 @@ after(async () => {
 test('Sign up with email', async ({ assert }) => {
   signUpProspectUser = await UserService.signUp({
     ...dummyProspectUserData,
+    status: STATUS_EMAIL_VERIFY,
+  })
+
+  signUpLandlordUser = await UserService.signUp({
+    ...dummyLandlordUserData,
     status: STATUS_EMAIL_VERIFY,
   })
 
@@ -185,7 +195,23 @@ test('Get Me', async ({ assert }) => {
 })
 
 test('Update Profile', async ({ assert }) => {})
-test('Change Password', async ({ assert }) => {})
+test('Change Password', async ({ assert }) => {
+  const changed = await UserService.changePassword(
+    signUpProspectUser,
+    dummyProspectUserData.password,
+    'newpassword'
+  )
+  assert.equal(changed, true)
+
+  const prospect = await UserService.getByEmailWithRole([signUpProspectUser.email], ROLE_USER)
+  assert.isNotNull(prospect)
+  assert.notEqual(signUpProspectUser.password, prospect.password)
+
+  const landlord = await UserService.getByEmailWithRole([signUpLandlordUser.email], ROLE_LANDLORD)
+  assert.isNotNull(landlord)
+  assert.notEqual(signUpLandlordUser.password, landlord.password)
+}).timeout(0)
+
 test('Change device token', async ({ assert }) => {
   try {
     const device_token = '123453453222'

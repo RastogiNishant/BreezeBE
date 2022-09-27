@@ -1,23 +1,11 @@
 'use strict'
-const fs = require('fs')
-const moment = require('moment')
-const uuid = require('uuid')
 const _ = require('lodash')
-const Promise = require('bluebird')
 const Event = use('Event')
 const User = use('App/Models/User')
 const Admin = use('App/Models/Admin')
-const Company = use('App/Models/Company')
-const Tenant = use('App/Models/Tenant')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
-const Hash = use('Hash')
-const Drive = use('Drive')
-
 const Database = use('Database')
 const Logger = use('Logger')
-
 const UserService = use('App/Services/UserService')
-const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
@@ -29,14 +17,10 @@ const { getAuthByRole } = require('../../Libs/utils')
 const {
   ROLE_LANDLORD,
   ROLE_USER,
-  STATUS_DELETE,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
-  STATUS_ACTIVE,
-  ERROR_USER_NOT_VERIFIED_LOGIN,
-  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -257,22 +241,7 @@ class AccountController {
   async changePassword({ request, auth, response }) {
     const user = auth.current.user
     const { current_password, new_password } = request.all()
-    const verifyPassword = await Hash.verify(current_password, user.password)
-
-    if (!verifyPassword) {
-      throw new HttpException('Current password could not be verified! Please try again.', 400)
-    }
-    const users = (
-      await User.query()
-        .where('email', user.email)
-        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
-        .limit(2)
-        .fetch()
-    ).rows
-
-    const updatePass = async (user) => user.updateItem({ password: new_password }, true)
-    await Promise.map(users, updatePass)
-
+    await UserService.changePassword(user, current_password, new_password)
     return response.res(true)
   }
 
