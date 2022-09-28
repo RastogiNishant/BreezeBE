@@ -677,38 +677,12 @@ class EstateController {
    *
    */
   async updateSlot({ request, auth, response }) {
-    const { estate_id, slot_id, ...rest } = request.all()
-    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
+    const data = request.all()
     const trx = await Database.beginTransaction()
     try {
-      const updatedSlot = await EstateService.updateSlot(slot, rest, trx)
-
-      const removeVisitsAt = MatchService.getNotCrossRange({
-        start_at: updatedSlot.start_at,
-        end_at: updatedSlot.end_at,
-        prev_start_at: updatedSlot.prev_start_at,
-        prev_end_at: updatedSlot.prev_end_at,
-      })
-
-      await Promise.all(
-        (removeVisitsAt || []).map(async (rvAt) => {
-          const visitsIn =
-            (await MatchService.getVisitsIn({
-              estate_id,
-              start_at: rvAt.start_at,
-              end_at: rvAt.end_at,
-            })) || []
-
-          const userIds = visitsIn.map((v) => v.user_id)
-          await MatchService.updatedTimeSlot(estate_id, userIds, trx)
-        })
-      )
-      await trx.commit()
+      const updatedSlot = await EstateService.updateTimeSlot(auth.user.id, data, trx)
       response.res(updatedSlot)
+      await trx.commit()
     } catch (e) {
       await trx.rollback()
       Logger.error(e)

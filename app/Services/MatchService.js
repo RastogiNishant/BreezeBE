@@ -771,23 +771,31 @@ class MatchService {
     })
   }
 
-  static async deleteVisit(estate_id, user_id, trx) {
-    await Visit.query().where({ estate_id, user_id }).delete().transacting(trx)
+  static async deleteVisit(estate_id, userIds, trx) {
+    if (!userIds) return
+    userIds = !Array.isArray(userIds) ? [userIds] : userIds
+    await Visit.query()
+      .where('estate_id', estate_id)
+      .whereIn('user_id', userIds)
+      .delete()
+      .transacting(trx)
   }
 
-  static async matchToInvite(estate_id, user_id, trx) {
+  static async matchToInvite(estate_id, userIds, trx) {
+    if (!userIds) return
+    userIds = !Array.isArray(userIds) ? [userIds] : userIds
     await Match.query()
       .update({ status: MATCH_STATUS_INVITE })
-      .where({
-        user_id,
-        estate_id,
-      })
+      .where('estate_id', estate_id)
+      .whereIn('user_id', userIds)
       .transacting(trx)
   }
 
   static async cancelVisit(estateId, userId, trx = null) {
+    let isInsideTrx = false
     if (!trx) {
       trx = await Database.beginTransaction()
+      isInsideTrx = true
     }
     const match = await Database.query()
       .table('matches')
@@ -799,18 +807,31 @@ class MatchService {
     }
 
     try {
-      await deleteVisit(estateId, userId, trx)
-      await matchToInvite(esateId, userId, trx)
-      await trx.commit()
+      await this.deleteVisit(estateId, userId, trx)
+      await this.matchToInvite(estateId, userId, trx)
+      if (isInsideTrx) {
+        await trx.commit()
+      }
+
       NoticeService.cancelVisit(estateId, null, userId)
     } catch (e) {
-      await trx.rollback()
+      if (isInsideTrx) {
+        await trx.rollback()
+      }
       throw new HttpException('Failed to cancel visit', 500)
     }
   }
 
-  static async updatedTimeSlot(estateId, userIds, trx) {
+  static async updateTimeSlot(estateId, userIds, trx) {
+    if (!userIds) return
     userIds = !Array.isArray(userIds) ? [userIds] : userIds
+
+    let isInsideTrx = false
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isInsideTrx = true
+    }
+
     const match = await Match.query()
       .table('matches')
       .whereIn('user_id', userIds)
@@ -823,13 +844,20 @@ class MatchService {
     }
 
     try {
-      await deleteVisit(estateId, userId, trx)
-      await matchToInvite(esateId, userId, trx)
-      await trx.commit()
-      NoticeService.updatedTimeSlot(estateId, userIds)
+      await this.deleteVisit(estateId, userIds, trx)
+      await this.matchToInvite(estateId, userIds, trx)
+
+      if (isInsideTrx) {
+        await trx.commit()
+      }
+
+      NoticeService.updateTimeSlot(estateId, userIds)
     } catch (e) {
-      await trx.rollback()
-      throw new HttpException('Failed to cancel visit', 500)
+      console.log('update time slot error', e.message)
+      if (isInsideTrx) {
+        await trx.rollback()
+      }
+      throw new HttpException('Failed to update time slot', 500)
     }
   }
 
@@ -2447,7 +2475,7 @@ class MatchService {
   static async getEstatesByStatus({ estate_id, status }) {
     let query = Match.query()
     if (estate_id) {
-      query.where('id', estate_id)
+      query.where('estate_id', estate_id)
     }
     if (status) {
       query.where('status', status)
@@ -2485,17 +2513,20 @@ class MatchService {
 
   static getNotCrossRange({ start_at, end_at, prev_start_at, prev_end_at }) {
     const removeVisitRanges = []
-    if (prev_start_at < start_at && prev_end_at > end_at) {
-      removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
-    } else if (prev_start_at > start_at && prev_end_at < end_at) {
-      removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
-    } else if (prev_start_at < start_at && prev_end_at > end_at) {
-      removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
-      removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
+    if (start_at <= prev_start_at && end_at >= prev_end_at) {
+      return removeVisitRanges
     } else {
-      removeVisitRanges.push({ start_at: prev_start_at, end_at: prev_end_at })
+      if (prev_start_at < start_at && prev_end_at > end_at) {
+        removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
+        removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
+      } else if (prev_start_at >= start_at && prev_end_at > end_at) {
+        removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
+      } else if (prev_start_at < start_at && prev_end_at <= end_at) {
+        removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
+      } else {
+        removeVisitRanges.push({ start_at: prev_start_at, end_at: end_at })
+      }
     }
-
     return removeVisitRanges
   }
 
@@ -2511,23 +2542,14 @@ class MatchService {
       await Match.query()
         .select('matches.user_id', 'matches.estate_id', '_v.start_date', '_v.end_date')
         .where('matches.estate_id', estate_id)
-        .whereIn('matches.status', [MATCH_STATUS_VISIT, MATCH_STATUS_INVITE])
+        .whereIn('matches.status', [MATCH_STATUS_VISIT])
         .innerJoin({ _v: 'visits' }, function () {
-          this.on('matches.user_id', '_v.user_id').onNotIn('_v.tenant_status', [
-            TIMESLOT_STATUS_REJECT,
-          ])
+          this.on('matches.estate_id', '_v.estate_id')
+            .on('matches.user_id', '_v.user_id')
+            .onNotIn('_v.tenant_status', [TIMESLOT_STATUS_REJECT])
         })
-        .where(function () {
-          this.orWhere(function () {
-            this.where(startAt, '>', start_at).where(startAt, '<', end_at)
-          })
-            .orWhere(function () {
-              this.where(endAt, '>', start_at).where(endAt, '<', end_at)
-            })
-            .orWhere(function () {
-              this.where(startAt, '<=', start_at).where(endAt, '>=', end_at)
-            })
-        })
+        .where(startAt, '>=', start_at)
+        .where(endAt, '<=', end_at)
         .fetch()
     ).rows
 
