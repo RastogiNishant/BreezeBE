@@ -55,9 +55,9 @@ class EstateCurrentTenantService {
         estate_id,
         salutation: data.txt_salutation || '',
         surname: data.surname || '',
-        email: data.tenant_email,
+        email: data.email,
         contract_end: data.contract_end,
-        phone_number: data.tenant_tel,
+        phone_number: data.phone_number,
         status: STATUS_ACTIVE,
         salutation_int: data.salutation_int,
       })
@@ -137,7 +137,7 @@ class EstateCurrentTenantService {
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('status', STATUS_ACTIVE)
-      .where('email', data.tenant_email)
+      .where('email', data.email)
       .first()
 
     if (!currentTenant) {
@@ -157,7 +157,7 @@ class EstateCurrentTenantService {
           salutation: data.txt_salutation,
           surname: data.surname,
           contract_end: data.contract_end,
-          phone_number: data.tenant_tel,
+          phone_number: data.phone_number,
           salutation_int: data.salutation_int,
         })
         await currentTenant.save()
@@ -409,7 +409,7 @@ class EstateCurrentTenantService {
     const trx = await Database.beginTransaction()
     try {
       if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx, estate_id)
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, estate_id, trx)
       } else {
         const userData = {
           role: ROLE_USER,
@@ -418,7 +418,12 @@ class EstateCurrentTenantService {
           password: password,
         }
         user = await UserService.signUp(
-          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
+          {
+            email: estateCurrentTenant.email || email,
+            firstname: '',
+            source_estate_id: estate_id,
+            ...userData,
+          },
           trx
         )
       }
@@ -498,19 +503,20 @@ class EstateCurrentTenantService {
     await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
-  static async updateOutsideTenantInfo(user, trx = null, estate_id = null) {
-    const query = EstateCurrentTenant.query()
-      .where('email', user.email)
-      .whereNot('status', STATUS_DELETE)
-
-    if (estate_id) {
-      query.where('estate_id', estate_id)
+  static async updateOutsideTenantInfo(user, estate_id = null, trx = null) {
+    if (!user || !estate_id) {
+      throw new HttpException('User or estate id is not provided', 400)
     }
+
+    const query = EstateCurrentTenant.query()
+      .where('estate_id', estate_id)
+      .whereNull('user_id')
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
 
     const currentTenant = await query.first()
 
     if (!currentTenant) {
-      return
+      throw new HttpException('Invalid data provided, cannot find tenant', 400)
     }
 
     //TODO: add user's phone verification logic here when we have phone verification flow for user

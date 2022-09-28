@@ -1034,8 +1034,8 @@ class EstateService {
     NoticeService.prospectPropertDeactivated(matches.rows)
   }
 
-  static async getEstatesByUserId(ids, limit, page, params) {
-    if (params.return_all && params.return_all == 1) {
+  static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
+    if (page === -1 || limit === -1) {
       return await this.getEstates(params)
         .whereIn('user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
@@ -1433,8 +1433,10 @@ class EstateService {
     return await query.transacting(trx)
   }
 
-  static async checkCanChangeLettingStatus(result) {
-    return (result.data || []).map((estate) => {
+  static async checkCanChangeLettingStatus(result, option = {}) {
+    result = result.toJSON(option).data || result.toJSON(option) || []
+
+    return result.map((estate) => {
       const isMatchCountValidToChangeLettinType =
         0 + parseInt(estate.__meta__.visits_count) ||
         0 + parseInt(estate.__meta__.knocked_count) ||
