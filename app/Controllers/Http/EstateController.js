@@ -362,8 +362,6 @@ class EstateController {
    *
    */
   async publishEstate({ request, auth, response }) {
-    throw new HttpException('Publish estate coming', 500)
-
     const { id, action } = request.all()
 
     const estate = await Estate.findOrFail(id)
