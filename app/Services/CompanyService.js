@@ -239,7 +239,9 @@ class CompanyService {
         return schema.validate(i)
       })
     } catch (e) {
-      throw wrapValidationError(e)
+      throw new HttpException(
+        'Please double check if you have added Your name, company size, type, email address, company name, phone number'
+      )
     }
   }
 }
