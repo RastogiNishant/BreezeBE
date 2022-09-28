@@ -851,6 +851,8 @@ const constants = {
 
   PROSPECT_ACTOR: 'prospect',
   LANDLORD_ACTOR: 'landlord',
+
+  TEST_ENVIRONMENT: 'test',
 }
 
 module.exports = constants

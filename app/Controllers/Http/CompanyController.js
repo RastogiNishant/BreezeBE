@@ -1,5 +1,5 @@
 const File = use('App/Classes/File')
-const UserService = use("App/Services/UserService")
+const UserService = use('App/Services/UserService')
 const CompanyService = use('App/Services/CompanyService')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
@@ -59,7 +59,7 @@ class CompanyController {
     }
 
     try {
-      const company = await CompanyService.updateCompany(id, auth.user.id, data)
+      const company = await CompanyService.updateCompany(auth.user.id, data)
       Event.fire('mautic:syncContact', auth.user.id)
       return response.res(company)
     } catch (e) {
