@@ -1453,54 +1453,65 @@ class EstateService {
     })
   }
 
-  static async updateTimeSlot(user_id, data, trx) {
+  static async updateTimeSlot(user_id, data) {
     const { estate_id, slot_id, ...rest } = data
     const slot = await this.getTimeSlotByOwner(user_id, slot_id)
     if (!slot) {
       throw new HttpException('Time slot not found', 404)
     }
 
-    if (!trx) {
-      throw new HttpException('Transaction has to be provided', 500)
-    }
+    const trx = await Database.beginTransaction()
+    try {
+      const updatedSlot = await this.updateSlot(slot, rest, trx)
 
-    const updatedSlot = await this.updateSlot(slot, rest, trx)
-    const MatchService = require('./MatchService')
-    const removeVisitsAt = MatchService.getNotCrossRange({
-      start_at: updatedSlot.start_at,
-      end_at: updatedSlot.end_at,
-      prev_start_at: updatedSlot.prev_start_at,
-      prev_end_at: updatedSlot.prev_end_at,
-    })
-
-    this.updateTimeSlotToInvite(estate_id)
-
-    await Promise.all(
-      (removeVisitsAt || []).map(async (rvAt) => {
-        const visitsIn =
-          (await MatchService.getVisitsIn({
-            estate_id,
-            start_at: rvAt.start_at,
-            end_at: rvAt.end_at,
-          })) || []
-
-        if (visitsIn && visitsIn.length) {
-          const userIds = visitsIn.map((v) => v.user_id)
-          await MatchService.updateTimeSlot(estate_id, userIds, trx)
-        }
+      const MatchService = require('./MatchService')
+      const removeVisitsAt = MatchService.getNotCrossRange({
+        start_at: updatedSlot.start_at,
+        end_at: updatedSlot.end_at,
+        prev_start_at: updatedSlot.prev_start_at,
+        prev_end_at: updatedSlot.prev_end_at,
       })
-    )
 
-    return updatedSlot
+      const invitedUserIds = await this.getInviteIds(estate_id)
+
+      const visitIds = []
+      await Promise.all(
+        (removeVisitsAt || []).map(async (rvAt) => {
+          const visitsIn =
+            (await MatchService.getVisitsIn({
+              estate_id,
+              start_at: rvAt.start_at,
+              end_at: rvAt.end_at,
+            })) || []
+
+          if (visitsIn && visitsIn.length) {
+            visitIds = visitsIn.map((v) => v.user_id)
+            await MatchService.updateTimeSlot(estate_id, visitIds, trx)
+          }
+        })
+      )
+
+      await trx.commit()
+
+      const notifyUserIds = visitIds.concat(invitedUserIds || [])
+      if (notifyUserIds && notifyUserIds.length) {
+        NoticeService.updateTimeSlot(estate_id, notifyUserIds)
+      }
+
+      return updatedSlot
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException('Failed to update timeslot', 500)
+    }
   }
 
-  static async updateTimeSlotToInvite(estate_id) {
+  static async getInviteIds(estate_id) {
     const invitedMatches = await require('./MatchService').getEstatesByStatus({
       estate_id,
       status: MATCH_STATUS_INVITE,
     })
     const invitedUserIds = (invitedMatches || []).map((match) => match.user_id)
-    NoticeService.updateTimeSlot(estate_id, invitedUserIds)
+    return invitedUserIds
   }
 }
 module.exports = EstateService

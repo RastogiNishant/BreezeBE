@@ -825,13 +825,6 @@ class MatchService {
   static async updateTimeSlot(estateId, userIds, trx) {
     if (!userIds) return
     userIds = !Array.isArray(userIds) ? [userIds] : userIds
-
-    let isInsideTrx = false
-    if (!trx) {
-      trx = await Database.beginTransaction()
-      isInsideTrx = true
-    }
-
     const match = await Match.query()
       .table('matches')
       .whereIn('user_id', userIds)
@@ -846,17 +839,8 @@ class MatchService {
     try {
       await this.deleteVisit(estateId, userIds, trx)
       await this.matchToInvite(estateId, userIds, trx)
-
-      if (isInsideTrx) {
-        await trx.commit()
-      }
-
-      NoticeService.updateTimeSlot(estateId, userIds)
     } catch (e) {
       console.log('update time slot error', e.message)
-      if (isInsideTrx) {
-        await trx.rollback()
-      }
       throw new HttpException('Failed to update time slot', 500)
     }
   }

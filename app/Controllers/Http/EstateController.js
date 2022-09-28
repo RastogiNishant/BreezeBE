@@ -678,13 +678,9 @@ class EstateController {
    */
   async updateSlot({ request, auth, response }) {
     const data = request.all()
-    const trx = await Database.beginTransaction()
     try {
-      const updatedSlot = await EstateService.updateTimeSlot(auth.user.id, data, trx)
-      response.res(updatedSlot)
-      await trx.commit()
+      response.res(await EstateService.updateTimeSlot(auth.user.id, data))
     } catch (e) {
-      await trx.rollback()
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
