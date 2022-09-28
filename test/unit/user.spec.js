@@ -251,10 +251,6 @@ test('get Landlord Info', async ({ assert }) => {
 
 test('resetUnreadNotificationCount', async ({ assert }) => {})
 
-test('updateTenantPremiumPlan', async ({ assert }) => {})
-
-test('getTenantPremiumPlans', async ({ assert }) => {})
-
 test('Close Account', async ({ assert }) => {
   try {
     const closedUser = await UserService.closeAccount(signUpProspectUser)
