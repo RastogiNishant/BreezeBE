@@ -56,18 +56,9 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, from_web, data1, data2, ...userData } = request.all()
-    let source_estate_id = null
-    if (data1 && data2) {
-      const { estate_id } = await EstateCurrentTenantService.handleInvitationLink({
-        data1,
-        data2,
-        email,
-      })
-      source_estate_id = estate_id
-    }
 
     try {
-      const user = await UserService.signUp({ email, from_web, source_estate_id, ...userData })
+      const user = await UserService.signUp({ email, from_web, data1, data2, ...userData })
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
