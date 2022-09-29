@@ -26,6 +26,7 @@ const ZendeskService = use('App/Services/ZendeskService')
 const MemberService = use('App/Services/MemberService')
 const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick, trim } = require('lodash')
@@ -54,9 +55,19 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, firstname, from_web, ...userData } = request.all()
+    const { email, from_web, data1, data2, ...userData } = request.all()
+    let source_estate_id = null
+    if (data1 && data2) {
+      const { estate_id } = await EstateCurrentTenantService.handleInvitationLink({
+        data1,
+        data2,
+        email,
+      })
+      source_estate_id = estate_id
+    }
+
     try {
-      const user = await UserService.signUp({ email, firstname, from_web, ...userData })
+      const user = await UserService.signUp({ email, from_web, source_estate_id, ...userData })
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
