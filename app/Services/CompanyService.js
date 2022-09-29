@@ -34,6 +34,7 @@ class CompanyService {
    */
   static async getUserCompany(userId, companyId = null) {
     let query = Company.query()
+      .select('companies.*')
       .innerJoin({ _u: 'users' }, function () {
         this.on('_u.company_id', 'companies.id').on('_u.id', userId)
       })
@@ -63,12 +64,17 @@ class CompanyService {
   /**
    *
    */
-  static async updateCompany(companyId, userId, data) {
+  static async updateCompany(userId, data, trx = null) {
     let userCompany = await this.getUserCompany(userId)
     if (!userCompany) {
       throw new AppException('Company not exists')
     }
-    await userCompany.updateItem(data)
+
+    if (trx) {
+      await userCompany.updateItemWithTrx(data, trx)
+    } else {
+      await userCompany.updateItem(data)
+    }
 
     userCompany = {
       ...userCompany.toJSON(),

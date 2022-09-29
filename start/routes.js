@@ -1102,6 +1102,7 @@ Route.group(() => {
   Route.get('/', 'LetterTemplateController.get')
   Route.post('/', 'LetterTemplateController.update').middleware(['valid:LetterTemplate'])
   Route.put('/:id/delete_logo', 'LetterTemplateController.deleteLogo').middleware(['valid:Id'])
+  Route.delete('/:id', 'LetterTemplateController.delete').middleware(['valid:Id'])
 })
   .prefix('/api/v1/letter_template')
   .middleware(['auth:jwtLandlord'])
