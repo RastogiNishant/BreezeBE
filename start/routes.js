@@ -195,9 +195,6 @@ Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'val
 Route.post('/api/v1/logout', 'AccountController.logout').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager,jwtAdministrator',
 ])
-Route.get('/api/v1/zendeskToken', 'AccountController.createZendeskToken').middleware([
-  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
-])
 Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
 ])
@@ -297,24 +294,9 @@ Route.put('/api/v1/users/password', 'AccountController.changePassword').middlewa
   'auth:jwt,jwtLandlord',
   'valid:ChangePassword',
 ])
-Route.put('/api/v1/users/password/reset', 'AccountController.passwordReset').middleware([
-  'valid:ResetEmailRequest',
-  'UserWithEmailExists',
-])
-Route.put('/api/v1/users/password/confirm', 'AccountController.passwordConfirm').middleware([
-  'valid:ResetEmailConfirm',
-])
-Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware([
-  'auth:jwtLandlord,jwt',
-])
-
 Route.group(() => {
   Route.get('/tenant/:id', 'AccountController.getTenantProfile').middleware([
     'auth:jwtLandlord',
-    'valid:Id',
-  ])
-  Route.get('/landlord/:id', 'AccountController.getLandlordProfile').middleware([
-    'auth:jwt',
     'valid:Id',
   ])
 }).prefix('/api/v1/profile')
@@ -527,6 +509,10 @@ Route.group(() => {
   Route.put('/tenant', 'MatchController.updateVisitTimeslotTenant').middleware([
     'auth:jwt',
     'valid:UpdateVisitStatusTenant',
+  ])
+  Route.post('/notifications/followup', 'MatchController.followupVisit').middleware([
+    'auth:jwtLandlord', //landlord for now
+    'valid:FollowupVisit',
   ])
 }).prefix('/api/v1/visit')
 
@@ -1116,6 +1102,7 @@ Route.group(() => {
   Route.get('/', 'LetterTemplateController.get')
   Route.post('/', 'LetterTemplateController.update').middleware(['valid:LetterTemplate'])
   Route.put('/:id/delete_logo', 'LetterTemplateController.deleteLogo').middleware(['valid:Id'])
+  Route.delete('/:id', 'LetterTemplateController.delete').middleware(['valid:Id'])
 })
   .prefix('/api/v1/letter_template')
   .middleware(['auth:jwtLandlord'])

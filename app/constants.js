@@ -419,6 +419,8 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW: 'notification_landlord_deactivated',
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED:
     'notification_prospect_informed_landlord_deactivated',
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT: 'notification_landlord_followup_prospect',
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
@@ -463,6 +465,8 @@ const constants = {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID: 46,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID: 47,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID: 48,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID: 49,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID: 50,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -470,6 +474,8 @@ const constants = {
   TIMESLOT_STATUS_REJECT: 'reject',
   TIMESLOT_STATUS_DELAY: 'delay',
   TIMESLOT_STATUS_COME: 'come',
+
+  VISIT_MAX_ALLOWED_FOLLOWUPS: 3,
 
   MIN_TIME_SLOT: 5,
 
@@ -842,6 +848,11 @@ const constants = {
 
   INCOME_NORMAL_TYPE: 'normal',
   INCOME_EXTRA_TYPE: 'extra',
+
+  PROSPECT_ACTOR: 'prospect',
+  LANDLORD_ACTOR: 'landlord',
+
+  TEST_ENVIRONMENT: 'test',
 }
 
 module.exports = constants

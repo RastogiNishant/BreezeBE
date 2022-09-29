@@ -40,6 +40,8 @@ const {
   NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -91,6 +93,7 @@ const {
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+  LANDLORD_ACTOR,
 } = require('../constants')
 
 class NoticeService {
@@ -988,6 +991,23 @@ class NoticeService {
       notification.title,
       notification.body
     )
+  }
+
+  static async sendFollowUpVisit(recipient, actor, estate) {
+    const notice = {
+      user_id: recipient,
+      type:
+        actor === LANDLORD_ACTOR
+          ? NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID
+          : NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
+      data: {
+        actor,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendFollowUpVisit(notice)
   }
 
   static async landlordsDeactivated(userIds, estateIds) {

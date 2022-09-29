@@ -49,6 +49,8 @@ class SignUp extends Base {
       landlord_email: yup.string().email().lowercase(),
       landlord_confirm_email: yup.string().email().lowercase(),
       from_web: yup.boolean(),
+      data1: yup.string(),
+      data2: yup.string(),
     })
 }
 
