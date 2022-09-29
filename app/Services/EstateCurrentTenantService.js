@@ -450,9 +450,6 @@ class EstateCurrentTenantService {
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
-    if (estateCurrentTenant.user_id) {
-      throw new HttpException('Invitation already accepted')
-    }
 
     if (!user) {
       if (!estateCurrentTenant.email && !email) {
