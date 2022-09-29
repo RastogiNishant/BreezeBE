@@ -494,6 +494,7 @@ class EstateCurrentTenantService {
 
       return { id, estate_id, code, expired_time }
     } catch (e) {
+      console.log(e)
       throw new HttpException('Params are wrong', 500)
     }
   }
