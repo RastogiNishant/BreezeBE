@@ -825,9 +825,19 @@ class UserService {
   }
 
   static async signUp(
-    { email, firstname, from_web, source_estate_id = null, ...userData },
+    { email, firstname, from_web, source_estate_id = null, data1, data2, ...userData },
     trx = null
   ) {
+    // Manages the outside tenant invitation flow
+    if (!source_estate_id && data1 && data2) {
+      const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
+        data1,
+        data2,
+        email,
+      })
+      source_estate_id = estate_id
+    }
+
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {

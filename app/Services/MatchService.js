@@ -1018,7 +1018,10 @@ class MatchService {
       existingMatch?.status === MATCH_STATUS_FINISH ||
       (!fromInvitation && existingMatch?.status !== MATCH_STATUS_COMMIT)
     ) {
-      throw new AppException('Invalid match status')
+      const errorText = fromInvitation
+        ? 'This invitation has already been accepted. Please contact with your landlord.'
+        : 'You should have commit by your landlord to rent a property. Please contact with your landlord.'
+      throw new AppException(errorText)
     }
 
     if (existingMatch) {

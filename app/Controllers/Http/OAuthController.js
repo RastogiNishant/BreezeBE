@@ -11,6 +11,8 @@ const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+
 const { getAuthByRole } = require('../../Libs/utils')
 
 const {
@@ -21,7 +23,6 @@ const {
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_GOOGLE,
   SIGN_IN_METHOD_APPLE,
-  LOG_TYPE_SIGN_UP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -100,7 +101,7 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    const { token, device_token, role, code } = request.all()
+    const { token, device_token, role, code, data1, data2 } = request.all()
     let ticket
     try {
       ticket = await GoogleAuth.verifyIdToken({
@@ -161,6 +162,14 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
+      if (data1 && data2) {
+        await EstateCurrentTenantService.acceptOutsideTenant({
+          data1,
+          data2,
+          email,
+          user,
+        })
+      }
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_GOOGLE,
         role: user.role,
@@ -180,7 +189,7 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    const { token, device_token, role, code } = request.all()
+    const { token, device_token, role, code, data1, data2 } = request.all()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
     try {
@@ -245,6 +254,14 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
+      if (data1 && data2) {
+        await EstateCurrentTenantService.acceptOutsideTenant({
+          data1,
+          data2,
+          email,
+          user,
+        })
+      }
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_APPLE,
         role: user.role,

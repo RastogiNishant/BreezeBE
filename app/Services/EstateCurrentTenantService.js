@@ -137,7 +137,6 @@ class EstateCurrentTenantService {
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('status', STATUS_ACTIVE)
-      .where('email', data.email)
       .first()
 
     if (!currentTenant) {
@@ -159,6 +158,7 @@ class EstateCurrentTenantService {
           contract_end: data.contract_end,
           phone_number: data.phone_number,
           salutation_int: data.salutation_int,
+          email: data.email,
         })
         await currentTenant.save()
       }
@@ -398,10 +398,9 @@ class EstateCurrentTenantService {
   }
 
   static async acceptOutsideTenant({ data1, data2, password, email, user }) {
-    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
-    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
-      ...rest,
-      estate_id,
+    const { estateCurrentTenant, estate_id } = await this.handleInvitationLink({
+      data1,
+      data2,
       email,
       user,
     })
@@ -419,7 +418,7 @@ class EstateCurrentTenantService {
         }
         user = await UserService.signUp(
           {
-            email: estateCurrentTenant.email || email,
+            email: email || estateCurrentTenant.email, // one of them must be not null, validated in handleInvitationLink
             firstname: '',
             source_estate_id: estate_id,
             ...userData,
@@ -435,26 +434,26 @@ class EstateCurrentTenantService {
     }
   }
 
+  static async handleInvitationLink({ data1, data2, email, user }) {
+    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
+      estate_id,
+      ...rest,
+      email,
+      user,
+    })
+    return { estate_id, estateCurrentTenant }
+  }
+
   static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
-    if (estateCurrentTenant.user_id) {
-      throw new HttpException('Invitation already accepted')
-    }
 
-    if (user) {
-      if (user.email !== estateCurrentTenant.email) {
-        throw new HttpException('Emails do not match! Please contact to customer service', 400)
-      }
-    } else {
+    if (!user) {
       if (!estateCurrentTenant.email && !email) {
         throw new HttpException('Email must be provided!', 400)
-      }
-
-      if (estateCurrentTenant.email && estateCurrentTenant.email !== email) {
-        throw new HttpException('Emails do not match! Please contact to customer service', 400)
       }
     }
 
@@ -495,6 +494,7 @@ class EstateCurrentTenantService {
 
       return { id, estate_id, code, expired_time }
     } catch (e) {
+      console.log(e)
       throw new HttpException('Params are wrong', 500)
     }
   }
