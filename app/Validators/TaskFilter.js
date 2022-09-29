@@ -90,6 +90,20 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
+
+      net_rent: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES).required(),
+              value: yup.number().min(0).nullable(),
+            })
+          ),
+        })
+        .nullable(),
+
       active_task: yup
         .object()
         .shape({
