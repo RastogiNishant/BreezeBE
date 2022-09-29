@@ -418,7 +418,7 @@ class EstateCurrentTenantService {
         }
         user = await UserService.signUp(
           {
-            email: estateCurrentTenant.email || email,
+            email: email || estateCurrentTenant.email, // one of them must be not null, validated in handleInvitationLink
             firstname: '',
             source_estate_id: estate_id,
             ...userData,
