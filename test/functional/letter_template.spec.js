@@ -25,14 +25,13 @@ before(async () => {
 })
 
 after(async () => {
-  if (landlord)
-    if (dummyLetterTemplate) {
-      await LetterTemplateService.deleteComplete(dummyLetterTemplate.id)
-    }
+  if (dummyLetterTemplate) {
+    await LetterTemplateService.deleteComplete(dummyLetterTemplate.id)
+  }
 })
 
 test('Create letter template', async ({ assert, client }) => {
-  const letterTemplate = await LetterTemplateService.getByUserId(landlord.id)
+  dummyLetterTemplate = await LetterTemplateService.getByUserId(landlord.id)
 
   const request = client
     .post('/api/v1/letter_template')
@@ -40,8 +39,8 @@ test('Create letter template', async ({ assert, client }) => {
     .field('title', dummyLetterTemplateData.title)
     .field('body', dummyLetterTemplateData.body)
 
-  if (letterTemplate) {
-    request.field('id', letterTemplate.id)
+  if (dummyLetterTemplate) {
+    request.field('id', dummyLetterTemplate.id)
   }
 
   const response = await request.end()
@@ -50,7 +49,7 @@ test('Create letter template', async ({ assert, client }) => {
 }).timeout(0)
 
 test('Create letter template with company address', async ({ assert, client }) => {
-  const letterTemplate = await LetterTemplateService.getByUserId(landlord.id)
+  dummyLetterTemplate = await LetterTemplateService.getByUserId(landlord.id)
 
   let company = await CompanyService.getUserCompany(landlord.id)
   const companyAddress = company.address
@@ -63,8 +62,8 @@ test('Create letter template with company address', async ({ assert, client }) =
     .field('body', dummyLetterTemplateData.body)
     .field('company_address', 'new address added')
 
-  if (letterTemplate) {
-    request.field('id', letterTemplate.id)
+  if (dummyLetterTemplate) {
+    request.field('id', dummyLetterTemplate.id)
   }
 
   const response = await request.end()

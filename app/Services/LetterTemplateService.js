@@ -24,19 +24,14 @@ class LetterTemplateService {
       user_id: user.id,
       company_id: user.company_id,
     }
-
     const files = await this.saveLogoToAWS(request)
     if (files && files.logo) {
       letterTemplate.logo = files.logo
     }
-
     const trx = await Database.beginTransaction()
     try {
       await this.updateCompany(user.id, data, trx)
-      const createletterTemplateResult = await LetterTemplate.createItem(
-        createletterTemplateResult,
-        trx
-      )
+      const createletterTemplateResult = await LetterTemplate.createItem(letterTemplate, trx)
       await trx.commit()
       return createletterTemplateResult
     } catch (e) {
@@ -51,7 +46,7 @@ class LetterTemplateService {
       .whereNot('status', STATUS_DELETE)
       .first()
     if (!template) {
-      return await this.create(request, user, trx)
+      return await this.create(request, user)
     }
 
     const { ...data } = request.all()
