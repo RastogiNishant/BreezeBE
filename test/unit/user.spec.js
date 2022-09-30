@@ -193,7 +193,6 @@ test('Get Me', async ({ assert }) => {
   }
 })
 
-test('Update Profile', async ({ assert }) => {})
 test('Change Password', async ({ assert }) => {
   const newPassword = 'newpassword'
   const changed = await UserService.changePassword(

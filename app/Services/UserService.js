@@ -1084,9 +1084,9 @@ class UserService {
     return user
   }
 
-  static async updateProfile(request, user, trx) {
+  static async updateProfile(request, user) {
     const data = request.all()
-    console.log('data update', data)
+    console.log('updateProfile', data)
     let company
     user.role === ROLE_USER
       ? delete data.landlord_visibility
@@ -1098,32 +1098,40 @@ class UserService {
 
     if (avatarUrl) user.avatar = avatarUrl
 
-    if (data.email) {
-      await this.changeEmail(user, data.email)
+    const trx = await Database.beginTransaction()
+
+    try {
+      if (data.email) {
+        await this.changeEmail(user, data.email)
+      }
+
+      if (data.company_name && data.company_name.trim()) {
+        let company_name = data.company_name.trim()
+        company = await Company.findOrCreate(
+          { name: company_name, user_id: auth.user.id },
+          { name: company_name, user_id: auth.user.id }
+        )
+        _.unset(data, 'company_name')
+        data.company_id = company.id
+      }
+
+      await user.updateItemWithTrx(data, trx)
+      user = user.toJSON({ isOwner: true })
+
+      await this.updateEstateTenant(data, user, trx)
+      user = this.setOnboardingStep(user)
+      await trx.commit()
+
+      user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+      Event.fire('mautic:syncContact', user.id)
+
+      return user
+    } catch (e) {
+      await trx.rollback()
     }
-
-    if (data.company_name && data.company_name.trim()) {
-      let company_name = data.company_name.trim()
-      company = await Company.findOrCreate(
-        { name: company_name, user_id: auth.user.id },
-        { name: company_name, user_id: auth.user.id }
-      )
-      _.unset(data, 'company_name')
-      data.company_id = company.id
-    }
-
-    await user.updateItemWithTrx(data, trx)
-    user = user.toJSON({ isOwner: true })
-
-    await this.updateEstateTenant(data, user)
-    user = this.setOnboardingStep(user)
-
-    user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
-    Event.fire('mautic:syncContact', user.id)
-    return user
   }
 
-  static async updateEstateTenant(data, user) {
+  static async updateEstateTenant(data, user, trx) {
     if (data.email || data.sex || data.secondname) {
       let ect = {}
 
