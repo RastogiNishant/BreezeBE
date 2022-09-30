@@ -1,29 +1,18 @@
 const Suite = use('Test/Suite')('User')
 const { test } = Suite
-
+const User = use('App/Models/User')
 const UserService = use('App/Services/UserService')
-const {
-  ROLE_LANDLORD,
-  ROLE_USER,
-  STATUS_EMAIL_VERIFY,
-  STATUS_ACTIVE,
-} = require('../../app/constants')
-const DataStorage = use('DataStorage')
-const GoogleAuth = use('GoogleAuth')
-const Config = use('Config')
-const { get, result } = require('lodash')
+const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../app/constants')
 const Hash = use('Hash')
-const Env = use('Env')
-
 let signUpProspectUser,
   dummyProspectUserData,
   signUpLandlordUser,
   dummyLandlordUserData,
-  signInUser,
-  code,
   googleDummyUserData,
   googleSignupUser,
-  googlePayload
+  googlePayload,
+  landlord,
+  prospect
 
 const { before, beforeEach, after, afterEach } = Suite
 
@@ -72,6 +61,16 @@ before(async () => {
     email: `google_test_${new Date().getTime().toString()}@gmail.com`,
     role: ROLE_USER,
   }
+
+  landlord = await User.query()
+    .where('role', ROLE_LANDLORD)
+    .where('email', 'it@bits.ventures')
+    .firstOrFail()
+
+  prospect = await User.query()
+    .where('role', ROLE_USER)
+    .where('email', 'it@bits.ventures')
+    .firstOrFail()
 })
 
 googleDummyUserData = {}
@@ -234,21 +233,22 @@ test('requestSendCodeForgotPassword', async ({ assert }) => {
   assert.isNotNull(shortLink, 'Failed sending forget password for frontend')
 }).timeout(0)
 
-test('get Tenant Info', async ({ assert }) => {
-  // try {
-  //   const tenantInfo = await UserService.getTenantInfo(id, signUpProspectUser.id)
-  //   console.log()
-  //   assert.isNotNull(tenantInfo.id, 'Failed to get tenant info')
-  // } catch (e) {
-  //   assert.fail('Failed to get tenant info')
-  // }
-})
+test('Get tenant', async ({ assert }) => {
+  const tenant = await UserService.getTenantInfo(prospect.id, landlord.id)
+  if (tenant) {
+    assert.equal(tenant.id, prospect.id)
+    assert.isUndefined(tenant.password)
+    assert.isTrue(tenant.finish, true)
+    assert.isDefined(tenant.tenant)
+  }
 
-test('get Landlord Info', async ({ assert }) => {
-  //UserService.getLandlordProfile ()
+  if (tenant.tenant) {
+    assert.isDefined(tenant.tenant.members)
+    if (tenant.tenant.members && tenant.tenant.members.length) {
+      assert.equal(tenant.tenant.members[0].user_id, prospect.id)
+    }
+  }
 })
-
-test('resetUnreadNotificationCount', async ({ assert }) => {})
 
 test('Close Account', async ({ assert }) => {
   try {

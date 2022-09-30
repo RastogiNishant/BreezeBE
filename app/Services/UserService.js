@@ -151,16 +151,13 @@ class UserService {
   /**
    *
    */
-  static async changeEmail(user, email) {
-    const code = uuid.v4(email, 'change_email')
-    const trx = await Database.beginTransaction()
+  static async changeEmail({ user, email, from_web }, trx) {
     try {
       user.email = email
       user.status = STATUS_EMAIL_VERIFY
-      user.save(trx)
+      await user.save(trx)
       await UserService.sendConfirmEmail(user, from_web)
     } catch (e) {
-      await trx.rollback()
       throw e
     }
   }
@@ -1105,7 +1102,7 @@ class UserService {
 
   static async updateProfile(request, user) {
     const data = request.all()
-    console.log('updateProfile', data)
+
     let company
     user.role === ROLE_USER
       ? delete data.landlord_visibility
@@ -1121,7 +1118,7 @@ class UserService {
 
     try {
       if (data.email) {
-        await this.changeEmail(user, data.email)
+        await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
       }
 
       if (data.company_name && data.company_name.trim()) {
@@ -1147,6 +1144,7 @@ class UserService {
       return user
     } catch (e) {
       await trx.rollback()
+      throw new HttpException(e.message, 500)
     }
   }
 

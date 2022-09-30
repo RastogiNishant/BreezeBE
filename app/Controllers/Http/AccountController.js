@@ -125,7 +125,6 @@ class AccountController {
   async login({ request, auth, response }) {
     try {
       let { email, role, password, device_token } = request.all()
-
       let user, authenticator, token
       try {
         user = await UserService.login({ email, role, device_token })
@@ -226,13 +225,10 @@ class AccountController {
    *
    */
   async updateProfile({ request, auth, response }) {
-    const trx = await Database.beginTransaction()
     try {
-      const user = await UserService.updateProfile(request, auth.user, trx)
-      await trx.commit()
+      const user = await UserService.updateProfile(request, auth.user)
       response.res(user)
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, 501)
     }
   }
@@ -313,20 +309,6 @@ class AccountController {
     const { id } = request.all()
     try {
       const user = await UserService.getTenantInfo(id, auth.user.id)
-      return response.res(user)
-    } catch (e) {
-      Logger.error(e)
-      throw new HttpException(e.message, 400)
-    }
-  }
-
-  /**
-   *
-   */
-  async getLandlordProfile({ request, auth, response }) {
-    const { id } = request.all()
-    try {
-      const user = await UserService.getLandlordInfo(id, auth.user.id)
       return response.res(user)
     } catch (e) {
       Logger.error(e)
