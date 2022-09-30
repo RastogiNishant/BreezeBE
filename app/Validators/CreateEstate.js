@@ -561,6 +561,7 @@ class CreateEstate extends Base {
         .number()
         .when(['additional_costs', 'heating_costs'], {
           is: (additional_costs, heating_costs) => {
+            console.log('extra cost', additional_costs || heating_costs)
             return additional_costs || heating_costs
           },
           then: yup.number().mustNotBeSet(),

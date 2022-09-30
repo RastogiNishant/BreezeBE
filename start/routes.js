@@ -282,10 +282,6 @@ Route.put('/api/v1/users/password', 'AccountController.changePassword').middlewa
   'auth:jwt,jwtLandlord',
   'valid:ChangePassword',
 ])
-Route.post('/api/v1/users/switch', 'AccountController.switchAccount').middleware([
-  'auth:jwtLandlord,jwt',
-])
-
 Route.group(() => {
   Route.get('/tenant/:id', 'AccountController.getTenantProfile').middleware([
     'auth:jwtLandlord',
@@ -501,6 +497,10 @@ Route.group(() => {
   Route.put('/tenant', 'MatchController.updateVisitTimeslotTenant').middleware([
     'auth:jwt',
     'valid:UpdateVisitStatusTenant',
+  ])
+  Route.post('/notifications/followup', 'MatchController.followupVisit').middleware([
+    'auth:jwtLandlord', //landlord for now
+    'valid:FollowupVisit',
   ])
 }).prefix('/api/v1/visit')
 
@@ -1090,6 +1090,7 @@ Route.group(() => {
   Route.get('/', 'LetterTemplateController.get')
   Route.post('/', 'LetterTemplateController.update').middleware(['valid:LetterTemplate'])
   Route.put('/:id/delete_logo', 'LetterTemplateController.deleteLogo').middleware(['valid:Id'])
+  Route.delete('/:id', 'LetterTemplateController.delete').middleware(['valid:Id'])
 })
   .prefix('/api/v1/letter_template')
   .middleware(['auth:jwtLandlord'])

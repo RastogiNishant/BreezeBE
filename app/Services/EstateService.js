@@ -1272,6 +1272,7 @@ class EstateService {
         'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
+        'estates.net_rent',
         'estates.address',
         Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
@@ -1430,8 +1431,8 @@ class EstateService {
     return await query.transacting(trx)
   }
 
-  static async checkCanChangeLettingStatus(result) {
-    result = result.toJSON().data || result.toJSON() || []
+  static async checkCanChangeLettingStatus(result, option = {}) {
+    result = result.toJSON(option).data || result.toJSON(option) || []
 
     return result.map((estate) => {
       const isMatchCountValidToChangeLettinType =

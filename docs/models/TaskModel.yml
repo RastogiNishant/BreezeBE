@@ -65,6 +65,24 @@ components:
                   value:
                     type: number
                     example: 5
+        net_rent:
+          properties:
+            operator:
+              type: string
+              enum: ["or", "and"]
+              example: "or"
+            constraints:
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
+                    example: "startsWith"
+                  value:
+                    type: number
+                    example: 500                    
         urgency:
           properties:
             matchMode:

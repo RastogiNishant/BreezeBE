@@ -7,6 +7,7 @@ const Database = use('Database')
 const Logger = use('Logger')
 const UserService = use('App/Services/UserService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick, trim } = require('lodash')
@@ -29,9 +30,10 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, firstname, from_web, ...userData } = request.all()
+    const { email, from_web, data1, data2, ...userData } = request.all()
+
     try {
-      const user = await UserService.signUp({ email, firstname, from_web, ...userData })
+      const user = await UserService.signUp({ email, from_web, data1, data2, ...userData })
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
@@ -302,44 +304,6 @@ class AccountController {
     }
 
     return response.res()
-  }
-
-  /**
-   *
-   */
-  async switchAccount({ auth, response }) {
-    const roleToSwitch = auth.user.role === ROLE_USER ? ROLE_LANDLORD : ROLE_USER
-    let userTarget = await User.query()
-      .where('email', auth.user.email)
-      .where('role', roleToSwitch)
-      .first()
-
-    const { id, ...data } = auth.user.toJSON({ isOwner: true })
-    if (!userTarget) {
-      const { user } = await UserService.createUser({
-        ...data,
-        password: String(new Date().getTime()),
-        role: roleToSwitch,
-      })
-      // Direct copy user password
-      await Database.raw(
-        'UPDATE users set password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
-        [id, user.id]
-      )
-
-      userTarget = user
-    }
-    let authenticator
-    try {
-      authenticator = getAuthByRole(auth, roleToSwitch)
-    } catch (e) {
-      throw new HttpException(e.message, 403)
-    }
-    const token = await authenticator.generate(userTarget)
-    // Switch device_token
-    await UserService.switchDeviceToken(userTarget.id, userTarget.email)
-
-    response.res(token)
   }
 
   /**

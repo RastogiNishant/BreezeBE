@@ -137,7 +137,6 @@ class EstateCurrentTenantService {
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('status', STATUS_ACTIVE)
-      .where('email', data.email)
       .first()
 
     if (!currentTenant) {
@@ -159,6 +158,7 @@ class EstateCurrentTenantService {
           contract_end: data.contract_end,
           phone_number: data.phone_number,
           salutation_int: data.salutation_int,
+          email: data.email,
         })
         await currentTenant.save()
       }
@@ -398,10 +398,9 @@ class EstateCurrentTenantService {
   }
 
   static async acceptOutsideTenant({ data1, data2, password, email, user }) {
-    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
-    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
-      ...rest,
-      estate_id,
+    const { estateCurrentTenant, estate_id } = await this.handleInvitationLink({
+      data1,
+      data2,
       email,
       user,
     })
@@ -409,7 +408,7 @@ class EstateCurrentTenantService {
     const trx = await Database.beginTransaction()
     try {
       if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, trx, estate_id)
+        await EstateCurrentTenantService.updateOutsideTenantInfo(user, estate_id, trx)
       } else {
         const userData = {
           role: ROLE_USER,
@@ -418,7 +417,12 @@ class EstateCurrentTenantService {
           password: password,
         }
         user = await UserService.signUp(
-          { email: estateCurrentTenant.email || email, firstname: '', ...userData },
+          {
+            email: email || estateCurrentTenant.email, // one of them must be not null, validated in handleInvitationLink
+            firstname: '',
+            source_estate_id: estate_id,
+            ...userData,
+          },
           trx
         )
       }
@@ -430,26 +434,26 @@ class EstateCurrentTenantService {
     }
   }
 
+  static async handleInvitationLink({ data1, data2, email, user }) {
+    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
+      estate_id,
+      ...rest,
+      email,
+      user,
+    })
+    return { estate_id, estateCurrentTenant }
+  }
+
   static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists')
     }
-    if (estateCurrentTenant.user_id) {
-      throw new HttpException('Invitation already accepted')
-    }
 
-    if (user) {
-      if (user.email !== estateCurrentTenant.email) {
-        throw new HttpException('Emails do not match! Please contact to customer service', 400)
-      }
-    } else {
+    if (!user) {
       if (!estateCurrentTenant.email && !email) {
         throw new HttpException('Email must be provided!', 400)
-      }
-
-      if (estateCurrentTenant.email && estateCurrentTenant.email !== email) {
-        throw new HttpException('Emails do not match! Please contact to customer service', 400)
       }
     }
 
@@ -490,6 +494,7 @@ class EstateCurrentTenantService {
 
       return { id, estate_id, code, expired_time }
     } catch (e) {
+      console.log(e)
       throw new HttpException('Params are wrong', 500)
     }
   }
@@ -498,19 +503,20 @@ class EstateCurrentTenantService {
     await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
-  static async updateOutsideTenantInfo(user, trx = null, estate_id = null) {
-    const query = EstateCurrentTenant.query()
-      .where('email', user.email)
-      .whereNot('status', STATUS_DELETE)
-
-    if (estate_id) {
-      query.where('estate_id', estate_id)
+  static async updateOutsideTenantInfo(user, estate_id = null, trx = null) {
+    if (!user || !estate_id) {
+      throw new HttpException('User or estate id is not provided', 400)
     }
+
+    const query = EstateCurrentTenant.query()
+      .where('estate_id', estate_id)
+      .whereNull('user_id')
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
 
     const currentTenant = await query.first()
 
     if (!currentTenant) {
-      return
+      throw new HttpException('Invalid data provided, cannot find tenant', 400)
     }
 
     //TODO: add user's phone verification logic here when we have phone verification flow for user
