@@ -828,7 +828,7 @@ class MatchService {
     const match = await Match.query()
       .table('matches')
       .whereIn('user_id', userIds)
-      .whereIn('status', [MATCH_STATUS_INVITE, MATCH_STATUS_VISIT])
+      .whereIn('status', [MATCH_STATUS_VISIT])
       .where('estate_id', estateId)
       .fetch()
 

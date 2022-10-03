@@ -1465,12 +1465,17 @@ class EstateService {
       const updatedSlot = await this.updateSlot(slot, rest, trx)
 
       const MatchService = require('./MatchService')
-      const removeVisitsAt = MatchService.getNotCrossRange({
-        start_at: updatedSlot.start_at,
-        end_at: updatedSlot.end_at,
-        prev_start_at: updatedSlot.prev_start_at,
-        prev_end_at: updatedSlot.prev_end_at,
-      })
+      let removeVisitsAt = []
+      if (+slot.slot_length === +updatedSlot.slot_length) {
+        removeVisitsAt = MatchService.getNotCrossRange({
+          start_at: updatedSlot.start_at,
+          end_at: updatedSlot.end_at,
+          prev_start_at: updatedSlot.prev_start_at,
+          prev_end_at: updatedSlot.prev_end_at,
+        })
+      } else {
+        removeVisitsAt = [{ start_at: slot.start_at, end_at: slot.end_at }]
+      }
 
       const invitedUserIds = await this.getInviteIds(estate_id)
 
@@ -1501,7 +1506,7 @@ class EstateService {
       return updatedSlot
     } catch (e) {
       await trx.rollback()
-      throw new HttpException('Failed to update timeslot', 500)
+      throw new HttpException(e.message, 500)
     }
   }
 
