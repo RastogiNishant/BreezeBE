@@ -1,4 +1,5 @@
 const constants = {
+  TEST_ENVIRONMENT: 'test',
   USER_ACTIVATION_STATUS_NOT_ACTIVATED: 1,
   USER_ACTIVATION_STATUS_ACTIVATED: 2,
   USER_ACTIVATION_STATUS_DEACTIVATED: 3,
@@ -853,6 +854,7 @@ const constants = {
   LANDLORD_ACTOR: 'landlord',
 
   TEST_ENVIRONMENT: 'test',
+  LETTER_GREETING_STYLE: [0, 1, 2, 3, 4],
 }
 
 module.exports = constants
