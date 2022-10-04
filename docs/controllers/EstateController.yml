@@ -575,14 +575,8 @@ paths:
           type: number
           in: query
           example: 1
-        - return_all:
-          name: return_all
-          in: query
-          enum:
-            -
-            - 1
-          example:
-          description: whether to return all estates at once or not (1 for return all)
+          description: |
+            if page or limit not passed, all data returned
       responses:
         "200":
           description: OK

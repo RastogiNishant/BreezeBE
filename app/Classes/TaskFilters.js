@@ -55,6 +55,7 @@ class TaskFilters extends Filter {
     Filter.TableInfo = {
       property_id: 'estates',
       address: 'estates',
+      net_rent: 'estates',
       urgency: 'tasks',
       status: 'tasks',
       email: '_ect',
@@ -70,6 +71,7 @@ class TaskFilters extends Filter {
       [
         'property_id',
         'address',
+        'net_rent',
         'urgency',
         'email',
         'phone_number',

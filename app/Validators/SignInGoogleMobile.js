@@ -13,6 +13,8 @@ class SignInGoogleMobile extends Base {
       owner_id: yup.number().positive(),
       member_id: yup.number().positive(),
       code: yup.string(),
+      data1: yup.string(),
+      data2: yup.string(),
     })
 }
 

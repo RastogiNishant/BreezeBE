@@ -13,14 +13,29 @@ const prettyMs = require('pretty-ms')
 const onFinished = require('on-finished')
 const moment = require('moment')
 const { get } = require('lodash')
-const util = require('util')
+
+var graylog2 = require('graylog2')
+var grayLog = new graylog2.graylog({
+  servers: [{ host: 'logs.app.breeze4me.de', port: 12201 }],
+  hostname: 'logs.app.breeze4me.de', // the name of this host
+  // (optional, default: os.hostname())
+  facility: 'Node.js', // the facility for these log messages
+  // (optional, default: "Node.js")
+  bufferSize: 1350, // max UDP packet size, should never exceed the
+  // MTU of your system (optional, default: 1400)
+})
+
+grayLog.on('error', function (error) {
+  console.error('Error while trying to write to graylog2:', error)
+})
 
 /**
  * Logs http request using AdonisJs in built logger
  */
 class Logger {
-  constructor({ request, response }, Logger) {
+  constructor({ request, response, auth }, Logger) {
     this.request = request
+    this.auth = auth
     this.res = response.response
     this.Logger = Logger
   }
@@ -123,13 +138,26 @@ class Logger {
    * @return {void}
    */
   hook() {
+    const user = this.auth.user
     const start = process.hrtime()
     const url = this.request.url()
     const method = this.request.method()
     const headers = this.request.headers()
     const ip = get(headers, 'x-real-ip') || this.request.ip()
-
     onFinished(this.res, (error, res) => {
+      try {
+        grayLog.log(url, {
+          start,
+          url,
+          method,
+          headers,
+          ip,
+          user,
+          res,
+        })
+      } catch (e) {
+        console.log(e)
+      }
       this.log(url, method, res.statusCode, start, error ? error.code : null, ip)
     })
   }

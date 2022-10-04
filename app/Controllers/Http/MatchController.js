@@ -5,6 +5,7 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
+const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
@@ -39,9 +40,11 @@ const {
   TENANT_EMAIL_INVITE,
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
+  VISIT_MAX_ALLOWED_FOLLOWUPS,
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
+const VisitService = require('../../Services/VisitService')
 
 class MatchController {
   /**
@@ -343,6 +346,16 @@ class MatchController {
     })
 
     return response.res(true)
+  }
+
+  async followupVisit({ request, auth, response }) {
+    let { estate_id, user_id } = request.all()
+    try {
+      await VisitService.followupVisit(estate_id, user_id, auth)
+      return response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 422)
+    }
   }
 
   /**
