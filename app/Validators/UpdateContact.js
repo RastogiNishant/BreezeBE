@@ -1,8 +1,8 @@
-"use strict";
+'use strict'
 
-const yup = require("yup");
+const yup = require('yup')
 
-const Base = require("./Base");
+const Base = require('./Base')
 const { phoneSchema } = require('../Libs/schemas.js')
 
 class UpdateContact extends Base {
@@ -13,8 +13,8 @@ class UpdateContact extends Base {
       phone: phoneSchema,
       region: yup.string().max(255),
       avatar: yup.string().max(255),
-    });
-  };
+    })
+  }
 }
 
-module.exports = UpdateContact;
+module.exports = UpdateContact

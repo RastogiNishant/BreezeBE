@@ -157,49 +157,14 @@ class EstateController {
         tenant_id
       )
       let tenant = await TenantService.getTenant(tenant_id)
-      let members = await MemberService.getMembers(tenant_id)
+      let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
+
       if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
-        members = members.toJSON().map((member) => pick(member, Member.limitFieldsList))
-        tenant = tenant.toJSON({ isShort: true })
-      } else {
-        members = await Promise.all(
-          members.toJSON().map(async (member) => {
-            const incomes = await Promise.all(
-              member.incomes.map(async (income) => {
-                const proofs = await Promise.all(
-                  income.proofs.map(async (proof) => {
-                    if (!proof.file) return proof
-                    proof.file = await FileBucket.getProtectedUrl(proof.file)
-                    return proof
-                  })
-                )
-                income = {
-                  ...income,
-                  proofs: proofs,
-                }
-                return income
-              })
-            )
-
-            const passports = await Promise.all(
-              member.passports.map(async (passport) => {
-                if (!passport.file) return passport
-                passport.file = await FileBucket.getProtectedUrl(passport.file)
-                return passport
-              })
-            )
-
-            member = {
-              ...member,
-              rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-              debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-              incomes: incomes,
-              passports: passports,
-            }
-            return member
-          })
+        members = (members || members.toJSON() || []).map((member) =>
+          pick(member, Member.limitFieldsList)
         )
+        tenant = tenant.toJSON({ isShort: true })
       }
 
       const result = {
@@ -220,8 +185,9 @@ class EstateController {
       auth.user.id,
       PROPERTY_MANAGE_ALLOWED
     )
-    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
-    result.data = await EstateService.checkCanChangeLettingStatus(result)
+    const result = await EstateService.getEstatesByUserId({ ids: landlordIds, limit, page, params })
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    delete result.rows
     response.res(result)
   }
   /**
@@ -233,10 +199,15 @@ class EstateController {
       params = request.post()
     }
     // Update expired estates status to unpublished
-    let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
-    result = result.toJSON()
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+      limit,
+      page,
+      params,
+    })
 
-    result.data = await EstateService.checkCanChangeLettingStatus(result)
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
@@ -392,6 +363,7 @@ class EstateController {
    */
   async publishEstate({ request, auth, response }) {
     const { id, action } = request.all()
+
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -910,7 +882,9 @@ class EstateController {
   async export({ request, auth, response }) {
     const { lang } = request.params
 
-    let result = await EstateService.getEstatesByUserId([auth.user.id], 0, 0, { return_all: 1 })
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+    })
     let rows = []
 
     if (lang) {

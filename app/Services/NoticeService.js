@@ -40,6 +40,8 @@ const {
   NOTICE_TYPE_CANCEL_VISIT_ID,
   NOTICE_TYPE_VISIT_DELAY_ID,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -89,8 +91,9 @@ const {
   DEFAULT_LANG,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
-  STATUS_EXPIRE,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+  LANDLORD_ACTOR,
 } = require('../constants')
 
 class NoticeService {
@@ -990,6 +993,23 @@ class NoticeService {
     )
   }
 
+  static async sendFollowUpVisit(recipient, actor, estate) {
+    const notice = {
+      user_id: recipient,
+      type:
+        actor === LANDLORD_ACTOR
+          ? NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID
+          : NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
+      data: {
+        actor,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendFollowUpVisit(notice)
+  }
+
   static async landlordsDeactivated(userIds, estateIds) {
     const notices = await userIds.reduce((notices, userId) => {
       return (notices = [
@@ -1081,6 +1101,26 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.notifyTaskMessageSent(notice)
+  }
+
+  static async notifyTenantDisconnected(tenants = []) {
+    const estateIds = tenants.map(({ estate_id }) => estate_id)
+    const estates = (await Estate.query().whereIn('id', estateIds).fetch()).rows
+
+    const notices = tenants.map(({ estate_id, user_id }) => {
+      const estate = estates.find(({ id }) => id === estate_id)
+      return {
+        user_id,
+        type: NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+        data: {
+          estate_id,
+          estate_address: estate.address,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyTenantDisconnected(notices)
   }
 }
 
