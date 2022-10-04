@@ -584,7 +584,10 @@ class EstateCurrentTenantService {
       if (valid_ids && valid_ids.length) {
         const estate_ids = estateCurrentTenants.map((tenant) => tenant.estate_id)
 
-        await require('./EstateService').unrented(estate_ids, trx)
+        /**
+         * though it's disconnected, rent status has not been change. it's like connected wrongly.
+         * //await require('./EstateService').unrented(estate_ids, trx)
+         */
 
         await Promise.all(
           estateCurrentTenants.map(async (tenant) => {
