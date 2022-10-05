@@ -59,7 +59,7 @@ class TaskController extends BaseController {
       if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
         throw new AppException('Chat message not editable anymore.')
       }
-      await ChatService.updateChatMessage(id, message, attachments)
+      await ChatService.updateChatMessage({ id, message, attachments })
       attachments = await this.getAbsoluteUrl(attachments)
       if (this.topic) {
         this.topic.broadcast('messageEdited', {
