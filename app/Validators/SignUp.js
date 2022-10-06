@@ -37,7 +37,7 @@ class SignUp extends Base {
         .oneOf(
           [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER],
           getExceptionMessage(
-            'lang',
+            'role',
             OPTION,
             `[${ROLE_USER},${ROLE_LANDLORD},${ROLE_PROPERTY_MANAGER}]`
           )

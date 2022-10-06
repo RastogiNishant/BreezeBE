@@ -226,6 +226,7 @@ class AccountController {
    */
   async updateProfile({ request, auth, response }) {
     try {
+console.log('updateProfile here', auth.user)      
       const user = await UserService.updateProfile(request, auth.user)
       response.res(user)
     } catch (e) {

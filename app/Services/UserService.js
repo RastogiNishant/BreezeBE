@@ -4,7 +4,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq, pick, trim } = require('lodash')
+const { get, isArray, isEmpty, uniq, pick, trim, unset } = require('lodash')
 const Promise = require('bluebird')
 const fs = require('fs')
 const Role = use('Role')
@@ -1110,10 +1110,6 @@ class UserService {
       ? delete data.prospect_visibility
       : data
 
-    const avatarUrl = await this.uploadAvatar(request)
-
-    if (avatarUrl) user.avatar = avatarUrl
-
     const trx = await Database.beginTransaction()
 
     try {
@@ -1124,10 +1120,10 @@ class UserService {
       if (data.company_name && data.company_name.trim()) {
         let company_name = data.company_name.trim()
         company = await Company.findOrCreate(
-          { name: company_name, user_id: auth.user.id },
-          { name: company_name, user_id: auth.user.id }
+          { name: company_name, user_id: user.id },
+          { name: company_name, user_id: user.id }
         )
-        _.unset(data, 'company_name')
+        unset(data, 'company_name')
         data.company_id = company.id
       }
 

@@ -16,6 +16,11 @@ const {
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
   ROLE_PROPERTY_MANAGER,
+
+  IS_PUBLIC,
+  IS_PRIVATE,
+  CONNECT_SERVICE_INDEX,
+  MATCH_SERVICE_INDEX,
 } = require('../../app/constants')
 
 const { test, trait, before, beforeEach, after, afterEach } = use('Test/Suite')('User Functional')
@@ -24,8 +29,21 @@ const UserService = use('App/Services/UserService')
 const AgreementService = use('App/Services/AgreementService')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH },
+  exceptionKeys: {
+    REQUIRED,
+    MINLENGTH,
+    MAXLENGTH,
+    OPTION,
+    DATE,
+    BOOLEAN,
+    EMAIL,
+    MATCH,
+    USER_NOT_FOUND,
+    USER_WRONG_PASSWORD,
+    ARRAY,
+  },
 } = require('../../app/excepions')
+const { response } = require('express')
 
 trait('Test/ApiClient')
 trait('Auth/Client')
@@ -120,7 +138,7 @@ test('signup failed', async ({ assert, client }) => {
     data: {
       email: getExceptionMessage('email', EMAIL),
       role: getExceptionMessage(
-        'lang',
+        'role',
         OPTION,
         `[${ROLE_USER},${ROLE_LANDLORD},${ROLE_PROPERTY_MANAGER}]`
       ),
@@ -156,6 +174,7 @@ test('signup failed', async ({ assert, client }) => {
     .send({
       firstname: faker.random.alphaNumeric(255),
       secondname: faker.random.alphaNumeric(255),
+      password: faker.random.alphaNumeric(37),
     })
     .end()
   response.assertStatus(422)
@@ -163,6 +182,7 @@ test('signup failed', async ({ assert, client }) => {
     data: {
       firstname: getExceptionMessage('firstname', MAXLENGTH, 254),
       secondname: getExceptionMessage('secondname', MAXLENGTH, 254),
+      password: getExceptionMessage('password', MAXLENGTH, 36),
     },
   })
 })
@@ -269,19 +289,76 @@ test('landlord log in', async ({ assert, client }) => {
   assert.isNotNull(loginTestLandlord.token)
 }).timeout(0)
 
-test('Login failed', async ({ assert, client }) => {
-  //wrong email
-  let response = await client
+test('Login failed', async ({ client }) => {
+  //No params
+  let response = await client.post('/api/v1/login').send({}).end()
+
+  response.assertStatus(422)
+  response.assertJSONSubset({
+    data: {
+      email: getExceptionMessage('email', REQUIRED),
+      role: getExceptionMessage('role', REQUIRED),
+      password: getExceptionMessage('password', REQUIRED),
+    },
+  })
+
+  //wrong info
+  response = await client
     .post('/api/v1/login')
     .send({
-      email: `123${prospectData.email}`,
+      email: faker.random.numeric(5),
+      password: faker.random.numeric(5),
+      role: faker.random.numeric(5),
+    })
+    .end()
+
+  response.assertStatus(422)
+  response.assertJSONSubset({
+    data: {
+      email: getExceptionMessage('email', EMAIL),
+      role: getExceptionMessage(
+        'role',
+        OPTION,
+        `[${ROLE_USER},${ROLE_LANDLORD},${ROLE_PROPERTY_MANAGER}]`
+      ),
+      password: getExceptionMessage('password', MINLENGTH, 6),
+    },
+  })
+
+  //max length
+  response = await client
+    .post('/api/v1/login')
+    .send({
+      email: prospectData.email,
+      password: faker.random.numeric(37),
+      device_token: faker.random.numeric(29),
+      role: ROLE_USER,
+    })
+    .end()
+
+  response.assertStatus(422)
+  response.assertJSONSubset({
+    data: {
+      password: getExceptionMessage('password', MAXLENGTH, 36),
+      device_token: getExceptionMessage('password', MINLENGTH, 30),
+    },
+  })
+
+  //wrong email
+  response = await client
+    .post('/api/v1/login')
+    .send({
+      email: `${faker.random.numeric(1)}${prospectData.email}`,
       password: prospectData.password,
       role: ROLE_USER,
     })
     .end()
+
   response.assertStatus(400)
   response.assertJSONSubset({
     status: 'error',
+    data: getExceptionMessage(undefined, USER_NOT_FOUND),
+    code: 0,
   })
 
   //wrong password
@@ -293,88 +370,140 @@ test('Login failed', async ({ assert, client }) => {
       role: ROLE_USER,
     })
     .end()
+
   response.assertStatus(400)
   response.assertJSONSubset({
     status: 'error',
-    data: 'E_PASSWORD_MISMATCH',
+    data: getExceptionMessage(undefined, USER_WRONG_PASSWORD),
+    code: 0,
   })
-
-  //No role
-  response = await client
-    .post('/api/v1/login')
-    .send({
-      email: prospectData.email,
-      password: `${prospectData.password}123`,
-    })
-    .end()
-  response.assertStatus(422)
-  response.assertJSONSubset({
-    status: 'error',
-  })
-
-  //wrong role
-  response = await client
-    .post('/api/v1/login')
-    .send({
-      email: prospectData.email,
-      password: `${prospectData.password}123`,
-      role: 0,
-    })
-    .end()
-  response.assertStatus(422)
-  response.assertJSONSubset({
-    status: 'error',
-  })
-
-  //wrong role
-  response = await client
-    .post('/api/v1/login')
-    .send({
-      email: prospectData.email,
-      password: `${prospectData.password}123`,
-      role: 5,
-    })
-    .end()
-  response.assertStatus(422)
-  response.assertJSONSubset({
-    status: 'error',
-  })
-
-  //if device_token is not bigger than 30 letter long. there must be an error
-  response = await client
-    .post('/api/v1/login')
-    .send({
-      email: prospectData.email,
-      password: prospectData.password,
-      role: ROLE_USER,
-      device_token: faker.random.alphaNumeric(29),
-    })
-    .end()
-
-  response.assertStatus(422)
 })
 
-test('update profile', async ({ assert, client }) => {
-  const updateInfo = {
-    email: `prospect_test_${new Date().getTime().toString()}@gmail.com`,
-    firstname: `firstname_${new Date().getTime().toString()}`,
-    secondname: `secondname_${new Date().getTime().toString()}`,
-    password: prospectData.password,
-  }
-  const response = await client
-    .put('/api/v1/users')
-    .loginVia(testProspect, 'jwt')
-    .send(updateInfo)
-    .end()
+test('update profile failed', async ({ assert, client }) => {
+  //wrong date type and min value check
 
-  response.assertStatus(200)
+  //without token
+  let response = await client.put('/api/v1/users').end()
+  response.assertStatus(401)
+
+  response = await client
+    .put('/api/v1/users')
+    .loginVia(landlord, 'jwtLandlord')
+    .send({
+      email: faker.random.numeric(5),
+      password: faker.random.numeric(5),
+      sex: faker.random.numeric(5),
+      phone: faker.random.alphaNumeric(5),
+      birthday: faker.random.alphaNumeric(10),
+      firstname: faker.random.alphaNumeric(1),
+      secondname: faker.random.alphaNumeric(1),
+      lang: faker.random.alphaNumeric(4),
+      notice: faker.random.alphaNumeric(1),
+      prospect_visibility: faker.random.numeric(3),
+      landlord_visibility: faker.random.numeric(3),
+      company_name: faker.random.alphaNumeric(1),
+      lord_size: faker.random.alphaNumeric(3),
+      preferred_services: faker.random.alphaNumeric(3),
+    })
+    .end()
+  response.assertStatus(422)
+
   response.assertJSONSubset({
     data: {
-      ...omit(updateInfo, ['password']),
-      status: STATUS_EMAIL_VERIFY,
+      email: getExceptionMessage('email', EMAIL),
+      password: getExceptionMessage('password', MINLENGTH, 6),
+      sex: getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`),
+      phone: getExceptionMessage(undefined, MATCH),
+      birthday: getExceptionMessage('birthday', DATE),
+      firstname: getExceptionMessage('firstname', MINLENGTH, 2),
+      secondname: getExceptionMessage('secondname', MINLENGTH, 2),
+      lang: getExceptionMessage('lang', OPTION, `[en,de]`),
+      notice: getExceptionMessage('notice', BOOLEAN),
+      prospect_visibility: getExceptionMessage(
+        'prospect_visibility',
+        OPTION,
+        `[${IS_PRIVATE},${IS_PUBLIC}]`
+      ),
+      landlord_visibility: getExceptionMessage(
+        'landlord_visibility',
+        OPTION,
+        `[${IS_PRIVATE},${IS_PUBLIC}]`
+      ),
+      lord_size: getExceptionMessage(
+        'lord_size',
+        OPTION,
+        `[${LANDLORD_SIZE_LARGE},${LANDLORD_SIZE_MID},${LANDLORD_SIZE_SMALL}]`
+      ),
+      preferred_services: getExceptionMessage('preferred_services', ARRAY),
+    },
+  })
+
+  //max length check
+  response = await client
+    .put('/api/v1/users')
+    .loginVia(landlord, 'jwtLandlord')
+    .send({
+      firstname: faker.random.alphaNumeric(256),
+      secondname: faker.random.alphaNumeric(256),
+      preferred_services: [faker.random.alphaNumeric(3)],
+    })
+    .end()
+  response.assertStatus(422)
+
+  response.assertJSONSubset({
+    data: {
+      firstname: getExceptionMessage('firstname', MAXLENGTH, 254),
+      secondname: getExceptionMessage('secondname', MAXLENGTH, 254),
+      'preferred_services[0]': getExceptionMessage(
+        'preferred_services[0]',
+        OPTION,
+        ` ${CONNECT_SERVICE_INDEX}, ${MATCH_SERVICE_INDEX}`
+      ),
     },
   })
 }).timeout(0)
+
+test('Update Profile', async ({ assert, client }) => {
+  const response = await client
+    .put('/api/v1/users')
+    .loginVia(landlord, 'jwtLandlord')
+    .send({
+      email: faker.internet.email(),
+      password: landlordData.password,
+      sex: GENDER_FEMALE,
+      phone: faker.phone.number('+4891#######'),
+      birthday: faker.date.between('1990-01-01', '2000-12-30'),
+      firstname: faker.random.alphaNumeric(10),
+      secondname: faker.random.alphaNumeric(10),
+      lang: 'en',
+      notice: true,
+      prospect_visibility: [IS_PRIVATE],
+      landlord_visibility: [IS_PRIVATE],
+      company_name: faker.random.alphaNumeric(10),
+      lord_size: LANDLORD_SIZE_LARGE,
+      preferred_services: [CONNECT_SERVICE_INDEX],
+    })
+    .end()
+
+  console.log('update Profile', {
+    email: faker.internet.email(),
+    password: landlord.password,
+
+    sex: GENDER_FEMALE,
+    phone: faker.phone.number('+4891#######'),
+    birthday: faker.date.between('1990-01-01', '2000-12-30'),
+    firstname: faker.name.firstName(),
+    secondname: faker.name.lastName(),
+    lang: 'en',
+    notice: true,
+    prospect_visibility: [IS_PRIVATE],
+    landlord_visibility: [IS_PRIVATE],
+    company_name: faker.company.companyName(),
+    lord_size: LANDLORD_SIZE_LARGE,
+    preferred_services: [CONNECT_SERVICE_INDEX],
+  })
+  response.assertStatus(200)
+})
 
 test('Get Landlord', async ({ client }) => {
   const response = await client

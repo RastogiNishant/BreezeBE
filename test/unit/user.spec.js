@@ -2,6 +2,7 @@ const Suite = use('Test/Suite')('User')
 const { test } = Suite
 const User = use('App/Models/User')
 const UserService = use('App/Services/UserService')
+const { faker } = require('@faker-js/faker')
 const { ROLE_LANDLORD, ROLE_USER, STATUS_EMAIL_VERIFY } = require('../../app/constants')
 const Hash = use('Hash')
 let signUpProspectUser,
@@ -178,22 +179,18 @@ test('Fail with verified user to resend User Confirm', async ({ assert }) => {
   }
 })
 
-test('Get Me', async ({ assert }) => {
-  try {
-    let user = await UserService.getByEmailWithRole(['it@bits1.ventures'], ROLE_USER)
-    if (!user || !user.rows || !user.rows.length) {
-      user = signUpProspectUser
-    }
-    user = await UserService.me(user.rows ? user.rows[0] : user)
-    assert.notEqual(user.id, null)
-    assert.notEqual(user.email, null)
-  } catch (e) {
-    assert.fail('Not passed Get Me for UserService')
+test('Fail Get Me', async ({ assert }) => {
+  let user = await UserService.getByEmailWithRole(['it@bits1.ventures'], ROLE_USER)
+  if (!user || !user.rows || !user.rows.length) {
+    user = signUpProspectUser
   }
+  user = await UserService.me(user.rows ? user.rows[0] : user)
+  assert.notEqual(user.id, null)
+  assert.notEqual(user.email, null)
 })
 
 test('Change Password', async ({ assert }) => {
-  const newPassword = 'newpassword'
+  const newPassword = faker.random.numeric(10)
   const changed = await UserService.changePassword(
     signUpProspectUser,
     dummyProspectUserData.password,
@@ -216,17 +213,13 @@ test('Change Password', async ({ assert }) => {
 }).timeout(0)
 
 test('Change device token', async ({ assert }) => {
-  try {
-    const device_token = '123453453222'
-    await UserService.updateDeviceToken(signUpProspectUser.id, device_token)
-    const prospect = await UserService.getById(signUpProspectUser.id)
-    assert.equal(prospect.device_token, device_token)
-  } catch (e) {
-    assert.fail('Failed to change device token', e)
-  }
+  const device_token = faker.random.alphaNumeric(31)
+  await UserService.updateDeviceToken(signUpProspectUser.id, device_token)
+  const prospect = await UserService.getById(signUpProspectUser.id)
+  assert.equal(prospect.device_token, device_token)
 })
 
-test('requestSendCodeForgotPassword', async ({ assert }) => {
+test('Request SendCode ForgotPassword', async ({ assert }) => {
   let shortLink = await UserService.requestSendCodeForgotPassword(signUpProspectUser.email, 'de')
   assert.isNotNull(shortLink, 'Failed sending forget password for mobile')
   shortLink = await UserService.requestSendCodeForgotPassword(signUpProspectUser.email, 'de', true)

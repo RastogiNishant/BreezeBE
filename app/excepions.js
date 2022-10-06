@@ -1,5 +1,5 @@
 const HttpException = use('App/Exceptions/HttpException')
-const { replace } = require('lodash')
+const { replace, trim } = require('lodash')
 
 const exceptions = {
   REQUIRED: 'is a required field',
@@ -8,8 +8,12 @@ const exceptions = {
   OPTION: 'must be one of the following values:${value}',
   DATE: 'must be a `YYYY-MM-DD` type',
   BOOLEAN: 'must be true or false',
+  ARRAY: 'must be a `array` type',
   EMAIL: 'must be a valid email',
   MATCH: 'format is wrong',
+  USER_NOT_FOUND: 'E_USER_NOT_FOUND',
+  USER_WRONG_PASSWORD: 'E_PASSWORD_MISMATCH',
+  CURRENT_PASSWORD_REQUIRED: 'Change on email requires current password.',
 }
 
 const exceptionKeys = {
@@ -20,14 +24,18 @@ const exceptionKeys = {
   DATE: 'DATE',
   BOOLEAN: 'BOOLEAN',
   EMAIL: 'EMAIL',
+  ARRAY: 'ARRAY',
   MATCH: 'MATCH',
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  USER_WRONG_PASSWORD: 'USER_WRONG_PASSWORD',
+  CURRENT_PASSWORD_REQUIRED: 'CURRENT_PASSWORD_REQUIRED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
     throw new HttpException(`message for ${command} is not defined`)
   }
 
-  return `${name || ''} ${replace(exceptions[command], '${value}', value)}`
+  return trim(`${name || ''} ${replace(exceptions[command], '${value}', value)}`)
 }
 
 module.exports = {
