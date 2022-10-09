@@ -148,10 +148,10 @@ class EstateController {
     response.res(newEstate)
   }
 
-  async lanlordTenantDetailInfo({ request, auth, response }) {
+  async landlordTenantDetailInfo({ request, auth, response }) {
     const { estate_id, tenant_id } = request.all()
     try {
-      const lanlord = await EstateService.lanlordTenantDetailInfo(
+      const landlord = await EstateService.landlordTenantDetailInfo(
         auth.user.id,
         estate_id,
         tenant_id
@@ -160,7 +160,7 @@ class EstateController {
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
-      if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
+      if (!landlord.toJSON().share && landlord.toJSON().status !== MATCH_STATUS_FINISH) {
         members = (members || members.toJSON() || []).map((member) =>
           pick(member, Member.limitFieldsList)
         )
@@ -168,7 +168,7 @@ class EstateController {
       }
 
       const result = {
-        ...lanlord.toJSON(),
+        ...landlord.toJSON(),
         company: company,
         tenant: tenant,
         members: members,

@@ -1131,7 +1131,7 @@ class EstateService {
     return result
   }
 
-  static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
+  static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
       .select(['estates.*', '_m.share', '_m.status'])
       .with('user')
