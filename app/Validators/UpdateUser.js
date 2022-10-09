@@ -78,10 +78,6 @@ class UpdateUser extends Base {
           [IS_PRIVATE, IS_PUBLIC],
           getExceptionMessage('landlord_visibility', OPTION, `[${IS_PRIVATE},${IS_PUBLIC}]`)
         ),
-      company_name: yup
-        .string()
-        .min(1, getExceptionMessage('company_name', MINLENGTH, 2))
-        .max(255, getExceptionMessage('company_name', MAXLENGTH, 2552)),
       lord_size: yup
         .number()
         .oneOf(

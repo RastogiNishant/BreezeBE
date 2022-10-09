@@ -12,6 +12,27 @@ const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick, trim } = require('lodash')
 
+const {
+  exceptions: {
+    REQUIRED,
+    MINLENGTH,
+    MAXLENGTH,
+    OPTION,
+    DATE,
+    BOOLEAN,
+    EMAIL,
+    MATCH,
+    USER_NOT_FOUND,
+    USER_NOT_EXIST,
+    USER_WRONG_PASSWORD,
+    ARRAY,
+    NUMBER,
+    USER_UNIQUE,
+    USER_CLOSED,
+    FAILED_UPLOAD_AVATAR,
+  },
+} = require('../../../app/excepions')
+
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
@@ -41,7 +62,7 @@ class AccountController {
       response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
-        throw new HttpException('User already exists', 400)
+        throw new HttpException(USER_UNIQUE, 400)
       }
 
       throw e
@@ -62,7 +83,7 @@ class AccountController {
       response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
-        throw new HttpException('User already exists', 400)
+        throw new HttpException(USER_UNIQUE, 400)
       }
       throw e
     }
@@ -95,20 +116,18 @@ class AccountController {
     try {
       const user = await User.find(user_id)
       if (!user) {
-        throw new HttpException('No user exists', 400)
+        throw new HttpException(USER_NOT_EXIST, 400)
       }
       await UserService.confirmEmail(user, code)
+
+      Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
-
-    Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
-
     if (!from_web) {
       return response.res(true)
     }
-
     let authenticator
     try {
       authenticator = getAuthByRole(auth, user.role)
@@ -128,7 +147,9 @@ class AccountController {
       let user, authenticator, token
       try {
         user = await UserService.login({ email, role, device_token })
-      } catch (e) {}
+      } catch (e) {
+        throw new HttpException(e.message, 400)
+      }
       try {
         authenticator = getAuthByRole(auth, role)
       } catch (e) {
@@ -183,7 +204,7 @@ class AccountController {
    */
   async closeAccount({ auth, response }) {
     await UserService.closeAccount(auth.user)
-    response.res({ message: 'User Account Closed' })
+    response.res({ message: USER_CLOSED })
   }
 
   async onboard({ auth, response }) {
@@ -226,7 +247,6 @@ class AccountController {
    */
   async updateProfile({ request, auth, response }) {
     try {
-console.log('updateProfile here', auth.user)      
       const user = await UserService.updateProfile(request, auth.user)
       response.res(user)
     } catch (e) {
@@ -263,7 +283,7 @@ console.log('updateProfile here', auth.user)
       const user = await UserService.updateAvatar(request, auth.user)
       response.res(user)
     } catch (e) {
-      throw new HttpException('Failed to save avatar', 500)
+      throw new HttpException(FAILED_UPLOAD_AVATAR, 500)
     }
   }
 
@@ -300,7 +320,7 @@ console.log('updateProfile here', auth.user)
       throw e
     }
 
-    return response.res()
+    return response.res(true)
   }
 
   /**
