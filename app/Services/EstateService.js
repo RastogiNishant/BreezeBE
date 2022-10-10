@@ -1450,5 +1450,9 @@ class EstateService {
       }
     })
   }
+
+  static async deletePermanent(user_id) {
+    await Estate.query().where('user_id', user_id).delete()
+  }
 }
 module.exports = EstateService

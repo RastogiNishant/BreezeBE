@@ -499,7 +499,6 @@ class UserService {
         this.orWhere('_m.share', true)
         this.orWhere('_m.status', MATCH_STATUS_FINISH)
       })
-      .where('_m.share', true)
       .first()
 
     return sharedMatch ? true : false
@@ -536,8 +535,10 @@ class UserService {
       return []
     }
     const deviceTokens = devices.map((d) => d.identifier)
-    const ids = (await User.query().select('id').whereIn('device_token', deviceTokens).fetch()).rows
-    return ids
+    const users = (
+      await User.query().select('id', 'device_token').whereIn('device_token', deviceTokens).fetch()
+    ).rows
+    return users
   }
 
   /**

@@ -6,6 +6,7 @@ const Match = use('App/Models/Match')
 const UserService = use('App/Services/UserService')
 const { faker } = require('@faker-js/faker')
 const DataStorage = use('DataStorage')
+const Database = use('Database')
 const { pick, omit } = require('lodash')
 
 const {
@@ -16,7 +17,10 @@ const {
   STATUS_DELETE,
   STATUS_ACTIVE,
   MATCH_STATUS_VISIT,
+  MATCH_STATUS_COMMIT,
 } = require('../../app/constants')
+const EstateService = require('../../app/Services/EstateService')
+const MatchService = require('../../app/Services/MatchService')
 const Hash = use('Hash')
 let signUpProspectUser,
   dummyProspectUserData,
@@ -92,6 +96,16 @@ before(async () => {
 })
 
 after(async () => {
+  if (globalMatch) {
+    await MatchService.deletePermanant({
+      user_id: globalMatch.user_id,
+    })
+  }
+
+  if (globalEstate) {
+    await EstateService.deletePermanent(globalEstate.user_id)
+  }
+
   if (signUpProspectUser) {
     await UserService.removeUser(signUpProspectUser.id)
   }
@@ -231,140 +245,246 @@ test('Update device token', async ({ assert }) => {
   assert.equal(prospect.device_token, device_token)
 }).timeout(0)
 
-// test('Landlord has permission to access Tenant full profile', async ({ assert }) => {
-//   assert.isNotNull(signUpProspectUser)
-//   assert.isNotNull(signUpLandlordUser)
-//   assert.isNotNull(landlord)
-//   assert.isNotNull(prospect)
-
-//   let hasAccess = await UserService.landlordHasAccessTenant(landlord.id, signUpProspectUser.id)
-//   assert.equal(hasAccess, false)
-
-//   hasAccess = await UserService.landlordHasAccessTenant(signUpLandlordUser.id, prospect.id)
-//   assert.equal(hasAccess, false)
-
-//   globalEstate = await Estate.createItem({
-//     user_id: signUpLandlordUser.id,
-//     property_id: faker.random.alphaNumeric(5),
-//   })
-//   assert.isNotNull(globalEstate)
-
-//   globalMatch = await Match.createItem({
-//     user_id: signUpProspectUser.id,
-//     share: true,
-//     status: MATCH_STATUS_VISIT,
-//   })
-//   assert.isNotNull(globalEstate)
-
-//   hasAccess = await UserService.landlordHasAccessTenant(
-//     signUpProspectUser.id,
-//     signUpLandlordUser.id
-//   )
-//   assert.equal(hasAccess, true)
-// })
-test('Request SendCode ForgotPassword', async ({ assert }) => {
-  const { shortLink, code } = await UserService.requestSendCodeForgotPassword(
-    signUpProspectUser.email,
-    'de'
-  )
-  let verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'forget_password')
-  assert.isNotNull(code)
-  assert.isDefined(code)
-  assert.isDefined(verifyCode)
-  assert.isNotNull(verifyCode)
-  assert.equal(code, verifyCode.code)
-  assert.isNotNull(shortLink)
-
-  const webForgetPassword = await UserService.requestSendCodeForgotPassword(
-    signUpProspectUser.email,
-    'de',
-    true
-  )
-  verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'forget_password')
-  assert.isNotNull(verifyCode)
-  assert.isNotNull(webForgetPassword.code)
-  assert.isDefined(webForgetPassword.code)
-  assert.equal(webForgetPassword.code, verifyCode.code)
-  assert.isNotNull(webForgetPassword.shortLink)
-  assert.isNotNull(webForgetPassword.shortLink)
-}).timeout(0)
-
-test('Get tenant By Landlord', async ({ assert }) => {
-  const tenant = await UserService.getTenantInfo(prospect.id, landlord.id)
-  if (tenant) {
-    assert.equal(tenant.id, prospect.id)
-    assert.isUndefined(tenant.password)
-    assert.isTrue(tenant.finish, true)
-    assert.isDefined(tenant.tenant)
-  }
-
-  if (!tenant.share) {
-    assert.equal(tenant.status, MATCH_STATUS_FINISH)
-  } else {
-    assert.isTrue(tenant.share)
-  }
-
-  if (tenant.tenant) {
-    assert.isDefined(tenant.tenant.members)
-    if (tenant.tenant.members && tenant.tenant.members.length) {
-      assert.equal(tenant.tenant.members[0].user_id, prospect.id)
-    }
-  }
-})
-
-test('Increase Unread NotificationCount', async ({ assert }) => {
+test('Landlord has permission to access Tenant full profile', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser)
-  assert.isNotNull(signUpProspectUser.id)
-  let user = await User.query().where('id', signUpProspectUser.id).first()
-  assert.isNotNull(user)
-  const unread_notification_count = user.unread_notification_count
+  assert.isNotNull(signUpLandlordUser)
+  assert.isNotNull(landlord)
+  assert.isNotNull(prospect)
 
-  await UserService.increaseUnreadNotificationCount(signUpProspectUser.id)
-  user = await User.query().where('id', signUpProspectUser.id).first()
-  assert.isNotNull(user)
-  assert.equal(unread_notification_count + 1, user.unread_notification_count)
+  let hasAccess = await UserService.landlordHasAccessTenant(landlord.id, signUpProspectUser.id)
+  assert.equal(hasAccess, false)
+
+  hasAccess = await UserService.landlordHasAccessTenant(signUpLandlordUser.id, prospect.id)
+  assert.equal(hasAccess, false)
+
+  globalEstate = await Estate.createItem({
+    user_id: signUpLandlordUser.id,
+    property_id: faker.random.alphaNumeric(5),
+  })
+  assert.isNotNull(globalEstate)
+
+  await Database.table('matches').insert({
+    user_id: signUpProspectUser.id,
+    estate_id: globalEstate.id,
+    percent: 0.5,
+    share: true,
+    status: MATCH_STATUS_VISIT,
+  })
+
+  globalMatch = await Match.query()
+    .where('user_id', signUpProspectUser.id)
+    .where('estate_id', globalEstate.id)
+    .first()
+  assert.isNotNull(globalMatch)
+  globalMatch = globalMatch.toJSON()
+
+  hasAccess = await UserService.landlordHasAccessTenant(
+    signUpLandlordUser.id,
+    signUpProspectUser.id
+  )
+  assert.equal(hasAccess, true)
+
+  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
+
+  await Database.table('matches').insert({
+    user_id: signUpProspectUser.id,
+    estate_id: globalEstate.id,
+    percent: 0.5,
+    share: false,
+    status: MATCH_STATUS_FINISH,
+  })
+
+  globalMatch = await Match.query()
+    .where('user_id', signUpProspectUser.id)
+    .where('estate_id', globalEstate.id)
+    .first()
+  assert.isNotNull(globalMatch)
+  globalMatch = globalMatch.toJSON()
+
+  hasAccess = await UserService.landlordHasAccessTenant(
+    signUpLandlordUser.id,
+    signUpProspectUser.id
+  )
+  assert.equal(hasAccess, true)
+
+  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
+
+  await Database.table('matches').insert({
+    user_id: signUpProspectUser.id,
+    estate_id: globalEstate.id,
+    percent: 0.5,
+    share: false,
+    status: MATCH_STATUS_COMMIT,
+  })
+
+  globalMatch = await Match.query()
+    .where('user_id', signUpProspectUser.id)
+    .where('estate_id', globalEstate.id)
+    .first()
+  assert.isNotNull(globalMatch)
+  globalMatch = globalMatch.toJSON()
+
+  hasAccess = await UserService.landlordHasAccessTenant(
+    signUpLandlordUser.id,
+    signUpProspectUser.id
+  )
+  assert.equal(hasAccess, false)
+
+  await EstateService.deletePermanent(globalEstate.user_id)
 })
 
-test('Reset Unread NotificationCount', async ({ assert }) => {
+test('getTokenWithLocale', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser)
-  assert.isNotNull(signUpProspectUser.id)
 
-  let user = await User.query().where('id', signUpProspectUser.id).first()
-  assert.isNotNull(user)
-  const notificationCount = user.unread_notification_count
-  assert.isAbove(notificationCount, 0)
-
-  await UserService.resetUnreadNotificationCount(signUpProspectUser.id)
-  user = await User.query().where('id', signUpProspectUser.id).first()
-
-  assert.isNotNull(user)
-  assert.equal(user.unread_notification_count, 0)
-})
-
-test('Change email', async ({ assert }) => {
-  const newEmail = faker.internet.email()
-  await UserService.changeEmail({ user: signUpProspectUser, email: newEmail })
   const user = await User.query().where('id', signUpProspectUser.id).first()
   assert.isNotNull(user)
-  const userObject = user.toJSON({ isOwner: true })
-  assert.equal(newEmail, userObject.email)
-  assert.equal(userObject.status, STATUS_EMAIL_VERIFY)
 
-  const code = await DataStorage.getItem(user.id, 'confirm_email')
-  assert.isNotNull(code)
+  let tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
+  if (user.notice && user.device_token) {
+    assert.isNotNull(tokens)
+    assert.equal(tokens.length, 1)
+  } else {
+    assert.isNull(tokens)
+  }
+
+  let updateResult = await User.query()
+    .update({ device_token: null })
+    .where('id', signUpProspectUser.id)
+  assert.equal(updateResult, 1)
+
+  tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
+  assert.equal(tokens.length, 0)
+
+  updateResult = await User.query()
+    .update({ device_token: faker.random.alphaNumeric(32), notice: false })
+    .where('id', signUpProspectUser.id)
+  assert.equal(updateResult, 1)
+
+  tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
+  assert.equal(tokens.length, 0)
 })
 
-test('Close Account', async ({ assert }) => {
-  const closedUser = await UserService.closeAccount(signUpProspectUser)
-  assert.notEqual(closedUser.email, null)
-  const isClosed = closedUser.email.includes('_breezeClose') ? true : false
-  assert.equal(isClosed, true)
+test('getUserIdsByToken', async ({ assert }) => {
+  const device_token = faker.random.alphaNumeric(32)
+  const updateResult = await User.query()
+    .update({ device_token: device_token })
+    .where('id', signUpProspectUser.id)
+  assert.equal(updateResult, 1)
 
-  assert.equal(closedUser.firstname, ' USER')
-  assert.equal(closedUser.secondname, ' DELETED')
-  assert.equal(closedUser.approved_landlord, false)
-  assert.equal(closedUser.is_admin, false)
-  assert.equal(closedUser.device_token, null)
-  assert.equal(closedUser.google_id, null)
-  assert.equal(closedUser.status, STATUS_DELETE)
-}).timeout(0)
+  const users = await UserService.getUserIdsByToken([{ identifier: device_token }])
+  assert.isNotNull(users)
+  assert.equal(users.length, 1)
+  assert.equal(users[0].id, signUpProspectUser.id)
+  assert.equal(users[0].device_token, device_token)
+})
+
+test('getNewestInactiveLandlordsIds', async ({ assert }) => {
+  
+})
+
+// test('Request SendCode ForgotPassword', async ({ assert }) => {
+//   const { shortLink, code } = await UserService.requestSendCodeForgotPassword(
+//     signUpProspectUser.email,
+//     'de'
+//   )
+//   let verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'forget_password')
+//   assert.isNotNull(code)
+//   assert.isDefined(code)
+//   assert.isDefined(verifyCode)
+//   assert.isNotNull(verifyCode)
+//   assert.equal(code, verifyCode.code)
+//   assert.isNotNull(shortLink)
+
+//   const webForgetPassword = await UserService.requestSendCodeForgotPassword(
+//     signUpProspectUser.email,
+//     'de',
+//     true
+//   )
+//   verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'forget_password')
+//   assert.isNotNull(verifyCode)
+//   assert.isNotNull(webForgetPassword.code)
+//   assert.isDefined(webForgetPassword.code)
+//   assert.equal(webForgetPassword.code, verifyCode.code)
+//   assert.isNotNull(webForgetPassword.shortLink)
+//   assert.isNotNull(webForgetPassword.shortLink)
+// }).timeout(0)
+
+// test('Get tenant By Landlord', async ({ assert }) => {
+//   const tenant = await UserService.getTenantInfo(prospect.id, landlord.id)
+//   if (tenant) {
+//     assert.equal(tenant.id, prospect.id)
+//     assert.isUndefined(tenant.password)
+//     assert.isTrue(tenant.finish, true)
+//     assert.isDefined(tenant.tenant)
+//   }
+
+//   if (!tenant.share) {
+//     assert.equal(tenant.status, MATCH_STATUS_FINISH)
+//   } else {
+//     assert.isTrue(tenant.share)
+//   }
+
+//   if (tenant.tenant) {
+//     assert.isDefined(tenant.tenant.members)
+//     if (tenant.tenant.members && tenant.tenant.members.length) {
+//       assert.equal(tenant.tenant.members[0].user_id, prospect.id)
+//     }
+//   }
+// })
+
+// test('Increase Unread NotificationCount', async ({ assert }) => {
+//   assert.isNotNull(signUpProspectUser)
+//   assert.isNotNull(signUpProspectUser.id)
+//   let user = await User.query().where('id', signUpProspectUser.id).first()
+//   assert.isNotNull(user)
+//   const unread_notification_count = user.unread_notification_count
+
+//   await UserService.increaseUnreadNotificationCount(signUpProspectUser.id)
+//   user = await User.query().where('id', signUpProspectUser.id).first()
+//   assert.isNotNull(user)
+//   assert.equal(unread_notification_count + 1, user.unread_notification_count)
+// })
+
+// test('Reset Unread NotificationCount', async ({ assert }) => {
+//   assert.isNotNull(signUpProspectUser)
+//   assert.isNotNull(signUpProspectUser.id)
+
+//   let user = await User.query().where('id', signUpProspectUser.id).first()
+//   assert.isNotNull(user)
+//   const notificationCount = user.unread_notification_count
+//   assert.isAbove(notificationCount, 0)
+
+//   await UserService.resetUnreadNotificationCount(signUpProspectUser.id)
+//   user = await User.query().where('id', signUpProspectUser.id).first()
+
+//   assert.isNotNull(user)
+//   assert.equal(user.unread_notification_count, 0)
+// })
+
+// test('Change email', async ({ assert }) => {
+//   const newEmail = faker.internet.email()
+//   await UserService.changeEmail({ user: signUpProspectUser, email: newEmail })
+//   const user = await User.query().where('id', signUpProspectUser.id).first()
+//   assert.isNotNull(user)
+//   const userObject = user.toJSON({ isOwner: true })
+//   assert.equal(newEmail, userObject.email)
+//   assert.equal(userObject.status, STATUS_EMAIL_VERIFY)
+
+//   const code = await DataStorage.getItem(user.id, 'confirm_email')
+//   assert.isNotNull(code)
+// })
+
+// test('Close Account', async ({ assert }) => {
+//   const closedUser = await UserService.closeAccount(signUpProspectUser)
+//   assert.notEqual(closedUser.email, null)
+//   const isClosed = closedUser.email.includes('_breezeClose') ? true : false
+//   assert.equal(isClosed, true)
+
+//   assert.equal(closedUser.firstname, ' USER')
+//   assert.equal(closedUser.secondname, ' DELETED')
+//   assert.equal(closedUser.approved_landlord, false)
+//   assert.equal(closedUser.is_admin, false)
+//   assert.equal(closedUser.device_token, null)
+//   assert.equal(closedUser.google_id, null)
+//   assert.equal(closedUser.status, STATUS_DELETE)
+// }).timeout(0)

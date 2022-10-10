@@ -2445,6 +2445,14 @@ class MatchService {
       return false
     }
   }
+
+  static async deletePermanant({ user_id, estate_id }) {
+    let query = Match.query().delete().where('user_id', user_id)
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+    await query
+  }
 }
 
 module.exports = MatchService
