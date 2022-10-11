@@ -71,6 +71,9 @@ let signUpProspectUser,
 
 const { before, beforeEach, after, afterEach } = Suite
 
+const prospectDataEmail = `functional_prospect_${new Date().getTime().toString()}@gmail.com`
+const landlordDataEmail = `functional_landlord_${new Date().getTime().toString()}@gmail.com`
+
 before(async () => {
   adminData = {
     email: `admin_${new Date().getTime().toString()}@gmail.com`,
@@ -79,7 +82,7 @@ before(async () => {
   }
 
   dummyProspectUserData = {
-    email: `test_prospect_${new Date().getTime().toString()}@gmail.com`,
+    email: prospectDataEmail,
     firstname: faker.name.firstName(),
     secondname: faker.name.lastName(),
     role: ROLE_USER,
@@ -90,7 +93,7 @@ before(async () => {
   }
 
   dummyProspectUserData = {
-    email: `test_prospect_${new Date().getTime().toString()}@gmail.com`,
+    email: landlordDataEmail,
     firstname: faker.name.firstName(),
     secondname: faker.name.lastName(),
     role: ROLE_USER,
