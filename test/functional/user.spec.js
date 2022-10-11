@@ -327,9 +327,10 @@ test('Failed Confirm email', async ({ assert, client }) => {
 }).timeout(0)
 
 test('Confirm email', async ({ assert, client }) => {
+  assert.isNotNull(testLandlord)
   assert.isNotNull(testLandlord.id)
   code = await UserService.sendConfirmEmail(testLandlord)
-
+  assert.isNotNull(code)
   const response = await client
     .get('/api/v1/confirm_email')
     .send({
@@ -664,8 +665,8 @@ test('update profile failed', async ({ assert, client }) => {
     .put('/api/v1/users')
     .loginVia(landlord, 'jwtLandlord')
     .send({
-      firstname: faker.random.alphaNumeric(256),
-      secondname: faker.random.alphaNumeric(256),
+      firstname: faker.random.alphaNumeric(255),
+      secondname: faker.random.alphaNumeric(255),
       preferred_services: [faker.random.alphaNumeric(3)],
     })
     .end()
@@ -699,7 +700,6 @@ test('update profile failed', async ({ assert, client }) => {
       notice: true,
       prospect_visibility: [IS_PRIVATE],
       landlord_visibility: [IS_PRIVATE],
-      company_name: faker.random.alphaNumeric(10),
       lord_size: LANDLORD_SIZE_LARGE,
       preferred_services: [CONNECT_SERVICE_INDEX],
     })
@@ -902,7 +902,7 @@ test('Reset password failed', async ({ assert, client }) => {
   response.assertJSONSubset({
     data: getExceptionMessage(undefined, INVALID_CONFIRM_CODE),
   })
-})
+}).timeout(0)
 
 test('Reset password', async ({ assert, client }) => {
   assert.isNotNull(testProspect)
@@ -924,7 +924,7 @@ test('Reset password', async ({ assert, client }) => {
   response.assertJSONSubset({
     data: true,
   })
-})
+}).timeout(0)
 
 test('Failed Get Prospect By Landlord', async ({ client }) => {
   //without login

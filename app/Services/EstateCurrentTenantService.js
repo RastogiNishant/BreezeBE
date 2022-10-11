@@ -619,6 +619,20 @@ class EstateCurrentTenantService {
       throw new HttpException(e.message, 400)
     }
   }
+
+  static async updateEstateTenant(data, user, trx) {
+    if (data.email || data.sex || data.secondname) {
+      let ect = {}
+
+      if (data.email) ect.email = data.email
+      if (data.sex) {
+        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation_int = data.sex
+      }
+      if (data.secondname) ect.surname = data.secondname
+      await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
+    }
+  }
 }
 
 module.exports = EstateCurrentTenantService

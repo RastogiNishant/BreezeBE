@@ -67,6 +67,7 @@ const {
     USER_NOT_VERIFIED,
     CURRENT_PASSWORD_NOT_VERIFIED,
     FAILED_GET_OWNER,
+    NO_USER_PASSED,
   },
 } = require('../../app/excepions')
 
@@ -690,6 +691,11 @@ class UserService {
 
     const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
+
+    if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+      return code
+    }
+
     await SMSService.send({ to: phone, txt: txt })
   }
 
@@ -698,11 +704,11 @@ class UserService {
   }
 
   static async confirmSMS(email, phone, code) {
-    const user = await User.query()
-      .select('id')
-      .where('email', email)
-      .where('phone', phone)
-      .firstOrFail()
+    const user = await User.query().select('id').where('email', email).where('phone', phone).first()
+
+    if (!user) {
+      throw new HttpException(USER_NOT_EXIST, 400)
+    }
 
     const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
 
@@ -748,6 +754,7 @@ class UserService {
 
     const { landlordId } = landlord
 
+    //TODO: if phone number & email are not defined???
     const buddy = await Buddy.query()
       .where('user_id', landlordId)
       .where('phone', tenant.phone)
@@ -999,7 +1006,7 @@ class UserService {
       await user.updateItemWithTrx(data, trx)
       user = user.toJSON({ isOwner: true })
 
-      await this.updateEstateTenant(data, user, trx)
+      await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
       user = this.setOnboardingStep(user)
       await trx.commit()
 
@@ -1010,23 +1017,6 @@ class UserService {
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
-    }
-  }
-
-  static async updateEstateTenant(data, user, trx) {
-    if (data.email || data.sex || data.secondname) {
-      let ect = {}
-
-      if (data.email) ect.email = data.email
-
-      if (data.sex) {
-        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
-        ect.salutation_int = data.sex
-      }
-
-      if (data.secondname) ect.surname = data.secondname
-
-      await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
     }
   }
 
