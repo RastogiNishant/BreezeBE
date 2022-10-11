@@ -151,7 +151,7 @@ class ImageService {
       const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.jpg`
 
-      const saveFunctionalTestImage = async () => {
+      const writeFunctionalTestImage = async () => {
         const writer = fs.createWriteStream(outputFileName)
         const response = await axios.get(url, { responseType: 'arraybuffer' })
         return new Promise((resolve, reject) => {
@@ -175,9 +175,10 @@ class ImageService {
         })
       }
 
-      await saveFunctionalTestImage(outputFileName)
+      await writeFunctionalTestImage(outputFileName)
       return outputFileName
     } catch (e) {
+      return null
       console.log('saveFunctionalTestImage Error', e.message)
     }
   }

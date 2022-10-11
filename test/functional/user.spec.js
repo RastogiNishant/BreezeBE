@@ -65,11 +65,15 @@ trait('Auth/Client')
 
 let prospect, testProspect, landlord, testLandlord, googleDummyUserData, googleSignupUser
 
+const prospectDataEmail = `prospect_test_${new Date().getTime().toString()}@gmail.com`
+const firstName = `firstname_${new Date().getTime().toString()}`
+const secondName = `secondname_${new Date().getTime().toString()}`
+const landlordDataEmail = `landlord_test_${new Date().getTime().toString()}@gmail.com`
 let prospectData = {
-  email: `prospect_test_${new Date().getTime().toString()}@gmail.com`,
+  email: prospectDataEmail,
   role: ROLE_USER,
-  firstname: `firstname_${new Date().getTime().toString()}`,
-  secondname: `secondname_${new Date().getTime().toString()}`,
+  firstname: firstName,
+  secondname: secondName,
   password: '12345678',
   sex: 1,
   birthday: '1990-01-01',
@@ -77,10 +81,10 @@ let prospectData = {
 }
 
 let landlordData = {
-  email: `landlord_test_${new Date().getTime().toString()}@gmail.com`,
+  email: landlordDataEmail,
   role: ROLE_LANDLORD,
-  firstname: `firstname_${new Date().getTime().toString()}`,
-  secondname: `secondname_${new Date().getTime().toString()}`,
+  firstname: firstName,
+  secondname: secondName,
   password: '12345678',
   sex: 1,
   birthday: '1990-01-01',
@@ -234,7 +238,7 @@ test('signup failed', async ({ assert, client }) => {
       password: getExceptionMessage('password', MAXLENGTH, 36),
     },
   })
-})
+}).timeout(0)
 
 test('prospect sign up', async ({ assert, client }) => {
   const response = await client.post('/api/v1/signup').send(prospectData).end()
@@ -963,13 +967,18 @@ test('Update avatar', async ({ assert, client }) => {
   const outputFileName = await ImageService.saveFunctionalTestImage(
     faker.image.abstract(1234, 2345)
   )
-  let response = await client
-    .put('/api/v1/users/avatar')
-    .loginVia(testLandlord, 'jwtLandlord')
-    .attach('file', outputFileName)
-    .end()
 
-  await fsPromise.unlink(outputFileName)
-  response.assertStatus(200)
-  assert.isNotNull(response.body.data.avatar)
+  if (outputFileName) {
+    let response = await client
+      .put('/api/v1/users/avatar')
+      .loginVia(testLandlord, 'jwtLandlord')
+      .attach('file', outputFileName)
+      .end()
+
+    if (outputFileName) {
+      await fsPromise.unlink(outputFileName)
+    }
+    response.assertStatus(200)
+    assert.isNotNull(response.body.data.avatar)
+  }
 }).timeout(0)
