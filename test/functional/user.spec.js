@@ -297,6 +297,7 @@ test('Failed Confirm email', async ({ assert, client }) => {
     data: {
       user_id: getExceptionMessage('user_id', NUMBER),
       from_web: getExceptionMessage('from_web', NUMBER),
+      code: getExceptionMessage('code', REQUIRED),
     },
   })
 
@@ -304,14 +305,15 @@ test('Failed Confirm email', async ({ assert, client }) => {
   response = await client
     .get('/api/v1/confirm_email')
     .send({
-      user_id: faker.random.numeric(3),
+      user_id: faker.random.numeric(8),
       from_web: faker.random.numeric(5),
       code: faker.random.numeric(4),
     })
     .end()
   response.assertStatus(400)
+  console.log('Confirm email', response.body.data)
   response.assertJSONSubset({
-    data: response.body.data,
+    data: getExceptionMessage(undefined, USER_NOT_EXIST),
   })
 
   //wrong code
@@ -627,14 +629,13 @@ test('update profile failed', async ({ assert, client }) => {
       notice: faker.random.alphaNumeric(1),
       prospect_visibility: faker.random.numeric(3),
       landlord_visibility: faker.random.numeric(3),
-      company_name: faker.random.alphaNumeric(1),
       lord_size: faker.random.alphaNumeric(3),
       preferred_services: faker.random.alphaNumeric(3),
     })
     .end()
   response.assertStatus(422)
-
   response.assertJSONSubset({
+    status: 'error',
     data: {
       email: getExceptionMessage('email', EMAIL),
       password: getExceptionMessage('password', MINLENGTH, 6),

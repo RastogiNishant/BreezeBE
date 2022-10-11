@@ -990,7 +990,6 @@ class UserService {
   static async updateProfile(request, user) {
     const data = request.all()
 
-    let company
     user.role === ROLE_USER
       ? delete data.landlord_visibility
       : user.role === ROLE_LANDLORD

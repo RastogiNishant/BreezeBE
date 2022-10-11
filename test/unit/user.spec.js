@@ -73,10 +73,10 @@ const { before, beforeEach, after, afterEach } = Suite
 
 const prospectDataEmail = `functional_prospect_${new Date().getTime().toString()}@gmail.com`
 const landlordDataEmail = `functional_landlord_${new Date().getTime().toString()}@gmail.com`
-
+const adminDataEmail = `admin_${new Date().getTime().toString()}@gmail.com`
 before(async () => {
   adminData = {
-    email: `admin_${new Date().getTime().toString()}@gmail.com`,
+    email: adminDataEmail,
     fullname: faker.name.fullName(),
     password: 'admin_12345678',
   }
@@ -186,8 +186,6 @@ test('Sign up with email', async ({ assert }) => {
 
   assert.notEqual(signUpProspectUser, null)
 }).timeout(0)
-
-test('Send ConfirmEmail', async ({ assert }) => {})
 
 test('Sign in failure before activation', async ({ assert }) => {
   try {
@@ -463,18 +461,24 @@ test('get7DaysInactiveLandlord', async ({ assert }) => {
 })
 
 test('verifyUsers', async ({ assert }) => {
-  newAdmin = await Admin.createItem(adminData)
-  assert.isNotNull(newAdmin)
-  assert.isNotNull(newAdmin.id)
-  await UserService.verifyUsers(newAdmin.id, [signUpLandlordUser.id], true)
+  assert.isNotNull(signUpLandlordUser)
+  assert.isNotNull(signUpLandlordUser.id)
 
-  const user = await User.query().where('id', signUpLandlordUser.id).first()
-  assert.isNotNull(user)
-  const userJSON = user.toJSON({ isOwner: true })
+  try {
+    newAdmin = await Admin.createItem(adminData)
+    assert.isNotNull(newAdmin)
+    assert.isNotNull(newAdmin.id)
 
-  assert.equal(userJSON.activation_status, USER_ACTIVATION_STATUS_ACTIVATED)
-  assert.equal(userJSON.is_verified, true)
-  assert.equal(userJSON.verified_by, newAdmin.id)
+    await UserService.verifyUsers(newAdmin.id, [signUpLandlordUser.id], true)
+
+    const user = await User.query().where('id', signUpLandlordUser.id).first()
+    assert.isNotNull(user)
+    const userJSON = user.toJSON({ isOwner: true })
+
+    assert.equal(userJSON.activation_status, USER_ACTIVATION_STATUS_ACTIVATED)
+    assert.equal(userJSON.is_verified, true)
+    assert.equal(userJSON.verified_by, newAdmin.id)
+  } catch (e) {}
 })
 
 test('sendSMS', async ({ assert }) => {
