@@ -1,3 +1,4 @@
+const { isNull } = require('lodash')
 const moment = require('moment')
 const Database = use('Database')
 const {
@@ -106,6 +107,20 @@ class VisitService {
 
   static async incrementFollowup(estate_id, user_id, actor = 'landlord') {
     const trx = await Database.beginTransaction()
+    const followupSchedulesDone = await Visit.query()
+      .select(`${actor}_followup_meta`)
+      .where('estate_id', estate_id)
+      .where('user_id', user_id)
+      .first()
+    // this is where the followups were done...
+    let meta = followupSchedulesDone[`${actor}_followup_meta`]
+    if (isNull(meta)) {
+      meta = [{ dateTime: moment().format(DATE_FORMAT) }]
+      meta = JSON.stringify(meta)
+    } else {
+      meta = [...meta, { dateTime: moment().format(DATE_FORMAT) }]
+      meta = JSON.stringify(meta)
+    }
     try {
       await Visit.query()
         .where('estate_id', estate_id)
@@ -113,6 +128,7 @@ class VisitService {
         .update(
           {
             [`${actor}_followup_count`]: Database.raw(`${actor}_followup_count + 1`),
+            [`${actor}_followup_meta`]: meta,
           },
           trx
         )
