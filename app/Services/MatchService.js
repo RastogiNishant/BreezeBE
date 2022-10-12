@@ -822,9 +822,10 @@ class MatchService {
     }
   }
 
-  static async updateTimeSlot(estateId, userIds, trx) {
+  static async handleMatchesOnTimeSlotUpdate(estateId, userIds, trx) {
     if (!userIds) return
     userIds = !Array.isArray(userIds) ? [userIds] : userIds
+
     const match = await Match.query()
       .table('matches')
       .whereIn('user_id', userIds)
@@ -2495,25 +2496,6 @@ class MatchService {
     }
   }
 
-  static getNotCrossRange({ start_at, end_at, prev_start_at, prev_end_at }) {
-    const removeVisitRanges = []
-    if (start_at <= prev_start_at && end_at >= prev_end_at) {
-      return removeVisitRanges
-    } else {
-      if (prev_start_at < start_at && prev_end_at > end_at) {
-        removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
-        removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
-      } else if (prev_start_at >= start_at && prev_end_at > end_at) {
-        removeVisitRanges.push({ start_at: end_at, end_at: prev_end_at })
-      } else if (prev_start_at < start_at && prev_end_at <= end_at) {
-        removeVisitRanges.push({ start_at: prev_start_at, end_at: start_at })
-      } else {
-        removeVisitRanges.push({ start_at: prev_start_at, end_at: end_at })
-      }
-    }
-    return removeVisitRanges
-  }
-
   static async getVisitsIn({ estate_id, start_at, end_at }) {
     const startAt = Database.raw(
       `_v.start_date + GREATEST(_v.tenant_delay, _v.lord_delay) * INTERVAL '1 minute'`
@@ -2538,6 +2520,15 @@ class MatchService {
     ).rows
 
     return visits
+  }
+
+  static async getInvitedUserIds(estate_id) {
+    const invitedMatches = await MatchService.getEstatesByStatus({
+      estate_id,
+      status: MATCH_STATUS_INVITE,
+    })
+    const invitedUserIds = (invitedMatches || []).map((match) => match.user_id)
+    return invitedUserIds
   }
 }
 

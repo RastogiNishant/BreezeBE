@@ -1,18 +1,6 @@
 'use strict'
 const moment = require('moment')
-const {
-  get,
-  isEmpty,
-  findIndex,
-  range,
-  filter,
-  omit,
-  flatten,
-  groupBy,
-  countBy,
-  maxBy,
-  orderBy,
-} = require('lodash')
+const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
@@ -24,14 +12,12 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
-const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
-const TimeSlot = use('App/Models/TimeSlot')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
@@ -59,8 +45,6 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_VISIT,
   LETTING_TYPE_NA,
-  LETTING_STATUS_NORMAL,
-  ROLE_USER,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -527,107 +511,6 @@ class EstateService {
       .first()
   }
 
-  /**
-   *
-   */
-  static async getTimeSlotsByEstate(estate) {
-    return TimeSlot.query()
-      .select('time_slots.*', Database.raw('COUNT(visits)::int as visitCount'))
-      .where('time_slots.estate_id', estate.id)
-      .leftJoin('visits', function () {
-        this.on('visits.start_date', '>=', 'time_slots.start_at')
-          .on('visits.end_date', '<=', 'time_slots.end_at')
-          .on('visits.estate_id', 'time_slots.estate_id')
-      })
-      .groupBy('time_slots.id')
-      .orderBy([{ column: 'end_at', order: 'desc' }])
-      .fetch()
-  }
-
-  /**
-   *
-   */
-  static getCrossTimeslotQuery({ end_at, start_at }, userId) {
-    return TimeSlot.query()
-      .whereIn('estate_id', function () {
-        this.select('id').from('estates').where('user_id', userId)
-      })
-      .where(function () {
-        this.orWhere(function () {
-          this.where('start_at', '>', start_at).where('start_at', '<', end_at)
-        })
-          .orWhere(function () {
-            this.where('end_at', '>', start_at).where('end_at', '<', end_at)
-          })
-          .orWhere(function () {
-            this.where('start_at', '<=', start_at).where('end_at', '>=', end_at)
-          })
-      })
-  }
-
-  /**
-   *
-   */
-  static async createSlot({ end_at, start_at, slot_length }, estate) {
-    if (slot_length) {
-      const minDiff = moment.utc(end_at).diff(moment.utc(start_at), 'minutes')
-      if (minDiff % slot_length !== 0) {
-        throw new AppException('Invalid time range')
-      }
-    }
-
-    // Checks is time slot crossing existing
-    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
-
-    if (existing) {
-      throw new AppException('Time slot crossing existing')
-    }
-
-    return TimeSlot.createItem({ end_at, start_at, slot_length, estate_id: estate.id })
-  }
-
-  /**
-   *
-   */
-  static async getTimeSlotByOwner(userId, slotId) {
-    return TimeSlot.query()
-      .select('time_slots.*')
-      .innerJoin({ _e: 'estates' }, '_e.id', 'time_slots.estate_id')
-      .where('_e.user_id', userId)
-      .where('time_slots.id', slotId)
-      .first()
-  }
-
-  /**
-   * Check if existing slot after update will not cross another existing slots
-   */
-  static async updateSlot(slot, data, trx = null) {
-    const slotJSON = slot.toJSON()
-    slot.prev_start_at = moment(slotJSON?.start_at).format(DATE_FORMAT)
-    slot.prev_end_at = moment(slotJSON?.end_at).format(DATE_FORMAT)
-    slot.merge(data)
-
-    if (slot.slot_length) {
-      const minDiff = moment.utc(slot.end_at).diff(moment.utc(slot.start_at), 'minutes')
-      if (minDiff % slot.slot_length !== 0) {
-        throw new AppException('Invalid time range')
-      }
-    }
-    const estate = await Estate.find(slot.estate_id)
-    const crossingSlot = await this.getCrossTimeslotQuery(
-      { end_at: slot.end_at, start_at: slot.start_at },
-      estate.user_id
-    )
-      .whereNot('id', slot.id)
-      .first()
-
-    if (crossingSlot) {
-      throw new AppException('Time slot crossing existing')
-    }
-    await slot.save(trx)
-    return slot
-  }
-
   static getPublishedEstates(userID = null) {
     if (isEmpty(userID)) {
       return Estate.query()
@@ -747,15 +630,6 @@ class EstateService {
    *
    */
   static getEstatesByPointCoordQuery(lat, lon) {
-    /*
-      SELECT _e.*
-      FROM estates AS _e
-      WHERE
-        _ST_Intersects(
-            _e.coord::geometry, (SELECT ST_Buffer(ST_MakePoint(13.3987, 52.5013)::geography, 200000)::geometry)
-          );
-     */
-
     const pointsQuery = Database.raw(
       `SELECT ST_Buffer(ST_MakePoint(?, ?)::geography, ?)::geometry`,
       [lon, lat, MAX_DIST]
@@ -769,38 +643,9 @@ class EstateService {
   }
 
   /**
-   * If tenant zone exists, make estate requests by tenant zone
-   */
-  static getEstatesByTenantZoneQuery(tenantId) {
-    // const zoneQuery = Database.from({ _t: 'tenants' })
-    //   .select('_t.zone')
-    //   .where({ '_t.id': tenantId })
-    //   .limit(1)
-    //
-    // return Estate.query().where(
-    //   Database.raw(`_ST_Intersects(estates.coord::geometry, (${zoneQuery.toString()})::geometry)`)
-    // )
-  }
-
-  /**
    * Get estates according to es
    */
   static getActiveMatchesQuery(userId, exclude = []) {
-    /*
-      SELECT
-        _e.*,
-        _m.percent AS match
-      FROM estates AS _e
-        INNER JOIN matches AS _m on _e.id = _m.estate_id AND _m.user_id = 1 --AND _m.status = 1
-      WHERE
-        _e.id NOT IN (1,2)
-        AND _e.id NOT IN (
-          SELECT _d.estate_id FROM dislikes AS _d WHERE _d.user_id = 1
-          UNION SELECT _l.estate_id FROM likes AS _l WHERE _l.user_id = 1
-        )
-      order by _m.percent DESC
-     */
-
     return Estate.query()
       .select('estates.*')
       .withCount('knocked', function (m) {
@@ -1048,90 +893,6 @@ class EstateService {
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
     }
-  }
-
-  /**
-   *
-   */
-  static async getFreeTimeslots(estateId) {
-    const dateFrom = moment().format(DATE_FORMAT)
-    // Get estate available slots
-    const getSlots = async () => {
-      return Database.table('time_slots')
-        .select('slot_length')
-        .select(Database.raw('extract(epoch from start_at) as start_at'))
-        .select(Database.raw('extract(epoch from end_at) as end_at'))
-        .where({ estate_id: estateId })
-        .where('start_at', '>=', dateFrom)
-        .orderBy('start_at')
-        .limit(500)
-    }
-
-    // Get estate visits (booked time units)
-    const getVisits = async () => {
-      return Database.table('visits')
-        .select(Database.raw('extract(epoch from date) as visit_date'))
-        .where({ estate_id: estateId })
-        .where('date', '>=', dateFrom)
-        .orderBy('date')
-        .limit(500)
-    }
-
-    let { slots, visits } = await props({
-      slots: getSlots(),
-      visits: getVisits(),
-    })
-
-    // If slot_length is zero, so users are able to book unlimited slot
-    const slotsWithoutLength = slots.filter(({ slot_length }) => slot_length === null)
-    slots = slots.filter(({ slot_length }) => slot_length)
-
-    // Split existing time ranges by booked time units
-    visits.forEach(({ visit_date }) => {
-      let index = findIndex(
-        slots,
-        ({ start_at, end_at }) => visit_date >= start_at && visit_date < end_at
-      )
-      // If found time range, split in
-      if (index !== -1) {
-        const slot = slots[index]
-        slots.splice(index, 1)
-        if (slot.start_at < visit_date) {
-          const newItem = {
-            start_at: slot.start_at,
-            end_at: visit_date,
-            slot_length: slot.slot_length,
-          }
-          slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
-          index += 1
-        }
-        if (visit_date + slot.slot_length * 60 < slot.end_at) {
-          const newItem = {
-            start_at: visit_date + slot.slot_length * 60,
-            end_at: slot.end_at,
-            slot_length: slot.slot_length,
-          }
-          slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
-        }
-      }
-    })
-
-    const combinedSlots = [...slots, ...slotsWithoutLength]
-
-    // Split slot ranges by slot units
-    let result = {}
-    combinedSlots.forEach((s) => {
-      const day = moment.utc(s.start_at, 'X').startOf('day').format('X')
-      // if slot_length is null, so show only 1 slot for date range
-      const step = s.slot_length ? s.slot_length * 60 : s.end_at - s.start_at
-      const items = range(s.start_at, s.end_at, step)
-      items.forEach((i) => {
-        const items = [...get(result, day, []), { from: i, to: i + step }]
-        result = { ...result, [day]: items }
-      })
-    })
-
-    return result
   }
 
   static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
@@ -1451,72 +1212,6 @@ class EstateService {
           isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
       }
     })
-  }
-
-  static async updateTimeSlot(user_id, data) {
-    const { estate_id, slot_id, ...rest } = data
-    const slot = await this.getTimeSlotByOwner(user_id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
-    const trx = await Database.beginTransaction()
-    try {
-      const updatedSlot = await this.updateSlot(slot, rest, trx)
-
-      const MatchService = require('./MatchService')
-      let removeVisitsAt = []
-      if (+slot.slot_length === +updatedSlot.slot_length) {
-        removeVisitsAt = MatchService.getNotCrossRange({
-          start_at: updatedSlot.start_at,
-          end_at: updatedSlot.end_at,
-          prev_start_at: updatedSlot.prev_start_at,
-          prev_end_at: updatedSlot.prev_end_at,
-        })
-      } else {
-        removeVisitsAt = [{ start_at: slot.start_at, end_at: slot.end_at }]
-      }
-
-      const invitedUserIds = await this.getInviteIds(estate_id)
-
-      const visitIds = []
-      await Promise.all(
-        (removeVisitsAt || []).map(async (rvAt) => {
-          const visitsIn =
-            (await MatchService.getVisitsIn({
-              estate_id,
-              start_at: rvAt.start_at,
-              end_at: rvAt.end_at,
-            })) || []
-
-          if (visitsIn && visitsIn.length) {
-            visitIds = visitsIn.map((v) => v.user_id)
-            await MatchService.updateTimeSlot(estate_id, visitIds, trx)
-          }
-        })
-      )
-
-      await trx.commit()
-
-      const notifyUserIds = visitIds.concat(invitedUserIds || [])
-      if (notifyUserIds && notifyUserIds.length) {
-        NoticeService.updateTimeSlot(estate_id, notifyUserIds)
-      }
-
-      return updatedSlot
-    } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 500)
-    }
-  }
-
-  static async getInviteIds(estate_id) {
-    const invitedMatches = await require('./MatchService').getEstatesByStatus({
-      estate_id,
-      status: MATCH_STATUS_INVITE,
-    })
-    const invitedUserIds = (invitedMatches || []).map((match) => match.user_id)
-    return invitedUserIds
   }
 }
 module.exports = EstateService

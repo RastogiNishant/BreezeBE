@@ -59,7 +59,8 @@ const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
 const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
-const GeoService = use('App/Services/GeoService')
+const TimeSlotService = require('../../Services/TimeSlotService')
+
 const INVITE_CODE_STRING_LENGTH = 8
 
 class EstateController {
@@ -646,7 +647,7 @@ class EstateController {
       throw new HttpException('Estate not exists', 404)
     }
 
-    const slots = await EstateService.getTimeSlotsByEstate(estate)
+    const slots = await TimeSlotService.getTimeSlotsByEstate(estate)
     response.res(slots.rows)
   }
 
@@ -664,8 +665,7 @@ class EstateController {
     }
 
     try {
-      const slot = await EstateService.createSlot(data, estate)
-
+      const slot = await TimeSlotService.createSlot(data, estate)
       return response.res(slot)
     } catch (e) {
       Logger.error(e)
@@ -679,7 +679,7 @@ class EstateController {
   async updateSlot({ request, auth, response }) {
     const data = request.all()
     try {
-      response.res(await EstateService.updateTimeSlot(auth.user.id, data))
+      response.res(await TimeSlotService.updateTimeSlot(auth.user.id, data))
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
@@ -691,40 +691,11 @@ class EstateController {
    */
   async removeSlot({ request, auth, response }) {
     const { slot_id } = request.all()
-    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
-    // The landlord can't remove the slot if it is already started
-    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException('Showing is already started', 500)
-    }
-
-    // If slot's end date is passed, we only delete the slot
-    // But if slot's end date is not passed, we delete the slot and all the visits
-    if (slot.end_at < new Date()) {
-      await slot.delete()
-      response.res(true)
-    } else {
-      const trx = await Database.beginTransaction()
-      try {
-        const estateId = slot.estate_id
-        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
-        await slot.delete(trx)
-
-        await trx.commit()
-
-        const notificationPromises = userIds.map((userId) =>
-          NoticeService.cancelVisit(estateId, userId)
-        )
-        await Promise.all(notificationPromises)
-        response.res(true)
-      } catch (e) {
-        Logger.error(e)
-        await trx.rollback()
-        throw new HttpException(e.message, 400)
-      }
+    try {
+      response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -777,9 +748,9 @@ class EstateController {
   /**
    *
    */
-  async getEstateFreeTimeslots({ request, auth, response }) {
+  async getEstateFreeTimeslots({ request, response }) {
     const { estate_id } = request.all()
-    const slots = await EstateService.getFreeTimeslots(estate_id)
+    const slots = await TimeSlotService.getFreeTimeslots(estate_id)
 
     return response.res(slots)
   }

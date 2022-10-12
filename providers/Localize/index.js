@@ -20,6 +20,7 @@ class Localization {
    *
    */
   async init() {
+    return true
     if (trim(process.env.DEV) == 'true' && trim(process.env.NO_LOCALIZATION_PULL) == 'true')
       return true
     const File = use('App/Classes/File')
