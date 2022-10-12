@@ -36,6 +36,16 @@ class VisitService {
       .where('date', '<', date15H.format(DATE_FORMAT))
   }
 
+  static async getFollowups(estate_id, user_id, auth) {
+    const { actor, estate, recipient } = await VisitService.initializeVisitMessaging(
+      estate_id,
+      user_id,
+      auth
+    )
+    const meta = await VisitService.getFollowupMeta(estate_id, user_id, actor)
+    return meta
+  }
+
   static async followupVisit(estate_id, user_id, auth) {
     const { actor, estate, recipient } = await VisitService.initializeVisitMessaging(
       estate_id,
@@ -105,15 +115,21 @@ class VisitService {
     return visits ? visits[`${actor}_followup_count`] : 0
   }
 
-  static async incrementFollowup(estate_id, user_id, actor = 'landlord') {
-    const trx = await Database.beginTransaction()
+  static async getFollowupMeta(estate_id, user_id, actor = 'landlord') {
     const followupSchedulesDone = await Visit.query()
       .select(`${actor}_followup_meta`)
       .where('estate_id', estate_id)
       .where('user_id', user_id)
       .first()
-    // this is where the followups were done...
+    // this is when the followups were done...
     let meta = followupSchedulesDone[`${actor}_followup_meta`]
+    return meta
+  }
+
+  static async incrementFollowup(estate_id, user_id, actor = 'landlord') {
+    const trx = await Database.beginTransaction()
+    let meta = await VisitService.getFollowupMeta(estate_id, user_id, actor)
+    console.log({ meta })
     if (isNull(meta)) {
       meta = [{ dateTime: moment().format(DATE_FORMAT) }]
       meta = JSON.stringify(meta)
