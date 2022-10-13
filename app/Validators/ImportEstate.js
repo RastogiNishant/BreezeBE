@@ -193,6 +193,8 @@ const {
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -265,6 +267,8 @@ class ImportEstate extends Base {
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ]),
       number_floors: yup.number().integer().min(1).max(100),
       prices: yup.number().min(0).max(100000),
