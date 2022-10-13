@@ -1274,6 +1274,7 @@ class EstateService {
         'estates.property_id',
         'estates.net_rent',
         'estates.address',
+        'estates.extra_address',
         Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
