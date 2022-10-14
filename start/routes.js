@@ -446,9 +446,9 @@ Route.group(() => {
     'LandlordOwnsThisEstate',
   ])
 
-  Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
-    'valid:EstateId,TenantId',
-  ])
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.landlordTenantDetailInfo').middleware(
+    ['valid:EstateId,TenantId']
+  )
 
   Route.post(
     '/tenant/invite/email',
@@ -502,6 +502,10 @@ Route.group(() => {
     'auth:jwtLandlord', //landlord for now
     'valid:FollowupVisit',
   ])
+  Route.get(
+    '/notifications/followup/:estate_id/:user_id',
+    'MatchController.getFollowups'
+  ).middleware(['auth:jwtLandlord', 'valid:FollowupVisit'])
 }).prefix('/api/v1/visit')
 
 Route.group(() => {

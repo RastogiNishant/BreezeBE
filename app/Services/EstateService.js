@@ -1131,7 +1131,7 @@ class EstateService {
     return result
   }
 
-  static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
+  static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
       .select(['estates.*', '_m.share', '_m.status'])
       .with('user')
@@ -1274,6 +1274,7 @@ class EstateService {
         'estates.property_id',
         'estates.net_rent',
         'estates.address',
+        'estates.extra_address',
         Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
