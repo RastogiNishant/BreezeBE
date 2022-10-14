@@ -1,16 +1,20 @@
 const Suite = use('Test/Suite')('User')
 const { test } = Suite
 const User = use('App/Models/User')
+const Tenant = use('App/Models/Tenant')
 const Estate = use('App/Models/Estate')
 const Company = use('App/Models/Company')
 const Match = use('App/Models/Match')
 const Admin = use('App/Models/Admin')
 const UserService = use('App/Services/UserService')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const Config = use('Config')
+const GoogleAuth = use('GoogleAuth')
 const { faker } = require('@faker-js/faker')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const { pick, omit } = require('lodash')
+const AgreementService = use('App/Services/AgreementService')
+const moment = require('moment')
 
 const {
   ROLE_LANDLORD,
@@ -49,6 +53,7 @@ const {
     USER_NOT_VERIFIED,
     NOT_EXIST_WITH_EMAIL,
     INVALID_CONFIRM_CODE,
+    INVALID_TOKEN,
   },
 } = require('../../app/excepions')
 
@@ -71,8 +76,8 @@ let signUpProspectUser,
 
 const { before, beforeEach, after, afterEach } = Suite
 
-const prospectDataEmail = `functional_prospect_${new Date().getTime().toString()}@gmail.com`
-const landlordDataEmail = `functional_landlord_${new Date().getTime().toString()}@gmail.com`
+const prospectDataEmail = `unit_prospect_${new Date().getTime().toString()}@gmail.com`
+const landlordDataEmail = `unit_landlord_${new Date().getTime().toString()}@gmail.com`
 const adminDataEmail = `admin_${new Date().getTime().toString()}@gmail.com`
 before(async () => {
   adminData = {
@@ -87,27 +92,16 @@ before(async () => {
     secondname: faker.name.lastName(),
     role: ROLE_USER,
     password: '12345678',
-    sex: '1',
-    birthday: '1990-01-01',
-    lang: 'en',
-  }
-
-  dummyProspectUserData = {
-    email: landlordDataEmail,
-    firstname: faker.name.firstName(),
-    secondname: faker.name.lastName(),
-    role: ROLE_USER,
-    password: '12345678',
-    sex: '1',
+    sex: 1,
     birthday: '1990-01-01',
     lang: 'en',
   }
 
   dummyLandlordUserData = {
-    email: `test_landlord_${new Date().getTime().toString()}@gmail.com`,
+    email: landlordDataEmail,
     role: ROLE_LANDLORD,
     password: '12345678',
-    sex: '1',
+    sex: 1,
     birthday: '1990-01-01',
     lang: 'en',
   }
@@ -173,20 +167,6 @@ after(async () => {
   }
 })
 
-test('Sign up with email', async ({ assert }) => {
-  signUpProspectUser = await UserService.signUp({
-    ...dummyProspectUserData,
-    status: STATUS_EMAIL_VERIFY,
-  })
-
-  signUpLandlordUser = await UserService.signUp({
-    ...dummyLandlordUserData,
-    status: STATUS_EMAIL_VERIFY,
-  })
-
-  assert.notEqual(signUpProspectUser, null)
-}).timeout(0)
-
 test('Sign in failure before activation', async ({ assert }) => {
   try {
     signInUser = await UserService.login({
@@ -198,6 +178,90 @@ test('Sign in failure before activation', async ({ assert }) => {
   } catch (e) {
     assert.isNotOk(false, 'Pass')
   }
+}).timeout(0)
+
+test('Sign up with email', async ({ assert }) => {
+  const agreement = await AgreementService.getLatestActive()
+  const term = await AgreementService.getActiveTerms()
+  assert.isNotNull(agreement.id)
+  assert.isNotNull(term.id)
+
+  signUpProspectUser = await UserService.signUp({
+    ...dummyProspectUserData,
+    status: STATUS_EMAIL_VERIFY,
+  })
+
+  assert.include(signUpProspectUser.toJSON({ isOwner: true }), {
+    ...omit(dummyProspectUserData, ['password']),
+    status: STATUS_EMAIL_VERIFY,
+    agreements_id: agreement.id,
+    terms_id: term.id,
+  })
+  let verifyPassword = await Hash.verify(
+    dummyProspectUserData.password,
+    signUpProspectUser.password
+  )
+
+  assert.isTrue(verifyPassword)
+
+  const tenant = await Tenant.query().where('user_id', signUpProspectUser.id).first()
+  assert.isNotNull(tenant)
+  assert.isNotNull(tenant.id)
+
+  signUpLandlordUser = await UserService.signUp({
+    ...dummyLandlordUserData,
+    status: STATUS_EMAIL_VERIFY,
+  })
+  assert.include(signUpLandlordUser.toJSON({ isOwner: true }), {
+    ...omit(dummyLandlordUserData, ['password']),
+    status: STATUS_EMAIL_VERIFY,
+    agreements_id: agreement.id,
+    terms_id: term.id,
+  })
+
+  verifyPassword = await Hash.verify(dummyLandlordUserData.password, signUpLandlordUser.password)
+  assert.isTrue(verifyPassword)
+}).timeout(0)
+
+test('getTokenWithLocale', async ({ assert }) => {
+  assert.isNotNull(signUpProspectUser.id)
+
+  const user = await User.query().where('id', signUpProspectUser.id).first()
+  assert.isNotNull(user)
+
+  let tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
+  assert.isNotNull(tokens)
+  if (user.notice && user.device_token) {
+    assert.equal(tokens.length, 1)
+  } else {
+    assert.equal(tokens.length, 0)
+  }
+
+  let updateResult = await User.query()
+    .update({ device_token: null })
+    .where('id', signUpProspectUser.id)
+  assert.equal(updateResult, 1)
+
+  tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
+  assert.equal(tokens.length, 0)
+
+  updateResult = await User.query()
+    .update({ device_token: faker.random.alphaNumeric(32), notice: false })
+    .where('id', signUpProspectUser.id)
+  assert.equal(updateResult, 1)
+
+  tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
+  assert.equal(tokens.length, 0)
+})
+
+test('SendConfirmEmail', async ({ assert }) => {
+  const code = await UserService.sendConfirmEmail(signUpProspectUser)
+  assert.equal(code.length, 4)
+
+  const verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'confirm_email')
+  assert.isNotNull(verifyCode)
+  assert.isNotNull(verifyCode.code)
+  assert.equal(code, verifyCode.code)
 }).timeout(0)
 
 test('Send signup confirm email & Activate account', async ({ assert }) => {
@@ -215,12 +279,11 @@ test('sign up token expiration with Google oAuth', async ({ assert }) => {
   const token =
     'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijc0ODNhMDg4ZDRmZmMwMDYwOWYwZTIyZjNjMjJkYTVmZTM5MDZjY2MiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiNTcwNzY0NjIzNDEzLTM3NTE2N3YydXVpYjFuZzZlaWg4Z24zbzZxcmg3aGZuLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiNTcwNzY0NjIzNDEzLTM3NTE2N3YydXVpYjFuZzZlaWg4Z24zbzZxcmg3aGZuLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEwODA5MzkxNzYzMjM3MTQyMTUyIiwiZW1haWwiOiJyYXN0b2dpbmlzaGFudGZsQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiY3hSOUNiTE9qYWpUaU1JazdQVUJtZyIsIm5hbWUiOiJOaXNoYW50IFJhc3RvZ2kiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUFUWEFKeG5nazhiM2dGc3lRdU5DTnNmRFVTdzBzRlZxdkRpOURrQm1NOD1zOTYtYyIsImdpdmVuX25hbWUiOiJOaXNoYW50IiwiZmFtaWx5X25hbWUiOiJSYXN0b2dpIiwibG9jYWxlIjoiZW4tR0IiLCJpYXQiOjE2NTQ1ODEyOTEsImV4cCI6MTY1NDU4NDg5MSwianRpIjoiZmE2YWI4ZThlOTBjMzljMjEzM2RiZWQxNDA3ODZiNmRiMzJjM2U4NiJ9.BUjqRHnlPAUllfFbMlerIsldM4xgn0Oafj8fuhAWly7kOOZgGszUVRLvR1aEzEkTmrEHE8uyyubkAfU3OGtegj02Ath3w0IyUc7eHSDjkBCBYwS6TgqEaiIuIGmeACvgUQwKwpyHQyYWQ6y3VhVQLOaXSeptyGPt7gfQLOleu7KDoLtx3KDNB6ke_47gO2u9M46H0BaU4MN8PrCKquoUeeH0EQ_sbkqHnnV0YgKj88paNpeR3GTYKYNAWhukzRPtys9R9w0J8y_8Oia1T_kOcNL4JfKLsaxiUQZOAcefvaaDAvpb3_-0tfypKDEJkF-v2YfeM0MRdFKCe55_Nn-ORA'
   try {
-    const ticket = await GoogleAuth.verifyIdToken({
-      idToken: token,
-      audience: Env.get('GOOGLE_CLIENT_ID'),
-    })
+    const isValidToken = await UserService.verifyGoogleToken(token)
+    assert.isTrue(isValidToken)
   } catch (e) {
     assert.isOk(true)
+    assert.equal(e.message, INVALID_TOKEN)
   }
 }).timeout(0)
 
@@ -256,6 +319,23 @@ test('Fail with verified user to resend User Confirm', async ({ assert }) => {
 test('Get Me', async ({ assert }) => {
   let user = signUpProspectUser
   assert.include(user.toJSON({ isOwner: true }), omit(dummyProspectUserData, ['password']))
+
+  assert.isNotNull(signUpProspectUser.id)
+  assert.equal(signUpProspectUser.status, STATUS_ACTIVE)
+
+  const newToken = faker.random.alphaNumeric(35)
+  assert.notEqual(signUpProspectUser.device_token, newToken)
+  user = await UserService.me(signUpProspectUser, newToken)
+
+  assert.include(
+    { ...user, birthday: user.birthday.toISOString() },
+    {
+      ...omit(dummyProspectUserData, ['password']),
+      birthday: moment.utc(dummyProspectUserData.birthday).toISOString(),
+      status: STATUS_ACTIVE,
+      device_token: newToken,
+    }
+  )
 }).timeout(0)
 
 test('Change Password', async ({ assert }) => {
@@ -381,37 +461,6 @@ test('Landlord has permission to access Tenant full profile', async ({ assert })
     signUpProspectUser.id
   )
   assert.equal(hasAccess, false)
-})
-
-test('getTokenWithLocale', async ({ assert }) => {
-  assert.isNotNull(signUpProspectUser)
-
-  const user = await User.query().where('id', signUpProspectUser.id).first()
-  assert.isNotNull(user)
-
-  let tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
-  if (user.notice && user.device_token) {
-    assert.isNotNull(tokens)
-    assert.equal(tokens.length, 1)
-  } else {
-    assert.isNull(tokens)
-  }
-
-  let updateResult = await User.query()
-    .update({ device_token: null })
-    .where('id', signUpProspectUser.id)
-  assert.equal(updateResult, 1)
-
-  tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
-  assert.equal(tokens.length, 0)
-
-  updateResult = await User.query()
-    .update({ device_token: faker.random.alphaNumeric(32), notice: false })
-    .where('id', signUpProspectUser.id)
-  assert.equal(updateResult, 1)
-
-  tokens = await UserService.getTokenWithLocale([signUpProspectUser.id])
-  assert.equal(tokens.length, 0)
 })
 
 test('getUserIdsByToken', async ({ assert }) => {
