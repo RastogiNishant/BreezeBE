@@ -458,7 +458,7 @@ Route.group(() => {
     'LandlordOwnsThisEstate',
   ])
 
-  Route.get('/:estate_id/me_tenant_detail', 'EstateController.lanlordTenantDetailInfo').middleware([
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.landlordTenantDetailInfo').middleware([
     'valid:EstateId,TenantId',
   ])
 
