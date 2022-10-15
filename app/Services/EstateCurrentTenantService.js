@@ -574,6 +574,49 @@ class EstateCurrentTenantService {
     )
   }
 
+  static async revokeInvitation(user_id, ids) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    const trx = await Database.beginTransaction()
+    try {
+      let estateCurrentTenants = await EstateCurrentTenant.query()
+        .select(
+          'estate_current_tenants.id',
+          'estate_current_tenants.estate_id',
+          'estate_current_tenants.user_id'
+        )
+        .whereIn('estate_current_tenants.id', ids)
+        .whereNull('estate_current_tenants.user_id')
+        .whereNotNull('estate_current_tenants.code')
+        .whereNotNull('estate_current_tenants.invite_sent_at')
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+        })
+        .fetch()
+
+      estateCurrentTenants = estateCurrentTenants?.toJSON() || []
+      if (estateCurrentTenants.length > 0) {
+        await EstateCurrentTenant.query()
+          .whereIn(
+            'id',
+            estateCurrentTenants.map((e) => e.id)
+          )
+          .update({ code: null, invite_sent_at: null })
+          .transacting(trx)
+
+        await trx.commit()
+      }
+
+      return {
+        successCount: estateCurrentTenants.length || 0,
+        failureCount: ids.length - (estateCurrentTenants.length || 0),
+      }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   static async disconnect(user_id, ids) {
     ids = Array.isArray(ids) ? ids : [ids]
     const trx = await Database.beginTransaction()

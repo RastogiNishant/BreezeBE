@@ -477,6 +477,10 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
 
+  Route.put('/tenant/revoke', 'EstateCurrentTenantController.revokeInvitation').middleware([
+    'valid:InvitationIds',
+  ])
+
   Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
     'valid:InvitationIds',
   ])

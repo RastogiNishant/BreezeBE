@@ -127,6 +127,15 @@ class EstateCurrentTenantController {
     }
   }
 
+  async revokeInvitation({ request, auth, response }) {
+    const { ids } = request.all()
+    try {
+      response.res(await EstateCurrentTenantService.revokeInvitation(auth.user.id, ids))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   async disconnect({ request, auth, response }) {
     const { ids } = request.all()
     try {
