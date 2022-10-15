@@ -491,6 +491,11 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
 
 Route.post(
+  '/api/v1/validate/outside_tenant/invitation',
+  'EstateCurrentTenantController.validateInvitationQRCode'
+).middleware(['auth:jwtLandlord', 'valid:AlreadyRegisteredOutsideTenantInvite'])
+
+Route.post(
   '/api/v1/accept/outside_tenant',
   'EstateCurrentTenantController.acceptOutsideTenant'
 ).middleware(['valid:OutsideTenantInvite'])
