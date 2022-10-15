@@ -613,7 +613,7 @@ class EstateCurrentTenantService {
       }
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 400)
+      throw new HttpException(e.message, 500)
     }
   }
 
