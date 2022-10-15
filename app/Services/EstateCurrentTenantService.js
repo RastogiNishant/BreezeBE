@@ -26,6 +26,9 @@ const {
   EMAIL_REG_EXP,
   PHONE_REG_EXP,
   MATCH_STATUS_NEW,
+  ERROR_OUTSIDE_TENANT_INVITATION_INVALID,
+  ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED,
+  ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -291,7 +294,6 @@ class EstateCurrentTenantService {
       .where('id', id)
       .where('estate_id', estate_id)
       .whereNot('status', STATUS_DELETE)
-      .whereNull('user_id')
       .first()
   }
 
@@ -448,18 +450,28 @@ class EstateCurrentTenantService {
   static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
-      throw new HttpException('No record exists')
+      throw new HttpException('No record exists', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    } else if (estateCurrentTenant.user_id) {
+      throw new HttpException(
+        'Invitation already used',
+        400,
+        ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
+      )
     }
 
     if (!user) {
       if (!estateCurrentTenant.email && !email) {
-        throw new HttpException('Email must be provided!', 400)
+        throw new HttpException(
+          'Email must be provided!',
+          400,
+          ERROR_OUTSIDE_TENANT_INVITATION_INVALID
+        )
       }
     }
 
     const preserved_code = estateCurrentTenant.code
     if (code !== preserved_code) {
-      throw new HttpException('code is wrong', 500)
+      throw new HttpException('code is wrong', 500, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
 
     const time = moment().utc()
@@ -468,7 +480,7 @@ class EstateCurrentTenantService {
       .add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
 
     if (old_time < time) {
-      throw new HttpException('Link has been expired', 500)
+      throw new HttpException('Link has been expired', 400, ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED)
     }
 
     return estateCurrentTenant
