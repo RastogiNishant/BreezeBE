@@ -635,6 +635,8 @@ class EstateCurrentTenantService {
           .transacting(trx)
 
         await trx.commit()
+      } else {
+        await trx.rollback()
       }
 
       return {
