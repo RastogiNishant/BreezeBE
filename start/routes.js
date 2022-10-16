@@ -458,9 +458,9 @@ Route.group(() => {
     'LandlordOwnsThisEstate',
   ])
 
-  Route.get('/:estate_id/me_tenant_detail', 'EstateController.landlordTenantDetailInfo').middleware([
-    'valid:EstateId,TenantId',
-  ])
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.landlordTenantDetailInfo').middleware(
+    ['valid:EstateId,TenantId']
+  )
 
   Route.post(
     '/tenant/invite/email',
@@ -477,6 +477,10 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
 
+  Route.put('/tenant/revoke', 'EstateCurrentTenantController.revokeInvitation').middleware([
+    'valid:InvitationIds',
+  ])
+
   Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
     'valid:InvitationIds',
   ])
@@ -485,6 +489,11 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.post(
+  '/api/v1/validate/outside_tenant/invitation',
+  'EstateCurrentTenantController.validateInvitationQRCode'
+).middleware(['valid:AlreadyRegisteredOutsideTenantInvite'])
 
 Route.post(
   '/api/v1/accept/outside_tenant',
@@ -514,6 +523,10 @@ Route.group(() => {
     'auth:jwtLandlord', //landlord for now
     'valid:FollowupVisit',
   ])
+  Route.get(
+    '/notifications/followup/:estate_id/:user_id',
+    'MatchController.getFollowups'
+  ).middleware(['auth:jwtLandlord', 'valid:FollowupVisit'])
 }).prefix('/api/v1/visit')
 
 Route.group(() => {
