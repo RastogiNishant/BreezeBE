@@ -293,7 +293,7 @@ class EstateCurrentTenantService {
     return await EstateCurrentTenant.query()
       .where('id', id)
       .where('estate_id', estate_id)
-      .whereNot('status', STATUS_DELETE)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
       .first()
   }
 
@@ -337,6 +337,7 @@ class EstateCurrentTenantService {
 
     return { failureCount, links }
   }
+
   static async createDynamicLink(estateCurrentTenant) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
@@ -447,7 +448,33 @@ class EstateCurrentTenantService {
     return { estate_id, estateCurrentTenant }
   }
 
+  static async validateInvitationQRCode({ data1, data2 }) {
+    const { estate_id, id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+
+    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+      id,
+      estate_id,
+    })
+    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+
+    return true
+  }
+
   static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
+    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+      id,
+      estate_id,
+    })
+
+    EstateCurrentTenantService.validateInvitationEmail({ email, estateCurrentTenant, user })
+    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+
+    return estateCurrentTenant
+  }
+
+  static async validateInvitedTenant({ id, estate_id }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
       throw new HttpException('No record exists', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
@@ -458,32 +485,35 @@ class EstateCurrentTenantService {
         ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
       )
     }
+    return estateCurrentTenant
+  }
 
+  static validateInvitationEmail({ user, estateCurrentTenant, email }) {
     if (!user) {
       if (!estateCurrentTenant.email && !email) {
-        throw new HttpException(
-          'Email must be provided!',
-          400,
-          ERROR_OUTSIDE_TENANT_INVITATION_INVALID
-        )
+        throw new HttpException('Email must be provided!', 400)
       }
     }
+    return true
+  }
 
+  static validateInvitationCode({ estateCurrentTenant, code }) {
     const preserved_code = estateCurrentTenant.code
     if (code !== preserved_code) {
-      throw new HttpException('code is wrong', 500, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+      throw new HttpException('code is wrong', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
+    return true
+  }
 
+  static validateInvitationExpirationDate({ expired_time }) {
     const time = moment().utc()
     const old_time = moment()
       .utc(expired_time, 'YYYY-MM-DD HH:mm:ss')
       .add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-
-    if (old_time < time) {
+    if (old_time.isBefore(time)) {
       throw new HttpException('Link has been expired', 400, ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED)
     }
-
-    return estateCurrentTenant
+    return true
   }
 
   static decryptDynamicLink({ data1, data2 }) {
@@ -507,7 +537,7 @@ class EstateCurrentTenantService {
       return { id, estate_id, code, expired_time }
     } catch (e) {
       console.log(e)
-      throw new HttpException('Params are wrong', 500)
+      throw new HttpException('Params are wrong', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
   }
 
