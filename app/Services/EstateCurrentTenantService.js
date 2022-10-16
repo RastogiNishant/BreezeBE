@@ -293,7 +293,7 @@ class EstateCurrentTenantService {
     return await EstateCurrentTenant.query()
       .where('id', id)
       .where('estate_id', estate_id)
-      .whereNot('status', STATUS_DELETE)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
       .first()
   }
 
@@ -500,7 +500,7 @@ class EstateCurrentTenantService {
   static validateInvitationCode({ estateCurrentTenant, code }) {
     const preserved_code = estateCurrentTenant.code
     if (code !== preserved_code) {
-      throw new HttpException('code is wrong', 500, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+      throw new HttpException('code is wrong', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
     return true
   }
