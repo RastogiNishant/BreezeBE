@@ -426,9 +426,8 @@ test('Failed Sign up with Google oAuth', async ({ client }) => {
   //TODO: success case will be here
 }).timeout(0)
 
-test('Login failed', async ({ assert, client }) => {
-  //No params
-  let response = await client.post('/api/v1/login').send({}).end()
+test('Login failed due to empty parameters', async ({ assert, client }) => {
+  const response = await client.post('/api/v1/login').send({}).end()
 
   response.assertStatus(422)
   response.assertJSONSubset({
@@ -438,9 +437,10 @@ test('Login failed', async ({ assert, client }) => {
       password: getExceptionMessage('password', REQUIRED),
     },
   })
+})
 
-  //wrong info
-  response = await client
+test('Login failed due to min length', async ({ assert, client }) => {
+  const response = await client
     .post('/api/v1/login')
     .send({
       email: faker.random.numeric(5),
@@ -461,9 +461,10 @@ test('Login failed', async ({ assert, client }) => {
       password: getExceptionMessage('password', MINLENGTH, 6),
     },
   })
+})
 
-  //max length
-  response = await client
+test('Login failed due to max length', async ({ assert, client }) => {
+  const response = await client
     .post('/api/v1/login')
     .send({
       email: prospectData.email,
@@ -480,9 +481,11 @@ test('Login failed', async ({ assert, client }) => {
       device_token: getExceptionMessage('password', MINLENGTH, 30),
     },
   })
+})
 
+test('Login failed due to not existing email', async ({ assert, client }) => {
   //wrong email
-  response = await client
+  const response = await client
     .post('/api/v1/login')
     .send({
       email: `${faker.random.numeric(1)}${prospectData.email}`,
@@ -492,13 +495,14 @@ test('Login failed', async ({ assert, client }) => {
     .end()
 
   response.assertStatus(400)
-  console.log('wrong email log in', response.body.data)
   response.assertJSONSubset({
     status: 'error',
     data: getExceptionMessage(undefined, USER_NOT_EXIST),
     code: 0,
   })
+})
 
+test('Login failed due to inactive user', async ({ assert, client }) => {
   //if not active, log in failed
   const user = await User.query()
     .select('*')
@@ -510,7 +514,7 @@ test('Login failed', async ({ assert, client }) => {
   assert.isNotNull(user)
   assert.isNotNull(user.id)
 
-  response = await client
+  const response = await client
     .post('/api/v1/login')
     .send({
       email: prospectData.email,
@@ -527,9 +531,9 @@ test('Login failed', async ({ assert, client }) => {
     )}`,
     code: 0,
   })
-}).timeout(0)
+})
 
-test('prospect log in', async ({ assert, client }) => {
+test('prospect log in successfully', async ({ assert, client }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
 
@@ -567,7 +571,7 @@ test('prospect log in', async ({ assert, client }) => {
   assert.isNotNull(loginTestProspect.token)
 }).timeout(0)
 
-test('landlord log in', async ({ assert, client }) => {
+test('landlord log in successfully', async ({ assert, client }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
 
@@ -605,7 +609,7 @@ test('landlord log in', async ({ assert, client }) => {
   assert.isNotNull(loginTestLandlord.token)
 }).timeout(0)
 
-test('Wrong password Login failed', async ({ assert, client }) => {
+test('Login failed due to Wrong password', async ({ assert, client }) => {
   //wrong password
   let response = await client
     .post('/api/v1/login')
