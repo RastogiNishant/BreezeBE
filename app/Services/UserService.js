@@ -29,6 +29,9 @@ const random = require('random')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Drive = use('Drive')
 const Hash = use('Hash')
+const Config = use('Config')
+const GoogleAuth = use('GoogleAuth')
+
 const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
@@ -68,6 +71,8 @@ const {
     CURRENT_PASSWORD_NOT_VERIFIED,
     FAILED_GET_OWNER,
     NO_USER_PASSED,
+    NO_CODE_PASSED,
+    INVALID_TOKEN,
   },
 } = require('../../app/excepions')
 
@@ -91,6 +96,7 @@ class UserService {
     userData.agreements_id = latestAgreement.id
 
     const user = await User.createItem(userData, trx)
+    
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -130,7 +136,7 @@ class UserService {
     // Check is user same email another role is exists
     const existingUser = await User.query().where('email', email).whereIn('role', roles).first()
     if (existingUser) {
-      throw new AppException('User same email, another role exists')
+      throw new AppException(USER_UNIQUE)
     }
 
     const userData = {
@@ -391,7 +397,7 @@ class UserService {
    */
   static async getOrCreateTenant(user, trx = null) {
     if (user.role !== ROLE_USER) {
-      throw new AppException('Invalid tenant user role')
+      throw new AppException(INVALID_USER_ROLE)
     }
     const tenant = await Tenant.query().where('user_id', user.id).first()
     if (tenant) {
@@ -713,7 +719,7 @@ class UserService {
     const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
 
     if (!data) {
-      throw new HttpException('No code', 400)
+      throw new HttpException(NO_CODE_PASSED, 400)
     }
 
     if (parseInt(data.code) !== parseInt(code)) {
@@ -997,6 +1003,7 @@ class UserService {
       : data
 
     const trx = await Database.beginTransaction()
+    delete data.password
 
     try {
       if (data.email) {
@@ -1060,6 +1067,18 @@ class UserService {
     const updatePass = async (user) => user.updateItem({ password: new_password }, true)
     await Promise.map(users, updatePass)
     return true
+  }
+
+  static async verifyGoogleToken(token) {
+    try {
+      const ticket = await GoogleAuth.verifyIdToken({
+        idToken: token,
+        audience: Config.get('services.ally.google.client_id'),
+      })
+      return true
+    } catch (e) {
+      throw new HttpException(INVALID_TOKEN, 400)
+    }
   }
 }
 

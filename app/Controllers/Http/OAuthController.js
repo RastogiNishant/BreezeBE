@@ -25,7 +25,9 @@ const {
   SIGN_IN_METHOD_APPLE,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-
+const {
+  exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_NOT_FOUND, USER_UNIQUE, INVALID_USER_ROLE },
+} = require('../../../app/excepions')
 class OAuthController {
   /**
    *
@@ -73,7 +75,7 @@ class OAuthController {
       return response.res(token)
     }
 
-    throw new new HttpException('Invalid user', 400)()
+    throw new new HttpException(USER_NOT_FOUND, 400)()
   }
 
   /**
@@ -91,7 +93,7 @@ class OAuthController {
     }
     const user = await query.first()
     if (!user && !role) {
-      throw new HttpException('User not exists', 412)
+      throw new HttpException(USER_NOT_EXIST, 412)
     }
 
     return user
@@ -104,12 +106,9 @@ class OAuthController {
     const { token, device_token, role, code, data1, data2 } = request.all()
     let ticket
     try {
-      ticket = await GoogleAuth.verifyIdToken({
-        idToken: token,
-        audience: Config.get('services.ally.google.client_id'),
-      })
+      await UserService.verifyGoogleToken(token)
     } catch (e) {
-      throw new HttpException('Invalid token', 400)
+      throw new HttpException(INVALID_TOKEN, 400)
     }
 
     const email = get(ticket, 'payload.email')
@@ -141,7 +140,7 @@ class OAuthController {
             .where('email', email)
             .first()
           if (availableUser) {
-            throw new HttpException('User already exists, can be switched', 400)
+            throw new HttpException(USER_UNIQUE, 400)
           }
         }
 
@@ -196,7 +195,7 @@ class OAuthController {
       const socialData = await appleSignIn.verifyIdToken(token, options)
       email = socialData.email
     } catch (e) {
-      throw new HttpException('Invalid token', 400)
+      throw new HttpException(INVALID_TOKEN, 400)
     }
     let user = await this.authorizeUser(email, role)
 
@@ -225,7 +224,7 @@ class OAuthController {
             .where('email', email)
             .first()
           if (availableUser) {
-            throw new HttpException('User already exists, can be switched', 400)
+            throw new HttpException(USER_UNIQUE, 400)
           }
         }
 
@@ -270,7 +269,7 @@ class OAuthController {
       return response.res(token)
     }
 
-    throw new HttpException('Invalid role', 400)
+    throw new HttpException(INVALID_USER_ROLE, 400)
   }
 }
 

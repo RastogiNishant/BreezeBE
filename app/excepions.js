@@ -31,6 +31,8 @@ const exceptions = {
   USER_NOT_VERIFIED: 'User has not been verified yet',
   CURRENT_PASSWORD_NOT_VERIFIED: 'Current password could not be verified! Please try again',
   FAILED_GET_OWNER: 'Failed to get owner',
+  INVALID_TOKEN: 'Invalid token',
+  NO_CODE_PASSED: 'No code',
 }
 
 const exceptionKeys = {
@@ -63,6 +65,8 @@ const exceptionKeys = {
   USER_NOT_VERIFIED: 'USER_NOT_VERIFIED',
   CURRENT_PASSWORD_NOT_VERIFIED: 'CURRENT_PASSWORD_NOT_VERIFIED',
   FAILED_GET_OWNER: 'FAILED_GET_OWNER',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+  NO_CODE_PASSED: 'NO_CODE_PASSED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
