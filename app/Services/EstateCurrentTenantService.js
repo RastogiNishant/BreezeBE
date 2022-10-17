@@ -9,6 +9,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
 const SMSService = use('App/Services/SMSService')
+const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const {
   ROLE_USER,
   STATUS_ACTIVE,
@@ -633,7 +634,12 @@ class EstateCurrentTenantService {
           )
           .update({ code: null, invite_sent_at: null })
           .transacting(trx)
-
+        await InvitationLinkCode.query()
+          .whereIn(
+            'current_tenant_id',
+            estateCurrentTenants.map((e) => e.id)
+          )
+          .delete(trx)
         await trx.commit()
       } else {
         await trx.rollback()
