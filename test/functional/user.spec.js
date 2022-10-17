@@ -287,9 +287,8 @@ test('Landlord successful sign up', async ({ assert, client }) => {
   })
 }).timeout(0)
 
-test('Failed Confirm email', async ({ assert, client }) => {
-  //required
-  let response = await client.get('/api/v1/confirm_email').send({}).end()
+test('Failed Confirm email due to empty data', async ({ assert, client }) => {
+  const response = await client.get('/api/v1/confirm_email').send({}).end()
   response.assertStatus(422)
   response.assertJSONSubset({
     data: {
@@ -297,9 +296,10 @@ test('Failed Confirm email', async ({ assert, client }) => {
       code: getExceptionMessage('code', REQUIRED),
     },
   })
+})
 
-  //wrong format
-  response = await client
+test('Failed Confirm email due to wrong format', async ({ assert, client }) => {
+  const response = await client
     .get('/api/v1/confirm_email')
     .send({
       user_id: faker.random.alphaNumeric(5),
@@ -314,9 +314,10 @@ test('Failed Confirm email', async ({ assert, client }) => {
       code: getExceptionMessage('code', REQUIRED),
     },
   })
+})
 
-  //Not existing user
-  response = await client
+test('Failed Confirm email due to not existing user', async ({ assert, client }) => {
+  const response = await client
     .get('/api/v1/confirm_email')
     .send({
       user_id: faker.random.numeric(8),
@@ -329,10 +330,11 @@ test('Failed Confirm email', async ({ assert, client }) => {
   response.assertJSONSubset({
     data: getExceptionMessage(undefined, USER_NOT_EXIST),
   })
+})
 
-  //wrong code
+test('Failed Confirm email due to wrong confirmation code', async ({ assert, client }) => {
   assert.isNotNull(testLandlord.id)
-  response = await client
+  const response = await client
     .get('/api/v1/confirm_email')
     .send({
       user_id: testLandlord.id,
@@ -344,9 +346,9 @@ test('Failed Confirm email', async ({ assert, client }) => {
   response.assertJSONSubset({
     data: response.body.data,
   })
-}).timeout(0)
+})
 
-test('Confirm email', async ({ assert, client }) => {
+test('Confirm email successfully', async ({ assert, client }) => {
   assert.isNotNull(testLandlord)
   assert.isNotNull(testLandlord.id)
   code = await UserService.sendConfirmEmail(testLandlord)
