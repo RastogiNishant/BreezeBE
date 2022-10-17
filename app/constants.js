@@ -860,6 +860,9 @@ const constants = {
 
   TEST_ENVIRONMENT: 'test',
   LETTER_GREETING_STYLE: [0, 1, 2, 3, 4],
+
+  INVITATION_LINK_RETRIEVAL_CODE_LENGTH: 6,
+  INVITATION_LINK_RETRIEVAL_CODE_CHARACTERS: '0123456',
 }
 
 module.exports = constants
