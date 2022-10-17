@@ -233,22 +233,46 @@ class UserService {
    *
    */
   static async requestSetPasswordForgotPassword(email, password, codeSent) {
-    let user = null
+    const trx = await Database.beginTransaction()
     try {
-      user = await User.findByOrFail({ email })
+      const users = (await User.query().where('email', email).fetch()).rows
+
+      if (!users || !users.length) {
+        throw new HttpException('Not email exists', 400)
+      }
+
+      let userId
+      const codes = await Promise.all(
+        users.map(async (user) => {
+          const code = await DataStorage.getItem(user.id, 'forget_password')
+          if (code) {
+            userId = user.id
+          }
+          return code
+        })
+      )
+      const data = codes.filter((code) => code)
+      if (!data || !data.length) {
+        throw new HttpException('Code not exist', 500)
+      }
+
+      const { code } = data[0] || {}
+      if (code !== codeSent) {
+        throw new HttpException('Invalid confirmation code', 400)
+      }
+
+      await Promise.all(
+        users.map(async (user) => {
+          user.password = password
+          await user.save(trx)
+        })
+      )
+      await trx.commit()
+      await DataStorage.remove(userId, 'forget_password')
     } catch (error) {
+      await trx.rollback()
       throw new AppException('User with this email does not exist')
     }
-
-    const data = await DataStorage.getItem(user.id, 'forget_password')
-    const { code } = data || {}
-    if (code !== codeSent) {
-      throw new HttpException('Invalid confirmation code', 404)
-    }
-
-    user.password = password
-    await user.save()
-    await DataStorage.remove(user.id, 'forget_password')
   }
 
   static async getHousehouseId(user_id) {
