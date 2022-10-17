@@ -9,6 +9,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
 const SMSService = use('App/Services/SMSService')
+const Promise = require('bluebird')
 const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const {
   ROLE_USER,
@@ -330,11 +331,15 @@ class EstateCurrentTenantService {
 
     estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
 
-    const links = await Promise.all(
+    let links = await Promise.all(
       estateCurrentTenants.map(async (ect) => {
         return await EstateCurrentTenantService.createDynamicLink(ect)
       })
     )
+    links = await Promise.map(links, async (link) => {
+      link.code = await InvitationLinkCode.create(link.id, link.shortLink)
+      return link
+    })
 
     return { failureCount, links }
   }

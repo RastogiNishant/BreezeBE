@@ -2,9 +2,6 @@
 
 const { ERROR_OUTSIDE_TENANT_INVITATION_INVALID } = require('../../constants')
 const HttpException = require('../../Exceptions/HttpException')
-const InvitationLinkCode = use('App/Models/InvitationLinkCode')
-const Promise = require('bluebird')
-
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 class EstateCurrentTenantController {
@@ -73,10 +70,7 @@ class EstateCurrentTenantController {
         ids: ids,
         user_id: auth.user.id,
       })
-      links = await Promise.map(links, async (link) => {
-        link.code = await InvitationLinkCode.create(link.id, link.shortLink)
-        return link
-      })
+
       response.res({
         successCount: (ids.length || 0) - failureCount,
         failureCount,
