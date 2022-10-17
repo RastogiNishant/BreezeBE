@@ -1,6 +1,7 @@
 const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const AppException = use('App/Exceptions/AppException')
 const MailService = use('App/Services/MailService')
 const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
