@@ -727,6 +727,16 @@ class EstateCurrentTenantService {
       throw new HttpException(e.message, 400)
     }
   }
+
+  static async retrieveLinkByCode(code) {
+    try {
+      const link = await InvitationLinkCode.getByCode(code)
+      return { shortLink: link }
+    } catch (err) {
+      console.log(err.message)
+      throw new AppException('Code did not match.')
+    }
+  }
 }
 
 module.exports = EstateCurrentTenantService

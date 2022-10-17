@@ -39,6 +39,11 @@ class InvitationLinkCode extends Model {
     })
     return randomString
   }
+
+  static async getByCode(code) {
+    const result = await this.query().select('link').where('code', code).firstOrFail()
+    return result.link
+  }
 }
 
 module.exports = InvitationLinkCode

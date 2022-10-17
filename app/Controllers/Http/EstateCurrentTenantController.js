@@ -152,6 +152,15 @@ class EstateCurrentTenantController {
       throw new HttpException(e.message, 400)
     }
   }
+
+  async retrieveLinkByCode({ request, auth, response }) {
+    const { code } = request.all()
+    try {
+      response.res(await EstateCurrentTenantService.retrieveLinkByCode(code))
+    } catch (e) {
+      throw new HttpException(e.message, 422)
+    }
+  }
 }
 
 module.exports = EstateCurrentTenantController
