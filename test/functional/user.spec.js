@@ -1,4 +1,4 @@
-const { omit, pick } = require('lodash')
+const { omit } = require('lodash')
 const { faker } = require('@faker-js/faker')
 const Hash = use('Hash')
 const {
@@ -24,17 +24,13 @@ const {
   MATCH_SERVICE_INDEX,
   ERROR_USER_NOT_VERIFIED_LOGIN,
 } = require('../../app/constants')
-const Env = use('Env')
 const fsPromise = require('fs/promises')
-const Helpers = use('Helpers')
-const { test, trait, before, beforeEach, after, afterEach } = use('Test/Suite')('User Functional')
+const { test, trait, before, after } = use('Test/Suite')('User Functional')
 const User = use('App/Models/User')
 const UserService = use('App/Services/UserService')
 const AgreementService = use('App/Services/AgreementService')
 const CompanyService = use('App/Services/CompanyService')
 const ImageService = use('App/Services/ImageService')
-
-const DataStorage = use('DataStorage')
 
 const {
   getExceptionMessage,
@@ -425,6 +421,7 @@ test('Failed Sign up with Google oAuth', async ({ client }) => {
   response = await client.get('/auth/google/mobile').send(googleDummyUserData).end()
   response.assertStatus(400)
   response.assertJSONSubset({ data: 'Invalid token' })
+  //TODO: success case will be here
 }).timeout(0)
 
 test('Login failed', async ({ assert, client }) => {
@@ -847,7 +844,7 @@ test('Failed Change Password', async ({ client }) => {
   let response = await client.put('/api/v1/users/password').end()
   response.assertStatus(401)
 
-  //min length login failed
+  //min length failed
   response = await client
     .put('/api/v1/users/password')
     .loginVia(testLandlord, 'jwtLandlord')
@@ -865,7 +862,7 @@ test('Failed Change Password', async ({ client }) => {
     },
   })
 
-  //max length login failed
+  //max length failed
   response = await client
     .put('/api/v1/users/password')
     .loginVia(testLandlord, 'jwtLandlord')
@@ -1047,6 +1044,7 @@ test('resetUnreadNotificationCount', async ({ client }) => {
 }).timeout(0)
 
 test('Update avatar', async ({ assert, client }) => {
+  //TODO: needs improvement in the future. Not prioritized for now
   await User.query().where('email', testLandlord.email).update({ status: STATUS_ACTIVE })
 
   assert.isNull(testLandlord.avatar)

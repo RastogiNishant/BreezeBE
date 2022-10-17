@@ -7,8 +7,6 @@ const Company = use('App/Models/Company')
 const Match = use('App/Models/Match')
 const Admin = use('App/Models/Admin')
 const UserService = use('App/Services/UserService')
-const Config = use('Config')
-const GoogleAuth = use('GoogleAuth')
 const { faker } = require('@faker-js/faker')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
@@ -31,30 +29,11 @@ const {
   CONNECT_SERVICE_INDEX,
   MATCH_SERVICE_INDEX,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
+  ERROR_USER_NOT_VERIFIED_LOGIN,
 } = require('../../app/constants')
 
 const {
-  exceptions: {
-    REQUIRED,
-    MINLENGTH,
-    MAXLENGTH,
-    OPTION,
-    DATE,
-    BOOLEAN,
-    EMAIL,
-    MATCH,
-    USER_NOT_FOUND,
-    USER_WRONG_PASSWORD,
-    ARRAY,
-    NUMBER,
-    USER_UNIQUE,
-    USER_NOT_EXIST,
-    SMS_CODE_NOT_CORERECT,
-    USER_NOT_VERIFIED,
-    NOT_EXIST_WITH_EMAIL,
-    INVALID_CONFIRM_CODE,
-    INVALID_TOKEN,
-  },
+  exceptions: { USER_NOT_EXIST, SMS_CODE_NOT_CORERECT, INVALID_TOKEN },
 } = require('../../app/excepions')
 
 const EstateService = require('../../app/Services/EstateService')
@@ -71,14 +50,36 @@ let signUpProspectUser,
   prospect,
   globalEstate,
   globalMatch,
+  globalCompany,
   newAdmin,
-  adminData
+  adminData,
+  fakePhoneNumber,
+  emailCode,
+  smsCode
 
-const { before, beforeEach, after, afterEach } = Suite
+const { before, after } = Suite
 
 const prospectDataEmail = `unit_prospect_${new Date().getTime().toString()}@gmail.com`
 const landlordDataEmail = `unit_landlord_${new Date().getTime().toString()}@gmail.com`
 const adminDataEmail = `admin_${new Date().getTime().toString()}@gmail.com`
+
+const createFakeMatchAndValidate = async (data, assert) => {
+  assert.isNotNull(globalEstate)
+  await Database.table('matches').insert({
+    ...data,
+    user_id: signUpProspectUser.id,
+    estate_id: globalEstate.id,
+    percent: 0.5,
+  })
+
+  globalMatch = await Match.query()
+    .where('user_id', signUpProspectUser.id)
+    .where('estate_id', globalEstate.id)
+    .first()
+  assert.isNotNull(globalMatch)
+  globalMatch = globalMatch.toJSON()
+}
+
 before(async () => {
   adminData = {
     email: adminDataEmail,
@@ -142,6 +143,8 @@ before(async () => {
     .where('role', ROLE_USER)
     .where('email', 'it@bits.ventures')
     .firstOrFail()
+
+  fakePhoneNumber = faker.phone.number()
 })
 
 after(async () => {
@@ -167,20 +170,7 @@ after(async () => {
   }
 })
 
-test('Sign in failure before activation', async ({ assert }) => {
-  try {
-    signInUser = await UserService.login({
-      email: dummyProspectUserData.email,
-      password: dummyProspectUserData.password,
-      role: dummyProspectUserData.role,
-    })
-    assert.equal(signInUser, null)
-  } catch (e) {
-    assert.isNotOk(false, 'Pass')
-  }
-}).timeout(0)
-
-test('Sign up with email', async ({ assert }) => {
+test('Tenant Sign up with email successfully', async ({ assert }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
   assert.isNotNull(agreement.id)
@@ -188,7 +178,6 @@ test('Sign up with email', async ({ assert }) => {
 
   signUpProspectUser = await UserService.signUp({
     ...dummyProspectUserData,
-    status: STATUS_EMAIL_VERIFY,
   })
 
   assert.include(signUpProspectUser.toJSON({ isOwner: true }), {
@@ -207,10 +196,16 @@ test('Sign up with email', async ({ assert }) => {
   const tenant = await Tenant.query().where('user_id', signUpProspectUser.id).first()
   assert.isNotNull(tenant)
   assert.isNotNull(tenant.id)
+}).timeout(0)
+
+test('Landlord Sign up with email successfully', async ({ assert }) => {
+  const agreement = await AgreementService.getLatestActive()
+  const term = await AgreementService.getActiveTerms()
+  assert.isNotNull(agreement.id)
+  assert.isNotNull(term.id)
 
   signUpLandlordUser = await UserService.signUp({
     ...dummyLandlordUserData,
-    status: STATUS_EMAIL_VERIFY,
   })
   assert.include(signUpLandlordUser.toJSON({ isOwner: true }), {
     ...omit(dummyLandlordUserData, ['password']),
@@ -221,6 +216,20 @@ test('Sign up with email', async ({ assert }) => {
 
   verifyPassword = await Hash.verify(dummyLandlordUserData.password, signUpLandlordUser.password)
   assert.isTrue(verifyPassword)
+}).timeout(0)
+
+test('Sign in failure before activation', async ({ assert }) => {
+  try {
+    signInUser = await UserService.login({
+      email: dummyProspectUserData.email,
+      password: dummyProspectUserData.password,
+      role: dummyProspectUserData.role,
+    })
+    assert.fail("User shouldn't be able to sign in before activation, error should be catched")
+  } catch (e) {
+    assert.equal(e.code, parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${signUpProspectUser.id}`))
+    assert.isNotOk(false, 'Pass')
+  }
 }).timeout(0)
 
 test('getTokenWithLocale', async ({ assert }) => {
@@ -254,8 +263,9 @@ test('getTokenWithLocale', async ({ assert }) => {
   assert.equal(tokens.length, 0)
 })
 
-test('SendConfirmEmail', async ({ assert }) => {
+test('SendConfirmEmail successfully', async ({ assert }) => {
   const code = await UserService.sendConfirmEmail(signUpProspectUser)
+  emailCode = code
   assert.equal(code.length, 4)
 
   const verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'confirm_email')
@@ -264,15 +274,14 @@ test('SendConfirmEmail', async ({ assert }) => {
   assert.equal(code, verifyCode.code)
 }).timeout(0)
 
-test('Send signup confirm email & Activate account', async ({ assert }) => {
-  const code = await UserService.sendConfirmEmail(signUpProspectUser)
-  assert.equal(code.length, 4)
-
-  await UserService.confirmEmail(signUpProspectUser, code)
-
+test('confirmEmail Confirm email address successfully by the code sent', async ({ assert }) => {
+  await UserService.confirmEmail(signUpProspectUser, emailCode)
   const user = await User.query().where('id', signUpProspectUser.id).first()
   assert.isNotNull(user)
   assert.equal(user.status, STATUS_ACTIVE)
+
+  const verifyCode = await DataStorage.getItem(signUpProspectUser.id, 'confirm_email')
+  assert.isNull(verifyCode)
 }).timeout(0)
 
 test('sign up token expiration with Google oAuth', async ({ assert }) => {
@@ -288,6 +297,7 @@ test('sign up token expiration with Google oAuth', async ({ assert }) => {
 }).timeout(0)
 
 test('sign up with Google oAuth', async ({ assert }) => {
+  //TODO: improvement needed in the future
   googleSignupUser = await UserService.createUserFromOAuth(null, { ...googleDummyUserData })
 
   assert.include(
@@ -339,6 +349,7 @@ test('Get Me', async ({ assert }) => {
 }).timeout(0)
 
 test('Change Password', async ({ assert }) => {
+  //TODO: we update all accounts with the same email. We have to validate that all accounts are updated synchronously
   const newPassword = faker.random.numeric(20)
   const changed = await UserService.changePassword(
     signUpProspectUser,
@@ -351,6 +362,7 @@ test('Change Password', async ({ assert }) => {
 
   assert.isNotNull(tempProspect)
   assert.notEqual(dummyProspectUserData.password, newPassword)
+
   let verifyPassword = await Hash.verify(newPassword, tempProspect.password)
   assert.isTrue(verifyPassword)
 
@@ -377,7 +389,7 @@ test('Update device token', async ({ assert }) => {
   assert.equal(prospect.device_token, device_token)
 }).timeout(0)
 
-test('Landlord has permission to access Tenant full profile', async ({ assert }) => {
+test('Landlord not have access to tenant full profile before match', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser)
   assert.isNotNull(signUpLandlordUser)
   assert.isNotNull(landlord)
@@ -388,79 +400,62 @@ test('Landlord has permission to access Tenant full profile', async ({ assert })
 
   hasAccess = await UserService.landlordHasAccessTenant(signUpLandlordUser.id, prospect.id)
   assert.equal(hasAccess, false)
+})
 
+test('Landlord not have access to tenant full profile before share', async ({ assert }) => {
   globalEstate = await Estate.createItem({
     user_id: signUpLandlordUser.id,
     property_id: faker.random.alphaNumeric(5),
   })
-  assert.isNotNull(globalEstate)
 
-  await Database.table('matches').insert({
-    user_id: signUpProspectUser.id,
-    estate_id: globalEstate.id,
-    percent: 0.5,
-    share: true,
-    status: MATCH_STATUS_VISIT,
-  })
-
-  globalMatch = await Match.query()
-    .where('user_id', signUpProspectUser.id)
-    .where('estate_id', globalEstate.id)
-    .first()
-  assert.isNotNull(globalMatch)
-  globalMatch = globalMatch.toJSON()
-
-  hasAccess = await UserService.landlordHasAccessTenant(
-    signUpLandlordUser.id,
-    signUpProspectUser.id
-  )
-  assert.equal(hasAccess, true)
-
-  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
-
-  await Database.table('matches').insert({
-    user_id: signUpProspectUser.id,
-    estate_id: globalEstate.id,
-    percent: 0.5,
-    share: false,
-    status: MATCH_STATUS_FINISH,
-  })
-
-  globalMatch = await Match.query()
-    .where('user_id', signUpProspectUser.id)
-    .where('estate_id', globalEstate.id)
-    .first()
-  assert.isNotNull(globalMatch)
-  globalMatch = globalMatch.toJSON()
-
-  hasAccess = await UserService.landlordHasAccessTenant(
-    signUpLandlordUser.id,
-    signUpProspectUser.id
-  )
-  assert.equal(hasAccess, true)
-
-  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
-
-  await Database.table('matches').insert({
-    user_id: signUpProspectUser.id,
-    estate_id: globalEstate.id,
-    percent: 0.5,
-    share: false,
-    status: MATCH_STATUS_COMMIT,
-  })
-
-  globalMatch = await Match.query()
-    .where('user_id', signUpProspectUser.id)
-    .where('estate_id', globalEstate.id)
-    .first()
-  assert.isNotNull(globalMatch)
-  globalMatch = globalMatch.toJSON()
+  await createFakeMatchAndValidate({ share: false, status: MATCH_STATUS_VISIT }, assert)
 
   hasAccess = await UserService.landlordHasAccessTenant(
     signUpLandlordUser.id,
     signUpProspectUser.id
   )
   assert.equal(hasAccess, false)
+  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
+})
+
+test('Landlord has access to tenant full profile after share', async ({ assert }) => {
+  await createFakeMatchAndValidate({ share: true, status: MATCH_STATUS_VISIT }, assert)
+
+  hasAccess = await UserService.landlordHasAccessTenant(
+    signUpLandlordUser.id,
+    signUpProspectUser.id
+  )
+  assert.equal(hasAccess, true)
+
+  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
+})
+
+test('Landlord has permission to access Tenant full profile with final match even no share', async ({
+  assert,
+}) => {
+  await createFakeMatchAndValidate({ share: false, status: MATCH_STATUS_FINISH }, assert)
+
+  hasAccess = await UserService.landlordHasAccessTenant(
+    signUpLandlordUser.id,
+    signUpProspectUser.id
+  )
+  assert.equal(hasAccess, true)
+
+  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
+})
+
+test('Landlord has no permission to access Tenant full profile with commit match no share', async ({
+  assert,
+}) => {
+  await createFakeMatchAndValidate({ share: false, status: MATCH_STATUS_COMMIT }, assert)
+
+  hasAccess = await UserService.landlordHasAccessTenant(
+    signUpLandlordUser.id,
+    signUpProspectUser.id
+  )
+  assert.equal(hasAccess, false)
+
+  await MatchService.deletePermanant({ user_id: globalMatch.user_id })
 })
 
 test('getUserIdsByToken', async ({ assert }) => {
@@ -530,10 +525,12 @@ test('verifyUsers', async ({ assert }) => {
   } catch (e) {}
 })
 
-test('sendSMS', async ({ assert }) => {
+test('sendSMS successfully', async ({ assert }) => {
   assert.isNotNull(signUpLandlordUser)
   const code = await UserService.sendSMS(signUpLandlordUser.id, faker.phone.number())
   assert.isNumber(code)
+
+  smsCode = code
 
   const verifyCode = await DataStorage.getItem(signUpLandlordUser.id, SMS_VERIFY_PREFIX)
   assert.isNotNull(verifyCode)
@@ -541,38 +538,48 @@ test('sendSMS', async ({ assert }) => {
   assert.equal(code, verifyCode.code)
 })
 
-test('confirmSMS', async ({ assert }) => {
-  assert.isNotNull(signUpLandlordUser)
+test('confirmSMS fails in case not existing phone number', async ({ assert }) => {
+  // prepare user
   await User.query().where('id', signUpLandlordUser.id).update({ status: STATUS_EMAIL_VERIFY })
-
-  const phoneNumber = faker.phone.number()
   try {
-    await UserService.confirmSMS(signUpLandlordUser.email, phoneNumber, faker.random.numeric(10))
+    await UserService.confirmSMS(
+      signUpLandlordUser.email,
+      fakePhoneNumber,
+      faker.random.numeric(10)
+    )
   } catch (e) {
     assert.equal(e.message, USER_NOT_EXIST)
   }
+})
 
+test('confirmSMS fails in case wrong code', async ({ assert }) => {
+  // prepare user
   await User.query()
     .where('id', signUpLandlordUser.id)
-    .update({ status: STATUS_EMAIL_VERIFY, phone: phoneNumber })
-
+    .update({ status: STATUS_EMAIL_VERIFY, phone: fakePhoneNumber })
   try {
-    await UserService.confirmSMS(signUpLandlordUser.email, phoneNumber, faker.random.numeric(10))
+    await UserService.confirmSMS(
+      signUpLandlordUser.email,
+      fakePhoneNumber,
+      faker.random.numeric(10)
+    )
   } catch (e) {
     assert.equal(e.message, SMS_CODE_NOT_CORERECT)
     let verifyData = await DataStorage.getItem(signUpLandlordUser.id, SMS_VERIFY_PREFIX)
     assert.equal(verifyData.count, 4)
   }
+})
 
-  const code = await UserService.sendSMS(signUpLandlordUser.id, phoneNumber)
-  assert.isNumber(code)
-
-  await UserService.confirmSMS(signUpLandlordUser.email, phoneNumber, code)
+test('confirmSMS successfully', async ({ assert }) => {
+  await UserService.confirmSMS(signUpLandlordUser.email, fakePhoneNumber, smsCode)
   const user = await User.query().where('id', signUpLandlordUser.id).first()
+  const verifyCode = await DataStorage.getItem(signUpLandlordUser.id, SMS_VERIFY_PREFIX)
+  assert.isNull(verifyCode)
   assert.equal(user.status, STATUS_ACTIVE)
 })
 
 test('proceedBuddyInviteLink', async ({ assert }) => {
+  //TODO: handle it later
   const user = await User.query().where('id', signUpLandlordUser.id).first()
   const userJSON = user.toJSON({ isOwner: true })
 
@@ -582,40 +589,53 @@ test('proceedBuddyInviteLink', async ({ assert }) => {
    */
 })
 
-test('setOnboardingStep', async ({ assert }) => {
+test('setOnboardingStep should set it as company step in case no company', async ({ assert }) => {
   assert.isNotNull(signUpLandlordUser)
-  let user = await User.query().where('id', signUpLandlordUser.id).first()
+  const user = await User.query().where('id', signUpLandlordUser.id).first()
   const userJSON = user.toJSON({ isOwner: true })
 
   assert.isUndefined(userJSON.onboarding_step)
   await UserService.setOnboardingStep(user)
   assert.equal(user.onboarding_step, PASS_ONBOARDING_STEP_COMPANY)
+})
 
-  const company = await Company.createItem({
+test('setOnboardingStep should set it as company step in case there is a company but no preferred services', async ({
+  assert,
+}) => {
+  // prepare company
+  globalCompany = await Company.createItem({
     name: faker.company.name(),
     address: faker.address.cityName(),
   })
-  assert.isNotNull(company)
-  assert.isNotNull(company.id)
+  assert.isNotNull(globalCompany)
+  assert.isNotNull(globalCompany.id)
+  await User.query().where('id', signUpLandlordUser.id).update({ company_id: globalCompany.id })
 
-  await User.query().where('id', signUpLandlordUser.id).update({ company_id: company.id })
-  user = await User.query().where('id', signUpLandlordUser.id).first()
+  const user = await User.query().where('id', signUpLandlordUser.id).first()
+  assert.isNull(user.preferred_services)
+
   await UserService.setOnboardingStep(user)
   assert.equal(user.onboarding_step, PASS_ONBOARDING_STEP_PREFERRED_SERVICES)
+})
 
+test('setOnboardingStep should set it as null in case there is a company and preferred services', async ({
+  assert,
+}) => {
+  // Set preferred services for user
   await User.query()
     .where('id', signUpLandlordUser.id)
     .update({ preferred_services: [CONNECT_SERVICE_INDEX, MATCH_SERVICE_INDEX] })
 
-  user = await User.query().where('id', signUpLandlordUser.id).first()
+  const user = await User.query().where('id', signUpLandlordUser.id).first()
   await UserService.setOnboardingStep(user)
   assert.isNull(user.onboarding_step)
 
+  // Revert changes
   await User.query().where('id', signUpLandlordUser.id).update({ company_id: null })
-  await Company.query().where('id', company.id).delete()
+  await Company.query().where('id', globalCompany.id).delete()
 })
 
-test('Request SendCode ForgotPassword', async ({ assert }) => {
+test('Request SendCode ForgotPassword Mobile', async ({ assert }) => {
   const { shortLink, code } = await UserService.requestSendCodeForgotPassword(
     signUpProspectUser.email,
     'de'
@@ -627,7 +647,9 @@ test('Request SendCode ForgotPassword', async ({ assert }) => {
   assert.isNotNull(verifyCode)
   assert.equal(code, verifyCode.code)
   assert.isNotNull(shortLink)
+}).timeout(0)
 
+test('Request SendCode ForgotPassword Web', async ({ assert }) => {
   const webForgetPassword = await UserService.requestSendCodeForgotPassword(
     signUpProspectUser.email,
     'de',
@@ -697,8 +719,10 @@ test('Reset Unread NotificationCount', async ({ assert }) => {
 test('Change email', async ({ assert }) => {
   const newEmail = faker.internet.email()
   await UserService.changeEmail({ user: signUpProspectUser, email: newEmail })
+
   const user = await User.query().where('id', signUpProspectUser.id).first()
   assert.isNotNull(user)
+
   const userObject = user.toJSON({ isOwner: true })
   assert.equal(newEmail, userObject.email)
   assert.equal(userObject.status, STATUS_EMAIL_VERIFY)
