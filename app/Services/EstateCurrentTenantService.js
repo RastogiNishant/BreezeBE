@@ -330,21 +330,27 @@ class EstateCurrentTenantService {
     )
 
     estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
-
-    let links = await Promise.all(
-      estateCurrentTenants.map(async (ect) => {
-        return await EstateCurrentTenantService.createDynamicLink(ect)
+    const trx = await Database.beginTransaction()
+    try {
+      let links = await Promise.all(
+        estateCurrentTenants.map(async (ect) => {
+          return await EstateCurrentTenantService.createDynamicLink(ect, trx)
+        })
+      )
+      links = await Promise.map(links, async (link) => {
+        link.code = await InvitationLinkCode.create(link.id, link.shortLink, trx)
+        return link
       })
-    )
-    links = await Promise.map(links, async (link) => {
-      link.code = await InvitationLinkCode.create(link.id, link.shortLink)
-      return link
-    })
 
-    return { failureCount, links }
+      return { failureCount, links }
+    } catch (err) {
+      console.log(err.message)
+      await trx.rollback()
+      throw new AppException('Error found while creating links.')
+    }
   }
 
-  static async createDynamicLink(estateCurrentTenant) {
+  static async createDynamicLink(estateCurrentTenant, trx) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -358,7 +364,7 @@ class EstateCurrentTenantService {
     const code = uuid.v4()
     await EstateCurrentTenant.query()
       .where('id', estateCurrentTenant.id)
-      .update({ code: code, invite_sent_at: time })
+      .update({ code: code, invite_sent_at: time }, trx)
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
