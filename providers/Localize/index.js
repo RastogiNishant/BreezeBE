@@ -24,10 +24,6 @@ class Localization {
     if (trim(process.env.DEV) == 'true' && trim(process.env.NO_LOCALIZATION_PULL) == 'true')
       return true
 
-    if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
-      return true
-    }
-
     const File = use('App/Classes/File')
     // Disable loading localisation from phrase
     const req = new Request(ROOT_LOCALISATION_API)
