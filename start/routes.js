@@ -465,6 +465,10 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
 
+  Route.put('/tenant/revoke', 'EstateCurrentTenantController.revokeInvitation').middleware([
+    'valid:InvitationIds',
+  ])
+
   Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
     'valid:InvitationIds',
   ])
@@ -473,6 +477,11 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.post(
+  '/api/v1/validate/outside_tenant/invitation',
+  'EstateCurrentTenantController.validateInvitationQRCode'
+).middleware(['valid:AlreadyRegisteredOutsideTenantInvite'])
 
 Route.post(
   '/api/v1/accept/outside_tenant',
