@@ -96,7 +96,7 @@ class UserService {
     userData.agreements_id = latestAgreement.id
 
     const user = await User.createItem(userData, trx)
-    
+
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -1001,6 +1001,8 @@ class UserService {
       : user.role === ROLE_LANDLORD
       ? delete data.prospect_visibility
       : data
+
+    console.log({ data })
 
     const trx = await Database.beginTransaction()
     delete data.password

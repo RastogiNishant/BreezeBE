@@ -628,14 +628,13 @@ test('Login failed due to Wrong password', async ({ assert, client }) => {
   })
 }).timeout(0)
 
-test('update profile failed', async ({ assert, client }) => {
-  //wrong date type and min value check
-
-  //without token
-  let response = await client.put('/api/v1/users').end()
+test('update profile failed due to without token', async ({ assert, client }) => {
+  const response = await client.put('/api/v1/users').end()
   response.assertStatus(401)
+})
 
-  response = await client
+test('update profile failed due to min length validation and wrong data', async ({ client }) => {
+  const response = await client
     .put('/api/v1/users')
     .loginVia(landlord, 'jwtLandlord')
     .send({
@@ -655,25 +654,6 @@ test('update profile failed', async ({ assert, client }) => {
     })
     .end()
 
-  response = await client
-    .put('/api/v1/users')
-    .loginVia(landlord, 'jwtLandlord')
-    .send({
-      email: faker.random.numeric(5),
-      password: faker.random.numeric(5),
-      sex: faker.random.numeric(5),
-      phone: faker.random.alphaNumeric(5),
-      birthday: faker.random.alphaNumeric(10),
-      firstname: faker.random.alphaNumeric(1),
-      secondname: faker.random.alphaNumeric(1),
-      lang: faker.random.alphaNumeric(4),
-      notice: faker.random.alphaNumeric(1),
-      prospect_visibility: faker.random.numeric(3),
-      landlord_visibility: faker.random.numeric(3),
-      lord_size: faker.random.alphaNumeric(3),
-      preferred_services: faker.random.alphaNumeric(3),
-    })
-    .end()
   response.assertStatus(422)
   response.assertJSONSubset({
     status: 'error',
@@ -705,9 +685,10 @@ test('update profile failed', async ({ assert, client }) => {
       preferred_services: getExceptionMessage('preferred_services', ARRAY),
     },
   })
+})
 
-  //max length check
-  response = await client
+test('update profile failed due to max length validation', async ({ client }) => {
+  const response = await client
     .put('/api/v1/users')
     .loginVia(landlord, 'jwtLandlord')
     .send({
@@ -729,34 +710,9 @@ test('update profile failed', async ({ assert, client }) => {
       ),
     },
   })
-
-  //Update profile has to be failed if a user hasn't been activated his email
-  response = await client
-    .put('/api/v1/users')
-    .loginVia(testLandlord, 'jwtLandlord')
-    .send({
-      email: faker.internet.email(),
-      password: landlordData.password,
-      sex: GENDER_FEMALE,
-      phone: faker.phone.number('+4891#######'),
-      birthday: faker.date.between('1990-01-01', '2000-12-30'),
-      firstname: faker.random.alphaNumeric(10),
-      secondname: faker.random.alphaNumeric(10),
-      lang: 'en',
-      notice: true,
-      prospect_visibility: [IS_PRIVATE],
-      landlord_visibility: [IS_PRIVATE],
-      lord_size: LANDLORD_SIZE_LARGE,
-      preferred_services: [CONNECT_SERVICE_INDEX],
-    })
-    .end()
-
-  if (testLandlord.status !== STATUS_ACTIVE) {
-    response.assertStatus(422)
-  }
 }).timeout(0)
 
-test('Update Profile', async ({ assert, client }) => {
+test('update profile successfully without email', async ({ assert, client }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
   assert.isNotNull(agreement.id)
@@ -767,7 +723,7 @@ test('Update Profile', async ({ assert, client }) => {
     .where('id', testLandlord.id)
     .update({ status: STATUS_ACTIVE, agreements_id: agreement.id, terms_id: term.id })
 
-  let updateInfo = {
+  const updateInfo = {
     sex: GENDER_FEMALE,
     password: landlordData.password,
     phone: faker.phone.number('+4891#######'),
@@ -782,7 +738,7 @@ test('Update Profile', async ({ assert, client }) => {
     preferred_services: [CONNECT_SERVICE_INDEX],
   }
 
-  let response = await client
+  const response = await client
     .put('/api/v1/users')
     .loginVia(testLandlord, 'jwtLandlord')
     .send(updateInfo)
@@ -800,12 +756,14 @@ test('Update Profile', async ({ assert, client }) => {
     },
   })
   //password doesn't have to be changed
-  let user = await User.query().where('id', testLandlord.id).first()
+  const user = await User.query().where('id', testLandlord.id).first()
   assert.isNotNull(user.id)
-  let verifyPassword = await Hash.verify(landlordData.password, user.password)
+  const verifyPassword = await Hash.verify(landlordData.password, user.password)
   assert.isTrue(verifyPassword)
+}).timeout(0)
 
-  updateInfo = {
+test('Update Profile successfully with email', async ({ assert, client }) => {
+  const updateInfo = {
     email: faker.internet.email(),
     password: landlordData.password,
     sex: GENDER_FEMALE,
@@ -821,7 +779,7 @@ test('Update Profile', async ({ assert, client }) => {
     preferred_services: [CONNECT_SERVICE_INDEX],
   }
 
-  response = await client
+  const response = await client
     .put('/api/v1/users')
     .loginVia(testLandlord, 'jwtLandlord')
     .send(updateInfo)
@@ -839,9 +797,9 @@ test('Update Profile', async ({ assert, client }) => {
   })
 
   //password doesn't have to be changed
-  user = await User.query().where('id', testLandlord.id).first()
+  const user = await User.query().where('id', testLandlord.id).first()
   assert.isNotNull(user.id)
-  verifyPassword = await Hash.verify(landlordData.password, user.password)
+  const verifyPassword = await Hash.verify(landlordData.password, user.password)
   assert.isTrue(verifyPassword)
 }).timeout(0)
 
@@ -903,7 +861,7 @@ test('Failed Change Password', async ({ client }) => {
   }
 }).timeout(0)
 
-test('Change Password', async ({ client }) => {
+test('Change Password successfully', async ({ client }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
 
