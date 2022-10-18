@@ -170,7 +170,7 @@ after(async () => {
   }
 })
 
-test('Tenant Sign up with email successfully', async ({ assert }) => {
+test('it shoud sign up with email successfully for prospect', async ({ assert }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
   assert.isNotNull(agreement.id)
@@ -198,7 +198,7 @@ test('Tenant Sign up with email successfully', async ({ assert }) => {
   assert.isNotNull(tenant.id)
 }).timeout(0)
 
-test('Landlord Sign up with email successfully', async ({ assert }) => {
+test('it shoud sign up with email successfully for landlord', async ({ assert }) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
   assert.isNotNull(agreement.id)
@@ -218,7 +218,7 @@ test('Landlord Sign up with email successfully', async ({ assert }) => {
   assert.isTrue(verifyPassword)
 }).timeout(0)
 
-test('Sign in failure before activation', async ({ assert }) => {
+test('it shoud sign in failure before activation', async ({ assert }) => {
   try {
     signInUser = await UserService.login({
       email: dummyProspectUserData.email,
@@ -232,7 +232,7 @@ test('Sign in failure before activation', async ({ assert }) => {
   }
 }).timeout(0)
 
-test('getTokenWithLocale', async ({ assert }) => {
+test('it should return prospect token', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser.id)
 
   const user = await User.query().where('id', signUpProspectUser.id).first()
@@ -263,7 +263,7 @@ test('getTokenWithLocale', async ({ assert }) => {
   assert.equal(tokens.length, 0)
 })
 
-test('SendConfirmEmail successfully', async ({ assert }) => {
+test('it should send confirm email successfully', async ({ assert }) => {
   const code = await UserService.sendConfirmEmail(signUpProspectUser)
   emailCode = code
   assert.equal(code.length, 4)
@@ -274,7 +274,7 @@ test('SendConfirmEmail successfully', async ({ assert }) => {
   assert.equal(code, verifyCode.code)
 }).timeout(0)
 
-test('confirmEmail Confirm email address successfully by the code sent', async ({ assert }) => {
+test('it should confirm email successfully by the code sent', async ({ assert }) => {
   await UserService.confirmEmail(signUpProspectUser, emailCode)
   const user = await User.query().where('id', signUpProspectUser.id).first()
   assert.isNotNull(user)
@@ -284,7 +284,9 @@ test('confirmEmail Confirm email address successfully by the code sent', async (
   assert.isNull(verifyCode)
 }).timeout(0)
 
-test('sign up token expiration with Google oAuth', async ({ assert }) => {
+test('it should return invalid token message with expired token of Google oAuth', async ({
+  assert,
+}) => {
   const token =
     'eyJhbGciOiJSUzI1NiIsImtpZCI6Ijc0ODNhMDg4ZDRmZmMwMDYwOWYwZTIyZjNjMjJkYTVmZTM5MDZjY2MiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiNTcwNzY0NjIzNDEzLTM3NTE2N3YydXVpYjFuZzZlaWg4Z24zbzZxcmg3aGZuLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiNTcwNzY0NjIzNDEzLTM3NTE2N3YydXVpYjFuZzZlaWg4Z24zbzZxcmg3aGZuLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTEwODA5MzkxNzYzMjM3MTQyMTUyIiwiZW1haWwiOiJyYXN0b2dpbmlzaGFudGZsQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoiY3hSOUNiTE9qYWpUaU1JazdQVUJtZyIsIm5hbWUiOiJOaXNoYW50IFJhc3RvZ2kiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUFUWEFKeG5nazhiM2dGc3lRdU5DTnNmRFVTdzBzRlZxdkRpOURrQm1NOD1zOTYtYyIsImdpdmVuX25hbWUiOiJOaXNoYW50IiwiZmFtaWx5X25hbWUiOiJSYXN0b2dpIiwibG9jYWxlIjoiZW4tR0IiLCJpYXQiOjE2NTQ1ODEyOTEsImV4cCI6MTY1NDU4NDg5MSwianRpIjoiZmE2YWI4ZThlOTBjMzljMjEzM2RiZWQxNDA3ODZiNmRiMzJjM2U4NiJ9.BUjqRHnlPAUllfFbMlerIsldM4xgn0Oafj8fuhAWly7kOOZgGszUVRLvR1aEzEkTmrEHE8uyyubkAfU3OGtegj02Ath3w0IyUc7eHSDjkBCBYwS6TgqEaiIuIGmeACvgUQwKwpyHQyYWQ6y3VhVQLOaXSeptyGPt7gfQLOleu7KDoLtx3KDNB6ke_47gO2u9M46H0BaU4MN8PrCKquoUeeH0EQ_sbkqHnnV0YgKj88paNpeR3GTYKYNAWhukzRPtys9R9w0J8y_8Oia1T_kOcNL4JfKLsaxiUQZOAcefvaaDAvpb3_-0tfypKDEJkF-v2YfeM0MRdFKCe55_Nn-ORA'
   try {
@@ -296,7 +298,7 @@ test('sign up token expiration with Google oAuth', async ({ assert }) => {
   }
 }).timeout(0)
 
-test('sign up with Google oAuth', async ({ assert }) => {
+test('it should sign up with google oAuth successfully', async ({ assert }) => {
   //TODO: improvement needed in the future
   googleSignupUser = await UserService.createUserFromOAuth(null, { ...googleDummyUserData })
 
@@ -309,7 +311,7 @@ test('sign up with Google oAuth', async ({ assert }) => {
 /*
   TODO: We need to implement this one right after implementing memerber unit test
 */
-test('sign up with housekeeper', async ({ assert }) => {
+test('it should sign up with housekeeper', async ({ assert }) => {
   //add member first
   //MemberService.addMember
   // send invitation
@@ -317,7 +319,7 @@ test('sign up with housekeeper', async ({ assert }) => {
   //housekeeper signup
 }).timeout(0)
 
-test('Fail with verified user to resend User Confirm', async ({ assert }) => {
+test('it should return false with verified user to get unverified user', async ({ assert }) => {
   try {
     const result = await UserService.resendUserConfirm(signUpProspectUser.id)
     assert.equal(result, false)
@@ -326,7 +328,7 @@ test('Fail with verified user to resend User Confirm', async ({ assert }) => {
   }
 }).timeout(0)
 
-test('Get Me', async ({ assert }) => {
+test('it should get all info for the account', async ({ assert }) => {
   let user = signUpProspectUser
   assert.include(user.toJSON({ isOwner: true }), omit(dummyProspectUserData, ['password']))
 
@@ -348,7 +350,7 @@ test('Get Me', async ({ assert }) => {
   )
 }).timeout(0)
 
-test('Change Password', async ({ assert }) => {
+test('it should change password successfully', async ({ assert }) => {
   //TODO: we update all accounts with the same email. We have to validate that all accounts are updated synchronously
   const newPassword = faker.random.numeric(20)
   const changed = await UserService.changePassword(
@@ -371,7 +373,7 @@ test('Change Password', async ({ assert }) => {
   assert.notEqual(dummyLandlordUserData.password, newPassword)
 }).timeout(0)
 
-test('Get household', async ({ assert }) => {
+test('it should get household of prospect', async ({ assert }) => {
   assert.isNotNull(prospect)
   const household = await UserService.getHousehouseId(prospect.id)
   assert.isNotNull(household)
@@ -382,14 +384,16 @@ test('Get household', async ({ assert }) => {
   }
 })
 
-test('Update device token', async ({ assert }) => {
+test('it should update device token', async ({ assert }) => {
   const device_token = faker.random.alphaNumeric(31)
   await UserService.updateDeviceToken(signUpProspectUser.id, device_token)
   const prospect = await UserService.getById(signUpProspectUser.id)
   assert.equal(prospect.device_token, device_token)
 }).timeout(0)
 
-test('Landlord not have access to tenant full profile before match', async ({ assert }) => {
+test('it should validate for landlord not to have access to tenant full profile before thre is no match', async ({
+  assert,
+}) => {
   assert.isNotNull(signUpProspectUser)
   assert.isNotNull(signUpLandlordUser)
   assert.isNotNull(landlord)
@@ -402,7 +406,9 @@ test('Landlord not have access to tenant full profile before match', async ({ as
   assert.equal(hasAccess, false)
 })
 
-test('Landlord not have access to tenant full profile before share', async ({ assert }) => {
+test('it should return false for Landlord not to have access to tenant full profile before tenant shares his profile', async ({
+  assert,
+}) => {
   globalEstate = await Estate.createItem({
     user_id: signUpLandlordUser.id,
     property_id: faker.random.alphaNumeric(5),
@@ -418,7 +424,9 @@ test('Landlord not have access to tenant full profile before share', async ({ as
   await MatchService.deletePermanant({ user_id: globalMatch.user_id })
 })
 
-test('Landlord has access to tenant full profile after share', async ({ assert }) => {
+test('it should return true for landlord to have access to tenant full profile after tenant shares his profile', async ({
+  assert,
+}) => {
   await createFakeMatchAndValidate({ share: true, status: MATCH_STATUS_VISIT }, assert)
 
   hasAccess = await UserService.landlordHasAccessTenant(
@@ -430,7 +438,7 @@ test('Landlord has access to tenant full profile after share', async ({ assert }
   await MatchService.deletePermanant({ user_id: globalMatch.user_id })
 })
 
-test('Landlord has permission to access Tenant full profile with final match even no share', async ({
+test('it should return true for landlord to have permission to access tenant full profile with final match even no share', async ({
   assert,
 }) => {
   await createFakeMatchAndValidate({ share: false, status: MATCH_STATUS_FINISH }, assert)
@@ -444,7 +452,7 @@ test('Landlord has permission to access Tenant full profile with final match eve
   await MatchService.deletePermanant({ user_id: globalMatch.user_id })
 })
 
-test('Landlord has no permission to access Tenant full profile with commit match no share', async ({
+test('it should return false for landlord not to have permission to access tenant full profile with commit match and no share', async ({
   assert,
 }) => {
   await createFakeMatchAndValidate({ share: false, status: MATCH_STATUS_COMMIT }, assert)
@@ -458,7 +466,7 @@ test('Landlord has no permission to access Tenant full profile with commit match
   await MatchService.deletePermanant({ user_id: globalMatch.user_id })
 })
 
-test('getUserIdsByToken', async ({ assert }) => {
+test('it should return user who has provided token', async ({ assert }) => {
   const device_token = faker.random.alphaNumeric(32)
   const updateResult = await User.query()
     .update({ device_token: device_token })
@@ -472,7 +480,9 @@ test('getUserIdsByToken', async ({ assert }) => {
   assert.equal(users[0].device_token, device_token)
 })
 
-test('getNewestInactiveLandlordsIds', async ({ assert }) => {
+test('it should return new landlord ids which has been created and activated 1 day ago', async ({
+  assert,
+}) => {
   await User.query()
     .where({ id: signUpLandlordUser.id })
     .update({ status: STATUS_ACTIVE, created_at: new Date() })
@@ -494,7 +504,9 @@ test('getNewestInactiveLandlordsIds', async ({ assert }) => {
   }
 })
 
-test('get7DaysInactiveLandlord', async ({ assert }) => {
+test('it should return new landlord ids which has been created and activated 1 day 7 days ago', async ({
+  assert,
+}) => {
   await User.query()
     .where({ id: signUpLandlordUser.id })
     .update({ status: STATUS_ACTIVE, created_at: new Date().setDate(new Date().getDate() - 7) })
@@ -504,7 +516,7 @@ test('get7DaysInactiveLandlord', async ({ assert }) => {
   assert.isAbove(landlordIds.length, 0)
 })
 
-test('verifyUsers', async ({ assert }) => {
+test('it should update to activate landlords by admin', async ({ assert }) => {
   assert.isNotNull(signUpLandlordUser)
   assert.isNotNull(signUpLandlordUser.id)
 
@@ -525,7 +537,7 @@ test('verifyUsers', async ({ assert }) => {
   } catch (e) {}
 })
 
-test('sendSMS successfully', async ({ assert }) => {
+test('it should send sms successfully', async ({ assert }) => {
   assert.isNotNull(signUpLandlordUser)
   const code = await UserService.sendSMS(signUpLandlordUser.id, faker.phone.number())
   assert.isNumber(code)
@@ -538,7 +550,7 @@ test('sendSMS successfully', async ({ assert }) => {
   assert.equal(code, verifyCode.code)
 })
 
-test('confirmSMS fails in case not existing phone number', async ({ assert }) => {
+test('it should fail to confirm sms code due to not existing phone number', async ({ assert }) => {
   // prepare user
   await User.query().where('id', signUpLandlordUser.id).update({ status: STATUS_EMAIL_VERIFY })
   try {
@@ -552,7 +564,7 @@ test('confirmSMS fails in case not existing phone number', async ({ assert }) =>
   }
 })
 
-test('confirmSMS fails in case wrong code', async ({ assert }) => {
+test('it should fail to confirm sms codes due to wrong code', async ({ assert }) => {
   // prepare user
   await User.query()
     .where('id', signUpLandlordUser.id)
@@ -570,7 +582,7 @@ test('confirmSMS fails in case wrong code', async ({ assert }) => {
   }
 })
 
-test('confirmSMS successfully', async ({ assert }) => {
+test('it should confirm sms successfully', async ({ assert }) => {
   await UserService.confirmSMS(signUpLandlordUser.email, fakePhoneNumber, smsCode)
   const user = await User.query().where('id', signUpLandlordUser.id).first()
   const verifyCode = await DataStorage.getItem(signUpLandlordUser.id, SMS_VERIFY_PREFIX)
@@ -635,7 +647,7 @@ test('setOnboardingStep should set it as null in case there is a company and pre
   await Company.query().where('id', globalCompany.id).delete()
 })
 
-test('Request SendCode ForgotPassword Mobile', async ({ assert }) => {
+test('it should return code for forgotPassword for mobile', async ({ assert }) => {
   const { shortLink, code } = await UserService.requestSendCodeForgotPassword(
     signUpProspectUser.email,
     'de'
@@ -649,7 +661,7 @@ test('Request SendCode ForgotPassword Mobile', async ({ assert }) => {
   assert.isNotNull(shortLink)
 }).timeout(0)
 
-test('Request SendCode ForgotPassword Web', async ({ assert }) => {
+test('it should return return code for forgotPassword for web', async ({ assert }) => {
   const webForgetPassword = await UserService.requestSendCodeForgotPassword(
     signUpProspectUser.email,
     'de',
@@ -664,7 +676,9 @@ test('Request SendCode ForgotPassword Web', async ({ assert }) => {
   assert.isNotNull(webForgetPassword.shortLink)
 }).timeout(0)
 
-test('Get tenant By Landlord', async ({ assert }) => {
+test('it should return tenant who has match status or share his account to landlord', async ({
+  assert,
+}) => {
   const tenant = await UserService.getTenantInfo(prospect.id, landlord.id)
   if (tenant) {
     assert.equal(tenant.id, prospect.id)
@@ -687,7 +701,7 @@ test('Get tenant By Landlord', async ({ assert }) => {
   }
 })
 
-test('Increase Unread NotificationCount', async ({ assert }) => {
+test('it should increase unread notification count', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser)
   assert.isNotNull(signUpProspectUser.id)
   let user = await User.query().where('id', signUpProspectUser.id).first()
@@ -700,7 +714,7 @@ test('Increase Unread NotificationCount', async ({ assert }) => {
   assert.equal(unread_notification_count + 1, user.unread_notification_count)
 })
 
-test('Reset Unread NotificationCount', async ({ assert }) => {
+test('it should reset unread notification count', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser)
   assert.isNotNull(signUpProspectUser.id)
 
@@ -716,7 +730,7 @@ test('Reset Unread NotificationCount', async ({ assert }) => {
   assert.equal(user.unread_notification_count, 0)
 })
 
-test('Change email', async ({ assert }) => {
+test('it should change email successfully', async ({ assert }) => {
   const newEmail = faker.internet.email()
   await UserService.changeEmail({ user: signUpProspectUser, email: newEmail })
 
@@ -731,7 +745,7 @@ test('Change email', async ({ assert }) => {
   assert.isNotNull(code)
 }).timeout(0)
 
-test('Close Account', async ({ assert }) => {
+test('it should close account', async ({ assert }) => {
   const closedUser = await UserService.closeAccount(signUpProspectUser)
   assert.notEqual(closedUser.email, null)
   const isClosed = closedUser.email.includes('_breezeClose') ? true : false
