@@ -96,7 +96,7 @@ class UserService {
     userData.agreements_id = latestAgreement.id
 
     const user = await User.createItem(userData, trx)
-    
+
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -1006,19 +1006,22 @@ class UserService {
     delete data.password
 
     try {
-      if (data.email) {
-        await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
+      user = await UserService.updateAvatar(request, user)
+
+      if (Object.keys(data).length) {
+        if (data.email) {
+          await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
+        }
+        await user.updateItemWithTrx(data, trx)
+        user = user.toJSON({ isOwner: true })
+
+        await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
+        user = this.setOnboardingStep(user)
+        await trx.commit()
+
+        user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+        Event.fire('mautic:syncContact', user.id)
       }
-      await user.updateItemWithTrx(data, trx)
-      user = user.toJSON({ isOwner: true })
-
-      await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
-      user = this.setOnboardingStep(user)
-      await trx.commit()
-
-      user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
-      Event.fire('mautic:syncContact', user.id)
-
       return user
     } catch (e) {
       await trx.rollback()
@@ -1027,6 +1030,10 @@ class UserService {
   }
 
   static async updateAvatar(request, user) {
+    if (!request.header('content-type').match(/^multipart/)) {
+      return user
+    }
+
     const fileSettings = { types: ['image'], size: '10mb' }
     const filename = `${uuid.v4()}.png`
     let avatarUrl, tmpFile
@@ -1041,12 +1048,12 @@ class UserService {
     })
 
     await request.multipart.process()
-
     if (avatarUrl) {
       user.avatar = avatarUrl
       await user.save()
     }
     fs.unlink(tmpFile, () => {})
+
     return user
   }
 
