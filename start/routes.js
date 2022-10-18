@@ -472,6 +472,11 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
   ).middleware(['valid:InvitationIds'])
 
+  Route.get(
+    '/tenant/invite/letter/retrieve-link/:code',
+    'EstateCurrentTenantController.retrieveLinkByCode'
+  ).middleware(['valid:InvitationLinkRetrieveCode'])
+
   Route.post(
     '/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
