@@ -23,6 +23,8 @@ const {
   CONNECT_SERVICE_INDEX,
   MATCH_SERVICE_INDEX,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  LANG_DE,
+  LANG_EN,
 } = require('../../app/constants')
 const fsPromise = require('fs/promises')
 const { test, trait, before, after } = use('Test/Suite')('User Functional')
@@ -326,7 +328,6 @@ test('Failed Confirm email due to not existing user', async ({ assert, client })
     })
     .end()
   response.assertStatus(400)
-  console.log('Confirm email', response.body.data)
   response.assertJSONSubset({
     data: getExceptionMessage(undefined, USER_NOT_EXIST),
   })
@@ -882,9 +883,60 @@ test('Change Password successfully', async ({ client }) => {
   response.assertJSONSubset({ data: true })
 }).timeout(0)
 
-test('Reset password failed', async ({ assert, client }) => {
-  //required
-  let response = await client.post('/api/v1/forgotPassword/setPassword').send().end()
+test('send code for forgot password to email faield due to empty data', async ({ client }) => {
+  const response = await client.post('/api/v1/forgotPassword').send().end()
+  response.assertStatus(422)
+  response.assertJSON({
+    status: 'error',
+    data: {
+      email: getExceptionMessage('email', REQUIRED),
+    },
+  })
+})
+
+test('send code for forgot password to email faield due to invalid email', async ({ client }) => {
+  const response = await client
+    .post('/api/v1/forgotPassword')
+    .send({
+      email: faker.random.numeric(10),
+    })
+    .end()
+  response.assertStatus(422)
+  response.assertJSON({
+    status: 'error',
+    data: {
+      email: getExceptionMessage('email', EMAIL),
+    },
+  })
+})
+
+test('send code for forgot password to email faield due to invalid lang', async ({ client }) => {
+  const response = await client
+    .post('/api/v1/forgotPassword')
+    .send({
+      email: faker.internet.email(),
+      lang: 'fe',
+    })
+    .end()
+
+  response.assertStatus(422)
+  response.assertJSON({
+    status: 'error',
+    data: {
+      lang: getExceptionMessage('lang', OPTION, ` ${LANG_DE}, ${LANG_EN}`),
+    },
+  })
+})
+
+test('send code for forgot password to email successfully', async ({ client }) => {
+  const response = await client.post('/api/v1/forgotPassword').send({ email: prospect.email }).end()
+
+  response.assertStatus(200)
+  response.assertJSON({ status: 'success' })
+})
+
+test('Reset password failed due to empty data', async ({ client }) => {
+  const response = await client.post('/api/v1/forgotPassword/setPassword').send().end()
   response.assertStatus(422)
   response.assertJSONSubset({
     data: {
@@ -893,9 +945,10 @@ test('Reset password failed', async ({ assert, client }) => {
       password: getExceptionMessage('password', REQUIRED),
     },
   })
+})
 
-  //wrong format & min length
-  response = await client
+test('Reset password failed due to wrong email format & min length', async ({ client }) => {
+  const response = await client
     .post('/api/v1/forgotPassword/setPassword')
     .send({
       email: faker.random.numeric(10),
@@ -911,9 +964,10 @@ test('Reset password failed', async ({ assert, client }) => {
       password: getExceptionMessage('password', MINLENGTH, 6),
     },
   })
+})
 
-  //max length
-  response = await client
+test('Reset password failed due to max length', async ({ client }) => {
+  const response = await client
     .post('/api/v1/forgotPassword/setPassword')
     .send({
       email: faker.internet.email(),
@@ -927,9 +981,10 @@ test('Reset password failed', async ({ assert, client }) => {
       password: getExceptionMessage('password', MAXLENGTH, 36),
     },
   })
+})
 
-  //wrong email
-  response = await client
+test('Reset password failed due to not existing email', async ({ client }) => {
+  const response = await client
     .post('/api/v1/forgotPassword/setPassword')
     .send({
       email: faker.internet.email(),
@@ -941,7 +996,9 @@ test('Reset password failed', async ({ assert, client }) => {
   response.assertJSONSubset({
     data: getExceptionMessage(undefined, NOT_EXIST_WITH_EMAIL),
   })
+})
 
+test('Reset password failed', async ({ assert, client }) => {
   //wrong code
   response = await client
     .post('/api/v1/forgotPassword/setPassword')
@@ -958,7 +1015,7 @@ test('Reset password failed', async ({ assert, client }) => {
   })
 }).timeout(0)
 
-test('Reset password', async ({ assert, client }) => {
+test('Reset password succesfully', async ({ assert, client }) => {
   assert.isNotNull(testProspect)
   assert.isNotNull(testProspect.id)
 
@@ -975,9 +1032,7 @@ test('Reset password', async ({ assert, client }) => {
     })
     .end()
   response.assertStatus(200)
-  response.assertJSONSubset({
-    data: true,
-  })
+  response.assertJSONSubset({ data: true })
 }).timeout(0)
 
 test('Failed Get Prospect By Landlord', async ({ client }) => {
