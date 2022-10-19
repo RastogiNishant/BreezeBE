@@ -478,6 +478,11 @@ Route.group(() => {
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
 
+Route.get(
+  '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
+  'EstateCurrentTenantController.retrieveLinkByCode'
+).middleware(['valid:InvitationLinkRetrieveCode'])
+
 Route.post(
   '/api/v1/validate/outside_tenant/invitation',
   'EstateCurrentTenantController.validateInvitationQRCode'
