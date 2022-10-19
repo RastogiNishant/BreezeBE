@@ -75,7 +75,7 @@ beforeEach(async () => {
   }
 })
 
-test('create timeslot successfully with slot length', async ({ assert, client }) => {
+test('it should create a timeslot successfully with slot length', async ({ assert, client }) => {
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -98,7 +98,7 @@ test('create timeslot successfully with slot length', async ({ assert, client })
   }
 })
 
-test('create timeslot successfully without slot length', async ({ assert, client }) => {
+test('it should create a timeslot successfully without slot length', async ({ assert, client }) => {
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -117,7 +117,7 @@ test('create timeslot successfully without slot length', async ({ assert, client
   }
 })
 
-test('create timeslot failure due to crossing', async ({ assert, client }) => {
+test('it should fail to create timeslot due to crossing time slots', async ({ assert, client }) => {
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -135,7 +135,7 @@ test('create timeslot failure due to crossing', async ({ assert, client }) => {
   }
 })
 
-test('create timeslot failure due to invalid time range', async ({ assert, client }) => {
+test('it should fail to create timeslot due to invalid time range', async ({ assert, client }) => {
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -154,7 +154,7 @@ test('create timeslot failure due to invalid time range', async ({ assert, clien
   }
 })
 
-test('create timeslot failure due to invalid time range', async ({ assert, client }) => {
+test('it should fail to create timeslot due to invalid time range', async ({ assert, client }) => {
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -173,7 +173,7 @@ test('create timeslot failure due to invalid time range', async ({ assert, clien
   }
 })
 
-test('create timeslot failure due to empty start_at', async ({ assert, client }) => {
+test('it should fail to create timeslot due to empty start_at', async ({ assert, client }) => {
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -206,7 +206,10 @@ test('create timeslot failure due to empty start_at', async ({ assert, client })
 // Out of range visits will be deleted
 // Out of range visit matches should be invite match
 
-test('update time slot and handle dependencies successfully', async ({ assert, client }) => {
+test('it should update time slot and handle dependencies successfully', async ({
+  assert,
+  client,
+}) => {
   // old time slot between 06:00 - 07:00
   // new time slot between 06:00 - 06:30
 
@@ -254,7 +257,7 @@ test('update time slot and handle dependencies successfully', async ({ assert, c
 
 // All visits should be deleted
 // All visit matches should be converted to invite match
-test('update time slot slot_length and handle dependencies successfully', async ({
+test("it should update time slot's slot_length and handle dependencies successfully", async ({
   assert,
   client,
 }) => {

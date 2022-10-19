@@ -93,7 +93,7 @@ after(async () => {
   }
 })
 
-test('validateTimeRange doesnt allow to pass with invalid time range', async ({ assert }) => {
+test('it should deny to pass with invalid time range', async ({ assert }) => {
   try {
     TimeSlotService.validateTimeRange({
       start_at: test_invalid_range_start_at,
@@ -106,7 +106,7 @@ test('validateTimeRange doesnt allow to pass with invalid time range', async ({ 
   }
 })
 
-test('validateTimeRange allow to pass with null slot_length', async ({ assert }) => {
+test('it should allow to pass with null slot_length', async ({ assert }) => {
   try {
     const resp = TimeSlotService.validateTimeRange({
       start_at: test_invalid_range_start_at,
@@ -119,7 +119,7 @@ test('validateTimeRange allow to pass with null slot_length', async ({ assert })
   }
 })
 
-test('validateTimeRange allow to pass with valid time range', async ({ assert }) => {
+test('it should allow to pass with valid time range', async ({ assert }) => {
   try {
     const resp = TimeSlotService.validateTimeRange({
       start_at: test_invalid_range_start_at,
@@ -132,7 +132,7 @@ test('validateTimeRange allow to pass with valid time range', async ({ assert })
   }
 })
 
-test('create timeslot successfully with slot length', async ({ assert }) => {
+test('it should create a timeslot successfully with slot length', async ({ assert }) => {
   try {
     testSlot = await TimeSlotService.createSlot(dummyTimeSlotData, testEstate)
     testSlot = testSlot.toJSON()
@@ -146,7 +146,7 @@ test('create timeslot successfully with slot length', async ({ assert }) => {
   }
 })
 
-test('create timeslot successfully without slot length', async ({ assert }) => {
+test('it should create a timeslot successfully without slot length', async ({ assert }) => {
   try {
     testSlotTomorrow = await TimeSlotService.createSlot(dummyTimeSlotDataTomorrow, testEstate)
     testSlotTomorrow = testSlotTomorrow.toJSON()
@@ -160,7 +160,7 @@ test('create timeslot successfully without slot length', async ({ assert }) => {
   }
 })
 
-test('create timeslot failure due to crossing', async ({ assert }) => {
+test('it should fail to create a timeslot due to crossing', async ({ assert }) => {
   try {
     testSlot = await TimeSlotService.createSlot(dummyCrossingTimeSlotData, testEstate)
     testSlot = testSlot.toJSON()
@@ -170,7 +170,9 @@ test('create timeslot failure due to crossing', async ({ assert }) => {
   }
 })
 
-test('getTimeSlotByOwner null in case of not existing slotId', async ({ assert }) => {
+test('it should return null time slots by owner in case of not existing slotId', async ({
+  assert,
+}) => {
   try {
     const slot = await TimeSlotService.getTimeSlotByOwner(testLandlord.id, -1)
     assert.equal(slot, null)
@@ -180,7 +182,9 @@ test('getTimeSlotByOwner null in case of not existing slotId', async ({ assert }
   }
 })
 
-test('getTimeSlotByOwner null in case of not existing userId', async ({ assert }) => {
+test('it should return null time slots by owner in case of not existing userId', async ({
+  assert,
+}) => {
   try {
     const slot = await TimeSlotService.getTimeSlotByOwner(-1, testSlot.id)
     assert.equal(slot, null)
@@ -190,7 +194,7 @@ test('getTimeSlotByOwner null in case of not existing userId', async ({ assert }
   }
 })
 
-test('getTimeSlotByOwner fetchs the time slot successfully', async ({ assert }) => {
+test('it should fetch the time slot by owner successfully', async ({ assert }) => {
   try {
     let slot = await TimeSlotService.getTimeSlotByOwner(testLandlord.id, testSlot.id)
     slot = slot.toJSON()
@@ -205,7 +209,7 @@ test('getTimeSlotByOwner fetchs the time slot successfully', async ({ assert }) 
   }
 })
 
-test('getTimeSlotsByEstate returns null in case of null estate', async ({ assert }) => {
+test('it should return null time slots by estate in case of null estate', async ({ assert }) => {
   try {
     const slots = await TimeSlotService.getTimeSlotsByEstate(null)
     assert.equal(slots, null)
@@ -215,9 +219,7 @@ test('getTimeSlotsByEstate returns null in case of null estate', async ({ assert
   }
 })
 
-test('getTimeSlotsByEstate returns empty array in case of not existing estate', async ({
-  assert,
-}) => {
+test('it should return empty array in case of not existing estate', async ({ assert }) => {
   try {
     let slots = await TimeSlotService.getTimeSlotsByEstate({ id: -1 })
     slots = slots.toJSON()
@@ -228,7 +230,7 @@ test('getTimeSlotsByEstate returns empty array in case of not existing estate', 
   }
 })
 
-test('getTimeSlotsByEstate fetchs the time slot successfully', async ({ assert }) => {
+test('it should fetch the time slots by estate successfully', async ({ assert }) => {
   try {
     let slots = await TimeSlotService.getTimeSlotsByEstate(testEstate)
     slots = slots.toJSON()
@@ -254,7 +256,7 @@ test('getTimeSlotsByEstate fetchs the time slot successfully', async ({ assert }
   }
 })
 
-test('getFreeTimeslots returns correct slot items for existing time slots', async ({ assert }) => {
+test('it should return correct free slot items for existing time slots', async ({ assert }) => {
   try {
     const slots = await TimeSlotService.getFreeTimeslots(testEstate.id)
 
@@ -301,7 +303,7 @@ test('getFreeTimeslots returns correct slot items for existing time slots', asyn
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 1', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 1', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -315,7 +317,7 @@ test('getNotCrossRange case 1', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 2', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 2', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -335,7 +337,7 @@ test('getNotCrossRange case 2', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 3 - 1', async ({ assert }) => {
+test('it should find only one crossing range regarding to case 3 - 1', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -352,7 +354,7 @@ test('getNotCrossRange case 3 - 1', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 3 - 2', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 3 - 2', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -369,7 +371,7 @@ test('getNotCrossRange case 3 - 2', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 4 - 1', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 4 - 1', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -386,7 +388,7 @@ test('getNotCrossRange case 4 - 1', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 4 - 2', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 4 - 2', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -403,7 +405,7 @@ test('getNotCrossRange case 4 - 2', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 5 - 1', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 5 - 1', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -420,7 +422,7 @@ test('getNotCrossRange case 5 - 1', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 5 - 2', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 5 - 2', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -437,7 +439,7 @@ test('getNotCrossRange case 5 - 2', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 6 - 1', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 6 - 1', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -454,7 +456,7 @@ test('getNotCrossRange case 6 - 1', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 6 - 2', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 6 - 2', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
@@ -471,7 +473,7 @@ test('getNotCrossRange case 6 - 2', async ({ assert }) => {
 })
 
 // Check cases here: https://www.figma.com/file/4fPxivd1w6QbKJYmVfsobM/Landords?node-id=21068%3A1193
-test('getNotCrossRange case 7', async ({ assert }) => {
+test('it should find the correct overlapping range according to case 7', async ({ assert }) => {
   const testCase = {
     prev_start_at: '2019-01-01 11:00:00',
     prev_end_at: '2019-01-01 15:00:00',
