@@ -128,14 +128,14 @@ before(async () => {
 })
 
 after(async () => {
-  // if (testProspect) {
-  //   CompanyService.permanentDelete(testProspect.id)
-  //   await UserService.removeUser(testProspect.id)
-  // }
-  // if (testLandlord) {
-  //   CompanyService.permanentDelete(testLandlord.id)
-  //   await UserService.removeUser(testLandlord.id)
-  // }
+  if (testProspect) {
+    CompanyService.permanentDelete(testProspect.id)
+    await UserService.removeUser(testProspect.id)
+  }
+  if (testLandlord) {
+    CompanyService.permanentDelete(testLandlord.id)
+    await UserService.removeUser(testLandlord.id)
+  }
 
   if (googleSignupUser) {
     await UserService.removeUser(googleSignupUser.id)
