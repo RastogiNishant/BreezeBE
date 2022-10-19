@@ -491,7 +491,7 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
 
 Route.get(
-  '/tenant/invite/letter/retrieve-link/:code',
+  '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
   'EstateCurrentTenantController.retrieveLinkByCode'
 ).middleware(['valid:InvitationLinkRetrieveCode'])
 
