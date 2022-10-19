@@ -2,7 +2,11 @@
 
 const { toString } = require('lodash')
 const md5 = require('md5')
-const { ROLE_LANDLORD, USER_ACTIVATION_STATUS_NOT_ACTIVATED } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+  STATUS_DELETE,
+} = require('../constants')
 
 const Model = require('./BaseModel')
 const UserFilter = use('App/ModelFilters/UserFilter')
@@ -130,7 +134,10 @@ class User extends Model {
   }
 
   letter_template() {
-    return this.hasOne('App/Models/LetterTemplate', 'id', 'user_id')
+    return this.hasOne('App/Models/LetterTemplate', 'id', 'user_id').whereNot(
+      'status',
+      STATUS_DELETE
+    )
   }
 
   /**

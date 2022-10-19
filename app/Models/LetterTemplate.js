@@ -4,7 +4,18 @@ const Model = require('./BaseModel')
 
 class LetterTemplate extends Model {
   static get columns() {
-    return ['id', 'user_id', 'company_id', 'title', 'body', 'logo', 'created_at', 'updated_at']
+    return [
+      'id',
+      'user_id',
+      'company_id',
+      'title',
+      'body',
+      'logo',
+      'created_at',
+      'updated_at',
+      'status',
+      'greeting_option',
+    ]
   }
 
   static get readonly() {

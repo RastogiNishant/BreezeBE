@@ -38,6 +38,15 @@ definitions:
       - $ref: '#/definitions/logo'
     responses: [200]
 
+  delete:
+    tags: [Letter template]
+    security: [bearerAuth: []]
+    description: Create/update letter template
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/id'    
+    responses: [200]
+
 /api/v1/letter_template/:id/delete_logo:
   put:
     tags: [Letter template]

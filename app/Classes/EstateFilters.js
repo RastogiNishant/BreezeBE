@@ -25,6 +25,8 @@ const {
   ESTATE_FLOOR_DIRECTION_NA,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -55,6 +57,8 @@ class EstateFilters extends Filter {
     left: ESTATE_FLOOR_DIRECTION_LEFT,
     right: ESTATE_FLOOR_DIRECTION_RIGHT,
     straight: ESTATE_FLOOR_DIRECTION_STRAIGHT,
+    straight_left: ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+    straight_right: ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   }
 
   static propertyTypeStringToValMap = {

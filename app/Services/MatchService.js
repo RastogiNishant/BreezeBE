@@ -1071,7 +1071,10 @@ class MatchService {
       existingMatch?.status === MATCH_STATUS_FINISH ||
       (!fromInvitation && existingMatch?.status !== MATCH_STATUS_COMMIT)
     ) {
-      throw new AppException('Invalid match status')
+      const errorText = fromInvitation
+        ? 'This invitation has already been accepted. Please contact with your landlord.'
+        : 'You should have commit by your landlord to rent a property. Please contact with your landlord.'
+      throw new AppException(errorText)
     }
 
     if (existingMatch) {
@@ -2529,6 +2532,14 @@ class MatchService {
     })
     const invitedUserIds = (invitedMatches || []).map((match) => match.user_id)
     return invitedUserIds
+  }
+
+  static async deletePermanant({ user_id, estate_id }) {
+    let query = Match.query().delete().where('user_id', user_id)
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+    await query
   }
 }
 

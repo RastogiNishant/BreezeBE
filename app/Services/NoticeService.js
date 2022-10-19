@@ -5,7 +5,6 @@ const moment = require('moment')
 const P = require('bluebird')
 const File = use('App/Classes/File')
 const Database = use('Database')
-const UserService = use('App/Services/UserService')
 const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const Notice = use('App/Models/Notice')
@@ -106,7 +105,9 @@ class NoticeService {
     const promises = []
     data.map((item) => {
       promises.push(
-        UserService.increaseUnreadNotificationCount(item.user_id).catch((e) => console.log(e))
+        require('./UserService')
+          .increaseUnreadNotificationCount(item.user_id)
+          .catch((e) => console.log(e))
       )
     })
     promises.push(
@@ -127,7 +128,7 @@ class NoticeService {
    * If landlord inactive for a day
    */
   static async sendLandlordNewProperty() {
-    const newLandlords = await UserService.getNewestInactiveLandlordsIds()
+    const newLandlords = await require('./UserService').getNewestInactiveLandlordsIds()
     if (isEmpty(newLandlords)) {
       return false
     }
@@ -146,7 +147,7 @@ class NoticeService {
    * If landlord inactive for a 7 days
    */
   static async sandLandlord7DaysInactive() {
-    const inactiveLandlords = await UserService.get7DaysInactiveLandlord()
+    const inactiveLandlords = await require('./UserService').get7DaysInactiveLandlord()
     if (isEmpty(inactiveLandlords)) {
       return false
     }

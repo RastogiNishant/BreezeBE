@@ -1,6 +1,7 @@
 const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const AppException = use('App/Exceptions/AppException')
 const MailService = use('App/Services/MailService')
 const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
@@ -9,6 +10,8 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
 const SMSService = use('App/Services/SMSService')
+const Promise = require('bluebird')
+const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const {
   ROLE_USER,
   STATUS_ACTIVE,
@@ -26,6 +29,9 @@ const {
   EMAIL_REG_EXP,
   PHONE_REG_EXP,
   MATCH_STATUS_NEW,
+  ERROR_OUTSIDE_TENANT_INVITATION_INVALID,
+  ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED,
+  ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -137,7 +143,6 @@ class EstateCurrentTenantService {
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .where('status', STATUS_ACTIVE)
-      .where('email', data.email)
       .first()
 
     if (!currentTenant) {
@@ -159,6 +164,7 @@ class EstateCurrentTenantService {
           contract_end: data.contract_end,
           phone_number: data.phone_number,
           salutation_int: data.salutation_int,
+          email: data.email,
         })
         await currentTenant.save()
       }
@@ -290,8 +296,7 @@ class EstateCurrentTenantService {
     return await EstateCurrentTenant.query()
       .where('id', id)
       .where('estate_id', estate_id)
-      .whereNot('status', STATUS_DELETE)
-      .whereNull('user_id')
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
       .first()
   }
 
@@ -326,16 +331,27 @@ class EstateCurrentTenantService {
     )
 
     estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
-
-    const links = await Promise.all(
-      estateCurrentTenants.map(async (ect) => {
-        return await EstateCurrentTenantService.createDynamicLink(ect)
+    const trx = await Database.beginTransaction()
+    try {
+      let links = await Promise.all(
+        estateCurrentTenants.map(async (ect) => {
+          return await EstateCurrentTenantService.createDynamicLink(ect, trx)
+        })
+      )
+      links = await Promise.map(links, async (link) => {
+        link.code = await InvitationLinkCode.create(link.id, link.shortLink, trx)
+        return link
       })
-    )
 
-    return { failureCount, links }
+      return { failureCount, links }
+    } catch (err) {
+      console.log(err.message)
+      await trx.rollback()
+      throw new AppException('Error found while creating links.')
+    }
   }
-  static async createDynamicLink(estateCurrentTenant) {
+
+  static async createDynamicLink(estateCurrentTenant, trx) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -349,7 +365,7 @@ class EstateCurrentTenantService {
     const code = uuid.v4()
     await EstateCurrentTenant.query()
       .where('id', estateCurrentTenant.id)
-      .update({ code: code, invite_sent_at: time })
+      .update({ code: code, invite_sent_at: time }, trx)
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
@@ -398,10 +414,9 @@ class EstateCurrentTenantService {
   }
 
   static async acceptOutsideTenant({ data1, data2, password, email, user }) {
-    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
-    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
-      ...rest,
-      estate_id,
+    const { estateCurrentTenant, estate_id } = await this.handleInvitationLink({
+      data1,
+      data2,
       email,
       user,
     })
@@ -419,7 +434,7 @@ class EstateCurrentTenantService {
         }
         user = await UserService.signUp(
           {
-            email: estateCurrentTenant.email || email,
+            email: email || estateCurrentTenant.email, // one of them must be not null, validated in handleInvitationLink
             firstname: '',
             source_estate_id: estate_id,
             ...userData,
@@ -435,44 +450,83 @@ class EstateCurrentTenantService {
     }
   }
 
+  static async handleInvitationLink({ data1, data2, email, user }) {
+    const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
+      estate_id,
+      ...rest,
+      email,
+      user,
+    })
+    return { estate_id, estateCurrentTenant }
+  }
+
+  static async validateInvitationQRCode({ data1, data2 }) {
+    const { estate_id, id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+
+    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+      id,
+      estate_id,
+    })
+    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+
+    return true
+  }
+
   static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
+    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+      id,
+      estate_id,
+    })
+
+    EstateCurrentTenantService.validateInvitationEmail({ email, estateCurrentTenant, user })
+    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+
+    return estateCurrentTenant
+  }
+
+  static async validateInvitedTenant({ id, estate_id }) {
     const estateCurrentTenant = await this.getOutsideTenantsByEstateId({ id, estate_id })
     if (!estateCurrentTenant) {
-      throw new HttpException('No record exists')
+      throw new HttpException('No record exists', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    } else if (estateCurrentTenant.user_id) {
+      throw new HttpException(
+        'Invitation already used',
+        400,
+        ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
+      )
     }
-    if (estateCurrentTenant.user_id) {
-      throw new HttpException('Invitation already accepted')
-    }
+    return estateCurrentTenant
+  }
 
-    if (user) {
-      if (user.email !== estateCurrentTenant.email) {
-        throw new HttpException('Emails do not match! Please contact to customer service', 400)
-      }
-    } else {
+  static validateInvitationEmail({ user, estateCurrentTenant, email }) {
+    if (!user) {
       if (!estateCurrentTenant.email && !email) {
         throw new HttpException('Email must be provided!', 400)
       }
-
-      if (estateCurrentTenant.email && estateCurrentTenant.email !== email) {
-        throw new HttpException('Emails do not match! Please contact to customer service', 400)
-      }
     }
+    return true
+  }
 
+  static validateInvitationCode({ estateCurrentTenant, code }) {
     const preserved_code = estateCurrentTenant.code
     if (code !== preserved_code) {
-      throw new HttpException('code is wrong', 500)
+      throw new HttpException('code is wrong', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
+    return true
+  }
 
+  static validateInvitationExpirationDate({ expired_time }) {
     const time = moment().utc()
     const old_time = moment()
       .utc(expired_time, 'YYYY-MM-DD HH:mm:ss')
       .add(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-
-    if (old_time < time) {
-      throw new HttpException('Link has been expired', 500)
+    if (old_time.isBefore(time)) {
+      throw new HttpException('Link has been expired', 400, ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED)
     }
-
-    return estateCurrentTenant
+    return true
   }
 
   static decryptDynamicLink({ data1, data2 }) {
@@ -495,7 +549,8 @@ class EstateCurrentTenantService {
 
       return { id, estate_id, code, expired_time }
     } catch (e) {
-      throw new HttpException('Params are wrong', 500)
+      console.log(e)
+      throw new HttpException('Params are wrong', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
   }
 
@@ -562,6 +617,56 @@ class EstateCurrentTenantService {
     )
   }
 
+  static async revokeInvitation(user_id, ids) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    const trx = await Database.beginTransaction()
+    try {
+      let estateCurrentTenants = await EstateCurrentTenant.query()
+        .select(
+          'estate_current_tenants.id',
+          'estate_current_tenants.estate_id',
+          'estate_current_tenants.user_id'
+        )
+        .whereIn('estate_current_tenants.id', ids)
+        .whereNull('estate_current_tenants.user_id')
+        .whereNotNull('estate_current_tenants.code')
+        .whereNotNull('estate_current_tenants.invite_sent_at')
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_current_tenants.estate_id').on('_e.user_id', user_id)
+        })
+        .fetch()
+
+      estateCurrentTenants = estateCurrentTenants?.toJSON() || []
+      if (estateCurrentTenants.length > 0) {
+        await EstateCurrentTenant.query()
+          .whereIn(
+            'id',
+            estateCurrentTenants.map((e) => e.id)
+          )
+          .update({ code: null, invite_sent_at: null })
+          .transacting(trx)
+        await InvitationLinkCode.query()
+          .whereIn(
+            'current_tenant_id',
+            estateCurrentTenants.map((e) => e.id)
+          )
+          .delete(trx)
+        await trx.commit()
+      } else {
+        await trx.rollback()
+      }
+
+      return {
+        successCount: estateCurrentTenants.length || 0,
+        failureCount: ids.length - (estateCurrentTenants.length || 0),
+      }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
+  }
+
   static async disconnect(user_id, ids) {
     ids = Array.isArray(ids) ? ids : [ids]
     const trx = await Database.beginTransaction()
@@ -585,7 +690,10 @@ class EstateCurrentTenantService {
       if (valid_ids && valid_ids.length) {
         const estate_ids = estateCurrentTenants.map((tenant) => tenant.estate_id)
 
-        await require('./EstateService').unrented(estate_ids, trx)
+        /**
+         * though it's disconnected, rent status has not been change. it's like connected wrongly.
+         * //await require('./EstateService').unrented(estate_ids, trx)
+         */
 
         await Promise.all(
           estateCurrentTenants.map(async (tenant) => {
@@ -617,6 +725,30 @@ class EstateCurrentTenantService {
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async updateEstateTenant(data, user, trx) {
+    if (data.email || data.sex || data.secondname) {
+      let ect = {}
+
+      if (data.email) ect.email = data.email
+      if (data.sex) {
+        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation_int = data.sex
+      }
+      if (data.secondname) ect.surname = data.secondname
+      await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
+    }
+  }
+
+  static async retrieveLinkByCode(code) {
+    try {
+      const link = await InvitationLinkCode.getByCode(code)
+      return { shortLink: link }
+    } catch (err) {
+      console.log(err.message)
+      throw new AppException('Code did not match.')
     }
   }
 }

@@ -34,6 +34,7 @@ class CompanyService {
    */
   static async getUserCompany(userId, companyId = null) {
     let query = Company.query()
+      .select('companies.*')
       .innerJoin({ _u: 'users' }, function () {
         this.on('_u.company_id', 'companies.id').on('_u.id', userId)
       })
@@ -63,12 +64,17 @@ class CompanyService {
   /**
    *
    */
-  static async updateCompany(companyId, userId, data) {
+  static async updateCompany(userId, data, trx = null) {
     let userCompany = await this.getUserCompany(userId)
     if (!userCompany) {
       throw new AppException('Company not exists')
     }
-    await userCompany.updateItem(data)
+
+    if (trx) {
+      await userCompany.updateItemWithTrx(data, trx)
+    } else {
+      await userCompany.updateItem(data)
+    }
 
     userCompany = {
       ...userCompany.toJSON(),
@@ -239,8 +245,19 @@ class CompanyService {
         return schema.validate(i)
       })
     } catch (e) {
-      throw wrapValidationError(e)
+      throw new HttpException(
+        'Please double check if you have added Your name, company size, type, email address, company name, phone number'
+      )
     }
+  }
+
+  /**
+   * Delete company completely
+   * It's only used for deleting test company
+   */
+
+  static async permanentDelete(user_id) {
+    await Company.query().where('user_id', user_id).delete()
   }
 }
 

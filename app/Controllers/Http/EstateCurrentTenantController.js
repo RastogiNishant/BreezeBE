@@ -1,7 +1,7 @@
 'use strict'
 
+const { ERROR_OUTSIDE_TENANT_INVITATION_INVALID } = require('../../constants')
 const HttpException = require('../../Exceptions/HttpException')
-
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
 class EstateCurrentTenantController {
@@ -66,7 +66,7 @@ class EstateCurrentTenantController {
   async inviteTenantToAppByLetter({ request, auth, response }) {
     const { ids } = request.all()
     try {
-      const { failureCount, links } = await EstateCurrentTenantService.getDynamicLinks({
+      let { failureCount, links } = await EstateCurrentTenantService.getDynamicLinks({
         ids: ids,
         user_id: auth.user.id,
       })
@@ -79,6 +79,14 @@ class EstateCurrentTenantController {
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
+  }
+
+  async validateInvitationQRCode({ request, response }) {
+    const { data1, data2 } = request.all()
+    if (!data1 || !data2) {
+      throw new HttpException('Not enough params', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    }
+    response.res(await EstateCurrentTenantService.validateInvitationQRCode({ data1, data2 }))
   }
 
   async acceptOutsideTenant({ request, response }) {
@@ -127,12 +135,30 @@ class EstateCurrentTenantController {
     }
   }
 
+  async revokeInvitation({ request, auth, response }) {
+    const { ids } = request.all()
+    try {
+      response.res(await EstateCurrentTenantService.revokeInvitation(auth.user.id, ids))
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
   async disconnect({ request, auth, response }) {
     const { ids } = request.all()
     try {
       response.res(await EstateCurrentTenantService.disconnect(auth.user.id, ids))
     } catch (e) {
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  async retrieveLinkByCode({ request, auth, response }) {
+    const { code } = request.all()
+    try {
+      response.res(await EstateCurrentTenantService.retrieveLinkByCode(code))
+    } catch (e) {
+      throw new HttpException(e.message, 422)
     }
   }
 }

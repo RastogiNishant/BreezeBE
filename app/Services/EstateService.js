@@ -1036,7 +1036,9 @@ class EstateService {
         'estates.zip',
         'estates.coord_raw',
         'estates.property_id',
+        'estates.net_rent',
         'estates.address',
+        'estates.extra_address',
         Database.raw('COALESCE(max("tasks"."urgency"), -1) as "mosturgency" ')
       )
 
@@ -1212,6 +1214,10 @@ class EstateService {
           isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
       }
     })
+  }
+
+  static async deletePermanent(user_id) {
+    await Estate.query().where('user_id', user_id).delete()
   }
 }
 module.exports = EstateService
