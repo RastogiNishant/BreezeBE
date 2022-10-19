@@ -472,11 +472,6 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppByLetter'
   ).middleware(['valid:InvitationIds'])
 
-  Route.get(
-    '/tenant/invite/letter/retrieve-link/:code',
-    'EstateCurrentTenantController.retrieveLinkByCode'
-  ).middleware(['valid:InvitationLinkRetrieveCode'])
-
   Route.post(
     '/tenant/invite/sms',
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
@@ -494,6 +489,11 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.get(
+  '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
+  'EstateCurrentTenantController.retrieveLinkByCode'
+).middleware(['valid:InvitationLinkRetrieveCode'])
 
 Route.post(
   '/api/v1/validate/outside_tenant/invitation',
