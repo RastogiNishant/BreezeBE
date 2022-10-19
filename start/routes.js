@@ -235,10 +235,6 @@ Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').m
   'guest',
   'valid:HosekeeperSignUp',
 ])
-Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
-  'guest',
-  'valid:ResendSMS,Lang',
-])
 Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
   'guest',
   'valid:ConfirmSMS',
@@ -256,15 +252,7 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware([
-  'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
-])
-Route.put('/api/v1/me', 'AccountController.updateProfile').middleware([
-  'auth:jwt,jwtLandlord',
-  'valid:UpdateUser',
-  'userCanValidlyChangeEmail',
-])
-
+Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])

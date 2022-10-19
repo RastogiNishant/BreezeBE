@@ -728,6 +728,20 @@ class EstateCurrentTenantService {
     }
   }
 
+  static async updateEstateTenant(data, user, trx) {
+    if (data.email || data.sex || data.secondname) {
+      let ect = {}
+
+      if (data.email) ect.email = data.email
+      if (data.sex) {
+        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation_int = data.sex
+      }
+      if (data.secondname) ect.surname = data.secondname
+      await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
+    }
+  }
+
   static async retrieveLinkByCode(code) {
     try {
       const link = await InvitationLinkCode.getByCode(code)
