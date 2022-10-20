@@ -481,7 +481,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
   'EstateCurrentTenantController.retrieveLinkByCode'
-).middleware(['valid:InvitationLinkRetrieveCode'])
+).middleware(['valid:InvitationLinkRetrieveCode', 'UserCanGetInvitationLink'])
 
 Route.post(
   '/api/v1/validate/outside_tenant/invitation',
