@@ -319,6 +319,14 @@ test('it should sign up with housekeeper', async ({ assert }) => {
   //housekeeper signup
 }).timeout(0)
 
+test('it should throw exception with not existing user', async ({ assert }) => {
+  try {
+    await UserService.resendUserConfirm(faker.random.numeric(5))
+  } catch (e) {
+    assert.equal(e.message, USER_NOT_EXIST)
+  }
+}).timeout(0)
+
 test('it should send reconfirm email successfully', async ({ assert }) => {
   assert.isNotNull(signUpProspectUser.id)
   const isUpdated = await User.query()
