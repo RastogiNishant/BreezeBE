@@ -263,7 +263,9 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'userCanValidlyChangeEmail',
 ])
 
-Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
+Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm').middleware([
+  'valid:Id',
+])
 
 Route.group(() => {
   Route.get('/', 'AccountController.onboard').middleware(['auth:jwt,jwtLandlord'])

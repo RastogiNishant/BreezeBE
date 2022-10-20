@@ -33,7 +33,7 @@ const {
 } = require('../../app/constants')
 
 const {
-  exceptions: { USER_NOT_EXIST, SMS_CODE_NOT_CORERECT, INVALID_TOKEN },
+  exceptions: { USER_NOT_EXIST, SMS_CODE_NOT_CORERECT, INVALID_TOKEN, ACCOUNT_ALREADY_VERIFIED },
 } = require('../../app/excepions')
 
 const EstateService = require('../../app/Services/EstateService')
@@ -319,12 +319,27 @@ test('it should sign up with housekeeper', async ({ assert }) => {
   //housekeeper signup
 }).timeout(0)
 
-test('it should return false with verified user to get unverified user', async ({ assert }) => {
+test('it should send reconfirm email successfully', async ({ assert }) => {
+  assert.isNotNull(signUpProspectUser.id)
+  const isUpdated = await User.query()
+    .where('id', signUpProspectUser.id)
+    .update({ status: STATUS_EMAIL_VERIFY })
+  assert.equal(isUpdated, 1)
+  const result = await UserService.resendUserConfirm(signUpProspectUser.id)
+  assert.isTrue(result)
+})
+
+test('it should throw exception with verified user to get unverified user', async ({ assert }) => {
+  assert.isNotNull(signUpProspectUser.id)
+  const isUpdated = await User.query()
+    .where('id', signUpProspectUser.id)
+    .update({ status: STATUS_ACTIVE })
+  assert.equal(isUpdated, 1)
+
   try {
-    const result = await UserService.resendUserConfirm(signUpProspectUser.id)
-    assert.equal(result, false)
+    await UserService.resendUserConfirm(signUpProspectUser.id)
   } catch (e) {
-    assert.fail('Not passed resending user confirmation')
+    assert.equal(e.message, ACCOUNT_ALREADY_VERIFIED)
   }
 }).timeout(0)
 

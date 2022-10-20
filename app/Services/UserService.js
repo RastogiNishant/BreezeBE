@@ -73,6 +73,7 @@ const {
     NO_USER_PASSED,
     NO_CODE_PASSED,
     INVALID_TOKEN,
+    ACCOUNT_ALREADY_VERIFIED,
   },
 } = require('../../app/excepions')
 
@@ -277,7 +278,7 @@ class UserService {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
-      await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+      await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
@@ -323,9 +324,12 @@ class UserService {
    *
    */
   static async resendUserConfirm(userId) {
-    const user = await User.query().where('id', userId).where('status', STATUS_EMAIL_VERIFY).first()
+    const user = await User.query().where('id', userId).first()
     if (!user) {
-      return false
+      throw new HttpException(USER_NOT_EXIST, 400)
+    }
+    if (user.status !== STATUS_EMAIL_VERIFY) {
+      throw new HttpException(ACCOUNT_ALREADY_VERIFIED, 400)
     }
     await UserService.sendConfirmEmail(user)
 
@@ -338,7 +342,6 @@ class UserService {
   static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
-
     if (code !== userCode) {
       throw new AppException(INVALID_CONFIRM_CODE)
     }

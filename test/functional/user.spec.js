@@ -33,7 +33,7 @@ const UserService = use('App/Services/UserService')
 const AgreementService = use('App/Services/AgreementService')
 const CompanyService = use('App/Services/CompanyService')
 const ImageService = use('App/Services/ImageService')
-
+const DataStorage = use('DataStorage')
 const {
   getExceptionMessage,
   exceptionKeys: {
@@ -272,13 +272,10 @@ test('it should successfully sign up for prospect', async ({ assert, client }) =
 
 test('it should successfully sign up for landlord', async ({ assert, client }) => {
   let response = await client.post('/api/v1/signup').send(landlordData).end()
-  testLandlord = response.body.data
-
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
   assert.isNotNull(agreement.id)
   assert.isNotNull(term.id)
-
   response.assertStatus(200)
   response.assertJSONSubset({
     data: {
@@ -288,7 +285,7 @@ test('it should successfully sign up for landlord', async ({ assert, client }) =
       status: STATUS_EMAIL_VERIFY,
     },
   })
-
+  testLandlord = response.body.data
   //duplicate signup failed
   response = await client.post('/api/v1/signup').send(landlordData).end()
   response.assertStatus(400)
@@ -360,23 +357,63 @@ test('it should fail to confirm email due to wrong confirmation code', async ({
   })
 })
 
-test('it should confirm email successfully', async ({ assert, client }) => {
+test('it should send confirm email successfully', async ({ assert, client }) => {
   assert.isNotNull(testLandlord)
   assert.isNotNull(testLandlord.id)
-  code = await UserService.sendConfirmEmail(testLandlord)
+  const user = await User.query().where('id', testLandlord.id).first()
+  assert.isNotNull(user)
+  code = await UserService.sendConfirmEmail(user.toJSON({ isOwner: true }))
   assert.isNotNull(code)
+  assert.isDefined(code)
+  const data = await DataStorage.getItem(user.id, 'confirm_email')
+  assert.isNotNull(data)
+  assert.equal(code, data.code)
+
   const response = await client
     .get('/api/v1/confirm_email')
     .send({
-      user_id: testLandlord.id,
+      user_id: user.id,
       code,
     })
     .end()
-
   response.assertStatus(200)
   response.assertJSONSubset({ status: 'success', data: true })
 }).timeout(0)
 
+test('it should fail in case there is no payload', async ({ client }) => {
+  const response = await client.post('/api/v1/users/reconfirm').send({}).end()
+  response.assertStatus(422)
+  response.assertJSONSubset({
+    data: {
+      id: getExceptionMessage('id', REQUIRED),
+    },
+  })
+})
+
+test('it should fail to send email for reconfirming in case email does not exist', async ({
+  client,
+}) => {
+  const response = await client
+    .post('/api/v1/users/reconfirm')
+    .send({ id: faker.random.numeric(5) })
+    .end()
+  response.assertStatus(500)
+  response.assertJSONSubset({
+    data: getExceptionMessage(undefined, USER_NOT_EXIST),
+  })
+}).timeout(0)
+
+test('it should resend confirm email successfully', async ({ assert, client }) => {
+  assert.isNotNull(testLandlord.id)
+  const isUpdated = await User.query()
+    .where('id', testLandlord.id)
+    .update({ status: STATUS_EMAIL_VERIFY })
+  assert.equal(isUpdated, 1)
+
+  const response = await client.post('/api/v1/users/reconfirm').send({ id: testLandlord.id }).end()
+  response.assertStatus(200)
+  response.assertJSONSubset({ data: true })
+}).timeout(0)
 test('it should fail to sign up with google oAuth in case payload is empty, wrong format', async ({
   client,
 }) => {
@@ -828,14 +865,16 @@ test('it should update profile without avatar', async ({ assert, client }) => {
     faker.image.abstract(1234, 2345)
   )
 
-  const response = await client
-    .put('/api/v1/users')
-    .loginVia(testLandlord, 'jwtLandlord')
-    .attach('file', outputFileName)
-    .end()
+  if (outputFileName) {
+    const response = await client
+      .put('/api/v1/users')
+      .loginVia(testLandlord, 'jwtLandlord')
+      .attach('file', outputFileName)
+      .end()
 
-  response.assertStatus(200)
-  assert.include(response.body.data.avatar, 'https')
+    response.assertStatus(200)
+    assert.include(response.body.data.avatar, 'https')
+  }
 }).timeout(0)
 
 test('it should fail to change password due to empty token', async ({ client }) => {
