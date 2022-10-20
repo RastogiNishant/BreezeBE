@@ -1566,7 +1566,11 @@ class MatchService {
 
   static async getTenantFinalMatchesCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_FINISH })
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_FINISH)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').on('_e.status', STATUS_DRAFT)
+      })
       .count('*')
     return data
   }
