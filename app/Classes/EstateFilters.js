@@ -41,7 +41,7 @@ class EstateFilters extends Filter {
     first_time_use: LETTING_STATUS_FIRST_TIME_USE,
     structural_vacancy: LETTING_STATUS_STRUCTURAL_VACANCY,
     defected: LETTING_STATUS_DEFECTED,
-    normal: LETTING_STATUS_NORMAL,
+    standard: LETTING_STATUS_NORMAL,
     vacancy: LETTING_STATUS_VACANCY,
     terminated: LETTING_STATUS_TERMINATED,
   }
