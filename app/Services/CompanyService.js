@@ -250,6 +250,15 @@ class CompanyService {
       )
     }
   }
+
+  /**
+   * Delete company completely
+   * It's only used for deleting test company
+   */
+
+  static async permanentDelete(user_id) {
+    await Company.query().where('user_id', user_id).delete()
+  }
 }
 
 module.exports = CompanyService
