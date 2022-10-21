@@ -1,6 +1,7 @@
 const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const AppException = use('App/Exceptions/AppException')
 const MailService = use('App/Services/MailService')
 const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
@@ -9,6 +10,8 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
 const SMSService = use('App/Services/SMSService')
+const Promise = require('bluebird')
+const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const {
   ROLE_USER,
   STATUS_ACTIVE,
@@ -328,17 +331,27 @@ class EstateCurrentTenantService {
     )
 
     estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
-
-    const links = await Promise.all(
-      estateCurrentTenants.map(async (ect) => {
-        return await EstateCurrentTenantService.createDynamicLink(ect)
+    const trx = await Database.beginTransaction()
+    try {
+      let links = await Promise.all(
+        estateCurrentTenants.map(async (ect) => {
+          return await EstateCurrentTenantService.createDynamicLink(ect, trx)
+        })
+      )
+      links = await Promise.map(links, async (link) => {
+        link.code = await InvitationLinkCode.create(link.id, link.shortLink, trx)
+        return link
       })
-    )
 
-    return { failureCount, links }
+      return { failureCount, links }
+    } catch (err) {
+      console.log(err.message)
+      await trx.rollback()
+      throw new AppException('Error found while creating links.')
+    }
   }
 
-  static async createDynamicLink(estateCurrentTenant) {
+  static async createDynamicLink(estateCurrentTenant, trx) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -352,7 +365,7 @@ class EstateCurrentTenantService {
     const code = uuid.v4()
     await EstateCurrentTenant.query()
       .where('id', estateCurrentTenant.id)
-      .update({ code: code, invite_sent_at: time })
+      .update({ code: code, invite_sent_at: time }, trx)
 
     const txtSrc = JSON.stringify({
       id: estateCurrentTenant.id,
@@ -632,7 +645,12 @@ class EstateCurrentTenantService {
           )
           .update({ code: null, invite_sent_at: null })
           .transacting(trx)
-
+        await InvitationLinkCode.query()
+          .whereIn(
+            'current_tenant_id',
+            estateCurrentTenants.map((e) => e.id)
+          )
+          .delete(trx)
         await trx.commit()
       } else {
         await trx.rollback()
@@ -706,6 +724,30 @@ class EstateCurrentTenantService {
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async updateEstateTenant(data, user, trx) {
+    if (data.email || data.sex || data.secondname) {
+      let ect = {}
+
+      if (data.email) ect.email = data.email
+      if (data.sex) {
+        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation_int = data.sex
+      }
+      if (data.secondname) ect.surname = data.secondname
+      await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
+    }
+  }
+
+  static async retrieveLinkByCode(code) {
+    try {
+      const link = await InvitationLinkCode.getByCode(code)
+      return { shortLink: link }
+    } catch (err) {
+      console.log(err.message)
+      throw new AppException('Code did not match.')
     }
   }
 }
