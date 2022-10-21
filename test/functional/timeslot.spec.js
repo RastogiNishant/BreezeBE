@@ -5,6 +5,10 @@ const {
   MATCH_STATUS_INVITE,
 } = require('../../app/constants')
 const {
+  getExceptionMessage,
+  exceptionKeys: { BOOLEAN },
+} = require('../../app/excepions')
+const {
   test_new_start_at,
   test_new_end_at,
   testUserEmail,
@@ -181,12 +185,14 @@ test('it should fail to create timeslot due to empty start_at', async ({ assert,
       .send({ ...dummyInvalidRangeTimeSlotData, start_at: '' })
       .end()
 
-    console.log({ resp: response.body.data })
+    console.log({ resp: response.body.data, exception: getExceptionMessage('start_at', BOOLEAN) })
 
     // response.assertStatus(400)
     // response.assertError({
     //   status: 'error',
-    //   data: 'Invalid time range',
+    //   data: {
+    //     start_at: getExceptionMessage('start_at', BOOLEAN),
+    //   },
     //   code: 0,
     // })
   } catch (e) {
