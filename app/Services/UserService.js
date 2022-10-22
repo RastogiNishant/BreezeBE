@@ -1106,7 +1106,7 @@ class UserService {
         idToken: token,
         audience: Config.get('services.ally.google.client_id'),
       })
-      return true
+      return ticket
     } catch (e) {
       throw new HttpException(INVALID_TOKEN, 400)
     }
