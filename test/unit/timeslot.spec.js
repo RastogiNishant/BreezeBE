@@ -9,7 +9,7 @@ const TimeSlot = use('App/Models/TimeSlot')
 const TimeSlotService = use('App/Services/TimeSlotService')
 const EstateService = use('App/Services/EstateService')
 
-const { before, beforeEach, after, afterEach } = Suite
+const { before, after } = Suite
 
 let dummyTimeSlotData,
   dummyTimeSlotDataTomorrow,
