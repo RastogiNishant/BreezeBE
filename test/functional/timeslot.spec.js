@@ -3,11 +3,10 @@ const {
   ROLE_LANDLORD,
   MATCH_STATUS_VISIT,
   MATCH_STATUS_INVITE,
+  STATUS_DELETE,
+  STATUS_ACTIVE,
 } = require('../../app/constants')
-const {
-  getExceptionMessage,
-  exceptionKeys: { BOOLEAN },
-} = require('../../app/excepions')
+
 const {
   test_new_start_at,
   test_new_end_at,
@@ -22,6 +21,8 @@ const {
   test_new_slot_length,
   test_start_at,
   test_end_at,
+  test_start_at_tomorrow,
+  invalid_slot_length,
 } = require('../constants/timeslot')
 
 const Suite = use('Test/Suite')('Time Slot Functional')
@@ -31,7 +32,6 @@ const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const Visit = use('App/Models/Visit')
 const Match = use('App/Models/Match')
-const TimeSlotService = use('App/Services/TimeSlotService')
 const EstateService = use('App/Services/EstateService')
 
 trait('Test/ApiClient')
@@ -178,6 +178,7 @@ test('it should fail to create timeslot due to invalid time range', async ({ ass
 })
 
 test('it should fail to create timeslot due to empty start_at', async ({ assert, client }) => {
+  //TODO: error messages should be more specific
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -185,28 +186,149 @@ test('it should fail to create timeslot due to empty start_at', async ({ assert,
       .send({ ...dummyInvalidRangeTimeSlotData, start_at: '' })
       .end()
 
-    console.log({ resp: response.body.data, exception: getExceptionMessage('start_at', BOOLEAN) })
-
-    // response.assertStatus(400)
-    // response.assertError({
-    //   status: 'error',
-    //   data: {
-    //     start_at: getExceptionMessage('start_at', BOOLEAN),
-    //   },
-    //   code: 0,
-    // })
+    response.assertStatus(422)
   } catch (e) {
     console.log(e)
     assert.fail('Time slot invalid time range test failed.')
   }
 })
 
-//TODO: empty start_at
-//TODO: empty end_at
-//TODO: end_at before start_at
-//TODO: invalid slot_length
-//TODO: not existing estate_id
-//TODO: deleted estate_id
+test('it should fail to create timeslot due to empty end_at', async ({ assert, client }) => {
+  //TODO: error messages should be more specific
+  try {
+    let response = await client
+      .post(`/api/v1/estates/${testEstate.id}/slots`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .send({ ...dummyInvalidRangeTimeSlotData, end_at: '' })
+      .end()
+
+    response.assertStatus(422)
+  } catch (e) {
+    console.log(e)
+    assert.fail('Time slot invalid time range test failed.')
+  }
+})
+
+test('it should fail to create timeslot due to earlier start_at value then end_at', async ({
+  assert,
+  client,
+}) => {
+  //TODO: error messages should be more specific
+  try {
+    let response = await client
+      .post(`/api/v1/estates/${testEstate.id}/slots`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .send({ ...dummyTimeSlotData, start_at: test_start_at_tomorrow, end_at: test_start_at })
+      .end()
+
+    response.assertStatus(422)
+    response.assertError({
+      status: 'error',
+      data: { end_at: 'should be after start_at' },
+    })
+  } catch (e) {
+    console.log(e)
+    assert.fail('Time slot invalid time range test failed.')
+  }
+})
+
+test('it should fail to create timeslot due to invalid slot_length', async ({ assert, client }) => {
+  //TODO: error messages should be more specific
+  try {
+    let response = await client
+      .post(`/api/v1/estates/${testEstate.id}/slots`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .send({ ...dummyTimeSlotData, slot_length: invalid_slot_length })
+      .end()
+
+    response.assertStatus(422)
+  } catch (e) {
+    console.log(e)
+    assert.fail('Time slot invalid time range test failed.')
+  }
+})
+
+test('it should fail to create timeslot due to not existing estate id', async ({
+  assert,
+  client,
+}) => {
+  //TODO: error messages should be more specific
+
+  const notExistingEstateId = 99999
+
+  try {
+    let response = await client
+      .post(`/api/v1/estates/${notExistingEstateId}/slots`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .send({ ...dummyTimeSlotData })
+      .end()
+
+    response.assertStatus(400)
+    response.assertError({
+      status: 'error',
+      data: 'Estate not exists',
+      code: 0,
+    })
+  } catch (e) {
+    console.log(e)
+    assert.fail('Time slot invalid time range test failed.')
+  }
+})
+
+test('it should fail to create timeslot due to invalid slot_length', async ({ assert, client }) => {
+  //TODO: error messages should be more specific
+
+  const notExistingEstateId = 99999
+
+  try {
+    let response = await client
+      .post(`/api/v1/estates/${notExistingEstateId}/slots`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .send({ ...dummyTimeSlotData })
+      .end()
+
+    response.assertStatus(400)
+    response.assertError({
+      status: 'error',
+      data: 'Estate not exists',
+      code: 0,
+    })
+  } catch (e) {
+    console.log(e)
+    assert.fail('Time slot invalid time range test failed.')
+  }
+})
+
+test('it should fail to create timeslot due to deleted estate', async ({ assert, client }) => {
+  //TODO: error messages should be more specific
+
+  // Make estate deleted
+  await Estate.query().where('id', testEstate.id).update({ status: STATUS_DELETE })
+
+  const deletedEstate = await Estate.query().where('id', testEstate.id).first()
+  assert.equal(deletedEstate.status, STATUS_DELETE)
+
+  try {
+    let response = await client
+      .post(`/api/v1/estates/${deletedEstate.id}/slots`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .send({ ...dummyTimeSlotData })
+      .end()
+
+    response.assertStatus(400)
+    response.assertError({
+      status: 'error',
+      data: 'Estate not exists',
+      code: 0,
+    })
+
+    // Revert estate status
+    await Estate.query().where('id', testEstate.id).update({ status: STATUS_ACTIVE })
+  } catch (e) {
+    console.log(e)
+    assert.fail('Time slot invalid time range test failed.')
+  }
+})
 
 // Update time slot has multiple dependecies
 // Out of range visits will be deleted

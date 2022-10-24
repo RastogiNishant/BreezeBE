@@ -15,6 +15,8 @@ const test_new_start_at = getTomorrow().add(6, 'hours').format(TIME_FORMAT)
 const test_new_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(TIME_FORMAT)
 const test_new_slot_length = 5
 
+const invalid_slot_length = 12
+
 const test_start_at_tomorrow = getTomorrow().add(1, 'day').add(6, 'hours').format(TIME_FORMAT)
 const test_end_at_tomorrow = getTomorrow().add(1, 'day').add(7, 'hours').format(TIME_FORMAT)
 
@@ -114,6 +116,7 @@ module.exports = {
   test_new_start_at,
   test_new_end_at,
   test_new_slot_length,
+  invalid_slot_length,
   test_start_at_tomorrow,
   test_end_at_tomorrow,
   test_crossing_start_at,
