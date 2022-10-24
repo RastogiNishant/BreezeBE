@@ -806,12 +806,12 @@ class NotificationsService {
   }
 
   static async sendFollowUpVisit(notice) {
-    const title = 'notification.txt_are_you_coming_notifications.title'
+    const title = 'prospect.notification.event.tenant_are_you_coming'
     const body = (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('notification.txt_are_you_coming_notifications.message', lang)
+        l.get('prospect.notification.next.tenant_are_you_coming', lang)
       )
     }
     return NotificationsService.sendNotes([notice], title, body)

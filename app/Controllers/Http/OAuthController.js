@@ -106,7 +106,7 @@ class OAuthController {
     const { token, device_token, role, code, data1, data2 } = request.all()
     let ticket
     try {
-      await UserService.verifyGoogleToken(token)
+      ticket = await UserService.verifyGoogleToken(token)
     } catch (e) {
       throw new HttpException(INVALID_TOKEN, 400)
     }
