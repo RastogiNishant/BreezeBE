@@ -485,3 +485,5 @@ test('it should find the correct overlapping range according to case 7', async (
   const ranges = TimeSlotService.getNotCrossRange(testCase)
   assert.equal(ranges.length, 0)
 })
+
+//TODO: add tests for removeSlot method

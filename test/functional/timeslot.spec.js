@@ -432,3 +432,5 @@ test("it should update time slot's slot_length and handle dependencies successfu
     assert.fail('Unexpected error in time slot update')
   }
 })
+
+//TODO: add tests for delete :estate_id/slots/:slot_id endpoint
