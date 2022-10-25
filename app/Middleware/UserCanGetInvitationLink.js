@@ -3,9 +3,9 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 const HttpException = use('App/Exceptions/HttpException')
-const Redis = use('Redis')
+const DataStorage = use('DataStorage')
 const {
-  INVITATION_LINK_RETRIEVAL_TRIES_REDIS_KEY,
+  INVITATION_LINK_RETRIEVAL_TRIES_KEY,
   INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT,
 } = require('../constants')
 
@@ -17,7 +17,7 @@ class UserCanGetInvitationLink {
    */
   async handle({ request }, next) {
     const ip = request.ip()
-    const tries = await Redis.get(`type=${INVITATION_LINK_RETRIEVAL_TRIES_REDIS_KEY}&ip=${ip}`)
+    const tries = await DataStorage.getItem(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY)
     if (tries && tries >= INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT) {
       throw new HttpException(`Maximum failed tries reached.`, 422)
     }
