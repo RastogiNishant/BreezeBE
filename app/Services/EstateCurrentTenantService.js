@@ -139,10 +139,9 @@ class EstateCurrentTenantService {
   }
 
   static async correctData(data) {
-    if (data.email === undefined) {
+    if (!data.email) {
       data.email = null
-    }
-    if (data.email) {
+    } else {
       try {
         await yup
           .object()
@@ -156,10 +155,9 @@ class EstateCurrentTenantService {
     }
 
     data.phone_number = data.phone_number || data.phone
-    if (data.phone_number === undefined) {
+    if (!data.phone_number) {
       data.phone_number = null
-    }
-    if (data.phone_number) {
+    } else {
       if (trim(data.phone_number[0]) !== '+') {
         data.phone_number = `+${trim(data.phone_number)}`
       }
