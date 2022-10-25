@@ -1661,6 +1661,7 @@ class MatchService {
         '_u.birthday',
         '_u.email',
         '_u.avatar',
+        '_v.landlord_followup_meta as followups',
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
