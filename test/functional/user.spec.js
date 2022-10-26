@@ -385,7 +385,7 @@ test('it should fail in case there is no payload', async ({ client }) => {
   response.assertStatus(422)
   response.assertJSONSubset({
     data: {
-      id: getExceptionMessage('id', REQUIRED),
+      user_id: getExceptionMessage('user_id', REQUIRED),
     },
   })
 })
@@ -395,11 +395,13 @@ test('it should fail to send email for reconfirming in case email does not exist
 }) => {
   const response = await client
     .post('/api/v1/users/reconfirm')
-    .send({ id: faker.random.numeric(5) })
+    .send({ user_id: faker.random.numeric(5) })
     .end()
-  response.assertStatus(500)
+  response.assertStatus(400)
   response.assertJSONSubset({
+    status: 'error',
     data: getExceptionMessage(undefined, USER_NOT_EXIST),
+    code: 0,
   })
 }).timeout(0)
 
@@ -410,10 +412,14 @@ test('it should resend confirm email successfully', async ({ assert, client }) =
     .update({ status: STATUS_EMAIL_VERIFY })
   assert.equal(isUpdated, 1)
 
-  const response = await client.post('/api/v1/users/reconfirm').send({ id: testLandlord.id }).end()
+  const response = await client
+    .post('/api/v1/users/reconfirm')
+    .send({ user_id: testLandlord.id })
+    .end()
   response.assertStatus(200)
   response.assertJSONSubset({ data: true })
 }).timeout(0)
+
 test('it should fail to sign up with google oAuth in case payload is empty, wrong format', async ({
   client,
 }) => {

@@ -264,7 +264,7 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
 ])
 
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm').middleware([
-  'valid:Id',
+  'valid:UserId',
 ])
 
 Route.group(() => {
