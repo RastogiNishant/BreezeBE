@@ -266,6 +266,7 @@ test('it should successfully sign up for prospect', async ({ assert, client }) =
       },
     })
   } catch (e) {
+    assert.fail('Signup failed')
     console.log('prospect sign up failed=', e.message)
   }
 }).timeout(0)
@@ -543,7 +544,7 @@ test('it should fail to login fail due to inactive user', async ({ assert, clien
       undefined,
       USER_NOT_VERIFIED
     )}`,
-    code: 0,
+    code: parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`),
   })
 }).timeout(0)
 
