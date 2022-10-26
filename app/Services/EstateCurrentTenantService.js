@@ -13,6 +13,7 @@ const yup = require('yup')
 const SMSService = use('App/Services/SMSService')
 const Promise = require('bluebird')
 const InvitationLinkCode = use('App/Models/InvitationLinkCode')
+const DataStorage = use('DataStorage')
 const {
   ROLE_USER,
   STATUS_ACTIVE,
@@ -33,6 +34,8 @@ const {
   ERROR_OUTSIDE_TENANT_INVITATION_INVALID,
   ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED,
   ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED,
+  INVITATION_LINK_RETRIEVAL_TRIES_KEY,
+  INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -783,12 +786,15 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async retrieveLinkByCode(code) {
+  static async retrieveLinkByCode(code, ip) {
     try {
       const link = await InvitationLinkCode.getByCode(code)
       return { shortLink: link }
     } catch (err) {
       console.log(err.message)
+      await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
+        expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
+      })
       throw new AppException('Code did not match.')
     }
   }

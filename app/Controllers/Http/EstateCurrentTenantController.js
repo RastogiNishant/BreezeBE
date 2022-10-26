@@ -155,8 +155,9 @@ class EstateCurrentTenantController {
 
   async retrieveLinkByCode({ request, auth, response }) {
     const { code } = request.all()
+    const ip = request.ip()
     try {
-      response.res(await EstateCurrentTenantService.retrieveLinkByCode(code))
+      response.res(await EstateCurrentTenantService.retrieveLinkByCode(code, ip))
     } catch (e) {
       throw new HttpException(e.message, 422)
     }
