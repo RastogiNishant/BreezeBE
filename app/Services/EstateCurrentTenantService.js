@@ -9,9 +9,11 @@ const crypto = require('crypto')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
+const yup = require('yup')
 const SMSService = use('App/Services/SMSService')
 const Promise = require('bluebird')
 const InvitationLinkCode = use('App/Models/InvitationLinkCode')
+const DataStorage = use('DataStorage')
 const {
   ROLE_USER,
   STATUS_ACTIVE,
@@ -32,6 +34,8 @@ const {
   ERROR_OUTSIDE_TENANT_INVITATION_INVALID,
   ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED,
   ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED,
+  INVITATION_LINK_RETRIEVAL_TRIES_KEY,
+  INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -40,6 +44,7 @@ const NoticeService = use('App/Services/NoticeService')
 
 const l = use('Localize')
 const { trim } = require('lodash')
+const { phoneSchema } = require('../Libs/schemas')
 
 class EstateCurrentTenantService {
   /**
@@ -55,6 +60,7 @@ class EstateCurrentTenantService {
       trx = await Database.beginTransaction()
     }
 
+    data = await this.correctData(data)
     try {
       let currentTenant = new EstateCurrentTenant()
       currentTenant.fill({
@@ -135,6 +141,43 @@ class EstateCurrentTenantService {
     return currentTenant
   }
 
+  static async correctData(data) {
+    if (!data.email) {
+      data.email = null
+    } else {
+      try {
+        await yup
+          .object()
+          .shape({
+            email: yup.string().email().lowercase().max(255),
+          })
+          .validate({ email: data.email })
+      } catch (e) {
+        data.email = null
+      }
+    }
+
+    data.phone_number = data.phone_number || data.phone
+    if (!data.phone_number) {
+      data.phone_number = null
+    } else {
+      if (trim(data.phone_number[0]) !== '+') {
+        data.phone_number = `+${trim(data.phone_number)}`
+      }
+      try {
+        await yup
+          .object()
+          .shape({
+            phone_number: phoneSchema,
+          })
+          .validate({ phone_number: data.phone_number })
+      } catch (e) {
+        data.phone_number = null
+      }
+    }
+    return data
+  }
+
   static async updateCurrentTenant({ id, data, estate_id, user_id }) {
     if (id) {
       await this.hasPermission(id, user_id)
@@ -155,6 +198,7 @@ class EstateCurrentTenantService {
 
       return newCurrentTenant
     } else {
+      data = await this.correctData(data)
       //update values except email if no registered user...
       if (!currentTenant.user_id) {
         currentTenant.fill({
@@ -741,12 +785,15 @@ class EstateCurrentTenantService {
     }
   }
 
-  static async retrieveLinkByCode(code) {
+  static async retrieveLinkByCode(code, ip) {
     try {
       const link = await InvitationLinkCode.getByCode(code)
       return { shortLink: link }
     } catch (err) {
       console.log(err.message)
+      await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
+        expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
+      })
       throw new AppException('Code did not match.')
     }
   }

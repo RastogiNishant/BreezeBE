@@ -50,6 +50,7 @@ const namedMiddleware = {
   ProspectHasNotRegisterYet: 'App/Middleware/ProspectHasNotRegisterYet',
   EstateFoundByHash: 'App/Middleware/EstateFoundByHash',
   UserWithEmailExists: 'App/Middleware/UserWithEmailExist',
+  UserCanGetInvitationLink: 'App/Middleware/UserCanGetInvitationLink',
   LandlordOwnsThisEstate: 'App/Middleware/LandlordOwnsThisEstate',
   RoomBelongsToEstate: 'App/Middleware/RoomBelongsToEstate',
 }

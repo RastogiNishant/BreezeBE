@@ -145,23 +145,15 @@ class AccountController {
     try {
       let { email, role, password, device_token } = request.all()
       let user, authenticator, token
-      try {
-        user = await UserService.login({ email, role, device_token })
-      } catch (e) {
-        throw new HttpException(e.message, 400)
-      }
-      try {
-        authenticator = getAuthByRole(auth, role)
-      } catch (e) {
-        throw new HttpException(e.message, 403)
-      }
+      user = await UserService.login({ email, role, device_token })
+      authenticator = getAuthByRole(auth, role)
 
       const uid = User.getHash(email, role)
       try {
         token = await authenticator.attempt(uid, password)
       } catch (e) {
         const [message] = e.message.split(':')
-        throw new HttpException(message, 401)
+        throw new HttpException(message, 400, 0)
       }
 
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
@@ -172,7 +164,7 @@ class AccountController {
 
       return response.res(token)
     } catch (e) {
-      throw new HttpException(e.message, e.code || 400)
+      throw e.status && e.code ? e : new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
