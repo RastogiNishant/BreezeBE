@@ -104,8 +104,12 @@ class AccountController {
    */
   async resendUserConfirm({ request, response }) {
     const { user_id } = request.all()
-    const result = await UserService.resendUserConfirm(user_id)
-    response.res(result)
+    try {
+      const result = await UserService.resendUserConfirm(user_id)
+      response.res(result)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || e.code, e.code || 0)
+    }
   }
 
   /**
@@ -119,7 +123,6 @@ class AccountController {
         throw new HttpException(USER_NOT_EXIST, 400)
       }
       await UserService.confirmEmail(user, code)
-
       Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
     } catch (e) {
       Logger.error(e)
