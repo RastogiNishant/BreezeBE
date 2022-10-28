@@ -33,6 +33,8 @@ const {
 class TaskFilter extends Base {
   static schema = () =>
     yup.object().shape({
+      order_by_unread_message: yup.boolean().nullable(),
+      filter_by_unread_message: yup.boolean().nullable(),
       global: yup
         .object()
         .shape({

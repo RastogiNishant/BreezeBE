@@ -65,6 +65,7 @@ const {
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+const ChatService = require('./ChatService')
 const MAX_DIST = 10000
 
 /**
@@ -1300,11 +1301,11 @@ class EstateService {
       query.whereIn('estates.id', [params.estate_id])
     }
 
-    const filter = new TaskFilters(params, query)
+    const taskFilter = new TaskFilters(params, query)
 
     query.groupBy('estates.id')
 
-    filter.afterQuery()
+    taskFilter.afterQuery()
 
     query.orderBy('mosturgency', 'desc')
 
@@ -1317,36 +1318,62 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    let estate = result.map((r) => {
-      const mostUrgency = maxBy(r[0].activeTasks, (re) => {
-        return re.urgency
+    //for testing
+    //await ChatService.getUnreadMessagesCount(40, user.id)
+
+    let estates = await Promise.all(
+      result.map(async (r) => {
+        const mostUrgency = maxBy(r[0].activeTasks, (re) => {
+          return re.urgency
+        })
+
+        const mostUpdated =
+          r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+        await Promise.all(
+          r[0].activeTasks.map(async (task) => {
+            task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
+          })
+        )
+        const has_unread_message =
+          (r[0].activeTasks || []).findIndex((task) => task.unread_message_count) !== -1
+            ? true
+            : false
+
+        let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
+
+        const taskCount = (r[0].tasks || []).length || 0
+        return {
+          ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
+          activeTasks: activeTasks,
+          mosturgency: mostUrgency?.urgency,
+          most_task_updated: mostUpdated,
+          has_unread_message,
+          taskSummary: {
+            taskCount,
+            activeTaskCount: r[0].activeTasks.length || 0,
+            mostUrgency: mostUrgency?.urgency || null,
+            mostUrgencyCount: mostUrgency
+              ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
+              : 0,
+          },
+        }
       })
+    )
 
-      const mostUpdated =
-        r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+    if (params && params.filter_by_unread_message) {
+      estates = filter(estates, { has_unread_message: true })
+    }
 
-      let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
-      const taskCount = (r[0].tasks || []).length || 0
-      return {
-        ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
-        activeTasks: activeTasks,
-        mosturgency: mostUrgency?.urgency,
-        most_task_updated: mostUpdated,
-        taskSummary: {
-          taskCount,
-          activeTaskCount: r[0].activeTasks.length || 0,
-          mostUrgency: mostUrgency?.urgency || null,
-          mostUrgencyCount: mostUrgency
-            ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
-            : 0,
-        },
-      }
-    })
+    let orderKeys = ['most_task_updated', 'mosturgency']
+    let orderRules = ['desc', 'desc']
 
-    estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
-
+    if (params && params.order_by_unread_message) {
+      orderKeys = ['has_unread_message', ...orderKeys]
+      orderRules = ['desc', ...orderRules]
+    }
+    estates = orderBy(estates, orderKeys, orderRules)
     await Promise.all(
-      estate.map(async (est) => {
+      estates.map(async (est) => {
         await est.activeTasks.map(async (task) => {
           task = await require('./TaskService').getItemWithAbsoluteUrl(task)
           return task
@@ -1354,7 +1381,7 @@ class EstateService {
       })
     )
 
-    return estate
+    return estates
   }
 
   static async getTotalLetCount(user_id, params, filtering = true) {
