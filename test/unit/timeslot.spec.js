@@ -22,6 +22,7 @@ const {
   test_start_at,
   test_end_at,
   test_start_at_tomorrow,
+  test_end_at_tomorrow,
   invalid_slot_length,
   test_invalid_range_start_at,
   test_invalid_range_end_at,
@@ -72,8 +73,8 @@ test('it should deny to pass with invalid time range', async ({ assert }) => {
 test('it should allow to pass with null slot_length', async ({ assert }) => {
   try {
     const resp = TimeSlotService.validateTimeRange({
-      start_at: test_invalid_range_start_at,
-      end_at: test_invalid_range_end_at,
+      start_at: test_start_at,
+      end_at: test_end_at,
       slot_length: null,
     })
     assert.equal(resp, true)
@@ -85,8 +86,8 @@ test('it should allow to pass with null slot_length', async ({ assert }) => {
 test('it should allow to pass with valid time range', async ({ assert }) => {
   try {
     const resp = TimeSlotService.validateTimeRange({
-      start_at: test_invalid_range_start_at,
-      end_at: test_invalid_range_end_at,
+      start_at: test_start_at,
+      end_at: test_end_at,
       slot_length: test_slot_length,
     })
     assert.equal(resp, true)
