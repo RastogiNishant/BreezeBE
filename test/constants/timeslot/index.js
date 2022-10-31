@@ -1,30 +1,28 @@
 const moment = require('moment')
 const Database = use('Database')
-const { MATCH_STATUS_VISIT } = require('../../../app/constants')
+const { MATCH_STATUS_VISIT, DATE_FORMAT } = require('../../../app/constants')
 const Visit = use('App/Models/Visit')
 const Match = use('App/Models/Match')
 
-const TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
-
 const getTomorrow = () => moment.utc().startOf('day').add(1, 'day')
-const test_start_at = getTomorrow().add(6, 'hours').format(TIME_FORMAT)
-const test_end_at = getTomorrow().add(7, 'hours').format(TIME_FORMAT)
-const test_slot_length = 15
+const test_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
+const test_end_at = getTomorrow().add(7, 'hours').format(DATE_FORMAT)
+const test_slot_length = 30
 
-const test_new_start_at = getTomorrow().add(6, 'hours').format(TIME_FORMAT)
-const test_new_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(TIME_FORMAT)
+const test_new_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
+const test_new_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(DATE_FORMAT)
 const test_new_slot_length = 5
 
 const invalid_slot_length = 12
 
-const test_start_at_tomorrow = getTomorrow().add(1, 'day').add(6, 'hours').format(TIME_FORMAT)
-const test_end_at_tomorrow = getTomorrow().add(1, 'day').add(7, 'hours').format(TIME_FORMAT)
+const test_start_at_tomorrow = getTomorrow().add(1, 'day').add(6, 'hours').format(DATE_FORMAT)
+const test_end_at_tomorrow = getTomorrow().add(1, 'day').add(7, 'hours').format(DATE_FORMAT)
 
-const test_crossing_start_at = getTomorrow().add(6, 'hours').format(TIME_FORMAT)
-const test_crossing_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(TIME_FORMAT)
+const test_crossing_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
+const test_crossing_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(DATE_FORMAT)
 
-const test_invalid_range_start_at = getTomorrow().format(TIME_FORMAT)
-const test_invalid_range_end_at = getTomorrow().add(32, 'minutes').format(TIME_FORMAT)
+const test_invalid_range_start_at = getTomorrow().format(DATE_FORMAT)
+const test_invalid_range_end_at = getTomorrow().add(32, 'minutes').format(DATE_FORMAT)
 
 const testUserEmail = 'it@bits.ventures'
 const testUserEmail2 = 'ookndkrk@gmail.com'
@@ -65,9 +63,9 @@ const prepareVisitInTimeRange = (prospect, estate) => {
   return {
     estate_id: estate.id,
     user_id: prospect.id,
-    date: moment.utc(dummyTimeSlotData.start_at).format(TIME_FORMAT),
-    start_date: moment.utc(dummyTimeSlotData.start_at).format(TIME_FORMAT),
-    end_date: moment.utc(dummyTimeSlotData.start_at).add(30, 'minutes').format(TIME_FORMAT),
+    date: moment.utc(dummyTimeSlotData.start_at).format(DATE_FORMAT),
+    start_date: moment.utc(dummyTimeSlotData.start_at).format(DATE_FORMAT),
+    end_date: moment.utc(dummyTimeSlotData.start_at).add(30, 'minutes').format(DATE_FORMAT),
   }
 }
 

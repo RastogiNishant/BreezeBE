@@ -11,35 +11,21 @@ const EstateService = use('App/Services/EstateService')
 
 const { before, after } = Suite
 
-let dummyTimeSlotData,
+let testProspect, testLandlord, testEstate, testSlot, testSlotTomorrow
+
+const {
+  test_slot_length,
+  testUserEmail,
+  dummyTimeSlotData,
   dummyTimeSlotDataTomorrow,
   dummyCrossingTimeSlotData,
-  dummyInvalidRangeTimeSlotData,
-  testProspect,
-  testLandlord,
-  testEstate,
-  testSlot,
-  testSlotTomorrow
-
-const TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
-
-const getTomorrow = () => moment.utc().startOf('day').add(1, 'day')
-
-const test_start_at = getTomorrow().add(6, 'hours').format(TIME_FORMAT)
-const test_end_at = getTomorrow().add(7, 'hours').format(TIME_FORMAT)
-const test_slot_length = 30
-
-const test_start_at_tomorrow = getTomorrow().add(1, 'day').add(6, 'hours').format(TIME_FORMAT)
-const test_end_at_tomorrow = getTomorrow().add(1, 'day').add(7, 'hours').format(TIME_FORMAT)
-
-const test_crossing_start_at = getTomorrow().add(6, 'hours').format(TIME_FORMAT)
-const test_crossing_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(TIME_FORMAT)
-
-const test_invalid_range_start_at = getTomorrow().format(TIME_FORMAT)
-const test_invalid_range_end_at = getTomorrow().add(30, 'minutes').format(TIME_FORMAT)
-const test_invalid_range_slot_length = 11
-
-const testUserEmail = 'it@bits.ventures'
+  test_start_at,
+  test_end_at,
+  test_start_at_tomorrow,
+  invalid_slot_length,
+  test_invalid_range_start_at,
+  test_invalid_range_end_at,
+} = require('../constants/timeslot')
 
 before(async () => {
   try {
@@ -58,29 +44,6 @@ before(async () => {
     if (!testProspect || !testLandlord || !testEstate) {
       //TODO: throw error
     }
-
-    dummyTimeSlotData = {
-      start_at: test_start_at,
-      end_at: test_end_at,
-      slot_length: test_slot_length,
-    }
-
-    dummyTimeSlotDataTomorrow = {
-      start_at: test_start_at_tomorrow,
-      end_at: test_end_at_tomorrow,
-    }
-
-    dummyCrossingTimeSlotData = {
-      start_at: test_crossing_start_at,
-      end_at: test_crossing_end_at,
-      slot_length: test_slot_length,
-    }
-
-    dummyInvalidRangeTimeSlotData = {
-      start_at: test_invalid_range_start_at,
-      end_at: test_invalid_range_end_at,
-      slot_length: test_invalid_range_slot_length,
-    }
   } catch (e) {
     console.log(e)
   }
@@ -98,7 +61,7 @@ test('it should deny to pass with invalid time range', async ({ assert }) => {
     TimeSlotService.validateTimeRange({
       start_at: test_invalid_range_start_at,
       end_at: test_invalid_range_end_at,
-      slot_length: test_invalid_range_slot_length,
+      slot_length: invalid_slot_length,
     })
     assert.fail('Invalid time range time slot accepted. Should not be accepted')
   } catch (e) {
