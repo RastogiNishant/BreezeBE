@@ -33,6 +33,7 @@ const exceptions = {
   FAILED_GET_OWNER: 'Failed to get owner',
   INVALID_TOKEN: 'Invalid token',
   NO_CODE_PASSED: 'No code',
+  ACCOUNT_ALREADY_VERIFIED: 'Your account has been already verified',
 }
 
 const exceptionKeys = {
@@ -67,6 +68,7 @@ const exceptionKeys = {
   FAILED_GET_OWNER: 'FAILED_GET_OWNER',
   INVALID_TOKEN: 'INVALID_TOKEN',
   NO_CODE_PASSED: 'NO_CODE_PASSED',
+  ACCOUNT_ALREADY_VERIFIED: 'ACCOUNT_ALREADY_VERIFIED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

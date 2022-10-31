@@ -7,30 +7,12 @@ const Database = use('Database')
 const Logger = use('Logger')
 const UserService = use('App/Services/UserService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
-const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick, trim } = require('lodash')
 
 const {
-  exceptions: {
-    REQUIRED,
-    MINLENGTH,
-    MAXLENGTH,
-    OPTION,
-    DATE,
-    BOOLEAN,
-    EMAIL,
-    MATCH,
-    USER_NOT_FOUND,
-    USER_NOT_EXIST,
-    USER_WRONG_PASSWORD,
-    ARRAY,
-    NUMBER,
-    USER_UNIQUE,
-    USER_CLOSED,
-    FAILED_UPLOAD_AVATAR,
-  },
+  exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },
 } = require('../../../app/excepions')
 
 const { getAuthByRole } = require('../../Libs/utils')
@@ -38,7 +20,6 @@ const { getAuthByRole } = require('../../Libs/utils')
 
 const {
   ROLE_LANDLORD,
-  ROLE_USER,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
@@ -104,8 +85,12 @@ class AccountController {
    */
   async resendUserConfirm({ request, response }) {
     const { user_id } = request.all()
-    const result = await UserService.resendUserConfirm(user_id)
-    response.res(result)
+    try {
+      const result = await UserService.resendUserConfirm(user_id)
+      response.res(result)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || e.code, e.code || 0)
+    }
   }
 
   /**
@@ -113,13 +98,13 @@ class AccountController {
    */
   async confirmEmail({ request, auth, response }) {
     const { code, user_id, from_web } = request.all()
+    let user
     try {
-      const user = await User.find(user_id)
+      user = await User.find(user_id)
       if (!user) {
         throw new HttpException(USER_NOT_EXIST, 400)
       }
       await UserService.confirmEmail(user, code)
-
       Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
     } catch (e) {
       Logger.error(e)
@@ -145,23 +130,15 @@ class AccountController {
     try {
       let { email, role, password, device_token } = request.all()
       let user, authenticator, token
-      try {
-        user = await UserService.login({ email, role, device_token })
-      } catch (e) {
-        throw new HttpException(e.message, 400)
-      }
-      try {
-        authenticator = getAuthByRole(auth, role)
-      } catch (e) {
-        throw new HttpException(e.message, 403)
-      }
+      user = await UserService.login({ email, role, device_token })
+      authenticator = getAuthByRole(auth, role)
 
       const uid = User.getHash(email, role)
       try {
         token = await authenticator.attempt(uid, password)
       } catch (e) {
         const [message] = e.message.split(':')
-        throw new HttpException(message, 401)
+        throw new HttpException(message, 400, 0)
       }
 
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
@@ -172,7 +149,7 @@ class AccountController {
 
       return response.res(token)
     } catch (e) {
-      throw new HttpException(e.message, e.code || 400)
+      throw e.status && e.code ? e : new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
@@ -203,6 +180,7 @@ class AccountController {
    *
    */
   async closeAccount({ auth, response }) {
+    //TODO: check this endpoint response
     await UserService.closeAccount(auth.user)
     response.res({ message: USER_CLOSED })
   }
@@ -337,7 +315,7 @@ class AccountController {
     }
   }
 
-  async resetUnreadNotificationCount({ request, auth, response }) {
+  async resetUnreadNotificationCount({ auth, response }) {
     try {
       await UserService.resetUnreadNotificationCount(auth.user.id)
       return response.send(200)

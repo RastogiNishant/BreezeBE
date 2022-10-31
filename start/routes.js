@@ -263,7 +263,9 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'userCanValidlyChangeEmail',
 ])
 
-Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
+Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm').middleware([
+  'valid:UserId',
+])
 
 Route.group(() => {
   Route.get('/', 'AccountController.onboard').middleware(['auth:jwt,jwtLandlord'])
@@ -481,7 +483,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
   'EstateCurrentTenantController.retrieveLinkByCode'
-).middleware(['valid:InvitationLinkRetrieveCode'])
+).middleware(['valid:InvitationLinkRetrieveCode', 'UserCanGetInvitationLink'])
 
 Route.post(
   '/api/v1/validate/outside_tenant/invitation',

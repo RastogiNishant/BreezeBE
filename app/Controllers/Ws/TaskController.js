@@ -100,10 +100,9 @@ class TaskController extends BaseController {
 
   async onMessage(message) {
     //FIXME: make slim controller
-    let task
+    const task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
     if (this.user.role === ROLE_LANDLORD) {
       //we check whether this is in progress
-      task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
 
       if ([TASK_STATUS_NEW, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED].includes(task.status)) {
         //if in progress make it TASK_STATUS_NEW
@@ -134,7 +133,10 @@ class TaskController extends BaseController {
         : `landlord:${this.estate_user_id}`
 
     //broadcast taskMessageReceived event to either tenant or landlord
-    this.broadcastToTopic(recipientTopic, 'taskMessageReceived', { topic: this.socket.topic })
+    this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
+      topic: this.socket.topic,
+      urgency: task?.urgency,
+    })
     const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
     await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
     super.onMessage(message)

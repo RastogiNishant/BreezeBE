@@ -231,7 +231,7 @@ class ChatService {
   static async getUserUnreadMessagesByTopic(userId, role) {
     let taskEstates
     let query = Task.query()
-      .select('tasks.id as task_id', 'estates.id as estate_id')
+      .select('tasks.id as task_id', 'estates.id as estate_id', 'tasks.urgency')
       .leftJoin('estates', 'estates.id', 'tasks.estate_id')
       .leftJoin('estate_current_tenants', function () {
         this.on('tasks.tenant_id', 'estate_current_tenants.user_id').on(
@@ -258,6 +258,7 @@ class ChatService {
           ...unreadMessagesByTopic,
           {
             topic: `task:${taskEstate.estate_id}brz${taskEstate.task_id}`,
+            urgency: taskEstate?.urgency,
             unread: unreadMessagesCount,
           },
         ]
