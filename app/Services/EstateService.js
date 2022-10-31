@@ -1452,6 +1452,19 @@ class EstateService {
     })
   }
 
+  static async hasEstate(user_id) {
+    const estate = await Estate.query()
+      .select('id')
+      .where('user_id', user_id)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+
+    if (!estate) {
+      return false
+    }
+    return true
+  }
+
   static async deletePermanent(user_id) {
     await Estate.query().where('user_id', user_id).delete()
   }
