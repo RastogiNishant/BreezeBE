@@ -1001,6 +1001,11 @@ class UserService {
 
     user = user.toJSON({ isOwner: true })
     user.is_admin = false
+
+    if (user.role === ROLE_LANDLORD) {
+      user.has_property = await require('./EstateService').hasEstate(user.id)
+    }
+
     return user
   }
 
