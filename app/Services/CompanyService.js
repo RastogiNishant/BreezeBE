@@ -12,7 +12,6 @@ const Database = use('Database')
 // const CreateCompany = require('../Validators/CreateCompany')
 // const CreateContact = require('../Validators/CreateContact')
 
-const { wrapValidationError } = require('../Libs/utils.js')
 const {
   MATCH_STATUS_FINISH,
   COMPANY_TYPE_PRIVATE,
