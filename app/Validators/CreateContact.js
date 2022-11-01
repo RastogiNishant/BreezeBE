@@ -8,7 +8,7 @@ const UpdateContact = require('./UpdateContact')
 class CreateContact extends Base {
   static schema = () => {
     const schema = UpdateContact.schema().clone()
-    const required = ['full_name', 'email', 'phone']
+    const required = ['full_name', 'email']
     schema.fields = reduce(
       schema.fields,
       (n, v, k) => {
