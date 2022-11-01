@@ -21,13 +21,13 @@ class UpdateCompany extends Base {
       // email: yup.string().email().lowercase(),
       // phone: yup.string(),
       name: yup.string().max(255),
-      address: yup
-        .string()
-        // .matches(
-        //   /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)\s+\d+[\-]{0,1}\d*(,\s)(\d){4,5}([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)(,\s*[A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)?$/,
-        //   'Address format is wrong'
-        // )
-        .min(10),
+      // address: yup
+      //   .string()
+      //   // .matches(
+      //   //   /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)\s+\d+[\-]{0,1}\d*(,\s)(\d){4,5}([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)(,\s*[A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)?$/,
+      //   //   'Address format is wrong'
+      //   // )
+      //   .min(10),
       tax_number: yup.string().max(255),
       trade_register_nr: yup.string().max(255),
       umsst: yup.string().max(255),
