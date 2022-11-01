@@ -988,7 +988,9 @@ Route.get('/api/v1/landlord/:id/company', 'CompanyController.getCompanyByLandlor
  */
 Route.group(() => {
   Route.get('/', 'CompanyController.getContacts')
-  Route.post('/', 'CompanyController.createContact').middleware(['valid:CreateContact'])
+  Route.post('/', 'CompanyController.createContact').middleware([
+    'valid:CreateContact,WebOnboardContact',
+  ])
   Route.put('/:id', 'CompanyController.updateContact').middleware(['valid:Id,UpdateContact'])
   Route.delete('/:id', 'CompanyController.removeContact').middleware(['valid:Id'])
 })
