@@ -88,26 +88,21 @@ beforeEach(async () => {
 })
 
 test('it should create a timeslot successfully with slot length', async ({ assert, client }) => {
-  try {
-    let response = await client
-      .post(`/api/v1/estates/${testEstate.id}/slots`)
-      .loginVia(testLandlord, 'jwtLandlord')
-      .send(dummyTimeSlotData)
-      .end()
+  let response = await client
+    .post(`/api/v1/estates/${testEstate.id}/slots`)
+    .loginVia(testLandlord, 'jwtLandlord')
+    .send(dummyTimeSlotData)
+    .end()
 
-    testSlot = response.body.data
+  testSlot = response.body.data
 
-    response.assertStatus(200)
-    response.assertJSONSubset({
-      data: {
-        estate_id: testEstate.id,
-        ...dummyTimeSlotData,
-      },
-    })
-  } catch (e) {
-    console.log(e)
-    assert.fail('Failed to create time slot')
-  }
+  response.assertStatus(200)
+  response.assertJSONSubset({
+    data: {
+      estate_id: testEstate.id,
+      ...dummyTimeSlotData,
+    },
+  })
 })
 
 test('it should create a timeslot successfully without slot length', async ({ assert, client }) => {

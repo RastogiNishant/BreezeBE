@@ -58,8 +58,6 @@ class TimeSlotService {
         })
       }
 
-      console.log({ removeVisitsAt })
-
       const invitedUserIds = await MatchService.getInvitedUserIds(estate_id)
 
       let visitIds = []

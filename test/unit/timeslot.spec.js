@@ -101,17 +101,12 @@ test('it should allow to pass with valid time range', async ({ assert }) => {
 })
 
 test('it should create a timeslot successfully with slot length', async ({ assert }) => {
-  try {
-    testSlot = await TimeSlotService.createSlot(dummyTimeSlotData, testEstate)
-    testSlot = testSlot.toJSON()
-    assert.equal(testSlot.estate_id, testEstate.id)
-    assert.equal(testSlot.start_at, test_start_at)
-    assert.equal(testSlot.end_at, test_end_at)
-    assert.equal(testSlot.slot_length, test_slot_length)
-  } catch (e) {
-    console.log(e)
-    assert.fail('Failed to create time slot')
-  }
+  testSlot = await TimeSlotService.createSlot(dummyTimeSlotData, testEstate)
+  testSlot = testSlot.toJSON()
+  assert.equal(testSlot.estate_id, testEstate.id)
+  assert.equal(testSlot.start_at, test_start_at)
+  assert.equal(testSlot.end_at, test_end_at)
+  assert.equal(testSlot.slot_length, test_slot_length)
 })
 
 test('it should create a timeslot successfully without slot length', async ({ assert }) => {
