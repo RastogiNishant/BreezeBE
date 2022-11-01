@@ -9,9 +9,6 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
 
-// const CreateCompany = require('../Validators/CreateCompany')
-// const CreateContact = require('../Validators/CreateContact')
-
 const {
   MATCH_STATUS_FINISH,
   COMPANY_TYPE_PRIVATE,
@@ -23,7 +20,6 @@ const {
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
-  STATUS_ACTIVE,
   STATUS_DELETE,
 } = require('../constants')
 
