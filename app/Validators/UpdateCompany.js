@@ -20,7 +20,7 @@ class UpdateCompany extends Base {
     return yup.object().shape({
       // email: yup.string().email().lowercase(),
       // phone: yup.string(),
-      name: yup.string().max(255),
+      name: yup.string().max(255).required(),
       // address: yup
       //   .string()
       //   // .matches(

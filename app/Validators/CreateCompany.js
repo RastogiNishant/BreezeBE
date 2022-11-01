@@ -17,7 +17,7 @@ const {
 class CreateCompany extends Base {
   static schema = () => {
     return yup.object().shape({
-      name: yup.string().max(255).required(),
+      name: yup.string().max(255),
       tax_number: yup.string().max(255),
       trade_register_nr: yup.string().max(255),
       umsst: yup.string().max(255),

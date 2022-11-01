@@ -123,7 +123,7 @@ class CompanyController {
    */
   async updateContact({ request, auth, response }) {
     const { id, ...data } = request.all()
-    console.log('updateContact data=', data)
+
     if (data.address) {
       await CompanyService.updateCompany(auth.user.id, { address: data.address })
     }
