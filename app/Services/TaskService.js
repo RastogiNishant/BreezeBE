@@ -323,7 +323,7 @@ class TaskService {
       )
 
     if (role === ROLE_USER) {
-      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
