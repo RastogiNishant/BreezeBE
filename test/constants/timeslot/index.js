@@ -7,7 +7,7 @@ const Match = use('App/Models/Match')
 const getTomorrow = () => moment.utc().startOf('day').add(1, 'day')
 const test_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
 const test_end_at = getTomorrow().add(7, 'hours').format(DATE_FORMAT)
-const test_slot_length = 30
+const test_slot_length = 15
 
 const test_new_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
 const test_new_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(DATE_FORMAT)

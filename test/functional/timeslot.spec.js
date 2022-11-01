@@ -10,8 +10,6 @@ const {
 const {
   test_new_start_at,
   test_new_end_at,
-  testUserEmail,
-  testUserEmail2,
   dummyTimeSlotData,
   dummyTimeSlotDataTomorrow,
   dummyCrossingTimeSlotData,
@@ -28,10 +26,10 @@ const {
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
 } = require('../../app/excepions')
+const { mockUser, mockSecondUser } = require('../mock/user.mock')
 
 const Suite = use('Test/Suite')('Time Slot Functional')
 const { test, before, after, trait, beforeEach } = Suite
-const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const Visit = use('App/Models/Visit')
@@ -45,19 +43,13 @@ let testProspect, testLandlord, testProspectAnother, testEstate, testSlot
 
 before(async () => {
   try {
-    setTimeout(() => {}, 2000)
-    await Promise.resolve(async () => {
-      await setTimeout(() => {}, 2000)
-    })
-    testProspect = await User.query().where('email', testUserEmail).where('role', ROLE_USER).first()
-    testProspectAnother = await User.query()
-      .where('email', testUserEmail2)
-      .where('role', ROLE_USER)
-      .first()
-    testLandlord = await User.query()
-      .where('email', testUserEmail)
-      .where('role', ROLE_LANDLORD)
-      .first()
+    const mockUsers = await mockUser()
+    testProspect = mockUsers.testProspect
+    testLandlord = mockUsers.testLandlord
+
+    const secondMockUsers = await mockSecondUser()
+    testProspectAnother = secondMockUsers.secondTestProspect
+
     testEstate = await EstateService.createEstate({
       userId: testLandlord.id,
       data: {

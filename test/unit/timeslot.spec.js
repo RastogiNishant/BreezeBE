@@ -1,9 +1,7 @@
 const moment = require('moment')
-const { ROLE_USER, ROLE_LANDLORD } = require('../../app/constants')
 
 const Suite = use('Test/Suite')('User')
 const { test } = Suite
-const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const TimeSlotService = use('App/Services/TimeSlotService')
@@ -15,7 +13,6 @@ let testProspect, testLandlord, testEstate, testSlot, testSlotTomorrow
 
 const {
   test_slot_length,
-  testUserEmail,
   dummyTimeSlotData,
   dummyTimeSlotDataTomorrow,
   dummyCrossingTimeSlotData,
@@ -31,14 +28,14 @@ const {
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
 } = require('../../app/excepions')
+const { mockUser } = require('../mock/user.mock')
 
 before(async () => {
   try {
-    testProspect = await User.query().where('email', testUserEmail).where('role', ROLE_USER).first()
-    testLandlord = await User.query()
-      .where('email', testUserEmail)
-      .where('role', ROLE_LANDLORD)
-      .first()
+    const mockUsers = await mockUser()
+    testProspect = mockUsers.testProspect
+    testLandlord = mockUsers.testLandlord
+
     testEstate = await EstateService.createEstate({
       userId: testLandlord.id,
       data: {
