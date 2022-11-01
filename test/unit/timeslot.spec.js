@@ -229,22 +229,47 @@ test('it should return correct free slot items for existing time slots', async (
     assert.equal(secondDayKey, moment.utc(testSlotTomorrow.start_at).startOf('day').format('X'))
 
     const firstDayItems = slots[firstDayKey]
-    assert.equal(firstDayItems.length, 2)
+    assert.equal(firstDayItems.length, 4)
 
     const firstDayFirstItem = {
       from: moment.utc(testSlot.start_at).format('X'),
       to: moment.utc(testSlot.start_at).add(test_slot_length, 'minutes').format('X'),
     }
-
     assert.equal(firstDayItems[0].from, parseInt(firstDayFirstItem.from))
     assert.equal(firstDayItems[0].to, parseInt(firstDayFirstItem.to))
 
     const firstDaySecondItem = {
       from: moment.utc(test_start_at).add(test_slot_length, 'minutes').format('X'),
-      to: moment.utc(test_end_at).format('X'),
+      to: moment
+        .utc(test_start_at)
+        .add(test_slot_length * 2, 'minutes')
+        .format('X'),
     }
     assert.equal(firstDayItems[1].from, parseInt(firstDaySecondItem.from))
     assert.equal(firstDayItems[1].to, parseInt(firstDaySecondItem.to))
+
+    const firstDayThirdItem = {
+      from: moment
+        .utc(test_start_at)
+        .add(test_slot_length * 2, 'minutes')
+        .format('X'),
+      to: moment
+        .utc(test_start_at)
+        .add(test_slot_length * 3, 'minutes')
+        .format('X'),
+    }
+    assert.equal(firstDayItems[2].from, parseInt(firstDayThirdItem.from))
+    assert.equal(firstDayItems[2].to, parseInt(firstDayThirdItem.to))
+
+    const firstForthThirdItem = {
+      from: moment
+        .utc(test_start_at)
+        .add(test_slot_length * 3, 'minutes')
+        .format('X'),
+      to: moment.utc(test_end_at).format('X'),
+    }
+    assert.equal(firstDayItems[3].from, parseInt(firstForthThirdItem.from))
+    assert.equal(firstDayItems[3].to, parseInt(firstForthThirdItem.to))
 
     const secondDayItems = slots[secondDayKey]
     assert.equal(secondDayItems.length, 1)
