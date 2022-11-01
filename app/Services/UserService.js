@@ -658,6 +658,19 @@ class UserService {
     return (await User.query().select('*').where('role', role).fetch()).rows
   }
 
+  static async getLangByIds({ ids, status = null }) {
+    let query = User.query()
+      .select(['id', 'email', 'lang'])
+      .whereNot('status', STATUS_DELETE)
+      .whereIn('id', ids)
+
+    if (!status) {
+      query.where('status', status)
+    }
+
+    return (await query.fetch()).rows
+  }
+
   static async housekeeperSignup({ code, email, password, firstname, lang }) {
     const member = await Member.query()
       .select('user_id', 'id')

@@ -34,6 +34,7 @@ const exceptions = {
   INVALID_TOKEN: 'Invalid token',
   NO_CODE_PASSED: 'No code',
   ACCOUNT_ALREADY_VERIFIED: 'Your account has been already verified',
+  ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
 }
 
 const exceptionKeys = {
