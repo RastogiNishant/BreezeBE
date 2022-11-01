@@ -664,7 +664,7 @@ class UserService {
       .whereNot('status', STATUS_DELETE)
       .whereIn('id', ids)
 
-    if (!status) {
+    if (status) {
       query.where('status', status)
     }
 
