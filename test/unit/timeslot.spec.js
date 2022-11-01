@@ -28,6 +28,10 @@ const {
   test_invalid_range_end_at,
 } = require('../constants/timeslot')
 
+const {
+  exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
+} = require('../../app/excepions')
+
 before(async () => {
   try {
     testProspect = await User.query().where('email', testUserEmail).where('role', ROLE_USER).first()
@@ -66,7 +70,7 @@ test('it should deny to pass with invalid time range', async ({ assert }) => {
     })
     assert.fail('Invalid time range time slot accepted. Should not be accepted')
   } catch (e) {
-    assert.equal(e.message, 'Invalid time range')
+    assert.equal(e.message, INVALID_TIME_RANGE)
   }
 })
 
@@ -130,7 +134,7 @@ test('it should fail to create a timeslot due to crossing', async ({ assert }) =
     testSlot = testSlot.toJSON()
     assert.fail('Crossing time slot accepted. Should not be accepted')
   } catch (e) {
-    assert.equal(e.message, 'Time slot crossing existing')
+    assert.equal(e.message, TIME_SLOT_CROSSING_EXISTING)
   }
 })
 

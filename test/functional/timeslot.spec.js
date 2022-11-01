@@ -25,6 +25,10 @@ const {
   invalid_slot_length,
 } = require('../constants/timeslot')
 
+const {
+  exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
+} = require('../../app/excepions')
+
 const Suite = use('Test/Suite')('Time Slot Functional')
 const { test, before, after, trait, beforeEach } = Suite
 const User = use('App/Models/User')
@@ -41,6 +45,10 @@ let testProspect, testLandlord, testProspectAnother, testEstate, testSlot
 
 before(async () => {
   try {
+    setTimeout(() => {}, 2000)
+    await Promise.resolve(async () => {
+      await setTimeout(() => {}, 2000)
+    })
     testProspect = await User.query().where('email', testUserEmail).where('role', ROLE_USER).first()
     testProspectAnother = await User.query()
       .where('email', testUserEmail2)
@@ -131,7 +139,7 @@ test('it should fail to create timeslot due to crossing time slots', async ({ as
     response.assertStatus(400)
     response.assertError({
       status: 'error',
-      data: 'Time slot crossing existing',
+      data: TIME_SLOT_CROSSING_EXISTING,
       code: 0,
     })
   } catch (e) {
@@ -149,7 +157,7 @@ test('it should fail to create timeslot due to invalid time range', async ({ ass
     response.assertStatus(400)
     response.assertError({
       status: 'error',
-      data: 'Invalid time range',
+      data: INVALID_TIME_RANGE,
       code: 0,
     })
   } catch (e) {

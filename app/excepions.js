@@ -34,6 +34,10 @@ const exceptions = {
   INVALID_TOKEN: 'Invalid token',
   NO_CODE_PASSED: 'No code',
   ACCOUNT_ALREADY_VERIFIED: 'Your account has been already verified',
+  INVALID_TIME_RANGE: 'Invalid time range',
+  TIME_SLOT_CROSSING_EXISTING: 'Time slot crossing existing',
+  TIME_SLOT_NOT_FOUND: 'Time slot not found',
+  SHOW_ALREADY_STARTED: 'Show already started',
 }
 
 const exceptionKeys = {
@@ -69,6 +73,10 @@ const exceptionKeys = {
   INVALID_TOKEN: 'INVALID_TOKEN',
   NO_CODE_PASSED: 'NO_CODE_PASSED',
   ACCOUNT_ALREADY_VERIFIED: 'ACCOUNT_ALREADY_VERIFIED',
+  INVALID_TIME_RANGE: 'INVALID_TIME_RANGE',
+  TIME_SLOT_CROSSING_EXISTING: 'TIME_SLOT_CROSSING_EXISTING',
+  TIME_SLOT_NOT_FOUND: 'TIME_SLOT_NOT_FOUND',
+  SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

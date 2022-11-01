@@ -9,6 +9,14 @@ const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const NoticeService = use('App/Services/NoticeService')
 
+const {
+  exceptions: {
+    INVALID_TIME_RANGE,
+    TIME_SLOT_CROSSING_EXISTING,
+    TIME_SLOT_NOT_FOUND,
+    SHOW_ALREADY_STARTED,
+  },
+} = require('../excepions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length }, estate) {
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
@@ -17,7 +25,7 @@ class TimeSlotService {
     const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
 
     if (existing) {
-      throw new AppException('Time slot crossing existing')
+      throw new AppException(TIME_SLOT_CROSSING_EXISTING)
     }
 
     return TimeSlot.createItem({ end_at, start_at, slot_length, estate_id: estate.id })
@@ -28,7 +36,7 @@ class TimeSlotService {
     const slot = await this.getTimeSlotByOwner(user_id, slot_id)
 
     if (!slot) {
-      throw new HttpException('Time slot not found', 404)
+      throw new HttpException(TIME_SLOT_NOT_FOUND, 404)
     }
 
     const { slot_length, end_at, start_at } = slot.toJSON()
@@ -104,7 +112,7 @@ class TimeSlotService {
       .first()
 
     if (crossingSlot) {
-      throw new AppException('Time slot crossing existing')
+      throw new AppException(TIME_SLOT_CROSSING_EXISTING)
     }
     await slot.save(trx)
     return slot
@@ -114,7 +122,7 @@ class TimeSlotService {
     if (slot_length) {
       const minDiff = moment.utc(end_at).diff(moment.utc(start_at), 'minutes')
       if (minDiff % slot_length !== 0) {
-        throw new AppException('Invalid time range')
+        throw new AppException(INVALID_TIME_RANGE)
       }
     }
     return true
@@ -268,12 +276,12 @@ class TimeSlotService {
   static async removeSlot(user_id, slot_id) {
     const slot = await TimeSlotService.getTimeSlotByOwner(user_id, slot_id)
     if (!slot) {
-      throw new HttpException('Time slot not found', 404)
+      throw new HttpException(TIME_SLOT_NOT_FOUND, 404)
     }
 
     // The landlord can't remove the slot if it is already started
     if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException('Showing is already started', 500)
+      throw new HttpException(SHOW_ALREADY_STARTED)
     }
 
     // If slot's end date is passed, we only delete the slot
