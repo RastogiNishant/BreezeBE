@@ -4,12 +4,13 @@ const Suite = use('Test/Suite')('User')
 const { test } = Suite
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
+const Visit = use('App/Models/Visit')
 const TimeSlotService = use('App/Services/TimeSlotService')
 const EstateService = use('App/Services/EstateService')
 
 const { before, after } = Suite
 
-let testProspect, testLandlord, testEstate, testSlot, testSlotTomorrow
+let testProspect, secondTestProspect, testLandlord, testEstate, testSlot, testSlotTomorrow
 
 const {
   test_slot_length,
@@ -28,13 +29,17 @@ const {
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
 } = require('../../app/excepions')
-const { mockUser } = require('../mock/user.mock')
+const { mockUser, mockSecondUser } = require('../mock/user.mock')
+const { DATE_FORMAT } = require('../../app/constants')
 
 before(async () => {
   try {
     const mockUsers = await mockUser()
     testProspect = mockUsers.testProspect
     testLandlord = mockUsers.testLandlord
+
+    const secondMockUsers = await mockSecondUser()
+    secondTestProspect = secondMockUsers.secondTestProspect
 
     testEstate = await EstateService.createEstate({
       userId: testLandlord.id,
@@ -54,6 +59,7 @@ before(async () => {
 after(async () => {
   if (testEstate) {
     await TimeSlot.query().where('estate_id', testEstate.id).delete()
+    await Visit.query().where('estate_id', testEstate.id).delete()
     await Estate.query().where('id', testEstate.id).delete()
   }
 })
@@ -192,11 +198,31 @@ test('it should return empty array in case of not existing estate', async ({ ass
 
 test('it should fetch the time slots by estate successfully', async ({ assert }) => {
   try {
+    //Mock visit for the time slot
+    await Visit.query().insert({
+      estate_id: testEstate.id,
+      user_id: testProspect.id,
+      date: test_start_at,
+      start_date: test_start_at,
+      end_date: moment(test_start_at).add(test_slot_length, 'minutes').format(DATE_FORMAT),
+    })
+
+    //Mock visit for the not existing time slot
+    //We should see that not related visit is not returned
+    await Visit.query().insert({
+      estate_id: testEstate.id,
+      user_id: secondTestProspect.id,
+      date: moment().add(30, 'days').format(DATE_FORMAT),
+      start_date: moment().add(30, 'days').format(DATE_FORMAT),
+      end_date: moment().add(30, 'days').add(15, 'minutes').format(DATE_FORMAT),
+    })
+
     let slots = await TimeSlotService.getTimeSlotsByEstate(testEstate)
     slots = slots.toJSON()
     assert.equal(slots.length, 2)
 
     assert.equal(slots[0].id, testSlotTomorrow.id)
+    assert.equal(slots[0].visitcount, 0)
     assert.equal(
       moment(slots[0].start_at).format('X'),
       moment(testSlotTomorrow.start_at).format('X')
@@ -206,10 +232,14 @@ test('it should fetch the time slots by estate successfully', async ({ assert })
     assert.equal(slots[0].slot_length, testSlotTomorrow.slot_length)
 
     assert.equal(slots[1].id, testSlot.id)
+    assert.equal(slots[1].visitcount, 1)
     assert.equal(moment(slots[1].start_at).format('X'), moment(testSlot.start_at).format('X'))
     assert.equal(moment(slots[1].end_at).format('X'), moment(testSlot.end_at).format('X'))
     assert.equal(slots[1].estate_id, testSlot.estate_id)
     assert.equal(slots[1].slot_length, testSlot.slot_length)
+
+    // Delete mocked visit
+    await Visit.query().where('estate_id', testEstate.id).delete()
   } catch (e) {
     console.log(e)
     assert.fail('Failed to get time slot by owner')
