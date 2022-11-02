@@ -1,11 +1,13 @@
 'use strict'
 
-const { test, before, after } = use('Test/Suite')('Unread Messages')
+const { test, before, after } = use('Test/Suite')('Unread Messages Count Unit Test')
 const { faker } = require('@faker-js/faker')
+const { CHAT_EDIT_STATUS_DELETED } = require('../../app/constants')
 const Database = use('Database')
 
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
+const Chat = use('App/Models/Chat')
 
 const { ROLE_LANDLORD, ROLE_USER } = use('App/constants')
 
@@ -49,9 +51,9 @@ const ChatService = use('App/Services/ChatService')
 
 after(async () => {
   //Cleanup
-  await Database.table('chats').where('task_id', taskId).delete()
-  await Database.table('tasks').where('id', taskId).delete()
-  await Database.table('estates').where('id', testCorrectEstate.id).delete()
+  // await Database.table('chats').where('task_id', taskId).delete()
+  // await Database.table('tasks').where('id', taskId).delete()
+  // await Database.table('estates').where('id', testCorrectEstate.id).delete()
 })
 
 test(`When task is created by landlord and landlord sent several messages
@@ -96,6 +98,10 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
   assert,
 }) => {
   // L L L TM T T
+
+  assert.isDefined(taskId)
+  //await Chat.query().where('task_id', taskId).delete()
+
   const messageCount = faker.datatype.number({
     min: 5,
     max: 10,
@@ -104,13 +110,28 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
     //tenant sent several messages...
     await ChatService.save(faker.hacker.phrase(), TenantUser.id, taskId)
   }
-  let unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TestLandlord.id)
+
+  const chats = (
+    await Chat.query()
+      .where('task_id', taskId)
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+      .fetch()
+  ).rows
+
+  //assert.equal(chats.length, messageCount)
+
+  let unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TenantUser.id)
+
   assert.equal(
     unreadMessagesCount,
     0,
     'Tenant sent messages so he should not have an unread message.'
   )
+
+  console.log('investigate start here!!!!!')
+
   unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TestLandlord.id)
+  console.log('unreadmessageCount here 2 >=', unreadMessagesCount)
   assert.equal(
     unreadMessagesCount,
     messageCount,

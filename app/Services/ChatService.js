@@ -146,6 +146,9 @@ class ChatService {
       .first()
 
     let count = 0
+
+    console.log('getUnreadMesageCount lastReadMarkerDate=', lastReadMarkerDate)
+    console.log('getUnreadMesageCount lastSentDate=', lastSentDate)
     if (lastReadMarkerDate && lastSentDate) {
       if (lastReadMarkerDate >= lastSentDate) {
         const unreadByMarker = await Chat.query()
