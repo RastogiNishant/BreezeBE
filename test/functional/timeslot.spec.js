@@ -277,28 +277,6 @@ test('it should fail to create timeslot due to not existing estate id', async ({
   }
 })
 
-test('it should fail to create timeslot due to not existing estate', async ({ assert, client }) => {
-  const notExistingEstateId = 99999
-
-  try {
-    let response = await client
-      .post(`/api/v1/estates/${notExistingEstateId}/slots`)
-      .loginVia(testLandlord, 'jwtLandlord')
-      .send({ ...dummyTimeSlotData })
-      .end()
-
-    response.assertStatus(400)
-    response.assertError({
-      status: 'error',
-      data: 'Estate not exists',
-      code: 0,
-    })
-  } catch (e) {
-    console.log(e)
-    assert.fail('Time slot invalid time range test failed.')
-  }
-})
-
 test('it should fail to create timeslot due to deleted estate', async ({ assert, client }) => {
   //TODO: error messages should be more specific
 
