@@ -232,8 +232,7 @@ class CompanyService {
           return String(v).replace(/[^\d]/gi, '')
         })
         .min(7)
-        .max(255)
-        .required(),
+        .max(255),
     })
     try {
       await map(contacts.rows, (i) => {
