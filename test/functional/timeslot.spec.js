@@ -22,7 +22,7 @@ const {
 } = require('../constants/timeslot')
 
 const {
-  exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
+  exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING, ESTATE_NOT_EXISTS },
   exceptionKeys: { OPTION },
   getExceptionMessage,
 } = require('../../app/excepions')
@@ -268,7 +268,7 @@ test('it should fail to create timeslot due to not existing estate id', async ({
     response.assertStatus(400)
     response.assertError({
       status: 'error',
-      data: 'Estate not exists',
+      data: ESTATE_NOT_EXISTS,
       code: 0,
     })
   } catch (e) {
@@ -296,7 +296,7 @@ test('it should fail to create timeslot due to deleted estate', async ({ assert,
     response.assertStatus(400)
     response.assertError({
       status: 'error',
-      data: 'Estate not exists',
+      data: ESTATE_NOT_EXISTS,
       code: 0,
     })
 

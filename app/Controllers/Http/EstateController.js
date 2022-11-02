@@ -16,7 +16,6 @@ const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
-const NoticeService = use('App/Services/NoticeService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
@@ -32,7 +31,6 @@ const {
   STATUS_DRAFT,
   STATUS_DELETE,
   ERROR_BUDDY_EXISTS,
-  DATE_FORMAT,
   DAY_FORMAT,
   MATCH_STATUS_NEW,
   PROPERTY_MANAGE_ALLOWED,
@@ -62,6 +60,10 @@ const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantSe
 const TimeSlotService = require('../../Services/TimeSlotService')
 
 const INVITE_CODE_STRING_LENGTH = 8
+
+const {
+  exceptions: { ESTATE_NOT_EXISTS },
+} = require('../../excepions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -616,7 +618,7 @@ class EstateController {
     const { code } = request.all()
     const estate = await EstateService.getEstateByHash(code)
     if (!estate) {
-      throw new HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
     }
 
     try {
@@ -645,7 +647,7 @@ class EstateController {
     const estate = await estateQuery.first()
 
     if (!estate) {
-      throw new HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
     }
 
     const slots = await TimeSlotService.getTimeSlotsByEstate(estate)
@@ -662,7 +664,7 @@ class EstateController {
       .where('id', estate_id)
       .first()
     if (!estate) {
-      throw new HttpException('Estate not exists', 400)
+      throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
 
     try {

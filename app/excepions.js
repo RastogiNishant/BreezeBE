@@ -39,6 +39,7 @@ const exceptions = {
   TIME_SLOT_NOT_FOUND: 'Time slot not found',
   SHOW_ALREADY_STARTED: 'Show already started',
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
+  ESTATE_NOT_EXISTS: 'Estate not exists',
 }
 
 const exceptionKeys = {
@@ -78,6 +79,7 @@ const exceptionKeys = {
   TIME_SLOT_CROSSING_EXISTING: 'TIME_SLOT_CROSSING_EXISTING',
   TIME_SLOT_NOT_FOUND: 'TIME_SLOT_NOT_FOUND',
   SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
+  ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
