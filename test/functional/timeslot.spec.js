@@ -79,7 +79,7 @@ beforeEach(async () => {
   }
 })
 
-test('it should create a timeslot successfully with slot length', async ({ assert, client }) => {
+test('it should create a timeslot successfully with slot length', async ({ client }) => {
   let response = await client
     .post(`/api/v1/estates/${testEstate.id}/slots`)
     .loginVia(testLandlord, 'jwtLandlord')
@@ -348,9 +348,9 @@ test('it should update time slot and handle dependencies successfully', async ({
       .loginVia(testLandlord, 'jwtLandlord')
       .send({ start_at: test_new_start_at, end_at: test_new_end_at })
       .end()
-
     response.assertStatus(200)
-    response.assertJSONSubset({
+    response.assertJSON({
+      status: 'success',
       data: {
         ...testSlot,
         start_at: test_new_start_at,
@@ -402,8 +402,11 @@ test("it should update time slot's slot_length and handle dependencies successfu
       .end()
 
     response.assertStatus(200)
-    response.assertJSONSubset({
+    response.assertJSON({
+      status: 'success',
       data: {
+        id: testSlot.id,
+        estate_id: testEstate.id,
         start_at: test_new_start_at,
         end_at: test_new_end_at,
         prev_start_at: test_new_start_at,
