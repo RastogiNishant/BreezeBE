@@ -15,7 +15,7 @@ class UpdateContact extends Base {
       phone: phoneSchema.nullable(),
       region: yup.string().max(255),
       avatar: yup.string().max(255),
-      address: yup.string().required(),
+      address: yup.string().min(1).required(),
     })
   }
 }
