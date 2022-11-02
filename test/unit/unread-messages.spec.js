@@ -2,7 +2,7 @@
 
 const { test, before, after } = use('Test/Suite')('Unread Messages Count Unit Test')
 const { faker } = require('@faker-js/faker')
-const { CHAT_EDIT_STATUS_DELETED } = require('../../app/constants')
+const { CHAT_EDIT_STATUS_DELETED, CHAT_TYPE_LAST_READ_MARKER } = require('../../app/constants')
 const Database = use('Database')
 
 const User = use('App/Models/User')
@@ -53,9 +53,9 @@ const ChatService = use('App/Services/ChatService')
 
 after(async () => {
   //Cleanup
-  // await Database.table('chats').where('task_id', taskId).delete()
-  // await Database.table('tasks').where('id', taskId).delete()
-  // await Database.table('estates').where('id', testCorrectEstate.id).delete()
+  await Database.table('chats').where('task_id', taskId).delete()
+  await Database.table('tasks').where('id', taskId).delete()
+  await Database.table('estates').where('id', testCorrectEstate.id).delete()
 })
 
 test(`When task is created by landlord and landlord sent several messages
@@ -84,7 +84,21 @@ test(`Unread Messages Count for landlord should be zero because he's the last se
 test(`When tenant send markLastRead, his unread messages should be zero.`, async ({ assert }) => {
   // L L L TM
   await ChatService.markLastRead(TenantUser.id, taskId)
+  const readTaskMarkers = (
+    await Chat.query()
+      .where({
+        type: CHAT_TYPE_LAST_READ_MARKER,
+        sender_id: TenantUser.id,
+        task_id: taskId,
+      })
+      .fetch()
+  ).rows
+  assert.isDefined(readTaskMarkers)
+  assert.equal(readTaskMarkers.length, 1)
+
+  console.log('When tenant send markLastRead here')
   const unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TenantUser.id)
+  console.log('markLastRead unreadMessagesCount=', unreadMessagesCount)
   assert.equal(unreadMessagesCount, 0, 'Tenant marked read so he should have zero unread.')
 })
 
@@ -108,21 +122,15 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
     min: 5,
     max: 10,
   })
+
+  console.log('Tenant send messages start')
   for (let count = 0; count < messageCount; count++) {
     //tenant sent several messages...
     await sleep(800)
-    await ChatService.save(faker.hacker.phrase(), TenantUser.id, taskId)
+    let task = await ChatService.save(faker.hacker.phrase(), TenantUser.id, taskId)
+    assert.isDefined(task.id)
   }
-
-  const chats = (
-    await Chat.query()
-      .where('task_id', taskId)
-      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
-      .fetch()
-  ).rows
-
-  //assert.equal(chats.length, messageCount)
-
+  console.log('Tenant send messages end')
   let unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TenantUser.id)
 
   assert.equal(
