@@ -11,6 +11,8 @@ const Chat = use('App/Models/Chat')
 
 const { ROLE_LANDLORD, ROLE_USER } = use('App/constants')
 
+const { sleep } = require('../../app/excepions')
+
 let TestLandlord
 let TenantUser
 let task
@@ -108,6 +110,7 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
   })
   for (let count = 0; count < messageCount; count++) {
     //tenant sent several messages...
+    await sleep(800)
     await ChatService.save(faker.hacker.phrase(), TenantUser.id, taskId)
   }
 
@@ -128,13 +131,10 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
     'Tenant sent messages so he should not have an unread message.'
   )
 
-  console.log('investigate start here!!!!!')
-
   unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TestLandlord.id)
-  console.log('unreadmessageCount here 2 >=', unreadMessagesCount)
   assert.equal(
     unreadMessagesCount,
     messageCount,
     `Tenant sent messages so landlord expects to see unread messages equal to how many tenant sent.`
   )
-})
+}).timeout(0)
