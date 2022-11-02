@@ -37,7 +37,7 @@ class ChatService {
         .delete()
         .transacting(trx)
 
-      await Chat.query().insert(
+      await Chat.create(
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: userId,
