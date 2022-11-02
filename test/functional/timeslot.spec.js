@@ -1,6 +1,4 @@
 const {
-  ROLE_USER,
-  ROLE_LANDLORD,
   MATCH_STATUS_VISIT,
   MATCH_STATUS_INVITE,
   STATUS_DELETE,
@@ -25,6 +23,8 @@ const {
 
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
+  exceptionKeys: { OPTION },
+  getExceptionMessage,
 } = require('../../app/excepions')
 const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
 
@@ -63,6 +63,7 @@ before(async () => {
   } catch (e) {
     console.log(e)
   }
+  await new Promise((resolve) => setTimeout(resolve, 200))
 })
 
 after(async () => {
@@ -229,7 +230,6 @@ test('it should fail to create timeslot due to earlier start_at value then end_a
 })
 
 test('it should fail to create timeslot due to invalid slot_length', async ({ assert, client }) => {
-  //TODO: error messages should be more specific
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -237,6 +237,12 @@ test('it should fail to create timeslot due to invalid slot_length', async ({ as
       .send({ ...dummyTimeSlotData, slot_length: invalid_slot_length })
       .end()
 
+    response.assertJSON({
+      status: 'error',
+      data: {
+        slot_length: getExceptionMessage('slot_length', OPTION, '[5, 10, 15, null]'),
+      },
+    })
     response.assertStatus(422)
   } catch (e) {
     console.log(e)
@@ -271,9 +277,7 @@ test('it should fail to create timeslot due to not existing estate id', async ({
   }
 })
 
-test('it should fail to create timeslot due to invalid slot_length', async ({ assert, client }) => {
-  //TODO: error messages should be more specific
-
+test('it should fail to create timeslot due to not existing estate', async ({ assert, client }) => {
   const notExistingEstateId = 99999
 
   try {
