@@ -9,6 +9,8 @@ const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
+const MailService = use('App/Services/MailService')
+
 const moment = require('moment')
 const { isArray, isEmpty, includes } = require('lodash')
 const {
@@ -22,7 +24,11 @@ const {
   STATUS_DRAFT,
   STATUS_EXPIRE,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
+  DEFAULT_LANG,
 } = require('../../../constants')
+const {
+  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST },
+} = require('../../../excepions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
@@ -94,8 +100,15 @@ class UserController {
     switch (action) {
       case 'activate':
         try {
+          const users = await UserService.getLangByIds({ ids, status: STATUS_ACTIVE })
+          if (users.length !== ids.length) {
+            console.log('error message here=', ACCOUNT_NOT_VERIFIED_USER_EXIST)
+            throw new HttpException(ACCOUNT_NOT_VERIFIED_USER_EXIST, 400)
+          }
+
           affectedRows = await User.query()
             .whereIn('id', ids)
+            .where('role', ROLE_LANDLORD)
             .update(
               {
                 activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
@@ -105,12 +118,22 @@ class UserController {
               },
               trx
             )
-          NoticeService.verifyUserByAdmin(ids)
+
           await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
+
+          NoticeService.verifyUserByAdmin(ids)
           ids.map((id) => {
             Event.fire('mautic:syncContact', id, { admin_approval_date: new Date() })
           })
+
+          users.map((user) => {
+            MailService.sendLandlordActivateEmail(user.email, {
+              user,
+              lang: user.lang ?? DEFAULT_LANG,
+            })
+          })
+
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)

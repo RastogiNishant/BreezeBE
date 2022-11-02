@@ -38,6 +38,7 @@ const exceptions = {
   TIME_SLOT_CROSSING_EXISTING: 'Time slot crossing existing',
   TIME_SLOT_NOT_FOUND: 'Time slot not found',
   SHOW_ALREADY_STARTED: 'Show already started',
+  ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
 }
 
 const exceptionKeys = {

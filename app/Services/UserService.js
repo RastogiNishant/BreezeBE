@@ -658,6 +658,19 @@ class UserService {
     return (await User.query().select('*').where('role', role).fetch()).rows
   }
 
+  static async getLangByIds({ ids, status = null }) {
+    let query = User.query()
+      .select(['id', 'email', 'lang'])
+      .whereNot('status', STATUS_DELETE)
+      .whereIn('id', ids)
+
+    if (status) {
+      query.where('status', status)
+    }
+
+    return (await query.fetch()).rows
+  }
+
   static async housekeeperSignup({ code, email, password, firstname, lang }) {
     const member = await Member.query()
       .select('user_id', 'id')
@@ -1001,6 +1014,12 @@ class UserService {
 
     user = user.toJSON({ isOwner: true })
     user.is_admin = false
+
+    if (user.role === ROLE_LANDLORD) {
+      //TODO: we should cover this field in the tests
+      user.has_property = await require('./EstateService').hasEstate(user.id)
+    }
+
     return user
   }
 
@@ -1049,6 +1068,12 @@ class UserService {
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
       }
+
+      if (user.role === ROLE_LANDLORD) {
+        //TODO: we should cover this field in the tests
+        user.has_property = await require('./EstateService').hasEstate(user.id)
+      }
+
       return user
     } catch (e) {
       await trx.rollback()
