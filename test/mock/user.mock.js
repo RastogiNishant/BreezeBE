@@ -82,7 +82,17 @@ const mockSecondUser = async () => {
   return { secondTestLandlord, secondTestProspect }
 }
 
+const clearMockUsers = async () => {
+  await Promise.all([
+    User.query().where('email', landlordDataEmail).delete(),
+    User.query().where('email', secondLandlordDataEmail).delete(),
+    User.query().where('email', prospectDataEmail).delete(),
+    User.query().where('email', secondProspectDataEmail).delete(),
+  ])
+}
+
 module.exports = {
   mockUser,
   mockSecondUser,
+  clearMockUsers,
 }

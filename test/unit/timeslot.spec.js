@@ -29,7 +29,7 @@ const {
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
 } = require('../../app/excepions')
-const { mockUser, mockSecondUser } = require('../mock/user.mock')
+const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
 const { DATE_FORMAT } = require('../../app/constants')
 
 before(async () => {
@@ -61,6 +61,7 @@ after(async () => {
     await TimeSlot.query().where('estate_id', testEstate.id).delete()
     await Visit.query().where('estate_id', testEstate.id).delete()
     await Estate.query().where('id', testEstate.id).delete()
+    await clearMockUsers()
   }
 })
 

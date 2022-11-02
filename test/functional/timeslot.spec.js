@@ -26,7 +26,7 @@ const {
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
 } = require('../../app/excepions')
-const { mockUser, mockSecondUser } = require('../mock/user.mock')
+const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
 
 const Suite = use('Test/Suite')('Time Slot Functional')
 const { test, before, after, trait, beforeEach } = Suite
@@ -69,6 +69,7 @@ after(async () => {
   if (testEstate) {
     await TimeSlot.query().where('estate_id', testEstate.id).delete()
     await Estate.query().where('id', testEstate.id).delete()
+    await clearMockUsers()
   }
 })
 
