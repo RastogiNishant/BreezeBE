@@ -17,7 +17,7 @@ const {
 class CreateCompany extends Base {
   static schema = () => {
     return yup.object().shape({
-      name: yup.string().max(255).required(),
+      name: yup.string().max(255),
       tax_number: yup.string().max(255),
       trade_register_nr: yup.string().max(255),
       umsst: yup.string().max(255),
@@ -37,14 +37,14 @@ class CreateCompany extends Base {
         ])
         .required(),
       is_onboard: yup.boolean(),
-      address: yup.string().when(['is_onboard'], {
-        is: (is_onboard) => {
-          console.log('isOnboard here=', is_onboard)
-          return !is_onboard
-        },
-        then: yup.string().min(10).required(),
-        otherwise: yup.string().min(10),
-      }),
+      // address: yup.string().when(['is_onboard'], {
+      //   is: (is_onboard) => {
+      //     console.log('isOnboard here=', is_onboard)
+      //     return !is_onboard
+      //   },
+      //   then: yup.string().min(10).required(),
+      //   otherwise: yup.string().min(10),
+      // }),
     })
   }
 }
