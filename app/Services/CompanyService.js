@@ -8,6 +8,7 @@ const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
+const { phoneSchema } = require('../Libs/schemas')
 
 const {
   MATCH_STATUS_FINISH,
@@ -226,14 +227,7 @@ class CompanyService {
         .required(),
       email: yup.string().email().lowercase().max(255).required(),
       full_name: yup.string().min(2).max(255).required(),
-      phone: yup
-        .string()
-        .transform((v) => {
-          return String(v).replace(/[^\d]/gi, '')
-        })
-        .min(7)
-        .max(255)
-        .required(),
+      phone: phoneSchema.nullable(),
     })
     try {
       await map(contacts.rows, (i) => {

@@ -12,9 +12,10 @@ class UpdateContact extends Base {
       email: yup.string().email().lowercase().max(255),
       title: yup.number().oneOf([SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM]),
       full_name: yup.string().min(2).max(255),
-      phone: phoneSchema,
+      phone: phoneSchema.nullable(),
       region: yup.string().max(255),
       avatar: yup.string().max(255),
+      address: yup.string().min(10).required(),
     })
   }
 }

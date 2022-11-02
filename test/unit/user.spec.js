@@ -30,6 +30,8 @@ const {
   MATCH_SERVICE_INDEX,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
   ERROR_USER_NOT_VERIFIED_LOGIN,
+  COMPANY_TYPE_PRIVATE,
+  COMPANY_SIZE_SMALL,
 } = require('../../app/constants')
 
 const {
@@ -639,8 +641,28 @@ test('setOnboardingStep should set it as company step in case there is a company
 }) => {
   // prepare company
   globalCompany = await Company.createItem({
+    type: COMPANY_TYPE_PRIVATE,
+    size: COMPANY_SIZE_SMALL,
+  })
+  assert.isNotNull(globalCompany)
+  assert.isNotNull(globalCompany.id)
+  await User.query().where('id', signUpLandlordUser.id).update({ company_id: globalCompany.id })
+
+  const user = await User.query().where('id', signUpLandlordUser.id).first()
+  assert.isNull(user.preferred_services)
+
+  await UserService.setOnboardingStep(user)
+  assert.equal(user.onboarding_step, PASS_ONBOARDING_STEP_COMPANY)
+})
+
+test('setOnboardingStep should set it as company step in case there is a company and all company info added but no preferred services', async ({
+  assert,
+}) => {
+  // prepare company
+  globalCompany = await Company.createItem({
     name: faker.company.name(),
-    address: faker.address.cityName(),
+    type: COMPANY_TYPE_PRIVATE,
+    size: COMPANY_SIZE_SMALL,
   })
   assert.isNotNull(globalCompany)
   assert.isNotNull(globalCompany.id)

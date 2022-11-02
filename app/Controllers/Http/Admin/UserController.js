@@ -26,7 +26,9 @@ const {
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
   DEFAULT_LANG,
 } = require('../../../constants')
-const { ACCOUNT_NOT_VERIFIED_USER_EXIST } = require('../../../excepions')
+const {
+  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST },
+} = require('../../../excepions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
@@ -100,6 +102,7 @@ class UserController {
         try {
           const users = await UserService.getLangByIds({ ids, status: STATUS_ACTIVE })
           if (users.length !== ids.length) {
+            console.log('error message here=', ACCOUNT_NOT_VERIFIED_USER_EXIST)
             throw new HttpException(ACCOUNT_NOT_VERIFIED_USER_EXIST, 400)
           }
 
