@@ -61,6 +61,7 @@ const {
   LETTING_TYPE_NA,
   LETTING_STATUS_NORMAL,
   ROLE_USER,
+  TASK_STATUS_RESOLVED,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1256,7 +1257,6 @@ class EstateService {
           u.select('id', 'firstname', 'secondname', 'email', 'avatar')
         })
       })
-      .with('activeTasks')
       .with('tasks')
       .select(
         'estates.id',
@@ -1318,11 +1318,9 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    //for testing
-    //await ChatService.getUnreadMessagesCount(40, user.id)
-
     let estates = await Promise.all(
       result.map(async (r) => {
+        r[0].activeTasks = (r[0].tasks || []).filter((task) => task.status !== TASK_STATUS_RESOLVED)
         const mostUrgency = maxBy(r[0].activeTasks, (re) => {
           return re.urgency
         })
@@ -1330,14 +1328,12 @@ class EstateService {
         const mostUpdated =
           r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
         await Promise.all(
-          r[0].activeTasks.map(async (task) => {
+          r[0].tasks.map(async (task) => {
             task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
           })
         )
         const has_unread_message =
-          (r[0].activeTasks || []).findIndex((task) => task.unread_message_count) !== -1
-            ? true
-            : false
+          (r[0].tasks || []).findIndex((task) => task.unread_message_count) !== -1 ? true : false
 
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 
