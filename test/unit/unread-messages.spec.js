@@ -53,9 +53,9 @@ const ChatService = use('App/Services/ChatService')
 
 after(async () => {
   //Cleanup
-  //await Database.table('chats').where('task_id', taskId).delete()
-  //await Database.table('tasks').where('id', taskId).delete()
-  //await Database.table('estates').where('id', testCorrectEstate.id).delete()
+  await Database.table('chats').where('task_id', taskId).delete()
+  await Database.table('tasks').where('id', taskId).delete()
+  await Database.table('estates').where('id', testCorrectEstate.id).delete()
 })
 
 test(`When task is created by landlord and landlord sent several messages
