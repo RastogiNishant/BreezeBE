@@ -53,9 +53,9 @@ const ChatService = use('App/Services/ChatService')
 
 after(async () => {
   //Cleanup
-  await Database.table('chats').where('task_id', taskId).delete()
-  await Database.table('tasks').where('id', taskId).delete()
-  await Database.table('estates').where('id', testCorrectEstate.id).delete()
+  //await Database.table('chats').where('task_id', taskId).delete()
+  //await Database.table('tasks').where('id', taskId).delete()
+  //await Database.table('estates').where('id', testCorrectEstate.id).delete()
 })
 
 test(`When task is created by landlord and landlord sent several messages
@@ -95,10 +95,7 @@ test(`When tenant send markLastRead, his unread messages should be zero.`, async
   ).rows
   assert.isDefined(readTaskMarkers)
   assert.equal(readTaskMarkers.length, 1)
-
-  console.log('When tenant send markLastRead here')
   const unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TenantUser.id)
-  console.log('markLastRead unreadMessagesCount=', unreadMessagesCount)
   assert.equal(unreadMessagesCount, 0, 'Tenant marked read so he should have zero unread.')
 })
 
@@ -123,14 +120,12 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
     max: 10,
   })
 
-  console.log('Tenant send messages start')
   for (let count = 0; count < messageCount; count++) {
     //tenant sent several messages...
     await sleep(800)
     let task = await ChatService.save(faker.hacker.phrase(), TenantUser.id, taskId)
     assert.isDefined(task.id)
   }
-  console.log('Tenant send messages end')
   let unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TenantUser.id)
 
   assert.equal(
@@ -146,3 +141,11 @@ test(`Tenant send messages, tenant should have 0 unread messages, while landlord
     `Tenant sent messages so landlord expects to see unread messages equal to how many tenant sent.`
   )
 }).timeout(0)
+
+test('Landlord has sent a message before, tenant sent messages then he marklastReadMarker', async ({
+  assert,
+}) => {
+  await ChatService.markLastRead(TestLandlord.id, taskId)
+  const unreadMessagesCount = await ChatService.getUnreadMessagesCount(taskId, TestLandlord.id)
+  assert.equal(unreadMessagesCount, 0)
+})
