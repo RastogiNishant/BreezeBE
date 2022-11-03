@@ -18,6 +18,8 @@ const {
   ROLE_LANDLORD,
   ROLE_USER,
   ISO_DATE_FORMAT,
+  STATUS_DELETE,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
@@ -249,17 +251,22 @@ class ChatService {
 
   static async getUserUnreadMessagesByTopic(userId, role) {
     let taskEstates
+
     let query = Task.query()
       .select('tasks.id as task_id', 'estates.id as estate_id', 'tasks.urgency')
-      .leftJoin('estates', 'estates.id', 'tasks.estate_id')
-      .leftJoin('estate_current_tenants', function () {
-        this.on('tasks.tenant_id', 'estate_current_tenants.user_id').on(
-          'estate_current_tenants.estate_id',
-          'estates.id'
+      .innerJoin('estates', function () {
+        this.on('estates.id', 'tasks.estate_id')
+          .onNotIn('estates.status', [STATUS_DELETE])
+          .on('estates.letting_type', LETTING_TYPE_LET)
+      })
+      .innerJoin('estate_current_tenants', function () {
+        this.on('estate_current_tenants.estate_id', 'estates.id').on(
+          'estate_current_tenants.status',
+          STATUS_ACTIVE
         )
       })
-      .whereNotIn('tasks.status', [TASK_STATUS_RESOLVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
-      .where('estate_current_tenants.status', STATUS_ACTIVE)
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+
     if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
     } else if (role === ROLE_USER) {

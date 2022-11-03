@@ -1280,7 +1280,7 @@ class EstateService {
       )
 
     query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
-      this.on('_ect.estate_id', 'estates.id')
+      this.on('_ect.estate_id', 'estates.id').onIn('_ect.status', [STATUS_ACTIVE])
     })
 
     query.leftJoin({ _u: 'users' }, function () {
