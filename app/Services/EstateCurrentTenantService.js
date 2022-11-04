@@ -344,6 +344,14 @@ class EstateCurrentTenantService {
       .first()
   }
 
+  static async getInsideTenant({ estate_id, user_id }) {
+    return await EstateCurrentTenant.query()
+      .where('estate_id', estate_id)
+      .where('user_id', user_id)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
+      .first()
+  }
+
   static async getOutsideTenantByIds(ids) {
     return (
       await EstateCurrentTenant.query()
@@ -732,8 +740,6 @@ class EstateCurrentTenantService {
       estateCurrentTenants = estateCurrentTenants?.toJSON() || []
       const valid_ids = estateCurrentTenants.map((tenant) => tenant.id)
       if (valid_ids && valid_ids.length) {
-        const estate_ids = estateCurrentTenants.map((tenant) => tenant.estate_id)
-
         /**
          * though it's disconnected, rent status has not been change. it's like connected wrongly.
          * //await require('./EstateService').unrented(estate_ids, trx)
@@ -752,6 +758,8 @@ class EstateCurrentTenantService {
             }
           })
         )
+
+        await require('./TaskService').archiveTask(valid_ids, trx)
 
         await EstateCurrentTenant.query()
           .whereIn('id', valid_ids)

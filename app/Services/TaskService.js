@@ -15,6 +15,7 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
+  TASK_STATUS_ARCHIVE,
 } = require('../constants')
 
 const l = use('Localize')
@@ -323,13 +324,21 @@ class TaskService {
       )
 
     if (role === ROLE_USER) {
-      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      taskQuery.whereNotIn('tasks.status', [
+        TASK_STATUS_DELETE,
+        TASK_STATUS_DRAFT,
+        TASK_STATUS_ARCHIVE,
+      ])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
       taskQuery.select(ESTATE_FIELD_FOR_TASK)
-      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      taskQuery.whereNotIn('tasks.status', [
+        TASK_STATUS_DELETE,
+        TASK_STATUS_DRAFT,
+        TASK_STATUS_ARCHIVE,
+      ])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
       })
@@ -388,7 +397,7 @@ class TaskService {
     }
 
     if (role === ROLE_LANDLORD) {
-      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
     }
     return await query
   }
@@ -398,7 +407,7 @@ class TaskService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
@@ -422,7 +431,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -430,7 +439,7 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
       .with('estate')
       .with('users')
   }
@@ -452,16 +461,23 @@ class TaskService {
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 500)
+      throw new HttpException('No final match yet for property', 400)
     }
 
     // to check if the user is the tenant for that property.
     if (role === ROLE_USER && finalMatch.user_id !== user_id) {
-      throw new HttpException('No permission for task', 500)
+      throw new HttpException('No permission for task', 400)
     }
 
     if (!finalMatch.user_id) {
       throw new HttpException('Database issue', 500)
+    }
+
+    if (
+      role === ROLE_USER &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+    ) {
+      throw new HttpException('You are not a breeze member yet', 400)
     }
 
     return finalMatch.user_id
@@ -516,6 +532,9 @@ class TaskService {
       })
   }
 
+  static async archiveTask(ids, trx) {
+    await Task.query().whereIn('id', ids).updateItemWithTrx({ status: TASK_STATUS_ARCHIVE }, trx)
+  }
   static async getItemWithAbsoluteUrl(item) {
     try {
       if (item.attachments) {
