@@ -1258,7 +1258,9 @@ class EstateService {
           u.select('id', 'firstname', 'secondname', 'email', 'avatar')
         })
       })
-      .with('tasks')
+      .with('tasks', function (t) {
+        t.select(['tasks.id as tid'])
+      })
       .with('activeTasks')
       .select(
         'estates.id',
