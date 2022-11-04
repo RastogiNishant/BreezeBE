@@ -15,7 +15,7 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
-  TASK_STATUS_ARCHIVE,
+  TASK_STATUS_UNRESOLVED,
 } = require('../constants')
 
 const l = use('Localize')
@@ -324,21 +324,13 @@ class TaskService {
       )
 
     if (role === ROLE_USER) {
-      taskQuery.whereNotIn('tasks.status', [
-        TASK_STATUS_DELETE,
-        TASK_STATUS_DRAFT,
-        TASK_STATUS_ARCHIVE,
-      ])
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
       taskQuery.select(ESTATE_FIELD_FOR_TASK)
-      taskQuery.whereNotIn('tasks.status', [
-        TASK_STATUS_DELETE,
-        TASK_STATUS_DRAFT,
-        TASK_STATUS_ARCHIVE,
-      ])
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
       })
@@ -397,7 +389,7 @@ class TaskService {
     }
 
     if (role === ROLE_LANDLORD) {
-      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
+      query.whereNotIn('status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
     }
     return await query
   }
@@ -407,7 +399,7 @@ class TaskService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
@@ -431,7 +423,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -439,7 +431,7 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE])
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .with('estate')
       .with('users')
   }
@@ -532,9 +524,12 @@ class TaskService {
       })
   }
 
-  static async archiveTask(ids, trx) {
-    await Task.query().whereIn('id', ids).updateItemWithTrx({ status: TASK_STATUS_ARCHIVE }, trx)
+  static async archiveTask(estate_id, trx) {
+    await Task.query()
+      .whereIn('estate_id', estate_id)
+      .updateItemWithTrx({ status: TASK_STATUS_UNRESOLVED }, trx)
   }
+
   static async getItemWithAbsoluteUrl(item) {
     try {
       if (item.attachments) {

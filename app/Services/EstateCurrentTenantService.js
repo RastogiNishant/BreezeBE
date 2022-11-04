@@ -646,8 +646,8 @@ class EstateCurrentTenantService {
 
     await currentTenant.save(trx)
 
-    //if current tenant, he needs to save to match as a final match
     if (currentTenant.estate_id) {
+      // if current tenant, he needs to save to match as a final match
       await require('./MatchService').handleFinalMatch(currentTenant.estate_id, user, true, trx)
     }
   }
@@ -741,7 +741,7 @@ class EstateCurrentTenantService {
       const valid_ids = estateCurrentTenants.map((tenant) => tenant.id)
       if (valid_ids && valid_ids.length) {
         /**
-         * though it's disconnected, rent status has not been change. it's like connected wrongly.
+         * though it's disconnected, rent status has not been changed. it's like connected wrongly.
          * //await require('./EstateService').unrented(estate_ids, trx)
          */
 
@@ -758,8 +758,6 @@ class EstateCurrentTenantService {
             }
           })
         )
-
-        await require('./TaskService').archiveTask(valid_ids, trx)
 
         await EstateCurrentTenant.query()
           .whereIn('id', valid_ids)

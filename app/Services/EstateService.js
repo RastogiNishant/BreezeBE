@@ -62,7 +62,6 @@ const {
   LETTING_STATUS_NORMAL,
   ROLE_USER,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_ARCHIVE,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1386,9 +1385,7 @@ class EstateService {
       .count('estates.*')
       .leftJoin('tasks', function () {
         this.on('estates.id', 'tasks.estate_id').on(
-          Database.raw(
-            `tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE, TASK_STATUS_ARCHIVE]})`
-          )
+          Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`)
         )
       })
       .leftJoin({ _ect: 'estate_current_tenants' }, function () {

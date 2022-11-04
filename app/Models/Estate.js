@@ -46,7 +46,6 @@ const {
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
   ROLE_LANDLORD,
-  TASK_STATUS_ARCHIVE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -313,7 +312,6 @@ class Estate extends Model {
     return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
       TASK_STATUS_DELETE,
       TASK_STATUS_DRAFT,
-      TASK_STATUS_ARCHIVE,
     ])
   }
 
