@@ -72,11 +72,7 @@ class CompanyService {
       await userCompany.updateItem(data)
     }
 
-    userCompany = {
-      ...userCompany.toJSON(),
-      ...data,
-    }
-
+    userCompany = await this.getUserCompany(userId)
     return userCompany
   }
 
