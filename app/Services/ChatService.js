@@ -148,49 +148,60 @@ class ChatService {
       .first()
 
     let count = 0
-
     if (lastReadMarkerDate && lastSentDate) {
-      if (lastReadMarkerDate >= lastSentDate) {
+      if (lastReadMarkerDate.created_at >= lastSentDate.created_at) {
+        //we're going to count the messages after lastReadMarkerDate
         const unreadByMarker = await Chat.query()
           .select(Database.raw(`count(*) as unread_messages`))
-          .where('created_at', '>', lastSentDate.created_at)
+          .where(
+            Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+            '>',
+            lastReadMarkerDate.created_at
+          )
           .where('task_id', taskId)
           .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
           .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
           .first()
-        // console.log('lastReadMarkerDate >= lastSentDate=', unreadByMarker?.unread_messages)
         count = parseInt(unreadByMarker?.unread_messages || 0)
       } else {
         const unreadByLastSent = await Chat.query()
           .select(Database.raw(`count(*) as unread_messages`))
-          .where('created_at', '>', lastReadMarkerDate.created_at)
+          .where(
+            Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+            '>',
+            lastSentDate.created_at
+          )
           .where('task_id', taskId)
           .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
           .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
           .first()
-        // console.log('lastReadMarkerDate <>=> lastSentDate=', unreadByLastSent?.unread_messages)
         count = parseInt(unreadByLastSent?.unread_messages || 0)
       }
     } else if (lastReadMarkerDate && !lastSentDate) {
       const unreadByLastSent = await Chat.query()
         .select(Database.raw(`count(*) as unread_messages`))
-        .where('created_at', '>', lastReadMarkerDate.created_at)
+        .where(
+          Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+          '>',
+          lastReadMarkerDate.created_at
+        )
         .where('task_id', taskId)
         .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
         .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
         .first()
-      // console.log('lastReadMarkerDate && !lastSentDate=', unreadByLastSent?.unread_messages)
       count = parseInt(unreadByLastSent.unread_messages)
     } else if (!lastReadMarkerDate && lastSentDate) {
       const unreadByMarker = await Chat.query()
         .select(Database.raw(`count(*) as unread_messages`))
-        .where('created_at', '>', lastSentDate.created_at)
+        .where(
+          Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+          '>',
+          lastSentDate.created_at
+        )
         .where('task_id', taskId)
         .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
         .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
         .first()
-      // console.log('!lastReadMarkerDate && lastSentDate date=', lastSentDate.created_at)
-      // console.log('!lastReadMarkerDate && lastSentDate=', unreadByMarker?.unread_messages)
       count = parseInt(unreadByMarker?.unread_messages || 0)
     } else {
       const allCount = await Chat.query()
@@ -199,7 +210,6 @@ class ChatService {
         .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
         .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
         .first()
-      // console.log('!lastReadMarkerDate && !lastSentDate=', allCount?.unread_messages)
       count = parseInt(allCount?.unread_messages || 0)
     }
     return count
