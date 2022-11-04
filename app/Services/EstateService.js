@@ -1329,7 +1329,7 @@ class EstateService {
         const mostUpdated =
           r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
         await Promise.all(
-          r[0].tasks.map(async (task) => {
+          r[0].activeTasks.map(async (task) => {
             task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
           })
         )
