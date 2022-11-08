@@ -61,10 +61,12 @@ const {
   LETTING_TYPE_NA,
   LETTING_STATUS_NORMAL,
   ROLE_USER,
+  TASK_STATUS_RESOLVED,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+const ChatService = require('./ChatService')
 const MAX_DIST = 10000
 
 /**
@@ -1255,7 +1257,6 @@ class EstateService {
           u.select('id', 'firstname', 'secondname', 'email', 'avatar')
         })
       })
-      .with('activeTasks')
       .with('tasks')
       .select(
         'estates.id',
@@ -1279,7 +1280,7 @@ class EstateService {
       )
 
     query.leftJoin({ _ect: 'estate_current_tenants' }, function () {
-      this.on('_ect.estate_id', 'estates.id')
+      this.on('_ect.estate_id', 'estates.id').onIn('_ect.status', [STATUS_ACTIVE])
     })
 
     query.leftJoin({ _u: 'users' }, function () {
@@ -1300,11 +1301,11 @@ class EstateService {
       query.whereIn('estates.id', [params.estate_id])
     }
 
-    const filter = new TaskFilters(params, query)
+    const taskFilter = new TaskFilters(params, query)
 
     query.groupBy('estates.id')
 
-    filter.afterQuery()
+    taskFilter.afterQuery()
 
     query.orderBy('mosturgency', 'desc')
 
@@ -1317,36 +1318,58 @@ class EstateService {
 
     result = Object.values(groupBy(result.toJSON().data || result.toJSON(), 'id'))
 
-    let estate = result.map((r) => {
-      const mostUrgency = maxBy(r[0].activeTasks, (re) => {
-        return re.urgency
+    let estates = await Promise.all(
+      result.map(async (r) => {
+        r[0].activeTasks = (r[0].tasks || []).filter((task) => task.status !== TASK_STATUS_RESOLVED)
+        const mostUrgency = maxBy(r[0].activeTasks, (re) => {
+          return re.urgency
+        })
+
+        const mostUpdated =
+          r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+        await Promise.all(
+          r[0].tasks.map(async (task) => {
+            task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
+          })
+        )
+        const has_unread_message =
+          (r[0].tasks || []).findIndex((task) => task.unread_message_count) !== -1 ? true : false
+
+        let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
+
+        const taskCount = (r[0].tasks || []).length || 0
+        return {
+          ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
+          activeTasks: activeTasks,
+          mosturgency: mostUrgency?.urgency,
+          most_task_updated: mostUpdated,
+          has_unread_message,
+          taskSummary: {
+            taskCount,
+            activeTaskCount: r[0].activeTasks.length || 0,
+            mostUrgency: mostUrgency?.urgency || null,
+            mostUrgencyCount: mostUrgency
+              ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
+              : 0,
+          },
+        }
       })
+    )
 
-      const mostUpdated =
-        r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
+    if (params && params.filter_by_unread_message) {
+      estates = filter(estates, { has_unread_message: true })
+    }
 
-      let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
-      const taskCount = (r[0].tasks || []).length || 0
-      return {
-        ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
-        activeTasks: activeTasks,
-        mosturgency: mostUrgency?.urgency,
-        most_task_updated: mostUpdated,
-        taskSummary: {
-          taskCount,
-          activeTaskCount: r[0].activeTasks.length || 0,
-          mostUrgency: mostUrgency?.urgency || null,
-          mostUrgencyCount: mostUrgency
-            ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
-            : 0,
-        },
-      }
-    })
+    let orderKeys = ['most_task_updated', 'mosturgency']
+    let orderRules = ['desc', 'desc']
 
-    estate = orderBy(estate, ['most_task_updated', 'mosturgency'], ['desc', 'desc'])
-
+    if (params && params.order_by_unread_message) {
+      orderKeys = ['has_unread_message', ...orderKeys]
+      orderRules = ['desc', ...orderRules]
+    }
+    estates = orderBy(estates, orderKeys, orderRules)
     await Promise.all(
-      estate.map(async (est) => {
+      estates.map(async (est) => {
         await est.activeTasks.map(async (task) => {
           task = await require('./TaskService').getItemWithAbsoluteUrl(task)
           return task
@@ -1354,7 +1377,7 @@ class EstateService {
       })
     )
 
-    return estate
+    return estates
   }
 
   static async getTotalLetCount(user_id, params, filtering = true) {
@@ -1450,6 +1473,23 @@ class EstateService {
           isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
       }
     })
+  }
+
+  static async hasEstate(user_id) {
+    const estate = await Estate.query()
+      .select('id')
+      .where('user_id', user_id)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+
+    if (!estate) {
+      return false
+    }
+    return true
+  }
+
+  static async deletePermanent(user_id) {
+    await Estate.query().where('user_id', user_id).delete()
   }
 }
 module.exports = EstateService

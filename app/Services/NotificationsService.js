@@ -7,7 +7,6 @@ const md5 = require('md5')
 /** @type {typeof import('/providers/Notifications')} */
 const Notifications = use('Notifications')
 const l = use('Localize')
-const UserService = use('App/Services/UserService')
 const uTime = require('moment')().format('X')
 
 const { capitalize, rc } = require('../Libs/utils')
@@ -353,7 +352,9 @@ class NotificationsService {
       return false
     }
     // Users tokens and lang
-    const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
+    const langTokens = await require('./UserService').getTokenWithLocale(
+      uniq(notes.map((i) => i.user_id))
+    )
     // Mixin token data to existing data
     notes = notes.reduce((n, i) => {
       const token = langTokens.find(({ id, lang, device_token }) => +id === +i.user_id)
@@ -792,12 +793,12 @@ class NotificationsService {
   }
 
   static async sendFollowUpVisit(notice) {
-    const title = 'notification.txt_are_you_coming_notifications.title'
+    const title = 'prospect.notification.event.tenant_are_you_coming'
     const body = (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('notification.txt_are_you_coming_notifications.message', lang)
+        l.get('prospect.notification.next.tenant_are_you_coming', lang)
       )
     }
     return NotificationsService.sendNotes([notice], title, body)
