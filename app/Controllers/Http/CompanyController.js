@@ -24,13 +24,14 @@ class CompanyController {
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])
-
     if (files.avatar) {
       data.avatar = files.avatar
+    } else {
+      data.avatar = null
     }
 
+    const trx = await Database.beginTransaction()
     try {
-      const trx = await Database.beginTransaction()
       const company = await CompanyService.createCompany(omit(data, ['address']), auth.user.id, trx)
       await UserService.updateCompany({ user_id: auth.user.id, company_id: company.id }, trx)
 
