@@ -371,13 +371,17 @@ class TenantService {
   }
 
   static async updateTenantAddress({ user, address }, trx) {
-    let tenant = await getOrCreateTenant(user, trx)
-    const { lon, lat } = await GeoService.geeGeoCoordByAddress(address)
+    if (user && address) {
+      let tenant = await getOrCreateTenant(user, trx)
+      tenant.address = address
 
-    tenant.address = address
-    tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
+      const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}
+      if (lon && lat) {
+        tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
+      }
 
-    await tenant.save(trx)
+      await tenant.save(trx)
+    }
   }
 }
 
