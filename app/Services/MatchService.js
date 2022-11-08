@@ -1566,7 +1566,11 @@ class MatchService {
 
   static async getTenantFinalMatchesCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_FINISH })
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_FINISH)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').on('_e.status', STATUS_DRAFT)
+      })
       .count('*')
     return data
   }
@@ -1657,6 +1661,7 @@ class MatchService {
         '_u.birthday',
         '_u.email',
         '_u.avatar',
+        '_v.landlord_followup_meta as followups',
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
@@ -2444,6 +2449,14 @@ class MatchService {
       console.log(e)
       return false
     }
+  }
+
+  static async deletePermanant({ user_id, estate_id }) {
+    let query = Match.query().delete().where('user_id', user_id)
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+    await query
   }
 }
 

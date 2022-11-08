@@ -4,6 +4,7 @@ const CompanyService = use('App/Services/CompanyService')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
 const Event = use('Event')
+const { omit } = require('lodash')
 class CompanyController {
   /**
    *
@@ -30,7 +31,7 @@ class CompanyController {
 
     try {
       const trx = await Database.beginTransaction()
-      const company = await CompanyService.createCompany(data, auth.user.id, trx)
+      const company = await CompanyService.createCompany(omit(data, ['address']), auth.user.id, trx)
       await UserService.updateCompany({ user_id: auth.user.id, company_id: company.id }, trx)
 
       await trx.commit()
@@ -59,7 +60,7 @@ class CompanyController {
     }
 
     try {
-      const company = await CompanyService.updateCompany(auth.user.id, data)
+      const company = await CompanyService.updateCompany(auth.user.id, omit(data, ['address']))
       Event.fire('mautic:syncContact', auth.user.id)
       return response.res(company)
     } catch (e) {
@@ -107,7 +108,12 @@ class CompanyController {
     }
 
     data.company_id = auth.user.company_id
-    const contacts = await CompanyService.createContact(data, auth.user.id)
+    let contactData = data
+    if (data.address) {
+      await CompanyService.updateCompany(auth.user.id, { address: data.address })
+      contactData = omit(contactData, ['address'])
+    }
+    const contacts = await CompanyService.createContact(contactData, auth.user.id)
     Event.fire('mautic:syncContact', auth.user.id)
     return response.res(contacts)
   }
@@ -117,7 +123,11 @@ class CompanyController {
    */
   async updateContact({ request, auth, response }) {
     const { id, ...data } = request.all()
-    const contact = await CompanyService.updateContact(id, auth.user.id, data)
+
+    if (data.address) {
+      await CompanyService.updateCompany(auth.user.id, { address: data.address })
+    }
+    const contact = await CompanyService.updateContact(id, auth.user.id, omit(data, ['address']))
     Event.fire('mautic:syncContact', auth.user.id)
     return response.res(contact)
   }

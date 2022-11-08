@@ -18,6 +18,8 @@ const {
   ROLE_LANDLORD,
   ROLE_USER,
   ISO_DATE_FORMAT,
+  STATUS_DELETE,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
@@ -37,7 +39,7 @@ class ChatService {
         .delete()
         .transacting(trx)
 
-      await Chat.query().insert(
+      await Chat.create(
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: userId,
@@ -127,16 +129,6 @@ class ChatService {
   static async getUnreadMessagesCount(taskId, userId) {
     //for unread messages
     let counts = []
-    const allCount = await Chat.query()
-      .select(Database.raw(`count(*) as unread_messages`))
-      .where('task_id', taskId)
-      .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
-      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
-      .first()
-    if (allCount) {
-      if (parseInt(allCount.unread_messages) === 0) return 0
-      counts.push(parseInt(allCount.unread_messages))
-    }
 
     const lastReadMarkerDate = await Chat.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
@@ -145,19 +137,6 @@ class ChatService {
       .where('sender_id', userId)
       .orderBy('created_at', 'desc')
       .first()
-
-    if (lastReadMarkerDate) {
-      const unreadByMarker = await Chat.query()
-        .select(Database.raw(`count(*) as unread_messages`))
-        .where('created_at', '>', lastReadMarkerDate.created_at)
-        .where('task_id', taskId)
-        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
-        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
-        .first()
-      if (unreadByMarker) {
-        counts.push(parseInt(unreadByMarker.unread_messages))
-      }
-    }
 
     const lastSentDate = await Chat.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
@@ -168,20 +147,72 @@ class ChatService {
       .orderBy('created_at', 'desc')
       .first()
 
-    if (lastSentDate) {
+    let count = 0
+    if (lastReadMarkerDate && lastSentDate) {
+      if (lastReadMarkerDate.created_at >= lastSentDate.created_at) {
+        //we're going to count the messages after lastReadMarkerDate
+        const unreadByMarker = await Chat.query()
+          .select(Database.raw(`count(*) as unread_messages`))
+          .where(
+            Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+            '>',
+            lastReadMarkerDate.created_at
+          )
+          .where('task_id', taskId)
+          .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+          .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+          .first()
+        count = parseInt(unreadByMarker?.unread_messages || 0)
+      } else {
+        const unreadByLastSent = await Chat.query()
+          .select(Database.raw(`count(*) as unread_messages`))
+          .where(
+            Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+            '>',
+            lastSentDate.created_at
+          )
+          .where('task_id', taskId)
+          .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+          .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+          .first()
+        count = parseInt(unreadByLastSent?.unread_messages || 0)
+      }
+    } else if (lastReadMarkerDate && !lastSentDate) {
       const unreadByLastSent = await Chat.query()
         .select(Database.raw(`count(*) as unread_messages`))
-        .where('created_at', '>', lastSentDate.created_at)
+        .where(
+          Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+          '>',
+          lastReadMarkerDate.created_at
+        )
         .where('task_id', taskId)
         .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
         .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
         .first()
-      if (unreadByLastSent) {
-        counts.push(parseInt(unreadByLastSent.unread_messages))
-      }
+      count = parseInt(unreadByLastSent.unread_messages)
+    } else if (!lastReadMarkerDate && lastSentDate) {
+      const unreadByMarker = await Chat.query()
+        .select(Database.raw(`count(*) as unread_messages`))
+        .where(
+          Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}')`),
+          '>',
+          lastSentDate.created_at
+        )
+        .where('task_id', taskId)
+        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+        .first()
+      count = parseInt(unreadByMarker?.unread_messages || 0)
+    } else {
+      const allCount = await Chat.query()
+        .select(Database.raw(`count(*) as unread_messages`))
+        .where('task_id', taskId)
+        .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
+        .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+        .first()
+      count = parseInt(allCount?.unread_messages || 0)
     }
-    const unreadMessagesCount = min(counts)
-    return unreadMessagesCount
+    return count
   }
 
   static async getChatMessageAge(id) {
@@ -230,17 +261,22 @@ class ChatService {
 
   static async getUserUnreadMessagesByTopic(userId, role) {
     let taskEstates
+
     let query = Task.query()
-      .select('tasks.id as task_id', 'estates.id as estate_id')
-      .leftJoin('estates', 'estates.id', 'tasks.estate_id')
-      .leftJoin('estate_current_tenants', function () {
-        this.on('tasks.tenant_id', 'estate_current_tenants.user_id').on(
-          'estate_current_tenants.estate_id',
-          'estates.id'
+      .select('tasks.id as task_id', 'estates.id as estate_id', 'tasks.urgency')
+      .innerJoin('estates', function () {
+        this.on('estates.id', 'tasks.estate_id')
+          .onNotIn('estates.status', [STATUS_DELETE])
+          .on('estates.letting_type', LETTING_TYPE_LET)
+      })
+      .innerJoin('estate_current_tenants', function () {
+        this.on('estate_current_tenants.estate_id', 'estates.id').on(
+          'estate_current_tenants.status',
+          STATUS_ACTIVE
         )
       })
-      .whereNotIn('tasks.status', [TASK_STATUS_RESOLVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
-      .where('estate_current_tenants.status', STATUS_ACTIVE)
+      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+
     if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
     } else if (role === ROLE_USER) {
@@ -258,6 +294,7 @@ class ChatService {
           ...unreadMessagesByTopic,
           {
             topic: `task:${taskEstate.estate_id}brz${taskEstate.task_id}`,
+            urgency: taskEstate?.urgency,
             unread: unreadMessagesCount,
           },
         ]
