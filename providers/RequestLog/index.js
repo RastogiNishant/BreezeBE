@@ -14,21 +14,23 @@ const onFinished = require('on-finished')
 const moment = require('moment')
 const { get } = require('lodash')
 
-var graylog2 = require('graylog2')
-const { TEST_ENVIRONMENT } = require('../../app/constants')
-var grayLog = new graylog2.graylog({
-  servers: [{ host: 'logs.app.breeze4me.de', port: 12201 }],
-  hostname: 'logs.app.breeze4me.de', // the name of this host
-  // (optional, default: os.hostname())
-  facility: 'Node.js', // the facility for these log messages
-  // (optional, default: "Node.js")
-  bufferSize: 1350, // max UDP packet size, should never exceed the
-  // MTU of your system (optional, default: 1400)
-})
+// var graylog2 = require('graylog2')
 
-grayLog.on('error', function (error) {
-  console.error('Error while trying to write to graylog2:', error)
-})
+const { TEST_ENVIRONMENT } = require('../../app/constants')
+
+// var grayLog = new graylog2.graylog({
+//   servers: [{ host: 'logs.app.breeze4me.de', port: 12201 }],
+//   hostname: 'logs.app.breeze4me.de', // the name of this host
+//   // (optional, default: os.hostname())
+//   facility: 'Node.js', // the facility for these log messages
+//   // (optional, default: "Node.js")
+//   bufferSize: 1350, // max UDP packet size, should never exceed the
+//   // MTU of your system (optional, default: 1400)
+// })
+
+// grayLog.on('error', function (error) {
+//   console.error('Error while trying to write to graylog2:', error)
+// })
 
 /**
  * Logs http request using AdonisJs in built logger
@@ -150,19 +152,19 @@ class Logger {
         return
       }
 
-      try {
-        grayLog.log(url, {
-          start,
-          url,
-          method,
-          headers,
-          ip,
-          user,
-          res,
-        })
-      } catch (e) {
-        console.log(e)
-      }
+      // try {
+      //   grayLog.log(url, {
+      //     start,
+      //     url,
+      //     method,
+      //     headers,
+      //     ip,
+      //     user,
+      //     res,
+      //   })
+      // } catch (e) {
+      //   console.log(e)
+      // }
       this.log(url, method, res.statusCode, start, error ? error.code : null, ip)
     })
   }
