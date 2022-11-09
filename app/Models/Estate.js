@@ -44,6 +44,7 @@ const {
   TASK_STATUS_DRAFT,
   LETTING_TYPE_LET,
   STATUS_DRAFT,
+  STATUS_DELETE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -213,7 +214,10 @@ class Estate extends Model {
     this.addTrait('@provider:SerializerExtender')
 
     this.addHook('beforeUpdate', async (instance) => {
-      if (instance.letting_type === LETTING_TYPE_LET && instance.status !== STATUS_DRAFT) {
+      if (
+        instance.letting_type === LETTING_TYPE_LET &&
+        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+      ) {
         instance.status = STATUS_DRAFT
       }
     })
