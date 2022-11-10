@@ -97,6 +97,7 @@ class EstateImportReader {
     this.reverseTranslator = new EstateAttributeTranslations()
     this.dataMapping = this.reverseTranslator.getMap()
     this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
+    return this
   }
 
   setValidColumns(columns) {
@@ -162,7 +163,6 @@ class EstateImportReader {
     ).replace(/\s,/g, ',')
     //letting
     let matches
-    console.log(row)
     if ((matches = row.letting?.match(/^(.*?) \- (.*?)$/))) {
       row.letting_status = get(this.dataMapping, `let_status.${this.escapeStr(matches[2])}`)
       row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(matches[1])}`)
