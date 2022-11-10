@@ -21,6 +21,7 @@ const constants = {
 
   LANG_EN: 'en',
   LANG_DE: 'de',
+  AVAILABLE_LANGUAGES: ['en', 'de'],
   DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',

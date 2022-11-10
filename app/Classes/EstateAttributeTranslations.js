@@ -2,6 +2,8 @@ const l = use('Localize')
 const { trim, isEmpty } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
 const {
+  AVAILABLE_LANGUAGES,
+
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
@@ -960,7 +962,7 @@ class EstateAttributeTranslations {
         throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
-        ;['en', 'de'].map((lang) => {
+        AVAILABLE_LANGUAGES.map((lang) => {
           keyValue[escapeStr(l.get(dataMap[attribute].keys[k], lang))] =
             dataMap[attribute].values[k]
         })
