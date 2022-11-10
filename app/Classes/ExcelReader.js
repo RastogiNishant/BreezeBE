@@ -25,7 +25,7 @@ class ExcelReader {
   dataRowStart = 4
 
   constructor() {
-    this.headerCol = 4
+    this.variableRow = 1
     this.sheetName = 'data'
   }
 
@@ -122,20 +122,6 @@ class ExcelReader {
         422,
         101100
       )
-    }
-
-    //determine language
-    const deTest = ['Objekt ID', 'Straße (*)', 'Hausnummer (*)', 'Adresszusatz', 'PLZ (*)']
-    const columns = sheet.data[this.headerCol].slice(0, this.columnLimit)
-    let probableLang = columns
-      .slice(1, 6)
-      .map((column) => (_.indexOf(deTest, column) > -1 ? 'de' : 'en'))
-    let lang = 'en'
-
-    if (_.uniq(probableLang).length <= 1) {
-      lang = probableLang[0]
-    } else {
-      throw new HttpException('Cannot determine Excel language.', 422, 101101)
     }
     const AttributeTranslations = new EstateAttributeTranslations(lang)
     this.dataMapping = AttributeTranslations.getMap()
