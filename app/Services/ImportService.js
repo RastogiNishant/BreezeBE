@@ -1,6 +1,7 @@
 const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
+const EstateImportReader = use('App/Classes/EstateImportReader')
 const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
@@ -145,9 +146,11 @@ class ImportService {
    *
    */
   static async process(filePath, userId, type) {
-    let { errors, data, warnings } = await ImportService.readFileFromWeb(filePath)
-    console.log(data)
+    const reader = new EstateImportReader(filePath)
+    //let { errors, data, warnings } = await reader.readFileEstateImport(filePath)
+    //console.log(data)
     throw new HttpException('asdfasdf')
+
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
 
