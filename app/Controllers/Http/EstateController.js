@@ -325,10 +325,10 @@ class EstateController {
         importFilePathName.headers['content-type'] !==
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       ) {
-        throw new HttpException('No excel format', 400)
+        throw new HttpException('Not an excel format', 400)
       }
     } else {
-      throw new HttpException('There is no excel data to import', 400)
+      throw new HttpException('Error found while uploading file.', 400)
     }
     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
     return response.res(result)
