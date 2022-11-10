@@ -3,6 +3,7 @@ const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
 const { get, has, isString, isFunction, trim } = require('lodash')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
+const schema = require('../Validators/ImportEstate').schema()
 
 class EstateImportReader {
   validHeaderVars = [
@@ -66,7 +67,7 @@ class EstateImportReader {
     'pets_allowed',
   ]
   sheetName = 'Import_Data'
-  rowForColumnKeys = 0
+  rowForColumnKeys = 4
   dataStart = 5
   errors = []
   warnings = []
@@ -84,6 +85,7 @@ class EstateImportReader {
       this.dataStart = overrides.dataStart
     }
     const sheet = data.find((i) => i.name === this.sheetName)
+    this.sheet = sheet
     //sheet where the estates to import are found...
     if (!sheet || !sheet.data) {
       throw new HttpException(
@@ -95,9 +97,6 @@ class EstateImportReader {
     this.reverseTranslator = new EstateAttributeTranslations()
     this.dataMapping = this.reverseTranslator.getMap()
     this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
-    this.setData(get(sheet, 'data') || [])
-    console.log(this.data)
-    throw new HttpException('asdf')
   }
 
   setValidColumns(columns) {
@@ -119,7 +118,7 @@ class EstateImportReader {
     return columns
   }
 
-  setData(data) {
+  async setData(data) {
     for (let k = this.dataStart; k < data.length; k++) {
       if (data[k].length > 0) {
         let row = {}
@@ -127,7 +126,7 @@ class EstateImportReader {
         this.validColumns.map((column) => {
           row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
         })
-        row = this.processRow(row)
+        row = await this.processRow(row, k)
         this.data.push(row)
       }
     }
@@ -153,7 +152,7 @@ class EstateImportReader {
     return value
   }
 
-  processRow(row) {
+  async processRow(row, rowCount) {
     //deposit
     row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
     //address
@@ -163,11 +162,12 @@ class EstateImportReader {
     ).replace(/\s,/g, ',')
     //letting
     let matches
-    if ((matches = row.letting.match(/^(.*?) \- (.*?)$/))) {
+    console.log(row)
+    if ((matches = row.letting?.match(/^(.*?) \- (.*?)$/))) {
       row.letting_status = get(this.dataMapping, `let_status.${this.escapeStr(matches[2])}`)
       row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(matches[1])}`)
     } else {
-      row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(value)}`)
+      row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(row.letting)}`)
     }
     //rooms
     for (let count = 1; count <= 6; count++) {
@@ -187,10 +187,32 @@ class EstateImportReader {
     if (get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)) {
       row.salutation_int = get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)
     }
+    row = await this.validateRow(row, rowCount)
     return row
   }
 
-  process() {
+  async validateRow(row, rowCount) {
+    try {
+      const data = await schema.validate(row)
+      return {
+        line: rowCount,
+        data: data,
+        six_char_code: row.six_char_code,
+      }
+    } catch (e) {
+      this.errors.push({
+        line: rowCount + 1,
+        error: e.errors,
+        breeze_id: row.six_char_code || null,
+        property_id: row ? row.property_id : `no property id`,
+        street: row ? row.street : `no street code`,
+        postcode: row ? row.zip : `no zip code`,
+      })
+    }
+  }
+
+  async process() {
+    await this.setData(get(this.sheet, 'data') || [])
     return {
       errors: this.errors,
       warnings: this.warnings,

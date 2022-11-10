@@ -147,10 +147,7 @@ class ImportService {
    */
   static async process(filePath, userId, type) {
     const reader = new EstateImportReader(filePath)
-    //let { errors, data, warnings } = await reader.readFileEstateImport(filePath)
-    //console.log(data)
-    throw new HttpException('asdfasdf')
-
+    let { errors, data, warnings } = await reader.process()
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
 
