@@ -2,7 +2,6 @@ const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
 const EstateImportReader = use('App/Classes/EstateImportReader')
-const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
@@ -27,21 +26,6 @@ const HttpException = use('App/Exceptions/HttpException')
  *
  */
 class ImportService {
-  /**
-   *
-   */
-  static async readFile(filePath) {
-    const reader = new ExcelReader()
-    return await reader.readFile(filePath)
-  }
-
-  static async readFileFromWeb(filePath) {
-    const reader = new ExcelReader()
-    reader.headerCol = 1
-    reader.sheetName = 'Import_Data'
-    return await reader.readFileEstateImport(filePath)
-  }
-
   static async readBuddyFile(filePath) {
     const reader = new BuddiesReader()
     return await reader.readFile(filePath)

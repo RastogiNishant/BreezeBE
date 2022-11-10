@@ -6,7 +6,6 @@ const l = use('Localize')
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateAttributeTranslations = require('./EstateAttributeTranslations')
-const EstateImportHeaderTranslations = require('./EstateImportHeaderTranslations')
 
 escapeStr = (v) => {
   return (v || '')
