@@ -423,7 +423,7 @@ class EstateAttributeTranslations {
     },
     stp_garage: (i) => parseInt(i) || 0,
     budget: (i) => parseInt(i * 100),
-    deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
+    deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
@@ -460,6 +460,11 @@ class EstateAttributeTranslations {
     min_age: (i) => parseInt(i) || 0,
     max_age: (i) => parseInt(i) || 0,
     currency: (i) => (isEmpty(i) ? 'EUR' : i),
+    property_id: (i) => {
+      if (i === undefined) {
+        return Math.random().toString(36).substr(2, 8).toUpperCase()
+      }
+    },
   }
 
   constructor(lang = 'en') {
@@ -955,8 +960,10 @@ class EstateAttributeTranslations {
         throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
-        keyValue[escapeStr(l.get(dataMap[attribute].keys[k], this.lang))] =
-          dataMap[attribute].values[k]
+        ;['en', 'de'].map((lang) => {
+          keyValue[escapeStr(l.get(dataMap[attribute].keys[k], lang))] =
+            dataMap[attribute].values[k]
+        })
       }
       this.dataMapping[attribute] = keyValue
     }

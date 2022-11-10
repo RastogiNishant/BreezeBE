@@ -24,9 +24,9 @@ class ExcelReader {
   columnLimit = 200
   dataRowStart = 4
 
-  constructor() {
-    this.variableRow = 1
-    this.sheetName = 'data'
+  constructor({ rowKey, sheetName }) {
+    this.rowForColumnKeys = rowKey ? rowKey : 0
+    this.sheetName = sheetName ? sheetName : 'Import_Data'
   }
 
   /**
@@ -110,12 +110,17 @@ class ExcelReader {
       {}
     )
   }
+
+  setValidColumns(keysFromImport) {
+    this.validColumns = keysFromImport
+  }
   /**
    *
    */
   async readFileEstateImport(filePath) {
     const data = xlsx.parse(filePath, { cellDates: true })
     const sheet = data.find((i) => i.name === this.sheetName)
+
     if (!sheet || !sheet.data) {
       throw new HttpException(
         `Cannot find sheet: ${this.sheetName}. Please use the correct template.`,
@@ -123,12 +128,13 @@ class ExcelReader {
         101100
       )
     }
+    this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
+    console.log(this.validColumns)
+    throw new HttpException('asdf')
     const AttributeTranslations = new EstateAttributeTranslations(lang)
     this.dataMapping = AttributeTranslations.getMap()
     const HeaderTranslations = new EstateImportHeaderTranslations(lang)
     //set possible columns that we can track...
-    this.columns = HeaderTranslations.getHeaderVars()
-    const header = get(sheet, `data.${this.headerCol}`) || []
     //we validate the header... this adds warnings when necessary
     await this.validateHeader(header)
     const errors = []
