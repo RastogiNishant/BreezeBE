@@ -146,7 +146,8 @@ class ImportService {
    */
   static async process(filePath, userId, type) {
     let { errors, data, warnings } = await ImportService.readFileFromWeb(filePath)
-
+    console.log(data)
+    throw new HttpException('asdfasdf')
     const opt = { concurrency: 1 }
     const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
 

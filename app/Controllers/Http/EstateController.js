@@ -317,7 +317,7 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const { from_web } = request.all()
+    const { lang } = request.all()
     const importFilePathName = request.file('file')
 
     if (importFilePathName && importFilePathName.tmpPath) {
