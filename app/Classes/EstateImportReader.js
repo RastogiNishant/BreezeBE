@@ -153,7 +153,7 @@ class EstateImportReader {
     return value
   }
 
-  async processRow(row, rowCount) {
+  async processRow(row, rowCount, validateRow = true) {
     //deposit
     row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
     //address
@@ -187,7 +187,9 @@ class EstateImportReader {
     if (get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)) {
       row.salutation_int = get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)
     }
-    row = await this.validateRow(row, rowCount)
+    if (validateRow) {
+      row = await this.validateRow(row, rowCount)
+    }
     return row
   }
 
