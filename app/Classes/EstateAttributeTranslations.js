@@ -904,9 +904,9 @@ class EstateAttributeTranslations {
           'property.attribute.LETTING_STATUS.Defected.message',
           'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Normal.message',
-          'property.attribute.LETTING_STATUS.Construction works.message',
-          'property.attribute.LETTING_STATUS.Structural vacancy.message',
-          'property.attribute.LETTING_STATUS.First-time use.message',
+          'property.attribute.LETTING_STATUS.Construction.works.message',
+          'property.attribute.LETTING_STATUS.Structural.vacancy.message',
+          'property.attribute.LETTING_STATUS.First-time.use.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
         ],
         values: [
