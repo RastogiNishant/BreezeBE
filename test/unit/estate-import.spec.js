@@ -14,6 +14,14 @@ const {
   LETTING_STATUS_CONSTRUCTION_WORKS,
   LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_VACANCY,
+  ROOM_TYPE_LIVING_ROOM,
+  ROOM_TYPE_GUEST_ROOM,
+  ROOM_TYPE_STAIRS,
+  ROOM_TYPE_BEDROOM,
+  ROOM_TYPE_KITCHEN,
+  ROOM_TYPE_BATH,
+  ROOM_TYPE_CHILDRENS_ROOM,
+  ROOM_TYPE_CORRIDOR,
 } = require('../../app/constants')
 const reader = new EstateImportReader(path.resolve('./test/unit/files/test.xlsx'))
 
@@ -77,8 +85,9 @@ test(`EstateImportReader.setValidColumns returns array of objects containing the
   assert.deepEqual(validColumns, expected)
 })
 
-test(`EstateImportReader.processRow updates deposit attribute
-to be a product of net_rent and deposit attributes`, async ({ assert }) => {
+test(`EstateImportReader.processRow updates deposit attribute to be a product of net_rent and deposit attributes`, async ({
+  assert,
+}) => {
   const testRows = [
     { deposit: 3, net_rent: 1000 },
     { deposit: 0, net_rent: 1000 },
@@ -92,7 +101,7 @@ to be a product of net_rent and deposit attributes`, async ({ assert }) => {
   })
 })
 
-test(`EstateImportReader.processRow parses address from street, house number, zip and city`, async ({
+test(`EstateImportReader.processRow generates address from street, house number, zip, city and country`, async ({
   assert,
 }) => {
   const testRows = [
@@ -101,9 +110,9 @@ test(`EstateImportReader.processRow parses address from street, house number, zi
     {},
   ]
   const expected = [
-    { address: 'Meinekestraße 40, 49453 Hemsloh' },
-    { address: 'Meinekestraße, 49453 Hemsloh' },
-    { address: '' },
+    { address: 'meinekestraße 40, 49453 hemsloh, germany' },
+    { address: 'meinekestraße, 49453 hemsloh, germany' },
+    { address: ',,,, germany' },
   ]
   testRows.map(async (row, index) => {
     row = await reader.processRow(row, 1, false)
@@ -115,7 +124,7 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
   assert,
 }) => {
   const testRows = [
-    { letting: 'N.A.' },
+    { letting: 'n.a.' },
     { letting: 'Let - Standard' },
     { letting: 'Let - Defected' },
     { letting: 'Let - Terminated' },
@@ -123,6 +132,7 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
     { letting: 'Void - Construction works' },
     { letting: 'Void - Structural vacancy' },
     { letting: 'Void - Vacancy' },
+    {},
   ]
   const expected = [
     { letting_type: LETTING_TYPE_NA },
@@ -133,6 +143,102 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_CONSTRUCTION_WORKS },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_STRUCTURAL_VACANCY },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_VACANCY },
+    {},
+  ]
+  testRows.map(async (row, index) => {
+    row = await reader.processRow(row, 1, false)
+    assert.deepInclude(row, expected[index])
+  })
+})
+
+test(`EstateImportReader.processRow adds letting_status and letting_type from letting in de language`, async ({
+  assert,
+}) => {
+  const testRows = [
+    { letting: 'k.A.' },
+    { letting: 'Vermietet - Standard' },
+    { letting: 'Vermietet - mangelhaft' },
+    { letting: 'Vermietet - gekündigt' },
+    { letting: 'Leer - Erstbezug' },
+    { letting: 'Leer - Bauarbeiten' },
+    { letting: 'Leer - strukturell leer' },
+    { letting: 'Leer - Leerstand' },
+    {},
+  ]
+  const expected = [
+    { letting_type: LETTING_TYPE_NA },
+    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_NORMAL },
+    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_DEFECTED },
+    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_TERMINATED },
+    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_FIRST_TIME_USE },
+    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_CONSTRUCTION_WORKS },
+    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_STRUCTURAL_VACANCY },
+    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_VACANCY },
+    {},
+  ]
+  testRows.map(async (row, index) => {
+    row = await reader.processRow(row, 1, false)
+    assert.deepInclude(row, expected[index])
+  })
+})
+
+test(`EstateImportReader.processRow updates roomX_type to object containing type and name`, async ({
+  assert,
+}) => {
+  const testRows = [
+    { room1_type: 'living room' },
+    { room1_type: 'Guest room' },
+    { room1_type: 'Stairs' },
+    { room1_type: 'bedroom' },
+    { room1_type: 'kitchen' },
+    { room1_type: 'bath' },
+    { room1_type: "children's room" },
+    { room1_type: 'Corridor' },
+  ]
+  const expected = [
+    {
+      room1_type: {
+        type: ROOM_TYPE_LIVING_ROOM,
+        name: 'apartment.amenities.room_type.living_room',
+      },
+    },
+    {
+      room1_type: {
+        type: ROOM_TYPE_GUEST_ROOM,
+        name: 'landlord.property.inside_view.rooms.guest_room',
+      },
+    },
+    {
+      room1_type: {
+        type: ROOM_TYPE_STAIRS,
+        name: 'landlord.property.inside_view.rooms.stairs',
+      },
+    },
+    {
+      room1_type: {
+        type: ROOM_TYPE_BEDROOM,
+        name: 'apartment.amenities.room_type.bedroom',
+      },
+    },
+    {
+      room1_type: {
+        type: ROOM_TYPE_KITCHEN,
+        name: 'apartment.amenities.room_type.kitchen',
+      },
+    },
+    { room1_type: { type: ROOM_TYPE_BATH, name: 'apartment.amenities.room_type.bath' } },
+    {
+      room1_type: {
+        type: ROOM_TYPE_CHILDRENS_ROOM,
+        name: "apartment.amenities.room_type.children's_room",
+      },
+    },
+    {
+      room1_type: {
+        type: ROOM_TYPE_CORRIDOR,
+        name: 'landlord.property.inside_view.rooms.corridor',
+      },
+    },
   ]
   testRows.map(async (row, index) => {
     row = await reader.processRow(row, 1, false)

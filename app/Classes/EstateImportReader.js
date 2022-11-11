@@ -2,9 +2,10 @@
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
 const { get, has, isString, isFunction, trim } = require('lodash')
+const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
+const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
-const l = use('Localize')
 
 class EstateImportReader {
   validHeaderVars = [
@@ -160,10 +161,7 @@ class EstateImportReader {
     //deposit
     row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
     //address
-    row.address = trim(
-      `${row.street || ''} ${row.house_number || ''}, ${row.zip || ''} ${row.city || ''}`,
-      ', '
-    ).replace(/\s,/g, ',')
+    //row.address = generateAddress(row)
     //letting
     if (row.letting) {
       let matches
@@ -175,7 +173,7 @@ class EstateImportReader {
       }
     }
     //rooms
-    for (let count = 1; count <= 6; count++) {
+    for (let count = 1; count <= MAX_ROOM_TYPES_TO_IMPORT; count++) {
       let roomValue = get(row, `room${count}_type`)
       if (roomValue) {
         roomValue = this.escapeStr(roomValue)

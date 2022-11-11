@@ -867,6 +867,8 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT: 10,
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
+
+  MAX_ROOM_TYPES_TO_IMPORT: 6,
 }
 
 module.exports = constants
