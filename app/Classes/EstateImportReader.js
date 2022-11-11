@@ -156,12 +156,10 @@ class EstateImportReader {
   }
 
   async processRow(row, rowCount, validateRow = true) {
-    //console.log(this.dataMapping['let_type'])
-    //throw new HttpException('asdf')
     //deposit
     row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
     //address
-    //row.address = generateAddress(row)
+    row.address = generateAddress(row)
     //letting
     if (row.letting) {
       let matches

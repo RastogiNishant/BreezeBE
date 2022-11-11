@@ -105,14 +105,16 @@ test(`EstateImportReader.processRow generates address from street, house number,
   assert,
 }) => {
   const testRows = [
-    { street: 'Meinekestraße', house_number: 40, zip: 49453, city: 'Hemsloh' },
+    { street: 'Meinekestraße', house_number: 40, zip: 49453, city: 'Hemsloh', country: 'Germany' },
+    { street: 'Meinekestraße', zip: 49453, city: 'Hemsloh', country: 'Germany' },
     { street: 'Meinekestraße', zip: 49453, city: 'Hemsloh' },
     {},
   ]
   const expected = [
     { address: 'meinekestraße 40, 49453 hemsloh, germany' },
     { address: 'meinekestraße, 49453 hemsloh, germany' },
-    { address: ',,,, germany' },
+    { address: 'meinekestraße, 49453 hemsloh' },
+    { address: '' },
   ]
   testRows.map(async (row, index) => {
     row = await reader.processRow(row, 1, false)

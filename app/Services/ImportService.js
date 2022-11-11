@@ -48,9 +48,6 @@ class ImportService {
       await ImportService.updateImportBySixCharCode(six_char_code, data)
     } else {
       try {
-        if (!data.address) {
-          throw new AppException('Invalid address')
-        }
         const address = data.address.toLowerCase()
         const existingEstate = await EstateService.getQuery()
           .where('user_id', userId)

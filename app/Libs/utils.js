@@ -101,7 +101,8 @@ const isHoliday = (date) => {
 
 const generateAddress = ({ street, house_number, zip, city, country }) => {
   return trim(
-    `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'}`
+    `${street || ''} ${house_number || ''}, ${zip || ''} ${city || ''}, ${country || ''}`,
+    ', '
   )
     .replace(/\s,/g, ',')
     .toLowerCase()
