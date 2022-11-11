@@ -61,7 +61,6 @@ const UserService = require('../../Services/UserService')
 const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
 const GeoService = use('App/Services/GeoService')
 const INVITE_CODE_STRING_LENGTH = 8
-const { generateAddress } = use('App/Libs/utils')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -94,7 +93,11 @@ class EstateController {
 
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
-        const address = generateAddress({ street, house_number, zip, city, country })
+        const address = trim(
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
+            country || 'Germany'
+          }`
+        ).toLowerCase()
 
         const txt = `The landlord '${
           user.email
