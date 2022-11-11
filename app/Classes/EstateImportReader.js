@@ -4,6 +4,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { get, has, isString, isFunction, trim } = require('lodash')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
+const l = use('Localize')
 
 class EstateImportReader {
   validHeaderVars = [
@@ -154,6 +155,8 @@ class EstateImportReader {
   }
 
   async processRow(row, rowCount, validateRow = true) {
+    //console.log(this.dataMapping['let_type'])
+    //throw new HttpException('asdf')
     //deposit
     row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
     //address
@@ -162,12 +165,14 @@ class EstateImportReader {
       ', '
     ).replace(/\s,/g, ',')
     //letting
-    let matches
-    if ((matches = row.letting?.match(/^(.*?) \- (.*?)$/))) {
-      row.letting_status = get(this.dataMapping, `let_status.${this.escapeStr(matches[2])}`)
-      row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(matches[1])}`)
-    } else {
-      row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(row.letting)}`)
+    if (row.letting) {
+      let matches
+      if ((matches = row.letting?.match(/^(.*?) \- (.*?)$/))) {
+        row.letting_status = get(this.dataMapping, `let_status.${this.escapeStr(matches[2])}`)
+        row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(matches[1])}`)
+      } else {
+        row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(row.letting)}`)
+      }
     }
     //rooms
     for (let count = 1; count <= 6; count++) {
