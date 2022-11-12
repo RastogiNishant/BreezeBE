@@ -105,7 +105,7 @@ class EstateController {
           process.env.NODE_ENV || 'local'
         } environment`
 
-        await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
+        MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
 
       response.res(estate)
