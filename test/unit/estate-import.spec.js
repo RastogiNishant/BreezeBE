@@ -28,6 +28,12 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  ESTATE_FLOOR_DIRECTION_NA,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   EQUIPMENT_STANDARD_SIMPLE,
   EQUIPMENT_STANDARD_NORMAL,
   EQUIPMENT_STANDARD_ENHANCED,
@@ -70,6 +76,7 @@ const {
   LETTING_STATUS_CONSTRUCTION_WORKS,
   LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_VACANCY,
+  MAX_ROOM_TYPES_TO_IMPORT,
   PARKING_SPACE_TYPE_NO_PARKING,
   PARKING_SPACE_TYPE_UNDERGROUND,
   PARKING_SPACE_TYPE_CARPORT,
@@ -89,7 +96,6 @@ const {
   ROOM_TYPE_BATH,
   ROOM_TYPE_CHILDRENS_ROOM,
   ROOM_TYPE_CORRIDOR,
-  MAX_ROOM_TYPES_TO_IMPORT,
   SALUTATION_MR,
   SALUTATION_MS,
   SALUTATION_NOT_DEFINED,
@@ -787,6 +793,40 @@ test(`EstateImportReader.mapValue maps result to expected values for Parking Spa
   })
 })
 
+test(`EstateImportReader.mapValue maps result to expected values for Floor Direction (floor_direction)`, async ({
+  assert,
+}) => {
+  const types = [
+    '',
+    'notfound',
+    'property.attribute.LETTING_TYPE.NA.message',
+    'property.attribute.floor_direction.left.message',
+    'property.attribute.floor_direction.right.message',
+    'property.attribute.floor_direction.straight.message',
+    'property.attribute.floor_direction.straight.left.message',
+    'property.attribute.floor_direction.straight.right.message',
+  ]
+
+  const langs = AVAILABLE_LANGUAGES
+  const expected = [
+    undefined,
+    undefined,
+    ESTATE_FLOOR_DIRECTION_NA,
+    ESTATE_FLOOR_DIRECTION_LEFT,
+    ESTATE_FLOOR_DIRECTION_RIGHT,
+    ESTATE_FLOOR_DIRECTION_STRAIGHT,
+    ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+    ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  ]
+
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue('floor_direction', l.get(`${type}`, lang))
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
 test(`EstateImportReader.mapValue parses yes/no fields to expected boolean`, async ({ assert }) => {
   const booleanFields = ['rent_arrears', 'furnished']
   const fieldValues = ['No', 'Nein', 'Yes', 'Ja']
@@ -819,4 +859,8 @@ test(`EstateImportReader.mapValue parses pets_allowed to expected boolean`, asyn
       assert.equal(result, petsAllowedExpected[index])
     })
   })
+})
+
+test(`EstateImportReader.mapValue returns exact values for several fields`, async ({ assert }) => {
+  const testFields = []
 })
