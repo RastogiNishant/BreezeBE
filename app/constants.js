@@ -633,7 +633,8 @@ const constants = {
 
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
-  SALUTATION_SIR_OR_MADAM: 3,
+  SALUTATION_NOT_DEFINED: 3, // confirmed by @Nishant that 3 is mapped to Not Defined on frontend.
+  SALUTATION_SIR_OR_MADAM: 4,
 
   MINIMUM_SHOW_PERIOD: 5,
   ROOM_CUSTOM_AMENITIES_MAX_COUNT: 3,

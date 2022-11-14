@@ -36,6 +36,7 @@ const exceptions = {
   ACCOUNT_ALREADY_VERIFIED: 'Your account has been already verified',
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
   IMPORT_ESTATE_INVALID_SHEET: 'Invalid Excel Sheet',
+  IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'Column ${value} is not included on import',
 }
 
 const exceptionKeys = {
@@ -71,6 +72,7 @@ const exceptionKeys = {
   INVALID_TOKEN: 'INVALID_TOKEN',
   NO_CODE_PASSED: 'NO_CODE_PASSED',
   ACCOUNT_ALREADY_VERIFIED: 'ACCOUNT_ALREADY_VERIFIED',
+  IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'IMPORT_ESTATE_INVALID_VARIABLE_WARNING',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

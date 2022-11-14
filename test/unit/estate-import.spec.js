@@ -23,17 +23,59 @@ const {
   ROOM_TYPE_CHILDRENS_ROOM,
   ROOM_TYPE_CORRIDOR,
   MAX_ROOM_TYPES_TO_IMPORT,
+  SALUTATION_MR,
+  SALUTATION_MS,
+  SALUTATION_NOT_DEFINED,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_SITE,
+  USE_TYPE_RESIDENTIAL,
+  USE_TYPE_COMMERCIAL,
+  USE_TYPE_PLANT,
+  USE_TYPE_OTHER,
+  HOUSE_TYPE_MULTIFAMILY_HOUSE,
+  HOUSE_TYPE_HIGH_RISE,
+  HOUSE_TYPE_SERIES,
+  HOUSE_TYPE_SEMIDETACHED_HOUSE,
+  HOUSE_TYPE_2FAMILY_HOUSE,
+  HOUSE_TYPE_DETACHED_HOUSE,
+  HOUSE_TYPE_COUNTRY,
+  HOUSE_TYPE_BUNGALOW,
+  HOUSE_TYPE_VILLA,
+  HOUSE_TYPE_GARDENHOUSE,
+  BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+  BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+  BUILDING_STATUS_NEW,
+  BUILDING_STATUS_EXISTING,
+  BUILDING_STATUS_PART_FULLY_RENOVATED,
+  BUILDING_STATUS_PARTLY_REFURISHED,
+  BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+  BUILDING_STATUS_READY_TO_BE_BUILT,
+  BUILDING_STATUS_BY_AGREEMENT,
+  BUILDING_STATUS_MODERNIZED,
+  BUILDING_STATUS_CLEANED,
+  BUILDING_STATUS_ROUGH_BUILDING,
+  BUILDING_STATUS_DEVELOPED,
+  BUILDING_STATUS_ABRISSOBJEKT,
+  BUILDING_STATUS_PROJECTED,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
+  exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
+  getExceptionMessage,
 } = use('App/exceptions')
 const reader = new EstateImportReader(path.resolve('./test/unit/files/test.xlsx'))
+const l = use('Localize')
 
 before(async () => {})
 
 test(`EstateImportReader returns error when a wrong file is uploaded`, async ({ assert }) => {
   try {
-    const wrongExcelReader = new EstateImportReader(path.resolve('./test/unit/files/wrong.txt'))
+    //should have been in a functional test but it could be loaded in a unit test
+    const wrongExcelLoadedReader = new EstateImportReader(
+      path.resolve('./test/unit/files/wrong.txt')
+    )
   } catch (err) {
     assert.equal(err.message, IMPORT_ESTATE_INVALID_SHEET)
   }
@@ -78,6 +120,16 @@ test(`EstateImportReader.setValidColumns returns array of objects of valid colum
   ]
   const validColumns = reader.setValidColumns(testColumns)
   assert.deepEqual(validColumns, expected)
+})
+
+test(`EstateImportReader appends to warnings for invalid columns`, async ({ assert }) => {
+  const invalidColumns = ['not_a_valid_column', 'another_invalid_column']
+  reader.warnings.map((warning, index) => {
+    assert.equal(
+      warning,
+      getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, invalidColumns[index])
+    )
+  })
 })
 
 test(`EstateImportReader.setValidColumns returns array of objects containing the correct index`, async ({
@@ -287,4 +339,152 @@ test(`EstateImportReader.processRow processes up to ${MAX_ROOM_TYPES_TO_IMPORT} 
   }
 })
 
-test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`)
+test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`, async ({
+  assert,
+}) => {
+  const salutations = ['Mr.', 'Ms.', 'Not Defined', 'Herr', 'Frau', 'Nicht definiert', '']
+  const expected = [
+    SALUTATION_MR,
+    SALUTATION_MS,
+    SALUTATION_NOT_DEFINED,
+    SALUTATION_MR,
+    SALUTATION_MS,
+    SALUTATION_NOT_DEFINED,
+    undefined,
+  ]
+  salutations.map(async (salutation, index) => {
+    let result = await reader.processRow({ txt_salutation: salutation }, 1, false)
+    assert.equal(result.salutation_int, expected[index])
+  })
+})
+
+//map value:
+test(`EstateImportReader.mapValue maps result to expected values for property_type`, async ({
+  assert,
+}) => {
+  const types = ['Apartment', 'Room', 'House', 'Site']
+  const langs = ['en', 'de']
+  const expected = [
+    PROPERTY_TYPE_APARTMENT,
+    PROPERTY_TYPE_ROOM,
+    PROPERTY_TYPE_HOUSE,
+    PROPERTY_TYPE_SITE,
+  ]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'property_type',
+        l.get(`property.attribute.PROPERTY_TYPE.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for use_type`, async ({
+  assert,
+}) => {
+  const types = ['Residential', 'Commercial', 'Plant', 'Other']
+
+  const langs = ['en', 'de']
+  const expected = [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_PLANT, USE_TYPE_OTHER]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'use_type',
+        l.get(`property.attribute.USE_TYPE.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for house_type`, async ({
+  assert,
+}) => {
+  const types = [
+    'Multi-family_house',
+    'High_rise',
+    'Series',
+    'Semidetached_house',
+    'Two_family_house',
+    'Detached_house',
+    'Country',
+    'Bungalow',
+    'Villa',
+    'Gardenhouse',
+  ]
+  const langs = ['en', 'de']
+  const expected = [
+    HOUSE_TYPE_MULTIFAMILY_HOUSE,
+    HOUSE_TYPE_HIGH_RISE,
+    HOUSE_TYPE_SERIES,
+    HOUSE_TYPE_SEMIDETACHED_HOUSE,
+    HOUSE_TYPE_2FAMILY_HOUSE,
+    HOUSE_TYPE_DETACHED_HOUSE,
+    HOUSE_TYPE_COUNTRY,
+    HOUSE_TYPE_BUNGALOW,
+    HOUSE_TYPE_VILLA,
+    HOUSE_TYPE_GARDENHOUSE,
+  ]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'house_type',
+        l.get(`property.attribute.HOUSE_TYPE.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for building_status`, async ({
+  assert,
+}) => {
+  const types = [
+    'First_time_occupied',
+    'Part_complete_renovation_need',
+    'New',
+    'Existing',
+    'Part_fully_renovated',
+    'Partly_refurished',
+    'In_need_of_renovation',
+    'Ready_to_be_built',
+    'By_agreement',
+    'Modernized',
+    'Cleaned',
+    'Rough_building',
+    'Developed',
+    'Abrissobjekt',
+    'Projected',
+  ]
+
+  const langs = ['en', 'de']
+  const expected = [
+    BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+    BUILDING_STATUS_NEW,
+    BUILDING_STATUS_EXISTING,
+    BUILDING_STATUS_PART_FULLY_RENOVATED,
+    BUILDING_STATUS_PARTLY_REFURISHED,
+    BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    BUILDING_STATUS_READY_TO_BE_BUILT,
+    BUILDING_STATUS_BY_AGREEMENT,
+    BUILDING_STATUS_MODERNIZED,
+    BUILDING_STATUS_CLEANED,
+    BUILDING_STATUS_ROUGH_BUILDING,
+    BUILDING_STATUS_DEVELOPED,
+    BUILDING_STATUS_ABRISSOBJEKT,
+    BUILDING_STATUS_PROJECTED,
+  ]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'building_status',
+        l.get(`property.attribute.BUILDING_STATUS.${type}.message`, lang)
+      )
+      console.log(result, type, expected[type_index])
+      assert.equal(result, expected[type_index])
+    })
+  })
+})

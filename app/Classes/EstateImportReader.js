@@ -1,9 +1,11 @@
 'use_strict'
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
-const { get, has, isString, isFunction, trim } = require('lodash')
+const { get, has, isString, isFunction } = require('lodash')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
+  exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
+  getExceptionMessage,
 } = require('../exceptions')
 const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
@@ -112,7 +114,7 @@ class EstateImportReader {
           },
         ]
       } else {
-        this.warnings.push(`Column ${current} is invalid and not included on import.`)
+        this.warnings.push(getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current))
       }
       return columns
     }, [])
