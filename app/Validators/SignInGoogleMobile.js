@@ -6,7 +6,7 @@ const { ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER } = require('../constant
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, NUMBER, BOOLEAN, EMAIL, MATCH },
-} = require('../excepions')
+} = require('../exceptions')
 
 class SignInGoogleMobile extends Base {
   static schema = () =>

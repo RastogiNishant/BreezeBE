@@ -75,7 +75,7 @@ const {
     INVALID_TOKEN,
     ACCOUNT_ALREADY_VERIFIED,
   },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
 

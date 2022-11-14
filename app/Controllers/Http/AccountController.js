@@ -13,7 +13,7 @@ const { pick, trim } = require('lodash')
 
 const {
   exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },
-} = require('../../../app/excepions')
+} = require('../../../app/exceptions')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
