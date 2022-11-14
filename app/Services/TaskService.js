@@ -498,22 +498,58 @@ class TaskService {
   static async removeImages({ id, user, uri }) {
     const task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const attachments = task
-      .toJSON()
-      .attachments.filter(
-        (attachment) =>
-          !(
-            attachment.user_id === user.id &&
-            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
-          )
-      )
 
-    return await Task.query()
-      .where('id', id)
-      .update({
-        ...task.toJSON(),
-        attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
+    const trx = await Database.beginTransaction()
+    try {
+      const taskAttachments = task
+        .toJSON()
+        .attachments.filter(
+          (attachment) =>
+            !(
+              attachment.user_id === user.id &&
+              (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
+            )
+        )
+
+      await Task.query()
+        .where('id', id)
+        .update({
+          ...task.toJSON(),
+          attachments:
+            taskAttachments && taskAttachments.length ? JSON.stringify(taskAttachments) : null,
+        })
+        .transacting(trx)
+
+      let chats =
+        (await ChatService.getPreviousMessages({ task_id: task.id, user_id: user.id })).rows || []
+
+      let deletedAttachmentChat = null
+      chats.map((chat) => {
+        if (chat.attachments && chat.attachments.includes(uri)) {
+          const attachments = chat.attachments.filter((attachment) => attachment !== uri)
+          deletedAttachmentChat = {
+            ...chat.toJSON(),
+            attachments: attachments.length ? attachments : null,
+          }
+          return
+        }
       })
+
+      if (deletedAttachmentChat) {
+        await ChatService.updateChatMessage(
+          {
+            id: deletedAttachmentChat.id,
+            message: deletedAttachmentChat.message,
+            attachments: deletedAttachmentChat.attachments,
+          },
+          trx
+        )
+      }
+
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+    }
   }
 
   static async getItemWithAbsoluteUrl(item) {
