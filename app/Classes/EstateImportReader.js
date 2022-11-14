@@ -34,7 +34,7 @@ class EstateImportReader {
     'building_status',
     'number_floors',
     'energy_efficiency',
-    'firing',
+    'firing', // Energy Carrier
     'heating_type',
     'area',
     'rooms_number',

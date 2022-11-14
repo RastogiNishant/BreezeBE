@@ -59,6 +59,20 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  FIRING_OEL,
+  FIRING_GAS,
+  FIRING_ELECTRIC,
+  FIRING_ALTERNATIVE,
+  FIRING_SOLAR,
+  FIRING_GROUND_HEAT,
+  FIRING_AIRWP,
+  FIRING_REMOTE,
+  FIRING_BLOCK,
+  FIRING_WATER_ELECTRIC,
+  FIRING_PELLET,
+  FIRING_COAL,
+  FIRING_WOOD,
+  FIRING_LIQUID_GAS,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
@@ -483,7 +497,54 @@ test(`EstateImportReader.mapValue maps result to expected values for building_st
         'building_status',
         l.get(`property.attribute.BUILDING_STATUS.${type}.message`, lang)
       )
-      console.log(result, type, expected[type_index])
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for firing (Energy Carrier)`, async ({
+  assert,
+}) => {
+  const types = [
+    'Oel',
+    'Gas',
+    'Electric',
+    'Alternative',
+    'Solar',
+    'Ground_heat',
+    'Airwp',
+    'District_heating',
+    'Block',
+    'Water_electric',
+    'Pellet',
+    'Coal',
+    'Wood',
+    'Liquid_gas',
+  ]
+
+  const langs = ['en', 'de']
+  const expected = [
+    FIRING_OEL,
+    FIRING_GAS,
+    FIRING_ELECTRIC,
+    FIRING_ALTERNATIVE,
+    FIRING_SOLAR,
+    FIRING_GROUND_HEAT,
+    FIRING_AIRWP,
+    FIRING_REMOTE,
+    FIRING_BLOCK,
+    FIRING_WATER_ELECTRIC,
+    FIRING_PELLET,
+    FIRING_COAL,
+    FIRING_WOOD,
+    FIRING_LIQUID_GAS,
+  ]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'firing',
+        l.get(`property.attribute.FIRING.${type}.message`, lang)
+      )
       assert.equal(result, expected[type_index])
     })
   })
