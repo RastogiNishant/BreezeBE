@@ -73,6 +73,19 @@ const {
   FIRING_COAL,
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
+  HEATING_TYPE_FLOOR_HEATING,
+  HEATING_TYPE_OVEN,
+  HEATING_TYPE_FLOOR,
+  HEATING_TYPE_CENTRAL,
+  HEATING_TYPE_REMOTE,
+  APARTMENT_TYPE_FLAT,
+  APARTMENT_TYPE_GROUND,
+  APARTMENT_TYPE_ROOF,
+  APARTMENT_TYPE_MAISONETTE,
+  APARTMENT_TYPE_LOFT,
+  APARTMENT_TYPE_SOCIAL,
+  APARTMENT_TYPE_SOUTERRAIN,
+  APARTMENT_TYPE_PENTHOUSE,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
@@ -544,6 +557,66 @@ test(`EstateImportReader.mapValue maps result to expected values for firing (Ene
       let result = reader.mapValue(
         'firing',
         l.get(`property.attribute.FIRING.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for heating_type`, async ({
+  assert,
+}) => {
+  const types = ['Oven', 'Floor', 'Central', 'Remote', 'Floor_heating']
+
+  const langs = ['en', 'de']
+  const expected = [
+    HEATING_TYPE_OVEN,
+    HEATING_TYPE_FLOOR,
+    HEATING_TYPE_CENTRAL,
+    HEATING_TYPE_REMOTE,
+    HEATING_TYPE_FLOOR_HEATING,
+  ]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'heating_type',
+        l.get(`property.attribute.HEATING_TYPE.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for Apartment Type (apt_type)`, async ({
+  assert,
+}) => {
+  const types = [
+    'Flat',
+    'Ground_floor',
+    'Roof_floor',
+    'Maisonette',
+    'Loft_studio_atelier',
+    'Social',
+    'Souterrain',
+    'Penthouse',
+  ]
+
+  const langs = ['en', 'de']
+  const expected = [
+    APARTMENT_TYPE_FLAT,
+    APARTMENT_TYPE_GROUND,
+    APARTMENT_TYPE_ROOF,
+    APARTMENT_TYPE_MAISONETTE,
+    APARTMENT_TYPE_LOFT,
+    APARTMENT_TYPE_SOCIAL,
+    APARTMENT_TYPE_SOUTERRAIN,
+    APARTMENT_TYPE_PENTHOUSE,
+  ]
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'apt_type',
+        l.get(`property.attribute.APARTMENT_TYPE.${type}.message`, lang)
       )
       assert.equal(result, expected[type_index])
     })

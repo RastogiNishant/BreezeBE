@@ -40,7 +40,7 @@ class EstateImportReader {
     'rooms_number',
     'floor',
     'floor_direction',
-    'apt_type',
+    'apt_type', // Apartment Type
     'apartment_status',
     'equipment_standard',
     'furnished',
