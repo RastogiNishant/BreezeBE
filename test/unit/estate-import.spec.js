@@ -786,3 +786,15 @@ test(`EstateImportReader.mapValue maps result to expected values for Parking Spa
     })
   })
 })
+
+test(`EstateImportReader.mapValue parses yes/no fields to expected boolean`, async ({ assert }) => {
+  const booleanFields = ['rent_arrears', 'furnished']
+  const fieldValues = ['No', 'Nein', 'Yes', 'Ja']
+  const expected = [false, false, true, true]
+  booleanFields.map(async (field, index) => {
+    fieldValues.map((value, fieldValueIndex) => {
+      let result = reader.mapValue(field, value)
+      assert.equal(result, expected[(index, fieldValueIndex)])
+    })
+  })
+})
