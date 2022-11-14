@@ -4,46 +4,15 @@ const { test, before } = use('Test/Suite')('Estate Import')
 const EstateImportReader = use('App/Classes/EstateImportReader')
 const path = require('path')
 const {
-  LETTING_TYPE_NA,
-  LETTING_TYPE_LET,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_DEFECTED,
-  LETTING_STATUS_TERMINATED,
-  LETTING_TYPE_VOID,
-  LETTING_STATUS_FIRST_TIME_USE,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_VACANCY,
-  ROOM_TYPE_LIVING_ROOM,
-  ROOM_TYPE_GUEST_ROOM,
-  ROOM_TYPE_STAIRS,
-  ROOM_TYPE_BEDROOM,
-  ROOM_TYPE_KITCHEN,
-  ROOM_TYPE_BATH,
-  ROOM_TYPE_CHILDRENS_ROOM,
-  ROOM_TYPE_CORRIDOR,
-  MAX_ROOM_TYPES_TO_IMPORT,
-  SALUTATION_MR,
-  SALUTATION_MS,
-  SALUTATION_NOT_DEFINED,
-  PROPERTY_TYPE_APARTMENT,
-  PROPERTY_TYPE_ROOM,
-  PROPERTY_TYPE_HOUSE,
-  PROPERTY_TYPE_SITE,
-  USE_TYPE_RESIDENTIAL,
-  USE_TYPE_COMMERCIAL,
-  USE_TYPE_PLANT,
-  USE_TYPE_OTHER,
-  HOUSE_TYPE_MULTIFAMILY_HOUSE,
-  HOUSE_TYPE_HIGH_RISE,
-  HOUSE_TYPE_SERIES,
-  HOUSE_TYPE_SEMIDETACHED_HOUSE,
-  HOUSE_TYPE_2FAMILY_HOUSE,
-  HOUSE_TYPE_DETACHED_HOUSE,
-  HOUSE_TYPE_COUNTRY,
-  HOUSE_TYPE_BUNGALOW,
-  HOUSE_TYPE_VILLA,
-  HOUSE_TYPE_GARDENHOUSE,
+  APARTMENT_TYPE_FLAT,
+  APARTMENT_TYPE_GROUND,
+  APARTMENT_TYPE_ROOF,
+  APARTMENT_TYPE_MAISONETTE,
+  APARTMENT_TYPE_LOFT,
+  APARTMENT_TYPE_SOCIAL,
+  APARTMENT_TYPE_SOUTERRAIN,
+  APARTMENT_TYPE_PENTHOUSE,
+  AVAILABLE_LANGUAGES,
   BUILDING_STATUS_FIRST_TIME_OCCUPIED,
   BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
   BUILDING_STATUS_NEW,
@@ -59,6 +28,9 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  EQUIPMENT_STANDARD_SIMPLE,
+  EQUIPMENT_STANDARD_NORMAL,
+  EQUIPMENT_STANDARD_ENHANCED,
   FIRING_OEL,
   FIRING_GAS,
   FIRING_ELECTRIC,
@@ -78,14 +50,53 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  APARTMENT_TYPE_FLAT,
-  APARTMENT_TYPE_GROUND,
-  APARTMENT_TYPE_ROOF,
-  APARTMENT_TYPE_MAISONETTE,
-  APARTMENT_TYPE_LOFT,
-  APARTMENT_TYPE_SOCIAL,
-  APARTMENT_TYPE_SOUTERRAIN,
-  APARTMENT_TYPE_PENTHOUSE,
+  HOUSE_TYPE_MULTIFAMILY_HOUSE,
+  HOUSE_TYPE_HIGH_RISE,
+  HOUSE_TYPE_SERIES,
+  HOUSE_TYPE_SEMIDETACHED_HOUSE,
+  HOUSE_TYPE_2FAMILY_HOUSE,
+  HOUSE_TYPE_DETACHED_HOUSE,
+  HOUSE_TYPE_COUNTRY,
+  HOUSE_TYPE_BUNGALOW,
+  HOUSE_TYPE_VILLA,
+  HOUSE_TYPE_GARDENHOUSE,
+  LETTING_TYPE_NA,
+  LETTING_TYPE_LET,
+  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_TERMINATED,
+  LETTING_TYPE_VOID,
+  LETTING_STATUS_FIRST_TIME_USE,
+  LETTING_STATUS_CONSTRUCTION_WORKS,
+  LETTING_STATUS_STRUCTURAL_VACANCY,
+  LETTING_STATUS_VACANCY,
+  PARKING_SPACE_TYPE_NO_PARKING,
+  PARKING_SPACE_TYPE_UNDERGROUND,
+  PARKING_SPACE_TYPE_CARPORT,
+  PARKING_SPACE_TYPE_OUTDOOR,
+  PARKING_SPACE_TYPE_CAR_PARK,
+  PARKING_SPACE_TYPE_DUPLEX,
+  PARKING_SPACE_TYPE_GARAGE,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_SITE,
+  ROOM_TYPE_LIVING_ROOM,
+  ROOM_TYPE_GUEST_ROOM,
+  ROOM_TYPE_STAIRS,
+  ROOM_TYPE_BEDROOM,
+  ROOM_TYPE_KITCHEN,
+  ROOM_TYPE_BATH,
+  ROOM_TYPE_CHILDRENS_ROOM,
+  ROOM_TYPE_CORRIDOR,
+  MAX_ROOM_TYPES_TO_IMPORT,
+  SALUTATION_MR,
+  SALUTATION_MS,
+  SALUTATION_NOT_DEFINED,
+  USE_TYPE_RESIDENTIAL,
+  USE_TYPE_COMMERCIAL,
+  USE_TYPE_PLANT,
+  USE_TYPE_OTHER,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
@@ -369,15 +380,25 @@ test(`EstateImportReader.processRow processes up to ${MAX_ROOM_TYPES_TO_IMPORT} 
 test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`, async ({
   assert,
 }) => {
-  const salutations = ['Mr.', 'Ms.', 'Not Defined', 'Herr', 'Frau', 'Nicht definiert', '']
+  const salutations = [
+    '',
+    'notfound',
+    'Mr.',
+    'Ms.',
+    'Not Defined',
+    'Herr',
+    'Frau',
+    'Nicht definiert',
+  ]
   const expected = [
-    SALUTATION_MR,
-    SALUTATION_MS,
-    SALUTATION_NOT_DEFINED,
-    SALUTATION_MR,
-    SALUTATION_MS,
-    SALUTATION_NOT_DEFINED,
     undefined,
+    undefined,
+    SALUTATION_MR,
+    SALUTATION_MS,
+    SALUTATION_NOT_DEFINED,
+    SALUTATION_MR,
+    SALUTATION_MS,
+    SALUTATION_NOT_DEFINED,
   ]
   salutations.map(async (salutation, index) => {
     let result = await reader.processRow({ txt_salutation: salutation }, 1, false)
@@ -389,9 +410,11 @@ test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`
 test(`EstateImportReader.mapValue maps result to expected values for property_type`, async ({
   assert,
 }) => {
-  const types = ['Apartment', 'Room', 'House', 'Site']
-  const langs = ['en', 'de']
+  const types = ['', 'notfound', 'Apartment', 'Room', 'House', 'Site']
+  const langs = AVAILABLE_LANGUAGES
   const expected = [
+    undefined,
+    undefined,
     PROPERTY_TYPE_APARTMENT,
     PROPERTY_TYPE_ROOM,
     PROPERTY_TYPE_HOUSE,
@@ -411,10 +434,17 @@ test(`EstateImportReader.mapValue maps result to expected values for property_ty
 test(`EstateImportReader.mapValue maps result to expected values for use_type`, async ({
   assert,
 }) => {
-  const types = ['Residential', 'Commercial', 'Plant', 'Other']
+  const types = ['', 'notfound', 'Residential', 'Commercial', 'Plant', 'Other']
 
-  const langs = ['en', 'de']
-  const expected = [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_PLANT, USE_TYPE_OTHER]
+  const langs = AVAILABLE_LANGUAGES
+  const expected = [
+    undefined,
+    undefined,
+    USE_TYPE_RESIDENTIAL,
+    USE_TYPE_COMMERCIAL,
+    USE_TYPE_PLANT,
+    USE_TYPE_OTHER,
+  ]
   types.map((type, type_index) => {
     langs.map((lang) => {
       let result = reader.mapValue(
@@ -430,6 +460,8 @@ test(`EstateImportReader.mapValue maps result to expected values for house_type`
   assert,
 }) => {
   const types = [
+    '',
+    'notfound',
     'Multi-family_house',
     'High_rise',
     'Series',
@@ -441,8 +473,10 @@ test(`EstateImportReader.mapValue maps result to expected values for house_type`
     'Villa',
     'Gardenhouse',
   ]
-  const langs = ['en', 'de']
+  const langs = AVAILABLE_LANGUAGES
   const expected = [
+    undefined,
+    undefined,
     HOUSE_TYPE_MULTIFAMILY_HOUSE,
     HOUSE_TYPE_HIGH_RISE,
     HOUSE_TYPE_SERIES,
@@ -469,6 +503,8 @@ test(`EstateImportReader.mapValue maps result to expected values for building_st
   assert,
 }) => {
   const types = [
+    '',
+    'notfound',
     'First_time_occupied',
     'Part_complete_renovation_need',
     'New',
@@ -486,8 +522,10 @@ test(`EstateImportReader.mapValue maps result to expected values for building_st
     'Projected',
   ]
 
-  const langs = ['en', 'de']
+  const langs = AVAILABLE_LANGUAGES
   const expected = [
+    undefined,
+    undefined,
     BUILDING_STATUS_FIRST_TIME_OCCUPIED,
     BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
     BUILDING_STATUS_NEW,
@@ -519,6 +557,8 @@ test(`EstateImportReader.mapValue maps result to expected values for firing (Ene
   assert,
 }) => {
   const types = [
+    '',
+    'notfound',
     'Oel',
     'Gas',
     'Electric',
@@ -535,8 +575,10 @@ test(`EstateImportReader.mapValue maps result to expected values for firing (Ene
     'Liquid_gas',
   ]
 
-  const langs = ['en', 'de']
+  const langs = AVAILABLE_LANGUAGES
   const expected = [
+    undefined,
+    undefined,
     FIRING_OEL,
     FIRING_GAS,
     FIRING_ELECTRIC,
@@ -566,10 +608,12 @@ test(`EstateImportReader.mapValue maps result to expected values for firing (Ene
 test(`EstateImportReader.mapValue maps result to expected values for heating_type`, async ({
   assert,
 }) => {
-  const types = ['Oven', 'Floor', 'Central', 'Remote', 'Floor_heating']
+  const types = ['', 'notfound', 'Oven', 'Floor', 'Central', 'Remote', 'Floor_heating']
 
-  const langs = ['en', 'de']
+  const langs = AVAILABLE_LANGUAGES
   const expected = [
+    undefined,
+    undefined,
     HEATING_TYPE_OVEN,
     HEATING_TYPE_FLOOR,
     HEATING_TYPE_CENTRAL,
@@ -591,6 +635,8 @@ test(`EstateImportReader.mapValue maps result to expected values for Apartment T
   assert,
 }) => {
   const types = [
+    '',
+    'notfound',
     'Flat',
     'Ground_floor',
     'Roof_floor',
@@ -601,8 +647,10 @@ test(`EstateImportReader.mapValue maps result to expected values for Apartment T
     'Penthouse',
   ]
 
-  const langs = ['en', 'de']
+  const langs = AVAILABLE_LANGUAGES
   const expected = [
+    undefined,
+    undefined,
     APARTMENT_TYPE_FLAT,
     APARTMENT_TYPE_GROUND,
     APARTMENT_TYPE_ROOF,
@@ -618,6 +666,122 @@ test(`EstateImportReader.mapValue maps result to expected values for Apartment T
         'apt_type',
         l.get(`property.attribute.APARTMENT_TYPE.${type}.message`, lang)
       )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for Apartment Status (apartment_status)`, async ({
+  assert,
+}) => {
+  const types = [
+    '',
+    'notfound',
+    'First_time_occupied',
+    'Part_complete_renovation_need',
+    'New',
+    'Existing',
+    'Part_fully_renovated',
+    'Partly_refurished',
+    'In_need_of_renovation',
+    'Ready_to_be_built',
+    'By_agreement',
+    'Modernized',
+    'Cleaned',
+    'Rough_building',
+    'Developed',
+    'Abrissobjekt',
+    'Projected',
+  ]
+
+  const langs = AVAILABLE_LANGUAGES
+  const expected = [
+    undefined,
+    undefined,
+    BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+    BUILDING_STATUS_NEW,
+    BUILDING_STATUS_EXISTING,
+    BUILDING_STATUS_PART_FULLY_RENOVATED,
+    BUILDING_STATUS_PARTLY_REFURISHED,
+    BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    BUILDING_STATUS_READY_TO_BE_BUILT,
+    BUILDING_STATUS_BY_AGREEMENT,
+    BUILDING_STATUS_MODERNIZED,
+    BUILDING_STATUS_CLEANED,
+    BUILDING_STATUS_ROUGH_BUILDING,
+    BUILDING_STATUS_DEVELOPED,
+    BUILDING_STATUS_ABRISSOBJEKT,
+    BUILDING_STATUS_PROJECTED,
+  ]
+
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'apartment_status',
+        l.get(`property.attribute.BUILDING_STATUS.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for Amenities Type (equipment_standard)`, async ({
+  assert,
+}) => {
+  const types = ['', 'notfound', 'Simple', 'Normal', 'Enhanced']
+
+  const langs = AVAILABLE_LANGUAGES
+  const expected = [
+    undefined,
+    undefined,
+    EQUIPMENT_STANDARD_SIMPLE,
+    EQUIPMENT_STANDARD_NORMAL,
+    EQUIPMENT_STANDARD_ENHANCED,
+  ]
+
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue(
+        'equipment_standard',
+        l.get(`property.attribute.EQUIPMENT_STANDARD.${type}.message`, lang)
+      )
+      assert.equal(result, expected[type_index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue maps result to expected values for Parking Space Type (parking_space_type)`, async ({
+  assert,
+}) => {
+  const types = [
+    '',
+    'notfound',
+    'web.letting.property.import.No_Parking',
+    'property.attribute.PARKING_SPACE_TYPE.Underground',
+    'property.attribute.PARKING_SPACE_TYPE.Carport',
+    'property.attribute.PARKING_SPACE_TYPE.Outdoor',
+    'property.attribute.PARKING_SPACE_TYPE.Car_park',
+    'property.attribute.PARKING_SPACE_TYPE.Duplex',
+    'property.attribute.PARKING_SPACE_TYPE.Garage',
+  ]
+
+  const langs = AVAILABLE_LANGUAGES
+  const expected = [
+    undefined,
+    undefined,
+    PARKING_SPACE_TYPE_NO_PARKING,
+    PARKING_SPACE_TYPE_UNDERGROUND,
+    PARKING_SPACE_TYPE_CARPORT,
+    PARKING_SPACE_TYPE_OUTDOOR,
+    PARKING_SPACE_TYPE_CAR_PARK,
+    PARKING_SPACE_TYPE_DUPLEX,
+    PARKING_SPACE_TYPE_GARAGE,
+  ]
+
+  types.map((type, type_index) => {
+    langs.map((lang) => {
+      let result = reader.mapValue('parking_space_type', l.get(`${type}.message`, lang))
       assert.equal(result, expected[type_index])
     })
   })
