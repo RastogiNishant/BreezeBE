@@ -22,6 +22,7 @@ const {
   ROOM_TYPE_BATH,
   ROOM_TYPE_CHILDRENS_ROOM,
   ROOM_TYPE_CORRIDOR,
+  MAX_ROOM_TYPES_TO_IMPORT,
 } = require('../../app/constants')
 const reader = new EstateImportReader(path.resolve('./test/unit/files/test.xlsx'))
 
@@ -244,6 +245,33 @@ test(`EstateImportReader.processRow updates roomX_type to object containing type
   ]
   testRows.map(async (row, index) => {
     row = await reader.processRow(row, 1, false)
+    //assert.include(row, expected[index])
     assert.deepInclude(row, expected[index])
   })
+})
+
+test(`EstateImportReader.processRow can process up to ${MAX_ROOM_TYPES_TO_IMPORT} rooms only.`, async ({
+  assert,
+}) => {
+  const roomTypes = [
+    'living room',
+    'Guest room',
+    'Stairs',
+    'bedroom',
+    'kitchen',
+    'bath',
+    "children's room",
+    'Corridor',
+    'living room',
+    'Guest room',
+  ]
+  for (let k = 1; k <= MAX_ROOM_TYPES_TO_IMPORT + 3; k++) {
+    let testRow = { [`room${k}_type`]: roomTypes[k] }
+    testRow = await reader.processRow(testRow, 1, false)
+    if (k <= MAX_ROOM_TYPES_TO_IMPORT) {
+      assert.isSet(testRow[`room${k}_type`].name)
+    } else {
+      assert.notIsSet(testRow[`room${k}_type`].name)
+    }
+  }
 })
