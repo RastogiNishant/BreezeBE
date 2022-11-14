@@ -798,3 +798,25 @@ test(`EstateImportReader.mapValue parses yes/no fields to expected boolean`, asy
     })
   })
 })
+
+test(`EstateImportReader.mapValue parses minors to expected boolean`, async ({ assert }) => {
+  const minorsValues = ['web.letting.property.import.No_matter.message', 'yes.message']
+  const minorsExpected = [false, true]
+  minorsValues.map((value, index) => {
+    AVAILABLE_LANGUAGES.map((lang) => {
+      let result = reader.mapValue('minors', l.get(value, lang))
+      assert.equal(result, minorsExpected[index])
+    })
+  })
+})
+
+test(`EstateImportReader.mapValue parses pets_allowed to expected boolean`, async ({ assert }) => {
+  const petsAllowedValues = ['yes.message', 'web.letting.property.import.No_or_small_pets.message']
+  const petsAllowedExpected = [true, false]
+  petsAllowedValues.map((value, index) => {
+    AVAILABLE_LANGUAGES.map((lang) => {
+      let result = reader.mapValue('pets_allowed', l.get(value, lang))
+      assert.equal(result, petsAllowedExpected[index])
+    })
+  })
+})
