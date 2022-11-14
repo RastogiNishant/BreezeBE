@@ -24,9 +24,20 @@ const {
   ROOM_TYPE_CORRIDOR,
   MAX_ROOM_TYPES_TO_IMPORT,
 } = require('../../app/constants')
+const {
+  exceptions: { IMPORT_ESTATE_INVALID_SHEET },
+} = use('App/exceptions')
 const reader = new EstateImportReader(path.resolve('./test/unit/files/test.xlsx'))
 
 before(async () => {})
+
+test(`EstateImportReader returns error when a wrong file is uploaded`, async ({ assert }) => {
+  try {
+    const wrongExcelReader = new EstateImportReader(path.resolve('./test/unit/files/wrong.txt'))
+  } catch (err) {
+    assert.equal(err.message, IMPORT_ESTATE_INVALID_SHEET)
+  }
+})
 
 test(`EstateImportReader.escapeStr changes non alphabet to underscores(_)`, async ({ assert }) => {
   const testStrings = ['abc def', 'abc1def', 'abc  def', 'straße']
@@ -245,12 +256,11 @@ test(`EstateImportReader.processRow updates roomX_type to object containing type
   ]
   testRows.map(async (row, index) => {
     row = await reader.processRow(row, 1, false)
-    //assert.include(row, expected[index])
-    assert.deepInclude(row, expected[index])
+    assert.deepEqual(row[`room1_type`], expected[index].room1_type)
   })
 })
 
-test(`EstateImportReader.processRow can process up to ${MAX_ROOM_TYPES_TO_IMPORT} rooms only.`, async ({
+test(`EstateImportReader.processRow processes up to ${MAX_ROOM_TYPES_TO_IMPORT} rooms only.`, async ({
   assert,
 }) => {
   const roomTypes = [
@@ -269,9 +279,12 @@ test(`EstateImportReader.processRow can process up to ${MAX_ROOM_TYPES_TO_IMPORT
     let testRow = { [`room${k}_type`]: roomTypes[k] }
     testRow = await reader.processRow(testRow, 1, false)
     if (k <= MAX_ROOM_TYPES_TO_IMPORT) {
-      assert.isSet(testRow[`room${k}_type`].name)
+      //just test for truthy...
+      assert.isOk(testRow[`room${k}_type`].name)
     } else {
-      assert.notIsSet(testRow[`room${k}_type`].name)
+      assert.isNotOk(testRow[`room${k}_type`].name)
     }
   }
 })
+
+test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`)

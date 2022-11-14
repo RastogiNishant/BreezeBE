@@ -2,6 +2,9 @@
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
 const { get, has, isString, isFunction, trim } = require('lodash')
+const {
+  exceptions: { IMPORT_ESTATE_INVALID_SHEET },
+} = require('../exceptions')
 const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
@@ -90,11 +93,7 @@ class EstateImportReader {
     this.sheet = sheet
     //sheet where the estates to import are found...
     if (!sheet || !sheet.data) {
-      throw new HttpException(
-        `Cannot find sheet: ${this.sheetName}. Please use the correct template.`,
-        422,
-        101100
-      )
+      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
     }
     this.reverseTranslator = new EstateAttributeTranslations()
     this.dataMapping = this.reverseTranslator.getMap()
