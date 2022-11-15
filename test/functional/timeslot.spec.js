@@ -81,6 +81,23 @@ beforeEach(async () => {
   }
 })
 
+test('it should fail to create a time slot without token', async ({ client }) => {
+  let response = await client
+    .post(`/api/v1/estates/${testEstate.id}/slots`)
+    .send(dummyTimeSlotData)
+    .end()
+  response.assertStatus(401)
+})
+
+test('it should fail to create a time slot with prospect token', async ({ client }) => {
+  let response = await client
+    .post(`/api/v1/estates/${testEstate.id}/slots`)
+    .loginVia(testProspect, 'jwt')
+    .send(dummyTimeSlotData)
+    .end()
+  response.assertStatus(401)
+})
+
 test('it should create a timeslot successfully with slot length', async ({ client }) => {
   let response = await client
     .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -308,6 +325,23 @@ test('it should fail to create timeslot due to deleted estate', async ({ assert,
   }
 })
 
+test('it should fail to update a time slot without token', async ({ client }) => {
+  let response = await client
+    .put(`/api/v1/estates/${testEstate.id}/slots/${testSlot.id}`)
+    .send({ start_at: test_new_start_at, end_at: test_new_end_at })
+    .end()
+  response.assertStatus(401)
+})
+
+test('it should fail to update a time slot with prospect token', async ({ client }) => {
+  let response = await client
+    .put(`/api/v1/estates/${testEstate.id}/slots/${testSlot.id}`)
+    .loginVia(testProspect, 'jwt')
+    .send({ start_at: test_new_start_at, end_at: test_new_end_at })
+    .end()
+  response.assertStatus(401)
+})
+
 // Update time slot has multiple dependecies
 // Out of range visits will be deleted
 // Out of range visit matches should be invite match
@@ -412,6 +446,19 @@ test("it should update time slot's slot_length and handle dependencies successfu
     console.log(e)
     assert.fail('Unexpected error in time slot update')
   }
+})
+
+test('it should fail to delete a time slot without token', async ({ client }) => {
+  let response = await client.delete(`/api/v1/estates/${testEstate.id}/slots/${testSlot.id}`).end()
+  response.assertStatus(401)
+})
+
+test('it should fail to delete a time slot with prospect token', async ({ client }) => {
+  let response = await client
+    .delete(`/api/v1/estates/${testEstate.id}/slots/${testSlot.id}`)
+    .loginVia(testProspect, 'jwt')
+    .end()
+  response.assertStatus(401)
 })
 
 //TODO: add tests for delete :estate_id/slots/:slot_id endpoint

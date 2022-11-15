@@ -45,11 +45,7 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_VISIT,
   LETTING_TYPE_NA,
-  LETTING_STATUS_NORMAL,
-  ROLE_USER,
-  TASK_STATUS_RESOLVED,
   TASK_STATUS_INPROGRESS,
-  TASK_STATUS_UNRESOLVED,
   TASK_STATUS_NEW,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
