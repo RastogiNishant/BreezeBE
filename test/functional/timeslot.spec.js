@@ -23,7 +23,7 @@ const {
 
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING, ESTATE_NOT_EXISTS },
-  exceptionKeys: { OPTION },
+  exceptionKeys: { OPTION, STRING, SHOULD_BE_AFTER },
   getExceptionMessage,
 } = require('../../app/excepions')
 const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
@@ -192,15 +192,21 @@ test('it should fail to create timeslot due to invalid time range', async ({ ass
 })
 
 test('it should fail to create timeslot due to empty start_at', async ({ assert, client }) => {
-  //TODO: error messages should be more specific
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
       .loginVia(testLandlord, 'jwtLandlord')
-      .send({ ...dummyInvalidRangeTimeSlotData, start_at: '' })
+      .send({ ...dummyTimeSlotData, start_at: '' })
       .end()
 
     response.assertStatus(422)
+    response.assertError({
+      status: 'error',
+      data: {
+        start_at: getExceptionMessage('start_at', STRING),
+        end_at: getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at'),
+      },
+    })
   } catch (e) {
     console.log(e)
     assert.fail('Time slot invalid time range test failed.')
@@ -208,7 +214,6 @@ test('it should fail to create timeslot due to empty start_at', async ({ assert,
 })
 
 test('it should fail to create timeslot due to empty end_at', async ({ assert, client }) => {
-  //TODO: error messages should be more specific
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -217,6 +222,13 @@ test('it should fail to create timeslot due to empty end_at', async ({ assert, c
       .end()
 
     response.assertStatus(422)
+    response.assertStatus(422)
+    response.assertError({
+      status: 'error',
+      data: {
+        end_at: getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at'),
+      },
+    })
   } catch (e) {
     console.log(e)
     assert.fail('Time slot invalid time range test failed.')
@@ -227,7 +239,6 @@ test('it should fail to create timeslot due to earlier start_at value then end_a
   assert,
   client,
 }) => {
-  //TODO: error messages should be more specific
   try {
     let response = await client
       .post(`/api/v1/estates/${testEstate.id}/slots`)
@@ -238,7 +249,7 @@ test('it should fail to create timeslot due to earlier start_at value then end_a
     response.assertStatus(422)
     response.assertError({
       status: 'error',
-      data: { end_at: 'should be after start_at' },
+      data: { end_at: getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at') },
     })
   } catch (e) {
     console.log(e)
@@ -271,8 +282,6 @@ test('it should fail to create timeslot due to not existing estate id', async ({
   assert,
   client,
 }) => {
-  //TODO: error messages should be more specific
-
   const notExistingEstateId = 99999
 
   try {
@@ -295,8 +304,6 @@ test('it should fail to create timeslot due to not existing estate id', async ({
 })
 
 test('it should fail to create timeslot due to deleted estate', async ({ assert, client }) => {
-  //TODO: error messages should be more specific
-
   // Make estate deleted
   await Estate.query().where('id', testEstate.id).update({ status: STATUS_DELETE })
 

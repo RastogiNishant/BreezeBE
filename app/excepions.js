@@ -8,6 +8,7 @@ const exceptions = {
   OPTION: 'must be one of the following values:${value}',
   DATE: 'must be a `YYYY-MM-DD` type',
   BOOLEAN: 'must be true or false',
+  STRING: 'must be a string',
   NUMBER: 'must be a number',
   ARRAY: 'must be a `array` type',
   EMAIL: 'must be a valid email',
@@ -40,6 +41,7 @@ const exceptions = {
   SHOW_ALREADY_STARTED: 'Show already started',
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
   ESTATE_NOT_EXISTS: 'Estate not exists',
+  SHOULD_BE_AFTER: 'Should be after',
 }
 
 const exceptionKeys = {
@@ -48,6 +50,7 @@ const exceptionKeys = {
   MAXLENGTH: 'MAXLENGTH',
   OPTION: 'OPTION',
   DATE: 'DATE',
+  STRING: 'STRING',
   NUMBER: 'NUMBER',
   BOOLEAN: 'BOOLEAN',
   EMAIL: 'EMAIL',
@@ -80,6 +83,7 @@ const exceptionKeys = {
   TIME_SLOT_NOT_FOUND: 'TIME_SLOT_NOT_FOUND',
   SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
+  SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
