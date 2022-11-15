@@ -118,6 +118,18 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
+      in_progress_task: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES).required(),
+              value: yup.number().min(0).nullable(),
+            })
+          ),
+        })
+        .nullable(),
       tenant: yup
         .object()
         .shape({
@@ -133,6 +145,7 @@ class TaskFilter extends Base {
       breeze_type: yup
         .object()
         .shape({
+          operator: yup.string().oneOf(['and', 'or']),
           matchMode: yup.string(),
           value: yup
             .array()

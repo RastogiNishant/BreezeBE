@@ -65,6 +65,7 @@ class TaskFilters extends Filter {
 
     Filter.paramToField = {
       active_task: 'count(tasks.id)',
+      in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
     }
     this.matchFilter(
@@ -130,10 +131,21 @@ class TaskFilters extends Filter {
         this.query.whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
       }
     }
+
+    const in_progress_task_params = params['in_progress_task']
+    if (in_progress_task_params && in_progress_task_params.constraints.length) {
+      const values = in_progress_task_params.constraints.filter(
+        (c) => c.value !== null && c.value !== undefined
+      )
+
+      if (values.length) {
+        this.query.whereIn('tasks.status', [TASK_STATUS_INPROGRESS])
+      }
+    }
   }
 
   afterQuery() {
-    this.matchCountFilter(['active_task'], this.params)
+    this.matchCountFilter(['active_task', 'in_progress_task'], this.params)
     return this.query
   }
 }
