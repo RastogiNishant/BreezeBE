@@ -145,6 +145,7 @@ class TaskFilter extends Base {
       breeze_type: yup
         .object()
         .shape({
+          operator: yup.string().oneOf(['and', 'or']),
           matchMode: yup.string(),
           value: yup
             .array()
