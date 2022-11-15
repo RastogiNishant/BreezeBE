@@ -204,14 +204,15 @@ class EstateImportReader {
         six_char_code: row.six_char_code,
       }
     } catch (e) {
-      this.errors.push({
+      const ret = {
         line: rowCount + 1,
         error: e.errors,
         breeze_id: row.six_char_code || null,
         property_id: row ? row.property_id : `no property id`,
         street: row ? row.street : `no street code`,
         postcode: row ? row.zip : `no zip code`,
-      })
+      }
+      this.errors.push(ret)
     }
   }
 
