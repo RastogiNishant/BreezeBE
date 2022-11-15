@@ -1,7 +1,7 @@
 'use_strict'
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
-const { get, has, isString, isFunction } = require('lodash')
+const { get, has, isString, isFunction, unset } = require('lodash')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
@@ -171,6 +171,7 @@ class EstateImportReader {
         row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(row.letting)}`)
       }
     }
+    unset(row, 'letting') //remove letting
     //rooms
     for (let count = 1; count <= MAX_ROOM_TYPES_TO_IMPORT; count++) {
       let roomValue = get(row, `room${count}_type`)
