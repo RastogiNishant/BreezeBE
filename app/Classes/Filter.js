@@ -132,7 +132,6 @@ class Filter {
     }
 
     if (Filter.MappingInfo && Filter.MappingInfo[param]) {
-      console.log('getValues here=', values)
       const mappingVals = values.map(
         (v) => Filter.MappingInfo[param][toLower(v.replace(/ /g, ''))] || null
       )
