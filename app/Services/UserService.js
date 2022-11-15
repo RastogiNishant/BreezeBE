@@ -410,7 +410,7 @@ class UserService {
     })
     const forgotLink = await UserService.getForgotShortLink(from_web)
 
-    await MailService.sendWelcomeMail(user, {
+    MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
