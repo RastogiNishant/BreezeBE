@@ -2,6 +2,10 @@
 
 const yup = require('yup')
 const Base = require('./Base')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED },
+} = require('../exceptions')
 
 const {
   STATUS_ACTIVE,
@@ -222,7 +226,7 @@ class ImportEstate extends Base {
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
         ])
-        .required('Property type is required.'),
+        .required(getExceptionMessage('Property type', REQUIRED)),
       apt_type: yup
         .number()
         .positive()
@@ -255,9 +259,13 @@ class ImportEstate extends Base {
       category: yup.string().min(2).max(20),
       // TODO: add rooms schema
       rooms: yup.mixed(),
-      street: yup.string().min(2).max(255).required('Street is required.'),
-      house_number: yup.string().min(1).max(255).required('House Number is required.'),
-      country: yup.string().min(1).max(255).required('Country is required.'),
+      street: yup.string().min(2).max(255).required(getExceptionMessage('Street', REQUIRED)),
+      house_number: yup
+        .string()
+        .min(1)
+        .max(255)
+        .required(getExceptionMessage('House Number', REQUIRED)),
+      country: yup.string().min(1).max(255).required(getExceptionMessage('Country', REQUIRED)),
       floor: yup.number().integer().min(-10).max(200),
       floor_direction: yup
         .number()
@@ -490,8 +498,8 @@ class ImportEstate extends Base {
         ])
         .nullable(),
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
-      city: yup.string().max(40).required('City is required.'),
-      zip: yup.string().max(8).required('Post Code is required.'),
+      city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
+      zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
       budget: yup.number().integer().min(0).max(100),
       credit_score: yup.number().min(0).max(100),
       rent_arrears: yup.boolean(),

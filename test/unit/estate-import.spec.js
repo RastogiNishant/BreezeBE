@@ -862,5 +862,33 @@ test(`EstateImportReader.mapValue parses pets_allowed to expected boolean`, asyn
 })
 
 test(`EstateImportReader.mapValue returns exact values for several fields`, async ({ assert }) => {
-  const testFields = []
+  const testFields = [
+    'six_char_code',
+    'street',
+    'house_number',
+    'extra_address',
+    'zip',
+    'city',
+    'country',
+    'surname',
+    'phone_number',
+    'email',
+  ]
+  const testValues = ['', 'abc1', 123, 'ABC', undefined]
+  const expectedResult = ['', 'abc1', 123, 'ABC', undefined]
+  testFields.map((field) => {
+    testValues.map((value, index) => {
+      let result = reader.mapValue(field, value)
+      assert.equal(result, expectedResult[index])
+    })
+  })
+})
+
+test(`EstateImporter.mapValue returns random generated string if property_id is undefined`, async ({
+  assert,
+}) => {
+  const result = reader.mapValue('property_id', undefined)
+  assert.isOk(result)
+  assert.equal(typeof result, 'string')
+  assert.equal(result.length, 8)
 })
