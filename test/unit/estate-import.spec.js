@@ -3,6 +3,8 @@
 const { test, before } = use('Test/Suite')('Estate Import')
 const EstateImportReader = use('App/Classes/EstateImportReader')
 const path = require('path')
+const { faker } = require('@faker-js/faker')
+faker.locale = 'de'
 const {
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -106,7 +108,7 @@ const {
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
-  exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
+  exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING, REQUIRED },
   getExceptionMessage,
 } = use('App/exceptions')
 const reader = new EstateImportReader(path.resolve('./test/unit/files/test.xlsx'))
@@ -891,4 +893,49 @@ test(`EstateImporter.mapValue returns random generated string if property_id is 
   assert.isOk(result)
   assert.equal(typeof result, 'string')
   assert.equal(result.length, 8)
+})
+
+test(`EstateImporter.validateRow returns object with line and data for saving`, async ({
+  assert,
+}) => {
+  const test = {
+    street: faker.address.street(),
+    house_number: faker.random.numeric(2),
+    zip: faker.address.zipCode(),
+    city: faker.address.city(),
+    country: 'Germany',
+    property_type: reader.mapValue('property_type', 'Apartment'),
+    currency: 'EUR',
+  }
+  const rowNumber = faker.datatype.number({
+    min: 10,
+    max: 15,
+  })
+  const result = await reader.validateRow(test, rowNumber)
+  assert.deepEqual(result.data, test)
+  assert.equal(rowNumber, result.line)
+})
+
+test(`EstateImporter.validateRow adds to errors when required field(s) are missing`, async ({
+  assert,
+}) => {
+  //no street
+  const test = {
+    zip: faker.address.zipCode(),
+    house_number: faker.random.numeric(2),
+    city: faker.address.city(),
+    country: 'Germany',
+    property_type: reader.mapValue('property_type', 'Apartment'),
+    currency: 'EUR',
+  }
+  const rowNumber = faker.datatype.number({
+    min: 10,
+    max: 15,
+  })
+  const result = await reader.validateRow(test, rowNumber)
+  const errors = reader.errors
+  assert.isNotOk(result) //return is falsy
+  assert.isOk(errors) //truthy
+  assert.equal(errors[0].line, rowNumber + 1) //zero based index so we must add 1
+  assert.equal(errors[0].error[0], getExceptionMessage('Street', REQUIRED))
 })
