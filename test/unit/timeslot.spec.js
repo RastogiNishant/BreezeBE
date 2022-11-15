@@ -113,6 +113,18 @@ test('it should create a timeslot successfully with slot length', async ({ asser
   assert.equal(testSlot.slot_length, test_slot_length)
 })
 
+test('it should return empty crossing time slot', async ({ assert }) => {
+  try {
+    let crossingSlot = await TimeSlotService.getCrossTimeslotQuery(
+      dummyTimeSlotDataTomorrow,
+      testEstate.user_id
+    ).first()
+    assert.equal(crossingSlot, null)
+  } catch (e) {
+    assert.fail('getCrosstimeSlotQuery should not throw error')
+  }
+})
+
 test('it should create a timeslot successfully without slot length', async ({ assert }) => {
   try {
     testSlotTomorrow = await TimeSlotService.createSlot(dummyTimeSlotDataTomorrow, testEstate)
@@ -127,6 +139,18 @@ test('it should create a timeslot successfully without slot length', async ({ as
   }
 })
 
+test('it should return the correct crossing time slot', async ({ assert }) => {
+  try {
+    let crossingSlot = await TimeSlotService.getCrossTimeslotQuery(
+      dummyCrossingTimeSlotData,
+      testEstate.user_id
+    ).first()
+    assert.equal(crossingSlot.id, testSlot.id)
+  } catch (e) {
+    assert.fail('getCrosstimeSlotQuery should not throw error')
+  }
+})
+
 test('it should fail to create a timeslot due to crossing', async ({ assert }) => {
   try {
     testSlot = await TimeSlotService.createSlot(dummyCrossingTimeSlotData, testEstate)
@@ -136,7 +160,6 @@ test('it should fail to create a timeslot due to crossing', async ({ assert }) =
     assert.equal(e.message, TIME_SLOT_CROSSING_EXISTING)
   }
 })
-
 test('it should return null time slots by owner in case of not existing slotId', async ({
   assert,
 }) => {
