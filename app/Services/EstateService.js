@@ -62,6 +62,9 @@ const {
   LETTING_STATUS_NORMAL,
   ROLE_USER,
   TASK_STATUS_RESOLVED,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_NEW,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1320,7 +1323,12 @@ class EstateService {
 
     let estates = await Promise.all(
       result.map(async (r) => {
-        r[0].activeTasks = (r[0].tasks || []).filter((task) => task.status !== TASK_STATUS_RESOLVED)
+        r[0].activeTasks = (r[0].tasks || []).filter(
+          (task) => task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_INPROGRESS
+        )
+        const in_progress_task =
+          countBy(r[0].tasks || [], (task) => task.status === TASK_STATUS_INPROGRESS).true || 0
+
         const mostUrgency = maxBy(r[0].activeTasks, (re) => {
           return re.urgency
         })
@@ -1341,6 +1349,7 @@ class EstateService {
         return {
           ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
           activeTasks: activeTasks,
+          in_progress_task,
           mosturgency: mostUrgency?.urgency,
           most_task_updated: mostUpdated,
           has_unread_message,
