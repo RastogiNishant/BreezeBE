@@ -1,8 +1,6 @@
 const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
-const xlsx = require('node-xlsx')
-const Excel = require('exceljs')
 const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
@@ -12,8 +10,6 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
-const User = use('App/Models/User')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const schema = require('../Validators/CreateBuddy').schema()
 
 const {
@@ -21,7 +17,6 @@ const {
   DATE_FORMAT,
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
-  ROLE_USER,
   LETTING_TYPE_NA,
 } = require('../constants')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')

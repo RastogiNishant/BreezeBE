@@ -35,7 +35,11 @@ class Filter {
   matchFilter = (possibleStringParams, params) => {
     possibleStringParams.forEach((param) => {
       if (params[param]) {
-        if (params[param].operator && params[param].constraints.length > 0) {
+        if (
+          params[param].operator &&
+          params[param].constraints &&
+          params[param].constraints.length > 0
+        ) {
           this.query.andWhere(function () {
             if (toLower(params[param].operator) === 'or') {
               params[param].constraints.map((constraint) => {
@@ -68,6 +72,7 @@ class Filter {
             }
           })
         }
+
         if (params[param].matchMode && params[param].matchMode === 'in') {
           if (!isNull(params[param].value)) {
             this.query.whereIn(Filter.getField(param), this.getValues(param, params[param].value))

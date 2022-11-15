@@ -18,16 +18,7 @@ const {
 class UpdateCompany extends Base {
   static schema = () => {
     return yup.object().shape({
-      // email: yup.string().email().lowercase(),
-      // phone: yup.string(),
-      name: yup.string().max(255),
-      address: yup
-        .string()
-        // .matches(
-        //   /^([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)\s+\d+[\-]{0,1}\d*(,\s)(\d){4,5}([A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)(,\s*[A-Za-zÀ-ž\u0370-\u03FF\u0400-\u04FF\-\s\(\)\.]+)?$/,
-        //   'Address format is wrong'
-        // )
-        .min(10),
+      name: yup.string().max(255).required(),
       tax_number: yup.string().max(255),
       trade_register_nr: yup.string().max(255),
       umsst: yup.string().max(255),
@@ -42,6 +33,7 @@ class UpdateCompany extends Base {
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
         ]),
+      avatar: yup.mixed(),
     })
   }
 }

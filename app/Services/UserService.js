@@ -410,7 +410,7 @@ class UserService {
     })
     const forgotLink = await UserService.getForgotShortLink(from_web)
 
-    await MailService.sendWelcomeMail(user, {
+    MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
@@ -910,13 +910,16 @@ class UserService {
     return await query
   }
 
-  static setOnboardingStep(user) {
+  static async setOnboardingStep(user) {
     if (!user) {
       throw new HttpException(NO_USER_PASSED, 500)
     }
     user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
     if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
-      user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
+      const company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+      if (company.name && company.size && company.type) {
+        user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
+      }
     } else if (user.company_id && user.preferred_services && trim(user.preferred_services) !== '') {
       user.onboarding_step = null
     }
@@ -996,7 +999,7 @@ class UserService {
 
       if (user.role == ROLE_LANDLORD) {
         user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
-        user = this.setOnboardingStep(user)
+        user = await this.setOnboardingStep(user)
       } else if (user.role == ROLE_USER) {
         user.has_final_match = await require('./MatchService').checkUserHasFinalMatch(user.id)
       }
@@ -1062,7 +1065,7 @@ class UserService {
         user = user.toJSON({ isOwner: true })
 
         await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
-        user = this.setOnboardingStep(user)
+        user = await this.setOnboardingStep(user)
         await trx.commit()
 
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)

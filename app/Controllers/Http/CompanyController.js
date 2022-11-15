@@ -27,11 +27,13 @@ class CompanyController {
 
     if (files.avatar) {
       data.avatar = files.avatar
+    } else {
+      data.avatar = null
     }
 
+    const trx = await Database.beginTransaction()
     try {
-      const trx = await Database.beginTransaction()
-      const company = await CompanyService.createCompany(data, auth.user.id, trx)
+      const company = await CompanyService.createCompany(omit(data, ['address']), auth.user.id, trx)
       await UserService.updateCompany({ user_id: auth.user.id, company_id: company.id }, trx)
 
       await trx.commit()
@@ -60,7 +62,7 @@ class CompanyController {
     }
 
     try {
-      const company = await CompanyService.updateCompany(auth.user.id, data)
+      const company = await CompanyService.updateCompany(auth.user.id, omit(data, ['address']))
       Event.fire('mautic:syncContact', auth.user.id)
       return response.res(company)
     } catch (e) {
@@ -109,7 +111,7 @@ class CompanyController {
 
     data.company_id = auth.user.company_id
     let contactData = data
-    if (data.is_onboard) {
+    if (data.address) {
       await CompanyService.updateCompany(auth.user.id, { address: data.address })
       contactData = omit(contactData, ['address'])
     }
@@ -123,7 +125,11 @@ class CompanyController {
    */
   async updateContact({ request, auth, response }) {
     const { id, ...data } = request.all()
-    const contact = await CompanyService.updateContact(id, auth.user.id, data)
+
+    if (data.address) {
+      await CompanyService.updateCompany(auth.user.id, { address: data.address })
+    }
+    const contact = await CompanyService.updateContact(id, auth.user.id, omit(data, ['address']))
     Event.fire('mautic:syncContact', auth.user.id)
     return response.res(contact)
   }

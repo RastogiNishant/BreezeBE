@@ -89,8 +89,13 @@ const getExceptionMessage = (name, command, value = null) => {
   return trim(`${name || ''} ${replace(exceptions[command], '${value}', value)}`)
 }
 
+const sleep = async (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 module.exports = {
   exceptions,
   exceptionKeys,
   getExceptionMessage,
+  sleep,
 }
