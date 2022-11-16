@@ -1146,7 +1146,7 @@ class UserService {
   }
 
   static emitAccountEnabled(ids = [], activated = true) {
-    ids = !isArray(ids) ? [ids] : ids
+    ids = !Array.isArray(ids) ? [ids] : ids
 
     ids.map((id) => {
       const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
