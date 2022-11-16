@@ -1335,11 +1335,11 @@ class EstateService {
 
         const mostUpdated =
           r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
-        await Promise.all(
-          r[0].tasks.map(async (task) => {
-            task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
-          })
-        )
+        // await Promise.all(
+        //   r[0].tasks.map(async (task) => {
+        //     task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
+        //   })
+        // )
         const has_unread_message =
           (r[0].tasks || []).findIndex((task) => task.unread_message_count) !== -1 ? true : false
 
@@ -1377,14 +1377,14 @@ class EstateService {
       orderRules = ['desc', ...orderRules]
     }
     estates = orderBy(estates, orderKeys, orderRules)
-    await Promise.all(
-      estates.map(async (est) => {
-        await est.activeTasks.map(async (task) => {
-          task = await require('./TaskService').getItemWithAbsoluteUrl(task)
-          return task
-        })
-      })
-    )
+    // await Promise.all(
+    //   estates.map(async (est) => {
+    //     await est.activeTasks.map(async (task) => {
+    //       task = await require('./TaskService').getItemWithAbsoluteUrl(task)
+    //       return task
+    //     })
+    //   })
+    // )
 
     return estates
   }
