@@ -31,6 +31,7 @@ const Drive = use('Drive')
 const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
+const Ws = use('Ws')
 
 const {
   STATUS_EMAIL_VERIFY,
@@ -54,6 +55,7 @@ const {
   TEST_ENVIRONMENT,
   STATUS_DELETE,
   WRONG_INVITATION_LINK,
+  WEBSOCKET_EVENT_USER_ACTIVATE,
 } = require('../constants')
 
 const {
@@ -1141,6 +1143,17 @@ class UserService {
     } catch (e) {
       throw new HttpException(INVALID_TOKEN, 400)
     }
+  }
+
+  static emitAccountEnabled(ids = [], activated = true) {
+    ids = !isArray(ids) ? [ids] : ids
+
+    ids.map((id) => {
+      const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
+      if (topic) {
+        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { activated })
+      }
+    })
   }
 }
 
