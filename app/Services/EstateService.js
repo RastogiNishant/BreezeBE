@@ -1465,8 +1465,14 @@ class EstateService {
   }
 
   static async checkCanChangeLettingStatus(result, option = {}) {
-    result = result.toJSON(option).data || result.toJSON(option) || []
-
+    const resultObject = result.toJSON(option)
+    if (resultObject.data) {
+      result = resultObject.data
+    } else if (resultObject) {
+      result = resultObject
+    } else {
+      result = []
+    }
     return result.map((estate) => {
       const isMatchCountValidToChangeLettinType =
         0 + parseInt(estate.__meta__.visits_count) ||
