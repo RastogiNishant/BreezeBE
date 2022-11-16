@@ -259,6 +259,16 @@ class UserController {
     estate_status = estate_status || STATUS_DRAFT
     limit = 99999
     const landlordQuery = User.query()
+      .select(
+        'id',
+        'firstname',
+        'secondname',
+        'email',
+        'phone',
+        'created_at',
+        'company_id',
+        'activation_status'
+      )
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
       .whereIn(
@@ -266,8 +276,12 @@ class UserController {
         isArray(activation_status) ? activation_status : [activation_status]
       )
       .with('estates', function (e) {
+        e.select('id', 'user_id', 'status')
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
+        e.withCount('current_tenant', function (q) {
+          q.whereNotNull('user_id')
+        })
       })
       .with('company', function (query) {
         query.with('contacts')
