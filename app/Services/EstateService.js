@@ -65,6 +65,7 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_NEW,
+  URGENCY_SUPER,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1387,6 +1388,23 @@ class EstateService {
     )
 
     return estates
+  }
+
+  static async getQuickActionsCount() {
+    let query = Estate.query()
+      .count('estates.*')
+      .select()
+      .leftJoin({ _ut: 'tasks' }, function () {
+        this.on('estates.id', '_ut.estate_id')
+          .on('_ut.urgency', URGENCY_SUPER)
+          .on(Database.raw(`tasks.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`))
+      })
+      .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+        this.on('_ect.estate_id', 'estates.id')
+      })
+      .where('estates.user_id', user_id)
+      .where('estates.letting_type', LETTING_TYPE_LET)
+      .whereNot('estates.status', STATUS_DELETE)
   }
 
   static async getTotalLetCount(user_id, params, filtering = true) {
