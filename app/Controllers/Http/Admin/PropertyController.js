@@ -1,7 +1,17 @@
 'use strict'
 const Database = use('Database')
 const EstateService = use('App/Services/EstateService')
-const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE } = require('../../../constants')
+const {
+  STATUS_ACTIVE,
+  STATUS_DRAFT,
+  STATUS_EXPIRE,
+  STATUS_DELETE,
+  ROLE_LANDLORD,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+  USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_DEACTIVATED,
+} = require('../../../constants')
+const { isArray } = require('lodash')
 const Promise = require('bluebird')
 const HttpException = require('../../../Exceptions/HttpException')
 
@@ -9,18 +19,35 @@ const Estate = use('App/Models/Estate')
 
 class PropertyController {
   async getProperties({ request, response }) {
+    let { activation_status, user_status, estate_status, page, limit, query } = request.all()
+    if (!activation_status) {
+      activation_status = [
+        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+        USER_ACTIVATION_STATUS_ACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED,
+      ]
+    }
+    user_status = user_status || STATUS_ACTIVE
+    estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE]
+    limit = 99999
     let estates = await Estate.query()
       .select(Database.raw('estates.*'))
       .select(Database.raw('_u.user'))
-      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereNot('estates.status', STATUS_DELETE)
+      .whereIn('estates.status', estate_status)
       //owner
       .innerJoin(
-        Database.raw(`(select
-          jsonb_build_object('firstname', users.firstname, 'secondname', users.secondname, 'email', users.email) as user,
-          users.id as user_id
-        from
-          users
-        ) as _u`),
+        Database.select(
+          Database.raw(`jsonb_build_object(
+            'firstname', users.firstname, 'secondname', users.secondname, 'email', users.email
+            ) as user`),
+          Database.raw(`users.id as user_id`)
+        )
+          .table('users')
+          .where('role', ROLE_LANDLORD)
+          .whereIn('status', isArray(user_status) ? user_status : [user_status])
+          .whereIn('activation_status', activation_status)
+          .as('_u'),
         'estates.user_id',
         '_u.user_id'
       )
