@@ -63,6 +63,8 @@ const {
   ROLE_USER,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_INPROGRESS,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_NEW,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1324,17 +1326,23 @@ class EstateService {
 
     let estates = await Promise.all(
       result.map(async (r) => {
+        r[0].activeTasks = (r[0].tasks || []).filter(
+          (task) => task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_INPROGRESS
+        )
+        const in_progress_task =
+          countBy(r[0].tasks || [], (task) => task.status === TASK_STATUS_INPROGRESS).true || 0
+
         const mostUrgency = maxBy(r[0].activeTasks, (re) => {
           return re.urgency
         })
 
         const mostUpdated =
           r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
-        await Promise.all(
-          r[0].activeTasks.map(async (task) => {
-            task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
-          })
-        )
+        // await Promise.all(
+        //   r[0].tasks.map(async (task) => {
+        //     task.unread_message_count = await ChatService.getUnreadMessagesCount(task.id, user.id)
+        //   })
+        // )
         const has_unread_message =
           (r[0].activeTasks || []).findIndex((task) => task.unread_message_count) !== -1
             ? true
@@ -1346,6 +1354,7 @@ class EstateService {
         return {
           ...omit(r[0], ['activeTasks', 'mosturgency', 'tasks']),
           activeTasks: activeTasks,
+          in_progress_task,
           mosturgency: mostUrgency?.urgency,
           most_task_updated: mostUpdated,
           has_unread_message,
@@ -1461,8 +1470,14 @@ class EstateService {
   }
 
   static async checkCanChangeLettingStatus(result, option = {}) {
-    result = result.toJSON(option).data || result.toJSON(option) || []
-
+    const resultObject = result.toJSON(option)
+    if (resultObject.data) {
+      result = resultObject.data
+    } else if (resultObject) {
+      result = resultObject
+    } else {
+      result = []
+    }
     return result.map((estate) => {
       const isMatchCountValidToChangeLettinType =
         0 + parseInt(estate.__meta__.visits_count) ||

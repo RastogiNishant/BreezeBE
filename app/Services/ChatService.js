@@ -288,10 +288,11 @@ class ChatService {
     const unreadMessagesByTopic = await Promise.reduce(
       taskEstates.toJSON(),
       async (unreadMessagesByTopic, taskEstate) => {
-        const unreadMessagesCount = await ChatService.getUnreadMessagesCount(
-          taskEstate.task_id,
-          userId
-        )
+        // const unreadMessagesCount = await ChatService.getUnreadMessagesCount(
+        //   taskEstate.task_id,
+        //   userId
+        // )
+        const unreadMessagesCount = 0
         return [
           ...unreadMessagesByTopic,
           {

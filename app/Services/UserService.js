@@ -205,6 +205,7 @@ class UserService {
           },
           iosInfo: {
             iosBundleId: process.env.IOS_BUNDLE_ID,
+            iosAppStoreId: process.env.IOS_APPSTORE_ID,
           },
         },
       })
@@ -339,6 +340,7 @@ class UserService {
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
+          iosAppStoreId: process.env.IOS_APPSTORE_ID,
         },
       },
     })
@@ -405,12 +407,13 @@ class UserService {
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
+          iosAppStoreId: process.env.IOS_APPSTORE_ID,
         },
       },
     })
     const forgotLink = await UserService.getForgotShortLink(from_web)
 
-    await MailService.sendWelcomeMail(user, {
+    MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
