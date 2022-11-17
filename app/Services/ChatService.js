@@ -20,6 +20,8 @@ const {
   ISO_DATE_FORMAT,
   STATUS_DELETE,
   LETTING_TYPE_LET,
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
 } = require('../constants')
 const { min, isBoolean, isArray } = require('lodash')
 const Task = use('App/Models/Task')
@@ -275,7 +277,7 @@ class ChatService {
           STATUS_ACTIVE
         )
       })
-      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+      .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
 
     if (role === ROLE_LANDLORD) {
       query.where('estates.user_id', userId)
