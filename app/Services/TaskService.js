@@ -305,6 +305,14 @@ class TaskService {
     }
 
     task = await TaskService.getItemWithAbsoluteUrl(task)
+
+    const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
+
+    const attachments = await Promise.all(
+      (chats || []).map(async (chat) => {
+        return await ChatService.getAbsoluteUrl(chat.attachments)
+      })
+    )
     return task
   }
 
