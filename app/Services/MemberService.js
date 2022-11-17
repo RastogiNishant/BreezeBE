@@ -505,6 +505,7 @@ class MemberService {
             },
             iosInfo: {
               iosBundleId: process.env.IOS_BUNDLE_ID,
+              iosAppStoreId: process.env.IOS_APPSTORE_ID,
             },
           },
         })
