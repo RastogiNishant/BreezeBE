@@ -1342,8 +1342,6 @@ class EstateService {
         // )
         const has_unread_message =
           (r[0].activeTasks || []).findIndex((task) => task.unread_message_count) !== -1
-            ? true
-            : false
 
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 
