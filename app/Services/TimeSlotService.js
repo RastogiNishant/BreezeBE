@@ -120,7 +120,7 @@ class TimeSlotService {
     if (slot_length) {
       const minDiff = moment.utc(end_at).diff(moment.utc(start_at), 'minutes')
       if (minDiff % slot_length !== 0) {
-        throw new AppException(INVALID_TIME_RANGE)
+        throw new AppException(INVALID_TIME_RANGE, 400)
       }
     }
     return true
