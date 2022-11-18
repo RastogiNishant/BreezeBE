@@ -45,6 +45,7 @@ const exceptions = {
   IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'Column ${value} is not included on import',
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
+  SETTINGS_ERROR: 'Internal Settings Error',
 }
 
 const exceptionKeys = {
@@ -89,6 +90,7 @@ const exceptionKeys = {
   SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
   SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
+  SETTINGS_ERROR: 'SETTINGS_ERROR',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
