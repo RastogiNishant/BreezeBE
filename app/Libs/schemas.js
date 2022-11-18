@@ -3,7 +3,7 @@
 const yup = require('yup')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH },
+  exceptionKeys: { MATCH, POSITIVE_NUMBER },
 } = require('../excepions')
 
 const { PHONE_REG_EXP } = require('../constants')
@@ -11,7 +11,7 @@ const phoneSchema = yup.string().matches(PHONE_REG_EXP, getExceptionMessage(unde
 
 const verificationCodeSchema = yup.string().matches(/^\d{6}$/)
 
-const id = yup.number().positive()
+const id = yup.number().positive().typeError(getExceptionMessage('id', POSITIVE_NUMBER))
 
 const pagination = yup.object().shape({
   page: yup.number().positive(),

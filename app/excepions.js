@@ -8,7 +8,9 @@ const exceptions = {
   OPTION: 'must be one of the following values:${value}',
   DATE: 'must be a `YYYY-MM-DD` type',
   BOOLEAN: 'must be true or false',
+  STRING: 'must be a string',
   NUMBER: 'must be a number',
+  POSITIVE_NUMBER: 'must be a positive number',
   ARRAY: 'must be a `array` type',
   EMAIL: 'must be a valid email',
   MATCH: 'format is wrong',
@@ -34,7 +36,13 @@ const exceptions = {
   INVALID_TOKEN: 'Invalid token',
   NO_CODE_PASSED: 'No code',
   ACCOUNT_ALREADY_VERIFIED: 'Your account has been already verified',
+  INVALID_TIME_RANGE: 'Invalid time range',
+  TIME_SLOT_CROSSING_EXISTING: 'Time slot crossing existing',
+  TIME_SLOT_NOT_FOUND: 'Time slot not found',
+  SHOW_ALREADY_STARTED: 'Show already started',
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
+  ESTATE_NOT_EXISTS: 'Estate not exists',
+  SHOULD_BE_AFTER: 'Should be after',
 }
 
 const exceptionKeys = {
@@ -43,7 +51,9 @@ const exceptionKeys = {
   MAXLENGTH: 'MAXLENGTH',
   OPTION: 'OPTION',
   DATE: 'DATE',
+  STRING: 'STRING',
   NUMBER: 'NUMBER',
+  POSITIVE_NUMBER: 'POSITIVE_NUMBER',
   BOOLEAN: 'BOOLEAN',
   EMAIL: 'EMAIL',
   ARRAY: 'ARRAY',
@@ -70,6 +80,12 @@ const exceptionKeys = {
   INVALID_TOKEN: 'INVALID_TOKEN',
   NO_CODE_PASSED: 'NO_CODE_PASSED',
   ACCOUNT_ALREADY_VERIFIED: 'ACCOUNT_ALREADY_VERIFIED',
+  INVALID_TIME_RANGE: 'INVALID_TIME_RANGE',
+  TIME_SLOT_CROSSING_EXISTING: 'TIME_SLOT_CROSSING_EXISTING',
+  TIME_SLOT_NOT_FOUND: 'TIME_SLOT_NOT_FOUND',
+  SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
+  ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
+  SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

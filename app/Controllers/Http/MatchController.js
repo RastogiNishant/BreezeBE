@@ -338,7 +338,7 @@ class MatchController {
     const { estate_id, status, delay = null, user_id } = request.all()
     const estate = await this.getOwnEstate(estate_id, auth.user.id)
     if (!estate) {
-      throw HttpException('Invalid estate', 404)
+      throw new HttpException('Invalid estate', 404)
     }
 
     await MatchService.updateVisitStatusLandlord(estate_id, user_id, {

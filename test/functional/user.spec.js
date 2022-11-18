@@ -55,7 +55,6 @@ const {
     INVALID_CONFIRM_CODE,
   },
 } = require('../../app/excepions')
-const { assert } = require('console')
 
 trait('Test/ApiClient')
 trait('Auth/Client')
