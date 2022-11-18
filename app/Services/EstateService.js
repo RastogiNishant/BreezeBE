@@ -1341,7 +1341,7 @@ class EstateService {
         //   })
         // )
         const has_unread_message =
-          (r[0].tasks || []).findIndex((task) => task.unread_message_count) !== -1 ? true : false
+          (r[0].activeTasks || []).findIndex((task) => task.unread_message_count) !== -1
 
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 
@@ -1377,14 +1377,6 @@ class EstateService {
       orderRules = ['desc', ...orderRules]
     }
     estates = orderBy(estates, orderKeys, orderRules)
-    // await Promise.all(
-    //   estates.map(async (est) => {
-    //     await est.activeTasks.map(async (task) => {
-    //       task = await require('./TaskService').getItemWithAbsoluteUrl(task)
-    //       return task
-    //     })
-    //   })
-    // )
 
     return estates
   }
