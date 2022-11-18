@@ -6,16 +6,29 @@ const { STATUS_ACTIVE, STATUS_DELETE } = require('../../app/constants')
 const Schema = use('Schema')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Estate = use('App/Models/Estate')
+const { max } = require('lodash')
 
 class RemoveDuplicateCurrentTenantSchema extends Schema {
   async up() {
-    const estates = (
-      await Estate.query().with('current_tenant').whereNot('status', STATUS_DELETE).fetch()
-    ).rows
+    const estates = (await Estate.query().select('id').whereNot('status', STATUS_DELETE).fetch())
+      .rows
 
     estates.map(async (estate) => {
-      if (estate.toJSON().current_tenant) {
-        console.log('Current estate Estates here=', estate.toJSON().current_tenant)
+      const currentTenants = (
+        await EstateCurrentTenant.query()
+          .where('estate_id', estate.id)
+          .where('status', STATUS_ACTIVE)
+          .fetch()
+      ).rows
+      if (currentTenants && currentTenants.length > 1) {
+        const created_dates = currentTenants.map((currentTenant) => currentTenant.created_at)
+        const latest_created_date = max(created_dates)
+        const oldCurrentTenants = currentTenants.filter(
+          (ct) => ct.created_at !== latest_created_date
+        )
+        const oldCurrentTenantIds = oldCurrentTenants.map((ct) => ct.id)
+
+        await EstateCurrentTenant.query().whereIn('id', oldCurrentTenantIds).delete()
       }
     })
   }
