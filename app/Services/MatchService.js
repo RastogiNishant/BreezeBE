@@ -841,7 +841,6 @@ class MatchService {
       await this.deleteVisit(estateId, userIds, trx)
       await this.matchToInvite(estateId, userIds, trx)
     } catch (e) {
-      console.log('update time slot error', e.message)
       throw new HttpException('Failed to update time slot', 500)
     }
   }
