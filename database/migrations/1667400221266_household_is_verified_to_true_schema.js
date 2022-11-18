@@ -8,6 +8,8 @@ class HouseholdIsVerifiedToTrueSchema extends Schema {
   async up() {
     await Member.query()
       .whereNotNull('user_id')
+      .whereNull('email')
+      .whereNull('code')
       .whereNull('owner_user_id')
       .update({ is_verified: true })
   }
