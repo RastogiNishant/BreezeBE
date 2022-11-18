@@ -1,6 +1,11 @@
 'use strict'
 
-const { TASK_STATUS_UNRESOLVED, STATUS_DELETE, TASK_STATUS_DELETE } = require('../../app/constants')
+const {
+  TASK_STATUS_UNRESOLVED,
+  STATUS_DELETE,
+  TASK_STATUS_DELETE,
+  TASK_STATUS_ARCHIVED,
+} = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
@@ -16,7 +21,7 @@ class ArchiveDisconnectUserTaskSchema extends Schema {
         .where('user_id', task.tenant_id)
         .first()
       if (!ect) {
-        await Task.query().where('id', task.id).update({ status: TASK_STATUS_UNRESOLVED })
+        await Task.query().where('id', task.id).update({ status: TASK_STATUS_ARCHIVED })
       }
     })
   }

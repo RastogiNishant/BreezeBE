@@ -1048,7 +1048,7 @@ class MatchService {
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
 
-    // need to make previous tasks which was between landlord and previous tenant archived to unresolved
+    // need to make previous tasks which was between landlord and previous tenant archived
     await require('./TaskService').archiveTask(estate_id, trx)
 
     if (!fromInvitation) {

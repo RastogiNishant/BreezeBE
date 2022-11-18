@@ -16,6 +16,7 @@ const {
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
   TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const l = use('Localize')
@@ -527,7 +528,7 @@ class TaskService {
   static async archiveTask(estate_id, trx) {
     await Task.query()
       .whereIn('estate_id', estate_id)
-      .updateItemWithTrx({ status: TASK_STATUS_UNRESOLVED }, trx)
+      .updateItemWithTrx({ status: TASK_STATUS_ARCHIVED }, trx)
   }
 
   static async getItemWithAbsoluteUrl(item) {
