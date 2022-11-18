@@ -65,6 +65,8 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_NEW,
+  URGENCY_SUPER,
+  TENANT_INVITATION_EXPIRATION_DATE,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1379,6 +1381,63 @@ class EstateService {
     estates = orderBy(estates, orderKeys, orderRules)
 
     return estates
+  }
+
+  static async getQuickActionsCount(user_id) {
+    const quickActions =
+      (
+        await Estate.query()
+          .select(Database.raw(` DISTINCT("estates"."id")`))
+          .select(Database.raw(` count( DISTINCT("_ut"."id" )) as "urgency_count"`))
+          .select(Database.raw(` count( DISTINCT("_tsi"."id")) as in_progress_count`))
+          .select('_ect.user_id', '_ect.code', '_ect.invite_sent_at')
+          .leftJoin({ _ut: 'tasks' }, function () {
+            this.on('estates.id', '_ut.estate_id')
+              .on('_ut.urgency', URGENCY_SUPER)
+              .on(Database.raw(`_ut.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`))
+              .onIn('_ut.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+          })
+          .leftJoin({ _tsi: 'tasks' }, function () {
+            this.on('estates.id', '_tsi.estate_id').on('_tsi.status', TASK_STATUS_INPROGRESS)
+          })
+          .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+            this.on('_ect.estate_id', 'estates.id').on('_ect.status', STATUS_ACTIVE)
+          })
+          .where('estates.user_id', user_id)
+          .where('estates.letting_type', LETTING_TYPE_LET)
+          .whereNot('estates.status', STATUS_DELETE)
+          .groupBy('estates.id', '_ect.id')
+          .fetch()
+      ).rows || []
+
+    let urgency_count = 0
+    let in_progress_count = 0
+    let not_connected_count = 0
+    let pending_count = 0
+
+    quickActions.map((estate) => {
+      urgency_count += parseInt(estate.urgency_count) || 0
+      in_progress_count += parseInt(estate.in_progress_count) || 0
+
+      if (!estate.user_id) {
+        if (
+          estate.code != null &&
+          moment.utc(estate.invite_sent_at).format('X') >=
+            moment.utc(new Date()).subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days').format('X')
+        ) {
+          pending_count++
+        } else {
+          not_connected_count++
+        }
+      }
+    })
+
+    return {
+      urgency_count,
+      in_progress_count,
+      not_connected_count,
+      pending_count,
+    }
   }
 
   static async getTotalLetCount(user_id, params, filtering = true) {
