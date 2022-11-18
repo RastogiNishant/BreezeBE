@@ -325,7 +325,7 @@ class ChatService {
 
           if (attachment.search('http') !== 0) {
             return {
-              uesr_id: sender_id,
+              user_id: sender_id,
               url: await File.getProtectedUrl(attachment),
               uri: attachment,
               thumb: thumb,
