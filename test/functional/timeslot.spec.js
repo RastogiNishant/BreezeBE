@@ -182,7 +182,7 @@ test('it should fail to create timeslot due to invalid time range', async ({ ass
     response.assertStatus(400)
     response.assertError({
       status: 'error',
-      data: 'Invalid time range',
+      data: INVALID_TIME_RANGE,
       code: 0,
     })
   } catch (e) {
