@@ -19,7 +19,7 @@ const Estate = use('App/Models/Estate')
 
 class PropertyController {
   async getProperties({ request, response }) {
-    let { activation_status, user_status, estate_status, page, limit, query } = request.all()
+    let { activation_status, user_status, estate_status } = request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -29,9 +29,8 @@ class PropertyController {
     }
     user_status = user_status || STATUS_ACTIVE
     estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE]
-    limit = 99999
     let estates = await Estate.query()
-      .select(Database.raw('estates.*'))
+      .select('estates.id', 'estates.address', 'estates.status', 'estates.six_char_code')
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
       .whereIn('estates.status', estate_status)
