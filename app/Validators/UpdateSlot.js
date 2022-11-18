@@ -37,13 +37,13 @@ class UpdateSlot extends Base {
             return begin.isValid()
               ? schema
                   .oneOf(['XX:XX'], getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at'))
-                  .required()
+                  .required(getExceptionMessage('end_at', REQUIRED))
               : schema
           } else {
             if ((begin.isValid() && !end.isValid()) || !begin.isBefore(end)) {
               return schema
                 .oneOf(['XX:XX'], getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at'))
-                .required()
+                .required(getExceptionMessage('end_at', REQUIRED))
             }
           }
 
