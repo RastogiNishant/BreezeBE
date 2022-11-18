@@ -651,7 +651,7 @@ class EstateController {
     }
 
     const slots = await TimeSlotService.getTimeSlotsByEstate(estate)
-    response.res(slots.rows)
+    response.res(slots?.rows || [])
   }
 
   /**
