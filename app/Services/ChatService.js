@@ -307,7 +307,7 @@ class ChatService {
     return unreadMessagesByTopic
   }
 
-  static async getAbsoluteUrl(attachments) {
+  static async getAbsoluteUrl(attachments, sender_id) {
     try {
       if (!attachments || !attachments.length) {
         return null
@@ -327,6 +327,7 @@ class ChatService {
 
           if (attachment.search('http') !== 0) {
             return {
+              user_id: sender_id,
               url: await File.getProtectedUrl(attachment),
               uri: attachment,
               thumb: thumb,
@@ -353,7 +354,7 @@ class ChatService {
       items = await Promise.all(
         (items = items.map(async (item) => {
           if (item.attachments) {
-            item.attachments = await ChatService.getAbsoluteUrl(item.attachments)
+            item.attachments = await ChatService.getAbsoluteUrl(item.attachments, item.sender_id)
           }
           return item
         }))
@@ -381,6 +382,18 @@ class ChatService {
       await trx.rollback()
       throw new HttpException(e)
     }
+  }
+
+  static async getChatsByTask({ task_id, has_attachment }) {
+    let query = Chat.query()
+      .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+      .where('task_id', task_id)
+
+    if (has_attachment) {
+      query.whereNotNull('attachments')
+    }
+
+    return (await query.fetch()).rows
   }
 }
 
