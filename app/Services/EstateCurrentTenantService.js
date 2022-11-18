@@ -626,6 +626,8 @@ class EstateCurrentTenantService {
     }
 
     currentTenant.user_id = user.id
+    currentTenant.code = null
+    currentTenant.invite_sent_at = null
     currentTenant.email = user.email
 
     currentTenant.surname = user.secondname || currentTenant.surname
