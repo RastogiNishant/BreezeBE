@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { isString, each, get, isDate } = require('lodash')
+const { isString, isEmpty, isDate } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
 const Drive = use('Drive')
 const File = require('../Classes/File')
@@ -16,7 +16,7 @@ class EstateSerializer extends BaseSerializer {
 
     item.coord = item.coord_raw
     item.coord_raw = undefined
-    item.verified_address = item.coord !== null
+    item.verified_address = !isEmpty(item.coord)
 
     // Get cover url
     if (isString(item.cover) && !item.cover.includes('http')) {

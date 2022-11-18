@@ -9,7 +9,7 @@ const UserService = use('App/Services/UserService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { pick, trim } = require('lodash')
+const { pick } = require('lodash')
 
 const {
   exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },

@@ -82,7 +82,7 @@ class CompanyService {
   static async removeCompany(companyId, userId) {
     const company = await CompanyService.getUserCompany(userId, companyId)
     if (!company) {
-      throw HttpException('No permission to delete')
+      throw new HttpException('No permission to delete')
     }
 
     const trx = await Database.beginTransaction()

@@ -725,6 +725,8 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.get('/unread_messages_count', 'ChatController.getUnreadMessagesCount')
+  Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])

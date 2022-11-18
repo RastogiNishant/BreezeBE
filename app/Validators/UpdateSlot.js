@@ -4,6 +4,10 @@ const moment = require('moment')
 const yup = require('yup')
 const Base = require('./Base')
 const { DATE_FORMAT } = require('../constants')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED, OPTION, STRING, SHOULD_BE_AFTER },
+} = require('../excepions')
 
 const transformTime = (value) => {
   const date = moment.utc(value, DATE_FORMAT)
@@ -17,7 +21,11 @@ const transformTime = (value) => {
 class UpdateSlot extends Base {
   static schema = () =>
     yup.object().shape({
-      start_at: yup.string().transform(transformTime),
+      start_at: yup
+        .string()
+        .transform(transformTime)
+        .required(getExceptionMessage('start_at', REQUIRED))
+        .typeError(getExceptionMessage('start_at', STRING)),
       end_at: yup
         .string()
         .transform(transformTime)
@@ -27,17 +35,26 @@ class UpdateSlot extends Base {
 
           if (value === undefined) {
             return begin.isValid()
-              ? schema.oneOf(['XX:XX'], 'should be after start_at').required()
+              ? schema
+                  .oneOf(['XX:XX'], getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at'))
+                  .required(getExceptionMessage('end_at', REQUIRED))
               : schema
           } else {
             if ((begin.isValid() && !end.isValid()) || !begin.isBefore(end)) {
-              return schema.oneOf(['XX:XX'], 'should be after start_at').required()
+              return schema
+                .oneOf(['XX:XX'], getExceptionMessage('end_at', SHOULD_BE_AFTER, 'start_at'))
+                .required(getExceptionMessage('end_at', REQUIRED))
             }
           }
 
           return schema
-        }),
-      slot_length: yup.number().oneOf([5, 10, 15, null]).nullable(true).notRequired(),
+        })
+        .typeError(getExceptionMessage('end_at', STRING)),
+      slot_length: yup
+        .number()
+        .oneOf([5, 10, 15, null], getExceptionMessage('slot_length', OPTION, `[5,10,15,null]`))
+        .nullable(true)
+        .notRequired(),
     })
 }
 

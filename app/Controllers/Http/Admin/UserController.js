@@ -267,6 +267,7 @@ class UserController {
         'phone',
         'created_at',
         'company_id',
+        'status',
         'activation_status'
       )
       .where('role', ROLE_LANDLORD)

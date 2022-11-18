@@ -101,21 +101,22 @@ class TaskFilters extends Filter {
         ) {
           this.query.orWhere(
             Database.raw(`
-            (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
+            _ect.user_id IS NULL AND
+            ( _ect.code IS NULL OR
             (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
               .utc(new Date())
               .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-              .format(DATE_FORMAT)}' )`)
+              .format(DATE_FORMAT)}') )`)
           )
         }
 
         if (params.breeze_type.value.findIndex((v) => v === PENDING_BREEZE_TEANT_LABEL) !== -1) {
           this.query.orWhere(
             Database.raw(`
-              _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
-                .utc(new Date())
-                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-                .format(DATE_FORMAT)}'`)
+            _ect.user_id IS NULL AND _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
+              .utc(new Date())
+              .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+              .format(DATE_FORMAT)}'`)
           )
         }
       })
