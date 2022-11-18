@@ -4,6 +4,13 @@ const { MATCH_STATUS_VISIT, DATE_FORMAT } = require('../../../app/constants')
 const Visit = use('App/Models/Visit')
 const Match = use('App/Models/Match')
 
+const test_start_at_yesterday = moment
+  .utc()
+  .startOf('day')
+  .subtract(30, 'hours')
+  .format(DATE_FORMAT)
+const test_end_at_yesterday = moment.utc().startOf('day').subtract(24, 'hours').format(DATE_FORMAT)
+
 const getTomorrow = () => moment.utc().startOf('day').add(1, 'day')
 const test_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
 const test_end_at = getTomorrow().add(7, 'hours').format(DATE_FORMAT)
@@ -17,6 +24,8 @@ const invalid_slot_length = 12
 
 const test_start_at_tomorrow = getTomorrow().add(1, 'day').add(6, 'hours').format(DATE_FORMAT)
 const test_end_at_tomorrow = getTomorrow().add(1, 'day').add(7, 'hours').format(DATE_FORMAT)
+
+const test_start_at_two_days_later = getTomorrow().add(2, 'day').add(6, 'hours').format(DATE_FORMAT)
 
 const test_crossing_start_at = getTomorrow().add(6, 'hours').format(DATE_FORMAT)
 const test_crossing_end_at = getTomorrow().add(6, 'hours').add(30, 'minutes').format(DATE_FORMAT)
@@ -79,6 +88,32 @@ const prepareVisitOutOfTimeRange = (prospect, estate) => {
   }
 }
 
+const prepareUpdatedVisitInTimeRange = (prospect, estate) => {
+  return {
+    estate_id: estate.id,
+    user_id: prospect.id,
+    date: moment.utc(test_new_start_at).format(DATE_FORMAT),
+    start_date: moment.utc(test_new_start_at).format(DATE_FORMAT),
+    end_date: moment
+      .utc(test_new_start_at)
+      .add(test_new_slot_length, 'minutes')
+      .format(DATE_FORMAT),
+  }
+}
+
+const prepareUpdatedVisitOutOfTimeRange = (prospect, estate) => {
+  return {
+    estate_id: estate.id,
+    user_id: prospect.id,
+    date: test_start_at_two_days_later,
+    start_date: test_start_at_two_days_later,
+    end_date: moment
+      .utc(test_start_at_two_days_later)
+      .add(test_new_slot_length, 'minutes')
+      .format(DATE_FORMAT),
+  }
+}
+
 const prepareTimeSlotUpdationDependencies = async ({ firstProspect, secondProspect, estate }) => {
   // Prepare records
   let matchInTimeRange = prepareVisitMatch(firstProspect, estate)
@@ -95,7 +130,23 @@ const prepareTimeSlotUpdationDependencies = async ({ firstProspect, secondProspe
   ])
 }
 
-const findTimeSlotUpdationDependencies = async ({ firstProspect, secondProspect, estate }) => {
+const prepareTimeSlotDeletionDependencies = async ({ firstProspect, secondProspect, estate }) => {
+  // Prepare records
+  let matchInTimeRange = prepareVisitMatch(firstProspect, estate)
+  let matchOutOfTimeRange = prepareVisitMatch(secondProspect, estate)
+  let visitInTimeRange = prepareUpdatedVisitInTimeRange(firstProspect, estate)
+  let visitOutOfTimeRange = prepareUpdatedVisitOutOfTimeRange(secondProspect, estate)
+
+  // Insert records
+  await Promise.all([
+    Database.table('matches').insert(matchInTimeRange),
+    Database.table('matches').insert(matchOutOfTimeRange),
+    Database.table('visits').insert(visitInTimeRange),
+    Database.table('visits').insert(visitOutOfTimeRange),
+  ])
+}
+
+const findTimeSlotDependencies = async ({ firstProspect, secondProspect, estate }) => {
   const [matchInTimeRange, matchOutOfTimeRange, visitInTimeRange, visitOutOfTimeRange] =
     await Promise.all([
       await Match.query().where({ estate_id: estate.id, user_id: firstProspect.id }).first(),
@@ -107,6 +158,8 @@ const findTimeSlotUpdationDependencies = async ({ firstProspect, secondProspect,
 }
 
 module.exports = {
+  test_start_at_yesterday,
+  test_end_at_yesterday,
   getTomorrow,
   test_start_at,
   test_end_at,
@@ -131,5 +184,6 @@ module.exports = {
   prepareVisitInTimeRange,
   prepareVisitOutOfTimeRange,
   prepareTimeSlotUpdationDependencies,
-  findTimeSlotUpdationDependencies,
+  prepareTimeSlotDeletionDependencies,
+  findTimeSlotDependencies,
 }

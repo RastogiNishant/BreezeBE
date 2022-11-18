@@ -8,6 +8,7 @@ const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const NoticeService = use('App/Services/NoticeService')
+const Logger = use('Logger')
 
 const {
   exceptions: {
@@ -291,7 +292,7 @@ class TimeSlotService {
       const trx = await Database.beginTransaction()
       try {
         const estateId = slot.estate_id
-        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
+        const userIds = await require('./MatchService').handleDeletedTimeSlotVisits(slot, trx)
         await slot.delete(trx)
 
         await trx.commit()

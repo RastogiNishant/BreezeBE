@@ -13,17 +13,27 @@ const {
   dummyCrossingTimeSlotData,
   dummyInvalidRangeTimeSlotData,
   prepareTimeSlotUpdationDependencies,
-  findTimeSlotUpdationDependencies,
+  findTimeSlotDependencies,
   test_new_slot_length,
   test_start_at,
   test_end_at,
   test_start_at_tomorrow,
   invalid_slot_length,
+  test_end_at_yesterday,
+  test_start_at_yesterday,
+  test_slot_length,
+  prepareTimeSlotDeletionDependencies,
 } = require('../constants/timeslot')
 
 const {
-  exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING, ESTATE_NOT_EXISTS },
-  exceptionKeys: { OPTION, STRING, SHOULD_BE_AFTER },
+  exceptions: {
+    INVALID_TIME_RANGE,
+    TIME_SLOT_CROSSING_EXISTING,
+    ESTATE_NOT_EXISTS,
+    TIME_SLOT_NOT_FOUND,
+    SHOW_ALREADY_STARTED,
+  },
+  exceptionKeys: { OPTION, STRING, SHOULD_BE_AFTER, POSITIVE_NUMBER },
   getExceptionMessage,
 } = require('../../app/excepions')
 const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
@@ -35,6 +45,7 @@ const TimeSlot = use('App/Models/TimeSlot')
 const Visit = use('App/Models/Visit')
 const Match = use('App/Models/Match')
 const EstateService = use('App/Services/EstateService')
+const TimeSlotService = use('App/Services/TimeSlotService')
 
 trait('Test/ApiClient')
 trait('Auth/Client')
@@ -222,7 +233,6 @@ test('it should fail to create timeslot due to empty end_at', async ({ assert, c
       .end()
 
     response.assertStatus(422)
-    response.assertStatus(422)
     response.assertError({
       status: 'error',
       data: {
@@ -386,7 +396,7 @@ test('it should update time slot and handle dependencies successfully', async ({
 
     testSlot = response.body.data
 
-    const dependencies = await findTimeSlotUpdationDependencies({
+    const dependencies = await findTimeSlotDependencies({
       firstProspect: testProspect,
       secondProspect: testProspectAnother,
       estate: testEstate,
@@ -441,7 +451,7 @@ test("it should update time slot's slot_length and handle dependencies successfu
 
     testSlot = response.body.data
 
-    const dependencies = await findTimeSlotUpdationDependencies({
+    const dependencies = await findTimeSlotDependencies({
       firstProspect: testProspect,
       secondProspect: testProspectAnother,
       estate: testEstate,
@@ -468,4 +478,85 @@ test('it should fail to delete a time slot with prospect token', async ({ client
   response.assertStatus(401)
 })
 
-//TODO: add tests for delete :estate_id/slots/:slot_id endpoint
+test('it should fail to delete a time slot due to invalid slot id', async ({ client }) => {
+  let response = await client
+    .delete(`/api/v1/estates/${testEstate.id}/slots/0`)
+    .loginVia(testLandlord, 'jwtLandlord')
+    .end()
+  response.assertStatus(422)
+  response.assertError({
+    status: 'error',
+    data: { slot_id: getExceptionMessage('slot_id', POSITIVE_NUMBER) },
+  })
+})
+
+test('it should fail to delete a time slot due to non-existing slot id', async ({ client }) => {
+  let response = await client
+    .delete(`/api/v1/estates/${testEstate.id}/slots/999999`)
+    .loginVia(testLandlord, 'jwtLandlord')
+    .end()
+  response.assertStatus(400)
+  response.assertError({
+    status: 'error',
+    data: TIME_SLOT_NOT_FOUND,
+    code: 0,
+  })
+})
+
+test('it should fail to delete a time slot due to already started status', async ({ client }) => {
+  const alreadyStaredTimeSlot = await TimeSlotService.createSlot(
+    {
+      end_at: test_end_at_yesterday,
+      start_at: test_start_at_yesterday,
+      slot_length: test_slot_length,
+    },
+    testEstate
+  )
+
+  let response = await client
+    .delete(`/api/v1/estates/${testEstate.id}/slots/${alreadyStaredTimeSlot.id}`)
+    .loginVia(testLandlord, 'jwtLandlord')
+    .end()
+  response.assertStatus(400)
+  response.assertError({
+    status: 'error',
+    data: SHOW_ALREADY_STARTED,
+    code: 0,
+  })
+})
+
+test('it should delete time slot and handle dependencies successfully', async ({
+  assert,
+  client,
+}) => {
+  try {
+    await prepareTimeSlotDeletionDependencies({
+      firstProspect: testProspect,
+      secondProspect: testProspectAnother,
+      estate: testEstate,
+    })
+
+    const response = await client
+      .delete(`/api/v1/estates/${testEstate.id}/slots/${testSlot.id}`)
+      .loginVia(testLandlord, 'jwtLandlord')
+      .end()
+    response.assertStatus(200)
+
+    const dependencies = await findTimeSlotDependencies({
+      firstProspect: testProspect,
+      secondProspect: testProspectAnother,
+      estate: testEstate,
+    })
+
+    const deletedSlot = await TimeSlot.query().where('id', testSlot.id).first()
+    assert.isNull(deletedSlot)
+
+    assert.equal(dependencies.matchOutOfTimeRange.status, MATCH_STATUS_VISIT)
+    assert.equal(dependencies.matchInTimeRange.status, MATCH_STATUS_INVITE)
+    assert.exists(dependencies.visitOutOfTimeRange)
+    assert.isNull(dependencies.visitInTimeRange)
+  } catch (e) {
+    console.log(e)
+    assert.fail('Unexpected error in time slot update')
+  }
+})

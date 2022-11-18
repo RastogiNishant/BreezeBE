@@ -1,6 +1,5 @@
 'use strict'
 
-const uuid = require('uuid')
 const moment = require('moment')
 
 const Admin = use('App/Models/Admin')

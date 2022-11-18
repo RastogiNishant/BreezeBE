@@ -64,7 +64,6 @@ const {
   DEFAULT_LANG,
   TIMESLOT_STATUS_REJECT,
 } = require('../constants')
-const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
 
 const MATCH_PERCENT_PASS = 40
