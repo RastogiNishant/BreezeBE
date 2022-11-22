@@ -496,6 +496,8 @@ class TaskService {
   }
 
   static async removeImages({ id, user, uri }) {
+    uri = uri.split(',')
+
     const task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
 
@@ -504,12 +506,9 @@ class TaskService {
       const taskAttachments = task
         .toJSON()
         .attachments.filter(
-          (attachment) =>
-            !(
-              attachment.user_id === user.id &&
-              (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
-            )
+          (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
         )
+      console.log('removeImages=', taskAttachments)
 
       await Task.query()
         .where('id', id)
@@ -520,27 +519,20 @@ class TaskService {
         })
         .transacting(trx)
 
-      let chats =
-        (await ChatService.getPreviousMessages({ task_id: task.id, user_id: user.id })).rows || []
+      const chat = await Chat.query()
+        .select('*')
+        .where('task_id', task.id)
+        .where('sender_id', user.id)
+        .where(Database.raw(`attachments::jsonb ?| array['${uri.join(',')}']`))
+        .first()
 
-      let deletedAttachmentChat = null
-      chats.map((chat) => {
-        if (chat.attachments && chat.attachments.includes(uri)) {
-          const attachments = chat.attachments.filter((attachment) => attachment !== uri)
-          deletedAttachmentChat = {
-            ...chat.toJSON(),
-            attachments: attachments.length ? attachments : null,
-          }
-          return
-        }
-      })
-
-      if (deletedAttachmentChat) {
+      if (chat) {
+        const attachments = chat.attachments.filter((attachment) => !uri.includes(attachment))
         await ChatService.updateChatMessage(
           {
-            id: deletedAttachmentChat.id,
-            message: deletedAttachmentChat.message,
-            attachments: deletedAttachmentChat.attachments,
+            id: chat.id,
+            message: chat.message,
+            attachments: attachments.length ? attachments : null,
           },
           trx
         )
@@ -548,6 +540,7 @@ class TaskService {
 
       await trx.commit()
     } catch (e) {
+      console.log('Remove image error=', e.message)
       await trx.rollback()
     }
   }
