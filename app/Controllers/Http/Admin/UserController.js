@@ -268,7 +268,8 @@ class UserController {
         'created_at',
         'company_id',
         'status',
-        'activation_status'
+        'activation_status',
+        'verified_date'
       )
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
