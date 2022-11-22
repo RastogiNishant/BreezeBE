@@ -523,7 +523,7 @@ class TaskService {
         .select('*')
         .where('task_id', task.id)
         .where('sender_id', user.id)
-        .where(Database.raw(`attachments::jsonb ?| array['${uri.join(',')}']`))
+        .where(Database.raw(`attachments::jsonb \\?| array['${uri.join(',')}']`))
         .first()
 
       if (chat) {
