@@ -95,7 +95,15 @@ class TaskController extends BaseController {
   }
 
   async onMarkLastRead() {
-    super._markLastRead(this.taskId)
+    const lastChat = await super._markLastRead(this.taskId)
+    this.broadcastToTopic(this.socket.topic, 'taskMessageRead', {
+      topic: this.socket.topic,
+      chat: {
+        id: lastChat.id,
+        user: lastChat.sender_id,
+        created_at: lastChat.created_at,
+      },
+    })
   }
 
   async onMessage(message) {
