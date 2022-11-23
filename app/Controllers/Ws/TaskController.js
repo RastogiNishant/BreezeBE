@@ -27,26 +27,30 @@ class TaskController extends BaseController {
   }
 
   async onGetPreviousMessages(data) {
-    let lastId = 0
+    try {
+      let lastId = 0
 
-    if (data && data.lastId) {
-      lastId = data.lastId
-    }
-    let previousMessages = await ChatService.getPreviousMessages({
-      task_id: this.taskId,
-      lastId,
-      user_id: this.user.id,
-    })
-    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
-    if (this.topic) {
-      this.topic.emitTo(
-        'previousMessages',
-        {
-          messages: previousMessages,
-          topic: this.socket.topic,
-        },
-        [this.socket.id]
-      )
+      if (data && data.lastId) {
+        lastId = data.lastId
+      }
+      let previousMessages = await ChatService.getPreviousMessages({
+        task_id: this.taskId,
+        lastId,
+        user_id: this.user.id,
+      })
+      previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
+      if (this.topic) {
+        this.topic.emitTo(
+          'previousMessages',
+          {
+            messages: previousMessages,
+            topic: this.socket.topic,
+          },
+          [this.socket.id]
+        )
+      }
+    } catch (err) {
+      this.emitError(err.message)
     }
   }
 
@@ -99,47 +103,51 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
-    //FIXME: make slim controller
-    const task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-    if (this.user.role === ROLE_LANDLORD) {
-      //we check whether this is in progress
+    try {
+      //FIXME: make slim controller
+      const task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
+      if (this.user.role === ROLE_LANDLORD) {
+        //we check whether this is in progress
 
-      if ([TASK_STATUS_NEW, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED].includes(task.status)) {
-        //if in progress make it TASK_STATUS_NEW
-        await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
-        if (this.topic) {
-          //Broadcast to those listening to this channel...
-          this.topic.broadcast('taskStatusUpdated', {
-            status: TASK_STATUS_INPROGRESS,
-            topic: this.socket.topic,
-          })
+        if ([TASK_STATUS_NEW, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED].includes(task.status)) {
+          //if in progress make it TASK_STATUS_NEW
+          await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
+          if (this.topic) {
+            //Broadcast to those listening to this channel...
+            this.topic.broadcast('taskStatusUpdated', {
+              status: TASK_STATUS_INPROGRESS,
+              topic: this.socket.topic,
+            })
+          }
         }
       }
-    }
-    const chat = await this._saveToChats(message, this.taskId)
-    message.id = chat.id
-    message.message = chat.text
-    message.attachments = await this.getAbsoluteUrl(chat.attachments)
-    message.sender = {
-      id: this.user.id,
-      firstname: this.user.firstname,
-      secondname: this.user.secondname,
-      avatar: this.user.avatar,
-    }
-    message.topic = this.socket.topic
-    const recipientTopic =
-      this.user.role === ROLE_LANDLORD
-        ? `tenant:${this.tenant_user_id}`
-        : `landlord:${this.estate_user_id}`
+      const chat = await this._saveToChats(message, this.taskId)
+      message.id = chat.id
+      message.message = chat.text
+      message.attachments = await this.getAbsoluteUrl(chat.attachments)
+      message.sender = {
+        id: this.user.id,
+        firstname: this.user.firstname,
+        secondname: this.user.secondname,
+        avatar: this.user.avatar,
+      }
+      message.topic = this.socket.topic
+      const recipientTopic =
+        this.user.role === ROLE_LANDLORD
+          ? `tenant:${this.tenant_user_id}`
+          : `landlord:${this.estate_user_id}`
 
-    //broadcast taskMessageReceived event to either tenant or landlord
-    this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
-      topic: this.socket.topic,
-      urgency: task?.urgency,
-    })
-    const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
-    await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
-    super.onMessage(message)
+      //broadcast taskMessageReceived event to either tenant or landlord
+      this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
+        topic: this.socket.topic,
+        urgency: task?.urgency,
+      })
+      const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
+      await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+      super.onMessage(message)
+    } catch (err) {
+      this.emitError(err.message)
+    }
   }
 }
 

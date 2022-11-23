@@ -21,3 +21,6 @@ package-lock.json
 .env.staging
 
 .DS_Store
+
+newrelic_agent.log
+newrelic.js
