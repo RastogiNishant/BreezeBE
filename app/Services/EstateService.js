@@ -1369,14 +1369,15 @@ class EstateService {
       orderRules = ['desc', ...orderRules]
     }
     estates = orderBy(estates, orderKeys, orderRules)
-    // await Promise.all(
-    //   estates.map(async (est) => {
-    //     await est.activeTasks.map(async (task) => {
-    //       task = await require('./TaskService').getItemWithAbsoluteUrl(task)
-    //       return task
-    //     })
-    //   })
-    // )
+    await Promise.all(
+      estates.map(async (est) => {
+        await est.activeTasks.map(async (task) => {
+          // task = await require('./TaskService').getItemWithAbsoluteUrl(task)
+          task = { ...task, attachments: [] }
+          return task
+        })
+      })
+    )
 
     return estates
   }
