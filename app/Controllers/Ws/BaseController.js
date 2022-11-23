@@ -16,53 +16,9 @@ class BaseController {
   //this will broadcast to all except sender
   broadcast(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
-    if (this.topic && isNull(sender)) {
-      this.topic.broadcast(event, {
-        message,
-        sender: {
-          userId: this.user.id,
-          firstname: this.user.firstname,
-          secondname: this.user.secondname,
-          avatar: this.user.avatar,
-        },
-        topic: this.socket.topic,
-      })
-    } else if (this.topic && sender == 0) {
-      this.topic.broadcast(event, {
-        message,
-        sender: BREEZE_BOT_USER,
-        topic: this.socket.topic,
-      })
-    }
-  }
-  //this will broadcast to all including sender
-  broadcastToAll(message, event = 'message', sender = null) {
-    //sender is null when user, 0 when bot
-    if (this.topic && isNull(sender)) {
-      this.topic.broadcastToAll(event, {
-        message,
-        sender: {
-          userId: this.user.id,
-          firstname: this.user.firstname,
-          secondname: this.user.secondname,
-          avatar: this.user.avatar,
-        },
-        topic: this.socket.topic,
-      })
-    } else if (this.topic && sender == 0) {
-      this.topic.broadcastToAll(event, {
-        message,
-        sender: BREEZE_BOT_USER,
-        topic: this.socket.topic,
-      })
-    }
-  }
-  //this will send message to sender given socket.id
-  emitToSender(message, event = 'message', sender = null) {
-    if (this.topic && isNull(sender)) {
-      this.topic.emitTo(
-        event,
-        {
+    try {
+      if (this.topic && isNull(sender)) {
+        this.topic.broadcast(event, {
           message,
           sender: {
             userId: this.user.id,
@@ -71,46 +27,118 @@ class BaseController {
             avatar: this.user.avatar,
           },
           topic: this.socket.topic,
-        },
-        [this.socket.id]
-      )
-    } else if (this.topic && sender == 0) {
-      this.topic.emitTo(
-        event,
-        {
+        })
+      } else if (this.topic && sender == 0) {
+        this.topic.broadcast(event, {
           message,
           sender: BREEZE_BOT_USER,
           topic: this.socket.topic,
-        },
-        [this.socket.id]
-      )
+        })
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
+  //this will broadcast to all including sender
+  broadcastToAll(message, event = 'message', sender = null) {
+    //sender is null when user, 0 when bot
+    try {
+      if (this.topic && isNull(sender)) {
+        this.topic.broadcastToAll(event, {
+          message,
+          sender: {
+            userId: this.user.id,
+            firstname: this.user.firstname,
+            secondname: this.user.secondname,
+            avatar: this.user.avatar,
+          },
+          topic: this.socket.topic,
+        })
+      } else if (this.topic && sender == 0) {
+        this.topic.broadcastToAll(event, {
+          message,
+          sender: BREEZE_BOT_USER,
+          topic: this.socket.topic,
+        })
+      }
+    } catch (err) {
+      this.emitError(err.message)
+    }
+  }
+  //this will send message to sender given socket.id
+  emitToSender(message, event = 'message', sender = null) {
+    try {
+      if (this.topic && isNull(sender)) {
+        this.topic.emitTo(
+          event,
+          {
+            message,
+            sender: {
+              userId: this.user.id,
+              firstname: this.user.firstname,
+              secondname: this.user.secondname,
+              avatar: this.user.avatar,
+            },
+            topic: this.socket.topic,
+          },
+          [this.socket.id]
+        )
+      } else if (this.topic && sender == 0) {
+        this.topic.emitTo(
+          event,
+          {
+            message,
+            sender: BREEZE_BOT_USER,
+            topic: this.socket.topic,
+          },
+          [this.socket.id]
+        )
+      }
+    } catch (err) {
+      this.emitError(err.message)
     }
   }
   //override this on the child controller
   onMessage(message) {
-    message.dateTime = message.dateTime ? message.dateTime : new Date()
-    if (this.topic) {
-      //FIXME: this will send sender twice on data...
-      this.broadcastToAll(message, 'message')
+    try {
+      message.dateTime = message.dateTime ? message.dateTime : new Date()
+      if (this.topic) {
+        //FIXME: this will send sender twice on data...
+        this.broadcastToAll(message, 'message')
+      }
+    } catch (err) {
+      this.emitError(err.message)
     }
   }
 
   emitError(message) {
-    this.topic.emitTo('error', { message }, [this.socket.id])
+    try {
+      this.topic.emitTo('error', { message }, [this.socket.id])
+    } catch (e) {
+      console.log(e)
+    }
   }
 
   async _markLastRead(taskId) {
-    await ChatService.markLastRead(this.user.id, taskId)
+    try {
+      await ChatService.markLastRead(this.user.id, taskId)
+    } catch (err) {
+      this.emitError(err.message)
+    }
   }
 
   async _saveToChats(message, taskId = null) {
-    let chat = await ChatService.save(message, this.user.id, taskId)
+    try {
+      let chat = await ChatService.save(message, this.user.id, taskId)
 
-    if (chat.success === false) {
-      this.emitError(chat.message)
+      if (chat.success === false) {
+        this.emitError(chat.message)
+      }
+
+      return chat
+    } catch (err) {
+      this.emitError(err.message)
     }
-
-    return chat
   }
 
   /**
@@ -120,10 +148,14 @@ class BaseController {
    * @param {Any} message
    */
   async broadcastToTopic(topicString, event, message) {
-    const matches = topicString.match(/([a-z]+):/i)
-    const topic = Ws.getChannel(`${matches[0]}*`).topic(topicString)
-    if (topic) {
-      topic.broadcast(event, message)
+    try {
+      const matches = topicString.match(/([a-z]+):/i)
+      const topic = Ws.getChannel(`${matches[0]}*`).topic(topicString)
+      if (topic) {
+        topic.broadcast(event, message)
+      }
+    } catch (err) {
+      this.emitError(err.message)
     }
   }
 
