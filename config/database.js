@@ -80,6 +80,14 @@ module.exports = {
       database: Env.get('DB_DATABASE', 'adonis'),
     },
     debug: Env.get('DB_DEBUG', false),
-    pool: { min: 10, max: 50 },
+    pool: {
+      min: 0,
+      max: 150,
+      idleTimeoutMillis: 3595,
+      reapIntervalMillis: 300,
+      destroyTimeoutMillis: 3595,
+      log: (message, logLevel) => console.log(`${logLevel}: ${message}`),
+    },
+    acquireConnectionTimeout: 10000,
   },
 }
