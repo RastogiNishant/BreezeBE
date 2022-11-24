@@ -84,7 +84,7 @@ class MemberController {
 
       if (!isInitializedAlready) {
         const member = await MemberService.createMember({ is_verified: true }, user_id, trx)
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
+        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count, trx)
         await trx.commit()
         Event.fire('tenant::update', user_id)
         return response.res(member)
