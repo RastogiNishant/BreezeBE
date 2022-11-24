@@ -44,7 +44,6 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
-
 class TaskService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
@@ -564,6 +563,25 @@ class TaskService {
       return null
     }
   }
+
+  static async updateUnreadMessageCount({ task_id, role }, trx = null) {
+    const unread_role = role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD
+    const task = await Task.query().where('id', task_id).first()
+    if (task) {
+      if (+task.unread_role === +role) {
+        await Task.query()
+          .where('id', task.id)
+          .update({ unread_count: 1, unread_role })
+          .transacting(trx)
+      } else {
+        await Task.query()
+          .where('id', task.id)
+          .update({ unread_count: +(task.unread_count || 0) + 1, unread_role })
+          .transacting(trx)
+      }
+    }
+  }
+
 }
 
 module.exports = TaskService

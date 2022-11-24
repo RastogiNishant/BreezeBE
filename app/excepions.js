@@ -43,6 +43,7 @@ const exceptions = {
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
+  MESSAGE_NOT_SAVED: 'Error happened to save message',
 }
 
 const exceptionKeys = {
@@ -86,6 +87,7 @@ const exceptionKeys = {
   SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
   SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
+  MESSAGE_NOT_SAVED: 'MESSAGE_NOT_SAVED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

@@ -3,8 +3,10 @@
 const Ws = use('Ws')
 const { isNull } = require('lodash')
 const { BREEZE_BOT_USER } = require('../../constants')
+const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
+const Database = use('Database')
 
 class BaseController {
   constructor({ socket, auth, request, channel }) {
@@ -100,17 +102,28 @@ class BaseController {
   }
 
   async _markLastRead(taskId) {
-    await ChatService.markLastRead(this.user.id, taskId)
+    return await ChatService.markLastRead({
+      user_id: this.user.id,
+      role: this.user.role,
+      task_id: taskId,
+    })
   }
 
   async _saveToChats(message, taskId = null) {
-    let chat = await ChatService.save(message, this.user.id, taskId)
-
-    if (chat.success === false) {
-      this.emitError(chat.message)
+    const trx = await Database.beginTransaction()
+    try {
+      let chat = await ChatService.save({ message, user_id: this.user.id, task_id: taskId }, trx)
+      await TaskService.updateUnreadMessageCount({ task_id: taskId, role: this.user.role }, trx)
+      await trx.commit()
+      if (chat.success === false) {
+        this.emitError(chat.message)
+      }
+      return chat
+    } catch (e) {
+      await trx.rollback()
+      this.emitError(message)
     }
-
-    return chat
+    return null
   }
 
   /**

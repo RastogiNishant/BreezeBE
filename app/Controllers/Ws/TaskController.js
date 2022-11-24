@@ -7,8 +7,12 @@ const {
   TASK_STATUS_NEW,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
 } = require('../../constants')
 
+const {
+  exceptions: { MESSAGE_NOT_SAVED },
+} = require('../../excepions')
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
@@ -16,6 +20,7 @@ const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
+const moment = require('moment')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -95,7 +100,19 @@ class TaskController extends BaseController {
   }
 
   async onMarkLastRead() {
-    super._markLastRead(this.taskId)
+    if (await super._markLastRead(this.taskId)) {
+      const recipientTopic =
+        this.user.role === ROLE_LANDLORD
+          ? `landlord:${this.estate_user_id}`
+          : `tenant:${this.tenant_user_id}`
+
+      //broadcast taskMessageReceived event to either tenant or landlord
+      this.broadcastToTopic(recipientTopic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
+        topic: `estate:${this.estateId}brz:${this.taskId}`,
+        read_at: moment.utc(new Date()),
+        count: 0,
+      })
+    }
   }
 
   async onMessage(message) {
@@ -116,30 +133,35 @@ class TaskController extends BaseController {
         }
       }
     }
-    const chat = await this._saveToChats(message, this.taskId)
-    message.id = chat.id
-    message.message = chat.text
-    message.attachments = await this.getAbsoluteUrl(chat.attachments)
-    message.sender = {
-      id: this.user.id,
-      firstname: this.user.firstname,
-      secondname: this.user.secondname,
-      avatar: this.user.avatar,
-    }
-    message.topic = this.socket.topic
-    const recipientTopic =
-      this.user.role === ROLE_LANDLORD
-        ? `tenant:${this.tenant_user_id}`
-        : `landlord:${this.estate_user_id}`
 
-    //broadcast taskMessageReceived event to either tenant or landlord
-    this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
-      topic: this.socket.topic,
-      urgency: task?.urgency,
-    })
-    const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
-    await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
-    super.onMessage(message)
+    const chat = await this._saveToChats(message, this.taskId)
+    if (chat) {
+      message.id = chat.id
+      message.message = chat.text
+      message.attachments = await this.getAbsoluteUrl(chat.attachments)
+      message.sender = {
+        id: this.user.id,
+        firstname: this.user.firstname,
+        secondname: this.user.secondname,
+        avatar: this.user.avatar,
+      }
+      message.topic = this.socket.topic
+      const recipientTopic =
+        this.user.role === ROLE_LANDLORD
+          ? `tenant:${this.tenant_user_id}`
+          : `landlord:${this.estate_user_id}`
+
+      //broadcast taskMessageReceived event to either tenant or landlord
+      this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
+        topic: this.socket.topic,
+        urgency: task?.urgency,
+      })
+      const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
+      await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+      super.onMessage(message)
+    } else {
+      this.emitError(MESSAGE_NOT_SAVED)
+    }
   }
 }
 

@@ -23,20 +23,20 @@ const {
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
 } = require('../constants')
-const { min, isBoolean, isArray } = require('lodash')
+const { min, isBoolean, isArray, groupBy } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 class ChatService {
-  static async markLastRead(userId, taskId) {
+  static async markLastRead({ user_id, role, task_id }) {
     const trx = await Database.beginTransaction()
     try {
       await Chat.query()
         .where({
           type: CHAT_TYPE_LAST_READ_MARKER,
-          sender_id: userId,
-          task_id: taskId,
+          sender_id: user_id,
+          task_id,
         })
         .delete()
         .transacting(trx)
@@ -44,20 +44,29 @@ class ChatService {
       await Chat.create(
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
-          sender_id: userId,
-          task_id: taskId,
+          sender_id: user_id,
+          task_id,
         },
         trx
       )
+
+      await Task.query()
+        .where('id', task_id)
+        .where('unread_role', role)
+        .update({ unread_count: 0 })
+        .transacting(trx)
       await trx.commit()
+      return true
     } catch (err) {
       console.log(err)
       await trx.rollback()
+      return false
     }
   }
 
-  static async save(message, userId, taskId) {
+  static async save({ message, user_id, task_id }, trx = null) {
     let data = {}
+
     if (typeof message === 'object' && typeof message.message === 'string') {
       data.text = message.message
     } else if (typeof message === 'object') {
@@ -75,10 +84,10 @@ class ChatService {
     }
 
     data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
-    data.task_id = taskId
-    data.sender_id = userId
+    data.task_id = task_id
+    data.sender_id = user_id
     data.type = CHAT_TYPE_MESSAGE
-    const chat = await Chat.create(data)
+    const chat = await Chat.create(data, trx)
     return chat
   }
 
@@ -261,52 +270,6 @@ class ChatService {
     return result
   }
 
-  static async getUserUnreadMessagesByTopic(userId, role) {
-    let taskEstates
-
-    let query = Task.query()
-      .select('tasks.id as task_id', 'estates.id as estate_id', 'tasks.urgency')
-      .innerJoin('estates', function () {
-        this.on('estates.id', 'tasks.estate_id')
-          .onNotIn('estates.status', [STATUS_DELETE])
-          .on('estates.letting_type', LETTING_TYPE_LET)
-      })
-      .innerJoin('estate_current_tenants', function () {
-        this.on('estate_current_tenants.estate_id', 'estates.id').on(
-          'estate_current_tenants.status',
-          STATUS_ACTIVE
-        )
-      })
-      .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
-
-    if (role === ROLE_LANDLORD) {
-      query.where('estates.user_id', userId)
-    } else if (role === ROLE_USER) {
-      query.where('estate_current_tenants.user_id', userId)
-    }
-    taskEstates = await query.fetch()
-    const unreadMessagesByTopic = await Promise.reduce(
-      taskEstates.toJSON(),
-      async (unreadMessagesByTopic, taskEstate) => {
-        // const unreadMessagesCount = await ChatService.getUnreadMessagesCount(
-        //   taskEstate.task_id,
-        //   userId
-        // )
-        const unreadMessagesCount = 0
-        return [
-          ...unreadMessagesByTopic,
-          {
-            topic: `task:${taskEstate.estate_id}brz${taskEstate.task_id}`,
-            urgency: taskEstate?.urgency,
-            unread: unreadMessagesCount,
-          },
-        ]
-      },
-      []
-    )
-    return unreadMessagesByTopic
-  }
-
   static async getAbsoluteUrl(attachments, sender_id) {
     try {
       if (!attachments || !attachments.length) {
@@ -394,6 +357,39 @@ class ChatService {
     }
 
     return (await query.fetch()).rows
+  }
+
+  static async getUserUnreadMessages(userId, role) {
+    let taskEstates
+
+    let query = Task.query()
+      .select('tasks.id as task_id', 'estates.id as estate_id', 'tasks.urgency')
+      .innerJoin('estates', function () {
+        this.on('estates.id', 'tasks.estate_id')
+          .onNotIn('estates.status', [STATUS_DELETE])
+          .on('estates.letting_type', LETTING_TYPE_LET)
+      })
+      .innerJoin('estate_current_tenants', function () {
+        this.on('estate_current_tenants.estate_id', 'estates.id').on(
+          'estate_current_tenants.status',
+          STATUS_ACTIVE
+        )
+      })
+      .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+
+    if (role === ROLE_LANDLORD) {
+      query.where('estates.user_id', userId)
+    } else if (role === ROLE_USER) {
+      query.where('estate_current_tenants.user_id', userId)
+    }
+    query.where('unread_role', role)
+    query.where('unread_count', '>', 0)
+
+    taskEstates = await query.fetch()
+
+    taskEstates = groupBy(taskEstates.rows, 'urgency')
+
+    return taskEstates
   }
 }
 

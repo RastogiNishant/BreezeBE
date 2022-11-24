@@ -18,6 +18,8 @@ class Task extends Model {
       'created_at',
       'updated_at',
       'status_changed_by',
+      'unread_count',
+      'unread_role',
     ]
   }
   static get readonly() {

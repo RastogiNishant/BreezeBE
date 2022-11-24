@@ -427,7 +427,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
-  NOTICE_TYPE_LANDLORD_UPDATE_SLOT:'notification_landlord_update_slot',
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -870,6 +870,9 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT: 10,
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
+
+  WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
+  WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageAllRead',
 }
 
 module.exports = constants

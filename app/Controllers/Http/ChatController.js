@@ -1,7 +1,7 @@
 'use strict'
 
 const ChatService = use('App/Services/ChatService')
-
+const HttpException = use('App/Exceptions/HttpException')
 class ChatController {
   async getByTaskId({ request, auth, response }) {
     const data = request.all()
@@ -26,9 +26,8 @@ class ChatController {
     response.res(previousMessages || [])
   }
 
-  async getUnreadMessagesCount({ request, auth, response }) {
+  async getUnreadMessages({ request, auth, response }) {
     try {
-      console.log('hello there')
       response.res(await ChatService.getUserUnreadMessagesByTopic(auth.user.id, auth.user.role))
     } catch (e) {
       throw new HttpException(e.message, 500)
