@@ -101,6 +101,8 @@ const {
   URGENCIES,
   NOTICE_TYPE_TENANT_DISCONNECTION,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
 } = require('../constants')
 
 const mapping = [
@@ -153,6 +155,7 @@ const mapping = [
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   ],
   [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
+  [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
 ]
 
 class NotificationsService {
@@ -559,6 +562,16 @@ class NotificationsService {
     })
   }
 
+  static async sendTenantUpdateTimeSlot(notice) {
+    const title = 'tenant.notification.event.visit_changed'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('tenant.notification.next.visit_changed', lang)
+      )
+    })
+  }
   //  static async sendProspectNewVisit(notice) {
   //   const title = 'prospect.notification.event.new_visit_time'
   //   return NotificationsService.sendNotes(notice, title, (data, lang) => {

@@ -14,6 +14,7 @@ const MailService = use('App/Services/MailService')
 const moment = require('moment')
 const { isArray, isEmpty, includes } = require('lodash')
 const {
+  ISO_DATE_FORMAT,
   ROLE_ADMIN,
   ROLE_LANDLORD,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -107,18 +108,15 @@ class UserController {
             throw new HttpException(ACCOUNT_NOT_VERIFIED_USER_EXIST, 400)
           }
 
-          affectedRows = await User.query()
-            .whereIn('id', ids)
-            .where('role', ROLE_LANDLORD)
-            .update(
-              {
-                activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-                is_verified: true,
-                verified_by: auth.user.id,
-                verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-              },
-              trx
-            )
+          affectedRows = await User.query().whereIn('id', ids).where('role', ROLE_LANDLORD).update(
+            {
+              activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+              is_verified: true,
+              verified_by: auth.user.id,
+              verified_date: moment().utc().format(),
+            },
+            trx
+          )
 
           await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
@@ -268,9 +266,11 @@ class UserController {
         'secondname',
         'email',
         'phone',
-        'created_at',
+        Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`),
         'company_id',
-        'activation_status'
+        'status',
+        'activation_status',
+        Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`)
       )
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
