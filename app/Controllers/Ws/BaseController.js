@@ -100,7 +100,7 @@ class BaseController {
   }
 
   async _markLastRead(taskId) {
-    await ChatService.markLastRead(this.user.id, taskId)
+    return await ChatService.markLastRead(this.user.id, taskId)
   }
 
   async _saveToChats(message, taskId = null) {

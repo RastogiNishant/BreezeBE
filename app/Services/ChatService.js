@@ -41,7 +41,7 @@ class ChatService {
         .delete()
         .transacting(trx)
 
-      await Chat.create(
+      const chat = await Chat.create(
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: userId,
@@ -50,6 +50,7 @@ class ChatService {
         trx
       )
       await trx.commit()
+      return chat
     } catch (err) {
       console.log(err)
       await trx.rollback()
