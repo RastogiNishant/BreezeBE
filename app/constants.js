@@ -872,7 +872,7 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
   WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
-  WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageAllRead',
+  WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
 }
 
 module.exports = constants

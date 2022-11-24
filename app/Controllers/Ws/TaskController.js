@@ -102,14 +102,8 @@ class TaskController extends BaseController {
   async onMarkLastRead() {
     const lastChat = await super._markLastRead(this.taskId)
     if (lastChat) {
-      const recipientTopic =
-        this.user.role === ROLE_LANDLORD
-          ? `landlord:${this.estate_user_id}`
-          : `tenant:${this.tenant_user_id}`
-
-      //broadcast taskMessageReceived event to either tenant or landlord
-      this.broadcastToTopic(recipientTopic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
-        topic: `estate:${this.estateId}brz:${this.taskId}`,
+      this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
+        topic: this.socket.topic,
         chat: {
           id: lastChat.id,
           user: lastChat.sender_id,
