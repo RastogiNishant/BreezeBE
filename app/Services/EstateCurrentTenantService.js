@@ -759,6 +759,8 @@ class EstateCurrentTenantService {
           .transacting(trx)
 
         await trx.commit()
+      } else {
+        await trx.rollback()
       }
       NoticeService.notifyTenantDisconnected(estateCurrentTenants)
 
