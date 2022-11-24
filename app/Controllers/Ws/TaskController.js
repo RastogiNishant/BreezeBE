@@ -100,7 +100,8 @@ class TaskController extends BaseController {
   }
 
   async onMarkLastRead() {
-    if (await super._markLastRead(this.taskId)) {
+    const lastChat = await super._markLastRead(this.taskId)
+    if (lastChat) {
       const recipientTopic =
         this.user.role === ROLE_LANDLORD
           ? `landlord:${this.estate_user_id}`
@@ -109,9 +110,14 @@ class TaskController extends BaseController {
       //broadcast taskMessageReceived event to either tenant or landlord
       this.broadcastToTopic(recipientTopic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
         topic: `estate:${this.estateId}brz:${this.taskId}`,
-        read_at: moment.utc(new Date()),
-        count: 0,
+        chat: {
+          id: lastChat.id,
+          user: lastChat.sender_id,
+          created_at: lastChat.created_at,
+        },
       })
+    } else {
+      this.emitError(MESSAGE_NOT_SAVED)
     }
   }
 
