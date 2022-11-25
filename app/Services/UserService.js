@@ -1070,6 +1070,8 @@ class UserService {
 
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
+      } else {
+        await trx.rollback()
       }
 
       if (user.role === ROLE_LANDLORD) {

@@ -387,6 +387,7 @@ class EstateCurrentTenantService {
         return link
       })
 
+      await trx.commit()
       return { failureCount, links }
     } catch (err) {
       console.log(err.message)
@@ -758,6 +759,8 @@ class EstateCurrentTenantService {
           .transacting(trx)
 
         await trx.commit()
+      } else {
+        await trx.rollback()
       }
       NoticeService.notifyTenantDisconnected(estateCurrentTenants)
 
