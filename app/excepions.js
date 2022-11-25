@@ -41,6 +41,7 @@ const exceptions = {
   TIME_SLOT_NOT_FOUND: 'Time slot not found',
   SHOW_ALREADY_STARTED: 'Show already started',
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
+  TOPIC_NOT_FOUND: 'Topic not found',
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
 }
@@ -80,6 +81,7 @@ const exceptionKeys = {
   INVALID_TOKEN: 'INVALID_TOKEN',
   NO_CODE_PASSED: 'NO_CODE_PASSED',
   ACCOUNT_ALREADY_VERIFIED: 'ACCOUNT_ALREADY_VERIFIED',
+  TOPIC_NOT_FOUND: 'TOPIC_NOT_FOUND',
   INVALID_TIME_RANGE: 'INVALID_TIME_RANGE',
   TIME_SLOT_CROSSING_EXISTING: 'TIME_SLOT_CROSSING_EXISTING',
   TIME_SLOT_NOT_FOUND: 'TIME_SLOT_NOT_FOUND',
