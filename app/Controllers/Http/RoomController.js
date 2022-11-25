@@ -166,11 +166,11 @@ class RoomController {
       await EstateService.changeEstateCoverInFavorite(room, images, ids[0], trx)
 
       await trx.commit()
+      response.res(true)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
     }
-    response.res(true)
   }
   /**
    *

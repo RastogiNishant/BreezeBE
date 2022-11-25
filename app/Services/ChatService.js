@@ -362,7 +362,6 @@ class ChatService {
   }
 
   static async editMessage({ message, attachments, id }) {
-    const trx = await Database.beginTransaction()
     try {
       const chat = await ChatService.getChatMessageAge(id)
       const messageAge = chat?.difference || false
@@ -375,7 +374,6 @@ class ChatService {
       }
       await ChatService.updateChatMessage({ id, message, attachments })
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e)
     }
   }
