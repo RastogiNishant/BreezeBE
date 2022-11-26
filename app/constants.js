@@ -873,6 +873,8 @@ const constants = {
 
   WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
+  WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
+  WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 }
 
 module.exports = constants

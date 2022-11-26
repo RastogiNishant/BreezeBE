@@ -869,8 +869,8 @@ class NotificationsService {
   }
 
   static async notifyTenantDisconnected(notices) {
-    const title = 'tenant.notification.event.tenant_disconnected'
-    const body = 'tenant.notification.next.tenant_disconnected'
+    const title = 'tenant.notification.event.tenant_disconnected.message'
+    const body = 'tenant.notification.next.tenant_disconnected.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
