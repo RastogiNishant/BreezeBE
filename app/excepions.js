@@ -44,6 +44,7 @@ const exceptions = {
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
   MESSAGE_NOT_SAVED: 'Error happened to save message',
+  MESSAGE_ATTACHMENT_WRONG_FORMAT: 'Attachments must be an array',
 }
 
 const exceptionKeys = {
