@@ -564,14 +564,14 @@ class TaskService {
     }
   }
 
-  static async updateUnreadMessageCount({ task_id, role }, trx = null) {
+  static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {
     const unread_role = role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD
     const task = await Task.query().where('id', task_id).first()
     if (task) {
-      if (+task.unread_role === +role) {
+      if (!task.unread_role || task.unread_role === role) {
         await Task.query()
           .where('id', task.id)
-          .update({ unread_count: 1, unread_role })
+          .update({ unread_count: 1, unread_role, first_not_read_chat_id: chat_id })
           .transacting(trx)
       } else {
         await Task.query()
@@ -581,7 +581,6 @@ class TaskService {
       }
     }
   }
-
 }
 
 module.exports = TaskService

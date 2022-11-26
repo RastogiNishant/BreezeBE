@@ -20,6 +20,7 @@ class Task extends Model {
       'status_changed_by',
       'unread_count',
       'unread_role',
+      'first_not_read_chat_id',
     ]
   }
   static get readonly() {

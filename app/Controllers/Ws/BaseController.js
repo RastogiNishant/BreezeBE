@@ -7,7 +7,9 @@ const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
 const Database = use('Database')
-
+const {
+  exceptions: { MESSAGE_NOT_SAVED },
+} = require('../../excepions')
 class BaseController {
   constructor({ socket, auth, request, channel }) {
     this.socket = socket
@@ -113,15 +115,17 @@ class BaseController {
     const trx = await Database.beginTransaction()
     try {
       let chat = await ChatService.save({ message, user_id: this.user.id, task_id: taskId }, trx)
-      await TaskService.updateUnreadMessageCount({ task_id: taskId, role: this.user.role }, trx)
+      await TaskService.updateUnreadMessageCount(
+        { task_id: taskId, role: this.user.role, chat_id: chat.id },
+        trx
+      )
       await trx.commit()
       if (chat.success === false) {
-        this.emitError(chat.message)
+        this.emitError(chat.message || MESSAGE_NOT_SAVED)
       }
       return chat
     } catch (e) {
       await trx.rollback()
-      this.emitError(message)
     }
     return null
   }

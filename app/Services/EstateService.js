@@ -1103,12 +1103,12 @@ class EstateService {
 
         r[0].tasks.map((task) => {
           task.unread_message_count =
-            +task.unread_role === +ROLE_LANDLORD ? task.unread_count || 0 : 0
+            task.unread_role === ROLE_LANDLORD ? task.unread_count || 0 : 0
         })
 
         const has_unread_message =
           (r[0].activeTasks || []).findIndex(
-            (task) => +task.unread_role === +ROLE_LANDLORD && task.unread_count
+            (task) => task.unread_role === ROLE_LANDLORD && task.unread_count
           ) !== -1
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 

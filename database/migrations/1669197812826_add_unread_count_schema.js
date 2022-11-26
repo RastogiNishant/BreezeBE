@@ -11,6 +11,7 @@ class AddUnreadCountSchema extends Schema {
       // alter table
       table.integer('unread_count').unsigned().defaultTo(0)
       table.integer('unread_role').unsigned().nullable()
+      table.integer('first_not_read_chat_id').unsigned().nullable()
       table.index('unread_role')
     })
   }

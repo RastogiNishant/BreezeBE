@@ -23,6 +23,9 @@ const {
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
 } = require('../constants')
+const {
+  exceptions: { MESSAGE_ATTACHMENT_WRONG_FORMAT },
+} = require('../excepions')
 const { min, isBoolean, isArray, groupBy } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')
@@ -53,7 +56,7 @@ class ChatService {
       await Task.query()
         .where('id', task_id)
         .where('unread_role', role)
-        .update({ unread_count: 0 })
+        .update({ unread_count: 0, first_not_read_chat_id: chat.id })
         .transacting(trx)
       await trx.commit()
       return chat
@@ -77,10 +80,7 @@ class ChatService {
     }
 
     if (message.attachments && !isArray(message.attachments)) {
-      return {
-        success: false,
-        message: 'Attachments must be an array',
-      }
+      throw new HttpException(MESSAGE_ATTACHMENT_WRONG_FORMAT)
     }
 
     data.attachments = message.attachments ? JSON.stringify(message.attachments) : null
@@ -98,7 +98,6 @@ class ChatService {
       .select('attachments')
       .select('created_at as dateTime')
       .select(Database.raw(`senders.sender`))
-      .select('_t.urgency')
       .leftJoin(
         Database.raw(`(select id,
         json_build_object('id', users.id, 'firstname', users.firstname, 
@@ -108,17 +107,7 @@ class ChatService {
         'senders.id',
         'chats.sender_id'
       )
-      .leftJoin(
-        Database.raw(`(
-        select id, urgency from tasks where id='${task_id}'
-      ) as _t`),
-        function () {
-          this.on('_t.id', 'chats.task_id').on('_t.id', task_id)
-        }
-      )
-      .where({
-        task_id: task_id,
-      })
+      .where('task_id', task_id)
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .orderBy('created_at', 'desc')

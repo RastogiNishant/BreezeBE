@@ -134,8 +134,8 @@ class TaskController extends BaseController {
       }
     }
 
-    const chat = await this._saveToChats(message, this.taskId)
-    if (chat) {
+    try {
+      const chat = await this._saveToChats(message, this.taskId)
       message.id = chat.id
       message.message = chat.text
       message.attachments = await this.getAbsoluteUrl(chat.attachments)
@@ -159,8 +159,8 @@ class TaskController extends BaseController {
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       super.onMessage(message)
-    } else {
-      this.emitError(MESSAGE_NOT_SAVED)
+    } catch (e) {
+      this.emitError(e.message || MESSAGE_NOT_SAVED)
     }
   }
 }
