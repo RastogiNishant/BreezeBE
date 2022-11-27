@@ -9,7 +9,7 @@ const UserService = use('App/Services/UserService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
-const { pick, trim } = require('lodash')
+const { pick } = require('lodash')
 
 const {
   exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },
@@ -130,7 +130,23 @@ class AccountController {
     try {
       let { email, role, password, device_token } = request.all()
       let user, authenticator, token
-      user = await UserService.login({ email, role, device_token })
+      const loginResult = await UserService.login({ email, role, device_token, auth })
+
+      if (loginResult?.isAdmin) {
+        const authenticator = auth.authenticator('jwtAdministrator')
+        const uid = Admin.getHash(email)
+        try {
+          const token = await authenticator.attempt(uid, password)
+          token.is_admin = true
+          return response.res(token)
+        } catch (e) {
+          const [message] = e.message.split(':')
+          throw new HttpException(message, 400, 0)
+        }
+      } else {
+        user = loginResult
+      }
+
       authenticator = getAuthByRole(auth, role)
 
       const uid = User.getHash(email, role)
@@ -157,6 +173,11 @@ class AccountController {
    *
    */
   async me({ auth, response, request }) {
+    if (auth.current.user instanceof Admin) {
+      let admin = JSON.parse(JSON.stringify(auth.current.user))
+      admin.is_admin = true
+      return response.res(admin)
+    }
     const { pushToken } = request.all()
     const user = await UserService.me(auth.current.user, pushToken)
     logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
