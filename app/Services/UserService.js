@@ -934,13 +934,11 @@ class UserService {
     }
 
     // Check if user is admin
-    let adminAttempt = null
     if (role === ROLE_LANDLORD) {
-      adminAttempt = await this.handleAdminLoginFromLandlord(email)
+      const adminAttempt = await this.handleAdminLoginFromLandlord(email)
       if (adminAttempt) return adminAttempt
     }
 
-    console.log({ adminAttempt })
     const user = await User.query()
       .select('*')
       .where('email', email)
