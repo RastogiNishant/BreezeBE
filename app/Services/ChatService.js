@@ -113,6 +113,7 @@ class ChatService {
       })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
 
@@ -121,7 +122,9 @@ class ChatService {
     } else {
       query.limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
     }
-
+    if (user_id) {
+      query.where('sender_id', user_id)
+    }
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
