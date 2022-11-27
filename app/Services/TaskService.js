@@ -508,7 +508,6 @@ class TaskService {
         .attachments.filter(
           (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
         )
-      console.log('removeImages=', taskAttachments)
 
       await Task.query()
         .where('id', id)
