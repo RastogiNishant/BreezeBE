@@ -28,7 +28,9 @@ class RemoveDuplicateCurrentTenantSchema extends Schema {
         )
         const oldCurrentTenantIds = oldCurrentTenants.map((ct) => ct.id)
 
-        await EstateCurrentTenant.query().whereIn('id', oldCurrentTenantIds).delete()
+        await EstateCurrentTenant.query()
+          .whereIn('id', oldCurrentTenantIds)
+          .update({ status: STATUS_DELETE })
       }
     })
   }

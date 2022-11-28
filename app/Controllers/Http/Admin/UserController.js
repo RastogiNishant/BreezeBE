@@ -14,6 +14,7 @@ const MailService = use('App/Services/MailService')
 const moment = require('moment')
 const { isArray, isEmpty, includes } = require('lodash')
 const {
+  ISO_DATE_FORMAT,
   ROLE_ADMIN,
   ROLE_LANDLORD,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -25,6 +26,8 @@ const {
   STATUS_EXPIRE,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
   DEFAULT_LANG,
+  WEBSOCKET_EVENT_USER_ACTIVATE,
+  WEBSOCKET_EVENT_USER_DEACTIVATE,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST },
@@ -102,22 +105,18 @@ class UserController {
         try {
           const users = await UserService.getLangByIds({ ids, status: STATUS_ACTIVE })
           if (users.length !== ids.length) {
-            console.log('error message here=', ACCOUNT_NOT_VERIFIED_USER_EXIST)
             throw new HttpException(ACCOUNT_NOT_VERIFIED_USER_EXIST, 400)
           }
 
-          affectedRows = await User.query()
-            .whereIn('id', ids)
-            .where('role', ROLE_LANDLORD)
-            .update(
-              {
-                activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-                is_verified: true,
-                verified_by: auth.user.id,
-                verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-              },
-              trx
-            )
+          affectedRows = await User.query().whereIn('id', ids).where('role', ROLE_LANDLORD).update(
+            {
+              activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+              is_verified: true,
+              verified_by: auth.user.id,
+              verified_date: moment().utc().format(),
+            },
+            trx
+          )
 
           await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
@@ -134,6 +133,7 @@ class UserController {
             })
           })
 
+          UserService.emitAccountEnabled(ids, true)
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -175,6 +175,7 @@ class UserController {
           })
           //send notifications
           NoticeService.landlordsDeactivated(ids, estateIds)
+          UserService.emitAccountEnabled(ids, false)
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -265,10 +266,11 @@ class UserController {
         'secondname',
         'email',
         'phone',
-        'created_at',
+        Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`),
         'company_id',
         'status',
-        'activation_status'
+        'activation_status',
+        Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`)
       )
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])

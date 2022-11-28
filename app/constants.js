@@ -873,7 +873,12 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
+<<<<<<< HEAD
   MAX_ROOM_TYPES_TO_IMPORT: 6,
+=======
+  WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
+  WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+>>>>>>> development
 }
 
 module.exports = constants

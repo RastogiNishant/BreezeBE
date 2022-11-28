@@ -41,7 +41,7 @@ class ChatService {
         .delete()
         .transacting(trx)
 
-      await Chat.create(
+      const chat = await Chat.create(
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: userId,
@@ -50,6 +50,7 @@ class ChatService {
         trx
       )
       await trx.commit()
+      return chat
     } catch (err) {
       console.log(err)
       await trx.rollback()
@@ -112,6 +113,7 @@ class ChatService {
       })
       .whereIn('type', [CHAT_TYPE_MESSAGE, CHAT_TYPE_BOT_MESSAGE])
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
+
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
 
@@ -120,7 +122,9 @@ class ChatService {
     } else {
       query.limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
     }
-
+    if (user_id) {
+      query.where('sender_id', user_id)
+    }
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
