@@ -187,12 +187,12 @@ class QueueJobService {
   }
 
   static async deactivateLandlord(deactivationId, userId) {
-    const trx = await Database.beginTransaction()
     const deactivationSchedule = await UserDeactivationSchedule.query()
       .where('id', deactivationId)
       .where('user_id', userId)
       .first()
     if (deactivationSchedule) {
+      const trx = await Database.beginTransaction()
       try {
         await User.query().where('id', userId).update(
           {
