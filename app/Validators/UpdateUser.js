@@ -17,6 +17,9 @@ const {
   LANDLORD_SIZE_LARGE,
   CONNECT_SERVICE_INDEX,
   MATCH_SERVICE_INDEX,
+  COMPANY_SIZE_SMALL,
+  COMPANY_SIZE_MID,
+  COMPANY_SIZE_LARGE,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -78,14 +81,15 @@ class UpdateUser extends Base {
           [IS_PRIVATE, IS_PUBLIC],
           getExceptionMessage('landlord_visibility', OPTION, `[${IS_PRIVATE},${IS_PUBLIC}]`)
         ),
-      lord_size: yup
-        .number()
+      company_name: yup.string().max(255, getExceptionMessage('company_name', MAXLENGTH, 255)),
+      size: yup
+        .string()
         .oneOf(
-          [LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL],
+          [COMPANY_SIZE_SMALL, COMPANY_SIZE_MID, COMPANY_SIZE_LARGE],
           getExceptionMessage(
-            'lord_size',
+            'size',
             OPTION,
-            `[${LANDLORD_SIZE_LARGE},${LANDLORD_SIZE_MID},${LANDLORD_SIZE_SMALL}]`
+            `[${COMPANY_SIZE_SMALL},${COMPANY_SIZE_MID},${COMPANY_SIZE_LARGE}]`
           )
         ),
       preferred_services: yup

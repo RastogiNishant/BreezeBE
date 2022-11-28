@@ -593,6 +593,7 @@ class MemberService {
         member.is_verified = true
         member.owner_user_id = user.id
         member.email = user.email
+        member.code = null
         updatePromises.push(member.save(trx))
       }
 

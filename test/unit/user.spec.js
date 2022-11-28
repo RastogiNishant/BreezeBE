@@ -1,4 +1,4 @@
-const Suite = use('Test/Suite')('User')
+const Suite = use('Test/Suite')('User Unit Test')
 const { test } = Suite
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')

@@ -25,10 +25,16 @@ const {
   ERROR_USER_NOT_VERIFIED_LOGIN,
   LANG_DE,
   LANG_EN,
+  COMPANY_SIZE_LARGE,
+  COMPANY_SIZE_MID,
+  COMPANY_SIZE_SMALL,
+  COMPANY_TYPE_PRIVATE,
+  PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
 } = require('../../app/constants')
 const fsPromise = require('fs/promises')
 const { test, trait, before, after } = use('Test/Suite')('User Functional')
 const User = use('App/Models/User')
+const Company = use('App/Models/Company')
 const UserService = use('App/Services/UserService')
 const AgreementService = use('App/Services/AgreementService')
 const CompanyService = use('App/Services/CompanyService')
@@ -55,12 +61,17 @@ const {
     INVALID_CONFIRM_CODE,
   },
 } = require('../../app/excepions')
-const { assert } = require('console')
 
 trait('Test/ApiClient')
 trait('Auth/Client')
 
-let prospect, testProspect, landlord, testLandlord, googleDummyUserData, googleSignupUser
+let prospect,
+  testProspect,
+  landlord,
+  testLandlord,
+  googleDummyUserData,
+  googleSignupUser,
+  testCompany
 
 const prospectDataEmail = `prospect_test_${new Date().getTime().toString()}@gmail.com`
 const firstName = `firstname_${new Date().getTime().toString()}`
@@ -129,11 +140,13 @@ before(async () => {
 
 after(async () => {
   if (testProspect) {
-    CompanyService.permanentDelete(testProspect.id)
     await UserService.removeUser(testProspect.id)
   }
   if (testLandlord) {
-    CompanyService.permanentDelete(testLandlord.id)
+    if (testCompany) {
+      await User.query().where('company_id', testCompany.id).update({ company_id: null })
+      CompanyService.permanentDelete(testCompany.id)
+    }
     await UserService.removeUser(testLandlord.id)
   }
 
@@ -267,7 +280,6 @@ test('it should successfully sign up for prospect', async ({ assert, client }) =
     })
   } catch (e) {
     assert.fail('Signup failed')
-    console.log('prospect sign up failed=', e.message)
   }
 }).timeout(0)
 
@@ -708,7 +720,7 @@ test('it should fail to update profile due to min length validation and wrong da
       notice: faker.random.alphaNumeric(1),
       prospect_visibility: faker.random.numeric(3),
       landlord_visibility: faker.random.numeric(3),
-      lord_size: faker.random.alphaNumeric(3),
+      size: faker.random.alphaNumeric(3),
       preferred_services: faker.random.alphaNumeric(3),
     })
     .end()
@@ -736,10 +748,10 @@ test('it should fail to update profile due to min length validation and wrong da
         OPTION,
         `[${IS_PRIVATE},${IS_PUBLIC}]`
       ),
-      lord_size: getExceptionMessage(
-        'lord_size',
+      size: getExceptionMessage(
+        'size',
         OPTION,
-        `[${LANDLORD_SIZE_LARGE},${LANDLORD_SIZE_MID},${LANDLORD_SIZE_SMALL}]`
+        `[${COMPANY_SIZE_SMALL},${COMPANY_SIZE_MID},${COMPANY_SIZE_LARGE}]`
       ),
       preferred_services: getExceptionMessage('preferred_services', ARRAY),
     },
@@ -753,6 +765,7 @@ test('it should fail to update profile due to max length validation', async ({ c
     .send({
       firstname: faker.random.alphaNumeric(255),
       secondname: faker.random.alphaNumeric(255),
+      company_name: faker.random.alphaNumeric(256),
       preferred_services: [faker.random.alphaNumeric(3)],
     })
     .end()
@@ -762,6 +775,7 @@ test('it should fail to update profile due to max length validation', async ({ c
     data: {
       firstname: getExceptionMessage('firstname', MAXLENGTH, 254),
       secondname: getExceptionMessage('secondname', MAXLENGTH, 254),
+      company_name: getExceptionMessage('company_name', MAXLENGTH, 255),
       'preferred_services[0]': getExceptionMessage(
         'preferred_services[0]',
         OPTION,
@@ -771,7 +785,10 @@ test('it should fail to update profile due to max length validation', async ({ c
   })
 }).timeout(0)
 
-test('it should update profile successfully without email', async ({ assert, client }) => {
+test('it should throw error for updating profile in case there is no company', async ({
+  assert,
+  client,
+}) => {
   const agreement = await AgreementService.getLatestActive()
   const term = await AgreementService.getActiveTerms()
   assert.isNotNull(agreement.id)
@@ -793,7 +810,62 @@ test('it should update profile successfully without email', async ({ assert, cli
     notice: true,
     prospect_visibility: [IS_PRIVATE],
     landlord_visibility: [IS_PRIVATE],
-    lord_size: LANDLORD_SIZE_LARGE,
+    company_name: faker.company.name(),
+    size: COMPANY_SIZE_LARGE,
+    preferred_services: [CONNECT_SERVICE_INDEX],
+  }
+
+  const response = await client
+    .put('/api/v1/users')
+    .loginVia(testLandlord, 'jwtLandlord')
+    .send(updateInfo)
+    .end()
+
+  response.assertStatus(400)
+
+  response.assertJSON({
+    status: 'error',
+    data: 'Company not exists',
+    code: 0,
+  })
+})
+
+test('it should update profile successfully without email', async ({ assert, client }) => {
+  const agreement = await AgreementService.getLatestActive()
+  const term = await AgreementService.getActiveTerms()
+  assert.isNotNull(agreement.id)
+  assert.isNotNull(term.id)
+  assert.isNotNull(testLandlord.id)
+
+  testCompany = await Company.createItem({
+    name: faker.company.name(),
+    address: faker.address.city(),
+    type: COMPANY_TYPE_PRIVATE,
+    size: COMPANY_SIZE_SMALL,
+  })
+
+  assert.isDefined(testCompany.id)
+
+  await User.query().where('id', testLandlord.id).update({
+    status: STATUS_ACTIVE,
+    agreements_id: agreement.id,
+    terms_id: term.id,
+    company_id: testCompany.id,
+  })
+
+  const updateInfo = {
+    sex: GENDER_FEMALE,
+    password: landlordData.password,
+    phone: faker.phone.number('+4891#######'),
+    birthday: faker.date.between('1990-01-01', '2000-12-30').toISOString(),
+    firstname: faker.name.firstName(),
+    secondname: faker.name.lastName(),
+    lang: 'en',
+    notice: true,
+    prospect_visibility: [IS_PRIVATE],
+    landlord_visibility: [IS_PRIVATE],
+    company_name: faker.company.name(),
+    size: COMPANY_SIZE_LARGE,
     preferred_services: [CONNECT_SERVICE_INDEX],
   }
 
@@ -808,11 +880,19 @@ test('it should update profile successfully without email', async ({ assert, cli
 
   response.assertJSONSubset({
     data: {
-      ...omit(updateInfo, ['password']),
+      ...omit(updateInfo, ['password', 'company_name', 'size']),
       status: STATUS_ACTIVE,
       landlord_visibility: updateInfo.landlord_visibility[0],
       prospect_visibility: updateInfo.prospect_visibility[0],
       preferred_services: '[1]',
+      company: {
+        ...testCompany.toJSON(),
+        name: updateInfo.company_name,
+        size: updateInfo.size,
+        updated_at: response.body.data.company.updated_at,
+      },
+      has_property: false,
+      onboarding_step: null,
     },
   })
 
@@ -830,17 +910,6 @@ test('it should change email address and status so that account has to be reveri
   const updateInfo = {
     email: faker.internet.email(),
     password: landlordData.password,
-    sex: GENDER_FEMALE,
-    phone: faker.phone.number('+4891#######'),
-    birthday: faker.date.between('1990-01-01', '2000-12-30').toISOString(),
-    firstname: faker.name.firstName(),
-    secondname: faker.name.lastName(),
-    lang: 'en',
-    notice: true,
-    prospect_visibility: [IS_PRIVATE],
-    landlord_visibility: [IS_PRIVATE],
-    lord_size: LANDLORD_SIZE_LARGE,
-    preferred_services: [CONNECT_SERVICE_INDEX],
   }
 
   const response = await client
@@ -854,9 +923,6 @@ test('it should change email address and status so that account has to be reveri
     data: {
       ...omit(updateInfo, ['password']),
       status: STATUS_EMAIL_VERIFY,
-      landlord_visibility: updateInfo.landlord_visibility[0],
-      prospect_visibility: updateInfo.prospect_visibility[0],
-      preferred_services: '[1]',
     },
   })
 

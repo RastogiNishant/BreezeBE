@@ -14,6 +14,9 @@ const SMSService = use('App/Services/SMSService')
 const Promise = require('bluebird')
 const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const DataStorage = use('DataStorage')
+const Ws = use('Ws')
+const Estate = use('App/Models/Estate')
+
 const {
   ROLE_USER,
   STATUS_ACTIVE,
@@ -36,6 +39,8 @@ const {
   ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED,
   INVITATION_LINK_RETRIEVAL_TRIES_KEY,
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME,
+  STATUS_DRAFT,
+  WEBSOCKET_EVENT_TENANT_CONNECTED,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -303,7 +308,9 @@ class EstateCurrentTenantService {
     failureCount += (links.length || 0) - (validLinks.length || 0)
     const successCount = (ids.length || 0) - failureCount
 
-    MailService.sendInvitationToOusideTenant(validLinks)
+    if (validLinks && validLinks.length) {
+      MailService.sendInvitationToOusideTenant(validLinks)
+    }
 
     return { successCount, failureCount }
   }
@@ -386,7 +393,7 @@ class EstateCurrentTenantService {
         link.code = await InvitationLinkCode.create(link.id, link.shortLink, trx)
         return link
       })
-
+      await trx.commit()
       return { failureCount, links }
     } catch (err) {
       console.log(err.message)
@@ -644,6 +651,8 @@ class EstateCurrentTenantService {
     if (currentTenant.estate_id) {
       await require('./MatchService').handleFinalMatch(currentTenant.estate_id, user, true, trx)
     }
+
+    this.emitConnected({ estate_id, user_id: user.id })
   }
 
   static async getAllTenant(id) {
@@ -761,6 +770,8 @@ class EstateCurrentTenantService {
           .transacting(trx)
 
         await trx.commit()
+      } else {
+        await trx.rollback()
       }
       NoticeService.notifyTenantDisconnected(estateCurrentTenants)
 
@@ -798,6 +809,21 @@ class EstateCurrentTenantService {
         expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
       })
       throw new AppException('Code did not match.')
+    }
+  }
+
+  static async emitConnected({ estate_id, user_id }) {
+    const estate = await Estate.query()
+      .where('id', estate_id)
+      .whereIn('status', [STATUS_DRAFT])
+      .where('letting_type', LETTING_TYPE_LET)
+      .first()
+
+    if (estate) {
+      const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${estate.user_id}`)
+      if (topic) {
+        topic.broadcast(WEBSOCKET_EVENT_TENANT_CONNECTED, { estate_id, user_id })
+      }
     }
   }
 }
