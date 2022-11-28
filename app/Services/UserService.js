@@ -32,6 +32,7 @@ const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const Ws = use('Ws')
+const Admin = use('App/Models/Admin')
 
 const {
   STATUS_EMAIL_VERIFY,
@@ -938,6 +939,13 @@ class UserService {
     if (role) {
       roles = [role]
     }
+
+    // Check if user is admin
+    if (role === ROLE_LANDLORD) {
+      const adminAttempt = await this.handleAdminLoginFromLandlord(email)
+      if (adminAttempt) return adminAttempt
+    }
+
     const user = await User.query()
       .select('*')
       .where('email', email)
@@ -971,6 +979,22 @@ class UserService {
     return user
   }
 
+  static async handleAdminLoginFromLandlord(email, auth) {
+    const adminUser = await Admin.query()
+      .select('admins.*')
+      .select(Database.raw(`${ROLE_LANDLORD} as role`))
+      .select(Database.raw(`true as is_admin`))
+      .select(Database.raw(`${STATUS_ACTIVE} as status`))
+      .select(Database.raw(`true as real_admin`))
+      .where('email', email)
+      .first()
+
+    if (adminUser) {
+      return { user: adminUser, isAdmin: true }
+    }
+
+    return null
+  }
   /**
    *
    * @param {*} id
