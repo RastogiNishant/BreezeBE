@@ -4,7 +4,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { isArray, isEmpty, uniq, pick, trim, unset } = require('lodash')
+const { isArray, isEmpty, uniq, pick, trim, omit } = require('lodash')
 const Promise = require('bluebird')
 const fs = require('fs')
 const Env = use('Env')
@@ -922,6 +922,7 @@ class UserService {
     user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
     if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
       const company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+      user.company = company
       if (company.name && company.size && company.type) {
         user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
       }
@@ -1066,13 +1067,37 @@ class UserService {
         if (data.email) {
           await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
         }
-        await user.updateItemWithTrx(data, trx)
+
+        let userData = omit(data, ['company_name', 'size'])
+        if (Object.keys(userData).length) {
+          await user.updateItemWithTrx(userData, trx)
+        }
         user = user.toJSON({ isOwner: true })
 
         await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
-        user = await this.setOnboardingStep(user)
-        await trx.commit()
 
+        let needCompanyUpdate = false
+        let companyData = {}
+        if (data && data.company_name) {
+          needCompanyUpdate = true
+          companyData = {
+            name: data.company_name,
+          }
+        }
+
+        if (data && data.size) {
+          needCompanyUpdate = true
+          companyData = {
+            ...companyData,
+            size: data.size,
+          }
+        }
+
+        if (needCompanyUpdate) {
+          await require('./CompanyService').updateCompany(user.id, companyData, trx)
+        }
+        await trx.commit()
+        user = await this.setOnboardingStep(user)
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
       }
@@ -1085,7 +1110,7 @@ class UserService {
       return user
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 

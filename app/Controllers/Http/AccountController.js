@@ -228,7 +228,7 @@ class AccountController {
       const user = await UserService.updateProfile(request, auth.user)
       response.res(user)
     } catch (e) {
-      throw new HttpException(e.message, 501)
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
