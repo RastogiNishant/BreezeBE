@@ -393,7 +393,7 @@ class EstateCurrentTenantService {
         link.code = await InvitationLinkCode.create(link.id, link.shortLink, trx)
         return link
       })
-
+      await trx.commit()
       return { failureCount, links }
     } catch (err) {
       console.log(err.message)
