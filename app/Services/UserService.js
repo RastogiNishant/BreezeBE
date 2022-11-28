@@ -843,7 +843,7 @@ class UserService {
   }
 
   static async signUp(
-    { email, firstname, from_web, source_estate_id = null, data1, data2, ...userData },
+    { email, firstname, from_web, source_estate_id = null, data1, data2, ip, ...userData },
     trx = null
   ) {
     // Manages the outside tenant invitation flow
@@ -883,6 +883,7 @@ class UserService {
           firstname,
           status: STATUS_EMAIL_VERIFY,
           source_estate_id,
+          ip,
         },
         trx
       )
@@ -890,7 +891,7 @@ class UserService {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
-      await UserService.sendConfirmEmail(user, from_web)
+      //await UserService.sendConfirmEmail(user, from_web)
       return user
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {

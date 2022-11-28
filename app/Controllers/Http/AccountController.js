@@ -33,9 +33,9 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, from_web, data1, data2, ...userData } = request.all()
-
+    const ip = request.ip()
     try {
-      const user = await UserService.signUp({ email, from_web, data1, data2, ...userData })
+      const user = await UserService.signUp({ email, from_web, data1, data2, ip, ...userData })
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
