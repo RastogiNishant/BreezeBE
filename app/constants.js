@@ -428,7 +428,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
-  NOTICE_TYPE_LANDLORD_UPDATE_SLOT:'notification_landlord_update_slot',
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -873,12 +873,9 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
-<<<<<<< HEAD
   MAX_ROOM_TYPES_TO_IMPORT: 6,
-=======
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
->>>>>>> development
 }
 
 module.exports = constants
