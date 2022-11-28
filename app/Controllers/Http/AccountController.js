@@ -130,7 +130,23 @@ class AccountController {
     try {
       let { email, role, password, device_token } = request.all()
       let user, authenticator, token
-      user = await UserService.login({ email, role, device_token })
+      const loginResult = await UserService.login({ email, role, device_token })
+      //TODO: implement test cases for admin login
+      if (loginResult?.isAdmin) {
+        const authenticator = auth.authenticator('jwtAdministrator')
+        const uid = Admin.getHash(email)
+        try {
+          const token = await authenticator.attempt(uid, password)
+          token.is_admin = true
+          return response.res(token)
+        } catch (e) {
+          const [message] = e.message.split(':')
+          throw new HttpException(message, 400, 0)
+        }
+      } else {
+        user = loginResult
+      }
+
       authenticator = getAuthByRole(auth, role)
 
       const uid = User.getHash(email, role)
