@@ -33,7 +33,7 @@ class ChatController {
 
   async getUnreadMessages({ request, auth, response }) {
     try {
-      response.res(await ChatService.getUserUnreadMessagesByTopic(auth.user.id, auth.user.role))
+      response.res(await ChatService.getUserUnreadMessages(auth.user.id, auth.user.role))
     } catch (e) {
       throw new HttpException(e.message, 500)
     }

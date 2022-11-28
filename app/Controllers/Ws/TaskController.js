@@ -31,30 +31,6 @@ class TaskController extends BaseController {
     this.estate_user_id = request.estate_user_id
   }
 
-  async onGetPreviousMessages(data) {
-    let lastId = 0
-
-    if (data && data.lastId) {
-      lastId = data.lastId
-    }
-    let previousMessages = await ChatService.getPreviousMessages({
-      task_id: this.taskId,
-      lastId,
-      user_id: this.user.id,
-    })
-    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
-    if (this.topic) {
-      this.topic.emitTo(
-        'previousMessages',
-        {
-          messages: previousMessages,
-          topic: this.socket.topic,
-        },
-        [this.socket.id]
-      )
-    }
-  }
-
   async onEditMessage({ message, attachments, id }) {
     try {
       let messageAge = await ChatService.getChatMessageAge(id)
