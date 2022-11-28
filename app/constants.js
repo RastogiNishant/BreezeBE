@@ -338,6 +338,7 @@ const constants = {
   COMPANY_TYPE_MUNICIPAL_HOUSING: 'numHost',
   COMPANY_TYPE_HOUSING_COOPERATIVE: 'hostCoop',
   COMPANY_TYPE_LISTED_HOUSING: 'listHost',
+  COMPANY_TYPE_BROKER: 'broker',
 
   COMPANY_SIZE_SMALL: 'sm',
   COMPANY_SIZE_MID: 'md',
@@ -427,7 +428,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
-  NOTICE_TYPE_LANDLORD_UPDATE_SLOT:'notification_landlord_update_slot',
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
