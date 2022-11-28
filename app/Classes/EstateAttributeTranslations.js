@@ -6,6 +6,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
 
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -242,6 +243,7 @@ class EstateAttributeTranslations {
       Room: PROPERTY_TYPE_ROOM,
       House: PROPERTY_TYPE_HOUSE,
       Site: PROPERTY_TYPE_SITE,
+      Office: PROPERTY_TYPE_OFFICE,
     },
     apt_type: {
       flat: APARTMENT_TYPE_FLAT,
@@ -471,12 +473,14 @@ class EstateAttributeTranslations {
           'property.attribute.PROPERTY_TYPE.Room.message',
           'property.attribute.PROPERTY_TYPE.House.message',
           'property.attribute.PROPERTY_TYPE.Site.message',
+          'property.attribute.PROPERTY_TYPE.Office.message',
         ],
         values: [
           PROPERTY_TYPE_APARTMENT,
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ],
       },
       apt_type: {
