@@ -18,6 +18,7 @@ const {
   COMPANY_TYPE_MUNICIPAL_HOUSING,
   COMPANY_TYPE_HOUSING_COOPERATIVE,
   COMPANY_TYPE_LISTED_HOUSING,
+  COMPANY_TYPE_BROKER,
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
@@ -219,6 +220,7 @@ class CompanyService {
           COMPANY_TYPE_MUNICIPAL_HOUSING,
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
+          COMPANY_TYPE_BROKER,
         ])
         .required(),
       email: yup.string().email().lowercase().max(255).required(),
