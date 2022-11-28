@@ -95,6 +95,8 @@ const {
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
   LANDLORD_ACTOR,
+  MATCH_STATUS_KNOCK,
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -225,7 +227,7 @@ class NoticeService {
   /**
    * On estate expiration, send to landlord
    */
-  static async landLandlordEstateExpired(estateIds) {
+  static async landlordEstateExpired(estateIds) {
     if (isEmpty(estateIds)) {
       return false
     }
@@ -244,6 +246,32 @@ class NoticeService {
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendEstateExpired(notices)
+
+    await NoticeService.landlordEstateExpiredToKnockedProspect(data)
+  }
+
+  static async landlordEstateExpiredToKnockedProspect(data) {
+    let notices = []
+    data.map(async ({ address, id, cover }) => {
+      const knocks =
+        (await require('./MatchService').getEstatesByStatus({
+          estate_id,
+          status: MATCH_STATUS_KNOCK,
+        })) || []
+      knocks.map((match) => {
+        notices.push({
+          user_id: match.user_id,
+          type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+          data: { estate_id: id, estate_address: address },
+          image: File.getPublicUrl(cover),
+        })
+      })
+    })
+
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendEstateExpiredToKnockedProspect(notices)
+    }
   }
 
   /**

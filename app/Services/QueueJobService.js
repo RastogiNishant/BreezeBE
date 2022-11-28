@@ -74,7 +74,7 @@ class QueueJobService {
         .delete()
         .transacting(trx)
 
-      await NoticeService.landLandlordEstateExpired(estateIds)
+      await NoticeService.landlordEstateExpired(estateIds)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
