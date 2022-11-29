@@ -19,7 +19,6 @@ class ChatController {
         await ChatService.getPreviousMessages({
           task_id: data.task_id,
           lastId,
-          user_id: auth.user.id,
           page: data.page,
           limit: data.limit,
         })

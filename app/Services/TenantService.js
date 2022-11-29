@@ -353,7 +353,7 @@ class TenantService {
       .first()
   }
 
-  static async updateSelectedAdultsCount(user, adultsCount, trx) {
+  static async updateSelectedAdultsCount(user, adultsCount, trx = null) {
     const tenant = await getOrCreateTenant(user)
     tenant.selected_adults_count = adultsCount
     return tenant.save(trx)

@@ -18,6 +18,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   ESTATE_VALID_ADDRESS_LABEL,
   ESTATE_INVALID_ADDRESS_LABEL,
   ESTATE_ALL_ADDRESS_LABEL,
@@ -66,6 +67,7 @@ class EstateFilters extends Filter {
     room: PROPERTY_TYPE_ROOM,
     house: PROPERTY_TYPE_HOUSE,
     site: PROPERTY_TYPE_SITE,
+    office: PROPERTY_TYPE_OFFICE,
   }
   static possibleStringParams = [
     'address',

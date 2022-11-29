@@ -50,6 +50,8 @@ const {
   URGENCY_SUPER,
   TENANT_INVITATION_EXPIRATION_DATE,
   ROLE_LANDLORD,
+  TASK_STATUS_RESOLVED,
+  TASK_STATUS_UNRESOLVED,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -901,7 +903,7 @@ class EstateService {
     }
   }
 
-  static async lanlordTenantDetailInfo(user_id, estate_id, tenant_id) {
+  static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
     return Estate.query()
       .select(['estates.*', '_m.share', '_m.status'])
       .with('user')
@@ -1091,6 +1093,11 @@ class EstateService {
         r[0].activeTasks = (r[0].tasks || []).filter(
           (task) => task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_INPROGRESS
         )
+
+        const closed_tasks_count =
+          (r[0].tasks || []).filter(
+            (task) => task.status === TASK_STATUS_RESOLVED || task.status === TASK_STATUS_UNRESOLVED
+          ).length || 0
         const in_progress_task =
           countBy(r[0].tasks || [], (task) => task.status === TASK_STATUS_INPROGRESS).true || 0
 
@@ -1123,6 +1130,7 @@ class EstateService {
           taskSummary: {
             taskCount,
             activeTaskCount: r[0].activeTasks.length || 0,
+            closed_tasks_count,
             mostUrgency: mostUrgency?.urgency || null,
             mostUrgencyCount: mostUrgency
               ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0

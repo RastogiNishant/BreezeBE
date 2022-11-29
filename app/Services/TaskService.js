@@ -505,24 +505,52 @@ class TaskService {
   }
 
   static async removeImages({ id, user, uri }) {
+    uri = uri.split(',')
+
     const task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const attachments = task
-      .toJSON()
-      .attachments.filter(
-        (attachment) =>
-          !(
-            attachment.user_id === user.id &&
-            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
-          )
-      )
 
-    return await Task.query()
-      .where('id', id)
-      .update({
-        ...task.toJSON(),
-        attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
-      })
+    const trx = await Database.beginTransaction()
+    try {
+      const taskAttachments = task
+        .toJSON()
+        .attachments.filter(
+          (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
+        )
+
+      await Task.query()
+        .where('id', id)
+        .update({
+          ...task.toJSON(),
+          attachments:
+            taskAttachments && taskAttachments.length ? JSON.stringify(taskAttachments) : null,
+        })
+        .transacting(trx)
+
+      const chat = await Chat.query()
+        .select('*')
+        .where('task_id', task.id)
+        .where('sender_id', user.id)
+        .where(Database.raw(`attachments::jsonb \\?| array['${uri.join(',')}']`))
+        .first()
+
+      if (chat) {
+        const attachments = chat.attachments.filter((attachment) => !uri.includes(attachment))
+        await ChatService.updateChatMessage(
+          {
+            id: chat.id,
+            message: chat.message,
+            attachments: attachments.length ? attachments : null,
+          },
+          trx
+        )
+      }
+
+      await trx.commit()
+    } catch (e) {
+      console.log('Remove image error=', e.message)
+      await trx.rollback()
+    }
   }
 
   static async getItemWithAbsoluteUrl(item) {

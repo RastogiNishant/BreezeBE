@@ -281,6 +281,21 @@ class NotificationsService {
   }
 
   /**
+   * Send notification to knocked prospect about estate expired
+   */
+
+  static async sendEstateExpiredToKnockedProspect(notices) {
+    const title = 'prospect.notification.event.knocked_property_expired'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      const address = capitalize(get(data, 'estate_address', ''))
+      return (
+        address + ' \n' + `${l.get('prospect.notification.next.knocked_property_expired', lang)}`
+      )
+    })
+  }
+
+  /**
    * Send Notification about estate expired soon
    */
   static async sendProspectPropertyDeactivated(notices) {
