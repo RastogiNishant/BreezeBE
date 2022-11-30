@@ -843,7 +843,17 @@ class UserService {
   }
 
   static async signUp(
-    { email, firstname, from_web, source_estate_id = null, data1, data2, ip, ...userData },
+    {
+      email,
+      firstname,
+      from_web,
+      source_estate_id = null,
+      data1,
+      data2,
+      ip,
+      ip_based_info,
+      ...userData
+    },
     trx = null
   ) {
     // Manages the outside tenant invitation flow
@@ -874,7 +884,10 @@ class UserService {
     if (availableUser) {
       throw new HttpException(USER_UNIQUE, 400)
     }
-
+    if (isEmpty(ip_based_info.country_code)) {
+      const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
+      ip_based_info = await getIpBasedInfo(ip)
+    }
     try {
       const { user } = await this.createUser(
         {
@@ -884,6 +897,7 @@ class UserService {
           status: STATUS_EMAIL_VERIFY,
           source_estate_id,
           ip,
+          ip_based_info,
         },
         trx
       )
