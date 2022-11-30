@@ -97,6 +97,7 @@ const {
   LANDLORD_ACTOR,
   MATCH_STATUS_KNOCK,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -1182,6 +1183,30 @@ class NoticeService {
     })
     await NoticeService.insertNotices(notices)
     await NotificationsService.notifyTenantDisconnected(notices)
+  }
+
+  static async notifyTenantTaskResolved(tenants = []) {
+    if (!tenants || !tenants.length) {
+      return
+    }
+
+    const estateIds = tenants.map(({ estate_id }) => estate_id)
+    const estates = (await Estate.query().whereIn('id', estateIds).fetch()).rows
+
+    const notices = tenants.map(({ estate_id, user_id }) => {
+      const estate = estates.find(({ id }) => id === estate_id)
+      return {
+        user_id,
+        type: NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
+        data: {
+          estate_id,
+          estate_address: estate.address || ``,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyTenantTaskResolved(notices)
   }
 }
 

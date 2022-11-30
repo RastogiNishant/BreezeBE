@@ -44,6 +44,7 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
+const NoticeService = require('./NoticeService')
 
 class TaskService {
   static async create(request, user, trx) {
@@ -237,8 +238,24 @@ class TaskService {
     const taskRow = await query.firstOrFail()
 
     task.status_changed_by = user.role
-    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
-    return await taskRow.updateItem({ ...task })
+    let taskResult = null
+    if (trx) {
+      taskResult = await taskRow.updateItemWithTrx({ ...task }, trx)
+    } else {
+      taskResult = await taskRow.updateItem({ ...task })
+    }
+
+    // send notification to tenant to inform task has been resolved
+    if (user.role === ROLE_LANDLORD && task.status === TASK_STATUS_RESOLVED) {
+      NoticeService.notifyTenantTaskResolved([
+        {
+          user_id: taskRow.tenant_id,
+          estate_id: taskRow.estate_id,
+        },
+      ])
+    }
+
+    return taskResult
   }
 
   /**

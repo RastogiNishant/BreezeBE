@@ -888,6 +888,12 @@ class NotificationsService {
     const body = 'tenant.notification.next.tenant_disconnected.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
+
+  static async notifyTenantTaskResolved(notices) {
+    const title = 'prospect.notification.event.task_resolved'
+    const body = 'prospect.notification.next.task_resolved'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
 }
 
 module.exports = NotificationsService

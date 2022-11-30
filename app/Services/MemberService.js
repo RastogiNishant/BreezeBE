@@ -683,7 +683,7 @@ class MemberService {
    *
    */
   static async handleOutdatedIncomeProofs() {
-    const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)

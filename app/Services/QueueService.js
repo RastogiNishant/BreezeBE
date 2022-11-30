@@ -116,7 +116,7 @@ class QueueService {
   /**
    *
    */
-  static async sendEveryEveryMonth12AM() {
+  static async sendEveryMonth12AM() {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
@@ -141,7 +141,7 @@ class QueueService {
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
         case SCHEDULED_MONTHLY_JOB:
-          return QueueService.sendEveryEveryMonth12AM()
+          return QueueService.sendEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
