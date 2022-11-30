@@ -134,6 +134,7 @@ class TaskController extends BaseController {
           : `landlord:${this.estate_user_id}`
 
       //broadcast taskMessageReceived event to either tenant or landlord
+      //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
       this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
         topic: this.socket.topic,
         urgency: task?.urgency,
