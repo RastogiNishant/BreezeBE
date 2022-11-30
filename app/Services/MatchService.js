@@ -443,7 +443,7 @@ class MatchService {
       return [...estateIds, estate.id]
     }, [])
     estates = await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
-    const matched = estates
+    const matches = estates
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
@@ -466,11 +466,19 @@ class MatchService {
       .delete()
 
     // Create new matches
-    if (!isEmpty(matched)) {
-      const insertQuery = Database.query().into('matches').insert(matched).toString()
+    if (!isEmpty(matches)) {
+      const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
+
+      const superMatches = matches.filter(({ percent }) => percent >= 90)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(superMatches)
+      }
+
+      //send notification to prospect who have matches
+      await NoticeService.prospectMatches(matches)
     }
   }
 
@@ -497,7 +505,7 @@ class MatchService {
       .whereIn('tenants.user_id', tenantUserIds)
       .fetch()
     // Calculate matches for tenants to current estate
-    const matched = tenants
+    const matches = tenants
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(v, estate)
@@ -519,15 +527,18 @@ class MatchService {
       .delete()
 
     // Create new matches
-    if (!isEmpty(matched)) {
-      const insertQuery = Database.query().into('matches').insert(matched).toString()
+    if (!isEmpty(matches)) {
+      const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
-      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      const superMatches = matches.filter(({ percent }) => percent >= 90)
       if (superMatches.length > 0) {
-        await NoticeService.prospectSuperMatch(estateId, superMatches)
+        await NoticeService.prospectSuperMatch(superMatches, estateId)
       }
+
+      //send notification to prospect who have matches
+      await NoticeService.prospectMatches(matches, estateId)
     }
   }
 

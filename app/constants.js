@@ -377,6 +377,15 @@ const constants = {
     'fitted_kitchen',
   ],
 
+  ESTATE_NOTIFICATION_FIELDS: [
+    'id',
+    'address',
+    'cover',
+    'rooms_number',
+    'area',
+    'floor',
+    'number_floors',
+  ],
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
@@ -478,6 +487,8 @@ const constants = {
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID: 51, // landlord updated timeslot
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID: 52,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
+  NOTICE_TYPE_PROSPECT_MATCH_ID: 54,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED: 55,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',

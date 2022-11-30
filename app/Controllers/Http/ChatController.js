@@ -27,7 +27,6 @@ class ChatController {
 
   async getUnreadMessagesCount({ request, auth, response }) {
     try {
-      console.log('hello there')
       response.res(await ChatService.getUserUnreadMessagesByTopic(auth.user.id, auth.user.role))
     } catch (e) {
       throw new HttpException(e.message, 500)

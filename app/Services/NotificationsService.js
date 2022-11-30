@@ -661,10 +661,25 @@ class NotificationsService {
   /**
    *
    */
-  static async sendProspectHasSuperMatch(notice) {
+  static async sendProspectHasSuperMatch(notices) {
     const title = 'prospect.notification.event.best_match'
 
-    return NotificationsService.sendNotes([notice], title, (data, lang) => {
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.best_match.message', lang)
+      )
+    })
+  }
+
+  /**
+   *
+   */
+  static async prospectMatches(notices) {
+    const title = 'prospect.notification.event.best_match'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
@@ -892,6 +907,12 @@ class NotificationsService {
   static async notifyTenantTaskResolved(notices) {
     const title = 'prospect.notification.event.task_resolved'
     const body = 'prospect.notification.next.task_resolved'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendProspectDeactivated(notices) {
+    const title = 'prospect.notification.event.profile_deactivated'
+    const body = 'prospect.notification.next.profile_deactivated'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
