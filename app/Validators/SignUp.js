@@ -21,7 +21,7 @@ const {
 
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH },
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
 } = require('../excepions')
 
 class SignUp extends Base {
@@ -122,6 +122,20 @@ class SignUp extends Base {
       from_web: yup.boolean().typeError(getExceptionMessage('from_web', BOOLEAN)),
       data1: yup.string(),
       data2: yup.string(),
+      ip: yup
+        .string()
+        .min(7, MINLENGTH)
+        .max(45, MAXLENGTH)
+        //just crude validation for now just numbers and : and .
+        .matches(/^[0-9a-f:.]+$/, getExceptionMessage('Ip Address', INVALID)),
+      ip_based_info: yup.object().shape({
+        country_code: yup.string(),
+        country_name: yup.string(),
+        city: yup.string().nullable(),
+        postal: yup.string().nullable(),
+        latitude: yup.string().nullable(),
+        longitude: yup.string().nullable(),
+      }),
     })
 }
 
