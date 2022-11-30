@@ -16,12 +16,7 @@ class OpenImmoReader {
   }
 
   process() {
-    /*
-    for (let count = 0; count < this.json['xsd:schema']['xsd:element'].length; count++) {
-      console.log(this.json['xsd:schema']['xsd:element'][count]['$'])
-    }*/
-    console.log(this.json['xsd:schema']['xsd:element'][3]['xsd:annotation'])
-    return this.json
+    return this.json.openimmo.user_defined_simplefield
   }
 }
 
