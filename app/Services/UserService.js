@@ -908,7 +908,7 @@ class UserService {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
-      //await UserService.sendConfirmEmail(user, from_web)
+      await UserService.sendConfirmEmail(user, from_web)
       return user
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
