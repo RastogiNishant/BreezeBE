@@ -427,7 +427,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD: 'notification_prospect_followup_landlord',
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
-  NOTICE_TYPE_LANDLORD_UPDATE_SLOT:'notification_landlord_update_slot',
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -873,6 +873,8 @@ const constants = {
 
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 }
 
 module.exports = constants

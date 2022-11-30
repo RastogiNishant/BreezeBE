@@ -32,6 +32,7 @@ const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const Ws = use('Ws')
+const { getIpBasedInfo } = use('App/Libs/getIpBasedInfo')
 
 const {
   STATUS_EMAIL_VERIFY,
@@ -56,6 +57,7 @@ const {
   STATUS_DELETE,
   WRONG_INVITATION_LINK,
   WEBSOCKET_EVENT_USER_ACTIVATE,
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN,
 } = require('../constants')
 
 const {
@@ -981,9 +983,17 @@ class UserService {
     if (device_token) {
       await User.query().where({ id: user.id }).update({ device_token })
     }
-
     Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
     return user
+  }
+
+  static async setIpBasedInfo(user, ip) {
+    if (!user.ip_based_info && SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN) {
+      const ip_based_info = await getIpBasedInfo(ip)
+      if (ip_based_info) {
+        await User.query().where('id', user.id).update({ ip, ip_based_info })
+      }
+    }
   }
 
   /**

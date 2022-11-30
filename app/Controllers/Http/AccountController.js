@@ -24,8 +24,11 @@ const {
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
+const { getIpBasedInfo } = require('../../Libs/getIpBasedInfo')
+const { setIpBasedInfo } = require('../../Services/UserService')
 
 class AccountController {
   /**
@@ -146,9 +149,12 @@ class AccountController {
         token = await authenticator.attempt(uid, password)
       } catch (e) {
         const [message] = e.message.split(':')
+        //FIXME: message should be json here to be consistent with being a backend
+        //that provides JSON RESTful API
         throw new HttpException(message, 400, 0)
       }
-
+      const ip = request.ip()
+      await UserService.setIpBasedInfo(user, ip)
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_EMAIL,
         role,
