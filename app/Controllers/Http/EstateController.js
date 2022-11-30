@@ -63,6 +63,7 @@ const INVITE_CODE_STRING_LENGTH = 8
 const {
   exceptions: { ESTATE_NOT_EXISTS },
 } = require('../../excepions')
+const OpenImmoReader = require('../../Classes/OpenImmoReader')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -979,6 +980,17 @@ class EstateController {
       .update({ letting_type: letting_type })
 
     response.res(true)
+  }
+
+  async importOpenimmo({ request, response, auth }) {
+    const importFile = request.file('file')
+    //todo: move validation to middleware
+    if (importFile.headers['content-type'] !== 'application/xml') {
+      throw new HttpException('Invalid file')
+    }
+    const reader = new OpenImmoReader(importFile.tmpPath)
+    const result = reader.process()
+    response.res(result)
   }
 }
 
