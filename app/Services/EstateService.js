@@ -49,6 +49,7 @@ const {
   TASK_STATUS_NEW,
   URGENCY_SUPER,
   TENANT_INVITATION_EXPIRATION_DATE,
+  ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
 } = require('../constants')
@@ -1106,9 +1107,16 @@ class EstateService {
 
         const mostUpdated =
           r[0].activeTasks && r[0].activeTasks.length ? r[0].activeTasks[0].updated_at : null
-        const has_unread_message =
-          (r[0].activeTasks || []).findIndex((task) => task.unread_message_count) !== -1
 
+        r[0].tasks.map((task) => {
+          task.unread_message_count =
+            task.unread_role === ROLE_LANDLORD ? task.unread_count || 0 : 0
+        })
+
+        const has_unread_message =
+          (r[0].activeTasks || []).findIndex(
+            (task) => task.unread_role === ROLE_LANDLORD && task.unread_count
+          ) !== -1
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 
         const taskCount = (r[0].tasks || []).length || 0
@@ -1154,8 +1162,16 @@ class EstateService {
         await Estate.query()
           .select(Database.raw(` DISTINCT("estates"."id")`))
           .select(Database.raw(` count( DISTINCT("_ut"."id" )) as "urgency_count"`))
+          .select(Database.raw(` count( DISTINCT("_t"."id")) as unread_count`))
           .select(Database.raw(` count( DISTINCT("_tsi"."id")) as in_progress_count`))
           .select('_ect.user_id', '_ect.code', '_ect.invite_sent_at')
+          .leftJoin({ _t: 'tasks' }, function () {
+            this.on('estates.id', '_t.estate_id')
+              .on('_t.unread_role', ROLE_LANDLORD)
+              .on(Database.raw(`_t.unread_count > 0`))
+              .on(Database.raw(`_t.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`))
+              .onIn('_t.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+          })
           .leftJoin({ _ut: 'tasks' }, function () {
             this.on('estates.id', '_ut.estate_id')
               .on('_ut.urgency', URGENCY_SUPER)
@@ -1179,10 +1195,12 @@ class EstateService {
     let in_progress_count = 0
     let not_connected_count = 0
     let pending_count = 0
+    let unread_count = 0
 
     quickActions.map((estate) => {
       urgency_count += parseInt(estate.urgency_count) || 0
       in_progress_count += parseInt(estate.in_progress_count) || 0
+      unread_count += parseInt(estate.unread_count) || 0
 
       if (!estate.user_id) {
         if (
@@ -1202,6 +1220,7 @@ class EstateService {
       in_progress_count,
       not_connected_count,
       pending_count,
+      unread_count,
     }
   }
 
