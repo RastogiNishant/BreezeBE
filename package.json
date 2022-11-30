@@ -63,7 +63,6 @@
 		"bluebird": "^3.7.2",
 		"body-parser-xml": "^2.0.3",
 		"bullmq": "^1.15.1",
-		"check-ip": "^1.1.1",
 		"crypto": "^1.0.1",
 		"csv-reader": "^1.0.7",
 		"debug": "^4.1.1",
