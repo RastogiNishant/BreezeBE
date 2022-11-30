@@ -873,6 +873,8 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
+  WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
+  WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 

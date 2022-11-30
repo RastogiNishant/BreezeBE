@@ -7,8 +7,12 @@ const {
   TASK_STATUS_NEW,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
 } = require('../../constants')
 
+const {
+  exceptions: { MESSAGE_NOT_SAVED },
+} = require('../../excepions')
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
@@ -16,6 +20,7 @@ const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
+const moment = require('moment')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -95,35 +100,23 @@ class TaskController extends BaseController {
 
   async onMarkLastRead() {
     const lastChat = await super._markLastRead(this.taskId)
-    this.broadcastToTopic(this.socket.topic, 'taskMessageRead', {
-      topic: this.socket.topic,
-      chat: {
-        id: lastChat.id,
-        user: lastChat.sender_id,
-        created_at: lastChat.created_at,
-      },
-    })
+    if (lastChat) {
+      this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
+        topic: this.socket.topic,
+        chat: {
+          id: lastChat.id,
+          user: lastChat.sender_id,
+          created_at: lastChat.created_at,
+        },
+      })
+    } else {
+      this.emitError(MESSAGE_NOT_SAVED)
+    }
   }
 
   async onMessage(message) {
     //FIXME: make slim controller
     try {
-      const task = await TaskService.getTaskById({ id: this.taskId, user: this.user })
-      if (this.user.role === ROLE_LANDLORD) {
-        //we check whether this is in progress
-
-        if ([TASK_STATUS_NEW, TASK_STATUS_RESOLVED, TASK_STATUS_UNRESOLVED].includes(task.status)) {
-          //if in progress make it TASK_STATUS_NEW
-          await Task.query().where('id', this.taskId).update({ status: TASK_STATUS_INPROGRESS })
-          if (this.topic) {
-            //Broadcast to those listening to this channel...
-            this.topic.broadcast('taskStatusUpdated', {
-              status: TASK_STATUS_INPROGRESS,
-              topic: this.socket.topic,
-            })
-          }
-        }
-      }
       const chat = await this._saveToChats(message, this.taskId)
       message.id = chat.id
       message.message = chat.text
@@ -141,6 +134,7 @@ class TaskController extends BaseController {
           : `landlord:${this.estate_user_id}`
 
       //broadcast taskMessageReceived event to either tenant or landlord
+      //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
       this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
         topic: this.socket.topic,
         urgency: task?.urgency,
@@ -148,8 +142,8 @@ class TaskController extends BaseController {
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       super.onMessage(message)
-    } catch (err) {
-      this.emitError(err.message)
+    } catch (e) {
+      this.emitError(e.message || MESSAGE_NOT_SAVED)
     }
   }
 }
