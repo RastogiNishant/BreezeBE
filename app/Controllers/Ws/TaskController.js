@@ -141,7 +141,7 @@ class TaskController extends BaseController {
         urgency: task?.urgency,
       })
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
-      await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+      NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       super.onMessage(message)
     } catch (e) {
       console.log('onMessage error=', e.message)
