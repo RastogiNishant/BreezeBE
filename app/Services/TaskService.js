@@ -560,36 +560,36 @@ class TaskService {
 
   static async getItemWithAbsoluteUrl(item) {
     try {
-      // if (item.attachments) {
-      //   item.attachments = await Promise.all(
-      //     item.attachments.map(async (attachment) => {
-      //       const thumb =
-      //         attachment.uri.split('/').length === 2
-      //           ? await File.getProtectedUrl(
-      //               `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-      //                 attachment.uri.split('/')[1]
-      //               }`
-      //             )
-      //           : ''
+      if (item.attachments) {
+        item.attachments = await Promise.all(
+          item.attachments.map(async (attachment) => {
+            const thumb =
+              attachment.uri.split('/').length === 2
+                ? await File.getProtectedUrl(
+                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
+                      attachment.uri.split('/')[1]
+                    }`
+                  )
+                : ''
 
-      //       if (attachment.uri.search('http') !== 0) {
-      //         return {
-      //           user_id: attachment.user_id,
-      //           url: await File.getProtectedUrl(attachment.uri),
-      //           uri: attachment.uri,
-      //           thumb: thumb,
-      //         }
-      //       }
+            if (attachment.uri.search('http') !== 0) {
+              return {
+                user_id: attachment.user_id,
+                url: await File.getProtectedUrl(attachment.uri),
+                uri: attachment.uri,
+                thumb: thumb,
+              }
+            }
 
-      //       return {
-      //         user_id: attachment.user_id,
-      //         url: attachment.uri,
-      //         uri: attachment.uri,
-      //         thumb: thumb,
-      //       }
-      //     })
-      //   )
-      // }
+            return {
+              user_id: attachment.user_id,
+              url: attachment.uri,
+              uri: attachment.uri,
+              thumb: thumb,
+            }
+          })
+        )
+      }
       return item
     } catch (e) {
       console.log(e.message, 500)
