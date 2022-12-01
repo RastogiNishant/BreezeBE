@@ -674,21 +674,6 @@ class NotificationsService {
   }
 
   /**
-   *
-   */
-  static async prospectMatches(notices) {
-    const title = 'prospect.notification.event.best_match'
-
-    return NotificationsService.sendNotes(notices, title, (data, lang) => {
-      return (
-        capitalize(data.estate_address) +
-        ' \n' +
-        l.get('prospect.notification.next.best_match.message', lang)
-      )
-    })
-  }
-
-  /**
    * When another user got final confirm request and accept it, another
    */
   static async sendProspectEstatesRentAnother(notices) {

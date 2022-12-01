@@ -98,7 +98,6 @@ const {
   MATCH_STATUS_KNOCK,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
-  NOTICE_TYPE_PROSPECT_MATCH_ID,
   ESTATE_NOTIFICATION_FIELDS,
   NOTICE_TYPE_PROSPECT_DEACTIVATED,
 } = require('../constants')
@@ -706,37 +705,6 @@ class NoticeService {
       )
       await NoticeService.insertNotices(notices)
       await NotificationsService.sendProspectHasSuperMatch(notices)
-    }
-  }
-
-  static async prospectMatches(matches, estateId = null) {
-    if (matches.length > 0) {
-      let estate = estateId
-        ? await Estate.query().select(ESTATE_NOTIFICATION_FIELDS).where('id', estateId).first()
-        : null
-
-      const notices = await Promise.all(
-        matches.map(async ({ user_id, estate_id }) => {
-          if (!estateId) {
-            estate = await Estate.query()
-              .select('id', 'address', 'cover')
-              .where('id', estate_id)
-              .first()
-          }
-          return {
-            user_id,
-            type: NOTICE_TYPE_PROSPECT_MATCH_ID,
-            data: {
-              estate_id: estateId,
-              estate_address: estate.address,
-              params: estate.getAptParams(),
-            },
-            image: File.getPublicUrl(estate.cover),
-          }
-        })
-      )
-      await NoticeService.insertNotices(notices)
-      await NotificationsService.prospectMatches(notices)
     }
   }
 

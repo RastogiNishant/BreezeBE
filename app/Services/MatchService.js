@@ -63,6 +63,7 @@ const {
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
   TIMESLOT_STATUS_REJECT,
+  MATCH_SCORE_GOOD_MATCH,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -472,13 +473,10 @@ class MatchService {
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
 
-      const superMatches = matches.filter(({ percent }) => percent >= 90)
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
       if (superMatches.length > 0) {
         await NoticeService.prospectSuperMatch(superMatches)
       }
-
-      //send notification to prospect who have matches
-      await NoticeService.prospectMatches(matches)
     }
   }
 
@@ -532,13 +530,10 @@ class MatchService {
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
-      const superMatches = matches.filter(({ percent }) => percent >= 90)
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
       if (superMatches.length > 0) {
         await NoticeService.prospectSuperMatch(superMatches, estateId)
       }
-
-      //send notification to prospect who have matches
-      await NoticeService.prospectMatches(matches, estateId)
     }
   }
 
