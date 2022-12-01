@@ -89,8 +89,12 @@ class File {
           format: 'JPEG', // output format
           quality: 0.8, // the jpeg compression quality, between 0 and 1
         })
-        console.log('IMage Heic data=', img_data)
+
         ext = `jpg`
+
+        const outputFileName = `${PDF_TEMP_PATH}/output_heic.jpg`
+        const data = await fsPromise.writeFile(outputFileName, img_data)
+        img_data = Drive.getStream(outputFileName)
       }
 
       if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
