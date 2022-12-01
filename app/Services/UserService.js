@@ -1033,6 +1033,8 @@ class UserService {
       } else if (user.role == ROLE_USER) {
         user.has_final_match = await require('./MatchService').checkUserHasFinalMatch(user.id)
       }
+      //set last login
+      await User.query().where('id', user.id).update({ last_login: moment().utc().format() })
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
     }
