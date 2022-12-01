@@ -25,7 +25,7 @@ class PropertyController {
         '_u.user_id'
       )
       .withCount('visits')
-      .withCount('final')
+      .with('final')
       .withCount('inviteBuddies')
       .withCount('knocked')
       .orderBy('estates.updated_at', 'desc')
