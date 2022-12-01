@@ -4,7 +4,7 @@ const fs = require('fs')
 
 class OpenImmoReader {
   json = {}
-  constructor(filePath) {
+  constructor(filePath, field) {
     const data = fs.readFileSync(filePath)
     const that = this
     xmlParser.parseString(data, function (err, result) {
@@ -13,12 +13,17 @@ class OpenImmoReader {
       }
       that.json = result
     })
+    this.field = field
   }
 
   process() {
-    const ret = this.json['xsd:schema']['xsd:element'][2]
-    console.log(ret)
-    return ret
+    const result = this.json['xsd:schema']['xsd:element'].filter((obj) => {
+      if (obj['$'].name === this.field) {
+        return obj
+      }
+    })
+    //const ret = this.json['xsd:schema']['xsd:element'][2]
+    return result
   }
 }
 

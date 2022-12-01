@@ -983,12 +983,16 @@ class EstateController {
   }
 
   async importOpenimmo({ request, response, auth }) {
+    const { field } = request.all()
     const importFile = request.file('file')
     //todo: move validation to middleware
     if (importFile.headers['content-type'] !== 'application/xml') {
       throw new HttpException('Invalid file')
     }
-    const reader = new OpenImmoReader(importFile.tmpPath)
+    console.log(
+      `openimmo provider ID. Structure:\r\n\t\t\t\tCode letter: ([O]bject|[Supplier]) {K};\r\n\t\t\t\tOI member company identifier = 3 chars, { P}; LIN= Licensee, \r\n\t\t\t\tTimestamp (date-time) 17 digits, {YMThmst};\r\n\t\t\t\tRandom 10 digits; {R};\r\n\t\t\t\tForm: KPPPYYYYMMTThhmmsstttRRRRRRRRRR;\r\n\t\t\t\tExample: OABC20011128124930123asd43fer34;\t\t\r\n\t\t\t`
+    )
+    const reader = new OpenImmoReader(importFile.tmpPath, field)
     const result = reader.process()
     response.res(result)
   }
