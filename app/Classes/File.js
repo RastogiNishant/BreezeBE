@@ -70,6 +70,7 @@ class File {
    */
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
+    let contentType = file.headers['content-type']
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
@@ -87,14 +88,11 @@ class File {
         img_data = await heicConvert({
           buffer: inputBuffer, // the HEIC file buffer
           format: 'JPEG', // output format
-          quality: 0.8, // the jpeg compression quality, between 0 and 1
+          quality: 0.1, // the jpeg compression quality, between 0 and 1
         })
 
         ext = `jpg`
-
-        const outputFileName = `${PDF_TEMP_PATH}/output_heic.jpg`
-        const data = await fsPromise.writeFile(outputFileName, img_data)
-        img_data = Drive.getStream(outputFileName)
+        contentType = File.IMAGE_JPEG
       }
 
       if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
@@ -116,14 +114,15 @@ class File {
       const dir = moment().format('YYYYMM')
       const filePathName = `${dir}/${filename}`
       const disk = isPublic ? 's3public' : 's3'
-      const options = { ContentType: file.headers['content-type'] }
+      console.log('content type here=', file.headers['content-type'])
+      const options = { ContentType: contentType }
       if (isPublic) {
         options.ACL = 'public-read'
       }
       await Drive.disk(disk).put(filePathName, img_data, options)
 
       let thumbnailFilePathName = null
-      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
+      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(contentType)) {
         thumbnailFilePathName = await File.saveThumbnailToDisk({
           image: img_data,
           fileName: filename,
