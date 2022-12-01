@@ -14,6 +14,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const imageThumbnail = require('image-thumbnail')
 const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
+const heicConvert = require('heic-convert')
 const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
 
 class File {
@@ -22,6 +23,7 @@ class File {
   static IMAGE_JPEG = 'image/jpeg'
   static IMAGE_PNG = 'image/png'
   static IMAGE_PDF = 'application/pdf'
+  static IMAGE_HEIC = 'image/heif'
   static MIME_DOC = 'application/msword'
   static MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   static MIME_EXCEL = 'application/vnd.ms-excel'
@@ -31,6 +33,7 @@ class File {
     jpg: File.IMAGE_JPEG,
     png: File.IMAGE_PNG,
     gif: File.IMAGE_GIF,
+    heic: File.IMAGE_HEIC,
   }
 
   static SUPPORTED_IMAGE_FORMAT = Object.keys(File.IMAGE_MIME_TYPE)
@@ -79,8 +82,18 @@ class File {
 
     try {
       let img_data
+      if ([this.IMAGE_HEIC].includes(mime)) {
+        const inputBuffer = await fsPromise.readFile(file.tmpPath)
+        img_data = await heicConvert({
+          buffer: inputBuffer, // the HEIC file buffer
+          format: 'JPEG', // output format
+          quality: 0.8, // the jpeg compression quality, between 0 and 1
+        })
+        console.log('IMage Heic data=', img_data)
+        ext = `jpg`
+      }
+
       if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
-        img_data = Drive.getStream(file.tmpPath)
         const imagemin = (await import('imagemin')).default
         const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
 
@@ -173,7 +186,7 @@ class File {
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: File.SUPPORTED_IMAGE_FORMAT,
+        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
       if (!file) {
         return null
