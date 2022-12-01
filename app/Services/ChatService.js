@@ -116,9 +116,8 @@ class ChatService {
 
     if (limit !== -1) {
       query.limit(limit)
-    } else {
-      query.limit(CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL)
     }
+
     if (user_id) {
       query.where('sender_id', user_id)
     }
