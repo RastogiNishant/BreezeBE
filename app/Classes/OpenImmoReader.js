@@ -16,7 +16,9 @@ class OpenImmoReader {
   }
 
   process() {
-    return this.json.openimmo.user_defined_simplefield
+    const ret = this.json['xsd:schema']['xsd:element'][2]
+    console.log(ret)
+    return ret
   }
 }
 
