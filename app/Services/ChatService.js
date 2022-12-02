@@ -376,8 +376,6 @@ class ChatService {
 
     taskEstates = await query.fetch()
 
-    taskEstates = groupBy(taskEstates.rows, 'urgency')
-
     return taskEstates
   }
 }
