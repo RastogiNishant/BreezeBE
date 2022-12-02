@@ -327,8 +327,8 @@ class TaskService {
       .select('tasks.*')
       .select(
         Database.raw(`coalesce(
-        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}  
-          or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
+        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED}
           and "tasks"."updated_at" > '${moment
             .utc()
             .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
@@ -450,7 +450,14 @@ class TaskService {
   }
 
   static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
+    const imageMimes = [
+      File.IMAGE_JPG,
+      File.IMAGE_JPEG,
+      File.IMAGE_PNG,
+      File.IMAGE_PDF,
+      File.IMAGE_GIF,
+      File.IMAGE_WEBP,
+    ]
     const files = await File.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: false },
     ])

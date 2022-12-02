@@ -21,6 +21,7 @@ class File {
   static IMAGE_GIF = 'image/gif'
   static IMAGE_JPEG = 'image/jpeg'
   static IMAGE_PNG = 'image/png'
+  static IMAGE_WEBP = 'image/webp'
   static IMAGE_PDF = 'application/pdf'
   static MIME_DOC = 'application/msword'
   static MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -31,6 +32,7 @@ class File {
     jpg: File.IMAGE_JPEG,
     png: File.IMAGE_PNG,
     gif: File.IMAGE_GIF,
+    webp: File.IMAGE_WEBP,
   }
 
   static SUPPORTED_IMAGE_FORMAT = Object.keys(File.IMAGE_MIME_TYPE)
@@ -171,6 +173,7 @@ class File {
       return {}
     }
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
+      
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
         extnames: File.SUPPORTED_IMAGE_FORMAT,
