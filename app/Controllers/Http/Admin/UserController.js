@@ -14,6 +14,7 @@ const MailService = use('App/Services/MailService')
 const moment = require('moment')
 const { isArray, isEmpty, includes } = require('lodash')
 const {
+  ISO_DATE_FORMAT,
   ROLE_ADMIN,
   ROLE_LANDLORD,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -106,18 +107,15 @@ class UserController {
             throw new HttpException(ACCOUNT_NOT_VERIFIED_USER_EXIST, 400)
           }
 
-          affectedRows = await User.query()
-            .whereIn('id', ids)
-            .where('role', ROLE_LANDLORD)
-            .update(
-              {
-                activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-                is_verified: true,
-                verified_by: auth.user.id,
-                verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-              },
-              trx
-            )
+          affectedRows = await User.query().whereIn('id', ids).where('role', ROLE_LANDLORD).update(
+            {
+              activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+              is_verified: true,
+              verified_by: auth.user.id,
+              verified_date: moment().utc().format(),
+            },
+            trx
+          )
 
           await UserDeactivationSchedule.query().whereIn('user_id', ids).delete(trx)
           await trx.commit()
@@ -259,6 +257,19 @@ class UserController {
     estate_status = estate_status || STATUS_DRAFT
     limit = 99999
     const landlordQuery = User.query()
+      .select(
+        'id',
+        'firstname',
+        'secondname',
+        'email',
+        'phone',
+        Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`),
+        'company_id',
+        'status',
+        'activation_status',
+        Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`),
+        Database.raw(`to_char(last_login, '${ISO_DATE_FORMAT}') as last_login`)
+      )
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
       .whereIn(
@@ -266,8 +277,12 @@ class UserController {
         isArray(activation_status) ? activation_status : [activation_status]
       )
       .with('estates', function (e) {
+        e.select('id', 'user_id', 'status')
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
+        e.withCount('current_tenant', function (q) {
+          q.whereNotNull('user_id')
+        })
       })
       .with('company', function (query) {
         query.with('contacts')
