@@ -305,20 +305,21 @@ class TaskService {
 
     task = await TaskService.getItemWithAbsoluteUrl(task)
 
-    const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
+    // const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
 
-    await Promise.all(
-      (chats || []).map(async (chat) => {
-        const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
-        if (chatsAttachment) {
-          if (task.attachments) {
-            task.attachments = task.attachments.concat(chatsAttachment)
-          } else {
-            task.attachments = chatsAttachment
-          }
-        }
-      })
-    )
+    // await Promise.all(
+    //   (chats || []).map(async (chat) => {
+    //     const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
+    //     if (chatsAttachment) {
+    //       if (task.attachments) {
+    //         task.attachments = task.attachments.concat(chatsAttachment)
+    //       } else {
+    //         task.attachments = chatsAttachment
+    //       }
+    //     }
+    //   })
+    // )
+
     return task
   }
 
