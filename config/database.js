@@ -81,7 +81,7 @@ module.exports = {
     },
     debug: Env.get('DB_DEBUG', false),
     pool: {
-      min: 0,
+      min: 10,
       max: 150,
       idleTimeoutMillis: 3595,
       reapIntervalMillis: 300,
