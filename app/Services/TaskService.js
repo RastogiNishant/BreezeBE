@@ -606,12 +606,21 @@ class TaskService {
       if (!task.unread_role || task.unread_role === role) {
         await Task.query()
           .where('id', task.id)
-          .update({ unread_count: 1, unread_role, first_not_read_chat_id: chat_id })
+          .update({
+            unread_count: 1,
+            unread_role,
+            first_not_read_chat_id: chat_id,
+            status: TASK_STATUS_INPROGRESS,
+          })
           .transacting(trx)
       } else {
         await Task.query()
           .where('id', task.id)
-          .update({ unread_count: +(task.unread_count || 0) + 1, unread_role })
+          .update({
+            unread_count: +(task.unread_count || 0) + 1,
+            unread_role,
+            status: TASK_STATUS_INPROGRESS,
+          })
           .transacting(trx)
       }
     }
