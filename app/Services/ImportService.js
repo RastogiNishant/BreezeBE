@@ -1,6 +1,7 @@
 const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
+const Database = use('Database')
 const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
@@ -18,6 +19,9 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   LETTING_TYPE_NA,
+  IMPORT_TYPE_EXCEL,
+  IMPORT_ENTITY_ESTATES,
+  ISO_DATE_FORMAT,
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -279,6 +283,21 @@ class ImportService {
     entity = IMPORT_ENTITY_ESTATES,
   }) {
     await Import.query().insert({ user_id, filename, type, entity })
+  }
+
+  static async getLastImportActivities(
+    user_id,
+    type = IMPORT_TYPE_EXCEL,
+    entity = IMPORT_ENTITY_ESTATES
+  ) {
+    const import_activity = await Import.query()
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('filename')
+      .where({ user_id, type, entity })
+      .orderBy('created_at', 'desc')
+      .first()
+
+    return import_activity
   }
 }
 

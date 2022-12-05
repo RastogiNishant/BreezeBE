@@ -857,7 +857,6 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-
     let result = await EstateService.getEstatesByUserId({
       ids: [auth.user.id],
     })
@@ -924,6 +923,19 @@ class EstateController {
       )
     }
     return response.res(rows)
+  }
+
+  async importLastActivity({ auth, request, response }) {
+    let last_excel_import_activity = await ImportService.getLastImportActivities(
+      auth.user.id,
+      IMPORT_TYPE_EXCEL,
+      IMPORT_ENTITY_ESTATES
+    )
+    last_excel_import_activity = last_excel_import_activity.toJSON()
+    last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
+      .utc()
+      .format()
+    return response.res(last_excel_import_activity)
   }
 
   async deleteMultiple({ auth, request, response }) {
