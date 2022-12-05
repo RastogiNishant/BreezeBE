@@ -19,6 +19,7 @@ const {
   STATUS_ACTIVE,
   LETTING_TYPE_NA,
 } = require('../constants')
+const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -269,6 +270,15 @@ class ImportService {
     //   await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
     // }
     return estate
+  }
+
+  static async addImportFile({
+    user_id,
+    filename,
+    type = IMPORT_TYPE_EXCEL,
+    entity = IMPORT_ENTITY_ESTATES,
+  }) {
+    await Import.query().insert({ user_id, filename, type, entity })
   }
 }
 

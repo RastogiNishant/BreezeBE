@@ -48,6 +48,8 @@ const {
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
+  IMPORT_TYPE_EXCEL,
+  IMPORT_ENTITY_ESTATES,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -332,6 +334,13 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
+    await ImportService.addImportFile({
+      user_id: auth.user.id,
+      filename: importFilePathName.clientName,
+      type: IMPORT_TYPE_EXCEL,
+      entity: IMPORT_ENTITY_ESTATES,
+    })
+
     const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
     return response.res(result)
   }
