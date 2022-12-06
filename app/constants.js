@@ -889,7 +889,7 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
-  MATCH_SCORE_GOOD_MATCH: 80,
+  MATCH_SCORE_GOOD_MATCH: 70,
 }
 
 module.exports = constants
