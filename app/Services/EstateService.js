@@ -86,9 +86,14 @@ class EstateService {
   }
 
   static async getEstateWithDetails(id, user_id) {
+    const excludes = ['id', 'type', 'plan', 'energy_pass']
+    let columns = Estate.columns.filter((c) => !excludes.includes(c))
+    columns = columns.map((c) => `estates.${c}`)
     const estateQuery = Estate.query()
-      .select(Database.raw('estates.*'))
+      .select(Database.raw(`DISTINCT("estates"."id")`))
+      .select(columns)
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
+      .select(Database.raw(`coalesce(bool(notices.id), false) as has_notification`))
       .leftJoin(
         Database.raw(`
           (select 
@@ -102,6 +107,10 @@ class EstateService {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
         }
       )
+      .leftJoin('notices', function () {
+        this.on('notices.user_id', 'estates.user_id').on('notices.user_id', user_id)
+        this.on('notices.estate_id', 'estates.id').on('notices.estate_id', id)
+      })
       .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
       .with('point')
@@ -318,7 +327,18 @@ class EstateService {
    *
    */
   static getEstates(params = {}) {
+    const excludes = ['id', 'type', 'plan', 'energy_pass']
+    let columns = Estate.columns.filter((c) => !excludes.includes(c))
+    columns = columns.map((c) => `estates.${c}`)
+
     let query = Estate.query()
+      .select(Database.raw(`DISTINCT("estates"."id")`))
+      .select(columns)
+      .select(Database.raw(`coalesce(bool(notices.id), false) as has_notification`))
+      .leftJoin('notices', function () {
+        this.on('notices.user_id', 'estates.user_id')
+        this.on('notices.estate_id', 'estates.id')
+      })
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -343,7 +363,7 @@ class EstateService {
   static getUpcomingShows(ids, query = '') {
     return this.getEstates()
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('user_id', ids)
+      .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -890,14 +910,14 @@ class EstateService {
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
     if (page === -1 || limit === -1) {
       return await this.getEstates(params)
-        .whereIn('user_id', ids)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
       return await this.getEstates(params)
-        .whereIn('user_id', ids)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
     }
