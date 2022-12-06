@@ -352,7 +352,13 @@ class ChatService {
     let taskEstates
 
     let query = Task.query()
-      .select('tasks.id as task_id', 'estates.id as estate_id', 'tasks.urgency')
+      .select(
+        'tasks.id as task_id',
+        'tasks.unread_role',
+        'tasks.unread_count',
+        'estates.id as estate_id',
+        'tasks.urgency'
+      )
       .innerJoin('estates', function () {
         this.on('estates.id', 'tasks.estate_id')
           .onNotIn('estates.status', [STATUS_DELETE])
