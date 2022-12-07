@@ -30,6 +30,9 @@ const {
   COMPANY_SIZE_SMALL,
   COMPANY_TYPE_PRIVATE,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
+  SALUTATION_MS,
+  SALUTATION_MR,
+  SALUTATION_SIR_OR_MADAM,
 } = require('../../app/constants')
 const fsPromise = require('fs/promises')
 const { test, trait, before, after } = use('Test/Suite')('User Functional')
@@ -59,6 +62,7 @@ const {
     USER_NOT_VERIFIED,
     NOT_EXIST_WITH_EMAIL,
     INVALID_CONFIRM_CODE,
+    NO_CONTACT_EXIST,
   },
 } = require('../../app/excepions')
 
@@ -717,11 +721,16 @@ test('it should fail to update profile due to min length validation and wrong da
       firstname: faker.random.alphaNumeric(1),
       secondname: faker.random.alphaNumeric(1),
       lang: faker.random.alphaNumeric(4),
-      notice: faker.random.alphaNumeric(1),
+      notice: faker.random.alphaNumeric(2),
       prospect_visibility: faker.random.numeric(3),
       landlord_visibility: faker.random.numeric(3),
       size: faker.random.alphaNumeric(3),
       preferred_services: faker.random.alphaNumeric(3),
+      contact: {
+        email: faker.random.numeric(5),
+        full_name: faker.random.alphaNumeric(1),
+        title: faker.random.alphaNumeric(3),
+      },
     })
     .end()
 
@@ -754,6 +763,13 @@ test('it should fail to update profile due to min length validation and wrong da
         `[${COMPANY_SIZE_SMALL},${COMPANY_SIZE_MID},${COMPANY_SIZE_LARGE}]`
       ),
       preferred_services: getExceptionMessage('preferred_services', ARRAY),
+      'contact.email': getExceptionMessage('contact.email', EMAIL),
+      'contact.full_name': getExceptionMessage('contact.full_name', MINLENGTH, 2),
+      'contact.title': getExceptionMessage(
+        'title',
+        OPTION,
+        `[${SALUTATION_MR},${SALUTATION_MS},${SALUTATION_SIR_OR_MADAM}]`
+      ),
     },
   })
 })
@@ -767,6 +783,10 @@ test('it should fail to update profile due to max length validation', async ({ c
       secondname: faker.random.alphaNumeric(255),
       company_name: faker.random.alphaNumeric(256),
       preferred_services: [faker.random.alphaNumeric(3)],
+      contact: {
+        full_name: faker.random.alphaNumeric(256),
+        address: faker.random.alphaNumeric(256),
+      },
     })
     .end()
   response.assertStatus(422)
@@ -781,6 +801,8 @@ test('it should fail to update profile due to max length validation', async ({ c
         OPTION,
         ` ${CONNECT_SERVICE_INDEX}, ${MATCH_SERVICE_INDEX}`
       ),
+      'contact.full_name': getExceptionMessage('full_name', MAXLENGTH, 255),
+      'contact.address': getExceptionMessage('address', MAXLENGTH, 255),
     },
   })
 }).timeout(0)
@@ -820,7 +842,6 @@ test('it should throw error for updating profile in case there is no company', a
     .loginVia(testLandlord, 'jwtLandlord')
     .send(updateInfo)
     .end()
-
   response.assertStatus(400)
 
   response.assertJSON({
@@ -873,9 +894,7 @@ test('it should update profile successfully without email', async ({ assert, cli
     .put('/api/v1/users')
     .loginVia(testLandlord, 'jwtLandlord')
     .send(updateInfo)
-
     .end()
-
   response.assertStatus(200)
 
   response.assertJSONSubset({
@@ -901,6 +920,84 @@ test('it should update profile successfully without email', async ({ assert, cli
   assert.isNotNull(user.id)
   const verifyPassword = await Hash.verify(landlordData.password, user.password)
   assert.isTrue(verifyPassword)
+}).timeout(0)
+
+test('it should throw error to update contact in case there is no contact', async ({
+  assert,
+  client,
+}) => {
+  assert.isDefined(testCompany.id)
+
+  const updateInfo = {
+    contact: {
+      email: faker.internet.email(),
+      address: faker.address.cityName(),
+      full_name: faker.name.fullName,
+      title: SALUTATION_MS,
+    },
+  }
+
+  const response = await client
+    .put('/api/v1/users')
+    .loginVia(testLandlord, 'jwtLandlord')
+    .send(updateInfo)
+    .end()
+  response.assertStatus(400)
+  response.assertJSON({
+    status: 'error',
+    data: getExceptionMessage(undefined, NO_CONTACT_EXIST),
+    code: 0,
+  })
+}).timeout(0)
+
+test('it should update contact via profile successfully', async ({ assert, client }) => {
+  assert.isDefined(testCompany.id)
+
+  const createContactIno = {
+    contact: {
+      email: faker.internet.email(),
+      address: faker.address.cityName(),
+      full_name: faker.name.fullName(),
+      title: SALUTATION_MS,
+    },
+  }
+
+  const updateInfo = {
+    contact: {
+      email: faker.internet.email(),
+      address: faker.address.cityName(),
+      full_name: faker.name.fullName(),
+      title: SALUTATION_MR,
+    },
+  }
+
+  //add test contact here
+  await CompanyService.createContact(createContactIno, testLandlord.id)
+  const response = await client
+    .put('/api/v1/users')
+    .loginVia(testLandlord, 'jwtLandlord')
+    .send(updateInfo)
+    .end()
+  response.assertStatus(200)
+
+  const company = await CompanyService.getUserCompany(testLandlord.id)
+
+  response.assertJSONSubset({
+    data: {
+      company: {
+        ...company.toJSON(),
+        address: updateInfo.contact.address,
+        contacts: [
+          {
+            ...company.toJSON().contacts[0],
+            email: updateInfo.contact.email,
+            full_name: updateInfo.contact.full_name,
+            title: updateInfo.contact.title.toString(),
+          },
+        ],
+      },
+    },
+  })
 }).timeout(0)
 
 test('it should change email address and status so that account has to be reverified', async ({
@@ -933,10 +1030,8 @@ test('it should change email address and status so that account has to be reveri
   assert.isTrue(verifyPassword)
 }).timeout(0)
 
-test('it should update profile without avatar', async ({ assert, client }) => {
-  const outputFileName = await ImageService.saveFunctionalTestImage(
-    faker.image.abstract(1234, 2345)
-  )
+test('it should update profile with avatar', async ({ assert, client }) => {
+  const outputFileName = await ImageService.saveFunctionalTestImage(faker.image.abstract(200, 300))
 
   if (outputFileName) {
     const response = await client
