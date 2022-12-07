@@ -44,6 +44,8 @@ const exceptions = {
   TOPIC_NOT_FOUND: 'Topic not found',
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
+  MESSAGE_NOT_SAVED: 'Error happened to save message',
+  MESSAGE_ATTACHMENT_WRONG_FORMAT: 'Attachments must be an array',
 }
 
 const exceptionKeys = {
@@ -88,6 +90,7 @@ const exceptionKeys = {
   SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
   SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
+  MESSAGE_NOT_SAVED: 'MESSAGE_NOT_SAVED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

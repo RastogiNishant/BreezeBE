@@ -270,7 +270,8 @@ class UserController {
         'company_id',
         'status',
         'activation_status',
-        Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`)
+        Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`),
+        Database.raw(`to_char(last_login, '${ISO_DATE_FORMAT}') as last_login`)
       )
       .where('role', ROLE_LANDLORD)
       .whereIn('status', isArray(status) ? status : [status])
