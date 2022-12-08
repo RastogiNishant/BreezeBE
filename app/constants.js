@@ -321,6 +321,7 @@ const constants = {
   FAMILY_STATUS_WITH_CHILD: 3,
   FAMILY_STATUS_NO_CHILD: 2,
 
+  NO_MATCH_STATUS: -1,
   MATCH_STATUS_NEW: 1,
   MATCH_STATUS_KNOCK: 2,
   MATCH_STATUS_INVITE: 3,
@@ -877,6 +878,9 @@ const constants = {
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+
+  //MATCH WEB SOCKET
+  WEBSOCKET_EVENT_MATCH: 'matchChanged',
 }
 
 module.exports = constants
