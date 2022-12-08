@@ -21,6 +21,7 @@ class File {
   static IMAGE_GIF = 'image/gif'
   static IMAGE_JPEG = 'image/jpeg'
   static IMAGE_PNG = 'image/png'
+  static IMAGE_TIFF = 'image/tiff'
   static IMAGE_PDF = 'application/pdf'
   static MIME_DOC = 'application/msword'
   static MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -31,6 +32,7 @@ class File {
     jpg: File.IMAGE_JPEG,
     png: File.IMAGE_PNG,
     gif: File.IMAGE_GIF,
+    tiff: File.IMAGE_TIFF,
   }
 
   static SUPPORTED_IMAGE_FORMAT = Object.keys(File.IMAGE_MIME_TYPE)
@@ -62,11 +64,36 @@ class File {
       throw new AppException(e.message, 400)
     }
   }
+
+  static async convertTiffToJPG(filePath) {
+    try {
+      // need to install gifsicle to linux so this shell will work.
+      // need to give read/write permission to tmp directly
+
+      const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.jpg`
+
+      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
+
+      let command = `convert ${filePath} ${outputFileName}`
+      await exec({
+        cmd: `${command}`,
+      })
+
+      const data = await fsPromise.readFile(outputFileName)
+      fsPromise.unlink(outputFileName)
+      return data
+    } catch (e) {
+      console.log('convert tiff to jpg error=', e)
+      throw new AppException(e?.message || 'Error convert tiff to jpg', 500)
+    }
+  }
+
   /**
    *
    */
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
+    let contentType = file.headers['content-type']
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
@@ -79,16 +106,32 @@ class File {
 
     try {
       let img_data
+      if ([this.IMAGE_TIFF].includes(mime)) {
+        img_data = await this.convertTiffToJPG(file.tmpPath)
+        ext = `jpg`
+        contentType = File.IMAGE_JPEG
+        mime = this.IMAGE_JPEG
+      }
+
       if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
-        img_data = Drive.getStream(file.tmpPath)
         const imagemin = (await import('imagemin')).default
         const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
 
-        img_data = (
-          await imagemin([file.tmpPath], {
+        if (img_data) {
+          img_data = await imagemin.buffer(img_data, {
             plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
           })
-        )[0].data
+          console.log('JPG buffer type=', img_data)
+        } else {
+          img_data = (
+            await imagemin([file.tmpPath], {
+              plugins: [
+                imageminPngquant({ quality: [0.6, 0.8] }),
+                imageminMozjpeg({ quality: 80 }),
+              ],
+            })
+          )[0].data
+        }
       }
 
       if ([this.IMAGE_PDF].includes(mime)) {
@@ -99,7 +142,7 @@ class File {
       const dir = moment().format('YYYYMM')
       const filePathName = `${dir}/${filename}`
       const disk = isPublic ? 's3public' : 's3'
-      const options = { ContentType: file.headers['content-type'] }
+      const options = { ContentType: contentType }
       if (isPublic) {
         options.ACL = 'public-read'
       }
