@@ -282,6 +282,9 @@ const constants = {
   SOURCE_TYPE_BUDDY: 1,
   SOURCE_TYPE_MATCHED: 2,
 
+  BUILDING_AGE_NEW: 1,
+  BUILDING_AGE_OLD: 2,
+
   ADULT_AGE_25: 1,
   ADULT_AGE_25_59: 2,
   ADULT_AGE_60: 3,
@@ -877,6 +880,8 @@ const constants = {
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+
+  OPENIMMO_EXTRACT_FOLDER: '/tmp',
 }
 
 module.exports = constants
