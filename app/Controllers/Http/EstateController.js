@@ -50,7 +50,7 @@ const {
   MATCH_STATUS_TOP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -996,6 +996,19 @@ class EstateController {
     }
     const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
     const result = await reader.process()
+    result.map(async (property) => {
+      property = omit(property, [
+        'apt_type',
+        'building_age',
+        'building_status',
+        'firing',
+        'heating_type',
+        'property_type',
+      ])
+      property.user_id = auth.user.id
+      property.construction_year = `${property.construction_year}-01-01`
+      await Estate.createItem(property)
+    })
     response.res(result)
   }
 }
