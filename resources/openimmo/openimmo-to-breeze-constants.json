@@ -1,4 +1,11 @@
 {
+  "bath_options": {
+    "BIDET": 3,
+    "DUSCHE": 5,
+    "FENSTER": 2,
+    "WANNE": 1,
+    "PISSOIR": 4
+  },
   "energy_type": {
     "OEL": 1,
     "GAS": 2,
@@ -21,5 +28,25 @@
     "ZENTRAL": 3,
     "FERN": 4,
     "FUSSBODEN": 5
+  },
+  "use_type": {
+    "ANLAGE": 3,
+    "GEWERBE": 2,
+    "WAZ": 4,
+    "WOHNEN": 1
+  },
+  "marketing_type": {
+    "ERBPACHT": 3,
+    "KAUF": 1,
+    "MIETE_PACHT": 2,
+    "LEASING": 4
+  },
+  "parking_space_type": {
+    "GARAGE": 6,
+    "TIEFGARAGE": 1,
+    "CARPORT": 2,
+    "FREIPLATZ": 3,
+    "PARKHAUS": 4,
+    "DUPLEX": 5
   }
 }
