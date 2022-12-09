@@ -996,6 +996,7 @@ class EstateController {
     }
     const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
     const result = await reader.process()
+    /*
     result.map(async (property) => {
       property = omit(property, [
         'apt_type',
@@ -1008,7 +1009,7 @@ class EstateController {
       property.user_id = auth.user.id
       property.construction_year = `${property.construction_year}-01-01`
       await Estate.createItem(property)
-    })
+    })*/
     response.res(result)
   }
 }
