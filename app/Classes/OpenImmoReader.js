@@ -202,8 +202,9 @@ class OpenImmoReader {
       if ((json = this.validate(json))) {
         //return json
         const properties = this.processProperties(json)
-        return properties
-        //return json['openimmo']['anbieter'][0]['immobilie'][0]
+        console.log(properties)
+        //return properties
+        return json['openimmo']['anbieter'][0]
       }
     } catch (err) {
       console.log(err.message)
