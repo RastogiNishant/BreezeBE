@@ -1143,7 +1143,7 @@ class UserService {
 
       if (user.role === ROLE_LANDLORD) {
         //TODO: we should cover this field in the tests
-        user.has_property = await require('./EstateService').hasEstate(user.id)
+        user = await this.me(user)
       }
 
       return user
