@@ -46,6 +46,8 @@ const exceptions = {
   SHOULD_BE_AFTER: 'Should be after',
   MESSAGE_NOT_SAVED: 'Error happened to save message',
   MESSAGE_ATTACHMENT_WRONG_FORMAT: 'Attachments must be an array',
+  NO_CONTACT_EXIST: 'Contacts not exists',
+  ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
 }
 
 const exceptionKeys = {
@@ -91,6 +93,8 @@ const exceptionKeys = {
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
   SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
   MESSAGE_NOT_SAVED: 'MESSAGE_NOT_SAVED',
+  NO_CONTACT_EXIST: 'NO_CONTACT_EXIST',
+  ONLY_ONE_CONTACT_ALLOWED: 'ONLY_ONE_CONTACT_ALLOWED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
