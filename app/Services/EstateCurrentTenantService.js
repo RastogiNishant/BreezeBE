@@ -818,12 +818,19 @@ class EstateCurrentTenantService {
       .where('id', estate_id)
       .whereIn('status', [STATUS_DRAFT])
       .where('letting_type', LETTING_TYPE_LET)
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
       .first()
 
     if (estate) {
       const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${estate.user_id}`)
       if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_TENANT_CONNECTED, { estate_id, user_id })
+        topic.broadcast(WEBSOCKET_EVENT_TENANT_CONNECTED, {
+          estate_id,
+          user_id,
+          current_tenant: estate?.toJSON()?.current_tenant,
+        })
       }
     }
   }
