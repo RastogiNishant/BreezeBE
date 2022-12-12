@@ -42,10 +42,9 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_DELETE,
   TASK_STATUS_DRAFT,
-  TASK_STATUS_RESOLVED,
-  DATE_FORMAT,
-  TASK_RESOLVE_HISTORY_PERIOD,
-  ROLE_LANDLORD,
+  LETTING_TYPE_LET,
+  STATUS_DRAFT,
+  STATUS_DELETE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -213,6 +212,16 @@ class Estate extends Model {
   static boot() {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
+
+    this.addHook('beforeUpdate', async (instance) => {
+      if (
+        instance.letting_type === LETTING_TYPE_LET &&
+        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+      ) {
+        instance.status = STATUS_DRAFT
+      }
+    })
+
     this.addHook('beforeSave', async (instance) => {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
@@ -309,10 +318,10 @@ class Estate extends Model {
   }
 
   tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
-      TASK_STATUS_DELETE,
-      TASK_STATUS_DRAFT,
-    ])
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .orderBy('updated_at', 'desc')
+      .orderBy('urgency', 'desc')
   }
 
   /**

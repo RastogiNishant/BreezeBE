@@ -18,6 +18,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   ESTATE_VALID_ADDRESS_LABEL,
   ESTATE_INVALID_ADDRESS_LABEL,
   ESTATE_ALL_ADDRESS_LABEL,
@@ -41,7 +42,7 @@ class EstateFilters extends Filter {
     first_time_use: LETTING_STATUS_FIRST_TIME_USE,
     structural_vacancy: LETTING_STATUS_STRUCTURAL_VACANCY,
     defected: LETTING_STATUS_DEFECTED,
-    normal: LETTING_STATUS_NORMAL,
+    standard: LETTING_STATUS_NORMAL,
     vacancy: LETTING_STATUS_VACANCY,
     terminated: LETTING_STATUS_TERMINATED,
   }
@@ -66,6 +67,7 @@ class EstateFilters extends Filter {
     room: PROPERTY_TYPE_ROOM,
     house: PROPERTY_TYPE_HOUSE,
     site: PROPERTY_TYPE_SITE,
+    office: PROPERTY_TYPE_OFFICE,
   }
   static possibleStringParams = [
     'address',

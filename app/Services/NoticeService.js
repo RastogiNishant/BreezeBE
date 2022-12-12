@@ -1,11 +1,10 @@
 'use strict'
 
-const { isEmpty, chunk } = require('lodash')
+const { isEmpty, chunk, isArray } = require('lodash')
 const moment = require('moment')
 const P = require('bluebird')
 const File = use('App/Classes/File')
 const Database = use('Database')
-const UserService = use('App/Services/UserService')
 const User = use('App/Models/User')
 const Match = use('App/Models/Match')
 const Notice = use('App/Models/Notice')
@@ -93,7 +92,11 @@ const {
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
   LANDLORD_ACTOR,
+  MATCH_STATUS_KNOCK,
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -104,7 +107,9 @@ class NoticeService {
     const promises = []
     data.map((item) => {
       promises.push(
-        UserService.increaseUnreadNotificationCount(item.user_id).catch((e) => console.log(e))
+        require('./UserService')
+          .increaseUnreadNotificationCount(item.user_id)
+          .catch((e) => console.log(e))
       )
     })
     promises.push(
@@ -125,7 +130,7 @@ class NoticeService {
    * If landlord inactive for a day
    */
   static async sendLandlordNewProperty() {
-    const newLandlords = await UserService.getNewestInactiveLandlordsIds()
+    const newLandlords = await require('./UserService').getNewestInactiveLandlordsIds()
     if (isEmpty(newLandlords)) {
       return false
     }
@@ -144,7 +149,7 @@ class NoticeService {
    * If landlord inactive for a 7 days
    */
   static async sandLandlord7DaysInactive() {
-    const inactiveLandlords = await UserService.get7DaysInactiveLandlord()
+    const inactiveLandlords = await require('./UserService').get7DaysInactiveLandlord()
     if (isEmpty(inactiveLandlords)) {
       return false
     }
@@ -222,7 +227,7 @@ class NoticeService {
   /**
    * On estate expiration, send to landlord
    */
-  static async landLandlordEstateExpired(estateIds) {
+  static async landlordEstateExpired(estateIds) {
     if (isEmpty(estateIds)) {
       return false
     }
@@ -241,6 +246,32 @@ class NoticeService {
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendEstateExpired(notices)
+
+    await NoticeService.landlordEstateExpiredToKnockedProspect(data)
+  }
+
+  static async landlordEstateExpiredToKnockedProspect(data) {
+    let notices = []
+    data.map(async ({ address, id, cover }) => {
+      const knocks =
+        (await require('./MatchService').getEstatesByStatus({
+          estate_id,
+          status: MATCH_STATUS_KNOCK,
+        })) || []
+      knocks.map((match) => {
+        notices.push({
+          user_id: match.user_id,
+          type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+          data: { estate_id: id, estate_address: address },
+          image: File.getPublicUrl(cover),
+        })
+      })
+    })
+
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendEstateExpiredToKnockedProspect(notices)
+    }
   }
 
   /**
@@ -465,11 +496,38 @@ class NoticeService {
     }
 
     await NoticeService.insertNotices([notice])
+
     if (userId) {
       await NotificationsService.sendLandlordCancelVisit([notice])
     } else {
       await NotificationsService.sendProspectCancelVisit([notice])
     }
+  }
+
+  static async updateTimeSlot(estateId, tenantIds) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    if (!estate || !estate.user_id) {
+      Logger.error('knockToLandloard', `there is no estate for${estateId}`)
+      throw new AppException('there is no estate')
+    }
+
+    tenantIds = tenantIds ? (Array.isArray(tenantIds) ? tenantIds : [tenantIds]) : []
+    const notices = tenantIds.map((tenantId) => {
+      return {
+        user_id: tenantId,
+        type: NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+        data: {
+          estate_id: estate.id,
+          estate_address: estate.address,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendTenantUpdateTimeSlot(notices)
   }
 
   /**
@@ -735,6 +793,7 @@ class NoticeService {
    */
   static async sendTestNotification(userId, type, estateId, extraData = {}) {
     const estate = await Database.table('estates').where('id', estateId).first()
+
     const notice = {
       user_id: userId,
       type: NotificationsService.getIdByType(type),
@@ -792,9 +851,11 @@ class NoticeService {
         notice.user_id = estate.user_id
         return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_VISIT_DELAY:
-        return NotificationsService.sendChangeVisitTime([notice])
+        return NotificationsService.sendChangeVisitTimeProspect([notice])
       case NOTICE_TYPE_VISIT_DELAY_LANDLORD:
-        return NotificationsService.sendChangeVisitTime([notice])
+        return NotificationsService.sendChangeVisitTimeLandlord([notice])
+      case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
+        return NotificationsService.sendTenantUpdateTimeSlot([notice])
     }
   }
 

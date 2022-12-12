@@ -8,11 +8,8 @@ const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
+const { phoneSchema } = require('../Libs/schemas')
 
-// const CreateCompany = require('../Validators/CreateCompany')
-// const CreateContact = require('../Validators/CreateContact')
-
-const { wrapValidationError } = require('../Libs/utils.js')
 const {
   MATCH_STATUS_FINISH,
   COMPANY_TYPE_PRIVATE,
@@ -21,10 +18,10 @@ const {
   COMPANY_TYPE_MUNICIPAL_HOUSING,
   COMPANY_TYPE_HOUSING_COOPERATIVE,
   COMPANY_TYPE_LISTED_HOUSING,
+  COMPANY_TYPE_BROKER,
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
-  STATUS_ACTIVE,
   STATUS_DELETE,
 } = require('../constants')
 
@@ -67,7 +64,7 @@ class CompanyService {
   static async updateCompany(userId, data, trx = null) {
     let userCompany = await this.getUserCompany(userId)
     if (!userCompany) {
-      throw new AppException('Company not exists')
+      throw new AppException('Company not exists', 400)
     }
 
     if (trx) {
@@ -76,11 +73,7 @@ class CompanyService {
       await userCompany.updateItem(data)
     }
 
-    userCompany = {
-      ...userCompany.toJSON(),
-      ...data,
-    }
-
+    userCompany = await this.getUserCompany(userId)
     return userCompany
   }
 
@@ -90,7 +83,7 @@ class CompanyService {
   static async removeCompany(companyId, userId) {
     const company = await CompanyService.getUserCompany(userId, companyId)
     if (!company) {
-      throw HttpException('No permission to delete')
+      throw new HttpException('No permission to delete')
     }
 
     const trx = await Database.beginTransaction()
@@ -227,18 +220,12 @@ class CompanyService {
           COMPANY_TYPE_MUNICIPAL_HOUSING,
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
+          COMPANY_TYPE_BROKER,
         ])
         .required(),
       email: yup.string().email().lowercase().max(255).required(),
       full_name: yup.string().min(2).max(255).required(),
-      phone: yup
-        .string()
-        .transform((v) => {
-          return String(v).replace(/[^\d]/gi, '')
-        })
-        .min(7)
-        .max(255)
-        .required(),
+      phone: phoneSchema.nullable(),
     })
     try {
       await map(contacts.rows, (i) => {
@@ -249,6 +236,15 @@ class CompanyService {
         'Please double check if you have added Your name, company size, type, email address, company name, phone number'
       )
     }
+  }
+
+  /**
+   * Delete company completely
+   * It's only used for deleting test company
+   */
+
+  static async permanentDelete(id) {
+    await Company.query().where('id', id).delete()
   }
 }
 

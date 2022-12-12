@@ -62,8 +62,8 @@ const {
   TIMESLOT_STATUS_CONFIRM,
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
+  TIMESLOT_STATUS_REJECT,
 } = require('../constants')
-const { logger } = require('../../config/app')
 const HttpException = require('../Exceptions/HttpException')
 
 const MATCH_PERCENT_PASS = 40
@@ -770,7 +770,32 @@ class MatchService {
     })
   }
 
-  static async cancelVisit(estateId, userId) {
+  static async deleteVisit(estate_id, userIds, trx) {
+    if (!userIds) return
+    userIds = !Array.isArray(userIds) ? [userIds] : userIds
+    await Visit.query()
+      .where('estate_id', estate_id)
+      .whereIn('user_id', userIds)
+      .delete()
+      .transacting(trx)
+  }
+
+  static async matchToInvite(estate_id, userIds, trx) {
+    if (!userIds) return
+    userIds = !Array.isArray(userIds) ? [userIds] : userIds
+    await Match.query()
+      .update({ status: MATCH_STATUS_INVITE })
+      .where('estate_id', estate_id)
+      .whereIn('user_id', userIds)
+      .transacting(trx)
+  }
+
+  static async cancelVisit(estateId, userId, trx = null) {
+    let isInsideTrx = false
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isInsideTrx = true
+    }
     const match = await Database.query()
       .table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_VISIT, estate_id: estateId })
@@ -780,17 +805,43 @@ class MatchService {
       throw new AppException('Invalid match stage')
     }
 
-    const deleteVisit = Database.table('visits')
-      .where({ estate_id: estateId, user_id: userId })
-      .delete()
-    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+    try {
+      await this.deleteVisit(estateId, userId, trx)
+      await this.matchToInvite(estateId, userId, trx)
+      if (isInsideTrx) {
+        await trx.commit()
+      }
 
-    await Promise.all([deleteVisit, updateMatch])
+      NoticeService.cancelVisit(estateId, null, userId)
+    } catch (e) {
+      if (isInsideTrx) {
+        await trx.rollback()
+      }
+      throw new HttpException('Failed to cancel visit', 500)
+    }
+  }
 
-    NoticeService.cancelVisit(estateId, null, userId)
+  static async handleMatchesOnTimeSlotUpdate(estateId, userIds, trx) {
+    if (!userIds) return
+    userIds = !Array.isArray(userIds) ? [userIds] : userIds
+
+    const match = await Match.query()
+      .table('matches')
+      .whereIn('user_id', userIds)
+      .whereIn('status', [MATCH_STATUS_VISIT])
+      .where('estate_id', estateId)
+      .fetch()
+
+    if (!match) {
+      throw new AppException('Invalid match stage')
+    }
+
+    try {
+      await this.deleteVisit(estateId, userIds, trx)
+      await this.matchToInvite(estateId, userIds, trx)
+    } catch (e) {
+      throw new HttpException('Failed to update time slot', 500)
+    }
   }
 
   /**
@@ -1566,7 +1617,11 @@ class MatchService {
 
   static async getTenantFinalMatchesCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_FINISH })
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_FINISH)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').on('_e.status', STATUS_DRAFT)
+      })
       .count('*')
     return data
   }
@@ -1657,6 +1712,7 @@ class MatchService {
         '_u.birthday',
         '_u.email',
         '_u.avatar',
+        '_v.landlord_followup_meta as followups',
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
       .select('_u.email', '_u.phone', '_u.status as u_status')
@@ -2410,7 +2466,7 @@ class MatchService {
   static async getEstatesByStatus({ estate_id, status }) {
     let query = Match.query()
     if (estate_id) {
-      query.where('id', estate_id)
+      query.where('estate_id', estate_id)
     }
     if (status) {
       query.where('status', status)
@@ -2444,6 +2500,49 @@ class MatchService {
       console.log(e)
       return false
     }
+  }
+
+  static async getVisitsIn({ estate_id, start_at, end_at }) {
+    const startAt = Database.raw(
+      `_v.start_date + GREATEST(_v.tenant_delay, _v.lord_delay) * INTERVAL '1 minute'`
+    )
+    const endAt = Database.raw(
+      `_v.end_date + GREATEST(_v.tenant_delay, _v.lord_delay) * INTERVAL '1 minute'`
+    )
+
+    const visits = (
+      await Match.query()
+        .select('matches.user_id', 'matches.estate_id', '_v.start_date', '_v.end_date')
+        .where('matches.estate_id', estate_id)
+        .whereIn('matches.status', [MATCH_STATUS_VISIT])
+        .innerJoin({ _v: 'visits' }, function () {
+          this.on('matches.estate_id', '_v.estate_id')
+            .on('matches.user_id', '_v.user_id')
+            .onNotIn('_v.tenant_status', [TIMESLOT_STATUS_REJECT])
+        })
+        .where(startAt, '>=', start_at)
+        .where(endAt, '<=', end_at)
+        .fetch()
+    ).rows
+
+    return visits
+  }
+
+  static async getInvitedUserIds(estate_id) {
+    const invitedMatches = await MatchService.getEstatesByStatus({
+      estate_id,
+      status: MATCH_STATUS_INVITE,
+    })
+    const invitedUserIds = (invitedMatches || []).map((match) => match.user_id)
+    return invitedUserIds
+  }
+
+  static async deletePermanant({ user_id, estate_id }) {
+    let query = Match.query().delete().where('user_id', user_id)
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+    await query
   }
 }
 

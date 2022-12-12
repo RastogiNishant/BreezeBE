@@ -12,6 +12,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   // type
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -221,6 +222,7 @@ class ImportEstate extends Base {
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ])
         .required('Property type is required.'),
       apt_type: yup
@@ -290,7 +292,7 @@ class ImportEstate extends Base {
       area: yup.number().min(0),
       living_space: yup.number().min(0),
       usable_area: yup.number().min(0),
-      rooms_number: yup.number().min(0),
+      rooms_number: yup.number().max(99).min(0), //decimal with 1 decimal place, will truncate if more decimal places
       bedrooms_number: yup.number().min(0),
       bathrooms_number: yup.number().min(0),
       kitchen_options: yup

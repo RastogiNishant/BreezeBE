@@ -11,7 +11,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
-const { reduce, isEmpty } = require('lodash')
+const { reduce, isEmpty, isNull } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -263,6 +263,7 @@ class MatchController {
               },
               iosInfo: {
                 iosBundleId: process.env.IOS_BUNDLE_ID,
+                iosAppStoreId: process.env.IOS_APPSTORE_ID,                
               },
             },
           })
@@ -337,7 +338,7 @@ class MatchController {
     const { estate_id, status, delay = null, user_id } = request.all()
     const estate = await this.getOwnEstate(estate_id, auth.user.id)
     if (!estate) {
-      throw HttpException('Invalid estate', 404)
+      throw new HttpException('Invalid estate', 404)
     }
 
     await MatchService.updateVisitStatusLandlord(estate_id, user_id, {
@@ -351,8 +352,22 @@ class MatchController {
   async followupVisit({ request, auth, response }) {
     let { estate_id, user_id } = request.all()
     try {
-      await VisitService.followupVisit(estate_id, user_id, auth)
+      const meta = await VisitService.followupVisit(estate_id, user_id, auth)
       return response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 422)
+    }
+  }
+
+  async getFollowups({ request, auth, response }) {
+    let { estate_id, user_id } = request.all()
+    try {
+      const meta = await VisitService.getFollowupMeta(estate_id, user_id)
+      return response.res({
+        estate_id,
+        user_id,
+        followupsMade: isNull(meta) ? [] : JSON.stringify(meta),
+      })
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
@@ -844,6 +859,7 @@ class MatchController {
       'updated_at',
       'inviteIn',
       'income',
+      'followups',
     ]
 
     const matchesCount = await Database.table('matches')
