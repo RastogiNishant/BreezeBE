@@ -792,7 +792,12 @@ class EstateCurrentTenantService {
 
       if (data.email) ect.email = data.email
       if (data.sex) {
-        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation =
+          data.sex === 1
+            ? SALUTATION_MR_LABEL
+            : data.sex === 2
+            ? SALUTATION_MS_LABEL
+            : SALUTATION_SIR_OR_MADAM_LABEL
         ect.salutation_int = data.sex
       }
       if (data.secondname) ect.surname = data.secondname

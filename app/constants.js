@@ -632,9 +632,9 @@ const constants = {
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
 
-  SALUTATION_MR_LABEL: 'Mr.',
-  SALUTATION_MS_LABEL: 'Ms.',
-  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
+  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
+  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.not_def.message',
 
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
