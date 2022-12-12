@@ -38,18 +38,17 @@
     "HOLZ": 13,
     "FLUESSIGGAS": 14
   },
+  "gender": {
+    "EGAL": 3,
+    "NUR_MANN": 1,
+    "NUR_FRAU": 2
+  },
   "heating_type": {
     "OFEN": 1,
     "ETAGE": 2,
     "ZENTRAL": 3,
     "FERN": 4,
     "FUSSBODEN": 5
-  },
-  "use_type": {
-    "ANLAGE": 3,
-    "GEWERBE": 2,
-    "WAZ": 4,
-    "WOHNEN": 1
   },
   "marketing_type": {
     "ERBPACHT": 3,
@@ -64,5 +63,11 @@
     "FREIPLATZ": 3,
     "PARKHAUS": 4,
     "DUPLEX": 5
+  },
+  "use_type": {
+    "ANLAGE": 3,
+    "GEWERBE": 2,
+    "WAZ": 4,
+    "WOHNEN": 1
   }
 }
