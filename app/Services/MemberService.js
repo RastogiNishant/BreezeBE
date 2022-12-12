@@ -16,7 +16,6 @@ const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const NoticeService = use('App/Services/NoticeService')
-const UserService = use('App/Services/UserService')
 const File = use('App/Classes/File')
 const FileBucket = use('App/Classes/File')
 const l = use('Localize')
@@ -303,7 +302,9 @@ class MemberService {
         }
       )
 
-      const data = await UserService.getTokenWithLocale([member.owner_user_id || member.user_id])
+      const data = await require('./UserService').getTokenWithLocale([
+        member.owner_user_id || member.user_id,
+      ])
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
       const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
 
@@ -504,6 +505,7 @@ class MemberService {
             },
             iosInfo: {
               iosBundleId: process.env.IOS_BUNDLE_ID,
+              iosAppStoreId: process.env.IOS_APPSTORE_ID,
             },
           },
         })
@@ -591,6 +593,7 @@ class MemberService {
         member.is_verified = true
         member.owner_user_id = user.id
         member.email = user.email
+        member.code = null
         updatePromises.push(member.save(trx))
       }
 

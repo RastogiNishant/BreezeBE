@@ -7,11 +7,11 @@ const { phoneSchema, id } = require('../Libs/schemas.js')
 class CreateEstateCurrentTenant extends Base {
   static schema = () =>
     yup.object().shape({
-      email: yup.string().email().max('255'),
+      email: yup.string().email().max('255').nullable(),
       surname: yup.string().required(),
       phone_number: phoneSchema.nullable(),
       estate_id: id.required(),
-      contract_end: yup.date(),
+      contract_end: yup.date().nullable(),
       salutation_int: yup
         .number()
         .oneOf([SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM])

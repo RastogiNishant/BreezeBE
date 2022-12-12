@@ -235,10 +235,6 @@ Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').m
   'guest',
   'valid:HosekeeperSignUp',
 ])
-Route.post('/api/v1/resendsms', 'AccountController.resendUserConfirmBySMS').middleware([
-  'guest',
-  'valid:ResendSMS,Lang',
-])
 Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
   'guest',
   'valid:ConfirmSMS',
@@ -259,12 +255,6 @@ Route.group(() => {
 Route.get('/api/v1/me', 'AccountController.me').middleware([
   'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
 ])
-Route.put('/api/v1/me', 'AccountController.updateProfile').middleware([
-  'auth:jwt,jwtLandlord',
-  'valid:UpdateUser',
-  'userCanValidlyChangeEmail',
-])
-
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
@@ -275,7 +265,9 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
   'userCanValidlyChangeEmail',
 ])
 
-Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm')
+Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm').middleware([
+  'valid:UserId',
+])
 
 Route.group(() => {
   Route.get('/', 'AccountController.onboard').middleware(['auth:jwt,jwtLandlord'])
@@ -458,9 +450,9 @@ Route.group(() => {
     'LandlordOwnsThisEstate',
   ])
 
-  Route.get('/:estate_id/me_tenant_detail', 'EstateController.landlordTenantDetailInfo').middleware([
-    'valid:EstateId,TenantId',
-  ])
+  Route.get('/:estate_id/me_tenant_detail', 'EstateController.landlordTenantDetailInfo').middleware(
+    ['valid:EstateId,TenantId']
+  )
 
   Route.post(
     '/tenant/invite/email',
@@ -477,6 +469,10 @@ Route.group(() => {
     'EstateCurrentTenantController.inviteTenantToAppBySMS'
   ).middleware(['valid:InvitationIds'])
 
+  Route.put('/tenant/revoke', 'EstateCurrentTenantController.revokeInvitation').middleware([
+    'valid:InvitationIds',
+  ])
+
   Route.post('/tenant/disconnect', 'EstateCurrentTenantController.disconnect').middleware([
     'valid:InvitationIds',
   ])
@@ -485,6 +481,16 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.get(
+  '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
+  'EstateCurrentTenantController.retrieveLinkByCode'
+).middleware(['valid:InvitationLinkRetrieveCode', 'UserCanGetInvitationLink'])
+
+Route.post(
+  '/api/v1/validate/outside_tenant/invitation',
+  'EstateCurrentTenantController.validateInvitationQRCode'
+).middleware(['valid:AlreadyRegisteredOutsideTenantInvite'])
 
 Route.post(
   '/api/v1/accept/outside_tenant',
@@ -514,6 +520,10 @@ Route.group(() => {
     'auth:jwtLandlord', //landlord for now
     'valid:FollowupVisit',
   ])
+  Route.get(
+    '/notifications/followup/:estate_id/:user_id',
+    'MatchController.getFollowups'
+  ).middleware(['auth:jwtLandlord', 'valid:FollowupVisit'])
 }).prefix('/api/v1/visit')
 
 Route.group(() => {
@@ -717,6 +727,8 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.get('/unread_messages', 'ChatController.getUnreadMessages')
+  Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])

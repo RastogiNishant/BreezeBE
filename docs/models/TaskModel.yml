@@ -61,10 +61,28 @@ components:
                   matchMode:
                     type: string
                     enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
-                    example: "startsWith"
+                    example: "notEquals"
                   value:
                     type: number
                     example: 5
+        in_progress_task:
+          properties:
+            operator:
+              type: string
+              enum: ["or", "and"]
+              example: "or"
+            constraints:
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
+                    example: "gt"
+                  value:
+                    type: number
+                    example: 5                    
         net_rent:
           properties:
             operator:
@@ -280,3 +298,11 @@ components:
             type: number
           example: [1, 2, 3, 4, 5]
           description: "1: STATUS_NEW, 2: STATUS_INPROGRESS, 3:STATUS_UNRESOLVED, 4:STATUS_RESOLVED"
+        filter_by_unread_message:
+          name: filter_by_unread_message
+          in: formData
+          type: boolean
+        order_by_unread_message:
+          name: order_by_unread_message
+          in: formData
+          type: boolean

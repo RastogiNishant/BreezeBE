@@ -7,7 +7,6 @@ const md5 = require('md5')
 /** @type {typeof import('/providers/Notifications')} */
 const Notifications = use('Notifications')
 const l = use('Localize')
-const UserService = use('App/Services/UserService')
 const uTime = require('moment')().format('X')
 
 const { capitalize, rc } = require('../Libs/utils')
@@ -102,6 +101,8 @@ const {
   URGENCIES,
   NOTICE_TYPE_TENANT_DISCONNECTION,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
 } = require('../constants')
 
 const mapping = [
@@ -154,6 +155,7 @@ const mapping = [
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   ],
   [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
+  [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
 ]
 
 class NotificationsService {
@@ -279,6 +281,21 @@ class NotificationsService {
   }
 
   /**
+   * Send notification to knocked prospect about estate expired
+   */
+
+  static async sendEstateExpiredToKnockedProspect(notices) {
+    const title = 'prospect.notification.event.knocked_property_expired'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      const address = capitalize(get(data, 'estate_address', ''))
+      return (
+        address + ' \n' + `${l.get('prospect.notification.next.knocked_property_expired', lang)}`
+      )
+    })
+  }
+
+  /**
    * Send Notification about estate expired soon
    */
   static async sendProspectPropertyDeactivated(notices) {
@@ -353,7 +370,9 @@ class NotificationsService {
       return false
     }
     // Users tokens and lang
-    const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
+    const langTokens = await require('./UserService').getTokenWithLocale(
+      uniq(notes.map((i) => i.user_id))
+    )
     // Mixin token data to existing data
     notes = notes.reduce((n, i) => {
       const token = langTokens.find(({ id, lang, device_token }) => +id === +i.user_id)
@@ -558,6 +577,16 @@ class NotificationsService {
     })
   }
 
+  static async sendTenantUpdateTimeSlot(notice) {
+    const title = 'tenant.notification.event.visit_changed'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('tenant.notification.next.visit_changed', lang)
+      )
+    })
+  }
   //  static async sendProspectNewVisit(notice) {
   //   const title = 'prospect.notification.event.new_visit_time'
   //   return NotificationsService.sendNotes(notice, title, (data, lang) => {
@@ -792,12 +821,12 @@ class NotificationsService {
   }
 
   static async sendFollowUpVisit(notice) {
-    const title = 'notification.txt_are_you_coming_notifications.title'
+    const title = 'prospect.notification.event.tenant_are_you_coming'
     const body = (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('notification.txt_are_you_coming_notifications.message', lang)
+        l.get('prospect.notification.next.tenant_are_you_coming', lang)
       )
     }
     return NotificationsService.sendNotes([notice], title, body)
@@ -855,8 +884,8 @@ class NotificationsService {
   }
 
   static async notifyTenantDisconnected(notices) {
-    const title = 'tenant.notification.event.tenant_disconnected'
-    const body = 'tenant.notification.next.tenant_disconnected'
+    const title = 'tenant.notification.event.tenant_disconnected.message'
+    const body = 'tenant.notification.next.tenant_disconnected.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
