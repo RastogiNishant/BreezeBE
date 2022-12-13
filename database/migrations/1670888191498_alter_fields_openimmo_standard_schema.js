@@ -4,13 +4,14 @@
 const Schema = use('Schema')
 const Database = use('Database')
 const fields = [
-  'firing',
-  'energy_type',
-  'use_type',
-  'marketing_type',
-  'ground',
-  'parking_space_type',
   'bath_options',
+  'energy_type',
+  'firing',
+  'ground',
+  'heating_type',
+  'marketing_type',
+  'parking_space_type',
+  'use_type',
 ]
 const has_defaults = [
   'energy_type',
