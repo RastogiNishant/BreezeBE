@@ -82,8 +82,12 @@ class OAuthController {
    *
    */
   async authorizeUser(email, role) {
+    if (!Array.isArray(email)) {
+      email = [email]
+    }
+
     const query = User.query()
-      .where('email', email)
+      .whereIn('email', email)
       .whereNot('status', STATUS_DELETE)
       .orderBy('updated_at', 'desc')
     if ([ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
@@ -110,10 +114,17 @@ class OAuthController {
     } catch (e) {
       throw new HttpException(INVALID_TOKEN, 400)
     }
-
     const email = get(ticket, 'payload.email')
     const googleId = get(ticket, 'payload.sub')
-    let user = await this.authorizeUser(email, role)
+    const emailPrefix = email.split(`@`)[0]
+    const emailSuffix = email.split(`@`)[1]
+    let anotherSameEmail = ''
+    if (emailSuffix.includes('googlemail')) {
+      anotherSameEmail = `${emailPrefix}@gmail.com`
+    } else {
+      anotherSameEmail = `${emailPrefix}@googlemail.com`
+    }
+    let user = await this.authorizeUser([email, anotherSameEmail], role)
 
     let owner_id
     let member_id
@@ -125,7 +136,7 @@ class OAuthController {
         if (code) {
           const member = await Member.query()
             .select('user_id', 'id')
-            .where('email', email)
+            .whereIn('email', [email, anotherSameEmail])
             .where('code', code)
             .firstOrFail()
 
@@ -137,7 +148,7 @@ class OAuthController {
           // Check user not exists
           const availableUser = await User.query()
             .where('role', ROLE_USER)
-            .where('email', email)
+            .whereIn('email', [email, anotherSameEmail])
             .first()
           if (availableUser) {
             throw new HttpException(USER_UNIQUE, 400)
