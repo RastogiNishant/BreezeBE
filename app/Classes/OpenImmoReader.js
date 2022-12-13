@@ -212,7 +212,8 @@ class OpenImmoReader {
             }
           })
         }
-        property[field] = propertyOptions
+        //property[field] = `ARRAY${JSON.stringify(propertyOptions)}`
+        property[field] = JSON.stringify(propertyOptions).replace(/\[/, '{').replace(/\]/, '}')
       })
     })
     return properties
@@ -220,24 +221,52 @@ class OpenImmoReader {
 
   parseSingleValues(properties) {
     const options = require('../../resources/openimmo/openimmo-to-breeze-constants.json')
-    const fields = ['apt_type', 'building_age', 'building_status', 'gender']
+    const fields = [
+      'apt_type',
+      'building_age',
+      'building_status',
+      'furnished',
+      'gender',
+      'property_type',
+    ]
     properties.map((property) => {
       fields.map((field) => {
-        let dproperty = property[field]
         let propertyValue
-        if (dproperty) {
-          propertyValue = options[field][dproperty]
+        if (field === 'furnished') {
+          let propertyField = property[field]
+          if (!property[field]) {
+            propertyField = ''
+          }
+          propertyValue = options[field][propertyField]
+        } else {
+          let dproperty = property[field]
+          if (dproperty) {
+            propertyValue = options[field][dproperty]
+          }
         }
         property[field] = propertyValue
       })
       //parse lat long
       if (property.coord_raw) {
         property.coord_raw = `${property.coord_raw.breitengrad},${property.coord_raw.laengengrad}`
-        property.coord = `POINT(${property.coord_raw})`
       }
       //force dates to be of the format YYYY-MM-DD
       property.available_date = moment(new Date(property.available_date)).format('YYYY-MM-DD')
       property.from_date = moment(new Date(property.from_date)).format('YYYY-MM-DD')
+
+      property.construction_year = property.construction_year
+        ? `${property.construction_year}-01-01`
+        : null
+      property.last_modernization = property.last_modernization
+        ? `${property.last_modernization}-01-01`
+        : null
+
+      if (property.pets === 'true') {
+        property.pets = null
+      } else if (property.pets === 'false') {
+        property.pets = 1
+      }
+      property.energy_pass = JSON.stringify(property.energy_pass)
     })
     return properties
   }
@@ -255,17 +284,13 @@ class OpenImmoReader {
     let json = this.extractJson(data)
     try {
       if ((json = this.validate(json))) {
-        //return json
         let properties = this.processProperties(json)
         properties = this.parseMultipleValuesWithOptions(properties)
         properties = this.parseSingleValues(properties)
-        //console.log(properties)
         return properties
-        return json['openimmo']['anbieter'][0]
       }
     } catch (err) {
-      console.log(err.message)
-      return false
+      throw new Error(err.message)
     }
   }
 }

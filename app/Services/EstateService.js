@@ -23,7 +23,7 @@ const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
-
+const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const {
   STATUS_DRAFT,
   STATUS_DELETE,
@@ -1336,6 +1336,17 @@ class EstateService {
       return false
     }
     return true
+  }
+
+  static async importOpenimmo(importFile, user_id) {
+    const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
+    const result = await reader.process()
+    result.map(async (property) => {
+      property.user_id = user_id
+      property.status = STATUS_DRAFT
+      await Estate.createItem(property)
+    })
+    return result
   }
 
   static async deletePermanent(user_id) {

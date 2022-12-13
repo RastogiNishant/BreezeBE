@@ -63,7 +63,6 @@ const INVITE_CODE_STRING_LENGTH = 8
 const {
   exceptions: { ESTATE_NOT_EXISTS },
 } = require('../../excepions')
-const OpenImmoReader = use('App/Classes/OpenImmoReader')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -983,34 +982,12 @@ class EstateController {
   }
 
   async importOpenimmo({ request, response, auth }) {
-    const importFile = request.file('file')
-
-    //todo: move validation to middleware
-    if (
-      !(
-        importFile.headers['content-type'] === 'application/xml' ||
-        importFile.headers['content-type'] === 'application/zip'
-      )
-    ) {
-      throw new HttpException('Invalid file')
+    try {
+      await EstateService.importOpenimmo(request.importFile, auth.user.id)
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 412)
     }
-    const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
-    const result = await reader.process()
-    /*
-    result.map(async (property) => {
-      property = omit(property, [
-        'apt_type',
-        'building_age',
-        'building_status',
-        'firing',
-        'heating_type',
-        'property_type',
-      ])
-      property.user_id = auth.user.id
-      property.construction_year = `${property.construction_year}-01-01`
-      await Estate.createItem(property)
-    })*/
-    response.res(result)
   }
 }
 
