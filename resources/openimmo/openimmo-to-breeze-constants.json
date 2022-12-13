@@ -34,13 +34,13 @@
     "TEIL_VOLLRENOVIERT": 4,
     "TEIL_SANIERT": 6,
     "VOLL_SANIERT": 7,
-    "SANIERUNGSBEDUERFTIG": 8,
-    "BAUFAELLIG": 9,
-    "NACH_VEREINBARUNG": 10,
-    "MODERNISIERT": 11,
-    "GEPFLEGT": 12,
-    "ROHBAU": 13,
-    "ENTKERNT": 14,
+    "SANIERUNGSBEDUERFTIG": 7,
+    "BAUFAELLIG": 8,
+    "NACH_VEREINBARUNG": 9,
+    "MODERNISIERT": 10,
+    "GEPFLEGT": 11,
+    "ROHBAU": 12,
+    "ENTKERNT": 13,
     "ABRISSOBJEKT": 14,
     "PROJEKTIERT": 15
   },
@@ -75,6 +75,11 @@
     "KOHLE": 12, 
     "HOLZ": 13, 
     "FLUESSIGGAS": 14
+  },
+  "furnished": {
+    "VOLL": true,
+    "": false,
+    "TEIL": null
   },
   "gender": {
     "EGAL": 3,
@@ -117,6 +122,22 @@
     "FREIPLATZ": 3,
     "PARKHAUS": 4,
     "DUPLEX": 5
+  },
+  "property_type": {
+    "DACHGESCHOSS": 3,
+    "MAISONETTE": 4,
+    "LOFT-STUDIO-ATELIER": 5,
+    "PENTHOUSE": 8,
+    "TERRASSEN": 9,
+    "ETAGE": 10,
+    "ERDGESCHOSS": 2,
+    "SOUTERRAIN": 7,
+    "APARTMENT": 1,
+    "FERIENWOHNUNG": 11,
+    "GALERIE": 12,
+    "ROHDACHBODEN": 13,
+    "ATTIKAWOHNUNG": 14,
+    "KEINE_ANGABE": 0
   },
   "use_type": {
     "ANLAGE": 3,
