@@ -38,6 +38,22 @@
     "HOLZ": 13,
     "FLUESSIGGAS": 14
   },
+  "firing": {
+    "OEL": 1,
+    "GAS": 2, 
+    "ELEKTRO": 3, 
+    "ALTERNATIV": 4, 
+    "SOLAR": 5, 
+    "ERDWAERME": 6, 
+    "LUFTWP": 7, 
+    "FERN": 8, 
+    "BLOCK": 9, 
+    "WASSER-ELEKTRO": 10, 
+    "PELLET": 11, 
+    "KOHLE": 12, 
+    "HOLZ": 13, 
+    "FLUESSIGGAS": 14
+  },
   "gender": {
     "EGAL": 3,
     "NUR_MANN": 1,
