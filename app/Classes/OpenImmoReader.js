@@ -4,6 +4,7 @@ const fs = require('fs')
 const extract = require('extract-zip')
 const { has, includes, isArray, isNumber, forOwn, get } = require('lodash')
 const { OPENIMMO_EXTRACT_FOLDER } = use('App/constants')
+const moment = require('moment')
 
 class OpenImmoReader {
   json = {}
@@ -132,6 +133,7 @@ class OpenImmoReader {
     //2001-01-01T11:00:00
     return test.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/)
   }
+
   isDate(test) {
     return test.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)
   }
@@ -187,6 +189,59 @@ class OpenImmoReader {
     return properties
   }
 
+  parseMultipleValuesWithOptions(properties) {
+    const options = require('../../resources/openimmo/openimmo-to-breeze-constants.json')
+    const fields = [
+      'bath_options',
+      'energy_type',
+      'firing',
+      'ground',
+      'heating_type',
+      'marketing_type',
+      'parking_space_type',
+      'use_type',
+    ]
+    properties.map((property) => {
+      fields.map((field) => {
+        let dproperty = property[field]
+        let propertyOptions = []
+        if (dproperty) {
+          forOwn(options[field], (value, key) => {
+            if (dproperty[key] && (dproperty[key] === 'true' || dproperty[key] === '1')) {
+              propertyOptions = [...propertyOptions, value]
+            }
+          })
+        }
+        property[field] = propertyOptions
+      })
+    })
+    return properties
+  }
+
+  parseSingleValues(properties) {
+    const options = require('../../resources/openimmo/openimmo-to-breeze-constants.json')
+    const fields = ['apt_type', 'building_age', 'building_status', 'gender']
+    properties.map((property) => {
+      fields.map((field) => {
+        let dproperty = property[field]
+        let propertyValue
+        if (dproperty) {
+          propertyValue = options[field][dproperty]
+        }
+        property[field] = propertyValue
+      })
+      //parse lat long
+      if (property.coord_raw) {
+        property.coord_raw = `${property.coord_raw.breitengrad},${property.coord_raw.laengengrad}`
+        property.coord = `POINT(${property.coord_raw})`
+      }
+      //force dates to be of the format YYYY-MM-DD
+      property.available_date = moment(new Date(property.available_date)).format('YYYY-MM-DD')
+      property.from_date = moment(new Date(property.from_date)).format('YYYY-MM-DD')
+    })
+    return properties
+  }
+
   async process() {
     let data
     if (this.contentType === 'application/zip') {
@@ -201,9 +256,11 @@ class OpenImmoReader {
     try {
       if ((json = this.validate(json))) {
         //return json
-        const properties = this.processProperties(json)
-        console.log(properties)
-        //return properties
+        let properties = this.processProperties(json)
+        properties = this.parseMultipleValuesWithOptions(properties)
+        properties = this.parseSingleValues(properties)
+        //console.log(properties)
+        return properties
         return json['openimmo']['anbieter'][0]
       }
     } catch (err) {

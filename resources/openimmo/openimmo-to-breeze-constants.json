@@ -22,6 +22,28 @@
     "WANNE": 1,
     "PISSOIR": 4
   },
+  "building_age": {
+    "ALTBAU": 2,
+		"NEUBAU": 1
+  },
+  "building_status": {
+    "ERSTBEZUG": 1,
+    "TEIL_VOLLRENOVIERUNGSBED": 2,
+    "NEUWERTIG": 3,
+    "TEIL_VOLLSANIERT": 5,
+    "TEIL_VOLLRENOVIERT": 4,
+    "TEIL_SANIERT": 6,
+    "VOLL_SANIERT": 7,
+    "SANIERUNGSBEDUERFTIG": 8,
+    "BAUFAELLIG": 9,
+    "NACH_VEREINBARUNG": 10,
+    "MODERNISIERT": 11,
+    "GEPFLEGT": 12,
+    "ROHBAU": 13,
+    "ENTKERNT": 14,
+    "ABRISSOBJEKT": 14,
+    "PROJEKTIERT": 15
+  },
   "energy_type": {
     "OEL": 1,
     "GAS": 2,
@@ -58,6 +80,22 @@
     "EGAL": 3,
     "NUR_MANN": 1,
     "NUR_FRAU": 2
+  },
+  "ground": {
+    "FLIESEN": 1,
+    "STEIN": 2, 
+    "TEPPICH": 3,
+    "PARKETT": 4,
+    "FERTIGPARKETT": 5,
+    "LAMINAT": 6,
+    "DIELEN": 7,
+    "KUNSTSTOFF": 8,
+    "ESTRICH": 9,
+    "DOPPELBODEN": 10,
+    "LINOLEUM": 11,
+    "MARMOR": 12,
+    "TERRAKOTTA": 13,
+    "GRANIT": 14
   },
   "heating_type": {
     "OFEN": 1,
