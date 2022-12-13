@@ -39,7 +39,7 @@ class AlterFieldsOpenimmoStandardSchema extends Schema {
   async down() {
     Promise.map(fields, async (field) => {
       await Database.raw(
-        `ALTER TABLE estates ALTER COLUMN firing TYPE INTEGER USING firing[1]::INTEGER`
+        `ALTER TABLE estates ALTER COLUMN ${field} TYPE INTEGER USING ${field}[1]::INTEGER`
       )
       if (includes(has_defaults, field)) {
         if (field === 'parking_space_type') {
