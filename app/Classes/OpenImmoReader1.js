@@ -1,3 +1,6 @@
+/**
+ * This file is used to generate the JSON file for openimmo.
+ */
 const xmlParser = require('xml2js').Parser()
 const AppException = use('App/Exceptions/AppException')
 const fs = require('fs')
