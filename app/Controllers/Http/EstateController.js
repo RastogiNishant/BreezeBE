@@ -983,8 +983,8 @@ class EstateController {
 
   async importOpenimmo({ request, response, auth }) {
     try {
-      await EstateService.importOpenimmo(request.importFile, auth.user.id)
-      response.res(true)
+      const result = await EstateService.importOpenimmo(request.importFile, auth.user.id)
+      response.res(result)
     } catch (err) {
       throw new HttpException(err.message, 412)
     }

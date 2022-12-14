@@ -1344,7 +1344,18 @@ class EstateService {
     result.map(async (property) => {
       property.user_id = user_id
       property.status = STATUS_DRAFT
-      await Estate.createItem(property)
+      let images = property.images
+      const result = await Estate.createItem(omit(property, ['images']))
+      images.map(async (image) => {
+        if (image.image) {
+          await File.createItem({
+            url: image.image,
+            type: image.type,
+            estate_id: result.id,
+            disk: 's3public',
+          })
+        }
+      })
     })
     return result
   }

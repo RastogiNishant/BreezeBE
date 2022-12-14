@@ -2,9 +2,35 @@ const xml2js = require('xml2js')
 const AppException = use('App/Exceptions/AppException')
 const fs = require('fs')
 const extract = require('extract-zip')
-const { has, includes, isArray, isNumber, forOwn, get } = require('lodash')
+const { has, includes, isArray, forOwn, get } = require('lodash')
 const { OPENIMMO_EXTRACT_FOLDER } = use('App/constants')
 const moment = require('moment')
+const Drive = use('Drive')
+
+const imageTypes = {
+  TITELBILD: 'cover',
+  INNENANSICHTEN: 'image',
+  AUSSENANSICHTEN: 'image',
+  GRUNDRISS: 'plan',
+  BILD: 'image',
+}
+
+const energyPassVariables = {
+  wertklasse: 'energy_efficiency_category',
+  ausstelldatum: 'created_on',
+  gueltig_bis: 'expires_on',
+  epart: 'type_of_certificate',
+  energieverbrauchkennwert: 'total_consumption_value',
+  stromwert: 'electricity',
+  waermewert: 'heating',
+  mitwarmwasser: 'consumption_including_hot_water',
+  endenergiebedarf: 'total_demand_value',
+}
+
+const certificateType = {
+  BEDARF: 'By Demand',
+  VERBRAUCH: 'By Consumption',
+}
 
 class OpenImmoReader {
   json = {}
@@ -106,7 +132,6 @@ class OpenImmoReader {
       //<email_sonstige emailart="EM_DIREKT" bemerkung="1">foo@bar.de</email_sonstige>
       //console.log('simple', definition, value)
     } else if (definition.type) {
-      //console.log('type', definition.name, value, definition.type)
       //FIXME: stellplatz type
       if (definition.type === 'boolean' && !this.isBoolean(value[0])) {
         throw new Error(`Validation Error: ${definition.name} must be boolean`)
@@ -170,7 +195,7 @@ class OpenImmoReader {
   validate(json) {
     this.validateRoot(json)
     const rootDefinition = this.getDefinition('openimmo')
-    const valid = rootDefinition.sequence.map((sequence) => {
+    rootDefinition.sequence.map((sequence) => {
       this.validateElement(json['openimmo'][sequence.ref], this.getDefinition(sequence.ref))
     })
     return json
@@ -185,6 +210,47 @@ class OpenImmoReader {
         obj = { ...obj, [key]: get(property, value) }
       })
       return obj
+    })
+    return properties
+  }
+
+  async processImages(properties) {
+    properties.map((property, index) => {
+      if (property.images) {
+        property.images.map(async (image, k) => {
+          if (
+            includes(
+              ['TITELBILD', 'INNENANSICHTEN', 'AUSSENANSICHTEN', 'GRUNDRISS', 'BILD'],
+              image.$.gruppe
+            )
+          ) {
+            const filename = `${moment().format('YYYYMM')}/${image.daten[0].pfad[0]}`
+            properties[index].images[k] = { image: filename, type: imageTypes[image.$.gruppe] }
+            const imgData = Drive.getStream(`${this.dir}/${image.daten[0].pfad[0]}`)
+            let options = { ContentType: image.format[0], ACL: 'public-read' }
+            await Drive.disk('s3public').put(filename, imgData, options)
+          }
+        })
+      }
+    })
+    return properties
+  }
+
+  processEnergyPass(properties) {
+    properties.map((property) => {
+      let pass = {}
+      if (property.energy_pass) {
+        forOwn(property.energy_pass, (value, key) => {
+          let dval = value[0]
+          if (key === 'epart') {
+            dval = certificateType[value[0]]
+          }
+          if (energyPassVariables[key]) {
+            pass = { ...pass, [energyPassVariables[key]]: dval }
+          }
+        })
+      }
+      property.energy_pass = pass
     })
     return properties
   }
@@ -212,8 +278,7 @@ class OpenImmoReader {
             }
           })
         }
-        //property[field] = `ARRAY${JSON.stringify(propertyOptions)}`
-        property[field] = JSON.stringify(propertyOptions).replace(/\[/, '{').replace(/\]/, '}')
+        property[field] = propertyOptions //JSON.stringify(propertyOptions).replace(/\[/, '{').replace(/\]/, '}')
       })
     })
     return properties
@@ -247,8 +312,8 @@ class OpenImmoReader {
         property[field] = propertyValue
       })
       //parse lat long
-      if (property.coord_raw) {
-        property.coord_raw = `${property.coord_raw.breitengrad},${property.coord_raw.laengengrad}`
+      if (property.coord) {
+        property.coord = `${property.coord.breitengrad},${property.coord.laengengrad}`
       }
       //force dates to be of the format YYYY-MM-DD
       property.available_date = moment(new Date(property.available_date)).format('YYYY-MM-DD')
@@ -257,16 +322,19 @@ class OpenImmoReader {
       property.construction_year = property.construction_year
         ? `${property.construction_year}-01-01`
         : null
-      property.last_modernization = property.last_modernization
-        ? `${property.last_modernization}-01-01`
-        : null
+
+      //last_modernization according to openimmo is a string ie. Bad 1997, K�che 2010
+      if (property.last_modernization) {
+        property.last_modernization = property.last_modernization.match(/(19|20)[0-9]{2}/)
+          ? `${property.last_modernization}-01-01`
+          : null
+      }
 
       if (property.pets === 'true') {
         property.pets = null
       } else if (property.pets === 'false') {
         property.pets = 1
       }
-      property.energy_pass = JSON.stringify(property.energy_pass)
     })
     return properties
   }
@@ -287,6 +355,9 @@ class OpenImmoReader {
         let properties = this.processProperties(json)
         properties = this.parseMultipleValuesWithOptions(properties)
         properties = this.parseSingleValues(properties)
+        properties = this.processEnergyPass(properties)
+        properties = await this.processImages(properties)
+
         return properties
       }
     } catch (err) {
