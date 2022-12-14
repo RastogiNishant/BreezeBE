@@ -246,7 +246,7 @@ class UserController {
 
   async getLandlords({ request, response }) {
     let { activation_status, status, estate_status, page, limit, query } = request.all()
-    if (!activation_status && !Array.isArray(activation_status)) {
+    if (!activation_status || !Array.isArray(activation_status)) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
         USER_ACTIVATION_STATUS_ACTIVATED,
