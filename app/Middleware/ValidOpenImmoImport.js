@@ -2,6 +2,7 @@
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
+const HttpException = use('App/Exceptions/HttpException')
 
 class ValidOpenImmoImport {
   /**
@@ -18,7 +19,7 @@ class ValidOpenImmoImport {
         importFile.headers['content-type'] === 'application/zip'
       )
     ) {
-      throw new HttpException('Invalid Openimmo file')
+      throw new HttpException('Invalid Openimmo file', 412)
     }
     request.importFile = importFile
     await next()
