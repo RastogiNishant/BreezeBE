@@ -28,6 +28,7 @@
   "heating_costs_included": "preise.0.heizkosten.0",
   "heating_type": "ausstattung.0.heizungsart.0.$",
   "house_number": "geo.0.hausnummer.0",
+  "house_type": "objektkategorie.0.objektart.0.haus.0.haustyp.0.$",
   "last_modernization": "zustand_angaben.0.letztemodernisierung.0",
   "living_space": "flaechen.0.wohnflaeche.0",
   "marketing_type": "objektkategorie.0.vermarktungsart.0.$",
