@@ -890,6 +890,9 @@ const constants = {
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
   OPENIMMO_EXTRACT_FOLDER: '/tmp',
+
+  IMPORT_TYPE_EXCEL: 'excel',
+  IMPORT_ENTITY_ESTATES: 'estates',
 }
 
 module.exports = constants
