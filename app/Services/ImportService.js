@@ -182,7 +182,7 @@ class ImportService {
       }
     } catch (err) {
       await trx.rollback
-      throw new HttpException('Error found while importing: '.err.message)
+      throw new HttpException('Error found while importing: ', err.message)
     }
   }
 
