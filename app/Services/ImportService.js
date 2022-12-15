@@ -177,7 +177,7 @@ class ImportService {
       await trx.commit()
       return {
         last_activity: {
-          file: filePath.clientName,
+          file: filePath.clientName || null,
           created_at: moment().utc().format(),
         },
         errors: [...errors, ...createErrors],
@@ -185,7 +185,7 @@ class ImportService {
         warnings: [...warnings],
       }
     } catch (err) {
-      await trx.rollback
+      await trx.rollback()
       throw new HttpException('Error found while importing: ', err.message)
     }
   }
