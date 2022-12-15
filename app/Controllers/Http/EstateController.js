@@ -413,7 +413,7 @@ class EstateController {
         await EstateService.handleOfflineEstate(estate.id, trx)
         await estate.save(trx)
         await trx.commit()
-        return response.res(true)
+        response.res(true)
       } else {
         throw new HttpException('You are attempted to edit wrong estate', 409)
       }
@@ -785,19 +785,20 @@ class EstateController {
 
     //Transaction start...
     const trx = await Database.beginTransaction()
-    let code
-    //check if this estate already has an invite
-    const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
-    if (invitation) {
-      code = invitation.code
-    } else {
-      do {
-        //generate code
-        code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
-      } while (await EstateViewInvite.findBy('code', code))
-    }
 
     try {
+      let code
+      //check if this estate already has an invite
+      const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
+      if (invitation) {
+        code = invitation.code
+      } else {
+        do {
+          //generate code
+          code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
+        } while (await EstateViewInvite.findBy('code', code))
+      }
+
       let newInvite = new EstateViewInvite()
       if (!invitation) {
         //this needs to be created
@@ -836,10 +837,10 @@ class EstateController {
       )
       await trx.commit()
       //transaction end
-      return response.res({ code })
+      response.res({ code })
     } catch (e) {
-      console.log(e)
       await trx.rollback()
+      console.log(e)
       //transaction failed
       throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
@@ -919,15 +920,14 @@ class EstateController {
   async deleteMultiple({ auth, request, response }) {
     const { id } = request.all()
     const trx = await Database.beginTransaction()
-    let affectedRows
     try {
-      affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+      const affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+      await trx.commit()
+      response.res({ deleted: affectedRows })
     } catch (error) {
       await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    await trx.commit()
-    return response.res({ deleted: affectedRows })
   }
 
   async getLatestEstates({ request, auth, response }) {

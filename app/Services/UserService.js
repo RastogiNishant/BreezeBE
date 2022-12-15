@@ -4,7 +4,7 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { isArray, isEmpty, uniq, pick, trim, unset } = require('lodash')
+const { isArray, isEmpty, uniq, pick, trim, omit } = require('lodash')
 const Promise = require('bluebird')
 const fs = require('fs')
 const Env = use('Env')
@@ -32,6 +32,7 @@ const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const Ws = use('Ws')
+const Admin = use('App/Models/Admin')
 
 const {
   STATUS_EMAIL_VERIFY,
@@ -76,6 +77,7 @@ const {
     NO_CODE_PASSED,
     INVALID_TOKEN,
     ACCOUNT_ALREADY_VERIFIED,
+    NO_CONTACT_EXIST,
   },
 } = require('../../app/exceptions')
 
@@ -922,6 +924,7 @@ class UserService {
     user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
     if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
       const company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+      user.company = company
       if (company.name && company.size && company.type) {
         user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
       }
@@ -937,6 +940,13 @@ class UserService {
     if (role) {
       roles = [role]
     }
+
+    // Check if user is admin
+    if (role === ROLE_LANDLORD) {
+      const adminAttempt = await this.handleAdminLoginFromLandlord(email)
+      if (adminAttempt) return adminAttempt
+    }
+
     const user = await User.query()
       .select('*')
       .where('email', email)
@@ -970,6 +980,22 @@ class UserService {
     return user
   }
 
+  static async handleAdminLoginFromLandlord(email, auth) {
+    const adminUser = await Admin.query()
+      .select('admins.*')
+      .select(Database.raw(`${ROLE_LANDLORD} as role`))
+      .select(Database.raw(`true as is_admin`))
+      .select(Database.raw(`${STATUS_ACTIVE} as status`))
+      .select(Database.raw(`true as real_admin`))
+      .where('email', email)
+      .first()
+
+    if (adminUser) {
+      return { user: adminUser, isAdmin: true }
+    }
+
+    return null
+  }
   /**
    *
    * @param {*} id
@@ -1008,6 +1034,8 @@ class UserService {
       } else if (user.role == ROLE_USER) {
         user.has_final_match = await require('./MatchService').checkUserHasFinalMatch(user.id)
       }
+      //set last login
+      await User.query().where('id', user.id).update({ last_login: moment().utc().format() })
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
     }
@@ -1066,26 +1094,80 @@ class UserService {
         if (data.email) {
           await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
         }
-        await user.updateItemWithTrx(data, trx)
+
+        let userData = omit(data, ['company_name', 'size', 'contact'])
+        if (Object.keys(userData).length) {
+          await user.updateItemWithTrx(userData, trx)
+        }
         user = user.toJSON({ isOwner: true })
 
         await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
-        user = await this.setOnboardingStep(user)
-        await trx.commit()
 
+        let needCompanyUpdate = false
+        let companyData = {}
+        if (data && data.company_name) {
+          needCompanyUpdate = true
+          companyData = {
+            name: data.company_name,
+          }
+        }
+
+        if (data && data.size) {
+          needCompanyUpdate = true
+          companyData = {
+            ...companyData,
+            size: data.size,
+          }
+        }
+
+        if (needCompanyUpdate) {
+          await require('./CompanyService').updateCompany(user.id, companyData, trx)
+        }
+
+        if (data && data.contact) {
+          const contactKeys = Object.keys(data.contact)
+          const contactInfo = contactKeys.map((key) => data.contact[key])
+          if (contactInfo.filter((i) => i != undefined).length) {
+            console.log('updateContact start point')
+            await this.updateContact(user.id, data.contact)
+          }
+        }
+        await trx.commit()
+        user = await this.setOnboardingStep(user)
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
+      } else {
+        console.log('update Profile else here')
+        await trx.rollback()
       }
 
       if (user.role === ROLE_LANDLORD) {
         //TODO: we should cover this field in the tests
-        user.has_property = await require('./EstateService').hasEstate(user.id)
+        user = await this.me(user)
       }
 
       return user
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
+  static async updateContact(user_id, contactData) {
+    const CompanyService = require('./CompanyService')
+    const currentContacts = await CompanyService.getContacts(user_id)
+    if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
+      throw new HttpException(NO_CONTACT_EXIST, 400)
+    }
+
+    if (contactData.address) {
+      await CompanyService.updateCompany(user_id, { address: contactData.address })
+    }
+
+    const contact = currentContacts.rows[0]
+
+    if (Object.keys(omit(contactData, ['address'])).length) {
+      await CompanyService.updateContact(contact.id, user_id, omit(contactData, ['address']))
     }
   }
 

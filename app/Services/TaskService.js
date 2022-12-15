@@ -44,7 +44,6 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
-
 class TaskService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
@@ -306,15 +305,21 @@ class TaskService {
 
     task = await TaskService.getItemWithAbsoluteUrl(task)
 
-    const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
+    // const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
 
-    await Promise.all(
-      (chats || []).map(async (chat) => {
-        task.attachments = (task.attachments || []).concat(
-          await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
-        )
-      })
-    )
+    // await Promise.all(
+    //   (chats || []).map(async (chat) => {
+    //     const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
+    //     if (chatsAttachment) {
+    //       if (task.attachments) {
+    //         task.attachments = task.attachments.concat(chatsAttachment)
+    //       } else {
+    //         task.attachments = chatsAttachment
+    //       }
+    //     }
+    //   })
+    // )
+
     return task
   }
 
@@ -590,6 +595,34 @@ class TaskService {
     } catch (e) {
       console.log(e.message, 500)
       return null
+    }
+  }
+
+  static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {
+    const unread_role = role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD
+    const task = await Task.query().where('id', task_id).first()
+
+    if (task) {
+      if (!task.unread_role || task.unread_role === role) {
+        await Task.query()
+          .where('id', task.id)
+          .update({
+            unread_count: 1,
+            unread_role,
+            first_not_read_chat_id: chat_id,
+            status: TASK_STATUS_INPROGRESS,
+          })
+          .transacting(trx)
+      } else {
+        await Task.query()
+          .where('id', task.id)
+          .update({
+            unread_count: +(task.unread_count || 0) + 1,
+            unread_role,
+            status: TASK_STATUS_INPROGRESS,
+          })
+          .transacting(trx)
+      }
     }
   }
 }

@@ -252,7 +252,9 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
+Route.get('/api/v1/me', 'AccountController.me').middleware([
+  'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
+])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
@@ -308,7 +310,6 @@ Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/authenticated', 'OAuthController.googleAuthConfirm')
 Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
   'valid:SignInGoogleMobile',
 ])
@@ -725,7 +726,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.get('/unread_messages_count', 'ChatController.getUnreadMessagesCount')
+  Route.get('/unread_messages', 'ChatController.getUnreadMessages')
   Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])

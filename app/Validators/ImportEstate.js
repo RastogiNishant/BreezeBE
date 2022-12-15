@@ -16,6 +16,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   // type
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -225,6 +226,7 @@ class ImportEstate extends Base {
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ])
         .required(getExceptionMessage('Property type', REQUIRED)),
       apt_type: yup

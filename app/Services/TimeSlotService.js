@@ -301,10 +301,11 @@ class TimeSlotService {
           NoticeService.cancelVisit(estateId, userId)
         )
         await Promise.all(notificationPromises)
+        await trx.commit()
         return true
       } catch (e) {
-        Logger.error(e)
         await trx.rollback()
+        Logger.error(e)
         throw new HttpException(e.message, 400)
       }
     }

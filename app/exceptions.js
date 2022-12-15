@@ -21,7 +21,7 @@ const exceptions = {
   USER_NOT_EXIST: 'No user exists',
   USER_CLOSED: 'User Account Closed',
   FAILED_UPLOAD_AVATAR: 'Failed to upload avatar',
-  INVALID_CONFIRM_CODE: 'Invalid confirmation code',
+  INVALID_CONFIRM_CODE: 'Invalid confirmation code. Please try again.',
   NOT_EXIST_WITH_EMAIL: 'User with this email does not exist',
   MEMBER_NOT_EXIST: "Member doesn't exist",
   HOUSEHOLD_NOT_EXIST: "Household doesn't exit",
@@ -47,6 +47,10 @@ const exceptions = {
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
   SETTINGS_ERROR: 'Internal Settings Error',
+  MESSAGE_NOT_SAVED: 'Error happened to save message',
+  MESSAGE_ATTACHMENT_WRONG_FORMAT: 'Attachments must be an array',
+  NO_CONTACT_EXIST: 'Contacts not exists',
+  ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
 }
 
 const exceptionKeys = {
@@ -93,6 +97,9 @@ const exceptionKeys = {
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
   SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
   SETTINGS_ERROR: 'SETTINGS_ERROR',
+  MESSAGE_NOT_SAVED: 'MESSAGE_NOT_SAVED',
+  NO_CONTACT_EXIST: 'NO_CONTACT_EXIST',
+  ONLY_ONE_CONTACT_ALLOWED: 'ONLY_ONE_CONTACT_ALLOWED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

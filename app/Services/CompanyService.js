@@ -18,6 +18,7 @@ const {
   COMPANY_TYPE_MUNICIPAL_HOUSING,
   COMPANY_TYPE_HOUSING_COOPERATIVE,
   COMPANY_TYPE_LISTED_HOUSING,
+  COMPANY_TYPE_BROKER,
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
@@ -63,7 +64,7 @@ class CompanyService {
   static async updateCompany(userId, data, trx = null) {
     let userCompany = await this.getUserCompany(userId)
     if (!userCompany) {
-      throw new AppException('Company not exists')
+      throw new AppException('Company not exists', 400)
     }
 
     if (trx) {
@@ -219,6 +220,7 @@ class CompanyService {
           COMPANY_TYPE_MUNICIPAL_HOUSING,
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
+          COMPANY_TYPE_BROKER,
         ])
         .required(),
       email: yup.string().email().lowercase().max(255).required(),
@@ -241,8 +243,8 @@ class CompanyService {
    * It's only used for deleting test company
    */
 
-  static async permanentDelete(user_id) {
-    await Company.query().where('user_id', user_id).delete()
+  static async permanentDelete(id) {
+    await Company.query().where('id', id).delete()
   }
 }
 
