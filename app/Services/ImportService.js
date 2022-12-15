@@ -176,6 +176,10 @@ class ImportService {
       )
       await trx.commit()
       return {
+        last_activity: {
+          file: filePath.clientName,
+          created_at: moment().utc().format(),
+        },
         errors: [...errors, ...createErrors],
         success: result.length - createErrors.length,
         warnings: [...warnings],
