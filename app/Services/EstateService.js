@@ -224,7 +224,7 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ request, data, userId }, fromImport = false) {
+  static async createEstate({ request, data, userId }, fromImport = false, trx = null) {
     data = request ? request.all() : data
 
     const propertyId = data.property_id
@@ -259,9 +259,12 @@ class EstateService {
       createData.letting_status = null
     }
 
-    const estate = await Estate.createItem({
-      ...createData,
-    })
+    const estate = await Estate.createItem(
+      {
+        ...createData,
+      },
+      trx
+    )
 
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 

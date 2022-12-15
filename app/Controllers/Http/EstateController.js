@@ -321,7 +321,6 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const { from_web } = request.all()
     const importFilePathName = request.file('file')
 
     if (importFilePathName && importFilePathName.tmpPath) {
@@ -334,14 +333,7 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
-    await ImportService.addImportFile({
-      user_id: auth.user.id,
-      filename: importFilePathName.clientName,
-      type: IMPORT_TYPE_EXCEL,
-      entity: IMPORT_ENTITY_ESTATES,
-    })
-
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+    const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
     return response.res(result)
   }
 
