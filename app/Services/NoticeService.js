@@ -98,8 +98,9 @@ const {
   MATCH_STATUS_KNOCK,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED,
   ESTATE_NOTIFICATION_FIELDS,
-  NOTICE_TYPE_PROSPECT_DEACTIVATED,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -1041,7 +1042,7 @@ class NoticeService {
   static async prospectAccountDeactivated(userId) {
     const notice = {
       user_id: userId,
-      type: NOTICE_TYPE_PROSPECT_DEACTIVATED,
+      type: NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectDeactivated([notice])
