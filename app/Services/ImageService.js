@@ -38,6 +38,11 @@ class ImageService {
     return dest
   }
 
+  static async uploadOpenImmoImages(images) {
+    for (let image of images) {
+    }
+  }
+
   static async savePropertyBulkImages(images) {
     for (let image of images) {
       if (image && image.photos && image.photos.length) {

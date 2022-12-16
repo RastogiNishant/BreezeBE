@@ -6,6 +6,7 @@ const { has, includes, isArray, forOwn, get } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
 const Drive = use('Drive')
+const QueueService = use('App/Services/QueueService')
 
 const imageTypes = {
   TITELBILD: 'cover',
@@ -224,11 +225,15 @@ class OpenImmoReader {
               image.$.gruppe
             )
           ) {
-            const filename = `${moment().format('YYYYMM')}/${image.daten[0].pfad[0]}`
-            properties[index].images[k] = { image: filename, type: imageTypes[image.$.gruppe] }
-            const imgData = Drive.getStream(`${this.dir}/${image.daten[0].pfad[0]}`)
-            let options = { ContentType: image.format[0], ACL: 'public-read' }
-            await Drive.disk('s3public').put(filename, imgData, options)
+            //const filename = `${moment().format('YYYYMM')}/${image.daten[0].pfad[0]}`
+            properties[index].images[k] = {
+              image: `${this.dir}/${image.daten[0].pfad[0]}`,
+              type: imageTypes[image.$.gruppe],
+              contentType: image.format[0],
+            }
+            //const imgData = Drive.getStream(`${this.dir}/${image.daten[0].pfad[0]}`)
+            //let options = { ContentType: image.format[0], ACL: 'public-read' }
+            //await Drive.disk('s3public').put(filename, imgData, options)
           }
         })
       }

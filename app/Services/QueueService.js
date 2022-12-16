@@ -12,6 +12,7 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
+const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 
@@ -45,6 +46,10 @@ class QueueService {
    */
   static getEstatePoint(estateId) {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
+  }
+
+  static uploadOpenImmoImages(images) {
+    Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images }, { delay: 1 })
   }
 
   static getAnchorIsoline(tenantId) {
@@ -126,6 +131,8 @@ class QueueService {
   static async processJob(job) {
     try {
       switch (job.name) {
+        case UPLOAD_OPENIMMO_IMAGES:
+          return ImageService.uploadOpenImmoImages(job.data.images)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
