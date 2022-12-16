@@ -879,6 +879,8 @@ const constants = {
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
+  IMPORT_TYPE_EXCEL: 'excel',
+  IMPORT_ENTITY_ESTATES: 'estates',
 }
 
 module.exports = constants

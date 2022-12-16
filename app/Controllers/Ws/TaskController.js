@@ -133,6 +133,7 @@ class TaskController extends BaseController {
           ? `tenant:${this.tenant_user_id}`
           : `landlord:${this.estate_user_id}`
 
+      const task = await TaskService.get(this.taskId)
       //broadcast taskMessageReceived event to either tenant or landlord
       //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
       this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
@@ -140,9 +141,10 @@ class TaskController extends BaseController {
         urgency: task?.urgency,
       })
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
-      await NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+      NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       super.onMessage(message)
     } catch (e) {
+      console.log('onMessage error=', e.message)
       this.emitError(e.message || MESSAGE_NOT_SAVED)
     }
   }

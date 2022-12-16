@@ -224,7 +224,7 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ request, data, userId }, fromImport = false) {
+  static async createEstate({ request, data, userId }, fromImport = false, trx = null) {
     data = request ? request.all() : data
 
     const propertyId = data.property_id
@@ -259,9 +259,12 @@ class EstateService {
       createData.letting_status = null
     }
 
-    const estate = await Estate.createItem({
-      ...createData,
-    })
+    const estate = await Estate.createItem(
+      {
+        ...createData,
+      },
+      trx
+    )
 
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
@@ -1233,7 +1236,7 @@ class EstateService {
         )
       })
       .leftJoin({ _ect: 'estate_current_tenants' }, function () {
-        this.on('_ect.estate_id', 'estates.id')
+        this.on('_ect.estate_id', 'estates.id').on('_ect.status', STATUS_ACTIVE)
       })
       .leftJoin({ _u: 'users' }, function () {
         this.on('_ect.user_id', '_u.id')
