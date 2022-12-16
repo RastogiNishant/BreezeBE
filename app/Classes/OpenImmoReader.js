@@ -3,7 +3,7 @@ const AppException = use('App/Exceptions/AppException')
 const fs = require('fs')
 const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get } = require('lodash')
-const { OPENIMMO_EXTRACT_FOLDER } = use('App/constants')
+const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
 const Drive = use('Drive')
 

@@ -20,6 +20,7 @@ const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
+const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
@@ -52,6 +53,8 @@ const {
   ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  IMPORT_TYPE_OPENIMMO,
+  IMPORT_ENTITY_ESTATES,
 } = require('../constants')
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -1342,25 +1345,44 @@ class EstateService {
   }
 
   static async importOpenimmo(importFile, user_id) {
+    const filename = importFile.clientName
     const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
     const result = await reader.process()
-    result.map(async (property) => {
-      property.user_id = user_id
-      property.status = STATUS_DRAFT
-      let images = property.images
-      const result = await Estate.createItem(omit(property, ['images']))
-      images.map(async (image) => {
-        if (image.image) {
-          await File.createItem({
-            url: image.image,
-            type: image.type,
-            estate_id: result.id,
-            disk: 's3public',
-          })
-        }
+    console.log('filename', filename)
+    const trx = await Database.beginTransaction()
+    try {
+      await Promise.map(result, async (property) => {
+        property.user_id = user_id
+        property.status = STATUS_DRAFT
+        let images = property.images
+        const result = await Estate.createItem(omit(property, ['images']), trx)
+        images.map(async (image) => {
+          if (image.image) {
+            await File.createItem(
+              {
+                url: image.image,
+                type: image.type,
+                estate_id: result.id,
+                disk: 's3public',
+              },
+              trx
+            )
+          }
+        })
       })
-    })
-    return result
+      await Import.createItem({
+        user_id,
+        filename,
+        type: IMPORT_TYPE_OPENIMMO,
+        entity: IMPORT_ENTITY_ESTATES,
+      })
+      await trx.commit()
+      return result
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException('Error: '.err.message)
+    }
   }
 
   static async deletePermanent(user_id) {

@@ -892,6 +892,7 @@ const constants = {
   OPENIMMO_EXTRACT_FOLDER: '/tmp',
 
   IMPORT_TYPE_EXCEL: 'excel',
+  IMPORT_TYPE_OPENIMMO: 'openimmo',
   IMPORT_ENTITY_ESTATES: 'estates',
 }
 
