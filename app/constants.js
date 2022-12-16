@@ -430,6 +430,7 @@ const constants = {
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED: 'notification_prospect_knock_property_expired',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
