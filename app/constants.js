@@ -889,8 +889,6 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
-  OPENIMMO_EXTRACT_FOLDER: '/tmp',
-
   IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_TYPE_OPENIMMO: 'openimmo',
   IMPORT_ENTITY_ESTATES: 'estates',

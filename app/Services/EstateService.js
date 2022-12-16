@@ -1348,7 +1348,6 @@ class EstateService {
     const filename = importFile.clientName
     const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
     const result = await reader.process()
-    console.log('filename', filename)
     const trx = await Database.beginTransaction()
     try {
       await Promise.map(result, async (property) => {
