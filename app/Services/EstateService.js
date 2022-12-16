@@ -1355,19 +1355,7 @@ class EstateService {
         property.status = STATUS_DRAFT
         let images = property.images
         const result = await Estate.createItem(omit(property, ['images']), trx)
-        images.map(async (image) => {
-          if (image.image) {
-            await File.createItem(
-              {
-                url: image.image,
-                type: image.type,
-                estate_id: result.id,
-                disk: 's3public',
-              },
-              trx
-            )
-          }
-        })
+        QueueService.uploadOpenImmoImages(images, result.id)
       })
       await Import.createItem({
         user_id,

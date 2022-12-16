@@ -225,15 +225,11 @@ class OpenImmoReader {
               image.$.gruppe
             )
           ) {
-            //const filename = `${moment().format('YYYYMM')}/${image.daten[0].pfad[0]}`
             properties[index].images[k] = {
               image: `${this.dir}/${image.daten[0].pfad[0]}`,
               type: imageTypes[image.$.gruppe],
-              contentType: image.format[0],
+              format: image.format[0],
             }
-            //const imgData = Drive.getStream(`${this.dir}/${image.daten[0].pfad[0]}`)
-            //let options = { ContentType: image.format[0], ACL: 'public-read' }
-            //await Drive.disk('s3public').put(filename, imgData, options)
           }
         })
       }

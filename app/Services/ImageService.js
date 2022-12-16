@@ -9,9 +9,11 @@ const Config = use('Config')
 const moment = require('moment')
 const ContentType = use('App/Classes/ContentType')
 const File = use('App/Classes/File')
+const FileModel = use('App/Models/File')
 const Image = use('App/Models/Image')
 const fsPromise = require('fs/promises')
 const axios = require('axios')
+const Database = use('Database')
 
 class ImageService {
   /**
@@ -38,8 +40,31 @@ class ImageService {
     return dest
   }
 
-  static async uploadOpenImmoImages(images) {
-    for (let image of images) {
+  static async uploadOpenImmoImages(images, estateId) {
+    const trx = await Database.beginTransaction()
+    try {
+      for (let image of images) {
+        if (image.image) {
+          const options = { ContentType: image.format, ACL: 'public-read' }
+          const ext = ContentType.getExt(image.image)
+          const filename = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
+          const imgData = Drive.getStream(image.image)
+          await Drive.disk('s3public').put(filename, imgData, options)
+          await FileModel.createItem(
+            {
+              url: filename,
+              type: image.type,
+              estate_id: estateId,
+              disk: 's3public',
+            },
+            trx
+          )
+        }
+      }
+      await trx.commit()
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
     }
   }
 

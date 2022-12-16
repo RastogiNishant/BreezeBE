@@ -48,8 +48,8 @@ class QueueService {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
   }
 
-  static uploadOpenImmoImages(images) {
-    Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images }, { delay: 1 })
+  static uploadOpenImmoImages(images, estateId) {
+    Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
   }
 
   static getAnchorIsoline(tenantId) {
@@ -132,7 +132,7 @@ class QueueService {
     try {
       switch (job.name) {
         case UPLOAD_OPENIMMO_IMAGES:
-          return ImageService.uploadOpenImmoImages(job.data.images)
+          return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
