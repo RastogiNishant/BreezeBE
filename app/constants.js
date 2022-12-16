@@ -881,6 +881,10 @@ const constants = {
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+
+  IMPORT_TYPE_EXCEL: 'excel',
+
+  IMPORT_ENTITY_ESTATES: 'estates',
 }
 
 module.exports = constants

@@ -2,12 +2,12 @@ const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
 const EstateImportReader = use('App/Classes/EstateImportReader')
+const Database = use('Database')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
-const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const schema = require('../Validators/CreateBuddy').schema()
@@ -18,7 +18,11 @@ const {
   BUDDY_STATUS_PENDING,
   STATUS_ACTIVE,
   LETTING_TYPE_NA,
+  ISO_DATE_FORMAT,
+  IMPORT_TYPE_EXCEL,
+  IMPORT_ENTITY_ESTATES,
 } = require('../constants')
+const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -34,7 +38,7 @@ class ImportService {
   /**
    *
    */
-  static async createSingleEstate({ data, line, six_char_code }, userId) {
+  static async createSingleEstate({ data, line, six_char_code }, userId, trx) {
     let estate
     if (six_char_code) {
       //check if this is an edit...
@@ -65,7 +69,7 @@ class ImportService {
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }
-        estate = await EstateService.createEstate({ data, userId }, true)
+        estate = await EstateService.createEstate({ data, userId }, true, trx)
 
         let rooms = []
         let found
@@ -129,20 +133,42 @@ class ImportService {
   static async process(filePath, userId, type) {
     const reader = new EstateImportReader(filePath)
     let { errors, data, warnings } = await reader.process()
+    const trx = await Database.beginTransaction()
     const opt = { concurrency: 1 }
-    const result = await Promise.map(data, (i) => ImportService.createSingleEstate(i, userId), opt)
-
-    const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
-    result.map((row) => {
-      if (has(row, 'warning')) {
-        warnings.push(row.warning)
+    try {
+      const result = await Promise.map(
+        data,
+        (i) => ImportService.createSingleEstate(i, userId, trx),
+        opt
+      )
+      const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
+      result.map((row) => {
+        if (has(row, 'warning')) {
+          warnings.push(row.warning)
+        }
+      })
+      await ImportService.addImportFile(
+        {
+          user_id: userId,
+          filename: filePath.clientName,
+          type: IMPORT_TYPE_EXCEL,
+          entity: IMPORT_ENTITY_ESTATES,
+        },
+        trx
+      )
+      await trx.commit()
+      return {
+        last_activity: {
+          file: filePath?.clientName || null,
+          created_at: moment().utc().format(),
+        },
+        errors: [...errors, ...createErrors],
+        success: result.length - createErrors.length,
+        warnings: [...warnings],
       }
-    })
-
-    return {
-      errors: [...errors, ...createErrors],
-      success: result.length - createErrors.length,
-      warnings: [...warnings],
+    } catch (err) {
+      await trx.rollback()
+      throw new HttpException('Error found while importing: ', err.message)
     }
   }
 
@@ -251,6 +277,28 @@ class ImportService {
     //   await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
     // }
     return estate
+  }
+
+  static async addImportFile(
+    { user_id, filename, type = IMPORT_TYPE_EXCEL, entity = IMPORT_ENTITY_ESTATES },
+    trx
+  ) {
+    await Import.query().insert({ user_id, filename, type, entity }, trx)
+  }
+
+  static async getLastImportActivities(
+    user_id,
+    type = IMPORT_TYPE_EXCEL,
+    entity = IMPORT_ENTITY_ESTATES
+  ) {
+    const import_activity = await Import.query()
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('filename')
+      .where({ user_id, type, entity })
+      .orderBy('created_at', 'desc')
+      .first()
+
+    return import_activity
   }
 }
 
