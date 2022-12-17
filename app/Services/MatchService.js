@@ -1078,7 +1078,7 @@ class MatchService {
       const errorText = fromInvitation
         ? 'This invitation has already been accepted. Please contact with your landlord.'
         : 'You should have commit by your landlord to rent a property. Please contact with your landlord.'
-      throw new AppException(errorText)
+      throw new AppException(errorText, 400)
     }
 
     if (existingMatch) {
@@ -1104,6 +1104,10 @@ class MatchService {
 
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+
+    // need to make previous tasks which was between landlord and previous tenant archived
+    await require('./TaskService').archiveTask(estate_id, trx)
+
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
     }
@@ -1331,6 +1335,8 @@ class MatchService {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
+        .withCount('tenant_has_unread_task')
+        .withCount('all_tasks')
         .whereIn('_m.status', [MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')

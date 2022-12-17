@@ -439,6 +439,7 @@ const constants = {
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED: 'notification_prospect_knock_property_expired',
 
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED: 'notification_prospect_task_resolved',
   NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
@@ -729,6 +730,7 @@ const constants = {
     avatar: '/img/breezeLogo.png',
   },
 
+  TASK_STATUS_ARCHIVED: 99,
   TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
@@ -892,6 +894,9 @@ const constants = {
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
   MATCH_SCORE_GOOD_MATCH: 70,
+  IMPORT_TYPE_EXCEL: 'excel',
+
+  IMPORT_ENTITY_ESTATES: 'estates',
 }
 
 module.exports = constants

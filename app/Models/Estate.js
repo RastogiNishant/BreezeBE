@@ -45,6 +45,8 @@ const {
   LETTING_TYPE_LET,
   STATUS_DRAFT,
   STATUS_DELETE,
+  ROLE_LANDLORD,
+  ROLE_USER,
 } = require('../constants')
 
 class Estate extends Model {
@@ -317,11 +319,28 @@ class Estate extends Model {
       .orderBy('urgency', 'desc')
   }
 
-  tasks() {
+  tenant_has_unread_task() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
-      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
-      .orderBy('updated_at', 'desc')
-      .orderBy('urgency', 'desc')
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .where('unread_role', ROLE_USER)
+      .where('unread_count', '>', 0)
+  }
+
+  static landlord_has_unread_messages(active_tasks, role = ROLE_LANDLORD) {
+    return active_tasks.findIndex((task) => task.unread_role === role && task.unread_count) !== -1
+  }
+
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
+  }
+  all_tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
   }
 
   /**
@@ -364,7 +383,10 @@ class Estate extends Model {
   }
 
   current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
+    return this.hasOne('App/Models/EstateCurrentTenant', 'id', 'estate_id').where(
+      'status',
+      STATUS_ACTIVE
+    )
   }
 
   /**
