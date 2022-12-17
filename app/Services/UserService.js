@@ -4,10 +4,9 @@ const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isArray, isEmpty, uniq, pick, trim } = require('lodash')
+const { isArray, isEmpty, uniq, pick, trim, omit } = require('lodash')
 const Promise = require('bluebird')
-
-const Role = use('Role')
+const fs = require('fs')
 const Env = use('Env')
 const Database = use('Database')
 const DataStorage = use('DataStorage')
@@ -24,9 +23,16 @@ const SMSService = use('App/Services/SMSService')
 const Event = use('Event')
 const Logger = use('Logger')
 const l = use('Localize')
-
+const MemberService = use('App/Services/MemberService')
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
+const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const Drive = use('Drive')
+const Hash = use('Hash')
+const Config = use('Config')
+const GoogleAuth = use('GoogleAuth')
+const Ws = use('Ws')
+const Admin = use('App/Models/Admin')
 
 const {
   STATUS_EMAIL_VERIFY,
@@ -44,10 +50,36 @@ const {
   DEFAULT_LANG,
   SIGN_IN_METHOD_GOOGLE,
   USER_ACTIVATION_STATUS_ACTIVATED,
-  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   PASS_ONBOARDING_STEP_COMPANY,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
+  ERROR_USER_NOT_VERIFIED_LOGIN,
+  TEST_ENVIRONMENT,
+  STATUS_DELETE,
+  WRONG_INVITATION_LINK,
+  WEBSOCKET_EVENT_USER_ACTIVATE,
 } = require('../constants')
+
+const {
+  exceptions: {
+    USER_UNIQUE,
+    INVALID_CONFIRM_CODE,
+    NOT_EXIST_WITH_EMAIL,
+    USER_NOT_EXIST,
+    MEMBER_NOT_EXIST,
+    HOUSEHOLD_NOT_EXIST,
+    SMS_CODE_NOT_VALID,
+    SMS_CODE_NOT_CORERECT,
+    INVALID_USER_ROLE,
+    USER_NOT_VERIFIED,
+    CURRENT_PASSWORD_NOT_VERIFIED,
+    FAILED_GET_OWNER,
+    NO_USER_PASSED,
+    NO_CODE_PASSED,
+    INVALID_TOKEN,
+    ACCOUNT_ALREADY_VERIFIED,
+    NO_CONTACT_EXIST,
+  },
+} = require('../../app/excepions')
 
 const { logEvent } = require('./TrackingService.js')
 
@@ -69,6 +101,7 @@ class UserService {
     userData.agreements_id = latestAgreement.id
 
     const user = await User.createItem(userData, trx)
+
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -108,7 +141,7 @@ class UserService {
     // Check is user same email another role is exists
     const existingUser = await User.query().where('email', email).whereIn('role', roles).first()
     if (existingUser) {
-      throw new AppException('User same email, another role exists')
+      throw new AppException(USER_UNIQUE)
     }
 
     const userData = {
@@ -124,57 +157,32 @@ class UserService {
 
     const { user } = await UserService.createUser(userData)
 
-    logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
-      role: user.role,
-      email: user.email,
-      method,
-    })
-    Event.fire('mautic:createContact', user.id)
+    if (request) {
+      logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
+        role: user.role,
+        email: user.email,
+        method,
+      })
+    }
 
+    if (process.env.NODE_ENV !== TEST_ENVIRONMENT) {
+      Event.fire('mautic:createContact', user.id)
+    }
     return user
   }
 
   /**
    *
    */
-  static async changeEmail(user, email) {
-    const code = uuid.v4(email, 'change_email')
-    const trx = await Database.beginTransaction()
+  static async changeEmail({ user, email, from_web }, trx) {
     try {
       user.email = email
-      user.confirm = false
-      user.save(trx)
-      await DataStorage.setItem(code, { userId: user.id }, 'change_email', { ttl: 3600 })
-      await MailService.sendChangeEmailConfirmation(email, code, user.role)
-      await trx.commit()
+      user.status = STATUS_EMAIL_VERIFY
+      await user.save(trx)
+      await UserService.sendConfirmEmail(user, from_web)
     } catch (e) {
-      await trx.rollback()
       throw e
     }
-  }
-
-  /**
-   *
-   */
-  static async confirmChangeEmail(code) {
-    const data = await DataStorage.getItem(code, 'change_email')
-    const userId = get(data, 'userId')
-    if (!userId) {
-      throw new AppException('Invalid confirmation code')
-    }
-
-    await User.query().update({ confirm: true })
-    await DataStorage.remove(code, 'change_email')
-  }
-
-  /**
-   *
-   */
-  static async requestPasswordReset(email) {
-    const code = getHash(3)
-    const user = await User.findByOrFail({ email })
-    await DataStorage.setItem(code, { userId: user.id }, 'reset_password', { ttl: 3600 })
-    await MailService.sendResetPasswordMail(user.email, code)
   }
 
   /**
@@ -201,11 +209,11 @@ class UserService {
           },
           iosInfo: {
             iosBundleId: process.env.IOS_BUNDLE_ID,
+            iosAppStoreId: process.env.IOS_APPSTORE_ID,
           },
         },
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
-
       const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
       const lang = paramLang
         ? paramLang
@@ -214,6 +222,10 @@ class UserService {
         : user.lang
         ? user.lang
         : DEFAULT_LANG
+
+      if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+        return { shortLink, code }
+      }
 
       await MailService.sendcodeForgotPasswordMail(
         user.email,
@@ -233,67 +245,54 @@ class UserService {
    *
    */
   static async requestSetPasswordForgotPassword(email, password, codeSent) {
-    let user = null
+    const trx = await Database.beginTransaction()
     try {
-      user = await User.findByOrFail({ email })
+      const users = (await User.query().where('email', email).fetch()).rows
+
+      if (!users || !users.length) {
+        throw new HttpException(NOT_EXIST_WITH_EMAIL, 400)
+      }
+
+      let userId
+      const codes = await Promise.all(
+        users.map(async (user) => {
+          const code = await DataStorage.getItem(user.id, 'forget_password')
+          if (code) {
+            userId = user.id
+          }
+          return code
+        })
+      )
+      const data = codes.filter((code) => code)
+      if (!data || !data.length) {
+        throw new HttpException(INVALID_CONFIRM_CODE, 400)
+      }
+
+      const { code } = data[0] || {}
+      if (code !== codeSent) {
+        throw new HttpException(INVALID_CONFIRM_CODE, 400)
+      }
+
+      await Promise.all(
+        users.map(async (user) => {
+          user.password = password
+          await user.save(trx)
+        })
+      )
+      await trx.commit()
+      await DataStorage.remove(userId, 'forget_password')
     } catch (error) {
-      throw new AppException('User with this email does not exist')
+      await trx.rollback()
+      throw error
     }
-
-    const data = await DataStorage.getItem(user.id, 'forget_password')
-    const { code } = data || {}
-    if (code !== codeSent) {
-      throw new HttpException('Invalid confirmation code', 404)
-    }
-
-    user.password = password
-    await user.save()
-    await DataStorage.remove(user.id, 'forget_password')
-  }
-
-  /**
-   * Reset password to all users with same email
-   */
-  static async resetPassword(code, password) {
-    const data = await DataStorage.getItem(code, 'reset_password')
-    const userId = get(data, 'userId')
-    if (!userId) {
-      throw new AppException('Invalid confirmation code')
-    }
-
-    const usersToUpdate = await User.query()
-      .whereIn('email', function () {
-        this.select('email').where('id', userId)
-      })
-      .limit(3)
-      .fetch()
-
-    if (!isEmpty(usersToUpdate.rows)) {
-      await Promise.map(usersToUpdate.rows, (u) => u.updateItem({ password }, true))
-    }
-
-    await DataStorage.remove(code, 'reset_password')
   }
 
   static async getHousehouseId(user_id) {
     try {
       const owner = await User.query().select('owner_id').where('id', user_id).firstOrFail()
-
       return owner
     } catch (e) {
-      throw new HttpException(e.message, 400)
-    }
-  }
-  /**
-   *
-   */
-  static async updateUserRoles(user, rolesSlugs) {
-    await user.roles().detach()
-
-    if (isArray(rolesSlugs) && !isEmpty(rolesSlugs)) {
-      const roleIds = (await Role.query().whereIn('slug', rolesSlugs).fetch()).rows.map((i) => i.id)
-
-      await user.roles().attach(roleIds)
+      throw new HttpException(FAILED_GET_OWNER, 500)
     }
   }
 
@@ -308,11 +307,15 @@ class UserService {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
-      await DataStorage.setItem(user.id, { code }, 'confirm_email', { ttl: 3600 })
+      await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
 
       const forgotLink = await UserService.getForgotShortLink(from_web)
+
+      if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+        return code
+      }
 
       await MailService.sendUserConfirmation(user.email, {
         code,
@@ -341,6 +344,7 @@ class UserService {
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
+          iosAppStoreId: process.env.IOS_APPSTORE_ID,
         },
       },
     })
@@ -350,9 +354,12 @@ class UserService {
    *
    */
   static async resendUserConfirm(userId) {
-    const user = await User.query().where('id', userId).where('status', STATUS_EMAIL_VERIFY).first()
+    const user = await User.query().where('id', userId).first()
     if (!user) {
-      return false
+      throw new HttpException(USER_NOT_EXIST, 400)
+    }
+    if (user.status !== STATUS_EMAIL_VERIFY) {
+      throw new HttpException(ACCOUNT_ALREADY_VERIFIED, 400)
     }
     await UserService.sendConfirmEmail(user)
 
@@ -365,20 +372,22 @@ class UserService {
   static async confirmEmail(user, userCode, from_web = false) {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
-
     if (code !== userCode) {
-      throw new AppException('Invalid code')
+      throw new AppException(INVALID_CONFIRM_CODE)
     }
     // TODO: check user status active is allow
     user.status = STATUS_ACTIVE
-
     const trx = await Database.beginTransaction()
     try {
-      if (user.role === ROLE_USER) {
+      if (user.role === ROLE_USER && user.source_estate_id) {
         //If user we look for his email on estate_current_tenant and make corresponding corrections
-        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(user, trx)
+        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
+          user,
+          user.source_estate_id,
+          trx
+        )
+        user.source_estate_id = null
       }
-
       await user.save(trx)
       await trx.commit()
     } catch (e) {
@@ -402,13 +411,13 @@ class UserService {
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
+          iosAppStoreId: process.env.IOS_APPSTORE_ID,
         },
       },
     })
-
     const forgotLink = await UserService.getForgotShortLink(from_web)
 
-    await MailService.sendWelcomeMail(user, {
+    MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
       lang: lang,
@@ -418,30 +427,11 @@ class UserService {
   }
 
   /**
-   *
-   */
-  static async copyUser(user, role) {
-    const { id, ...data } = auth.user.toJSON({ isOwner: true })
-    const result = await UserService.createUser({
-      ...data,
-      password: String(new Date().getTime()),
-      role,
-    })
-    // Copy password from origin
-    await Database.raw(
-      'UPDATE users SET password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
-      [result.user.id, id]
-    )
-
-    return result.user
-  }
-
-  /**
    * Get tenant for user or create if not exists
    */
   static async getOrCreateTenant(user, trx = null) {
     if (user.role !== ROLE_USER) {
-      throw new AppException('Invalid tenant user role')
+      throw new AppException(INVALID_USER_ROLE)
     }
     const tenant = await Tenant.query().where('user_id', user.id).first()
     if (tenant) {
@@ -501,7 +491,7 @@ class UserService {
       .first()
 
     if (!user) {
-      throw new AppException('User not exists')
+      throw new AppException(USER_NOT_EXIST)
     }
 
     //TODO: WARNING: SECURITY
@@ -539,31 +529,6 @@ class UserService {
   /**
    *
    */
-  static async getLandlordInfo(landlordId, userTenantId) {
-    const user = await User.query()
-      .select('users.*')
-      .select(Database.raw('? = ANY(ARRAY_AGG("_m"."status")) as finish', [MATCH_STATUS_FINISH]))
-      .leftJoin({ _m: 'matches' }, function () {
-        this.onIn('_m.user_id', [userTenantId])
-          .onIn('_m.estate_id', function () {
-            this.select('id').from('estates').where({ user_id: landlordId })
-          })
-          .on('_m.status', MATCH_STATUS_FINISH)
-      })
-      .where({ 'users.id': landlordId, 'users.role': ROLE_LANDLORD })
-      .groupBy('users.id')
-      .first()
-
-    if (!user) {
-      throw new AppException('User not exists')
-    }
-
-    return user.toJSON({ publicOnly: !user.finish })
-  }
-
-  /**
-   *
-   */
   static async landlordHasAccessTenant(landlordId, userTenantId) {
     const sharedMatch = await Database.table({ _m: 'matches' })
       .select('_m.estate_id')
@@ -571,36 +536,13 @@ class UserService {
       .whereIn('_m.estate_id', function () {
         this.select('id').from('estates').where({ user_id: landlordId })
       })
-      .where('_m.share', true)
+      .andWhere(function () {
+        this.orWhere('_m.share', true)
+        this.orWhere('_m.status', MATCH_STATUS_FINISH)
+      })
       .first()
 
-    if (sharedMatch) {
-      return true
-    } else {
-      const finalMatch = await Database.table({ _m: 'matches' })
-        .select('_m.estate_id')
-        .where({ '_m.user_id': userTenantId })
-        .whereIn('_m.estate_id', function () {
-          this.select('id').from('estates').where({ user_id: landlordId })
-        })
-        .where('_m.status', MATCH_STATUS_FINISH)
-        .first()
-      return finalMatch ? true : false
-    }
-  }
-
-  /**
-   *
-   */
-  static async switchDeviceToken(id, email) {
-    await Database.raw(
-      'UPDATE users SET device_token = (SELECT device_token FROM users WHERE email = ? AND id != ? LIMIT 1) WHERE id = ?',
-      [email, id, id]
-    )
-    await Database.raw('UPDATE users SET device_token = NULL WHERE email = ? AND id != ?', [
-      email,
-      id,
-    ])
+    return sharedMatch ? true : false
   }
 
   static async increaseUnreadNotificationCount(id) {
@@ -608,23 +550,6 @@ class UserService {
       'UPDATE users SET unread_notification_count = unread_notification_count + 1 WHERE id = ?',
       id
     )
-  }
-
-  /**
-   *
-   */
-  static async getDeviceTokens(userIds) {
-    if (isEmpty(userIds)) {
-      return []
-    }
-
-    const data = await Database.table('users')
-      .select('device_token')
-      .whereIn('id', userIds)
-      .whereNot('device_token', '')
-      .whereNot('device_token', null)
-
-    return data.map((i) => i.device_token)
   }
 
   /**
@@ -651,8 +576,10 @@ class UserService {
       return []
     }
     const deviceTokens = devices.map((d) => d.identifier)
-    const ids = (await User.query().select('id').whereIn('device_token', deviceTokens).fetch()).rows
-    return ids
+    const users = (
+      await User.query().select('id', 'device_token').whereIn('device_token', deviceTokens).fetch()
+    ).rows
+    return users
   }
 
   /**
@@ -738,8 +665,41 @@ class UserService {
     return (await User.query().select('*').where('role', role).fetch()).rows
   }
 
-  static async housekeeperSignup(ownerId, email, password, firstname, lang) {
-    await User.query().where('id', ownerId).firstOrFail()
+  static async getLangByIds({ ids, status = null }) {
+    let query = User.query()
+      .select(['id', 'email', 'lang'])
+      .whereNot('status', STATUS_DELETE)
+      .whereIn('id', ids)
+
+    if (status) {
+      query.where('status', status)
+    }
+
+    return (await query.fetch()).rows
+  }
+
+  static async housekeeperSignup({ code, email, password, firstname, lang }) {
+    const member = await Member.query()
+      .select('user_id', 'id')
+      .where('email', email)
+      .where('code', code)
+      .first()
+
+    if (!member) {
+      throw new HttpException(MEMBER_NOT_EXIST, 400)
+    }
+
+    const ownerId = member.id
+
+    // Check user not exists
+    const availableUser = await User.query().where('email', email).first()
+    if (availableUser) {
+      throw new HttpException(USER_UNIQUE, 400)
+    }
+
+    if (!(await User.query().where('id', ownerId).first())) {
+      throw new HttpException(HOUSEHOLD_NOT_EXIST, 400)
+    }
 
     const trx = await Database.beginTransaction()
     try {
@@ -760,8 +720,14 @@ class UserService {
 
       await Tenant.create({ user_id: user.id }, trx)
 
-      await UserService.sendConfirmEmail(user)
+      await this.sendConfirmEmail(user)
       await trx.commit()
+
+      if (user) {
+        await MemberService.setMemberOwner(member_id, user.id)
+      }
+      Event.fire('mautic:createContact', user.id)
+
       return user
     } catch (e) {
       await trx.rollback()
@@ -774,32 +740,40 @@ class UserService {
     const code = random.int(1000, 9999)
     const data = await UserService.getTokenWithLocale([userId])
 
-    console.log('Param lang', paramLang)
     const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
 
     const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
+
+    if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+      return code
+    }
+
     await SMSService.send({ to: phone, txt: txt })
   }
 
+  static async removeUserOwnerId(user_id, trx) {
+    return User.query().where('id', user_id).update({ owner_id: null }, trx)
+  }
+
   static async confirmSMS(email, phone, code) {
-    const user = await User.query()
-      .select('id')
-      .where('email', email)
-      .where('phone', phone)
-      .firstOrFail()
+    const user = await User.query().select('id').where('email', email).where('phone', phone).first()
+
+    if (!user) {
+      throw new HttpException(USER_NOT_EXIST, 400)
+    }
 
     const data = await DataStorage.getItem(user.id, SMS_VERIFY_PREFIX)
 
     if (!data) {
-      throw new HttpException('No code', 400)
+      throw new HttpException(NO_CODE_PASSED, 400)
     }
 
     if (parseInt(data.code) !== parseInt(code)) {
       await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
 
       if (parseInt(data.count) <= 0) {
-        throw new HttpException('Your code invalid any more', 400)
+        throw new HttpException(SMS_CODE_NOT_VALID, 400)
       }
 
       await DataStorage.setItem(
@@ -808,7 +782,7 @@ class UserService {
         SMS_VERIFY_PREFIX,
         { ttl: 3600 }
       )
-      throw new HttpException('Not Correct', 400)
+      throw new HttpException(SMS_CODE_NOT_CORERECT, 400)
     }
 
     await User.query().where({ id: user.id }).update({
@@ -817,10 +791,6 @@ class UserService {
 
     await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
     return true
-  }
-
-  static async removeUserOwnerId(user_id, trx) {
-    return User.query().where('id', user_id).update({ owner_id: null }, trx)
   }
 
   static async proceedBuddyInviteLink(uid, tenantId) {
@@ -832,11 +802,12 @@ class UserService {
     const tenant = await Database.table('users').where('id', tenantId).first()
 
     if (!tenant || !landlord) {
-      throw new AppException('Wrong invitation link')
+      throw new AppException(WRONG_INVITATION_LINK)
     }
 
     const { landlordId } = landlord
 
+    //TODO: if phone number & email are not defined???
     const buddy = await Buddy.query()
       .where('user_id', landlordId)
       .where('phone', tenant.phone)
@@ -873,18 +844,24 @@ class UserService {
     }
   }
 
-  static async getUnverifiedUserByAdmin(id) {
-    return await User.query()
-      .where('id', id)
-      .where('activation_status', USER_ACTIVATION_STATUS_NOT_ACTIVATED)
-      .first()
-  }
+  static async signUp(
+    { email, firstname, from_web, source_estate_id = null, data1, data2, ...userData },
+    trx = null
+  ) {
+    // Manages the outside tenant invitation flow
+    if (!source_estate_id && data1 && data2) {
+      const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
+        data1,
+        data2,
+        email,
+      })
+      source_estate_id = estate_id
+    }
 
-  static async signUp({ email, firstname, from_web, ...userData }, trx = null) {
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {
-      throw new HttpException('Invalid user role', 401)
+      throw new HttpException(INVALID_USER_ROLE, 401)
     }
     if (role) {
       roles = [role]
@@ -897,7 +874,7 @@ class UserService {
       .first()
 
     if (availableUser) {
-      throw new HttpException('User already exists, can be switched', 400)
+      throw new HttpException(USER_UNIQUE, 400)
     }
 
     try {
@@ -907,20 +884,19 @@ class UserService {
           email,
           firstname,
           status: STATUS_EMAIL_VERIFY,
+          source_estate_id,
         },
         trx
       )
-
-      if (!trx) {
+      if (!trx && process.env.NODE_ENV !== TEST_ENVIRONMENT) {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
-
       await UserService.sendConfirmEmail(user, from_web)
       return user
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
-        throw new HttpException('User already exists', 400)
+        throw new HttpException(USER_UNIQUE, 400)
       }
 
       throw e
@@ -941,18 +917,328 @@ class UserService {
     return await query
   }
 
-  static setOnboardingStep(user) {
+  static async setOnboardingStep(user) {
     if (!user) {
-      throw new HttpException('No User passed', 500)
+      throw new HttpException(NO_USER_PASSED, 500)
     }
     user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
     if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
-      user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
+      const company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+      user.company = company
+      if (company.name && company.size && company.type) {
+        user.onboarding_step = PASS_ONBOARDING_STEP_PREFERRED_SERVICES
+      }
     } else if (user.company_id && user.preferred_services && trim(user.preferred_services) !== '') {
       user.onboarding_step = null
     }
 
     return user
+  }
+
+  static async login({ email, role, device_token }) {
+    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
+    if (role) {
+      roles = [role]
+    }
+
+    // Check if user is admin
+    if (role === ROLE_LANDLORD) {
+      const adminAttempt = await this.handleAdminLoginFromLandlord(email)
+      if (adminAttempt) return adminAttempt
+    }
+
+    const user = await User.query()
+      .select('*')
+      .where('email', email)
+      .whereIn('role', roles)
+      .orderBy('updated_at', 'desc')
+      .first()
+
+    if (!user) {
+      throw new HttpException(USER_NOT_EXIST, 400)
+    }
+
+    if (user.status !== STATUS_ACTIVE) {
+      await UserService.sendConfirmEmail(user.toJSON({ isOwner: true }))
+      /* @description */
+      // Merge error code and user id and send as a response
+      // Because client needs user id to call verify code endpoint
+      throw new HttpException(
+        USER_NOT_VERIFIED,
+        400,
+        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
+      )
+    }
+    role = user.role
+
+    await User.query().where({ email }).update({ device_token: null })
+    if (device_token) {
+      await User.query().where({ id: user.id }).update({ device_token })
+    }
+
+    Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
+    return user
+  }
+
+  static async handleAdminLoginFromLandlord(email, auth) {
+    const adminUser = await Admin.query()
+      .select('admins.*')
+      .select(Database.raw(`${ROLE_LANDLORD} as role`))
+      .select(Database.raw(`true as is_admin`))
+      .select(Database.raw(`${STATUS_ACTIVE} as status`))
+      .select(Database.raw(`true as real_admin`))
+      .where('email', email)
+      .first()
+
+    if (adminUser) {
+      return { user: adminUser, isAdmin: true }
+    }
+
+    return null
+  }
+  /**
+   *
+   * @param {*} id
+   * This function only has to be used deleting fake user
+   */
+  static async removeUser(id) {
+    await User.query().delete().where('id', id)
+  }
+
+  static async me(user, pushToken) {
+    user = await User.query()
+      .where('users.id', user.id)
+      .with('household')
+      .with('plan')
+      .with('company', function (query) {
+        query.with('contacts')
+      })
+      .with('letter_template')
+      .with('tenantPaymentPlan')
+      .first()
+
+    if (!user) {
+      throw new HttpException(USER_NOT_EXIST)
+    }
+
+    const tenant = await require('./TenantService').getTenant(user.owner_id ?? user.id)
+
+    if (user) {
+      if (pushToken && user.device_token !== pushToken) {
+        await user.updateItem({ device_token: pushToken })
+      }
+
+      if (user.role == ROLE_LANDLORD) {
+        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
+        user = await this.setOnboardingStep(user)
+      } else if (user.role == ROLE_USER) {
+        user.has_final_match = await require('./MatchService').checkUserHasFinalMatch(user.id)
+      }
+      //set last login
+      await User.query().where('id', user.id).update({ last_login: moment().utc().format() })
+
+      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
+    }
+
+    if (tenant) {
+      user.tenant = tenant
+    }
+
+    if (user.preferred_services) {
+      user.preferred_services = JSON.parse(user.preferred_services)
+    }
+
+    user = user.toJSON({ isOwner: true })
+    user.is_admin = false
+
+    if (user.role === ROLE_LANDLORD) {
+      //TODO: we should cover this field in the tests
+      user.has_property = await require('./EstateService').hasEstate(user.id)
+    }
+
+    return user
+  }
+
+  static async closeAccount(user) {
+    user = await User.query().where('id', user.id).first()
+    const email = user.email
+    const newEmail = email.concat('_breezeClose')
+    user.email = newEmail
+    user.firstname = ' USER'
+    user.secondname = ' DELETED'
+    user.approved_landlord = false
+    user.is_admin = false
+    user.device_token = null
+    user.google_id = null
+    user.status = STATUS_DELETE
+    await user.save()
+    return user
+  }
+
+  static async updateProfile(request, user) {
+    const data = request.all()
+
+    user.role === ROLE_USER
+      ? delete data.landlord_visibility
+      : user.role === ROLE_LANDLORD
+      ? delete data.prospect_visibility
+      : data
+
+    const trx = await Database.beginTransaction()
+    delete data.password
+
+    try {
+      user = await UserService.updateAvatar(request, user)
+
+      if (Object.keys(data).length) {
+        if (data.email) {
+          await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
+        }
+
+        let userData = omit(data, ['company_name', 'size', 'contact'])
+        if (Object.keys(userData).length) {
+          await user.updateItemWithTrx(userData, trx)
+        }
+        user = user.toJSON({ isOwner: true })
+
+        await require('./EstateCurrentTenantService').updateEstateTenant(data, user, trx)
+
+        let needCompanyUpdate = false
+        let companyData = {}
+        if (data && data.company_name) {
+          needCompanyUpdate = true
+          companyData = {
+            name: data.company_name,
+          }
+        }
+
+        if (data && data.size) {
+          needCompanyUpdate = true
+          companyData = {
+            ...companyData,
+            size: data.size,
+          }
+        }
+
+        if (needCompanyUpdate) {
+          await require('./CompanyService').updateCompany(user.id, companyData, trx)
+        }
+
+        if (data && data.contact) {
+          const contactKeys = Object.keys(data.contact)
+          const contactInfo = contactKeys.map((key) => data.contact[key])
+          if (contactInfo.filter((i) => i != undefined).length) {
+            console.log('updateContact start point')
+            await this.updateContact(user.id, data.contact)
+          }
+        }
+        await trx.commit()
+        user = await this.setOnboardingStep(user)
+        user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
+        Event.fire('mautic:syncContact', user.id)
+      } else {
+        console.log('update Profile else here')
+        await trx.rollback()
+      }
+
+      if (user.role === ROLE_LANDLORD) {
+        //TODO: we should cover this field in the tests
+        user = await this.me(user)
+      }
+
+      return user
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
+  static async updateContact(user_id, contactData) {
+    const CompanyService = require('./CompanyService')
+    const currentContacts = await CompanyService.getContacts(user_id)
+    if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
+      throw new HttpException(NO_CONTACT_EXIST, 400)
+    }
+
+    if (contactData.address) {
+      await CompanyService.updateCompany(user_id, { address: contactData.address })
+    }
+
+    const contact = currentContacts.rows[0]
+
+    if (Object.keys(omit(contactData, ['address'])).length) {
+      await CompanyService.updateContact(contact.id, user_id, omit(contactData, ['address']))
+    }
+  }
+
+  static async updateAvatar(request, user) {
+    if (!request.header('content-type').match(/^multipart/)) {
+      return user
+    }
+
+    const fileSettings = { types: ['image'], size: '10mb' }
+    const filename = `${uuid.v4()}.png`
+    let avatarUrl, tmpFile
+    request.multipart.file(`file`, fileSettings, async (file) => {
+      tmpFile = await require('./ImageService').resizeAvatar(file, filename)
+      const sourceStream = fs.createReadStream(tmpFile)
+      avatarUrl = await Drive.disk('s3public').put(
+        `${moment().format('YYYYMM')}/${filename}`,
+        sourceStream,
+        { ACL: 'public-read', ContentType: 'image/png' }
+      )
+    })
+
+    await request.multipart.process()
+    if (avatarUrl) {
+      user.avatar = avatarUrl
+      await user.save()
+    }
+    fs.unlink(tmpFile, () => {})
+
+    return user
+  }
+
+  static async changePassword(user, current_password, new_password) {
+    const verifyPassword = await Hash.verify(current_password, user.password)
+
+    if (!verifyPassword) {
+      throw new HttpException(CURRENT_PASSWORD_NOT_VERIFIED, 400)
+    }
+    const users = (
+      await User.query()
+        .where('email', user.email)
+        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+        .limit(2)
+        .fetch()
+    ).rows
+
+    const updatePass = async (user) => user.updateItem({ password: new_password }, true)
+    await Promise.map(users, updatePass)
+    return true
+  }
+
+  static async verifyGoogleToken(token) {
+    try {
+      const ticket = await GoogleAuth.verifyIdToken({
+        idToken: token,
+        audience: Config.get('services.ally.google.client_id'),
+      })
+      return ticket
+    } catch (e) {
+      throw new HttpException(INVALID_TOKEN, 400)
+    }
+  }
+
+  static emitAccountEnabled(ids = [], activated = true) {
+    ids = !Array.isArray(ids) ? [ids] : ids
+
+    ids.map((id) => {
+      const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
+      if (topic) {
+        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { activated })
+      }
+    })
   }
 }
 

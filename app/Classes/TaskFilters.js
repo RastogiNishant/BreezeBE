@@ -55,6 +55,7 @@ class TaskFilters extends Filter {
     Filter.TableInfo = {
       property_id: 'estates',
       address: 'estates',
+      net_rent: 'estates',
       urgency: 'tasks',
       status: 'tasks',
       email: '_ect',
@@ -64,12 +65,14 @@ class TaskFilters extends Filter {
 
     Filter.paramToField = {
       active_task: 'count(tasks.id)',
+      in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
     }
     this.matchFilter(
       [
         'property_id',
         'address',
+        'net_rent',
         'urgency',
         'email',
         'phone_number',
@@ -98,21 +101,22 @@ class TaskFilters extends Filter {
         ) {
           this.query.orWhere(
             Database.raw(`
-            (_ect.user_id IS NULL AND _ect.code IS NULL ) OR
+            _ect.user_id IS NULL AND
+            ( _ect.code IS NULL OR
             (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
               .utc(new Date())
               .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-              .format(DATE_FORMAT)}' )`)
+              .format(DATE_FORMAT)}') )`)
           )
         }
 
         if (params.breeze_type.value.findIndex((v) => v === PENDING_BREEZE_TEANT_LABEL) !== -1) {
           this.query.orWhere(
             Database.raw(`
-              _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
-                .utc(new Date())
-                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-                .format(DATE_FORMAT)}'`)
+            _ect.user_id IS NULL AND _ect.code IS NOT NULL AND _ect.invite_sent_at >= '${moment
+              .utc(new Date())
+              .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+              .format(DATE_FORMAT)}'`)
           )
         }
       })
@@ -128,10 +132,21 @@ class TaskFilters extends Filter {
         this.query.whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
       }
     }
+
+    const in_progress_task_params = params['in_progress_task']
+    if (in_progress_task_params && in_progress_task_params.constraints.length) {
+      const values = in_progress_task_params.constraints.filter(
+        (c) => c.value !== null && c.value !== undefined
+      )
+
+      if (values.length) {
+        this.query.whereIn('tasks.status', [TASK_STATUS_INPROGRESS])
+      }
+    }
   }
 
   afterQuery() {
-    this.matchCountFilter(['active_task'], this.params)
+    this.matchCountFilter(['active_task', 'in_progress_task'], this.params)
     return this.query
   }
 }

@@ -14,6 +14,7 @@ class EstateCurrentTenant extends Model {
       'contract_end',
       'status',
       'salutation_int',
+      'user_id',
     ]
   }
 
@@ -26,7 +27,9 @@ class EstateCurrentTenant extends Model {
   }
 
   inside_breeze() {
-    return this.hasOne('App/Models/User', 'email', 'email').where('status', STATUS_ACTIVE).where('role', ROLE_USER)
+    return this.hasOne('App/Models/User', 'email', 'email')
+      .where('status', STATUS_ACTIVE)
+      .where('role', ROLE_USER)
   }
 
   estate() {

@@ -1,6 +1,5 @@
 'use strict'
 
-const uuid = require('uuid')
 const moment = require('moment')
 
 const Admin = use('App/Models/Admin')
@@ -16,7 +15,6 @@ const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
-const NoticeService = use('App/Services/NoticeService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
@@ -32,7 +30,6 @@ const {
   STATUS_DRAFT,
   STATUS_DELETE,
   ERROR_BUDDY_EXISTS,
-  DATE_FORMAT,
   DAY_FORMAT,
   MATCH_STATUS_NEW,
   PROPERTY_MANAGE_ALLOWED,
@@ -51,6 +48,8 @@ const {
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
+  IMPORT_TYPE_EXCEL,
+  IMPORT_ENTITY_ESTATES,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -59,8 +58,13 @@ const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
 const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
-const GeoService = use('App/Services/GeoService')
+const TimeSlotService = require('../../Services/TimeSlotService')
+
 const INVITE_CODE_STRING_LENGTH = 8
+
+const {
+  exceptions: { ESTATE_NOT_EXISTS },
+} = require('../../excepions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -105,7 +109,7 @@ class EstateController {
           process.env.NODE_ENV || 'local'
         } environment`
 
-        await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
+        MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
 
       response.res(estate)
@@ -148,10 +152,10 @@ class EstateController {
     response.res(newEstate)
   }
 
-  async lanlordTenantDetailInfo({ request, auth, response }) {
+  async landlordTenantDetailInfo({ request, auth, response }) {
     const { estate_id, tenant_id } = request.all()
     try {
-      const lanlord = await EstateService.lanlordTenantDetailInfo(
+      const landlord = await EstateService.landlordTenantDetailInfo(
         auth.user.id,
         estate_id,
         tenant_id
@@ -160,7 +164,7 @@ class EstateController {
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
-      if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
+      if (!landlord.toJSON().share && landlord.toJSON().status !== MATCH_STATUS_FINISH) {
         members = (members || members.toJSON() || []).map((member) =>
           pick(member, Member.limitFieldsList)
         )
@@ -168,7 +172,7 @@ class EstateController {
       }
 
       const result = {
-        ...lanlord.toJSON(),
+        ...landlord.toJSON(),
         company: company,
         tenant: tenant,
         members: members,
@@ -185,8 +189,9 @@ class EstateController {
       auth.user.id,
       PROPERTY_MANAGE_ALLOWED
     )
-    const result = await EstateService.getEstatesByUserId(landlordIds, limit, page, params)
-    result.data = await EstateService.checkCanChangeLettingStatus(result)
+    const result = await EstateService.getEstatesByUserId({ ids: landlordIds, limit, page, params })
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    delete result.rows
     response.res(result)
   }
   /**
@@ -198,10 +203,15 @@ class EstateController {
       params = request.post()
     }
     // Update expired estates status to unpublished
-    let result = await EstateService.getEstatesByUserId([auth.user.id], limit, page, params)
-    result = result.toJSON()
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+      limit,
+      page,
+      params,
+    })
 
-    result.data = await EstateService.checkCanChangeLettingStatus(result)
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
@@ -311,7 +321,6 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const { from_web } = request.all()
     const importFilePathName = request.file('file')
 
     if (importFilePathName && importFilePathName.tmpPath) {
@@ -324,7 +333,7 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+    const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
     return response.res(result)
   }
 
@@ -357,6 +366,7 @@ class EstateController {
    */
   async publishEstate({ request, auth, response }) {
     const { id, action } = request.all()
+
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -404,7 +414,7 @@ class EstateController {
         await EstateService.handleOfflineEstate(estate.id, trx)
         await estate.save(trx)
         await trx.commit()
-        return response.res(true)
+        response.res(true)
       } else {
         throw new HttpException('You are attempted to edit wrong estate', 409)
       }
@@ -608,7 +618,7 @@ class EstateController {
     const { code } = request.all()
     const estate = await EstateService.getEstateByHash(code)
     if (!estate) {
-      throw new HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
     }
 
     try {
@@ -637,11 +647,11 @@ class EstateController {
     const estate = await estateQuery.first()
 
     if (!estate) {
-      throw new HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
     }
 
-    const slots = await EstateService.getTimeSlotsByEstate(estate)
-    response.res(slots.rows)
+    const slots = await TimeSlotService.getTimeSlotsByEstate(estate)
+    response.res(slots?.rows || [])
   }
 
   /**
@@ -654,12 +664,11 @@ class EstateController {
       .where('id', estate_id)
       .first()
     if (!estate) {
-      throw HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
 
     try {
-      const slot = await EstateService.createSlot(data, estate)
-
+      const slot = await TimeSlotService.createSlot(data, estate)
       return response.res(slot)
     } catch (e) {
       Logger.error(e)
@@ -671,15 +680,9 @@ class EstateController {
    *
    */
   async updateSlot({ request, auth, response }) {
-    const { estate_id, slot_id, ...rest } = request.all()
-    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
+    const data = request.all()
     try {
-      const updatedSlot = await EstateService.updateSlot(slot, rest)
-      return response.res(updatedSlot)
+      response.res(await TimeSlotService.updateTimeSlot(auth.user.id, data))
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
@@ -691,40 +694,11 @@ class EstateController {
    */
   async removeSlot({ request, auth, response }) {
     const { slot_id } = request.all()
-    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
-    // The landlord can't remove the slot if it is already started
-    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException('Showing is already started', 500)
-    }
-
-    // If slot's end date is passed, we only delete the slot
-    // But if slot's end date is not passed, we delete the slot and all the visits
-    if (slot.end_at < new Date()) {
-      await slot.delete()
-      response.res(true)
-    } else {
-      const trx = await Database.beginTransaction()
-      try {
-        const estateId = slot.estate_id
-        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
-        await slot.delete(trx)
-
-        await trx.commit()
-
-        const notificationPromises = userIds.map((userId) =>
-          NoticeService.cancelVisit(estateId, userId)
-        )
-        await Promise.all(notificationPromises)
-        response.res(true)
-      } catch (e) {
-        Logger.error(e)
-        await trx.rollback()
-        throw new HttpException(e.message, 400)
-      }
+    try {
+      response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -777,9 +751,9 @@ class EstateController {
   /**
    *
    */
-  async getEstateFreeTimeslots({ request, auth, response }) {
+  async getEstateFreeTimeslots({ request, response }) {
     const { estate_id } = request.all()
-    const slots = await EstateService.getFreeTimeslots(estate_id)
+    const slots = await TimeSlotService.getFreeTimeslots(estate_id)
 
     return response.res(slots)
   }
@@ -812,19 +786,20 @@ class EstateController {
 
     //Transaction start...
     const trx = await Database.beginTransaction()
-    let code
-    //check if this estate already has an invite
-    const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
-    if (invitation) {
-      code = invitation.code
-    } else {
-      do {
-        //generate code
-        code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
-      } while (await EstateViewInvite.findBy('code', code))
-    }
 
     try {
+      let code
+      //check if this estate already has an invite
+      const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
+      if (invitation) {
+        code = invitation.code
+      } else {
+        do {
+          //generate code
+          code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
+        } while (await EstateViewInvite.findBy('code', code))
+      }
+
       let newInvite = new EstateViewInvite()
       if (!invitation) {
         //this needs to be created
@@ -863,10 +838,10 @@ class EstateController {
       )
       await trx.commit()
       //transaction end
-      return response.res({ code })
+      response.res({ code })
     } catch (e) {
-      console.log(e)
       await trx.rollback()
+      console.log(e)
       //transaction failed
       throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
@@ -874,8 +849,9 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-
-    let result = await EstateService.getEstatesByUserId([auth.user.id], 0, 0, { return_all: 1 })
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+    })
     let rows = []
 
     if (lang) {
@@ -941,18 +917,32 @@ class EstateController {
     return response.res(rows)
   }
 
+  async importLastActivity({ auth, request, response }) {
+    let last_excel_import_activity = await ImportService.getLastImportActivities(
+      auth.user.id,
+      IMPORT_TYPE_EXCEL,
+      IMPORT_ENTITY_ESTATES
+    )
+    if (last_excel_import_activity) {
+      last_excel_import_activity = last_excel_import_activity?.toJSON()
+      last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
+        .utc()
+        .format()
+    }
+    return response.res(last_excel_import_activity)
+  }
+
   async deleteMultiple({ auth, request, response }) {
     const { id } = request.all()
     const trx = await Database.beginTransaction()
-    let affectedRows
     try {
-      affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+      const affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+      await trx.commit()
+      response.res({ deleted: affectedRows })
     } catch (error) {
       await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    await trx.commit()
-    return response.res({ deleted: affectedRows })
   }
 
   async getLatestEstates({ request, auth, response }) {

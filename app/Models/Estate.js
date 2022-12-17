@@ -42,10 +42,11 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_DELETE,
   TASK_STATUS_DRAFT,
-  TASK_STATUS_RESOLVED,
-  DATE_FORMAT,
-  TASK_RESOLVE_HISTORY_PERIOD,
+  LETTING_TYPE_LET,
+  STATUS_DRAFT,
+  STATUS_DELETE,
   ROLE_LANDLORD,
+  ROLE_USER,
 } = require('../constants')
 
 class Estate extends Model {
@@ -213,6 +214,16 @@ class Estate extends Model {
   static boot() {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
+
+    this.addHook('beforeUpdate', async (instance) => {
+      if (
+        instance.letting_type === LETTING_TYPE_LET &&
+        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+      ) {
+        instance.status = STATUS_DRAFT
+      }
+    })
+
     this.addHook('beforeSave', async (instance) => {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
@@ -310,7 +321,24 @@ class Estate extends Model {
       .orderBy('urgency', 'desc')
   }
 
+  tenant_has_unread_task() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .where('unread_role', ROLE_USER)
+      .where('unread_count', '>', 0)
+  }
+
+  static landlord_has_unread_messages(active_tasks, role = ROLE_LANDLORD) {
+    return active_tasks.findIndex((task) => task.unread_role === role && task.unread_count) !== -1
+  }
+
   tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
+  }
+  all_tasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
       TASK_STATUS_DELETE,
       TASK_STATUS_DRAFT,
@@ -357,7 +385,10 @@ class Estate extends Model {
   }
 
   current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
+    return this.hasOne('App/Models/EstateCurrentTenant', 'id', 'estate_id').where(
+      'status',
+      STATUS_ACTIVE
+    )
   }
 
   /**

@@ -11,6 +11,8 @@ const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
+const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+
 const { getAuthByRole } = require('../../Libs/utils')
 
 const {
@@ -21,58 +23,17 @@ const {
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_GOOGLE,
   SIGN_IN_METHOD_APPLE,
-  LOG_TYPE_SIGN_UP,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-
+const {
+  exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_UNIQUE, INVALID_USER_ROLE },
+} = require('../../../app/excepions')
 class OAuthController {
   /**
    *
    */
   async googleAuth({ ally }) {
     await ally.driver('google').redirect()
-  }
-
-  /**
-   * Login with web client
-   */
-  async googleAuthConfirm({ request, ally, auth, response }) {
-    let authUser
-    try {
-      authUser = await ally.driver('google').getUser()
-    } catch (e) {
-      throw new HttpException('Invalid user', 400)
-    }
-
-    const { id, email } = authUser.toJSON({ isOwner: true })
-    let user = await User.query()
-      .where('email', email)
-      .whereIn('role', [ROLE_LANDLORD])
-      .whereNot('status', STATUS_DELETE)
-      .first()
-
-    // Create user if not exists
-    if (!user) {
-      try {
-        user = await UserService.createUserFromOAuth(request, {
-          ...authUser.toJSON({ isOwner: true }),
-          role: ROLE_LANDLORD,
-          google_id: id,
-        })
-      } catch (e) {
-        throw new HttpException(e.message, 400)
-      }
-    }
-
-    // Auth user
-    if (user) {
-      const authenticator = getAuthByRole(auth, user.role)
-      const token = await authenticator.generate(user)
-
-      return response.res(token)
-    }
-
-    throw new new HttpException('Invalid user', 400)()
   }
 
   /**
@@ -90,7 +51,7 @@ class OAuthController {
     }
     const user = await query.first()
     if (!user && !role) {
-      throw new HttpException('User not exists', 412)
+      throw new HttpException(USER_NOT_EXIST, 412)
     }
 
     return user
@@ -100,15 +61,12 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    const { token, device_token, role, code } = request.all()
+    const { token, device_token, role, code, data1, data2 } = request.all()
     let ticket
     try {
-      ticket = await GoogleAuth.verifyIdToken({
-        idToken: token,
-        audience: Config.get('services.ally.google.client_id'),
-      })
+      ticket = await UserService.verifyGoogleToken(token)
     } catch (e) {
-      throw new HttpException('Invalid token', 400)
+      throw new HttpException(INVALID_TOKEN, 400)
     }
 
     const email = get(ticket, 'payload.email')
@@ -140,7 +98,7 @@ class OAuthController {
             .where('email', email)
             .first()
           if (availableUser) {
-            throw new HttpException('User already exists, can be switched', 400)
+            throw new HttpException(USER_UNIQUE, 400)
           }
         }
 
@@ -161,6 +119,14 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
+      if (data1 && data2) {
+        await EstateCurrentTenantService.acceptOutsideTenant({
+          data1,
+          data2,
+          email,
+          user,
+        })
+      }
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_GOOGLE,
         role: user.role,
@@ -180,14 +146,14 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    const { token, device_token, role, code } = request.all()
+    const { token, device_token, role, code, data1, data2 } = request.all()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
     try {
       const socialData = await appleSignIn.verifyIdToken(token, options)
       email = socialData.email
     } catch (e) {
-      throw new HttpException('Invalid token', 400)
+      throw new HttpException(INVALID_TOKEN, 400)
     }
     let user = await this.authorizeUser(email, role)
 
@@ -216,7 +182,7 @@ class OAuthController {
             .where('email', email)
             .first()
           if (availableUser) {
-            throw new HttpException('User already exists, can be switched', 400)
+            throw new HttpException(USER_UNIQUE, 400)
           }
         }
 
@@ -245,6 +211,14 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
+      if (data1 && data2) {
+        await EstateCurrentTenantService.acceptOutsideTenant({
+          data1,
+          data2,
+          email,
+          user,
+        })
+      }
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_APPLE,
         role: user.role,
@@ -253,7 +227,7 @@ class OAuthController {
       return response.res(token)
     }
 
-    throw new HttpException('Invalid role', 400)
+    throw new HttpException(INVALID_USER_ROLE, 400)
   }
 }
 

@@ -12,6 +12,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   // type
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -192,6 +193,9 @@ const {
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   DATE_FORMAT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  ESTATE_FLOOR_DIRECTION_NA,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -218,6 +222,7 @@ class CreateEstate extends Base {
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ]),
       apt_type: yup
         .number()
@@ -259,9 +264,12 @@ class CreateEstate extends Base {
         .number()
         .integer()
         .oneOf([
+          ESTATE_FLOOR_DIRECTION_NA,
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ]),
       number_floors: yup.number().integer().min(1).max(100),
       prices: yup.number().min(0).max(100000),
@@ -561,6 +569,7 @@ class CreateEstate extends Base {
         .number()
         .when(['additional_costs', 'heating_costs'], {
           is: (additional_costs, heating_costs) => {
+            console.log('extra cost', additional_costs || heating_costs)
             return additional_costs || heating_costs
           },
           then: yup.number().mustNotBeSet(),

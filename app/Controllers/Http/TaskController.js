@@ -104,28 +104,38 @@ class TaskController {
     response.res(estate)
   }
 
+  async getQuickActionsCount({ request, auth, response }) {
+    response.res(await EstateService.getQuickActionsCount(auth.user.id))
+  }
+
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
     try {
-      const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
-      const filterCountResult = await EstateService.getTotalLetCount(auth.user.id, params)
-
-      let estate = await EstateService.getEstatesWithTask(
+      const estates = await EstateService.getEstatesWithTask(
         auth.user,
         params,
-        params.page || -1,
-        params.limit || -1
+        params?.filter_by_unread_message ? -1 : params.page || -1,
+        params?.filter_by_unread_message ? -1 : params.limit || -1
       )
+
+      const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
+
+      let filterCountResultCount
+      if (!params?.filter_by_unread_message) {
+        filterCountResultCount = (await EstateService.getTotalLetCount(auth.user.id, params)).length
+      } else {
+        filterCountResultCount = estates.length
+      }
 
       const result = {
         total: totalCountResult.length || 0,
-        filtered: filterCountResult.length || 0,
-        estates: estate,
+        filtered: filterCountResultCount || 0,
+        estates,
       }
 
       response.res(result)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status)
     }
   }
 

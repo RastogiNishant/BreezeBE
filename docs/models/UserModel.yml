@@ -131,7 +131,7 @@ components:
         prospect_visibility:
           type: integer
           example: 1
-        lanlord_visibility:
+        landlord_visibility:
           type: integer
           example: 1
         owner_id:

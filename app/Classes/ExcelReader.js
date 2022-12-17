@@ -125,7 +125,7 @@ class ExcelReader {
     }
 
     //determine language
-    const deTest = ['Deine ID', 'Straße (*)', 'Hausnummer (*)', 'Zusatzadresse', 'PLZ (*)']
+    const deTest = ['Objekt ID', 'Straße (*)', 'Hausnummer (*)', 'Adresszusatz', 'PLZ (*)']
     const columns = sheet.data[this.headerCol].slice(0, this.columnLimit)
     let probableLang = columns
       .slice(1, 6)

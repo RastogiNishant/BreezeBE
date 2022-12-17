@@ -6,6 +6,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
 
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -162,6 +163,8 @@ const {
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_NA,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
 } = require('../constants')
 
 escapeStr = (v) => {
@@ -240,6 +243,7 @@ class EstateAttributeTranslations {
       Room: PROPERTY_TYPE_ROOM,
       House: PROPERTY_TYPE_HOUSE,
       Site: PROPERTY_TYPE_SITE,
+      Office: PROPERTY_TYPE_OFFICE,
     },
     apt_type: {
       flat: APARTMENT_TYPE_FLAT,
@@ -469,12 +473,14 @@ class EstateAttributeTranslations {
           'property.attribute.PROPERTY_TYPE.Room.message',
           'property.attribute.PROPERTY_TYPE.House.message',
           'property.attribute.PROPERTY_TYPE.Site.message',
+          'property.attribute.PROPERTY_TYPE.Office.message',
         ],
         values: [
           PROPERTY_TYPE_APARTMENT,
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ],
       },
       apt_type: {
@@ -924,12 +930,16 @@ class EstateAttributeTranslations {
           'property.attribute.floor_direction.left.message',
           'property.attribute.floor_direction.right.message',
           'property.attribute.floor_direction.straight.message',
+          'property.attribute.floor_direction.straight.left.message',
+          'property.attribute.floor_direction.straight.right.message',
         ],
         values: [
           ESTATE_FLOOR_DIRECTION_NA,
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ],
       },
     }

@@ -5,12 +5,13 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
+const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
-const { reduce, isEmpty } = require('lodash')
+const { reduce, isEmpty, isNull } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -39,9 +40,11 @@ const {
   TENANT_EMAIL_INVITE,
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
+  VISIT_MAX_ALLOWED_FOLLOWUPS,
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
+const VisitService = require('../../Services/VisitService')
 
 class MatchController {
   /**
@@ -260,6 +263,7 @@ class MatchController {
               },
               iosInfo: {
                 iosBundleId: process.env.IOS_BUNDLE_ID,
+                iosAppStoreId: process.env.IOS_APPSTORE_ID,
               },
             },
           })
@@ -334,7 +338,7 @@ class MatchController {
     const { estate_id, status, delay = null, user_id } = request.all()
     const estate = await this.getOwnEstate(estate_id, auth.user.id)
     if (!estate) {
-      throw HttpException('Invalid estate', 404)
+      throw new HttpException('Invalid estate', 404)
     }
 
     await MatchService.updateVisitStatusLandlord(estate_id, user_id, {
@@ -343,6 +347,30 @@ class MatchController {
     })
 
     return response.res(true)
+  }
+
+  async followupVisit({ request, auth, response }) {
+    let { estate_id, user_id } = request.all()
+    try {
+      const meta = await VisitService.followupVisit(estate_id, user_id, auth)
+      return response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 422)
+    }
+  }
+
+  async getFollowups({ request, auth, response }) {
+    let { estate_id, user_id } = request.all()
+    try {
+      const meta = await VisitService.getFollowupMeta(estate_id, user_id)
+      return response.res({
+        estate_id,
+        user_id,
+        followupsMade: isNull(meta) ? [] : JSON.stringify(meta),
+      })
+    } catch (err) {
+      throw new HttpException(err.message, 422)
+    }
   }
 
   /**
@@ -831,6 +859,7 @@ class MatchController {
       'updated_at',
       'inviteIn',
       'income',
+      'followups',
     ]
 
     const matchesCount = await Database.table('matches')

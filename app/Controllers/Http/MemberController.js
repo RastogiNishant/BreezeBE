@@ -84,7 +84,7 @@ class MemberController {
 
       if (!isInitializedAlready) {
         const member = await MemberService.createMember({ is_verified: true }, user_id, trx)
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
+        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count, trx)
         await trx.commit()
         Event.fire('tenant::update', user_id)
         return response.res(member)
@@ -111,7 +111,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: imageMimes, isPublic: false },
+        { field: 'passport', mime: docMimes, isPublic: false },
       ])
 
       const user_id = auth.user.id
@@ -181,7 +181,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: MEMBER_FILE_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
         { field: MEMBER_FILE_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
-        { field: MEMBER_FILE_TYPE_PASSPORT, mime: imageMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: docMimes, isPublic: false },
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)

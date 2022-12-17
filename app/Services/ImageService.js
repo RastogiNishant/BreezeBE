@@ -10,6 +10,8 @@ const moment = require('moment')
 const ContentType = use('App/Classes/ContentType')
 const File = use('App/Classes/File')
 const Image = use('App/Models/Image')
+const fsPromise = require('fs/promises')
+const axios = require('axios')
 
 class ImageService {
   /**
@@ -19,7 +21,6 @@ class ImageService {
   static async resizeAvatar(fileStream, filename) {
     const { width, height } = Config.get('app.images.avatar')
     const roundedCornerResize = sharp().rotate().resize(width, height).png()
-
     const resizeFile = (file, filename) =>
       new Promise((resolve, reject) => {
         const writableStream = fs.createWriteStream(filename)
@@ -34,7 +35,6 @@ class ImageService {
 
     const dest = Helpers.tmpPath(filename)
     await resizeFile(fileStream, dest)
-
     return dest
   }
 
@@ -144,6 +144,43 @@ class ImageService {
       })
     )
     console.log('End creating estates thumbnail')
+  }
+
+  static async saveFunctionalTestImage(url) {
+    try {
+      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.jpg`
+
+      const writeFunctionalTestImage = async () => {
+        const writer = fs.createWriteStream(outputFileName)
+        const response = await axios.get(url, { responseType: 'arraybuffer' })
+        return new Promise((resolve, reject) => {
+          if (response.data instanceof Buffer) {
+            writer.write(response.data)
+            resolve(outputFileName)
+          } else {
+            response.data.pipe(writer)
+            let error = null
+            writer.on('error', (err) => {
+              error = err
+              writer.close()
+              reject(err)
+            })
+            writer.on('close', () => {
+              if (!error) {
+                resolve(outputFileName)
+              }
+            })
+          }
+        })
+      }
+
+      await writeFunctionalTestImage(outputFileName)
+      return outputFileName
+    } catch (e) {
+      return null
+      console.log('saveFunctionalTestImage Error', e.message)
+    }
   }
 }
 
