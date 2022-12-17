@@ -101,6 +101,12 @@ const {
   URGENCIES,
   NOTICE_TYPE_TENANT_DISCONNECTION,
   NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
+
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED,
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
 } = require('../constants')
 
 const mapping = [
@@ -153,6 +159,8 @@ const mapping = [
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   ],
   [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
+  [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
+  [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID],
 ]
 
 class NotificationsService {
@@ -274,6 +282,21 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       const address = capitalize(get(data, 'estate_address', ''))
       return address + ' \n' + `${l.get('landlord.notification.next.limit_expired.message', lang)}`
+    })
+  }
+
+  /**
+   * Send notification to knocked prospect about estate expired
+   */
+
+  static async sendEstateExpiredToKnockedProspect(notices) {
+    const title = 'prospect.notification.event.knocked_property_expired'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      const address = capitalize(get(data, 'estate_address', ''))
+      return (
+        address + ' \n' + `${l.get('prospect.notification.next.knocked_property_expired', lang)}`
+      )
     })
   }
 
@@ -559,6 +582,16 @@ class NotificationsService {
     })
   }
 
+  static async sendTenantUpdateTimeSlot(notice) {
+    const title = 'tenant.notification.event.visit_changed'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('tenant.notification.next.visit_changed', lang)
+      )
+    })
+  }
   //  static async sendProspectNewVisit(notice) {
   //   const title = 'prospect.notification.event.new_visit_time'
   //   return NotificationsService.sendNotes(notice, title, (data, lang) => {
@@ -856,8 +889,8 @@ class NotificationsService {
   }
 
   static async notifyTenantDisconnected(notices) {
-    const title = 'tenant.notification.event.tenant_disconnected'
-    const body = 'tenant.notification.next.tenant_disconnected'
+    const title = 'tenant.notification.event.tenant_disconnected.message'
+    const body = 'tenant.notification.next.tenant_disconnected.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

@@ -252,7 +252,9 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/forgotPassword')
 
-Route.get('/api/v1/me', 'AccountController.me').middleware(['auth:jwtLandlord,jwt,jwtHousekeeper'])
+Route.get('/api/v1/me', 'AccountController.me').middleware([
+  'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
+])
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
@@ -308,7 +310,6 @@ Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/authenticated', 'OAuthController.googleAuthConfirm')
 Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
   'valid:SignInGoogleMobile',
 ])
@@ -355,6 +356,7 @@ Route.group(() => {
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  Route.get('/import/last-activity', 'EstateController.importLastActivity')
   Route.get('/export/:lang', 'EstateController.export')
   Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
@@ -725,6 +727,8 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.get('/unread_messages', 'ChatController.getUnreadMessages')
+  Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])

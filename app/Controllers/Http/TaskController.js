@@ -104,6 +104,10 @@ class TaskController {
     response.res(estate)
   }
 
+  async getQuickActionsCount({ request, auth, response }) {
+    response.res(await EstateService.getQuickActionsCount(auth.user.id))
+  }
+
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
     try {

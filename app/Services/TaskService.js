@@ -15,6 +15,8 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const l = use('Localize')
@@ -44,7 +46,6 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
-
 class TaskService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
@@ -305,6 +306,22 @@ class TaskService {
     }
 
     task = await TaskService.getItemWithAbsoluteUrl(task)
+
+    // const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
+
+    // await Promise.all(
+    //   (chats || []).map(async (chat) => {
+    //     const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
+    //     if (chatsAttachment) {
+    //       if (task.attachments) {
+    //         task.attachments = task.attachments.concat(chatsAttachment)
+    //       } else {
+    //         task.attachments = chatsAttachment
+    //       }
+    //     }
+    //   })
+    // )
+
     return task
   }
 
@@ -422,7 +439,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -430,7 +447,7 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .with('estate')
       .with('users')
   }
@@ -452,16 +469,23 @@ class TaskService {
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 500)
+      throw new HttpException('No final match yet for property', 400)
     }
 
     // to check if the user is the tenant for that property.
     if (role === ROLE_USER && finalMatch.user_id !== user_id) {
-      throw new HttpException('No permission for task', 500)
+      throw new HttpException('No permission for task', 400)
     }
 
     if (!finalMatch.user_id) {
       throw new HttpException('Database issue', 500)
+    }
+
+    if (
+      role === ROLE_USER &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+    ) {
+      throw new HttpException('You are not a breeze member yet', 400)
     }
 
     return finalMatch.user_id
@@ -496,24 +520,58 @@ class TaskService {
   }
 
   static async removeImages({ id, user, uri }) {
+    uri = uri.split(',')
+
     const task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const attachments = task
-      .toJSON()
-      .attachments.filter(
-        (attachment) =>
-          !(
-            attachment.user_id === user.id &&
-            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
-          )
-      )
 
-    return await Task.query()
-      .where('id', id)
-      .update({
-        ...task.toJSON(),
-        attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
-      })
+    const trx = await Database.beginTransaction()
+    try {
+      const taskAttachments = task
+        .toJSON()
+        .attachments.filter(
+          (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
+        )
+
+      await Task.query()
+        .where('id', id)
+        .update({
+          ...task.toJSON(),
+          attachments:
+            taskAttachments && taskAttachments.length ? JSON.stringify(taskAttachments) : null,
+        })
+        .transacting(trx)
+
+      const chat = await Chat.query()
+        .select('*')
+        .where('task_id', task.id)
+        .where('sender_id', user.id)
+        .where(Database.raw(`attachments::jsonb \\?| array['${uri.join(',')}']`))
+        .first()
+
+      if (chat) {
+        const attachments = chat.attachments.filter((attachment) => !uri.includes(attachment))
+        await ChatService.updateChatMessage(
+          {
+            id: chat.id,
+            message: chat.message,
+            attachments: attachments.length ? attachments : null,
+          },
+          trx
+        )
+      }
+
+      await trx.commit()
+    } catch (e) {
+      console.log('Remove image error=', e.message)
+      await trx.rollback()
+    }
+  }
+
+  static async archiveTask(estate_id, trx) {
+    await Task.query()
+      .whereIn('estate_id', estate_id)
+      .updateItemWithTrx({ status: TASK_STATUS_ARCHIVED }, trx)
   }
 
   static async getItemWithAbsoluteUrl(item) {
@@ -552,6 +610,34 @@ class TaskService {
     } catch (e) {
       console.log(e.message, 500)
       return null
+    }
+  }
+
+  static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {
+    const unread_role = role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD
+    const task = await Task.query().where('id', task_id).first()
+
+    if (task) {
+      if (!task.unread_role || task.unread_role === role) {
+        await Task.query()
+          .where('id', task.id)
+          .update({
+            unread_count: 1,
+            unread_role,
+            first_not_read_chat_id: chat_id,
+            status: TASK_STATUS_INPROGRESS,
+          })
+          .transacting(trx)
+      } else {
+        await Task.query()
+          .where('id', task.id)
+          .update({
+            unread_count: +(task.unread_count || 0) + 1,
+            unread_role,
+            status: TASK_STATUS_INPROGRESS,
+          })
+          .transacting(trx)
+      }
     }
   }
 }

@@ -61,10 +61,28 @@ components:
                   matchMode:
                     type: string
                     enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
-                    example: "startsWith"
+                    example: "notEquals"
                   value:
                     type: number
                     example: 5
+        in_progress_task:
+          properties:
+            operator:
+              type: string
+              enum: ["or", "and"]
+              example: "or"
+            constraints:
+              type: array
+              items:
+                type: object
+                properties:
+                  matchMode:
+                    type: string
+                    enum: ["equals", "notEquals", "gt", "lt", "gte", "lte"]
+                    example: "gt"
+                  value:
+                    type: number
+                    example: 5                    
         net_rent:
           properties:
             operator:
