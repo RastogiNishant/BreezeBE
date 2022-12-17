@@ -288,10 +288,7 @@ class ImportService {
 
     // Run task to separate get coords and point of estate
     QueueService.getEstateCoords(estate.id)
-    //await EstateService.updateEstateCoord(estate.id)
-    // if (data.email) {
-    //   await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
-    // }
+
     return estate
   }
 
