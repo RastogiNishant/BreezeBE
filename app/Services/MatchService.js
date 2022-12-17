@@ -1325,6 +1325,8 @@ class MatchService {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
+        .withCount('tenant_has_unread_task')
+        .withCount('all_tasks')
         .whereIn('_m.status', [MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')
