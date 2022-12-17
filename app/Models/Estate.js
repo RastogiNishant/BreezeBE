@@ -383,7 +383,7 @@ class Estate extends Model {
   }
 
   current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant', 'estate_id', 'id').where(
+    return this.hasOne('App/Models/EstateCurrentTenant', 'id', 'estate_id').where(
       'status',
       STATUS_ACTIVE
     )
