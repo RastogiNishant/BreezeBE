@@ -98,7 +98,6 @@ const {
   MATCH_STATUS_KNOCK,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
-  NOTICE_TYPE_PROSPECT_TASK_RESOLVED,
   ESTATE_NOTIFICATION_FIELDS,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
 } = require('../constants')
@@ -688,7 +687,7 @@ class NoticeService {
         matches.map(async ({ user_id, estate_id }) => {
           if (!estateId) {
             estate = await Estate.query()
-              .select('id', 'address', 'cover')
+              .select(ESTATE_NOTIFICATION_FIELDS)
               .where('id', estate_id)
               .first()
           }
