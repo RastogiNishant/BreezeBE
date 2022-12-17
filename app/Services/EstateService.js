@@ -56,6 +56,11 @@ const {
   IMPORT_TYPE_OPENIMMO,
   IMPORT_ENTITY_ESTATES,
 } = require('../constants')
+
+const {
+  exceptions: { NO_ESTATE_EXIST },
+} = require('../../app/excepions')
+
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
@@ -1023,7 +1028,11 @@ class EstateService {
   }
 
   static async hasPermission({ id, user_id }) {
-    return await Estate.findByOrFail({ id, user_id: user_id })
+    try {
+      return await Estate.findByOrFail({ id, user_id: user_id })
+    } catch (e) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
   }
 
   static async getEstatesWithTask(user, params, page, limit = -1) {
@@ -1119,10 +1128,10 @@ class EstateService {
             task.unread_role === ROLE_LANDLORD ? task.unread_count || 0 : 0
         })
 
-        const has_unread_message =
-          (r[0].activeTasks || []).findIndex(
-            (task) => task.unread_role === ROLE_LANDLORD && task.unread_count
-          ) !== -1
+        const has_unread_message = Estate.landlord_has_unread_messages(
+          r[0].activeTasks || [],
+          ROLE_LANDLORD
+        )
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 
         const taskCount = (r[0].tasks || []).length || 0
