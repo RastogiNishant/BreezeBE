@@ -336,7 +336,6 @@ class TenantService {
         .transacting(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(userId, trx)
       await trx.commit()
-      require('./NoticeService').prospectAccountDeactivated(userId)
     } catch (e) {
       await trx.rollback()
       console.log({ e })
