@@ -104,6 +104,10 @@ const {
 
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED,
 
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
@@ -160,6 +164,8 @@ const mapping = [
   ],
   [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
   [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
+  [NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID, NOTICE_TYPE_PROSPECT_TASK_RESOLVED],
+  [NOTICE_TYPE_PROSPECT_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID],
 ]
 
@@ -666,10 +672,10 @@ class NotificationsService {
   /**
    *
    */
-  static async sendProspectHasSuperMatch(notice) {
+  static async sendProspectHasSuperMatch(notices) {
     const title = 'prospect.notification.event.best_match'
 
-    return NotificationsService.sendNotes([notice], title, (data, lang) => {
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
@@ -891,6 +897,18 @@ class NotificationsService {
   static async notifyTenantDisconnected(notices) {
     const title = 'tenant.notification.event.tenant_disconnected.message'
     const body = 'tenant.notification.next.tenant_disconnected.message'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyTenantTaskResolved(notices) {
+    const title = 'prospect.notification.event.task_resolved'
+    const body = 'prospect.notification.next.task_resolved'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendProspectDeactivated(notices) {
+    const title = 'prospect.notification.event.profile_deactivated'
+    const body = 'prospect.notification.next.profile_deactivated'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

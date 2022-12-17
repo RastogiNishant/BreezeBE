@@ -377,6 +377,15 @@ const constants = {
     'fitted_kitchen',
   ],
 
+  ESTATE_NOTIFICATION_FIELDS: [
+    'id',
+    'address',
+    'cover',
+    'rooms_number',
+    'area',
+    'floor',
+    'number_floors',
+  ],
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
@@ -432,6 +441,8 @@ const constants = {
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED: 'notification_prospect_knock_property_expired',
 
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED: 'notification_prospect_task_resolved',
+  NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
   NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID: 4,
@@ -478,6 +489,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID: 50,
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID: 51, // landlord updated timeslot
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID: 52,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -880,6 +893,7 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
+  MATCH_SCORE_GOOD_MATCH: 70,
   IMPORT_TYPE_EXCEL: 'excel',
 
   IMPORT_ENTITY_ESTATES: 'estates',
