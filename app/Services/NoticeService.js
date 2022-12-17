@@ -411,43 +411,6 @@ class NoticeService {
   /**
    *
    */
-  static async getNewWeekMatches() {
-    const start = moment().add(2, 'hours').startOf('minute')
-    const end = start.clone().add(5, 'min')
-    const withQuery = Database.table({ _e: 'estates' })
-      .select('id')
-      .where({ '_e.status': STATUS_ACTIVE })
-      .where('_e.available_date', '>=', start.format(DATE_FORMAT))
-      .where('_e.available_date', '<', end.format(DATE_FORMAT))
-
-    const result = await Database.table({ _l: 'likes' })
-      .select('_l.user_id', '_l.estate_id', '_e.address', '_e.cover')
-      .innerJoin({ _e: 'estates' }, '_e.id', '_l.estate_id')
-      .whereIn('_l.estate_id', function () {
-        this.select('*').from('expiring_estates')
-      })
-      .with('expiring_estates', withQuery)
-    // .limit(1)
-    if (isEmpty(result)) {
-      return false
-    }
-
-    const notices = result.map(({ estate_id, user_id, address, cover }) => ({
-      user_id,
-      type: NOTICE_TYPE_PROSPECT_MATCH_LEFT_ID,
-      data: {
-        estate_id,
-        estate_address: address,
-      },
-      image: File.getPublicUrl(cover),
-    }))
-    await NoticeService.insertNotices(notices)
-    await NotificationsService.sendProspectEstateExpiring(notices)
-  }
-
-  /**
-   *
-   */
   static async userInvite(estateId, userId) {
     const estate = await Database.table({ _e: 'estates' })
       .select('address', 'id', 'cover')
