@@ -21,7 +21,7 @@ const exceptions = {
   USER_NOT_EXIST: 'No user exists',
   USER_CLOSED: 'User Account Closed',
   FAILED_UPLOAD_AVATAR: 'Failed to upload avatar',
-  INVALID_CONFIRM_CODE: 'Invalid confirmation code',
+  INVALID_CONFIRM_CODE: 'Invalid confirmation code. Please try again.',
   NOT_EXIST_WITH_EMAIL: 'User with this email does not exist',
   MEMBER_NOT_EXIST: "Member doesn't exist",
   HOUSEHOLD_NOT_EXIST: "Household doesn't exit",
