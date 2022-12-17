@@ -15,6 +15,8 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const l = use('Localize')
@@ -437,7 +439,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -445,7 +447,7 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .with('estate')
       .with('users')
   }
@@ -467,16 +469,23 @@ class TaskService {
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 500)
+      throw new HttpException('No final match yet for property', 400)
     }
 
     // to check if the user is the tenant for that property.
     if (role === ROLE_USER && finalMatch.user_id !== user_id) {
-      throw new HttpException('No permission for task', 500)
+      throw new HttpException('No permission for task', 400)
     }
 
     if (!finalMatch.user_id) {
       throw new HttpException('Database issue', 500)
+    }
+
+    if (
+      role === ROLE_USER &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+    ) {
+      throw new HttpException('You are not a breeze member yet', 400)
     }
 
     return finalMatch.user_id
@@ -557,6 +566,12 @@ class TaskService {
       console.log('Remove image error=', e.message)
       await trx.rollback()
     }
+  }
+
+  static async archiveTask(estate_id, trx) {
+    await Task.query()
+      .whereIn('estate_id', estate_id)
+      .updateItemWithTrx({ status: TASK_STATUS_ARCHIVED }, trx)
   }
 
   static async getItemWithAbsoluteUrl(item) {

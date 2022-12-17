@@ -1072,7 +1072,7 @@ class MatchService {
       const errorText = fromInvitation
         ? 'This invitation has already been accepted. Please contact with your landlord.'
         : 'You should have commit by your landlord to rent a property. Please contact with your landlord.'
-      throw new AppException(errorText)
+      throw new AppException(errorText, 400)
     }
 
     if (existingMatch) {
@@ -1098,6 +1098,10 @@ class MatchService {
 
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+
+    // need to make previous tasks which was between landlord and previous tenant archived
+    await require('./TaskService').archiveTask(estate_id, trx)
+
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
     }

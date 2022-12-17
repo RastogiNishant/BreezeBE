@@ -331,10 +331,10 @@ class Estate extends Model {
   }
 
   tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id')
-      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
-      .orderBy('updated_at', 'desc')
-      .orderBy('urgency', 'desc')
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
   }
   all_tasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [

@@ -717,6 +717,7 @@ const constants = {
     avatar: '/img/breezeLogo.png',
   },
 
+  TASK_STATUS_ARCHIVED: 99,
   TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
