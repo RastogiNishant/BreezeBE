@@ -923,10 +923,12 @@ class EstateController {
       IMPORT_TYPE_EXCEL,
       IMPORT_ENTITY_ESTATES
     )
-    last_excel_import_activity = last_excel_import_activity.toJSON()
-    last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
-      .utc()
-      .format()
+    if (last_excel_import_activity) {
+      last_excel_import_activity = last_excel_import_activity?.toJSON()
+      last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
+        .utc()
+        .format()
+    }
     return response.res(last_excel_import_activity)
   }
 
