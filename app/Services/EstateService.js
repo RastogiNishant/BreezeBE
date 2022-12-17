@@ -274,7 +274,7 @@ class EstateService {
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    QueueService.getEstateCoords(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
@@ -318,7 +318,7 @@ class EstateService {
       FileBucket.remove(energy_proof)
     }
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    QueueService.getEstateCoords(estate.id)
     return estate
   }
 

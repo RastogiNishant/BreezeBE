@@ -238,6 +238,8 @@ class Estate extends Model {
           }, ${instance.country || ''}`,
           ', '
         ).toLowerCase()
+        instance.coord = null
+        instance.coord_raw = null
       }
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
