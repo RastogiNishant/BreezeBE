@@ -114,7 +114,6 @@ class File {
       const dir = moment().format('YYYYMM')
       const filePathName = `${dir}/${filename}`
       const disk = isPublic ? 's3public' : 's3'
-      console.log('content type here=', file.headers['content-type'])
       const options = { ContentType: contentType }
       if (isPublic) {
         options.ACL = 'public-read'

@@ -706,7 +706,7 @@ class MemberService {
 
   static async createThumbnail() {
     const incomeProofs = (await IncomeProof.query().fetch()).rows
-    console.log('Start creating income proofs thumbnail')
+
     await Promise.all(
       incomeProofs.map(async (incomeProof) => {
         {
@@ -723,8 +723,6 @@ class MemberService {
                 if (isValidFormat) {
                   const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
                   const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
-
-                  console.log('Income Proof is saving', url)
                   await File.saveThumbnailToDisk({
                     image: url,
                     fileName: fileName,
@@ -744,14 +742,11 @@ class MemberService {
         }
       })
     )
-
-    console.log('End creating income proofs thumbnail')
   }
 
   static async addExtraProofs(request, user) {
     const { id, file_type } = request.all()
 
-    console.log('MemberService Doc', file_type)
     const member = await this.allowEditMemberByPermission(user, id)
     if (!member) {
       throw new HttpException('No permission to add passport')
