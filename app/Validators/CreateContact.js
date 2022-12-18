@@ -16,7 +16,6 @@ class CreateContact extends Base {
       },
       {}
     )
-
     return schema
   }
 }

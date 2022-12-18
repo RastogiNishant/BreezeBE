@@ -111,7 +111,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: imageMimes, isPublic: false },
+        { field: 'passport', mime: docMimes, isPublic: false },
       ])
 
       const user_id = auth.user.id
@@ -181,7 +181,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: MEMBER_FILE_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
         { field: MEMBER_FILE_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
-        { field: MEMBER_FILE_TYPE_PASSPORT, mime: imageMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: docMimes, isPublic: false },
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)

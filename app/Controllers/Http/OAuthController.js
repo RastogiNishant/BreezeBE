@@ -26,7 +26,7 @@ const {
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const {
-  exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_NOT_FOUND, USER_UNIQUE, INVALID_USER_ROLE },
+  exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_UNIQUE, INVALID_USER_ROLE },
 } = require('../../../app/excepions')
 class OAuthController {
   /**
@@ -34,48 +34,6 @@ class OAuthController {
    */
   async googleAuth({ ally }) {
     await ally.driver('google').redirect()
-  }
-
-  /**
-   * Login with web client
-   */
-  async googleAuthConfirm({ request, ally, auth, response }) {
-    let authUser
-    try {
-      authUser = await ally.driver('google').getUser()
-    } catch (e) {
-      throw new HttpException('Invalid user', 400)
-    }
-
-    const { id, email } = authUser.toJSON({ isOwner: true })
-    let user = await User.query()
-      .where('email', email)
-      .whereIn('role', [ROLE_LANDLORD])
-      .whereNot('status', STATUS_DELETE)
-      .first()
-
-    // Create user if not exists
-    if (!user) {
-      try {
-        user = await UserService.createUserFromOAuth(request, {
-          ...authUser.toJSON({ isOwner: true }),
-          role: ROLE_LANDLORD,
-          google_id: id,
-        })
-      } catch (e) {
-        throw new HttpException(e.message, 400)
-      }
-    }
-
-    // Auth user
-    if (user) {
-      const authenticator = getAuthByRole(auth, user.role)
-      const token = await authenticator.generate(user)
-
-      return response.res(token)
-    }
-
-    throw new new HttpException(USER_NOT_FOUND, 400)()
   }
 
   /**

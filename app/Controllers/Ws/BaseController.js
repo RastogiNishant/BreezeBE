@@ -125,7 +125,11 @@ class BaseController {
 
   async _markLastRead(taskId) {
     try {
-      return await ChatService.markLastRead(this.user.id, taskId)
+      return await ChatService.markLastRead({
+        user_id: this.user.id,
+        task_id: taskId,
+        role: this.user.role,
+      })
     } catch (err) {
       this.emitError(err.message)
     }
