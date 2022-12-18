@@ -832,7 +832,7 @@ class MatchService {
       data: {
         estate_id: estateId,
         user_id: userId,
-        old_status: MATCH_STATUS_KNOCK,
+        old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_VISIT,
       },
       role: ROLE_LANDLORD,
