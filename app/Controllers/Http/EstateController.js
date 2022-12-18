@@ -923,13 +923,26 @@ class EstateController {
       IMPORT_TYPE_EXCEL,
       IMPORT_ENTITY_ESTATES
     )
+    /*
     if (last_excel_import_activity) {
       last_excel_import_activity = last_excel_import_activity?.toJSON()
       last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
         .utc()
         .format()
-    }
+    }*/
     return response.res(last_excel_import_activity)
+  }
+
+  async postImportLastActivity({ auth, request, response }) {
+    const { filename, action, type, entity } = request.all()
+    const result = await ImportService.postLastActivity({
+      user_id: auth.user.id,
+      filename,
+      action,
+      type,
+      entity,
+    })
+    return response.res(result)
   }
 
   async deleteMultiple({ auth, request, response }) {

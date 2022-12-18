@@ -358,6 +358,9 @@ Route.group(() => {
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
   Route.get('/import/last-activity', 'EstateController.importLastActivity')
+  Route.post('/import/last-activity', 'EstateController.postImportLastActivity').middleware([
+    'valid:PostImportLastActivity',
+  ])
   Route.get('/export/:lang', 'EstateController.export')
   Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([

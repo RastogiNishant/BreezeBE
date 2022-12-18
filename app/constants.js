@@ -897,6 +897,9 @@ const constants = {
   IMPORT_TYPE_EXCEL: 'excel',
 
   IMPORT_ENTITY_ESTATES: 'estates',
+
+  IMPORT_ACTION_IMPORT: 'import',
+  IMPORT_ACTION_EXPORT: 'export',
 }
 
 module.exports = constants
