@@ -470,7 +470,13 @@ class TaskService {
   }
 
   static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
+    const imageMimes = [
+      File.IMAGE_JPG,
+      File.IMAGE_JPEG,
+      File.IMAGE_PNG,
+      File.IMAGE_PDF,
+      File.IMAGE_HEIC,
+    ]
     const files = await File.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: false },
     ])
