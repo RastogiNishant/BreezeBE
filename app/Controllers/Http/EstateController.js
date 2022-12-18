@@ -932,6 +932,18 @@ class EstateController {
     return response.res(last_excel_import_activity)
   }
 
+  async postImportLastActivity({ auth, request, response }) {
+    const { filename, action, type, entity } = request.all()
+    const result = await ImportService.postLastActivity({
+      user_id: auth.user.id,
+      filename,
+      action,
+      type,
+      entity,
+    })
+    return response.res(result)
+  }
+
   async deleteMultiple({ auth, request, response }) {
     const { id } = request.all()
     const trx = await Database.beginTransaction()
