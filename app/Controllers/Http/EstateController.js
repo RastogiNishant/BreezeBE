@@ -48,6 +48,8 @@ const {
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
+  IMPORT_TYPE_EXCEL,
+  IMPORT_ENTITY_ESTATES,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -319,7 +321,6 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const { from_web } = request.all()
     const importFilePathName = request.file('file')
 
     if (importFilePathName && importFilePathName.tmpPath) {
@@ -332,7 +333,7 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
+    const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
     return response.res(result)
   }
 
@@ -848,7 +849,6 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-
     let result = await EstateService.getEstatesByUserId({
       ids: [auth.user.id],
     })
@@ -915,6 +915,21 @@ class EstateController {
       )
     }
     return response.res(rows)
+  }
+
+  async importLastActivity({ auth, request, response }) {
+    let last_excel_import_activity = await ImportService.getLastImportActivities(
+      auth.user.id,
+      IMPORT_TYPE_EXCEL,
+      IMPORT_ENTITY_ESTATES
+    )
+    if (last_excel_import_activity) {
+      last_excel_import_activity = last_excel_import_activity?.toJSON()
+      last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
+        .utc()
+        .format()
+    }
+    return response.res(last_excel_import_activity)
   }
 
   async deleteMultiple({ auth, request, response }) {

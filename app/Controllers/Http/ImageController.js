@@ -7,8 +7,8 @@ const moment = require('moment')
 const imageThumbnail = require('image-thumbnail')
 const QueueService = use('App/Services/QueueService')
 const File = use('App/Classes/File')
-const exec = require('node-async-exec');
-const fs = require('fs/promises');
+const exec = require('node-async-exec')
+const fs = require('fs/promises')
 
 class ImageController {
   async compressImage({ request, response }) {
@@ -84,15 +84,27 @@ class ImageController {
 
   async testCompressPDF({ request, response }) {
     try {
-      await exec({ cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=/srv/temp/pdf/output.pdf /srv/temp/pdf/temp.pdf` })
-      const data = await fs.readFile('/srv/temp/pdf/output.pdf', { encoding: 'utf8' });
-      console.log(data);
+      await exec({
+        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=/srv/temp/pdf/output.pdf /srv/temp/pdf/temp.pdf`,
+      })
+      const data = await fs.readFile('/srv/temp/pdf/output.pdf', { encoding: 'utf8' })
+      console.log(data)
       response.res(true)
     } catch (err) {
-      console.log(err);
+      console.log(err)
       throw new HttpException(err.message, 500)
     }
-
+  }
+  async checkFormat({ request, response }) {
+    try {
+      const image = request.file('file', {
+        size: process.env.MAX_IMAGE_SIZE || '20M',
+        extnames: File.SUPPORTED_IMAGE_FORMAT,
+      })
+      console.log('checkformat image=', image)
+    } catch (e) {
+      console.log('Format not supported')
+    }
   }
 }
 

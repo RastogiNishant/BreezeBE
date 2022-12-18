@@ -67,6 +67,7 @@ const {
   ROLE_LANDLORD,
   WEBSOCKET_EVENT_MATCH,
   NO_MATCH_STATUS,
+  MATCH_SCORE_GOOD_MATCH,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -447,7 +448,7 @@ class MatchService {
       return [...estateIds, estate.id]
     }, [])
     estates = await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
-    const matched = estates
+    const matches = estates
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
@@ -470,11 +471,16 @@ class MatchService {
       .delete()
 
     // Create new matches
-    if (!isEmpty(matched)) {
-      const insertQuery = Database.query().into('matches').insert(matched).toString()
+    if (!isEmpty(matches)) {
+      const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
+
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(superMatches)
+      }
     }
   }
 
@@ -501,7 +507,7 @@ class MatchService {
       .whereIn('tenants.user_id', tenantUserIds)
       .fetch()
     // Calculate matches for tenants to current estate
-    const matched = tenants
+    const matches = tenants
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(v, estate)
@@ -523,14 +529,14 @@ class MatchService {
       .delete()
 
     // Create new matches
-    if (!isEmpty(matched)) {
-      const insertQuery = Database.query().into('matches').insert(matched).toString()
+    if (!isEmpty(matches)) {
+      const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
-      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
       if (superMatches.length > 0) {
-        await NoticeService.prospectSuperMatch(estateId, superMatches)
+        await NoticeService.prospectSuperMatch(superMatches, estateId)
       }
     }
   }
@@ -1238,7 +1244,7 @@ class MatchService {
       const errorText = fromInvitation
         ? 'This invitation has already been accepted. Please contact with your landlord.'
         : 'You should have commit by your landlord to rent a property. Please contact with your landlord.'
-      throw new AppException(errorText)
+      throw new AppException(errorText, 400)
     }
 
     if (existingMatch) {
@@ -1264,6 +1270,10 @@ class MatchService {
 
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+
+    // need to make previous tasks which was between landlord and previous tenant archived
+    await require('./TaskService').archiveTask(estate_id, trx)
+
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
     }
@@ -1527,6 +1537,8 @@ class MatchService {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
+        .withCount('tenant_has_unread_task')
+        .withCount('all_tasks')
         .whereIn('_m.status', [MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')
