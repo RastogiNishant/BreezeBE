@@ -313,6 +313,11 @@ class ImportService {
 
     return import_activity
   }
+
+  static async postLastActivity({ user_id, filename, action, type, entity }) {
+    await Import.createItem({ user_id, filename, action, type, entity })
+    return true
+  }
 }
 
 module.exports = ImportService
