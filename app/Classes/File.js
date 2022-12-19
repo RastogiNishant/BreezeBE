@@ -181,9 +181,7 @@ class File {
         ext = `jpg`
         contentType = File.IMAGE_JPEG
         mime = this.IMAGE_JPEG
-      }
-
-      if ([this.IMAGE_HEIC].includes(mime)) {
+      } else if ([this.IMAGE_HEIC].includes(mime)) {
         const inputBuffer = await fsPromise.readFile(file.tmpPath)
         img_data = await heicConvert({
           buffer: inputBuffer, // the HEIC file buffer
