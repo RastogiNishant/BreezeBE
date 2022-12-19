@@ -77,6 +77,7 @@ const {
     NO_CODE_PASSED,
     INVALID_TOKEN,
     ACCOUNT_ALREADY_VERIFIED,
+    NO_CONTACT_EXIST,
   },
 } = require('../../app/excepions')
 
@@ -1094,7 +1095,7 @@ class UserService {
           await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
         }
 
-        let userData = omit(data, ['company_name', 'size'])
+        let userData = omit(data, ['company_name', 'size', 'contact'])
         if (Object.keys(userData).length) {
           await user.updateItemWithTrx(userData, trx)
         }
@@ -1122,23 +1123,51 @@ class UserService {
         if (needCompanyUpdate) {
           await require('./CompanyService').updateCompany(user.id, companyData, trx)
         }
+
+        if (data && data.contact) {
+          const contactKeys = Object.keys(data.contact)
+          const contactInfo = contactKeys.map((key) => data.contact[key])
+          if (contactInfo.filter((i) => i != undefined).length) {
+            console.log('updateContact start point')
+            await this.updateContact(user.id, data.contact)
+          }
+        }
         await trx.commit()
         user = await this.setOnboardingStep(user)
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
       } else {
+        console.log('update Profile else here')
         await trx.rollback()
       }
 
       if (user.role === ROLE_LANDLORD) {
         //TODO: we should cover this field in the tests
-        user.has_property = await require('./EstateService').hasEstate(user.id)
+        user = await this.me(user)
       }
 
       return user
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
+  static async updateContact(user_id, contactData) {
+    const CompanyService = require('./CompanyService')
+    const currentContacts = await CompanyService.getContacts(user_id)
+    if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
+      throw new HttpException(NO_CONTACT_EXIST, 400)
+    }
+
+    if (contactData.address) {
+      await CompanyService.updateCompany(user_id, { address: contactData.address })
+    }
+
+    const contact = currentContacts.rows[0]
+
+    if (Object.keys(omit(contactData, ['address'])).length) {
+      await CompanyService.updateContact(contact.id, user_id, omit(contactData, ['address']))
     }
   }
 

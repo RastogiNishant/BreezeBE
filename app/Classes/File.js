@@ -14,6 +14,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const imageThumbnail = require('image-thumbnail')
 const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
+const heicConvert = require('heic-convert')
 const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
 
 class File {
@@ -23,6 +24,7 @@ class File {
   static IMAGE_PNG = 'image/png'
   static IMAGE_WEBP = 'image/webp'
   static IMAGE_PDF = 'application/pdf'
+  static IMAGE_HEIC = 'image/heif'
   static MIME_DOC = 'application/msword'
   static MIME_DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   static MIME_EXCEL = 'application/vnd.ms-excel'
@@ -33,6 +35,7 @@ class File {
     png: File.IMAGE_PNG,
     gif: File.IMAGE_GIF,
     webp: File.IMAGE_WEBP,
+    heic: File.IMAGE_HEIC,
   }
 
   static SUPPORTED_IMAGE_FORMAT = Object.keys(File.IMAGE_MIME_TYPE)
@@ -133,6 +136,7 @@ class File {
    */
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
+    let contentType = file.headers['content-type']
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
@@ -146,7 +150,17 @@ class File {
     try {
       // let img_data = Drive.getStream(file.tmpPath)
       let img_data
-      if ([this.IMAGE_GIF].includes(mime)) {
+      if ([this.IMAGE_HEIC].includes(mime)) {
+        const inputBuffer = await fsPromise.readFile(file.tmpPath)
+        img_data = await heicConvert({
+          buffer: inputBuffer, // the HEIC file buffer
+          format: 'JPEG', // output format
+          quality: 0.1, // the jpeg compression quality, between 0 and 1
+        })
+
+        ext = `jpg`
+        contentType = File.IMAGE_JPEG
+      } else if ([this.IMAGE_GIF].includes(mime)) {
         img_data = await this.compressGif(file.tmpPath, { optimize: 3, lossy: 80, colors: 128 })
       } else if ([this.IMAGE_WEBP]) {
         img_data = await this.compressWebp(file.tmpPath, { quality: 50 })
@@ -166,7 +180,7 @@ class File {
       const dir = moment().format('YYYYMM')
       const filePathName = `${dir}/${filename}`
       const disk = isPublic ? 's3public' : 's3'
-      const options = { ContentType: file.headers['content-type'] }
+      const options = { ContentType: contentType }
       if (isPublic) {
         options.ACL = 'public-read'
       }
@@ -240,7 +254,7 @@ class File {
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: File.SUPPORTED_IMAGE_FORMAT,
+        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
 
       if (!file) {

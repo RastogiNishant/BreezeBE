@@ -7,7 +7,7 @@ const Income = use('App/Models/Income')
 const MemberFile = use('App/Models/MemberFile')
 const IncomeProof = use('App/Models/IncomeProof')
 const { getHash } = require('../Libs/utils.js')
-const { isEmpty, pick } = require('lodash')
+const { pick } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
@@ -20,7 +20,6 @@ const File = use('App/Classes/File')
 const FileBucket = use('App/Classes/File')
 const l = use('Localize')
 const Promise = require('bluebird')
-const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
 const {
@@ -30,11 +29,9 @@ const {
   SMS_MEMBER_PHONE_VERIFY_PREFIX,
   ROLE_USER,
   VISIBLE_TO_SPECIFIC,
-  MEMBER_FILE_TYPE_PASSPORT,
   MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
   MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
   MEMBER_FILE_PASSPORT_DOC,
-  MEMBER_FILE_TYPE_DEBT,
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   STATUS_ACTIVE,
@@ -683,7 +680,7 @@ class MemberService {
    *
    */
   static async handleOutdatedIncomeProofs() {
-    const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
@@ -699,6 +696,7 @@ class MemberService {
       promises.push(IncomeProof.query().where('id', id).delete())
       if (!deactivatedUsers.includes(user_id)) {
         Event.fire('tenant::update', user_id)
+        NoticeService.prospectAccountDeactivated(user_id)
         deactivatedUsers.push(user_id)
       }
     })
@@ -708,7 +706,7 @@ class MemberService {
 
   static async createThumbnail() {
     const incomeProofs = (await IncomeProof.query().fetch()).rows
-    console.log('Start creating income proofs thumbnail')
+
     await Promise.all(
       incomeProofs.map(async (incomeProof) => {
         {
@@ -725,8 +723,6 @@ class MemberService {
                 if (isValidFormat) {
                   const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
                   const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
-
-                  console.log('Income Proof is saving', url)
                   await File.saveThumbnailToDisk({
                     image: url,
                     fileName: fileName,
@@ -746,14 +742,11 @@ class MemberService {
         }
       })
     )
-
-    console.log('End creating income proofs thumbnail')
   }
 
   static async addExtraProofs(request, user) {
     const { id, file_type } = request.all()
 
-    console.log('MemberService Doc', file_type)
     const member = await this.allowEditMemberByPermission(user, id)
     if (!member) {
       throw new HttpException('No permission to add passport')
