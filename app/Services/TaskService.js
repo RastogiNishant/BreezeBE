@@ -475,6 +475,7 @@ class TaskService {
       File.IMAGE_JPEG,
       File.IMAGE_PNG,
       File.IMAGE_PDF,
+      File.IMAGE_TIFF,
       File.IMAGE_GIF,
       File.IMAGE_WEBP,
       File.IMAGE_HEIC,
