@@ -1,4 +1,4 @@
-const Suite = use('Test/Suite')('User')
+const Suite = use('Test/Suite')('User Unit Test')
 const { test } = Suite
 const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
@@ -353,7 +353,7 @@ test('it should throw exception with verified user to get unverified user', asyn
   }
 }).timeout(0)
 
-test('it should get all info for the account', async ({ assert }) => {
+test('it should get all info for the prospect', async ({ assert }) => {
   let user = signUpProspectUser
   assert.include(user.toJSON({ isOwner: true }), omit(dummyProspectUserData, ['password']))
 
@@ -364,13 +364,36 @@ test('it should get all info for the account', async ({ assert }) => {
   assert.notEqual(signUpProspectUser.device_token, newToken)
   user = await UserService.me(signUpProspectUser, newToken)
 
-  assert.include(
+  assert.deepInclude(
     { ...user, birthday: user.birthday.toISOString() },
     {
       ...omit(dummyProspectUserData, ['password']),
       birthday: moment.utc(dummyProspectUserData.birthday).toISOString(),
       status: STATUS_ACTIVE,
       device_token: newToken,
+      is_admin: false,
+    }
+  )
+}).timeout(0)
+
+test('it should get all info for the landlord', async ({ assert }) => {
+  let user = signUpLandlordUser
+
+  assert.isNotNull(signUpLandlordUser.id)
+
+  const newToken = faker.random.alphaNumeric(35)
+  assert.notEqual(signUpLandlordUser.device_token, newToken)
+  user = await UserService.me(signUpLandlordUser, newToken)
+
+  assert.deepInclude(
+    { ...user, birthday: user.birthday.toISOString() },
+    {
+      ...omit(dummyLandlordUserData, ['password']),
+      birthday: moment.utc(dummyLandlordUserData.birthday).toISOString(),
+      status: STATUS_EMAIL_VERIFY,
+      device_token: newToken,
+      is_admin: false,
+      has_property: false,
     }
   )
 }).timeout(0)

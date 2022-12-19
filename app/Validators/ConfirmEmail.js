@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, NUMBER },
+  exceptionKeys: { REQUIRED, NUMBER },
 } = require('../excepions')
 
 class ConfirmEmail extends Base {
