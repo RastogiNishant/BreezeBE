@@ -23,6 +23,7 @@ class File {
   static IMAGE_JPEG = 'image/jpeg'
   static IMAGE_PNG = 'image/png'
   static IMAGE_TIFF = 'image/tiff'
+  static IMAGE_WEBP = 'image/webp'
   static IMAGE_PDF = 'application/pdf'
   static IMAGE_HEIC = 'image/heif'
   static MIME_DOC = 'application/msword'
@@ -35,6 +36,7 @@ class File {
     png: File.IMAGE_PNG,
     gif: File.IMAGE_GIF,
     tiff: File.IMAGE_TIFF,
+    webp: File.IMAGE_WEBP,
     heic: File.IMAGE_HEIC,
   }
 
@@ -42,7 +44,10 @@ class File {
 
   static async createThumbnail(buffer) {
     try {
-      const options = { width: parseInt(process.env.THUMB_WIDTH || '100') }
+      const options = {
+        width: parseInt(process.env.THUMB_WIDTH || '100'),
+        jpegOptions: { force: true, quality: 90 },
+      }
       const thumbnail = await imageThumbnail(buffer, options)
       return thumbnail
     } catch (e) {
@@ -64,7 +69,68 @@ class File {
       fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
-      throw new AppException(e.message, 400)
+      throw new AppException(e.message, 500)
+    }
+  }
+
+  static async compressGif(filePath, options = {}) {
+    try {
+      // need to install gifsicle to linux so this shell will work.
+      // need to give read/write permission to tmp directly
+
+      const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.gif`
+
+      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
+
+      let command = `gifsicle -i ${filePath} `
+      if (options.optimize) {
+        command += ` --optimize=${options.optimize}`
+      }
+      if (options.lossy) {
+        command += ` --lossy=${options.lossy}`
+      }
+      if (options.colors) {
+        command += ` --colors=${options.colors}`
+      }
+
+      command += ` --output ${outputFileName}`
+      await exec({
+        cmd: `${command}`,
+      })
+
+      const data = await fsPromise.readFile(outputFileName)
+      fsPromise.unlink(outputFileName)
+      return data
+    } catch (e) {
+      console.log('compress gif error=', e)
+      throw new AppException(e?.message || 'Error compress gif', 500)
+    }
+  }
+
+  static async compressWebp(filePath, options = {}) {
+    try {
+      // need to install gifsicle to linux so this shell will work.
+      // need to give read/write permission to tmp directly
+
+      const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.webp`
+
+      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
+
+      let command = `cwebp -quiet true ${filePath} `
+      if (options.quality) {
+        command += ` -q ${options.quality}`
+      }
+      command += ` -o ${outputFileName}`
+      await exec({
+        cmd: `${command}`,
+      })
+
+      const data = await fsPromise.readFile(outputFileName)
+      fsPromise.unlink(outputFileName)
+      return data
+    } catch (e) {
+      console.log('compress webp error=', e)
+      throw new AppException(e?.message || 'Error compress webp', 500)
     }
   }
 
@@ -108,6 +174,7 @@ class File {
     }
 
     try {
+      // let img_data = Drive.getStream(file.tmpPath)
       let img_data
       if ([this.IMAGE_TIFF].includes(mime)) {
         img_data = await this.convertTiffToJPG(file.tmpPath)
@@ -115,7 +182,7 @@ class File {
         contentType = File.IMAGE_JPEG
         mime = this.IMAGE_JPEG
       }
-      
+
       if ([this.IMAGE_HEIC].includes(mime)) {
         const inputBuffer = await fsPromise.readFile(file.tmpPath)
         img_data = await heicConvert({
@@ -126,9 +193,11 @@ class File {
 
         ext = `jpg`
         contentType = File.IMAGE_JPEG
-      }
-
-      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
+      } else if ([this.IMAGE_GIF].includes(mime)) {
+        img_data = await this.compressGif(file.tmpPath, { optimize: 3, lossy: 80, colors: 128 })
+      } else if ([this.IMAGE_WEBP]) {
+        img_data = await this.compressWebp(file.tmpPath, { quality: 50 })
+      } else if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
         const imagemin = (await import('imagemin')).default
         const imageminMozjpeg = (await import('imagemin-mozjpeg')).default
 
@@ -136,7 +205,6 @@ class File {
           img_data = await imagemin.buffer(img_data, {
             plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
           })
-          console.log('JPG buffer type=', img_data)
         } else {
           img_data = (
             await imagemin([file.tmpPath], {
@@ -147,9 +215,7 @@ class File {
             })
           )[0].data
         }
-      }
-
-      if ([this.IMAGE_PDF].includes(mime)) {
+      } else if ([this.IMAGE_PDF].includes(mime)) {
         img_data = await this.compressPDF(file.tmpPath)
       }
 
@@ -164,7 +230,7 @@ class File {
       await Drive.disk(disk).put(filePathName, img_data, options)
 
       let thumbnailFilePathName = null
-      if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(contentType)) {
+      if ([this.IMAGE_JPEG, this.IMAGE_PNG, this.IMAGE_GIF, this.IMAGE_WEBP].includes(mime)) {
         thumbnailFilePathName = await File.saveThumbnailToDisk({
           image: img_data,
           fileName: filename,
@@ -176,7 +242,7 @@ class File {
 
       return { filePathName: filePathName, thumbnailFilePathName: thumbnailFilePathName }
     } catch (e) {
-      throw new AppException(e, 500)
+      throw new AppException(e, 400)
     }
   }
 
@@ -233,6 +299,7 @@ class File {
         size: process.env.MAX_IMAGE_SIZE || '20M',
         extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
+
       if (!file) {
         return null
       }
