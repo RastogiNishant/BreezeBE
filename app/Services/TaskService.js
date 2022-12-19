@@ -347,8 +347,8 @@ class TaskService {
       .select('tasks.*')
       .select(
         Database.raw(`coalesce(
-        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}  
-          or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
+        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED}
           and "tasks"."updated_at" > '${moment
             .utc()
             .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
@@ -475,6 +475,8 @@ class TaskService {
       File.IMAGE_JPEG,
       File.IMAGE_PNG,
       File.IMAGE_PDF,
+      File.IMAGE_GIF,
+      File.IMAGE_WEBP,
       File.IMAGE_HEIC,
     ]
     const files = await File.saveRequestFiles(request, [
