@@ -77,6 +77,7 @@ Route.group(() => {
   Route.post('/image/compress', 'ImageController.compressImage').middleware([
     'auth:jwtAdministrator',
   ])
+  Route.post('/image/check', 'ImageController.checkFormat').middleware(['auth:jwtAdministrator'])
 
   Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware(['auth:jwt'])
 
@@ -310,7 +311,6 @@ Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/authenticated', 'OAuthController.googleAuthConfirm')
 Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
   'valid:SignInGoogleMobile',
 ])
@@ -357,6 +357,10 @@ Route.group(() => {
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  Route.get('/import/last-activity', 'EstateController.importLastActivity')
+  Route.post('/import/last-activity', 'EstateController.postImportLastActivity').middleware([
+    'valid:PostImportLastActivity',
+  ])
   Route.get('/export/:lang', 'EstateController.export')
   Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([

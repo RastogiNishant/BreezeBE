@@ -351,6 +351,14 @@ class EstateCurrentTenantService {
       .first()
   }
 
+  static async getInsideTenant({ estate_id, user_id }) {
+    return await EstateCurrentTenant.query()
+      .where('estate_id', estate_id)
+      .where('user_id', user_id)
+      .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
+      .first()
+  }
+
   static async getOutsideTenantByIds(ids) {
     return (
       await EstateCurrentTenant.query()
@@ -648,8 +656,8 @@ class EstateCurrentTenantService {
 
     await currentTenant.save(trx)
 
-    //if current tenant, he needs to save to match as a final match
     if (currentTenant.estate_id) {
+      // if current tenant, he needs to save to match as a final match
       await require('./MatchService').handleFinalMatch(currentTenant.estate_id, user, true, trx)
     }
 
@@ -744,10 +752,8 @@ class EstateCurrentTenantService {
       estateCurrentTenants = estateCurrentTenants?.toJSON() || []
       const valid_ids = estateCurrentTenants.map((tenant) => tenant.id)
       if (valid_ids && valid_ids.length) {
-        const estate_ids = estateCurrentTenants.map((tenant) => tenant.estate_id)
-
         /**
-         * though it's disconnected, rent status has not been change. it's like connected wrongly.
+         * though it's disconnected, rent status has not been changed. it's like connected wrongly.
          * //await require('./EstateService').unrented(estate_ids, trx)
          */
 
@@ -818,12 +824,19 @@ class EstateCurrentTenantService {
       .where('id', estate_id)
       .whereIn('status', [STATUS_DRAFT])
       .where('letting_type', LETTING_TYPE_LET)
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
       .first()
 
     if (estate) {
       const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${estate.user_id}`)
       if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_TENANT_CONNECTED, { estate_id, user_id })
+        topic.broadcast(WEBSOCKET_EVENT_TENANT_CONNECTED, {
+          estate_id,
+          user_id,
+          current_tenant: estate?.toJSON()?.current_tenant,
+        })
       }
     }
   }
