@@ -1214,7 +1214,7 @@ class MatchService {
   ) {
     const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
     const excludes = ['id', 'type', 'plan', 'energy_pass']
-    let columns = Estate.columns.filter((c) => !excludes.includes(c))
+    let columns = Estate.columns.concat('coord_raw').filter((c) => !excludes.includes(c))
     columns = columns.map((c) => `estates.${c}`)
 
     const query = Estate.query()
