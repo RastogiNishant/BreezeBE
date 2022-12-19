@@ -77,6 +77,7 @@ Route.group(() => {
   Route.post('/image/compress', 'ImageController.compressImage').middleware([
     'auth:jwtAdministrator',
   ])
+  Route.post('/image/check', 'ImageController.checkFormat').middleware(['auth:jwtAdministrator'])
 
   Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware(['auth:jwt'])
 
@@ -357,6 +358,9 @@ Route.group(() => {
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
   Route.get('/import/last-activity', 'EstateController.importLastActivity')
+  Route.post('/import/last-activity', 'EstateController.postImportLastActivity').middleware([
+    'valid:PostImportLastActivity',
+  ])
   Route.get('/export/:lang', 'EstateController.export')
   Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([

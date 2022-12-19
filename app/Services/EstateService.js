@@ -274,7 +274,7 @@ class EstateService {
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    QueueService.getEstateCoords(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
@@ -318,7 +318,7 @@ class EstateService {
       FileBucket.remove(energy_proof)
     }
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    QueueService.getEstateCoords(estate.id)
     return estate
   }
 
@@ -1208,6 +1208,7 @@ class EstateService {
     let not_connected_count = 0
     let pending_count = 0
     let unread_count = 0
+    let connected_count = 0
 
     quickActions.map((estate) => {
       urgency_count += parseInt(estate.urgency_count) || 0
@@ -1224,6 +1225,8 @@ class EstateService {
         } else {
           not_connected_count++
         }
+      } else {
+        connected_count++
       }
     })
 
@@ -1233,6 +1236,7 @@ class EstateService {
       not_connected_count,
       pending_count,
       unread_count,
+      connected_count,
     }
   }
 
