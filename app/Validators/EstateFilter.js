@@ -14,6 +14,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   FILTER_CONSTRAINTS_MATCH_MODES,
   LETTING_TYPE_NA,
   ESTATE_VALID_ADDRESS_LABEL,
@@ -169,6 +170,7 @@ class EstateFilter extends Base {
               PROPERTY_TYPE_ROOM,
               PROPERTY_TYPE_HOUSE,
               PROPERTY_TYPE_SITE,
+              PROPERTY_TYPE_OFFICE,
             ])
         ),
       letting_type: yup

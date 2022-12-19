@@ -26,6 +26,8 @@ const {
   STATUS_EXPIRE,
   DEACTIVATE_LANDLORD_AT_END_OF_DAY,
   DEFAULT_LANG,
+  WEBSOCKET_EVENT_USER_ACTIVATE,
+  WEBSOCKET_EVENT_USER_DEACTIVATE,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST },
@@ -103,7 +105,6 @@ class UserController {
         try {
           const users = await UserService.getLangByIds({ ids, status: STATUS_ACTIVE })
           if (users.length !== ids.length) {
-            console.log('error message here=', ACCOUNT_NOT_VERIFIED_USER_EXIST)
             throw new HttpException(ACCOUNT_NOT_VERIFIED_USER_EXIST, 400)
           }
 
@@ -132,6 +133,7 @@ class UserController {
             })
           })
 
+          UserService.emitAccountEnabled(ids, true)
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -173,6 +175,7 @@ class UserController {
           })
           //send notifications
           NoticeService.landlordsDeactivated(ids, estateIds)
+          UserService.emitAccountEnabled(ids, false)
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)

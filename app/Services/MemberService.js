@@ -505,6 +505,7 @@ class MemberService {
             },
             iosInfo: {
               iosBundleId: process.env.IOS_BUNDLE_ID,
+              iosAppStoreId: process.env.IOS_APPSTORE_ID,
             },
           },
         })
@@ -592,6 +593,7 @@ class MemberService {
         member.is_verified = true
         member.owner_user_id = user.id
         member.email = user.email
+        member.code = null
         updatePromises.push(member.save(trx))
       }
 

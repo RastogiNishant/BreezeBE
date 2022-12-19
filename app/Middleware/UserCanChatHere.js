@@ -59,12 +59,7 @@ class UserCanChatHere {
     if (role === ROLE_LANDLORD) {
       currentTenant = await query.where('estates.user_id', user_id).first()
     } else {
-      currentTenant = await query.first()
-      if (currentTenant.tenant_user_id === user_id) {
-        return currentTenant
-      } else {
-        return false
-      }
+      currentTenant = await query.where('estate_current_tenants.user_id ', user_id).first()
     }
     return currentTenant
   }

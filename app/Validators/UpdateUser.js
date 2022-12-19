@@ -17,6 +17,12 @@ const {
   LANDLORD_SIZE_LARGE,
   CONNECT_SERVICE_INDEX,
   MATCH_SERVICE_INDEX,
+  COMPANY_SIZE_SMALL,
+  COMPANY_SIZE_MID,
+  COMPANY_SIZE_LARGE,
+  SALUTATION_SIR_OR_MADAM,
+  SALUTATION_MS,
+  SALUTATION_MR,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -78,14 +84,15 @@ class UpdateUser extends Base {
           [IS_PRIVATE, IS_PUBLIC],
           getExceptionMessage('landlord_visibility', OPTION, `[${IS_PRIVATE},${IS_PUBLIC}]`)
         ),
-      lord_size: yup
-        .number()
+      company_name: yup.string().max(255, getExceptionMessage('company_name', MAXLENGTH, 255)),
+      size: yup
+        .string()
         .oneOf(
-          [LANDLORD_SIZE_LARGE, LANDLORD_SIZE_MID, LANDLORD_SIZE_SMALL],
+          [COMPANY_SIZE_SMALL, COMPANY_SIZE_MID, COMPANY_SIZE_LARGE],
           getExceptionMessage(
-            'lord_size',
+            'size',
             OPTION,
-            `[${LANDLORD_SIZE_LARGE},${LANDLORD_SIZE_MID},${LANDLORD_SIZE_SMALL}]`
+            `[${COMPANY_SIZE_SMALL},${COMPANY_SIZE_MID},${COMPANY_SIZE_LARGE}]`
           )
         ),
       preferred_services: yup
@@ -99,6 +106,24 @@ class UpdateUser extends Base {
             `[${CONNECT_SERVICE_INDEX},${MATCH_SERVICE_INDEX}]`
           )
         ),
+      contact: yup
+        .object()
+        .shape({
+          email: yup.string().email().max(255, getExceptionMessage('email', MAXLENGTH, 255)),
+          title: yup
+            .number()
+            .oneOf(
+              [SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM],
+              getExceptionMessage(
+                'title',
+                OPTION,
+                `[${SALUTATION_MR},${SALUTATION_MS},${SALUTATION_SIR_OR_MADAM}]`
+              )
+            ),
+          full_name: yup.string().min(2).max(255, getExceptionMessage('full_name', MAXLENGTH, 255)),
+          address: yup.string().min(1).max(255, getExceptionMessage('address', MAXLENGTH, 255)),
+        })
+        .nullable(),
     })
 }
 

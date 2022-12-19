@@ -164,7 +164,6 @@ class RoomController {
 
       await ImageService.updateOrder(ids, trx)
       await EstateService.changeEstateCoverInFavorite(room, images, ids[0], trx)
-
       await trx.commit()
       response.res(true)
     } catch (e) {

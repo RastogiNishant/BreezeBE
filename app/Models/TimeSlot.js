@@ -8,7 +8,7 @@ const Model = require('./BaseModel')
 
 class TimeSlot extends Model {
   static get columns() {
-    return ['id', 'estate_id', 'week_day', 'start_at', 'end_at', 'slot_length']
+    return ['id', 'estate_id', 'start_at', 'end_at', 'slot_length', 'prev_start_at', 'prev_end_at']
   }
 
   /**
