@@ -133,7 +133,6 @@ class ImageService {
 
   static async createThumbnail() {
     const images = await ImageService.getAll()
-    console.log('Start creating estates thumbnail')
     await Promise.all(
       images.map(async (image) => {
         {
@@ -154,7 +153,6 @@ class ImageService {
                     options.ACL = 'public-read'
                   }
 
-                  console.log('Esates URL', url)
                   await File.saveThumbnailToDisk({
                     image: url,
                     fileName: fileName,
