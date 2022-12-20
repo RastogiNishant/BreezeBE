@@ -214,6 +214,12 @@ class QueueJobService {
       console.log(`deactivating ${deactivationId} is not valid anymore.`)
     }
   }
+
+  static async getIpBasedInfo(userId, ip) {
+    const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
+    const ip_based_info = await getIpBasedInfo(ip)
+    await User.query().where('id', userId).update({ ip_based_info })
+  }
 }
 
 module.exports = QueueJobService

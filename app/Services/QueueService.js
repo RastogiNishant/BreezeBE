@@ -14,6 +14,7 @@ const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
+const GET_IP_BASED_INFO = 'getIpBasedInfo'
 
 const {
   SCHEDULED_EVERY_5M_JOB,
@@ -68,6 +69,10 @@ class QueueService {
 
   static deactivateLandlord(deactivationId, userId, delay) {
     Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
+  }
+
+  static getIpBasedInfo(userId, ip) {
+    Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
 
   /**
@@ -147,6 +152,8 @@ class QueueService {
           return QueueJobService.createThumbnailImages()
         case DEACTIVATE_LANDLORD:
           return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
+        case GET_IP_BASED_INFO:
+          return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
         default:
           console.log(`No job processor for: ${job.name}`)
       }
