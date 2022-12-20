@@ -888,10 +888,6 @@ class UserService {
     if (availableUser) {
       throw new HttpException(USER_UNIQUE, 400)
     }
-    if (isEmpty(ip_based_info.country_code)) {
-      const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
-      ip_based_info = await getIpBasedInfo(ip)
-    }
     try {
       const { user } = await this.createUser(
         {
@@ -905,6 +901,11 @@ class UserService {
         },
         trx
       )
+      if (isEmpty(ip_based_info.country_code)) {
+        const QueueService = require('./QueueService.js')
+        QueueService.getIpBasedInfo(user.id, ip)
+      }
+
       if (!trx && process.env.NODE_ENV !== TEST_ENVIRONMENT) {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
