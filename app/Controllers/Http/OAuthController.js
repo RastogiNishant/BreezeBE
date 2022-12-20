@@ -61,14 +61,14 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    const { token, device_token, role, code, data1, data2 } = request.all()
+    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    ip = ip || request.ip()
     let ticket
     try {
       ticket = await UserService.verifyGoogleToken(token)
     } catch (e) {
       throw new HttpException(INVALID_TOKEN, 400)
     }
-
     const email = get(ticket, 'payload.email')
     const googleId = get(ticket, 'payload.sub')
     let user = await this.authorizeUser(email, role)
@@ -101,7 +101,6 @@ class OAuthController {
             throw new HttpException(USER_UNIQUE, 400)
           }
         }
-
         user = await UserService.createUserFromOAuth(request, {
           ...ticket.getPayload(),
           google_id: googleId,
@@ -110,6 +109,8 @@ class OAuthController {
           owner_id,
           is_household_invitation_onboarded,
           is_profile_onboarded,
+          ip,
+          ip_based_info,
         })
       } catch (e) {
         throw new HttpException(e.message, 400)
