@@ -147,7 +147,8 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    const { token, device_token, role, code, data1, data2 } = request.all()
+    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    ip = ip || request.ip()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
     try {
@@ -197,6 +198,8 @@ class OAuthController {
             name: 'Apple User',
             is_household_invitation_onboarded,
             is_profile_onboarded,
+            ip,
+            ip_based_info,
           },
           SIGN_IN_METHOD_APPLE
         )
