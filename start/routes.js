@@ -1025,10 +1025,14 @@ Route.group(() => {
   Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
     'valid:EstateCurrentTenantFilter',
   ])
-  // Route.put(
-  //   '/:id/lease_contract',
-  //   'EstateCurrentTenantController.addLeaseContractImages'
-  // ).middleware(['valid:Id'])
+  Route.get('/:id', 'EstateCurrentTenantController.get').middleware(['valid:Id'])
+  Route.put('/:id/lease_contract', 'EstateCurrentTenantController.addLeaseContract').middleware([
+    'valid:Id',
+  ])
+  Route.delete(
+    '/:id/lease_contract',
+    'EstateCurrentTenantController.removeLeaseContract'
+  ).middleware(['valid:Id,RemoveImage'])
 })
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/current_tenant')

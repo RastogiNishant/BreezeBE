@@ -38,6 +38,26 @@ class EstateCurrentTenantController {
     )
   }
 
+  async get({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateCurrentTenantService.getWithAbsoluteAttachments(id, auth.user.id))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
+  async removeLeaseContract({ request, auth, response }) {
+    const { id, uri } = request.all()
+    try {
+      response.res(
+        await EstateCurrentTenantService.removeLeaseContract({ id, uri, user: auth.user })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
   async delete({ request, auth, response }) {
     const { id } = request.all()
     response.res(await EstateCurrentTenantService.delete(id, auth.user.id))
@@ -163,11 +183,11 @@ class EstateCurrentTenantController {
     }
   }
 
-  async addLeaseContractImages({ request, auth, response }) {
+  async addLeaseContract({ request, auth, response }) {
     try {
-      response.res(await EstateCurrentTenantService.addLeaseContractImages(request, auth.user))
+      response.res(await EstateCurrentTenantService.addLeaseContract(request, auth.user))
     } catch (e) {
-      throw new HttpException(e.message, e.staus)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 }

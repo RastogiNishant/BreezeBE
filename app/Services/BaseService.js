@@ -1,5 +1,4 @@
 'use strict'
-
 const HttpException = require('../Exceptions/HttpException')
 const File = use('App/Classes/File')
 const {
@@ -23,7 +22,7 @@ class BaseService {
 
             if (attachment.uri.search('http') !== 0) {
               return {
-                user_id: attachment.user_id,
+                ...attachment,
                 url: await File.getProtectedUrl(attachment.uri),
                 uri: attachment.uri,
                 thumb: thumb,
@@ -31,7 +30,7 @@ class BaseService {
             }
 
             return {
-              user_id: attachment.user_id,
+              ...attachment,
               url: attachment.uri,
               uri: attachment.uri,
               thumb: thumb,
@@ -41,13 +40,12 @@ class BaseService {
       }
       return item
     } catch (e) {
-      console.log(e.message, IMAGE_ABSOLUTE_URL_ERROR_CODE)
       return null
     }
   }
 
-  static async saveFiles(request, { mimes, filedName, public = false }) {
-    const imageMimes = mimes || [
+  static async saveFiles(request, options = { mimes: null, filedName: null, isPublic: false }) {
+    const imageMimes = options?.mimes || [
       File.IMAGE_JPG,
       File.IMAGE_JPEG,
       File.IMAGE_PNG,
@@ -57,18 +55,24 @@ class BaseService {
       File.IMAGE_WEBP,
       File.IMAGE_HEIC,
     ]
+
     const files = await File.saveRequestFiles(request, [
-      { field: filedName || 'file', mime: imageMimes, isPublic: public },
+      {
+        field: options?.filedName || 'file',
+        mime: imageMimes,
+        isPublic: options?.isPublic || false,
+      },
     ])
 
     return files
   }
 
   static async getAbsoluteUrl(attachments, sender_id) {
-    try {if (!attachments || !attachments.length) {
+    try {
+      if (!attachments || !attachments.length) {
         return null
       }
-      if (!isArray(attachments)) {
+      if (!Array.isArray(attachments)) {
         attachments = JSON.parse(attachments)
       }
 
@@ -91,6 +95,7 @@ class BaseService {
           }
 
           return {
+            user_id: sender_id,
             url: attachment,
             uri: attachment,
             thumb: thumb,

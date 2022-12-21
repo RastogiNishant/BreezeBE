@@ -65,7 +65,7 @@ class TaskService extends BaseService {
       status_changed_by: user.role,
     }
 
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const attachments = path.map((p) => {
@@ -376,7 +376,7 @@ class TaskService extends BaseService {
 
     tasks = await Promise.all(
       tasks.rows.map(async (t) => {
-        return await TaskService.getItemWithAbsoluteUrl(t)
+        return await TaskService.getWithAbsoluteUrl(t)
       })
     )
 
@@ -565,45 +565,6 @@ class TaskService extends BaseService {
     await Task.query()
       .whereIn('estate_id', estate_id)
       .updateItemWithTrx({ status: TASK_STATUS_ARCHIVED }, trx)
-  }
-
-  static async getItemWithAbsoluteUrl(item) {
-    try {
-      if (item.attachments) {
-        item.attachments = await Promise.all(
-          item.attachments.map(async (attachment) => {
-            const thumb =
-              attachment.uri.split('/').length === 2
-                ? await File.getProtectedUrl(
-                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-                      attachment.uri.split('/')[1]
-                    }`
-                  )
-                : ''
-
-            if (attachment.uri.search('http') !== 0) {
-              return {
-                user_id: attachment.user_id,
-                url: await File.getProtectedUrl(attachment.uri),
-                uri: attachment.uri,
-                thumb: thumb,
-              }
-            }
-
-            return {
-              user_id: attachment.user_id,
-              url: attachment.uri,
-              uri: attachment.uri,
-              thumb: thumb,
-            }
-          })
-        )
-      }
-      return item
-    } catch (e) {
-      console.log(e.message, 500)
-      return null
-    }
   }
 
   static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {

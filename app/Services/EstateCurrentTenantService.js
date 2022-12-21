@@ -234,6 +234,9 @@ class EstateCurrentTenantService extends BaseService {
       .firstOrFail()
   }
 
+  static async getWithAbsoluteAttachments(id, user_id) {
+    return await this.getWithAbsoluteUrl((await this.hasPermission(id, user_id)).toJSON())
+  }
   static async getCurrentTenantByEstateId(estate_id) {
     return await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
@@ -827,15 +830,18 @@ class EstateCurrentTenantService extends BaseService {
     }
   }
 
-  static async addLeaseContractImages(request, user) {
+  static async addLeaseContract(request, user) {
     const { id } = request.all()
     let currentEstate = await this.hasPermission(id, user.id)
 
     const files = await this.saveFiles(request)
     if (files && files.file) {
-      const paths = !isArray(files.file) ? [files.file] : files.file
-      const pathJSON = paths.map((p) => {
-        return { user_id: user.id, uri: p }
+      const paths = !Array.isArray(files.file) ? [files.file] : files.file
+      const originalFileNames = !Array.isArray(files.original_file)
+        ? [files.original_file]
+        : files.original_file
+      const pathJSON = paths.map((p, index) => {
+        return { user_id: user.id, uri: p, original_file_name: originalFileNames[index] }
       })
 
       const attachments = JSON.stringify(
@@ -853,6 +859,30 @@ class EstateCurrentTenantService extends BaseService {
       return await this.getAbsoluteUrl(paths, user.id)
     }
     throw new HttpException(FAILED_UPLOAD_LEASE_CONTRACT, 400)
+  }
+
+  static async removeLeaseContract({ id, user, uri }) {
+    uri = uri.split(',')
+
+    const currentEstate = await this.hasPermission(id, user.id)
+
+    try {
+      const attachments = currentEstate
+        .toJSON()
+        .attachments.filter(
+          (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
+        )
+
+      await EstateCurrentTenant.query()
+        .where('id', id)
+        .update({
+          ...currentEstate.toJSON(),
+          attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
+        })
+      return true
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
   }
 
   static async emitConnected({ estate_id, user_id }) {
