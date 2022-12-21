@@ -177,13 +177,7 @@ class QueueJobService {
   }
 
   static async createThumbnailImages() {
-    console.log('Hey guys')
-
-    console.log('Start time', new Date().getTime())
-    //await Promise.all([ImageService.createThumbnail()])
     await Promise.all([ImageService.createThumbnail(), MemberService.createThumbnail()])
-    console.log('End time', new Date().getTime())
-    console.log('Creating thumbnails completed!!!!')
   }
 
   static async deactivateLandlord(deactivationId, userId) {

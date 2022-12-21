@@ -234,6 +234,8 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = generateAddress(instance)
+        instance.coord = null
+        instance.coord_raw = null
       }
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
@@ -327,10 +329,10 @@ class Estate extends Model {
   }
 
   tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id')
-      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
-      .orderBy('updated_at', 'desc')
-      .orderBy('urgency', 'desc')
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
   }
   all_tasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
@@ -379,7 +381,7 @@ class Estate extends Model {
   }
 
   current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant', 'estate_id', 'id').where(
+    return this.hasOne('App/Models/EstateCurrentTenant', 'id', 'estate_id').where(
       'status',
       STATUS_ACTIVE
     )

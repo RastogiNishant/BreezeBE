@@ -11,7 +11,6 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const schema = require('../Validators/CreateBuddy').schema()
-
 const {
   STATUS_DRAFT,
   DATE_FORMAT,
@@ -24,7 +23,6 @@ const {
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
-const HttpException = use('App/Exceptions/HttpException')
 
 /**
  *
@@ -272,10 +270,7 @@ class ImportService {
 
     // Run task to separate get coords and point of estate
     QueueService.getEstateCoords(estate.id)
-    //await EstateService.updateEstateCoord(estate.id)
-    // if (data.email) {
-    //   await EstateCurrentTenantService.updateCurrentTenant(data, estate.id)
-    // }
+
     return estate
   }
 
@@ -291,14 +286,47 @@ class ImportService {
     type = IMPORT_TYPE_EXCEL,
     entity = IMPORT_ENTITY_ESTATES
   ) {
-    const import_activity = await Import.query()
+    const importActivity = {}
+    let importExcelActivity = await Import.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
       .select('filename')
-      .where({ user_id, type, entity })
+      .select('action')
+      .where({ user_id, type, entity, action: 'import' })
       .orderBy('created_at', 'desc')
       .first()
 
-    return import_activity
+    if (importExcelActivity) {
+      importExcelActivity = importExcelActivity.toJSON()
+      importExcelActivity.created_at = moment(importExcelActivity.created_at).utc().format()
+      importActivity.import = importExcelActivity
+    }
+
+    let exportExcelActivity = await Import.query()
+      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('filename')
+      .select('action')
+      .where({ user_id, type, entity, action: 'export' })
+      .orderBy('created_at', 'desc')
+      .first()
+    if (exportExcelActivity) {
+      exportExcelActivity = exportExcelActivity.toJSON()
+      exportExcelActivity.created_at = moment(exportExcelActivity.created_at).utc().format()
+      importActivity.export = exportExcelActivity
+    }
+    return importActivity
+  }
+
+  static async postLastActivity({ user_id, filename, action, type, entity }) {
+    const trx = await Database.beginTransaction()
+    try {
+      await Import.createItem({ user_id, filename, action, type, entity }, trx)
+      await trx.commit()
+      return true
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      return false
+    }
   }
 }
 
