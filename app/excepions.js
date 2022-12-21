@@ -48,6 +48,11 @@ const exceptions = {
   MESSAGE_ATTACHMENT_WRONG_FORMAT: 'Attachments must be an array',
   NO_CONTACT_EXIST: 'Contacts not exists',
   ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
+  FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
+}
+
+const exceptionCodes = {
+  IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
 }
 
 const exceptionKeys = {
@@ -111,6 +116,7 @@ const sleep = async (ms) => {
 module.exports = {
   exceptions,
   exceptionKeys,
+  exceptionCodes,
   getExceptionMessage,
   sleep,
 }

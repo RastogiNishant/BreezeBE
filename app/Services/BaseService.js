@@ -1,0 +1,107 @@
+'use strict'
+
+const HttpException = require('../Exceptions/HttpException')
+const File = use('App/Classes/File')
+const {
+  exceptionCodes: { IMAGE_ABSOLUTE_URL_ERROR_CODE },
+} = require('../excepions')
+
+class BaseService {
+  static async getWithAbsoluteUrl(item) {
+    try {
+      if (item.attachments) {
+        item.attachments = await Promise.all(
+          item.attachments.map(async (attachment) => {
+            const thumb =
+              attachment.uri.split('/').length === 2
+                ? await File.getProtectedUrl(
+                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
+                      attachment.uri.split('/')[1]
+                    }`
+                  )
+                : ''
+
+            if (attachment.uri.search('http') !== 0) {
+              return {
+                user_id: attachment.user_id,
+                url: await File.getProtectedUrl(attachment.uri),
+                uri: attachment.uri,
+                thumb: thumb,
+              }
+            }
+
+            return {
+              user_id: attachment.user_id,
+              url: attachment.uri,
+              uri: attachment.uri,
+              thumb: thumb,
+            }
+          })
+        )
+      }
+      return item
+    } catch (e) {
+      console.log(e.message, IMAGE_ABSOLUTE_URL_ERROR_CODE)
+      return null
+    }
+  }
+
+  static async saveFiles(request, { mimes, filedName, public = false }) {
+    const imageMimes = mimes || [
+      File.IMAGE_JPG,
+      File.IMAGE_JPEG,
+      File.IMAGE_PNG,
+      File.IMAGE_PDF,
+      File.IMAGE_TIFF,
+      File.IMAGE_GIF,
+      File.IMAGE_WEBP,
+      File.IMAGE_HEIC,
+    ]
+    const files = await File.saveRequestFiles(request, [
+      { field: filedName || 'file', mime: imageMimes, isPublic: public },
+    ])
+
+    return files
+  }
+
+  static async getAbsoluteUrl(attachments, sender_id) {
+    try {if (!attachments || !attachments.length) {
+        return null
+      }
+      if (!isArray(attachments)) {
+        attachments = JSON.parse(attachments)
+      }
+
+      attachments = await Promise.all(
+        attachments.map(async (attachment) => {
+          const thumb =
+            attachment.split('/').length === 2
+              ? await File.getProtectedUrl(
+                  `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
+                )
+              : ''
+
+          if (attachment.search('http') !== 0) {
+            return {
+              user_id: sender_id,
+              url: await File.getProtectedUrl(attachment),
+              uri: attachment,
+              thumb: thumb,
+            }
+          }
+
+          return {
+            url: attachment,
+            uri: attachment,
+            thumb: thumb,
+          }
+        })
+      )
+      return attachments
+    } catch (e) {
+      throw new HttpException(e.message, IMAGE_ABSOLUTE_URL_ERROR_CODE)
+    }
+  }
+}
+
+module.exports = BaseService

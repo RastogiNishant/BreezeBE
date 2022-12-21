@@ -162,6 +162,14 @@ class EstateCurrentTenantController {
       throw new HttpException(e.message, 422)
     }
   }
+
+  async addLeaseContractImages({ request, auth, response }) {
+    try {
+      response.res(await EstateCurrentTenantService.addLeaseContractImages(request, auth.user))
+    } catch (e) {
+      throw new HttpException(e.message, e.staus)
+    }
+  }
 }
 
 module.exports = EstateCurrentTenantController

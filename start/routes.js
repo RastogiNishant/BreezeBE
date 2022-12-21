@@ -1025,6 +1025,10 @@ Route.group(() => {
   Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
     'valid:EstateCurrentTenantFilter',
   ])
+  // Route.put(
+  //   '/:id/lease_contract',
+  //   'EstateCurrentTenantController.addLeaseContractImages'
+  // ).middleware(['valid:Id'])
 })
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/current_tenant')

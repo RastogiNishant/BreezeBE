@@ -47,7 +47,8 @@ const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
-class TaskService {
+const BaseService = require('./BaseService')
+class TaskService extends BaseService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
     const tenant_id = await this.hasPermission({
@@ -322,23 +323,7 @@ class TaskService {
       throw new HttpException('No Permission')
     }
 
-    task = await TaskService.getItemWithAbsoluteUrl(task)
-
-    // const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
-
-    // await Promise.all(
-    //   (chats || []).map(async (chat) => {
-    //     const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
-    //     if (chatsAttachment) {
-    //       if (task.attachments) {
-    //         task.attachments = task.attachments.concat(chatsAttachment)
-    //       } else {
-    //         task.attachments = chatsAttachment
-    //       }
-    //     }
-    //   })
-    // )
-
+    task = await this.getWithAbsoluteUrl(task)
     return task
   }
 
@@ -469,24 +454,6 @@ class TaskService {
       .with('users')
   }
 
-  static async saveTaskImages(request) {
-    const imageMimes = [
-      File.IMAGE_JPG,
-      File.IMAGE_JPEG,
-      File.IMAGE_PNG,
-      File.IMAGE_PDF,
-      File.IMAGE_TIFF,
-      File.IMAGE_GIF,
-      File.IMAGE_WEBP,
-      File.IMAGE_HEIC,
-    ]
-    const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
-    ])
-
-    return files
-  }
-
   static async hasPermission({ estate_id, user_id, role }) {
     //to check if the user has permission
     if (role === ROLE_LANDLORD) {
@@ -521,7 +488,7 @@ class TaskService {
     const { id } = request.all()
     let task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const pathJSON = path.map((p) => {
@@ -537,7 +504,7 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
-      files.attachments = await ChatService.getAbsoluteUrl(
+      files.attachments = await this.getAbsoluteUrl(
         Array.isArray(files.file) ? files.file : [files.file]
       )
       return files

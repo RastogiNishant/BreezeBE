@@ -16,6 +16,7 @@ const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const DataStorage = use('DataStorage')
 const Ws = use('Ws')
 const Estate = use('App/Models/Estate')
+const File = use('App/Classes/File')
 
 const {
   ROLE_USER,
@@ -43,6 +44,10 @@ const {
   WEBSOCKET_EVENT_TENANT_CONNECTED,
 } = require('../constants')
 
+const {
+  exceptions: { FAILED_UPLOAD_LEASE_CONTRACT },
+} = require('../excepions')
+
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
 const NoticeService = use('App/Services/NoticeService')
@@ -50,8 +55,9 @@ const NoticeService = use('App/Services/NoticeService')
 const l = use('Localize')
 const { trim } = require('lodash')
 const { phoneSchema } = require('../Libs/schemas')
+const BaseService = require('./BaseService')
 
-class EstateCurrentTenantService {
+class EstateCurrentTenantService extends BaseService {
   /**
    * Right now there is no way to determine if the email address is the right tenant's email address or not
    * So we can't prevent duplicated record for the same estate
@@ -288,6 +294,8 @@ class EstateCurrentTenantService {
       .where('id', estateCurrentTeant.estate_id)
       .where('letting_type', LETTING_TYPE_LET)
       .firstOrFail()
+
+    return estateCurrentTeant
   }
 
   static async expire(id, user_id) {
@@ -817,6 +825,34 @@ class EstateCurrentTenantService {
       })
       throw new AppException('Code did not match.')
     }
+  }
+
+  static async addLeaseContractImages(request, user) {
+    const { id } = request.all()
+    let currentEstate = await this.hasPermission(id, user.id)
+
+    const files = await this.saveFiles(request)
+    if (files && files.file) {
+      const paths = !isArray(files.file) ? [files.file] : files.file
+      const pathJSON = paths.map((p) => {
+        return { user_id: user.id, uri: p }
+      })
+
+      const attachments = JSON.stringify(
+        (currentEstate.toJSON().attachments || []).concat(pathJSON)
+      )
+      currentEstate = {
+        ...currentEstate.toJSON(),
+        attachments,
+      }
+
+      await EstateCurrentTenant.query()
+        .where('id', id)
+        .update({ ...currentEstate })
+
+      return await this.getAbsoluteUrl(paths, user.id)
+    }
+    throw new HttpException(FAILED_UPLOAD_LEASE_CONTRACT, 400)
   }
 
   static async emitConnected({ estate_id, user_id }) {
