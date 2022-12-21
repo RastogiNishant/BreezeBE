@@ -1,7 +1,7 @@
 'use strict'
 
 const appleSignIn = require('apple-signin-auth')
-const { get } = require('lodash')
+const { get, isEmpty } = require('lodash')
 
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
@@ -118,6 +118,10 @@ class OAuthController {
     }
 
     if (user) {
+      if (isEmpty(ip_based_info.country_code)) {
+        const QueueService = require('../../Services/QueueService')
+        QueueService.getIpBasedInfo(user.id, ip)
+      }
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
       if (data1 && data2) {
@@ -203,6 +207,11 @@ class OAuthController {
           },
           SIGN_IN_METHOD_APPLE
         )
+
+        if (isEmpty(ip_based_info.country_code)) {
+          const QueueService = require('../../Services/QueueService')
+          QueueService.getIpBasedInfo(user.id, ip)
+        }
 
         if (user && member_id) {
           await MemberService.setMemberOwner(member_id, user.id)
