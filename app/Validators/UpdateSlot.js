@@ -7,7 +7,7 @@ const { DATE_FORMAT } = require('../constants')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, OPTION, STRING, SHOULD_BE_AFTER },
-} = require('../excepions')
+} = require('../exceptions')
 
 const transformTime = (value) => {
   const date = moment.utc(value, DATE_FORMAT)

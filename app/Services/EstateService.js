@@ -56,7 +56,7 @@ const {
 
 const {
   exceptions: { NO_ESTATE_EXIST },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')

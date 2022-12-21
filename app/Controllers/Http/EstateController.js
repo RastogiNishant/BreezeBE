@@ -64,7 +64,7 @@ const INVITE_CODE_STRING_LENGTH = 8
 
 const {
   exceptions: { ESTATE_NOT_EXISTS },
-} = require('../../excepions')
+} = require('../../exceptions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
