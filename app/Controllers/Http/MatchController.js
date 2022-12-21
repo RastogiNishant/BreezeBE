@@ -11,7 +11,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
-const { reduce, isEmpty, isNull } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -263,7 +263,7 @@ class MatchController {
               },
               iosInfo: {
                 iosBundleId: process.env.IOS_BUNDLE_ID,
-                iosAppStoreId: process.env.IOS_APPSTORE_ID,                
+                iosAppStoreId: process.env.IOS_APPSTORE_ID,
               },
             },
           })
@@ -573,6 +573,7 @@ class MatchController {
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
+    estates.data = uniqBy(estates.data, 'id')
 
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)

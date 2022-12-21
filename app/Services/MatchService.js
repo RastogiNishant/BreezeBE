@@ -1213,13 +1213,9 @@ class MatchService {
     { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
   ) {
     const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
-    const excludes = ['id', 'type', 'plan', 'energy_pass']
-    let columns = Estate.columns.concat('coord_raw').filter((c) => !excludes.includes(c))
-    columns = columns.map((c) => `estates.${c}`)
 
     const query = Estate.query()
-      .select(Database.raw(`DISTINCT("estates"."id")`))
-      .select(columns)
+      .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
       .orderBy('_m.updated_at', 'DESC')
