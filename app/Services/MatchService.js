@@ -1205,6 +1205,27 @@ class MatchService {
     return query.first()
   }
 
+  static getCountTenantMatchesWithFilterQuery(
+    userId,
+    { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
+  ) {
+    return this.getTenantMatchesWithFilterQuery(userId, {
+      buddy,
+      like,
+      dislike,
+      knock,
+      invite,
+      visit,
+      share,
+      top,
+      commit,
+      final,
+    })
+      .clearSelect()
+      .clearOrder()
+      .select(Database.raw(`count(DISTINCT("estates"."id"))`))
+      .fetch()
+  }
   /**
    *
    */
@@ -1237,8 +1258,7 @@ class MatchService {
       // All liked estates
       query
         .clearSelect()
-        .select(Database.raw(`DISTINCT("estates"."id")`))
-        .select(columns)
+        .select('estates.*')
         .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
@@ -1254,8 +1274,7 @@ class MatchService {
       // All disliked estates
       query
         .clearSelect()
-        .select(Database.raw(`DISTINCT("estates"."id")`))
-        .select(columns)
+        .select('estates.*')
         .select('_m.updated_at')
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
