@@ -111,20 +111,23 @@ class File {
     try {
       // need to install gifsicle to linux so this shell will work.
       // need to give read/write permission to tmp directly
+      const webp = require('webp-converter')
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.webp`
 
-      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
-
-      let command = `cwebp -quiet true ${filePath} `
-      if (options.quality) {
-        command += ` -q ${options.quality}`
+      const saveFile = async (filePath) => {
+        return new Promise((resolve, reject) => {
+          const result = webp.cwebp(filePath, outputFileName, '-q 30')
+          result
+            .then((response) => {
+              resolve(response)
+            })
+            .catch((e) => {
+              reject(e)
+            })
+        })
       }
-      command += ` -o ${outputFileName}`
-      await exec({
-        cmd: `${command}`,
-      })
-
+      await saveFile(filePath)
       const data = await fsPromise.readFile(outputFileName)
       fsPromise.unlink(outputFileName)
       return data
