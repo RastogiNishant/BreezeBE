@@ -44,7 +44,7 @@ class ImageService {
     const trx = await Database.beginTransaction()
     try {
       for (let image of images) {
-        if (image.image) {
+        if (image.image && fs.existsSync(image.image)) {
           const options = { ContentType: image.format, ACL: 'public-read' }
           const ext = ContentType.getExt(image.image)
           const filename = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
