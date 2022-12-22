@@ -193,7 +193,7 @@ class File {
         contentType = File.IMAGE_JPEG
       } else if ([this.IMAGE_GIF].includes(mime)) {
         img_data = await this.compressGif(file.tmpPath, { optimize: 3, lossy: 80, colors: 128 })
-      } else if ([this.IMAGE_WEBP]) {
+      } else if ([this.IMAGE_WEBP].includes(mime)) {
         img_data = await this.compressWebp(file.tmpPath, { quality: 50 })
       } else if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
         const imagemin = (await import('imagemin')).default
