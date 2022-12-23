@@ -597,7 +597,8 @@ class TaskService {
   static async archiveTask(estate_id, trx) {
     await Task.query()
       .whereIn('estate_id', estate_id)
-      .updateItemWithTrx({ status: TASK_STATUS_ARCHIVED }, trx)
+      .update({ status: TASK_STATUS_ARCHIVED })
+      .transacting(trx)
   }
 
   static async getItemWithAbsoluteUrl(item) {
