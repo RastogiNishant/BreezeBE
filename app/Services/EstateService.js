@@ -1368,17 +1368,17 @@ class EstateService {
         property.status = STATUS_DRAFT
         let images = property.images
         let result
-        const propertyIdExist = await Estate.query()
+        const existingProperty = await Estate.query()
           .where({ property_id: property.property_id, user_id })
           .first()
-        if (propertyIdExist) {
-          result = await Estate.query()
-            .where({ property_id: property.property_id, user_id })
-            .update(property)
+        if (existingProperty) {
+          existingProperty.merge(omit(property, ['images']))
+          result = await existingProperty.save(trx)
+          QueueService.uploadOpenImmoImages(images, existingProperty.id)
         } else {
           result = await Estate.createItem(omit(property, ['images']), trx)
+          QueueService.uploadOpenImmoImages(images, result.id)
         }
-        QueueService.uploadOpenImmoImages(images, result.id)
       })
       await Import.createItem({
         user_id,
@@ -1390,8 +1390,8 @@ class EstateService {
       return result
     } catch (err) {
       await trx.rollback()
-      console.log(err.message)
-      throw new HttpException('Error: '.err.message)
+      console.log(err)
+      throw new HttpException('Error found while importing xml.')
     }
   }
 
