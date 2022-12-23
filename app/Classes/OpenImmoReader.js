@@ -279,7 +279,7 @@ class OpenImmoReader {
             }
           })
         }
-        property[field] = propertyOptions //JSON.stringify(propertyOptions).replace(/\[/, '{').replace(/\]/, '}')
+        property[field] = propertyOptions
       })
     })
     return properties
@@ -291,6 +291,7 @@ class OpenImmoReader {
       'apt_type',
       'building_age',
       'building_status',
+      'country',
       'furnished',
       'gender',
       'property_type',

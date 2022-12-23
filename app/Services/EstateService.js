@@ -1367,7 +1367,17 @@ class EstateService {
         property.user_id = user_id
         property.status = STATUS_DRAFT
         let images = property.images
-        const result = await Estate.createItem(omit(property, ['images']), trx)
+        let result
+        const propertyIdExist = await Estate.query()
+          .where({ property_id: property.property_id, user_id })
+          .first()
+        if (propertyIdExist) {
+          result = await Estate.query()
+            .where({ property_id: property.property_id, user_id })
+            .update(property)
+        } else {
+          result = await Estate.createItem(omit(property, ['images']), trx)
+        }
         QueueService.uploadOpenImmoImages(images, result.id)
       })
       await Import.createItem({
