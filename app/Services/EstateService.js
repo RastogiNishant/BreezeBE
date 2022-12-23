@@ -53,6 +53,11 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
 } = require('../constants')
+
+const {
+  exceptions: { NO_ESTATE_EXIST },
+} = require('../../app/excepions')
+
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
@@ -224,7 +229,7 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ request, data, userId }, fromImport = false) {
+  static async createEstate({ request, data, userId }, fromImport = false, trx = null) {
     data = request ? request.all() : data
 
     const propertyId = data.property_id
@@ -259,14 +264,17 @@ class EstateService {
       createData.letting_status = null
     }
 
-    const estate = await Estate.createItem({
-      ...createData,
-    })
+    const estate = await Estate.createItem(
+      {
+        ...createData,
+      },
+      trx
+    )
 
     const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
 
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    QueueService.getEstateCoords(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
@@ -310,7 +318,7 @@ class EstateService {
       FileBucket.remove(energy_proof)
     }
     // Run processing estate geo nearest
-    QueueService.getEstatePoint(estate.id)
+    QueueService.getEstateCoords(estate.id)
     return estate
   }
 
@@ -1017,7 +1025,11 @@ class EstateService {
   }
 
   static async hasPermission({ id, user_id }) {
-    return await Estate.findByOrFail({ id, user_id: user_id })
+    try {
+      return await Estate.findByOrFail({ id, user_id: user_id })
+    } catch (e) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
   }
 
   static async getEstatesWithTask(user, params, page, limit = -1) {
@@ -1113,10 +1125,10 @@ class EstateService {
             task.unread_role === ROLE_LANDLORD ? task.unread_count || 0 : 0
         })
 
-        const has_unread_message =
-          (r[0].activeTasks || []).findIndex(
-            (task) => task.unread_role === ROLE_LANDLORD && task.unread_count
-          ) !== -1
+        const has_unread_message = Estate.landlord_has_unread_messages(
+          r[0].activeTasks || [],
+          ROLE_LANDLORD
+        )
         let activeTasks = (r[0].activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT)
 
         const taskCount = (r[0].tasks || []).length || 0
@@ -1196,6 +1208,7 @@ class EstateService {
     let not_connected_count = 0
     let pending_count = 0
     let unread_count = 0
+    let connected_count = 0
 
     quickActions.map((estate) => {
       urgency_count += parseInt(estate.urgency_count) || 0
@@ -1212,6 +1225,8 @@ class EstateService {
         } else {
           not_connected_count++
         }
+      } else {
+        connected_count++
       }
     })
 
@@ -1221,6 +1236,7 @@ class EstateService {
       not_connected_count,
       pending_count,
       unread_count,
+      connected_count,
     }
   }
 

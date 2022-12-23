@@ -20,7 +20,7 @@ const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
 const Event = use('Event')
 const File = use('App/Classes/File')
-
+const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const TenantService = use('App/Services/TenantService')
 
@@ -63,6 +63,11 @@ const {
   MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
   TIMESLOT_STATUS_REJECT,
+  STATUS_DELETE,
+  ROLE_LANDLORD,
+  WEBSOCKET_EVENT_MATCH,
+  NO_MATCH_STATUS,
+  MATCH_SCORE_GOOD_MATCH,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -443,7 +448,7 @@ class MatchService {
       return [...estateIds, estate.id]
     }, [])
     estates = await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
-    const matched = estates
+    const matches = estates
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(tenant, v)
@@ -466,11 +471,16 @@ class MatchService {
       .delete()
 
     // Create new matches
-    if (!isEmpty(matched)) {
-      const insertQuery = Database.query().into('matches').insert(matched).toString()
+    if (!isEmpty(matches)) {
+      const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
+
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(superMatches)
+      }
     }
   }
 
@@ -497,7 +507,7 @@ class MatchService {
       .whereIn('tenants.user_id', tenantUserIds)
       .fetch()
     // Calculate matches for tenants to current estate
-    const matched = tenants
+    const matches = tenants
       .toJSON()
       .reduce((n, v) => {
         const percent = MatchService.calculateMatchPercent(v, estate)
@@ -519,14 +529,14 @@ class MatchService {
       .delete()
 
     // Create new matches
-    if (!isEmpty(matched)) {
-      const insertQuery = Database.query().into('matches').insert(matched).toString()
+    if (!isEmpty(matches)) {
+      const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
-      const superMatches = matched.filter(({ percent }) => percent >= 90)
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
       if (superMatches.length > 0) {
-        await NoticeService.prospectSuperMatch(estateId, superMatches)
+        await NoticeService.prospectSuperMatch(superMatches, estateId)
       }
     }
   }
@@ -583,6 +593,15 @@ class MatchService {
             user_id: userId,
             estate_id: estateId,
           })
+        this.emitMatch({
+          data: {
+            estate_id: estateId,
+            user_id: userId,
+            old_status: MATCH_STATUS_NEW,
+            status: MATCH_STATUS_KNOCK,
+          },
+          role: ROLE_LANDLORD,
+        })
         return true
       }
 
@@ -598,11 +617,36 @@ class MatchService {
         percent: 0,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
-
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_NEW,
+          status: MATCH_STATUS_KNOCK,
+        },
+        role: ROLE_LANDLORD,
+      })
       return true
     }
 
     throw new AppException('Not allowed')
+  }
+
+  static async emitMatch({ data, role }) {
+    const estate = await Estate.query()
+      .where('id', data.estate_id)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+
+    if (estate) {
+      const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
+      const topicName =
+        role === ROLE_LANDLORD ? `landlord:${estate.user_id}` : `tenant:${data.user_id}`
+      const topic = Ws.getChannel(channel).topic(topicName)
+      if (topic) {
+        topic.broadcast(WEBSOCKET_EVENT_MATCH, data)
+      }
+    }
   }
 
   static async cancelKnock(estateId, userId) {
@@ -620,6 +664,15 @@ class MatchService {
     try {
       await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
       await EstateService.addDislike(userId, estateId, trx)
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_KNOCK,
+          status: NO_MATCH_STATUS,
+        },
+        role: ROLE_LANDLORD,
+      })
       await trx.commit()
       return true
     } catch (e) {
@@ -646,6 +699,16 @@ class MatchService {
       estate_id: estateId,
     })
     await NoticeService.userInvite(estateId, userId)
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_INVITE,
+      },
+      role: ROLE_USER,
+    })
     MatchService.inviteEmailToProspect({ estateId, userId })
   }
 
@@ -678,6 +741,15 @@ class MatchService {
     await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
       user_id: userId,
       estate_id: estateId,
+    })
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_INVITE,
+        status: MATCH_STATUS_KNOCK,
+      },
+      role: ROLE_USER,
     })
   }
 
@@ -761,6 +833,16 @@ class MatchService {
     if (booked === total) {
       await NoticeService.landlordTimeslotsBooked(estateId, total, booked)
     }
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_INVITE,
+        status: MATCH_STATUS_VISIT,
+      },
+      role: ROLE_LANDLORD,
+    })
   }
 
   static async updateVisitIn(estateId, userId, inviteIn = true) {
@@ -811,6 +893,15 @@ class MatchService {
       if (isInsideTrx) {
         await trx.commit()
       }
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_VISIT,
+          status: MATCH_STATUS_INVITE,
+        },
+        role: ROLE_LANDLORD,
+      })
 
       NoticeService.cancelVisit(estateId, null, userId)
     } catch (e) {
@@ -839,6 +930,18 @@ class MatchService {
     try {
       await this.deleteVisit(estateId, userIds, trx)
       await this.matchToInvite(estateId, userIds, trx)
+
+      userIds.map((userId) => {
+        MatchService.emitMatch({
+          data: {
+            estate_id: estateId,
+            user_id: userId,
+            old_status: MATCH_STATUS_VISIT,
+            status: MATCH_STATUS_INVITE,
+          },
+          role: ROLE_USER,
+        })
+      })
     } catch (e) {
       throw new HttpException('Failed to update time slot', 500)
     }
@@ -868,6 +971,17 @@ class MatchService {
     })
 
     await Promise.all([deleteVisit, updateMatch])
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: MATCH_STATUS_VISIT,
+        status: MATCH_STATUS_INVITE,
+      },
+      role: ROLE_USER,
+    })
+
     NoticeService.cancelVisit(estateId, tenantId)
   }
 
@@ -900,6 +1014,17 @@ class MatchService {
         user_id: userTenant.id,
         estate_id: estateId,
       })
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userTenant.id,
+        old_status: MATCH_STATUS_VISIT,
+        status: MATCH_STATUS_SHARE,
+      },
+      role: ROLE_USER,
+    })
+
     return { tenantId: userTenant.id, tenantUid: userTenant.uid }
   }
 
@@ -915,10 +1040,23 @@ class MatchService {
       throw new AppException('Invalid code or match status')
     }
 
-    await Database.table('matches').update({ share: false }).where({
+    await Database.table('matches').update({ status: MATCH_STATUS_VISIT, share: false }).where({
       user_id,
       estate_id: estateId,
     })
+
+    /**Need to confirm status */
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: user_id,
+        old_status: match.status,
+        status: MATCH_STATUS_VISIT,
+        share: false,
+      },
+      role: ROLE_LANDLORD,
+    })
+
     NoticeService.prospectIsNotInterested(estateId)
   }
 
@@ -933,7 +1071,7 @@ class MatchService {
    *
    */
   static async toTop(estateId, tenantId) {
-    return Database.table('matches')
+    const result = await Database.table('matches')
       .update({ status: MATCH_STATUS_TOP })
       .where({
         user_id: tenantId,
@@ -941,6 +1079,18 @@ class MatchService {
         share: true,
       })
       .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: MATCH_STATUS_SHARE,
+        share: true,
+        status: MATCH_STATUS_TOP,
+      },
+      role: ROLE_USER,
+    })
+    return result
   }
 
   static async cancelTopByTenant(estateId, tenantId) {
@@ -969,6 +1119,16 @@ class MatchService {
       }
     }
 
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: MATCH_STATUS_TOP,
+        status: NO_MATCH_STATUS,
+      },
+      role: ROLE_LANDLORD,
+    })
+
     await Promise.all([deleteMatch, deleteVisit, checkDislikeExist()])
   }
 
@@ -994,6 +1154,16 @@ class MatchService {
         user_id: tenantId,
         estate_id: estateId,
       })
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: MATCH_STATUS_TOP,
+        status: match.share ? MATCH_STATUS_SHARE : MATCH_STATUS_VISIT,
+      },
+      role: ROLE_USER,
+    })
   }
 
   /**
@@ -1023,6 +1193,16 @@ class MatchService {
       status: MATCH_STATUS_TOP,
     })
 
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: MATCH_STATUS_TOP,
+        status: MATCH_STATUS_COMMIT,
+      },
+      role: ROLE_USER,
+    })
+
     await NoticeService.prospectRequestConfirm(estateId, tenantId)
   }
 
@@ -1032,26 +1212,18 @@ class MatchService {
       estate_id: estateId,
       status: MATCH_STATUS_COMMIT,
     })
-    NoticeService.prospectIsNotInterested(estateId)
-  }
 
-  /**
-   *
-   */
-  /**
-   *
-   */
-  static async removeNonConfirmUserMatches(estateId, tenantId) {
-    return Database.table('matches')
-      .where({ user_id: tenantId })
-      .whereNot(function () {
-        this.where({
-          user_id: tenantId,
-          estate_id: estateId,
-          status: MATCH_STATUS_FINISH,
-        })
-      })
-      .delete()
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_COMMIT,
+        status: MATCH_STATUS_TOP,
+      },
+      role: ROLE_LANDLORD,
+    })
+
+    NoticeService.prospectIsNotInterested(estateId)
   }
 
   static async handleFinalMatch(estate_id, user, fromInvitation, trx) {
@@ -1072,7 +1244,7 @@ class MatchService {
       const errorText = fromInvitation
         ? 'This invitation has already been accepted. Please contact with your landlord.'
         : 'You should have commit by your landlord to rent a property. Please contact with your landlord.'
-      throw new AppException(errorText)
+      throw new AppException(errorText, 400)
     }
 
     if (existingMatch) {
@@ -1098,6 +1270,10 @@ class MatchService {
 
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+
+    // need to make previous tasks which was between landlord and previous tenant archived
+    await require('./TaskService').archiveTask(estate_id, trx)
+
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
     }
@@ -1113,6 +1289,17 @@ class MatchService {
       const estate = await MatchService.handleFinalMatch(estateId, user, false, trx)
 
       await trx.commit()
+
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: user.id,
+          old_status: MATCH_STATUS_COMMIT,
+          status: MATCH_STATUS_FINISH,
+        },
+        role: ROLE_LANDLORD,
+      })
+
       NoticeService.estateFinalConfirm(estateId, user.id)
       Event.fire('mautic:syncContact', user.id, { finalmatchapproval_count: 1 })
 
@@ -1164,13 +1351,25 @@ class MatchService {
       .first()
 
     if (!match) {
-      return Database.table('matches').insert({
+      const result = Database.table('matches').insert({
         user_id: tenantId,
         estate_id: estateId,
         percent: 0,
         buddy: true,
         status: MATCH_STATUS_NEW,
       })
+
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: tenantId,
+          old_status: NO_MATCH_STATUS,
+          status: MATCH_STATUS_NEW,
+          buddy: true,
+        },
+        role: ROLE_LANDLORD,
+      })
+      return result
     }
 
     if (match.buddy) {
@@ -1178,10 +1377,23 @@ class MatchService {
     }
 
     // Match exists but without buddy
-    return Database.table('matches').update({ buddy: true }).where({
+    const buddyMatch = Database.table('matches').update({ buddy: true }).where({
       user_id: tenantId,
       estate_id: estateId,
     })
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: NO_MATCH_STATUS,
+        status: MATCH_STATUS_NEW,
+        buddy: true,
+      },
+      role: ROLE_LANDLORD,
+    })
+
+    return buddyMatch
   }
 
   static getTenantTopMatchesByEstate(estateId, tenantId) {
@@ -1325,6 +1537,8 @@ class MatchService {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
+        .withCount('tenant_has_unread_task')
+        .withCount('all_tasks')
         .whereIn('_m.status', [MATCH_STATUS_FINISH])
     } else {
       throw new AppException('Invalid filter params')
@@ -2459,6 +2673,18 @@ class MatchService {
       .where({ estate_id })
       .update({ status: MATCH_STATUS_INVITE })
       .transacting(trx)
+
+    userIds.map((userId) => {
+      MatchService.emitMatch({
+        data: {
+          estate_id,
+          user_id: userId,
+          old_status: MATCH_STATUS_KNOCK,
+          status: MATCH_STATUS_INVITE,
+        },
+        role: ROLE_USER,
+      })
+    })
 
     return userIds
   }
