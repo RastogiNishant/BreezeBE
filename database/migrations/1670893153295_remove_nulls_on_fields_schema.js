@@ -10,6 +10,7 @@ const fields = [
   'ground',
   'parking_space_type',
   'bath_options',
+  'heating_type',
 ]
 const has_defaults = [
   'energy_type',
