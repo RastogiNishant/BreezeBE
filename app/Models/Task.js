@@ -21,6 +21,10 @@ class Task extends Model {
       'unread_count',
       'unread_role',
       'first_not_read_chat_id',
+      'email',
+      'address',
+      'address_detail',
+      'landlord_identify_key',
     ]
   }
   static get readonly() {

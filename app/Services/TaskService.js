@@ -85,7 +85,7 @@ class TaskService {
       predefined_message_id,
       prev_predefined_message_id,
       predefined_message_choice_id,
-      estate_id,
+      estate_id = null,
       task_id,
       answer,
     } = data
@@ -99,21 +99,26 @@ class TaskService {
       .firstOrFail()
 
     // Fetch estate and also check the tenant has valid "EstateCurrentTenant" for this estate
-    const estate = await Estate.query()
-      .whereNot('estates.status', STATUS_DELETE)
-      .select('estates.user_id')
-      .where('estates.id', estate_id)
-      .innerJoin('estate_current_tenants', function () {
-        this.on('estate_current_tenants.estate_id', 'estates.id').on(
-          'estate_current_tenants.user_id',
-          user.id
-        )
-      })
-      .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
-      .first()
 
-    if (!estate) {
-      throw new HttpException('Estate not found', 404)
+    let estate = null
+
+    if (estate_id) {
+      estate = await Estate.query()
+        .whereNot('estates.status', STATUS_DELETE)
+        .select('estates.user_id')
+        .where('estates.id', estate_id)
+        .innerJoin('estate_current_tenants', function () {
+          this.on('estate_current_tenants.estate_id', 'estates.id').on(
+            'estate_current_tenants.user_id',
+            user.id
+          )
+        })
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .first()
+
+      if (!estate) {
+        throw new HttpException('Estate not found', 404)
+      }
     }
 
     if (predefinedMessage.step === undefined || predefinedMessage.step === null) {
@@ -143,7 +148,7 @@ class TaskService {
       const landlordMessage = await Chat.createItem(
         {
           task_id: task.id,
-          sender_id: estate.user_id,
+          sender_id: estate?.user_id || null,
           text: rc(l.get(predefinedMessage.text, lang), [
             { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
           ]),
@@ -155,6 +160,13 @@ class TaskService {
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
         task.status = TASK_STATUS_NEW
+        /*
+         * need to determine to send email to a user who will be a landlord later after signing up
+         * Here figma design goes
+         *
+         */
+        if (await this.isExistLandlord(task)) {
+        }
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
@@ -210,6 +222,21 @@ class TaskService {
       await trx.rollback()
       throw new HttpException(error.message)
     }
+  }
+
+  static async inviteLandlordFromTenant(email) {}
+
+  static async isExistLandlord(task) {
+    if (task.email) {
+      const landlords = (
+        await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)
+      ).rows
+      if (landlords && landlords.length) {
+        return true
+      }
+      return false
+    }
+    return true
   }
 
   static async handleFirstStep(tenant_id, estate_id, trx) {
@@ -323,21 +350,6 @@ class TaskService {
     }
 
     task = await TaskService.getItemWithAbsoluteUrl(task)
-
-    // const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
-
-    // await Promise.all(
-    //   (chats || []).map(async (chat) => {
-    //     const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
-    //     if (chatsAttachment) {
-    //       if (task.attachments) {
-    //         task.attachments = task.attachments.concat(chatsAttachment)
-    //       } else {
-    //         task.attachments = chatsAttachment
-    //       }
-    //     }
-    //   })
-    // )
 
     return task
   }
