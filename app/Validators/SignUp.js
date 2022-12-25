@@ -51,7 +51,7 @@ class SignUp extends Base {
             coord: yup
               .string()
               .matches(
-                /^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/,
+                /^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/,
                 getExceptionMessage('address', MATCH)
               ),
           }),
