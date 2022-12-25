@@ -595,6 +595,7 @@ class TaskService {
   }
 
   static async archiveTask(estate_id, trx) {
+    estate_id = !Array.isArray(estate_id) ? [estate_id] : estate_id
     await Task.query()
       .whereIn('estate_id', estate_id)
       .update({ status: TASK_STATUS_ARCHIVED })
