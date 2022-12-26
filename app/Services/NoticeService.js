@@ -658,7 +658,7 @@ class NoticeService {
             user_id,
             type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
             data: {
-              estate_id: estateId,
+              estate_id: estate_id,
               estate_address: estate.address,
               params: estate.getAptParams(),
             },
