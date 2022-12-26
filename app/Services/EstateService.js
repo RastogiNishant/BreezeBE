@@ -1354,6 +1354,25 @@ class EstateService {
     return true
   }
 
+  static async getEstateByAddress({ email, address }) {
+    if (!email || !address) {
+      return null
+    }
+
+    const estates =
+      (
+        await Estate.query()
+          .innerJoin({ _u: 'users' }, function () {
+            this.on('_u.user_id', 'estates.id').on('status', STATUS_ACTIVE).on('_u.email', email)
+          })
+          .whereNot('status', STATUS_DELETE)
+          .where('address', address)
+          .fetch()
+      ).rows || []
+
+    return estates
+  }
+
   static async deletePermanent(user_id) {
     await Estate.query().where('user_id', user_id).delete()
   }

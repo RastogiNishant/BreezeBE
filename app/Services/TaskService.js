@@ -15,7 +15,6 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
-  TASK_STATUS_UNRESOLVED,
   TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
@@ -165,8 +164,7 @@ class TaskService {
          * Here figma design goes
          *
          */
-        if (await this.isExistLandlord(task)) {
-        }
+        await require('./OutsideLandlordService').handleTaskWithoutEstate(task, trx)
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
@@ -222,21 +220,6 @@ class TaskService {
       await trx.rollback()
       throw new HttpException(error.message)
     }
-  }
-
-  static async inviteLandlordFromTenant(email) {}
-
-  static async isExistLandlord(task) {
-    if (task.email) {
-      const landlords = (
-        await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)
-      ).rows
-      if (landlords && landlords.length) {
-        return true
-      }
-      return false
-    }
-    return true
   }
 
   static async handleFirstStep(tenant_id, estate_id, trx) {

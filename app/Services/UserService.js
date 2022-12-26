@@ -82,6 +82,7 @@ const {
 } = require('../../app/excepions')
 
 const { logEvent } = require('./TrackingService.js')
+const TaskService = require('./TaskService.js')
 
 class UserService {
   /**
@@ -845,7 +846,16 @@ class UserService {
   }
 
   static async signUp(
-    { email, firstname, from_web, source_estate_id = null, data1, data2, ...userData },
+    {
+      email,
+      firstname,
+      from_web,
+      source_estate_id = null,
+      landord_invite = -1,
+      data1,
+      data2,
+      ...userData
+    },
     trx = null
   ) {
     // Manages the outside tenant invitation flow
@@ -888,6 +898,16 @@ class UserService {
         },
         trx
       )
+
+      //TODO: Manage outside landlord invitation flow
+      if (landord_invite && parseInt(landord_invite) === 1 && data1 && data2) {
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo({
+          new_email: email,
+          data1,
+          data1,
+        })
+      }
+
       if (!trx && process.env.NODE_ENV !== TEST_ENVIRONMENT) {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
