@@ -760,6 +760,7 @@ Route.group(() => {
   Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
     'valid:Pagination,TaskFilter',
   ])
+  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])

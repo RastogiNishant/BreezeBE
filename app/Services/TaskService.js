@@ -337,6 +337,24 @@ class TaskService {
     return task
   }
 
+  static async getAllUnassignedTasks({ user_id, page = -1, limit = -1 }) {
+    const query = Task.query().where('landlord_id', user_id)
+
+    let tasks, count
+    if (page === -1 || limit === -1) {
+      tasks = await query.fetch()
+      count = tasks.rows.length
+    } else {
+      tasks = await query.paginate(page, limit)
+      count = tasks.pages.total
+    }
+
+    return {
+      tasks,
+      count,
+    }
+  }
+
   static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
     let taskQuery = Task.query()
       .select('tasks.*')

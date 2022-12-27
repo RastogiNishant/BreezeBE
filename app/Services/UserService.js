@@ -390,6 +390,13 @@ class UserService {
         user.source_estate_id = null
       }
       await user.save(trx)
+
+      if (user.role === ROLE_LANDLORD) {
+        await require('./OutsideLandlordService').updateTaskLandlord({
+          landlord_id: user.id,
+          email: user.email,
+        })
+      }
       await trx.commit()
     } catch (e) {
       await trx.rollback()
