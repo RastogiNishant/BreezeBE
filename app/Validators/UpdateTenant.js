@@ -43,7 +43,7 @@ class UpdateTenant extends Base {
       non_smoker: yup.boolean(),
       parking_space: yup.number().min(0),
       minors_count: yup.number().min(0).max(MAX_MINOR_COUNT),
-      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       address: yup
         .string()
         .max(255)
