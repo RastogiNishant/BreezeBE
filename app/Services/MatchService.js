@@ -728,7 +728,7 @@ class MatchService {
   /**
    * Cancel invite if already invited
    */
-  static async cancelInvite(estateId, userId) {
+  static async cancelInvite(estateId, userId, role) {
     const match = await Database.query()
       .table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_INVITE, estate_id: estateId })
@@ -749,7 +749,7 @@ class MatchService {
         old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_KNOCK,
       },
-      role: ROLE_USER,
+      role: role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD,
     })
   }
 
