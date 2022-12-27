@@ -212,7 +212,7 @@ class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
       breeze_id: yup.string().nullable(),
-      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
         .number()
@@ -569,7 +569,6 @@ class CreateEstate extends Base {
         .number()
         .when(['additional_costs', 'heating_costs'], {
           is: (additional_costs, heating_costs) => {
-            console.log('extra cost', additional_costs || heating_costs)
             return additional_costs || heating_costs
           },
           then: yup.number().mustNotBeSet(),

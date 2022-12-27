@@ -15,6 +15,8 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const l = use('Localize')
@@ -44,6 +46,7 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
+const NoticeService = require('./NoticeService')
 class TaskService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
@@ -236,8 +239,24 @@ class TaskService {
     const taskRow = await query.firstOrFail()
 
     task.status_changed_by = user.role
-    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
-    return await taskRow.updateItem({ ...task })
+    let taskResult = null
+    if (trx) {
+      taskResult = await taskRow.updateItemWithTrx({ ...task }, trx)
+    } else {
+      taskResult = await taskRow.updateItem({ ...task })
+    }
+
+    // send notification to tenant to inform task has been resolved
+    if (user.role === ROLE_LANDLORD && task.status === TASK_STATUS_RESOLVED) {
+      NoticeService.notifyTenantTaskResolved([
+        {
+          user_id: taskRow.tenant_id,
+          estate_id: taskRow.estate_id,
+        },
+      ])
+    }
+
+    return taskResult
   }
 
   /**
@@ -328,8 +347,8 @@ class TaskService {
       .select('tasks.*')
       .select(
         Database.raw(`coalesce(
-        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}  
-          or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
+        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED}
           and "tasks"."updated_at" > '${moment
             .utc()
             .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
@@ -437,7 +456,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -445,13 +464,22 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .with('estate')
       .with('users')
   }
 
   static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
+    const imageMimes = [
+      File.IMAGE_JPG,
+      File.IMAGE_JPEG,
+      File.IMAGE_PNG,
+      File.IMAGE_PDF,
+      File.IMAGE_TIFF,
+      File.IMAGE_GIF,
+      File.IMAGE_WEBP,
+      File.IMAGE_HEIC,
+    ]
     const files = await File.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: false },
     ])
@@ -467,16 +495,23 @@ class TaskService {
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 500)
+      throw new HttpException('No final match yet for property', 400)
     }
 
     // to check if the user is the tenant for that property.
     if (role === ROLE_USER && finalMatch.user_id !== user_id) {
-      throw new HttpException('No permission for task', 500)
+      throw new HttpException('No permission for task', 400)
     }
 
     if (!finalMatch.user_id) {
       throw new HttpException('Database issue', 500)
+    }
+
+    if (
+      role === ROLE_USER &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+    ) {
+      throw new HttpException('You are not a breeze member yet', 400)
     }
 
     return finalMatch.user_id
@@ -557,6 +592,14 @@ class TaskService {
       console.log('Remove image error=', e.message)
       await trx.rollback()
     }
+  }
+
+  static async archiveTask(estate_id, trx) {
+    estate_id = !Array.isArray(estate_id) ? [estate_id] : estate_id
+    await Task.query()
+      .whereIn('estate_id', estate_id)
+      .update({ status: TASK_STATUS_ARCHIVED })
+      .transacting(trx)
   }
 
   static async getItemWithAbsoluteUrl(item) {
