@@ -44,7 +44,7 @@ class BaseService {
     }
   }
 
-  static async saveFiles(request, options = { mimes: null, filedName: null, isPublic: false }) {
+  static async saveFiles(request, options = { mimes: null, fieldName: null, isPublic: false }) {
     const imageMimes = options?.mimes || [
       File.IMAGE_JPG,
       File.IMAGE_JPEG,
@@ -58,7 +58,7 @@ class BaseService {
 
     const files = await File.saveRequestFiles(request, [
       {
-        field: options?.filedName || 'file',
+        field: options?.fieldName || 'file',
         mime: imageMimes,
         isPublic: options?.isPublic || false,
       },
