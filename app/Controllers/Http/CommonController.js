@@ -36,6 +36,7 @@ class CommonController {
     const result = {
       constants,
       options: await OptionService.getOptions(),
+      ROOM_TYPE: OptionService.getRoomTypes(),
     }
     response.res(result)
   }
