@@ -239,6 +239,12 @@ class OptionService {
         name: 'Liggia',
         locale_key: 'landlord.property.inside_view.rooms.loggia',
       },
+      {
+        key_index: ROOM_TYPE_BALCONY,
+        key_name: `ROOM_TYPE_BALCONY`,
+        name: 'Balcony',
+        locale_key: 'landlord.property.inside_view.rooms.balcony',
+      },
     ]
   }
 }
