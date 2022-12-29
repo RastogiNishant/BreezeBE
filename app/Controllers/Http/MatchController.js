@@ -161,7 +161,7 @@ class MatchController {
     await this.getOwnEstate(estate_id, auth.user.id)
 
     try {
-      await MatchService.cancelInvite(estate_id, user_id)
+      await MatchService.cancelInvite(estate_id, user_id, auth.user.role)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -178,7 +178,7 @@ class MatchController {
   async removeInviteByTenant({ request, auth, response }) {
     const { estate_id } = request.all()
     try {
-      await MatchService.cancelInvite(estate_id, auth.user.id)
+      await MatchService.cancelInvite(estate_id, auth.user.id, auth.user.role)
       return response.res(true)
     } catch (e) {
       Logger.error(e)

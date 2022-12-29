@@ -17,6 +17,7 @@ const {
   MIN_TIME_SLOT,
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
+  STATUS_DELETE,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -48,9 +49,29 @@ class QueueJobService {
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result) {
-      await estate.updateItem({ coord: `${result.lat},${result.lon}` })
+      const coord = `${result.lat},${result.lon}`
+      await estate.updateItem({ coord: coord })
       await QueueJobService.updateEstatePoint(estateId)
+      require('./EstateService').emitValidAddress({
+        user_id: estate.user_id,
+        id: estate.id,
+        coord,
+        address: estate.address,
+      })
     }
+  }
+
+  static async updateAllMisseEstateCoord() {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .whereNull('coord')
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+      ).rows || []
+
+    estates.map((estate) => QueueJobService.updateEstateCoord(estate.id))
   }
 
   //Finds and handles the estates that available date is over

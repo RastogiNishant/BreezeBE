@@ -208,6 +208,7 @@ class NotificationsService {
       notification: {
         title: title || body,
         body: body || title,
+        sound: 'my_sound.mp3',
       },
       data: {
         type,
