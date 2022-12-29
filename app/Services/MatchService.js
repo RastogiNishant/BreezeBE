@@ -1417,6 +1417,27 @@ class MatchService {
     return query.first()
   }
 
+  static getCountTenantMatchesWithFilterQuery(
+    userId,
+    { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
+  ) {
+    return this.getTenantMatchesWithFilterQuery(userId, {
+      buddy,
+      like,
+      dislike,
+      knock,
+      invite,
+      visit,
+      share,
+      top,
+      commit,
+      final,
+    })
+      .clearSelect()
+      .clearOrder()
+      .select(Database.raw(`count(DISTINCT("estates"."id"))`))
+      .fetch()
+  }
   /**
    *
    */
