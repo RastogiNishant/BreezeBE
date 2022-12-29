@@ -951,6 +951,7 @@ class UserService {
       .select('*')
       .where('email', email)
       .whereIn('role', roles)
+      .whereNot('status', STATUS_DELETE)
       .orderBy('updated_at', 'desc')
       .first()
 
