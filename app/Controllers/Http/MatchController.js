@@ -578,6 +578,7 @@ class MatchController {
     estates = estates.toJSON(params)
     estates.data = uniqBy(estates.data, 'id')
     estates.total = countResult.length ? parseInt(countResult[0]?.count) : 0
+    estates.lastPage = parseInt(estates.total / limit) + 1
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)
       estates = {
