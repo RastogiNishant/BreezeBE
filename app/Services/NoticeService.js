@@ -1123,9 +1123,14 @@ class NoticeService {
         'tasks.title',
         'tasks.description',
         'tasks.urgency',
-        'tasks.estate_id'
+        'tasks.estate_id',
+        'users.firstname',
+        'users.secondname',
+        'users.sex',
+        'users.avatar'
       )
-      .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('users', 'users.id', 'estates.user_id')
       .where('tasks.id', task_id)
       .first()
 
@@ -1133,6 +1138,10 @@ class NoticeService {
       user_id: recipient_id,
       type,
       data: {
+        firstname: task.firstname,
+        secondname: task.secondname,
+        sex: task.sex,
+        avatar: task.avatar,
         estate_id: task.estate_id,
         estate_address: task.address,
         task_id,
