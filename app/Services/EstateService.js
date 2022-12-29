@@ -23,6 +23,7 @@ const FileBucket = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
+const Ws = use('Ws')
 
 const {
   STATUS_DRAFT,
@@ -52,6 +53,7 @@ const {
   ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  WEBSOCKET_EVENT_VALID_ADDRESS,
 } = require('../constants')
 
 const {
@@ -1356,6 +1358,19 @@ class EstateService {
 
   static async deletePermanent(user_id) {
     await Estate.query().where('user_id', user_id).delete()
+  }
+
+  static emitValidAddress({ id, user_id, coord, address }) {
+    const channel = role === `landlord:*`
+    const topicName = `landlord:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_VALID_ADDRESS, {
+        id,
+        coord,
+        address,
+      })
+    }
   }
 }
 module.exports = EstateService
