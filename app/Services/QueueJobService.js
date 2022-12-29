@@ -17,6 +17,7 @@ const {
   MIN_TIME_SLOT,
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
+  STATUS_DELETE,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -58,6 +59,19 @@ class QueueJobService {
         address: estate.address,
       })
     }
+  }
+
+  static async updateAllMisseEstateCoord() {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .whereNull('coord')
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+      ).rows || []
+
+    estates.map((estate) => QueueJobService.updateEstateCoord(estate.id))
   }
 
   //Finds and handles the estates that available date is over
