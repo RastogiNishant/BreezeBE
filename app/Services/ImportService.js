@@ -316,7 +316,7 @@ class ImportService {
     if (importExcelActivity) {
       importExcelActivity = importExcelActivity.toJSON()
       importExcelActivity.created_at = moment(importExcelActivity.created_at).utc().format()
-      importActivity.import = importExcelActivity
+      importActivity.imported = importExcelActivity
     }
 
     let exportExcelActivity = await Import.query()
@@ -329,7 +329,7 @@ class ImportService {
     if (exportExcelActivity) {
       exportExcelActivity = exportExcelActivity.toJSON()
       exportExcelActivity.created_at = moment(exportExcelActivity.created_at).utc().format()
-      importActivity.export = exportExcelActivity
+      importActivity.exported = exportExcelActivity
     }
     return importActivity
   }
