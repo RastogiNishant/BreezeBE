@@ -1,25 +1,16 @@
 'use strict'
 
-const { countBy, includes, filter, orderBy } = require('lodash')
-const moment = require('moment')
-const uuid = require('uuid')
-const AppException = use('App/Exceptions/AppException')
 const Logger = use('Logger')
 const Database = use('Database')
-const Drive = use('Drive')
 const Event = use('Event')
-const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const File = use('App/Classes/File')
-const Option = use('App/Models/Option')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
 const { PROPERTY_MANAGE_ALLOWED, ROLE_PROPERTY_MANAGER, STATUS_DELETE } = require('../../constants')
-const {
-  exceptions: { ONLY_ONE_FAVORITE_ROOM_ALLOWED },
-} = require('../../excepions')
+
 const ImageService = require('../../Services/ImageService')
 
 class RoomController {
