@@ -32,10 +32,10 @@ class EstateRoomTypeUniqueSchema extends Schema {
       const roomBaseName = getRoomType(groupRoom[0].type)
       await Promise.all(
         groupRoom.map(async (gr, index) => {
-          const extraName = index ? `${index + 1}` : ``
+          const extraName = index ? ` ${index + 1}` : ``
           await Room.query()
             .where('id', gr.id)
-            .update({ name: `${roomBaseName} ${extraName}` })
+            .update({ name: `${roomBaseName}${extraName}` })
         })
       )
       i++
