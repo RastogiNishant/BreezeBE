@@ -11,6 +11,8 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
+const HttpException = use('App/Exceptions/HttpException')
+
 const schema = require('../Validators/CreateBuddy').schema()
 const {
   STATUS_DRAFT,
