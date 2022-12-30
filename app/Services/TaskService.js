@@ -213,7 +213,6 @@ class TaskService {
       await task.save(trx)
 
       messages = await ChatService.getItemsWithAbsoluteUrl(messages)
-
       await trx.commit()
       return { task, messages }
     } catch (error) {

@@ -606,9 +606,9 @@ class MailService {
     const templateId = LANDLORD_EMAIL_TEMPLATE
 
     const shortMsg = `${task.address}, ${task.address_detail}: \n 
-                      ${l.get(task.title, lang)}
-                      :
-                      ${l.get(task.description, lang)} ... ${task.created_at}`
+                      ${l.get(task.title, lang)}:${l.get(task.description, lang)} ... ${
+      task.created_at
+    }`
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)

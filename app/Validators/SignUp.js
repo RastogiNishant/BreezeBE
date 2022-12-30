@@ -122,6 +122,7 @@ class SignUp extends Base {
       from_web: yup.boolean().typeError(getExceptionMessage('from_web', BOOLEAN)),
       data1: yup.string(),
       data2: yup.string(),
+      landord_invite: yup.boolean().typeError(getExceptionMessage('landord_invite', BOOLEAN)),
     })
 }
 

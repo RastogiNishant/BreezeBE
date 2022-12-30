@@ -33,22 +33,27 @@ class AccountController {
    */
   async signup({ request, response }) {
     const { email, from_web, data1, data2, landord_invite, ...userData } = request.all()
-
+    const trx = await Database.beginTransaction()
     try {
-      const user = await UserService.signUp({
-        email,
-        from_web,
-        data1,
-        data2,
-        landord_invite,
-        ...userData,
-      })
+      const user = await UserService.signUp(
+        {
+          email,
+          from_web,
+          data1,
+          data2,
+          landord_invite,
+          ...userData,
+        },
+        trx
+      )
+      await trx.commit()
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
       response.res(user)
     } catch (e) {
+      await trx.rollback()
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException(USER_UNIQUE, 400)
       }

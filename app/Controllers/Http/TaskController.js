@@ -50,7 +50,7 @@ class TaskController {
 
   async getUnassignedTasks({ request, auth, response }) {
     try {
-      const { status, page, limit } = request.all()
+      const { page, limit } = request.all()
       response.res(
         await TaskService.getAllUnassignedTasks({
           user_id: auth.user.id,

@@ -731,6 +731,18 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
+  Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
+    'valid:Pagination,Id,TaskFilter',
+  ])
+  Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
+    'valid:Pagination,TaskFilter',
+  ])
+})
+  .prefix('api/v1/connect/task')
+  .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
   Route.get('/unread_messages', 'ChatController.getUnreadMessages')
   Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
@@ -742,6 +754,7 @@ Route.group(() => {
     'valid:Id,RemoveImage',
   ])
   Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
+  Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
@@ -751,24 +764,6 @@ Route.group(() => {
   Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
 })
   .prefix('api/v1/connect/chat')
-  .middleware(['auth:jwt,jwtLandlord'])
-
-Route.group(() => {
-  Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
-    'valid:Pagination,Id,TaskFilter',
-  ])
-  Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
-    'valid:Pagination,TaskFilter',
-  ])
-  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
-})
-  .prefix('api/v1/connect/task')
-  .middleware(['auth:jwtLandlord'])
-
-Route.group(() => {
-  Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
-})
-  .prefix('api/v1/connect/task')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {

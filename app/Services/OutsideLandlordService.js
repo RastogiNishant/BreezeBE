@@ -4,7 +4,7 @@ const moment = require('moment')
 const uuid = require('uuid')
 const crypto = require('crypto')
 const { FirebaseDynamicLinks } = require('firebase-dynamic-links')
-const HttpException = use('HttpException')
+const HttpException = require('../Exceptions/HttpException')
 const { ROLE_LANDLORD, ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID } = require('../constants')
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
@@ -16,18 +16,14 @@ class OutsideLandlordService {
     if (!task.email || !task.address) {
       return
     }
-    if (await this.isExistLandlord(task)) {
-      //if property is 100% accurate
-      const estates = await require('./EstateService').getEstateByAddress(task.email)
-      if (!estates || !estates.length) {
-        await this.inviteLandlordFromTenant(task, trx)
-      }
+    if (!(await this.isExistLandlord(task))) {
+      await this.inviteLandlordFromTenant(task, trx)
     }
   }
 
   static async inviteLandlordFromTenant(task, trx) {
     const { code, shortLink } = await this.createDynamicLink(task)
-    await Task.query().where('id', task.id).update({ landlord_identify_key: code }.transacting(trx))
+    await Task.query().where('id', task.id).update({ landlord_identify_key: code }).transacting(trx)
     await MailService.inviteLandlordFromTenant({
       task: task.toJSON(),
       link: shortLink,
@@ -36,16 +32,13 @@ class OutsideLandlordService {
   }
 
   static async isExistLandlord(task) {
-    if (task.email) {
-      const landlords = (
-        await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)
-      ).rows
-      if (landlords && landlords.length) {
-        return true
-      }
-      return false
+    const landlords = (
+      await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)
+    ).rows
+    if (landlords && landlords.length) {
+      return true
     }
-    return true
+    return false
   }
 
   static async createDynamicLink(task, trx) {
@@ -72,7 +65,7 @@ class OutsideLandlordService {
 
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
-      `&data2=${encodeURIComponent(iv.toString('base64'))}&landord_invite=1`
+      `&data2=${encodeURIComponent(iv.toString('base64'))}&landord_invite=true`
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
@@ -93,6 +86,7 @@ class OutsideLandlordService {
       id: task.id,
       email: task.email,
       shortLink,
+      code,
     }
   }
 

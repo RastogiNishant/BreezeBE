@@ -392,10 +392,13 @@ class UserService {
       await user.save(trx)
 
       if (user.role === ROLE_LANDLORD) {
-        await require('./OutsideLandlordService').updateTaskLandlord({
-          landlord_id: user.id,
-          email: user.email,
-        })
+        await require('./OutsideLandlordService').updateTaskLandlord(
+          {
+            landlord_id: user.id,
+            email: user.email,
+          },
+          trx
+        )
       }
       await trx.commit()
     } catch (e) {
@@ -858,7 +861,7 @@ class UserService {
       firstname,
       from_web,
       source_estate_id = null,
-      landord_invite = -1,
+      landord_invite = false,
       data1,
       data2,
       ...userData
@@ -866,7 +869,7 @@ class UserService {
     trx = null
   ) {
     // Manages the outside tenant invitation flow
-    if (!source_estate_id && data1 && data2) {
+    if (!source_estate_id && !landord_invite && data1 && data2) {
       const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
         data1,
         data2,
@@ -907,12 +910,15 @@ class UserService {
       )
 
       //TODO: Manage outside landlord invitation flow
-      if (landord_invite && parseInt(landord_invite) === 1 && data1 && data2) {
-        await require('./OutsideLandlordService').updateOutsideLandlordInfo({
-          new_email: email,
-          data1,
-          data1,
-        })
+      if (landord_invite && data1 && data2) {
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
+          {
+            new_email: email,
+            data1,
+            data2,
+          },
+          trx
+        )
       }
 
       if (!trx && process.env.NODE_ENV !== TEST_ENVIRONMENT) {
