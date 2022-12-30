@@ -420,6 +420,9 @@ Route.group(() => {
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
   ])
+  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
+    'valid:CreateBulkRoom,EstateId',
+  ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
@@ -1146,6 +1149,9 @@ Route.group(() => {
   Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
+  ])
+  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
+    'valid:CreateBulkRoom,EstateId',
   ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
 

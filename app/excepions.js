@@ -50,6 +50,7 @@ const exceptions = {
   NO_CONTACT_EXIST: 'Contacts not exists',
   ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
   FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
+  ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
 }
 
 const exceptionCodes = {
@@ -102,6 +103,7 @@ const exceptionKeys = {
   MESSAGE_NOT_SAVED: 'MESSAGE_NOT_SAVED',
   NO_CONTACT_EXIST: 'NO_CONTACT_EXIST',
   ONLY_ONE_CONTACT_ALLOWED: 'ONLY_ONE_CONTACT_ALLOWED',
+  ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'ONLY_ONE_FAVORITE_ROOM_ALLOWED',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
