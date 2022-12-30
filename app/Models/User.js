@@ -56,6 +56,8 @@ class User extends Model {
       'activation_status',
       'preferred_services',
       'source_estate_id',
+      'ip',
+      'ip_based_info',
     ]
   }
 

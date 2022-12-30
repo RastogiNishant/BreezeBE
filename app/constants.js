@@ -894,13 +894,15 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
+
   //MATCH WEB SOCKET
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
   //if address valid from importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   MATCH_SCORE_GOOD_MATCH: 70,
-  IMPORT_TYPE_EXCEL: 'excel',
 
+  IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_ENTITY_ESTATES: 'estates',
 
   IMPORT_ACTION_IMPORT: 'import',

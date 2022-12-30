@@ -5,7 +5,7 @@ const Base = require('./Base')
 const { ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, NUMBER, BOOLEAN, EMAIL, MATCH },
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, INVALID, NUMBER },
 } = require('../excepions')
 
 class SignInGoogleMobile extends Base {
@@ -36,6 +36,19 @@ class SignInGoogleMobile extends Base {
       code: yup.string(),
       data1: yup.string(),
       data2: yup.string(),
+      ip: yup
+        .string()
+        .min(7, MINLENGTH)
+        .max(45, MAXLENGTH)
+        .matches(/^[0-9a-f:.]+$/, getExceptionMessage('Ip Address', INVALID)),
+      ip_based_info: yup.object().shape({
+        country_code: yup.string(),
+        country_name: yup.string(),
+        city: yup.string().nullable(),
+        postal: yup.string().nullable(),
+        latitude: yup.string().nullable(),
+        longitude: yup.string().nullable(),
+      }),
     })
 }
 
