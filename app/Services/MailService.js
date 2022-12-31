@@ -4,7 +4,7 @@ const Mail = use('Mail')
 const Config = use('Config')
 const { trim, capitalize } = require('lodash')
 const l = use('Localize')
-
+const moment = require('moment')
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
@@ -15,7 +15,7 @@ const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
 const SITE_URL = process.env.SITE_URL
 const INVITE_APP_LINK = process.env.INVITE_APP_LINK || 'https://linktr.ee/breeze.app'
-const { ROLE_LANDLORD, ROLE_USER, DEFAULT_LANG } = require('../constants')
+const { ROLE_LANDLORD, ROLE_USER, DEFAULT_LANG, DAY_FORMAT, DATE_FORMAT } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
 class MailService {
@@ -606,9 +606,9 @@ class MailService {
     const templateId = LANDLORD_EMAIL_TEMPLATE
 
     const shortMsg = `${task.address}, ${task.address_detail}: \n 
-                      ${l.get(task.title, lang)}:${l.get(task.description, lang)} ... ${
-      task.created_at
-    }`
+                      ${l.get(task.title, lang)}:${l.get(task.description, lang)} ... ${moment
+      .utc(task.created_at)
+      .format(DATE_FORMAT)}`
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)
