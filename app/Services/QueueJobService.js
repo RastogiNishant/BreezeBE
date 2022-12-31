@@ -42,22 +42,26 @@ class QueueJobService {
   }
 
   static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
-    if (!estate.address) {
-      throw new AppException('Estate address invalid')
-    }
+    try {
+      const estate = await Estate.findOrFail(estateId)
+      if (!estate.address) {
+        throw new AppException('Estate address invalid')
+      }
 
-    const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result) {
-      const coord = `${result.lat},${result.lon}`
-      await estate.updateItem({ coord: coord })
-      await QueueJobService.updateEstatePoint(estateId)
-      require('./EstateService').emitValidAddress({
-        user_id: estate.user_id,
-        id: estate.id,
-        coord,
-        address: estate.address,
-      })
+      const result = await GeoService.geeGeoCoordByAddress(estate.address)
+      if (result) {
+        const coord = `${result.lat},${result.lon}`
+        await estate.updateItem({ coord: coord })
+        await QueueJobService.updateEstatePoint(estateId)
+        require('./EstateService').emitValidAddress({
+          user_id: estate.user_id,
+          id: estate.id,
+          coord,
+          address: estate.address,
+        })
+      }
+    } catch (e) {
+      Logger.error(e)
     }
   }
 
