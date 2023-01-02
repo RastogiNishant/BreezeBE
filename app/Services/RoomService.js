@@ -67,8 +67,11 @@ class RoomService {
   /**
    *
    */
-  static async removeRoom(roomId, trx) {
-    return await Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
+  static async removeRoom(room, trx) {
+    return await Room.query()
+      .update({ name: `deleted_${room.name}`, status: STATUS_DELETE })
+      .where('id', room.id)
+      .transacting(trx)
   }
 
   /**
