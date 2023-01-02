@@ -43,8 +43,10 @@ class Localization {
     try {
       const data = await map(this.locales, async (l) => {
         const res = await getLocale(l)
+        console.log('Location file downloaded!')
         return { locale: l, data: res }
       })
+      console.log('Start Location parsing!!!')
       this._data = data.reduce((n, { locale, data }) => ({ ...n, [locale]: data }), {})
       //console.log( "Locale", this._data );
       //await File.logFile(this._data, 'locales.json')

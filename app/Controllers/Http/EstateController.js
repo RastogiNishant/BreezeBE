@@ -65,6 +65,7 @@ const INVITE_CODE_STRING_LENGTH = 8
 const {
   exceptions: { ESTATE_NOT_EXISTS },
 } = require('../../excepions')
+const QueueService = require('../../Services/QueueService')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -333,8 +334,9 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
-    const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
-    return response.res(result)
+    //const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
+    QueueService.importEstate(importFilePathName, auth.user.id, 'xls')
+    response.res(true)
   }
 
   //import Estate by property manager
