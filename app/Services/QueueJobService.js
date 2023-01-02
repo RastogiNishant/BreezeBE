@@ -67,6 +67,7 @@ class QueueJobService {
         await Estate.query()
           .select('id')
           .whereNull('coord')
+          .whereNotNull('address')
           .whereNot('status', STATUS_DELETE)
           .fetch()
       ).rows || []
