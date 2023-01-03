@@ -5,7 +5,6 @@ const Database = use('Database')
 const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
-const QueueService = use('App/Services/QueueService')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const AppException = use('App/Exceptions/AppException')
@@ -102,7 +101,7 @@ class ImportService {
         }
 
         // Run task to separate get coords and point of estate
-        QueueService.getEstateCoords(estate.id)
+        require('./QueueService').getEstateCoords(estate.id)
         //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.surname) {
@@ -295,11 +294,11 @@ class ImportService {
       }
     }
     if (rooms.length) {
-      await RoomService.updateRoomsFromImport(estate.id, rooms)
+      await require('./RoomService').updateRoomsFromImport(estate.id, rooms)
     }
 
     // Run task to separate get coords and point of estate
-    QueueService.getEstateCoords(estate.id)
+    require('./QueueService').getEstateCoords(estate.id)
 
     return estate
   }
