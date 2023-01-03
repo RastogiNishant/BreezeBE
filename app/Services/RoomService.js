@@ -16,6 +16,7 @@ const {
   pick,
   assign,
   pull,
+  groupBy,
 } = require('lodash')
 const Event = use('Event')
 const {
@@ -172,14 +173,34 @@ class RoomService {
     return rooms
   }
 
-  static async createRoomsFromImport(estate_id, rooms) {
+  static async createRoomsFromImport({ estate_id, rooms }, trx) {
+    await Room.query().where('estate_id', estate_id).delete()
+
     const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
       return [...roomsInfo, { ...room, estate_id }]
     }, [])
-    await Room.createMany(roomsInfo)
+
+    const groupRooms = groupBy(roomsInfo, (room) => room.type)
+    const newRoomsInfo = []
+    Object.keys(groupRooms).map((key) => {
+      groupRooms[key].map((room, index) => {
+        newRoomsInfo.push({
+          ...room,
+          name: index ? `${room.name} ${index + 1}` : room.name,
+          import_sequence: null,
+          order: index + 1,
+        })
+      })
+    })
+    if (newRoomsInfo && newRoomsInfo.length) {
+      newRoomsInfo[0].favorite = true
+    }
+    await Promise.map(newRoomsInfo, async (roomInfo) => {
+      await Room.createItem(roomInfo, trx)
+    })
   }
 
-  static async updateRoomsFromImport(estate_id, rooms) {
+  static async updateRoomsFromImport({ estate_id, rooms }, trx) {
     let roomSequences = [1, 2, 3, 4, 5, 6]
     await Promise.all(
       rooms.map(async (room) => {

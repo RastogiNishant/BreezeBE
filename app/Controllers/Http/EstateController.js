@@ -334,7 +334,8 @@ class EstateController {
     } else {
       throw new HttpException('There is no excel data to import', 400)
     }
-    //const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
+    // const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
+    // response.res(result)
     QueueService.importEstate(importFilePathName, auth.user.id, 'xls')
     response.res(true)
   }

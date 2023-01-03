@@ -243,7 +243,21 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, [
+        'room1_type',
+        'room2_type',
+        'room3_type',
+        'room4_type',
+        'room5_type',
+        'room6_type',
+        'txt_salutation',
+        'surname',
+        'contract_end',
+        'phone_number',
+        'email',
+        'salutation_int',
+        'rooms',
+      ]),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -266,21 +280,23 @@ class EstateService {
       createData.letting_status = null
     }
 
+    let estateHash
     const estate = await Estate.createItem(
       {
         ...createData,
       },
       trx
     )
-
-    const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+    if (!trx) {
+      estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+    }
 
     // Run processing estate geo nearest
     QueueService.getEstateCoords(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
-      hash: estateHash.hash,
+      hash: estateHash?.hash || null,
       ...estateData,
     }
   }

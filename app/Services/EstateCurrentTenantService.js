@@ -64,7 +64,7 @@ class EstateCurrentTenantService extends BaseService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id, trx }) {
+  static async addCurrentTenant({ data, estate_id }, trx) {
     const shouldCommitTrx = trx ? false : true
 
     if (shouldCommitTrx) {
@@ -189,7 +189,7 @@ class EstateCurrentTenantService extends BaseService {
     return data
   }
 
-  static async updateCurrentTenant({ id, data, estate_id, user_id }) {
+  static async updateCurrentTenant({ id, data, estate_id, user_id }, trx = null) {
     if (id) {
       await this.hasPermission(id, user_id)
     }
@@ -202,10 +202,13 @@ class EstateCurrentTenantService extends BaseService {
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
 
-      const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
-        data,
-        estate_id,
-      })
+      const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant(
+        {
+          data,
+          estate_id,
+        },
+        trx
+      )
 
       return newCurrentTenant
     } else {
@@ -221,7 +224,7 @@ class EstateCurrentTenantService extends BaseService {
           salutation_int: data.salutation_int,
           email: data.email,
         })
-        await currentTenant.save()
+        await currentTenant.save(trx)
       }
       return currentTenant
     }
