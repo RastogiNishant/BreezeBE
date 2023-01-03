@@ -534,13 +534,43 @@ class EstateCurrentTenantService extends BaseService {
 
   static async validateInvitationQRCode({ data1, data2 }) {
     const { estate_id, id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+    let estateCurrentTenant
 
-    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
-      id,
-      estate_id,
-    })
-    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
-    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+    try {
+      estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+        id,
+        estate_id,
+      })
+    } catch (e) {
+      if (e.code === ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED) {
+        throw new HttpException(
+          'Already used QR code',
+          400,
+          ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
+        )
+      }
+      throw new HttpException('Invalid QR code', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    }
+
+    try {
+      EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    } catch (e) {
+      throw new HttpException(
+        'Invalid QR code',
+        400,
+        e.code || ERROR_OUTSIDE_TENANT_INVITATION_INVALID
+      )
+    }
+
+    try {
+      EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+    } catch (e) {
+      throw new HttpException(
+        'Expired QR code',
+        400,
+        e.code || ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED
+      )
+    }
 
     return true
   }
@@ -826,7 +856,7 @@ class EstateCurrentTenantService extends BaseService {
       await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
         expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
       })
-      throw new AppException('Code did not match.')
+      throw new AppException('Invalid QR code')
     }
   }
 
