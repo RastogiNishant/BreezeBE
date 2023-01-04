@@ -634,11 +634,13 @@ const constants = {
 
   SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
   SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
-  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.not_def.message',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
+  SALUTATION_UNDEFINED_LABEL: 'landlord.profile.user_details.salut.not_def.message',
 
   SALUTATION_MR: 1,
   SALUTATION_MS: 2,
-  SALUTATION_SIR_OR_MADAM: 3,
+  SALUTATION_SIR_OR_MADAM: 4,
+  SALUTATION_UDEFINED: 3,
 
   MINIMUM_SHOW_PERIOD: 5,
   ROOM_CUSTOM_AMENITIES_MAX_COUNT: 3,
