@@ -196,6 +196,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  GENDER_NEUTRAL,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -369,7 +370,7 @@ class ImportEstate extends Base {
       gender: yup
         .number()
         .integer()
-        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY, null])
+        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY, null])
         .nullable(),
       monumental_protection: yup.boolean(),
       parking_space: yup.number().min(0).max(10),

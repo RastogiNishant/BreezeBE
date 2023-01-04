@@ -17,6 +17,7 @@ const {
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
   ROLE_PROPERTY_MANAGER,
+  GENDER_NEUTRAL,
 } = require('../constants')
 
 const {
@@ -80,8 +81,12 @@ class SignUp extends Base {
       sex: yup
         .number()
         .oneOf(
-          [GENDER_MALE, GENDER_FEMALE, GENDER_ANY],
-          getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`)
+          [GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY],
+          getExceptionMessage(
+            'sex',
+            OPTION,
+            `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL}, ${GENDER_ANY}]`
+          )
         )
         .required(getExceptionMessage('sex', REQUIRED)),
       phone: phoneSchema,

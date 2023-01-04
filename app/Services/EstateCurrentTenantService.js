@@ -23,7 +23,6 @@ const {
   STATUS_EXPIRE,
   DEFAULT_LANG,
   DAY_FORMAT,
-  SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
   MATCH_STATUS_FINISH,
@@ -41,6 +40,11 @@ const {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME,
   STATUS_DRAFT,
   WEBSOCKET_EVENT_TENANT_CONNECTED,
+  GENDER_ANY,
+  GENDER_NEUTRAL,
+  SALUTATION_NEUTRAL_LABEL,
+  GENDER_FEMALE,
+  GENDER_MALE,
 } = require('../constants')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -134,12 +138,14 @@ class EstateCurrentTenantService {
         member?.phone && member?.phone_verified ? member.phone : user.phone_number || '',
       status: STATUS_ACTIVE,
       salutation:
-        user.sex === 1
+        user.sex === GENDER_MALE
           ? SALUTATION_MR_LABEL
-          : user.sex === 2
+          : user.sex === GENDER_FEMALE
           ? SALUTATION_MS_LABEL
+          : user.sex === GENDER_NEUTRAL
+          ? SALUTATION_NEUTRAL_LABEL
           : SALUTATION_SIR_OR_MADAM_LABEL,
-      salutation_int: user.sex || SALUTATION_SIR_OR_MADAM,
+      salutation_int: user.sex || GENDER_ANY,
     })
 
     await currentTenant.save(trx)

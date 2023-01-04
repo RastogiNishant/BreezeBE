@@ -71,7 +71,13 @@ const constants = {
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
+  GENDER_NEUTRAL: 4,
   GENDER_ANY: 3,
+
+  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
+  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
+  SALUTATION_NEUTRAL_LABEL: 'landlord.profile.user_details.salut.not_def.message',
 
   OCCUPATION_TYPE_OCCUPIED_OWN: 1,
   OCCUPATION_TYPE_OCCUPIED_TENANT: 2,
@@ -631,16 +637,6 @@ const constants = {
   LETTING_STATUS_STRUCTURAL_VACANCY: 5,
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
-
-  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
-  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
-  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
-  SALUTATION_UNDEFINED_LABEL: 'landlord.profile.user_details.salut.not_def.message',
-
-  SALUTATION_MR: 1,
-  SALUTATION_MS: 2,
-  SALUTATION_SIR_OR_MADAM: 4,
-  SALUTATION_UDEFINED: 3,
 
   MINIMUM_SHOW_PERIOD: 5,
   ROOM_CUSTOM_AMENITIES_MAX_COUNT: 3,
