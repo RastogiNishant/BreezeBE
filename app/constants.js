@@ -906,6 +906,13 @@ const constants = {
 
   IMPORT_ACTION_IMPORT: 'import',
   IMPORT_ACTION_EXPORT: 'export',
+
+  GALLERY_INSIDE_VIEW_TYPE: 'inside',
+  GALLERY_DOCUMENT_VIEW_TYPE: 'outside',
+
+  DOCUMENT_VIEW_FLOOR_PLAN_TYPE: 'plan',
+  DOCUMENT_VIEW_ENERGY_TYPE: 'energy',
+  DOCUMENT_VIEW_CUSTOM_TYPE: 'custom',
 }
 
 module.exports = constants

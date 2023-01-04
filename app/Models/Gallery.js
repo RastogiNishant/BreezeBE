@@ -1,0 +1,19 @@
+'use strict'
+
+const Model = require('./BaseModel')
+
+class Gallery extends Model {
+  static get columns() {
+    return ['user_id', 'url', 'disk', 'status']
+  }
+
+  static get traits() {
+    return ['NoTimestamp']
+  }
+
+  static get Serializer() {
+    return 'App/Serializers/GallerySerializer'
+  }
+}
+
+module.exports = Gallery
