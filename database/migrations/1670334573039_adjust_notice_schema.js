@@ -6,12 +6,16 @@ const Notice = use('App/Models/Notice')
 class AdjustNoticeSchema extends Schema {
   async up() {
     try {
-      let notices = await Notice.query().whereNotNull('data').fetch()
+      let notices = await Notice.query()
+        .select('id', 'data')
+        .whereNotNull('data')
+        .orderBy('id', 'asc')
+        .fetch()
 
-      notices = notices.toJSON().filter((notice) => !notice.estate_id)
+      notices = notices.toJSON().filter((notice) => notice.data.estate_id)
       let i = 0
       while (i < notices.length) {
-        const partialNotices = notices.slice(i, 20)
+        const partialNotices = notices.slice(i, i + 20)
         await Promise.all(
           partialNotices.map(async (notice) => {
             await Notice.query().where('id', notice.id).update({ estate_id: notice.data.estate_id })

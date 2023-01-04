@@ -257,7 +257,7 @@ class EstateController {
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
     const user_id = auth.user instanceof Admin ? null : auth.user.id
-    let estate = await EstateService.getEstateWithDetails(id, user_id)
+    let estate = await EstateService.getEstateWithDetails({ id, user_id, role: auth.user.role })
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
@@ -593,7 +593,11 @@ class EstateController {
   async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
 
-    let estate = await EstateService.getEstateWithDetails(id)
+    let estate = await EstateService.getEstateWithDetails({
+      id,
+      user_id: auth.user.id,
+      role: auth.user.role,
+    })
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)

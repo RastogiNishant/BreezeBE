@@ -85,15 +85,10 @@ class EstateService {
     return await this.getActiveEstateQuery().where({ id }).first()
   }
 
-  static async getEstateWithDetails(id, user_id) {
-    const excludes = ['id', 'type', 'plan', 'energy_pass']
-    let columns = Estate.columns.filter((c) => !excludes.includes(c))
-    columns = columns.map((c) => `estates.${c}`)
+  static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
-      .select(Database.raw(`DISTINCT("estates"."id")`))
-      .select(columns)
+      .select(Database.raw('estates.*'))
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
-      .select(Database.raw(`coalesce(bool(notices.id), false) as has_notification`))
       .leftJoin(
         Database.raw(`
           (select 
@@ -107,12 +102,11 @@ class EstateService {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
         }
       )
-      .leftJoin('notices', function () {
-        this.on('notices.user_id', 'estates.user_id').on('notices.user_id', user_id)
-        this.on('notices.estate_id', 'estates.id').on('notices.estate_id', id)
-      })
       .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
+      .withCount('notifications', function (n) {
+        n.where('user_id', user_id)
+      })
       .with('point')
       .with('files')
       .with('current_tenant', function (q) {
@@ -146,7 +140,7 @@ class EstateService {
           })
       })
 
-    if (user_id) {
+    if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()

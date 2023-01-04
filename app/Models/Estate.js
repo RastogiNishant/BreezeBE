@@ -404,6 +404,10 @@ class Estate extends Model {
     return this.hasMany('App/Models/Amenity')
   }
 
+  notifications() {
+    return this.hasOne('App/Models/Notice')
+  }
+
   /**
    *
    */
