@@ -286,7 +286,7 @@ class EstateService {
     }
   }
 
-  static async updateEstate(request) {
+  static async updateEstate(request, user_id) {
     const { ...data } = request.all()
 
     let updateData = {
@@ -306,7 +306,7 @@ class EstateService {
             {
               user_id,
               url: energy_proof,
-              original_file_name: estate.energy_proof_original_file,
+              file_name: estate.energy_proof_original_file,
             },
             trx
           )

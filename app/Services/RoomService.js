@@ -250,6 +250,7 @@ class RoomService {
     images.map((image) => {
       imagesInfo.push({
         url: image.url,
+        file_name: image.file_name,
         room_id: room.id,
         disk: 's3public',
       })
