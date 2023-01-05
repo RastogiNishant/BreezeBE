@@ -1916,7 +1916,7 @@ class MatchService {
   }
 
   static searchForLandlord(userId, searchQuery) {
-    const query = EstateService.getEstates()
+    const query = EstateService.getEstates(userId)
       .select('*')
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])

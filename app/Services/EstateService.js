@@ -92,7 +92,7 @@ class EstateService {
     return await this.getActiveEstateQuery().where({ id }).first()
   }
 
-  static async getEstateWithDetails(id, user_id) {
+  static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
@@ -111,6 +111,9 @@ class EstateService {
       )
       .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
+      .withCount('notifications', function (n) {
+        n.where('user_id', user_id)
+      })
       .with('point')
       .with('files')
       .with('current_tenant', function (q) {
@@ -144,7 +147,7 @@ class EstateService {
           })
       })
 
-    if (user_id) {
+    if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
@@ -327,8 +330,12 @@ class EstateService {
   /**
    *
    */
-  static getEstates(params = {}) {
+  static getEstates(user_ids, params = {}) {
     let query = Estate.query()
+      .withCount('notifications', function (n) {
+        user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        n.whereIn('user_id', user_ids)
+      })
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -351,9 +358,9 @@ class EstateService {
    *
    */
   static getUpcomingShows(ids, query = '') {
-    return this.getEstates()
+    return this.getEstates(ids)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('user_id', ids)
+      .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -899,15 +906,15 @@ class EstateService {
 
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
     if (page === -1 || limit === -1) {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(ids, params)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(ids, params)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
     }
