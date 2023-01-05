@@ -321,10 +321,6 @@ class EstateService {
    *
    */
   static getEstates(user_ids, params = {}) {
-    const excludes = ['id', 'type', 'plan', 'energy_pass']
-    let columns = Estate.columns.filter((c) => !excludes.includes(c))
-    columns = columns.map((c) => `estates.${c}`)
-
     let query = Estate.query()
       .withCount('notifications', function (n) {
         user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
