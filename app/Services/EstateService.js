@@ -320,18 +320,15 @@ class EstateService {
   /**
    *
    */
-  static getEstates(params = {}) {
+  static getEstates(user_ids, params = {}) {
     const excludes = ['id', 'type', 'plan', 'energy_pass']
     let columns = Estate.columns.filter((c) => !excludes.includes(c))
     columns = columns.map((c) => `estates.${c}`)
 
     let query = Estate.query()
-      .select(Database.raw(`DISTINCT("estates"."id")`))
-      .select(columns)
-      .select(Database.raw(`coalesce(bool(notices.id), false) as has_notification`))
-      .leftJoin('notices', function () {
-        this.on('notices.user_id', 'estates.user_id')
-        this.on('notices.estate_id', 'estates.id')
+      .withCount('notifications', function (n) {
+        user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        n.whereIn('user_id', user_ids)
       })
       .withCount('visits')
       .withCount('knocked')
@@ -355,7 +352,7 @@ class EstateService {
    *
    */
   static getUpcomingShows(ids, query = '') {
-    return this.getEstates()
+    return this.getEstates(ids)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
@@ -903,14 +900,14 @@ class EstateService {
 
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
     if (page === -1 || limit === -1) {
-      return await this.getEstates(params)
+      return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
-      return await this.getEstates(params)
+      return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
