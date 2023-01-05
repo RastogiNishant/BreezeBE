@@ -81,7 +81,7 @@ class EstateImportReader {
   data = []
 
   constructor(filePath, overrides = {}) {
-    const data = xlsx.parse(filePath, { cellDates: true })
+    const data = xlsx.parse(filePath.tmpPath, { cellDates: true })
     if (overrides?.sheetName) {
       this.sheetName = overrides.sheetName
     }
