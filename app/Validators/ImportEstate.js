@@ -200,6 +200,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  GENDER_NEUTRAL,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -216,7 +217,7 @@ class ImportEstate extends Base {
   static schema = () =>
     yup.object().shape({
       breeze_id: yup.string().nullable(),
-      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
         .number()
@@ -377,7 +378,7 @@ class ImportEstate extends Base {
       gender: yup
         .number()
         .integer()
-        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY, null])
+        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY, null])
         .nullable(),
       monumental_protection: yup.boolean(),
       parking_space: yup.number().min(0).max(10),

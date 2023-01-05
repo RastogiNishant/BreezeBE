@@ -30,9 +30,7 @@ const {
   COMPANY_SIZE_SMALL,
   COMPANY_TYPE_PRIVATE,
   PASS_ONBOARDING_STEP_PREFERRED_SERVICES,
-  SALUTATION_MS,
-  SALUTATION_MR,
-  SALUTATION_SIR_OR_MADAM,
+  GENDER_NEUTRAL,
 } = require('../../app/constants')
 const fsPromise = require('fs/promises')
 const { test, trait, before, after } = use('Test/Suite')('User Functional')
@@ -222,7 +220,11 @@ test('it should fail to signup due to wrong date type and min value check', asyn
       ),
       'signupData.time': getExceptionMessage('time', OPTION, `[15, 30, 45, 60]`),
       password: getExceptionMessage('password', MINLENGTH, 6),
-      sex: getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`),
+      sex: getExceptionMessage(
+        'sex',
+        OPTION,
+        `[${GENDER_MALE},${GENDER_FEMALE}, ${GENDER_NEUTRAL},${GENDER_ANY}]`
+      ),
       phone: getExceptionMessage(undefined, MATCH),
       firstname: getExceptionMessage('firstname', MINLENGTH, 2),
       secondname: getExceptionMessage('secondname', MINLENGTH, 2),
@@ -740,7 +742,11 @@ test('it should fail to update profile due to min length validation and wrong da
     data: {
       email: getExceptionMessage('email', EMAIL),
       password: getExceptionMessage('password', MINLENGTH, 6),
-      sex: getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`),
+      sex: getExceptionMessage(
+        'sex',
+        OPTION,
+        `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL},${GENDER_ANY}]`
+      ),
       phone: getExceptionMessage(undefined, MATCH),
       birthday: getExceptionMessage('birthday', DATE),
       firstname: getExceptionMessage('firstname', MINLENGTH, 2),
@@ -768,7 +774,7 @@ test('it should fail to update profile due to min length validation and wrong da
       'contact.title': getExceptionMessage(
         'title',
         OPTION,
-        `[${SALUTATION_MR},${SALUTATION_MS},${SALUTATION_SIR_OR_MADAM}]`
+        `[${GENDER_MALE},${GENDER_FEMALE}, ${GENDER_NEUTRAL}, ${GENDER_ANY}]`
       ),
     },
   })
@@ -933,7 +939,7 @@ test('it should throw error to update contact in case there is no contact', asyn
       email: faker.internet.email(),
       address: faker.address.cityName(),
       full_name: faker.name.fullName,
-      title: SALUTATION_MS,
+      title: GENDER_FEMALE,
     },
   }
 
@@ -958,7 +964,7 @@ test('it should update contact via profile successfully', async ({ assert, clien
       email: faker.internet.email(),
       address: faker.address.cityName(),
       full_name: faker.name.fullName(),
-      title: SALUTATION_MS,
+      title: GENDER_MALE,
     },
   }
 
@@ -967,7 +973,7 @@ test('it should update contact via profile successfully', async ({ assert, clien
       email: faker.internet.email(),
       address: faker.address.cityName(),
       full_name: faker.name.fullName(),
-      title: SALUTATION_MR,
+      title: GENDER_MALE,
     },
   }
 

@@ -18,10 +18,15 @@ const {
   pull,
 } = require('lodash')
 const Event = use('Event')
-const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
+const {
+  STATUS_DELETE,
+  STATUS_ACTIVE,
+  ROLE_PROPERTY_MANAGER,
+  PROPERTY_MANAGE_ALLOWED,
+} = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
-
+const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 
 class RoomService {
@@ -62,8 +67,11 @@ class RoomService {
   /**
    *
    */
-  static async removeRoom(roomId, trx) {
-    return await Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
+  static async removeRoom(room, trx) {
+    return await Room.query()
+      .update({ name: `deleted_${new Date().getTime()}_${room.name}`, status: STATUS_DELETE })
+      .where('id', room.id)
+      .transacting(trx)
   }
 
   /**
@@ -203,6 +211,17 @@ class RoomService {
       .whereIn('import_sequence', roomSequences)
       .where('estate_id', estate_id)
       .update({ status: STATUS_DELETE })
+  }
+
+  static async hasPermission(estate_id, user) {
+    let userIds = [user.id]
+    if (user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await require('./EstatePermissionService').getLandlordIds(
+        user.id,
+        PROPERTY_MANAGE_ALLOWED
+      )
+    }
+    await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
   }
 }
 

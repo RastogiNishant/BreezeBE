@@ -81,6 +81,7 @@
 		"imagemin-mozjpeg": "^10.0.0",
 		"imagemin-pngquant": "^9.0.2",
 		"in-app-purchase": "^1.11.4",
+		"ipaddr.js": "^2.0.1",
 		"knex-postgis": "^0.14.1",
 		"lodash": "^4.17.15",
 		"md5": "^2.3.0",
@@ -102,6 +103,7 @@
 		"swagger-jsdoc": "^6.1.0",
 		"url": "^0.11.0",
 		"uuid": "^3.4.0",
+		"webp-converter": "^2.3.3",
 		"yup": "^0.28.3"
 	},
 	"autoload": {

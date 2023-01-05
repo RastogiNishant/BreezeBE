@@ -20,9 +20,7 @@ const {
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
-  SALUTATION_SIR_OR_MADAM,
-  SALUTATION_MS,
-  SALUTATION_MR,
+  GENDER_NEUTRAL,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -57,8 +55,12 @@ class UpdateUser extends Base {
       sex: yup
         .number()
         .oneOf(
-          [GENDER_MALE, GENDER_FEMALE, GENDER_ANY],
-          getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`)
+          [GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY],
+          getExceptionMessage(
+            'sex',
+            OPTION,
+            `[${GENDER_MALE},${GENDER_FEMALE}, ${GENDER_NEUTRAL},${GENDER_ANY}]`
+          )
         ),
       phone: phoneSchema,
       birthday: yup.date().typeError(getExceptionMessage('birthday', DATE)),
@@ -113,11 +115,11 @@ class UpdateUser extends Base {
           title: yup
             .number()
             .oneOf(
-              [SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM],
+              [GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY],
               getExceptionMessage(
                 'title',
                 OPTION,
-                `[${SALUTATION_MR},${SALUTATION_MS},${SALUTATION_SIR_OR_MADAM}]`
+                `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL}, ${GENDER_ANY}]`
               )
             ),
           full_name: yup.string().min(2).max(255, getExceptionMessage('full_name', MAXLENGTH, 255)),

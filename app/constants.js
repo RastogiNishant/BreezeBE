@@ -25,6 +25,7 @@ const constants = {
   DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
+  FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
 
@@ -72,7 +73,13 @@ const constants = {
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
+  GENDER_NEUTRAL: 4,
   GENDER_ANY: 3,
+
+  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
+  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
+  SALUTATION_NEUTRAL_LABEL: 'landlord.profile.user_details.salut.not_def.message',
 
   OCCUPATION_TYPE_OCCUPIED_OWN: 1,
   OCCUPATION_TYPE_OCCUPIED_TENANT: 2,
@@ -161,7 +168,6 @@ const constants = {
   ROOM_TYPE_WASHING_ROOM: 28,
   ROOM_TYPE_EXTERNAL_CORRIDOR: 29,
   ROOM_TYPE_STAIRS: 30,
-  ROOM_TYPE_PROPERTY_ENTRANCE: 31,
   ROOM_TYPE_GARDEN: 32,
   ROOM_TYPE_LOGGIA: 33,
 
@@ -898,11 +904,15 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
 
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
+
   //MATCH WEB SOCKET
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
+  //if address valid from importing estates, websocket will be emitted
+  WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   MATCH_SCORE_GOOD_MATCH: 70,
-  IMPORT_TYPE_EXCEL: 'excel',
 
+  IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_ENTITY_ESTATES: 'estates',
 
   IMPORT_ACTION_IMPORT: 'import',

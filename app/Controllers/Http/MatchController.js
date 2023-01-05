@@ -11,7 +11,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
-const { reduce, isEmpty, isNull } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -161,7 +161,7 @@ class MatchController {
     await this.getOwnEstate(estate_id, auth.user.id)
 
     try {
-      await MatchService.cancelInvite(estate_id, user_id)
+      await MatchService.cancelInvite(estate_id, user_id, auth.user.role)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -178,7 +178,7 @@ class MatchController {
   async removeInviteByTenant({ request, auth, response }) {
     const { estate_id } = request.all()
     try {
-      await MatchService.cancelInvite(estate_id, auth.user.id)
+      await MatchService.cancelInvite(estate_id, auth.user.id, auth.user.role)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -571,9 +571,14 @@ class MatchController {
       isDislikeFilter ? 9999 : limit
     )
 
+    const countResult =
+      (await MatchService.getCountTenantMatchesWithFilterQuery(user.id, filters)).toJSON() || []
+
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-
+    estates.data = uniqBy(estates.data, 'id')
+    estates.total = countResult.length ? parseInt(countResult[0]?.count) : 0
+    estates.lastPage = parseInt(estates.total / limit) + 1
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)
       estates = {

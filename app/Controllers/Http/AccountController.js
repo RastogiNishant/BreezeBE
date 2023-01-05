@@ -32,10 +32,18 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, from_web, data1, data2, ...userData } = request.all()
-
+    let { email, from_web, data1, data2, ip, ip_based_info, ...userData } = request.all()
+    ip = ip || request.ip()
     try {
-      const user = await UserService.signUp({ email, from_web, data1, data2, ...userData })
+      const user = await UserService.signUp({
+        email,
+        from_web,
+        data1,
+        data2,
+        ip,
+        ip_based_info,
+        ...userData,
+      })
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
@@ -154,9 +162,12 @@ class AccountController {
         token = await authenticator.attempt(uid, password)
       } catch (e) {
         const [message] = e.message.split(':')
+        //FIXME: message should be json here to be consistent with being a backend
+        //that provides JSON RESTful API
         throw new HttpException(message, 400, 0)
       }
-
+      const ip = request.ip()
+      await UserService.setIpBasedInfo(user, ip)
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_EMAIL,
         role,

@@ -522,6 +522,10 @@ class EstateController {
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_TIFF,
+      FileBucket.IMAGE_WEBP,
+      FileBucket.IMAGE_HEIC,
+      FileBucket.IMAGE_GIF,
       FileBucket.IMAGE_PDF,
       FileBucket.MIME_DOC,
       FileBucket.MIME_DOCX,

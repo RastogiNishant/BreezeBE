@@ -10,6 +10,8 @@ const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
+const HttpException = use('App/Exceptions/HttpException')
+
 const schema = require('../Validators/CreateBuddy').schema()
 const {
   STATUS_DRAFT,
@@ -298,7 +300,7 @@ class ImportService {
     if (importExcelActivity) {
       importExcelActivity = importExcelActivity.toJSON()
       importExcelActivity.created_at = moment(importExcelActivity.created_at).utc().format()
-      importActivity.import = importExcelActivity
+      importActivity.imported = importExcelActivity
     }
 
     let exportExcelActivity = await Import.query()
@@ -311,7 +313,7 @@ class ImportService {
     if (exportExcelActivity) {
       exportExcelActivity = exportExcelActivity.toJSON()
       exportExcelActivity.created_at = moment(exportExcelActivity.created_at).utc().format()
-      importActivity.export = exportExcelActivity
+      importActivity.exported = exportExcelActivity
     }
     return importActivity
   }

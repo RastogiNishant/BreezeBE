@@ -157,17 +157,16 @@ const {
   LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
-
-  SALUTATION_MR,
-  SALUTATION_MS,
-  SALUTATION_SIR_OR_MADAM,
-  SALUTATION_NOT_DEFINED,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_NA,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  GENDER_MALE,
+  GENDER_FEMALE,
+  GENDER_NEUTRAL,
+  GENDER_ANY,
 } = require('../constants')
 
 const {
@@ -935,7 +934,7 @@ class EstateAttributeTranslations {
           'landlord.profile.user_details.salut.not_def.message',
           'landlord.profile.user_details.salut.sir_madam.message',
         ],
-        values: [SALUTATION_MR, SALUTATION_MS, SALUTATION_NOT_DEFINED, SALUTATION_SIR_OR_MADAM],
+        values: [GENDER_MALE, GENDER_FEMALE, GENDER_ANY, GENDER_NEUTRAL],
       },
       floor_direction: {
         keys: [
