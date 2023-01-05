@@ -352,6 +352,7 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'GalleryController.getAll').middleware(['valid:Pagination'])
   Route.post('/', 'GalleryController.addFile')
+  Route.post('/assign', 'GalleryController.assign').middleware(['valid:GalleryAssign'])
   Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id'])
 })
   .prefix('/api/v1/gallery')

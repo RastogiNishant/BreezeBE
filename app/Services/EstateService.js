@@ -54,6 +54,7 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_VALID_ADDRESS,
+  FILE_TYPE_PLAN,
 } = require('../constants')
 
 const {
@@ -320,8 +321,24 @@ class EstateService {
       FileBucket.remove(energy_proof)
     }
     // Run processing estate geo nearest
-    QueueService.getEstateCoords(estate.id)
+    if (data.address) {
+      QueueService.getEstateCoords(estate.id)
+    }
+
     return estate
+  }
+
+  static async updateEnergyProofFromGallery({ estate_id, user_id, galleries }, trx) {
+    if (!galleries || !galleries.length) {
+      return null
+    }
+
+    const estate = {
+      user_id,
+      energy_proof: galleries[0].url,
+      energy_proof_original_file: galleries[0].original_file_name,
+    }
+    await Estate.query().where('id', estate_id).update(estate).transacting(trx)
   }
 
   /**
@@ -410,6 +427,21 @@ class EstateService {
    */
   static async addFile({ url, disk, estate, type }) {
     return File.createItem({ url, disk, estate_id: estate.id, type })
+  }
+
+  static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
+    await this.hasPermission({ id: estate_id, user_id })
+    const files = galleries.map((gallery) => {
+      return {
+        url: gallery.url,
+        disk: 's3public',
+        estate_id,
+        type,
+      }
+    })
+    console.log('addFIleFromGallery=', files)
+    await File.createMany(files, trx)
+    return galleries.map((gallery) => gallery.id)
   }
 
   /**

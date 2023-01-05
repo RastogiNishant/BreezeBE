@@ -25,6 +25,11 @@ class GalleryController {
     const { page, limit } = request.all()
     response.res(await GalleryService.getAll({ user_id: auth.user.id, page, limit }))
   }
+
+  async assign({ request, auth, response }) {
+    const { estate_id, ...data } = request.all()
+    response.res(await GalleryService.assign({ user_id: auth.user.id, estate_id, data }))
+  }
 }
 
 module.exports = GalleryController

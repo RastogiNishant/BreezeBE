@@ -2,6 +2,7 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 const Room = use('App/Models/Room')
 const Image = use('App/Models/Image')
+const File = use('App/Classes/File')
 const QueueService = use('App/Services/QueueService')
 const {
   get,
@@ -24,6 +25,9 @@ const {
   ROLE_PROPERTY_MANAGER,
   PROPERTY_MANAGE_ALLOWED,
 } = require('../constants')
+const {
+  exceptions: { NO_ROOM_EXIST },
+} = require('../excepions')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
 const Estate = use('App/Models/Estate')
@@ -33,16 +37,19 @@ class RoomService {
   /**
    *
    */
-  static async getRoomByUser(userId, roomId) {
+  static async getRoomByUser({ userIds, room_id, estate_id = null }) {
     return await Room.query()
       .select('rooms.*', '_e.cover')
       .with('images')
-      .where('rooms.id', roomId)
+      .where('rooms.id', room_id)
       .innerJoin({ _e: 'estates' }, function () {
-        if (isArray(userId)) {
-          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)
+        if (estate_id) {
+          this.on('_e.id', estate_id)
+        }
+        if (isArray(userIds)) {
+          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userIds)
         } else {
-          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
+          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userIds)
         }
       })
       .first()
@@ -222,6 +229,35 @@ class RoomService {
       )
     }
     await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
+  }
+
+  static async addImageFromGallery({ user_id, room_id, estate_id, galleries }, trx) {
+    const room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
+    if (!room) {
+      throw new HttpException(NO_ROOM_EXIST, 400)
+    }
+
+    const imagesInfo = []
+    // const images =
+    //   galleries.filter((gallery) => File.SUPPORTED_IMAGE_FORMAT.includes(gallery.url)) || []
+    const images =
+      galleries.filter((gallery) =>
+        File.SUPPORTED_IMAGE_FORMAT.some((format) => gallery.url.indexOf(format) >= 0)
+      ) || []
+
+    images.map((image) => {
+      imagesInfo.push({
+        url: image.url,
+        room_id: room.id,
+        disk: 's3public',
+      })
+    })
+
+    if (imagesInfo) {
+      await Image.createMany(imagesInfo, trx)
+    }
+
+    return images.map((image) => image.id)
   }
 }
 

@@ -5,6 +5,7 @@ const exceptions = {
   REQUIRED: 'is a required field',
   MINLENGTH: 'must be at least ${value} characters',
   MAXLENGTH: 'must be at most ${value} characters',
+  MAXSIZE: 'must be at most ${value} count',
   OPTION: 'must be one of the following values:${value}',
   DATE: 'must be a `YYYY-MM-DD` type',
   BOOLEAN: 'must be true or false',
@@ -51,7 +52,9 @@ const exceptions = {
   ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
   FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
+  NO_ROOM_EXIST: 'Room no exists',
   MEDIA_NOT_EXIST: 'Media not exists',
+  INVALID_IDS: 'ids must be an array of integers',
 }
 
 const exceptionCodes = {
@@ -62,6 +65,7 @@ const exceptionKeys = {
   REQUIRED: 'REQUIRED',
   MINLENGTH: 'MINLENGTH',
   MAXLENGTH: 'MAXLENGTH',
+  MAXSIZE: 'MAXSIZE',
   OPTION: 'OPTION',
   DATE: 'DATE',
   STRING: 'STRING',
@@ -106,6 +110,8 @@ const exceptionKeys = {
   ONLY_ONE_CONTACT_ALLOWED: 'ONLY_ONE_CONTACT_ALLOWED',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'ONLY_ONE_FAVORITE_ROOM_ALLOWED',
   MEDIA_NOT_EXIST: 'MEDIA_NOT_EXIST',
+  INVALID_IDS: 'INVALID_IDS',
+  NO_ROOM_EXISTS: 'NO_ROOM_EXISTS',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
