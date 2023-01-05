@@ -2,9 +2,9 @@
 
 const {
   MATCH_STATUS_FINISH,
-  SALUTATION_SIR_OR_MADAM,
   STATUS_ACTIVE,
   DAY_FORMAT,
+  GENDER_ANY,
 } = require('../../app/constants')
 const moment = require('moment')
 
@@ -31,7 +31,7 @@ class EstateCurrentTenantForFinalMatchesSchema extends Schema {
             contract_end: moment(match.updated_at).utc().add(1, 'years').format(DAY_FORMAT),
             phone_number: tenantUser.phone_number || '',
             status: STATUS_ACTIVE,
-            salutation_int: SALUTATION_SIR_OR_MADAM,
+            salutation_int: GENDER_ANY,
           })
           await currentTenant.save()
         }

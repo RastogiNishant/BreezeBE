@@ -6,7 +6,12 @@ const {
   SALUTATION_MR_LABEL,
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
-  SALUTATION_SIR_OR_MADAM,
+  SALUTATION_NEUTRAL_LABEL,
+  SALUTATION_NEUTRAL_LABEL,
+  GENDER_MALE,
+  GENDER_FEMALE,
+  GENDER_NEUTRAL,
+  GENDER_ANY,
 } = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
@@ -34,12 +39,14 @@ class SynchronizingSecondnameSurnameSchema extends Schema {
                   ? member.phone
                   : user.phone_number || estateCurrentTenant.phone_number,
               salutation:
-                user.sex === 1
+                user.sex === GENDER_MALE
                   ? SALUTATION_MR_LABEL
-                  : user.sex === 2
+                  : user.sex === GENDER_FEMALE
                   ? SALUTATION_MS_LABEL
+                  : user.sex === GENDER_NEUTRAL
+                  ? SALUTATION_NEUTRAL_LABEL
                   : SALUTATION_SIR_OR_MADAM_LABEL,
-              salutation_int: user.sex || SALUTATION_SIR_OR_MADAM,
+              salutation_int: user.sex || GENDER_ANY,
             })
         } else {
           await EstateCurrentTenant.query()
