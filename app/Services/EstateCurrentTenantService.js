@@ -50,7 +50,7 @@ const {
 
 const {
   exceptions: { FAILED_UPLOAD_LEASE_CONTRACT },
-} = require('../excepions')
+} = require('../exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
