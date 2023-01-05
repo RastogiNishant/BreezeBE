@@ -10,6 +10,7 @@ const {
   GENDER_FEMALE,
   GENDER_NEUTRAL,
   SALUTATION_NEUTRAL_LABEL,
+  SALUTATION_MR_LABEL,
 } = require('../../app/constants')
 class EstateCurrentTenantSalutationLocaleSchema extends Schema {
   async up() {
