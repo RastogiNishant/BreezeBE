@@ -23,15 +23,25 @@ class GalleryService extends BaseService {
     const files = await this.saveFiles(request, { isPublic: true })
     if (files && files.file) {
       const path = !Array.isArray(files.file) ? [files.file] : files.file
-      const original_file_names = !Array.isArray(files.original_file)
+      const file_names = !Array.isArray(files.original_file)
         ? [files.original_file]
         : files.original_file
       const galleris = path.map((p, index) => {
-        return { user_id, disk: 's3public', url: p, original_file_name: original_file_names[index] }
+        return { user_id, disk: 's3public', url: p, file_name: file_names[index] }
       })
       return await Gallery.createMany(galleris)
     }
     return null
+  }
+
+  static async addFromView({ user_id, url, file_name = null }, trx) {
+    const gallery = {
+      user_id,
+      url,
+      file_name,
+      disk: 's3public',
+    }
+    await Gallery.createItem(gallery, trx)
   }
 
   static async getById(id, user_id) {

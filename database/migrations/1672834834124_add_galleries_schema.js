@@ -11,7 +11,7 @@ class AddGalleriesSchema extends Schema {
       table.increments()
       table.integer('user_id').unsigned().references('id').inTable('users').onDelete('cascade')
       table.string('url', 254).notNullable()
-      table.string('original_file_name', 254).notNullable()
+      table.string('file_name', 254).notNullable()
       table.string('disk', 10).defaultTo('s3public').notNullable()
       table.integer('status').unsigned().defaultTo(STATUS_ACTIVE)
       table.timestamp('created_at').defaultTo(Database.fn.now())

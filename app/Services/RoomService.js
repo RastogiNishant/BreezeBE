@@ -26,8 +26,9 @@ const {
   PROPERTY_MANAGE_ALLOWED,
 } = require('../constants')
 const {
-  exceptions: { NO_ROOM_EXIST },
+  exceptions: { NO_ROOM_EXIST, NO_IMAGE_EXIST },
 } = require('../excepions')
+
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
 const Estate = use('App/Models/Estate')
@@ -101,8 +102,8 @@ class RoomService {
   /**
    *
    */
-  static async addImage(url, room, disk, trx = null) {
-    return Image.createItem({ url, disk, room_id: room.id }, trx)
+  static async addImage({ url, file_name, room, disk }, trx = null) {
+    return Image.createItem({ url, file_name, disk, room_id: room.id }, trx)
   }
 
   /**
@@ -111,11 +112,12 @@ class RoomService {
   static async removeImage(id, trx) {
     try {
       const image = await Image.findOrFail(id)
-      await Drive.disk(image.disk).delete(image.url)
+
+      //await Drive.disk(image.disk).delete(image.url)
       await image.delete(trx)
       return image
     } catch (e) {
-      return null
+      throw new HttpException(NO_IMAGE_EXIST, 400)
     }
   }
 

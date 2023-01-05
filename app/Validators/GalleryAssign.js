@@ -12,7 +12,7 @@ const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, MAXSIZE, NUMBER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
 } = require('../excepions')
 
 class GalleryAssign extends Base {
@@ -65,7 +65,7 @@ class GalleryAssign extends Base {
           then: yup
             .array()
             .of(yup.number().integer().positive().typeError(getExceptionMessage('ids', NUMBER)))
-            .max(1, getExceptionMessage('ids', MAXSIZE, 1)),
+            .max(1, getExceptionMessage('ids', SIZE, 1)),
         })
         .required(getExceptionMessage('ids', REQUIRED))
         .typeError(getExceptionMessage(undefined, INVALID_IDS)),

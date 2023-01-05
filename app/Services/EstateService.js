@@ -296,36 +296,53 @@ class EstateService {
 
     let energy_proof = null
     const estate = await this.getById(data.id)
-    if (data.delete_energy_proof) {
-      energy_proof = estate?.energy_proof
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.delete_energy_proof) {
+        energy_proof = estate?.energy_proof
 
-      updateData = {
-        ...updateData,
-        energy_proof: null,
-        energy_proof_original_file: null,
-      }
-    } else {
-      const files = await this.saveEnergyProof(request)
-      if (files && files.energy_proof) {
+        if (energy_proof) {
+          await require('./GalleryService').addFromView(
+            {
+              user_id,
+              url: energy_proof,
+              original_file_name: estate.energy_proof_original_file,
+            },
+            trx
+          )
+        }
+
         updateData = {
           ...updateData,
-          energy_proof: files.energy_proof,
-          energy_proof_original_file: files.original_energy_proof,
+          energy_proof: null,
+          energy_proof_original_file: null,
+        }
+      } else {
+        const files = await this.saveEnergyProof(request)
+        if (files && files.energy_proof) {
+          updateData = {
+            ...updateData,
+            energy_proof: files.energy_proof,
+            energy_proof_original_file: files.original_energy_proof,
+          }
         }
       }
-    }
 
-    await estate.updateItem(updateData)
+      await estate.updateItemWithTrx(updateData, trx)
 
-    if (data.delete_energy_proof && energy_proof) {
-      FileBucket.remove(energy_proof)
+      if (data.delete_energy_proof && energy_proof) {
+        FileBucket.remove(energy_proof)
+      }
+      // Run processing estate geo nearest
+      if (data.address) {
+        QueueService.getEstateCoords(estate.id)
+      }
+      await trx.commit()
+      return estate
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
     }
-    // Run processing estate geo nearest
-    if (data.address) {
-      QueueService.getEstateCoords(estate.id)
-    }
-
-    return estate
   }
 
   static async updateEnergyProofFromGallery({ estate_id, user_id, galleries }, trx) {
@@ -333,12 +350,26 @@ class EstateService {
       return null
     }
 
-    const estate = {
+    //need to backup this energy proof to gallery to be used later
+    const estate = await this.getById(estate_id)
+    if (estate && estate.energy_proof) {
+      await require('./GalleryService').addFromView(
+        {
+          user_id,
+          url: estate.energy_proof,
+          file_name: estate.energy_proof_original_file,
+        },
+        trx
+      )
+    }
+
+    const estateData = {
       user_id,
       energy_proof: galleries[0].url,
-      energy_proof_original_file: galleries[0].original_file_name,
+      energy_proof_original_file: galleries[0].file_name,
     }
-    await Estate.query().where('id', estate_id).update(estate).transacting(trx)
+    await Estate.query().where('id', estate_id).update(estateData).transacting(trx)
+    return galleries.map((gallery) => gallery.id)
   }
 
   /**
@@ -425,8 +456,8 @@ class EstateService {
   /**
    *
    */
-  static async addFile({ url, disk, estate, type }) {
-    return File.createItem({ url, disk, estate_id: estate.id, type })
+  static async addFile({ url, file_name, disk, estate, type }) {
+    return File.createItem({ url, disk, file_name, estate_id: estate.id, type })
   }
 
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
@@ -434,12 +465,12 @@ class EstateService {
     const files = galleries.map((gallery) => {
       return {
         url: gallery.url,
+        file_name: gallery.file_name,
         disk: 's3public',
         estate_id,
         type,
       }
     })
-    console.log('addFIleFromGallery=', files)
     await File.createMany(files, trx)
     return galleries.map((gallery) => gallery.id)
   }
@@ -447,14 +478,16 @@ class EstateService {
   /**
    *
    */
-  static async removeFile(file) {
+  static async removeFile(file, trx) {
     try {
-      await Drive.disk(file.disk).delete(file.url)
+      // await Drive.disk(file.disk).delete(file.url)
+      const oldFile = await File.findOrFail(file.id)
+      await File.query().delete().where('id', file.id).transacting(trx)
+      return oldFile
     } catch (e) {
       Logger.error(e.message)
+      throw new HttpException(NO_FILE_EXIST, 400)
     }
-
-    await File.query().delete().where('id', file.id)
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {

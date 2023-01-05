@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class Gallery extends Model {
   static get columns() {
-    return ['user_id', 'original_file_name', 'url', 'disk', 'status']
+    return ['user_id', 'file_name', 'url', 'disk', 'status']
   }
 
   static get traits() {

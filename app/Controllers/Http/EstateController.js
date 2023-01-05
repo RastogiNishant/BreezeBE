@@ -65,6 +65,7 @@ const INVITE_CODE_STRING_LENGTH = 8
 const {
   exceptions: { ESTATE_NOT_EXISTS },
 } = require('../../excepions')
+const GalleryService = require('../../Services/GalleryService')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -536,7 +537,13 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({ disk: 's3public', url: files.file, type, estate })
+    const fileObj = await EstateService.addFile({
+      disk: 's3public',
+      url: files.file,
+      file_name: files.original_file,
+      type,
+      estate,
+    })
     Event.fire('estate::update', estate_id)
 
     response.res(fileObj)
@@ -558,8 +565,23 @@ class EstateController {
       throw new HttpException('Image not found', 404)
     }
 
-    await EstateService.removeFile(file)
-    response.res(true)
+    const trx = await Database.beginTransaction()
+    try {
+      const removedFile = await EstateService.removeFile(file, trx)
+      await GalleryService.addFromView(
+        {
+          user_id: auth.user.id,
+          url: removedFile.url,
+          file_name: removedFile.file_name,
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   /**
