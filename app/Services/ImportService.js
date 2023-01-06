@@ -70,6 +70,7 @@ class ImportService {
           data.letting_type = LETTING_TYPE_NA
         }
         estate = await EstateService.createEstate({ data, userId }, true)
+        //removed trx here because it will not make Estate Model AfterCreate work...
 
         let rooms = []
         let found
