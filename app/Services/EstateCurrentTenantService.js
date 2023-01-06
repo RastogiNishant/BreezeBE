@@ -49,7 +49,12 @@ const {
 } = require('../constants')
 
 const {
-  exceptions: { FAILED_UPLOAD_LEASE_CONTRACT, INVALID_QR_CODE, ALREADY_USED_QR_CODE, EXPIRED_QR_CODE },
+  exceptions: {
+    FAILED_UPLOAD_LEASE_CONTRACT,
+    INVALID_QR_CODE,
+    ALREADY_USED_QR_CODE,
+    EXPIRED_QR_CODE,
+  },
 } = require('../excepions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -290,9 +295,10 @@ class EstateCurrentTenantService extends BaseService {
     return await query.paginate(page, limit)
   }
 
-  static async delete(id, user_id) {
-    await this.hasPermission(id, user_id)
-    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_DELETE })
+  static async delete(ids, user_id) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    await Promise.map(ids, async (id) => await this.hasPermission(id, user_id))
+    return await EstateCurrentTenant.query().whereIn('id', ids).update({ status: STATUS_DELETE })
   }
 
   static async hasPermission(id, user_id) {
