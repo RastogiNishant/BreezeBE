@@ -45,7 +45,7 @@ const {
 } = require('../constants')
 
 const {
-  exceptions: { FAILED_UPLOAD_LEASE_CONTRACT },
+  exceptions: { FAILED_UPLOAD_LEASE_CONTRACT, INVALID_QR_CODE, ALREADY_USED_QR_CODE, EXPIRED_QR_CODE },
 } = require('../excepions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -544,19 +544,19 @@ class EstateCurrentTenantService extends BaseService {
     } catch (e) {
       if (e.code === ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED) {
         throw new HttpException(
-          'Already used QR code',
+          ALREADY_USED_QR_CODE,
           400,
           ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
         )
       }
-      throw new HttpException('Invalid QR code', 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+      throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
 
     try {
       EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
     } catch (e) {
       throw new HttpException(
-        'Invalid QR code',
+        INVALID_QR_CODE,
         400,
         e.code || ERROR_OUTSIDE_TENANT_INVITATION_INVALID
       )
@@ -566,7 +566,7 @@ class EstateCurrentTenantService extends BaseService {
       EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
     } catch (e) {
       throw new HttpException(
-        'Expired QR code',
+        EXPIRED_QR_CODE,
         400,
         e.code || ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED
       )
@@ -856,7 +856,7 @@ class EstateCurrentTenantService extends BaseService {
       await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
         expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
       })
-      throw new AppException('Invalid QR code')
+      throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
   }
 
