@@ -120,6 +120,7 @@ class NoticeService {
         data.map(({ user_id, type, data }) => ({
           user_id,
           type,
+          estate_id: data?.estate_id || null,
           data,
           created_at: Database.fn.now(),
           updated_at: Database.fn.now(),

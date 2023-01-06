@@ -1451,6 +1451,9 @@ class MatchService {
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
+      .withCount('notifications', function (n) {
+        n.where('user_id', userId)
+      })
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', defaultWhereIn)
 
@@ -1916,7 +1919,7 @@ class MatchService {
   }
 
   static searchForLandlord(userId, searchQuery) {
-    const query = EstateService.getEstates()
+    const query = EstateService.getEstates(userId)
       .select('*')
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
