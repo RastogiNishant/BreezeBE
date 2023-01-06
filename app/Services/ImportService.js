@@ -69,7 +69,7 @@ class ImportService {
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }
-        estate = await EstateService.createEstate({ data, userId }, true, trx)
+        estate = await EstateService.createEstate({ data, userId }, true)
 
         let rooms = []
         let found
