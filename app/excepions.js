@@ -51,6 +51,9 @@ const exceptions = {
   ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
   FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
+  INVALID_QR_CODE: 'Invalid QR code',
+  ALREADY_USED_QR_CODE: 'Already used QR code',
+  EXPIRED_QR_CODE: 'Expired QR code',
 }
 
 const exceptionCodes = {
