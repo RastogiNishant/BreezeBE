@@ -42,9 +42,9 @@ class QueueJobService {
   }
 
   static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
+    const estate = await Estate.find(estateId)
 
-    if (!estate.address || trim(estate.address) === '') {
+    if (!estate || !estate.address || trim(estate.address) === '') {
       return
     }
 
