@@ -49,7 +49,7 @@ class QueueJobService {
     }
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result && result.lat && result.lon) {
+    if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
       await estate.updateItem({ coord: coord })
       await QueueJobService.updateEstatePoint(estateId)
