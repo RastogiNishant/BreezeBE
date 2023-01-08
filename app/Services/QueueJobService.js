@@ -73,7 +73,11 @@ class QueueJobService {
           .fetch()
       ).rows || []
 
-    estates.map((estate) => QueueJobService.updateEstateCoord(estate.id))
+    let i = 0
+    while (i < estates.length) {
+      await QueueJobService.updateEstateCoord(estates[i].id)
+      i++
+    }
   }
 
   //Finds and handles the estates that available date is over
