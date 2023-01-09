@@ -46,9 +46,9 @@ class Localization {
         })
         this._data = data.reduce((n, { locale, data }) => ({ ...n, [locale]: data }), {})
         console.log('Location loading success')
-        if (process.env.NODE_ENV === 'development') {
-          File.logFile(this._data, 'locales.json')
-        }
+        // if (process.env.NODE_ENV === 'development') {
+        //   File.logFile(this._data, 'locales.json')
+        // }
       } catch (e) {
         console.log('Loading location failure', e)
       }
