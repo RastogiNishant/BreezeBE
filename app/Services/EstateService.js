@@ -416,7 +416,7 @@ class EstateService {
    *
    */
   static async addFile({ url, disk, estate, type }) {
-    return File.createItem({ url, disk, estate_id: estate.id, type })
+    return await File.createItem({ url, disk, estate_id: estate.id, type })
   }
 
   /**
@@ -430,6 +430,10 @@ class EstateService {
     }
 
     await File.query().delete().where('id', file.id)
+  }
+
+  static async getFiles({ estate_id, ids, type }) {
+    return (await File.query().whereIn('id', ids).where('type', type).fetch()).rows || []
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {

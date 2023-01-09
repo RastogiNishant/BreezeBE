@@ -421,7 +421,7 @@ class Estate extends Model {
    *
    */
   files() {
-    return this.hasMany('App/Models/File')
+    return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
   amenities() {

@@ -63,7 +63,7 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS },
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
 } = require('../../excepions')
 
 class EstateController {
@@ -567,6 +567,30 @@ class EstateController {
     response.res(true)
   }
 
+  async updateOrder({ request, auth, response }) {
+    const { estate_id, ids, type } = request.all()
+    const imageIds = await EstateService.getFiles({ estate_id, ids, type })
+    if (imageIds.length != ids.length) {
+      throw new HttpException(SOME_IMAGE_NOT_EXIST)
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await Promise.all(
+        ids.map(async (id, index) => {
+          await File.query()
+            .where('id', id)
+            .update({ order: index + 1 })
+            .transacting(trx)
+        })
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
   /**
    *
    */
