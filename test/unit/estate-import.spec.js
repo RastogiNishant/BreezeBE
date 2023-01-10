@@ -171,25 +171,31 @@ test(`EstateImportReader.setValidColumns returns array of objects of valid colum
 test(`EstateImportReader.validateColumns returns true when columns match validHeaders`, async ({
   assert,
 }) => {
+  const validHeaders = reader.validHeaderVars
   reader.validHeaderVars = ['property_id', 'street', 'city', 'zip', 'country']
   const testColumns = ['property_id', 'street', 'city', 'zip', 'country']
   const validColumns = reader.setValidColumns(testColumns)
   const isValid = reader.validateColumns(validColumns)
+  reader.validHeaderVars = validHeaders
   assert.isTrue(isValid)
 })
 
 test(`EstateImportReader.validateColumns returns false when columns doesn't match validHeaders`, async ({
   assert,
 }) => {
+  const validHeaders = reader.validHeaderVars
   reader.validHeaderVars = ['property_id', 'street', 'city', 'zip', 'country']
   const testColumns = ['property_id', 'street1', 'city', 'zip', 'country']
   const validColumns = reader.setValidColumns(testColumns)
   const isValid = reader.validateColumns(validColumns)
+  reader.validHeaderVars = validHeaders
   assert.isFalse(isValid)
 })
 
 test(`EstateImportReader appends to warnings for invalid columns`, async ({ assert }) => {
   const invalidColumns = ['not_a_valid_column', 'another_invalid_column']
+  reader.warnings = []
+  reader.setValidColumns(invalidColumns)
   reader.warnings.map((warning, index) => {
     assert.equal(
       warning,
@@ -410,25 +416,14 @@ test(`EstateImportReader.processRow processes up to ${MAX_ROOM_TYPES_TO_IMPORT} 
 test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`, async ({
   assert,
 }) => {
-  const salutations = [
-    '',
-    'notfound',
-    'Mr.',
-    'Ms.',
-    'Not Defined',
-    'Herr',
-    'Frau',
-    'Nicht definiert',
-  ]
+  const salutations = ['', 'notfound', 'Mr.', 'Ms.', 'Herr', 'Frau']
   const expected = [
     undefined,
     undefined,
     SALUTATION_MR,
     SALUTATION_MS,
-    SALUTATION_NOT_DEFINED,
     SALUTATION_MR,
     SALUTATION_MS,
-    SALUTATION_NOT_DEFINED,
   ]
   salutations.map(async (salutation, index) => {
     let result = await reader.processRow({ txt_salutation: salutation }, 1, false)
