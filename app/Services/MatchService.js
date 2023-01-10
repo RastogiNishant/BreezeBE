@@ -2101,7 +2101,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.income_type order by incomes.income desc))[1] as profession
+          (array_agg(incomes.income_type order by incomes.income desc)) as profession
         from
           members as primaryMember
         left join
@@ -2178,6 +2178,19 @@ class MatchService {
     }
     if (params && params.credit_score_max) {
       query.where('tenants.credit_score', '>=', params.credit_score_max)
+    }
+    if (params && params.phone_verified) {
+      query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
+    }
+    if (params && params.id_verified) {
+      query.where('_mf.id_verified', true)
+    }
+    if (params && params.income_type && params.income_type.length) {
+      query.andWhere(function () {
+        params.income_type.map((income_type) => {
+          this.query.orWhere(Database.raw(`'${income_type}' = any(_pm.profession)`))
+        })
+      })
     }
 
     return query

@@ -42,8 +42,8 @@ class MatchListLandlord extends Base {
               INCOME_TYPE_TRAINEE,
             ])
         ),
-      is_phone_verified: yup.boolean(),
-      is_id_verified: yup.boolean(),
+      phone_verified: yup.boolean(),
+      id_verified: yup.boolean(),
       filters: yup.lazy((value) => {
         const itemsCount = reduce(value, (n, v, k) => (v ? n.concat(k) : n), []).length
         if (itemsCount > 1) {
