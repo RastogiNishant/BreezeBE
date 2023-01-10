@@ -168,6 +168,26 @@ test(`EstateImportReader.setValidColumns returns array of objects of valid colum
   assert.deepEqual(validColumns, expected)
 })
 
+test(`EstateImportReader.validateColumns returns true when columns match validHeaders`, async ({
+  assert,
+}) => {
+  reader.validHeaderVars = ['property_id', 'street', 'city', 'zip', 'country']
+  const testColumns = ['property_id', 'street', 'city', 'zip', 'country']
+  const validColumns = reader.setValidColumns(testColumns)
+  const isValid = reader.validateColumns(validColumns)
+  assert.isTrue(isValid)
+})
+
+test(`EstateImportReader.validateColumns returns false when columns doesn't match validHeaders`, async ({
+  assert,
+}) => {
+  reader.validHeaderVars = ['property_id', 'street', 'city', 'zip', 'country']
+  const testColumns = ['property_id', 'street1', 'city', 'zip', 'country']
+  const validColumns = reader.setValidColumns(testColumns)
+  const isValid = reader.validateColumns(validColumns)
+  assert.isFalse(isValid)
+})
+
 test(`EstateImportReader appends to warnings for invalid columns`, async ({ assert }) => {
   const invalidColumns = ['not_a_valid_column', 'another_invalid_column']
   reader.warnings.map((warning, index) => {
@@ -194,6 +214,8 @@ test(`EstateImportReader.setValidColumns returns array of objects containing the
   const validColumns = reader.setValidColumns(testColumns)
   assert.deepEqual(validColumns, expected)
 })
+
+test
 
 test(`EstateImportReader.processRow updates deposit attribute to be a product of net_rent and deposit attributes`, async ({
   assert,
