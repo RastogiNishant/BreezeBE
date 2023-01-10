@@ -21,9 +21,11 @@ const constants = {
 
   LANG_EN: 'en',
   LANG_DE: 'de',
+  AVAILABLE_LANGUAGES: ['en', 'de'],
   DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
+  FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
 
@@ -71,7 +73,13 @@ const constants = {
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
+  GENDER_NEUTRAL: 4,
   GENDER_ANY: 3,
+
+  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
+  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
+  SALUTATION_NEUTRAL_LABEL: 'landlord.profile.user_details.salut.not_def.message',
 
   OCCUPATION_TYPE_OCCUPIED_OWN: 1,
   OCCUPATION_TYPE_OCCUPIED_TENANT: 2,
@@ -646,14 +654,6 @@ const constants = {
   LETTING_STATUS_FIRST_TIME_USE: 6,
   LETTING_STATUS_VACANCY: 7,
 
-  SALUTATION_MR_LABEL: 'Mr.',
-  SALUTATION_MS_LABEL: 'Ms.',
-  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
-
-  SALUTATION_MR: 1,
-  SALUTATION_MS: 2,
-  SALUTATION_SIR_OR_MADAM: 3,
-
   MINIMUM_SHOW_PERIOD: 5,
   ROOM_CUSTOM_AMENITIES_MAX_COUNT: 3,
   ROOM_CUSTOM_AMENITY_MAX_STRING_LENGTH: 35,
@@ -887,6 +887,8 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT: 10,
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
+
+  MAX_ROOM_TYPES_TO_IMPORT: 6,
 
   WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',

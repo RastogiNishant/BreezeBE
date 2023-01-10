@@ -41,9 +41,12 @@ const exceptions = {
   TIME_SLOT_NOT_FOUND: 'Time slot not found',
   SHOW_ALREADY_STARTED: 'Show already started',
   ACCOUNT_NOT_VERIFIED_USER_EXIST: 'There are some accounts which have not verified yet',
+  IMPORT_ESTATE_INVALID_SHEET: 'Invalid Excel Sheet',
+  IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'Column ${value} is not included on import',
   TOPIC_NOT_FOUND: 'Topic not found',
   ESTATE_NOT_EXISTS: 'Estate not exists',
   SHOULD_BE_AFTER: 'Should be after',
+  SETTINGS_ERROR: 'Internal Settings Error',
   INVALID: 'is invalid',
   MESSAGE_NOT_SAVED: 'Error happened to save message',
   MESSAGE_ATTACHMENT_WRONG_FORMAT: 'Attachments must be an array',
@@ -51,6 +54,9 @@ const exceptions = {
   ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
   FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
+  INVALID_QR_CODE: 'Invalid QR code',
+  ALREADY_USED_QR_CODE: 'Already used QR code',
+  EXPIRED_QR_CODE: 'Expired QR code',
 }
 
 const exceptionCodes = {
@@ -92,6 +98,7 @@ const exceptionKeys = {
   INVALID_TOKEN: 'INVALID_TOKEN',
   NO_CODE_PASSED: 'NO_CODE_PASSED',
   ACCOUNT_ALREADY_VERIFIED: 'ACCOUNT_ALREADY_VERIFIED',
+  IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'IMPORT_ESTATE_INVALID_VARIABLE_WARNING',
   TOPIC_NOT_FOUND: 'TOPIC_NOT_FOUND',
   INVALID_TIME_RANGE: 'INVALID_TIME_RANGE',
   TIME_SLOT_CROSSING_EXISTING: 'TIME_SLOT_CROSSING_EXISTING',
@@ -99,6 +106,7 @@ const exceptionKeys = {
   SHOW_ALREADY_STARTED: 'SHOW_ALREADY_STARTED',
   ESTATE_NOT_EXISTS: 'ESTATE_NOT_EXISTS',
   SHOULD_BE_AFTER: 'SHOULD_BE_AFTER',
+  SETTINGS_ERROR: 'SETTINGS_ERROR',
   INVALID: 'INVALID',
   MESSAGE_NOT_SAVED: 'MESSAGE_NOT_SAVED',
   NO_CONTACT_EXIST: 'NO_CONTACT_EXIST',

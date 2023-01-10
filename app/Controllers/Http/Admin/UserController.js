@@ -31,7 +31,7 @@ const {
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST },
-} = require('../../../excepions')
+} = require('../../../exceptions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')

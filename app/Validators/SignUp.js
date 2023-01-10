@@ -17,12 +17,13 @@ const {
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
   ROLE_PROPERTY_MANAGER,
+  GENDER_NEUTRAL,
 } = require('../constants')
 
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
-} = require('../excepions')
+} = require('../exceptions')
 
 class SignUp extends Base {
   static schema = () =>
@@ -80,8 +81,12 @@ class SignUp extends Base {
       sex: yup
         .number()
         .oneOf(
-          [GENDER_MALE, GENDER_FEMALE, GENDER_ANY],
-          getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`)
+          [GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY],
+          getExceptionMessage(
+            'sex',
+            OPTION,
+            `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL}, ${GENDER_ANY}]`
+          )
         )
         .required(getExceptionMessage('sex', REQUIRED)),
       phone: phoneSchema,

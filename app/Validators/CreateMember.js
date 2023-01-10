@@ -24,6 +24,7 @@ const {
   NO_INCOME_SEIZURE,
   YES_INCOME_SEIZURE,
   NO_ANSWER_INCOME_SEIZURE,
+  GENDER_NEUTRAL,
 } = require('../constants')
 
 class CreateMember extends Base {
@@ -32,7 +33,7 @@ class CreateMember extends Base {
       firstname: yup.string().max(254),
       secondname: yup.string().max(254),
       child: yup.boolean().default(false),
-      sex: yup.number().positive().oneOf([GENDER_ANY, GENDER_FEMALE, GENDER_MALE]),
+      sex: yup.number().positive().oneOf([GENDER_ANY, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_MALE]),
       phone: phoneSchema.nullable(),
       bio: yup.string().max(100).nullable(),
       birthday: yup.date(),

@@ -3,7 +3,7 @@ const HttpException = require('../Exceptions/HttpException')
 const File = use('App/Classes/File')
 const {
   exceptionCodes: { IMAGE_ABSOLUTE_URL_ERROR_CODE },
-} = require('../excepions')
+} = require('../exceptions')
 
 class BaseService {
   static async getWithAbsoluteUrl(item) {
