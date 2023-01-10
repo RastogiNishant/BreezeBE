@@ -23,7 +23,7 @@ const {
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
-} = require('../excepions')
+} = require('../exceptions')
 
 class SignUp extends Base {
   static schema = () =>

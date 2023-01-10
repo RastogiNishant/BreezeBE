@@ -1,14 +1,13 @@
 const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
+const EstateImportReader = use('App/Classes/EstateImportReader')
 const Database = use('Database')
-const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
 const EstateService = use('App/Services/EstateService')
 const QueueService = use('App/Services/QueueService')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
-const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
@@ -31,21 +30,6 @@ const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService'
  *
  */
 class ImportService {
-  /**
-   *
-   */
-  static async readFile(filePath) {
-    const reader = new ExcelReader()
-    return await reader.readFile(filePath)
-  }
-
-  static async readFileFromWeb(filePath) {
-    const reader = new ExcelReader()
-    reader.headerCol = 1
-    reader.sheetName = 'Import_Data'
-    return await reader.readFileEstateImport(filePath)
-  }
-
   static async readBuddyFile(filePath) {
     const reader = new BuddiesReader()
     return await reader.readFile(filePath)
@@ -68,9 +52,6 @@ class ImportService {
       await ImportService.updateImportBySixCharCode(six_char_code, data)
     } else {
       try {
-        if (!data.address) {
-          throw new AppException('Invalid address')
-        }
         const address = data.address.toLowerCase()
         const existingEstate = await EstateService.getQuery()
           .where('user_id', userId)
@@ -88,7 +69,8 @@ class ImportService {
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }
-        estate = await EstateService.createEstate({ data, userId }, true, trx)
+        estate = await EstateService.createEstate({ data, userId }, true)
+        //removed trx here because it will not make Estate Model AfterCreate work...
 
         let rooms = []
         let found
@@ -150,13 +132,16 @@ class ImportService {
    *
    */
   static async process(filePath, userId, type) {
-    let { errors, data, warnings } = await ImportService.readFileFromWeb(filePath.tmpPath)
+    const reader = new EstateImportReader(filePath.tmpPath)
+    let { errors, data, warnings } = await reader.process()
     const trx = await Database.beginTransaction()
     const opt = { concurrency: 1 }
     try {
       const result = await Promise.map(
         data,
-        (i) => ImportService.createSingleEstate(i, userId, trx),
+        (i) => {
+          if (i) ImportService.createSingleEstate(i, userId, trx)
+        },
         opt
       )
       const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
