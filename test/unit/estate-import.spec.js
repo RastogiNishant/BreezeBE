@@ -98,13 +98,12 @@ const {
   ROOM_TYPE_BATH,
   ROOM_TYPE_CHILDRENS_ROOM,
   ROOM_TYPE_CORRIDOR,
-  SALUTATION_MR,
-  SALUTATION_MS,
-  SALUTATION_NOT_DEFINED,
   USE_TYPE_RESIDENTIAL,
   USE_TYPE_COMMERCIAL,
   USE_TYPE_PLANT,
   USE_TYPE_OTHER,
+  GENDER_MALE,
+  GENDER_FEMALE,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
@@ -417,14 +416,7 @@ test(`EstateImportReader.processRow adds salutation_int based on salutation_txt`
   assert,
 }) => {
   const salutations = ['', 'notfound', 'Mr.', 'Ms.', 'Herr', 'Frau']
-  const expected = [
-    undefined,
-    undefined,
-    SALUTATION_MR,
-    SALUTATION_MS,
-    SALUTATION_MR,
-    SALUTATION_MS,
-  ]
+  const expected = [undefined, undefined, GENDER_MALE, GENDER_FEMALE, GENDER_MALE, GENDER_FEMALE]
   salutations.map(async (salutation, index) => {
     let result = await reader.processRow({ txt_salutation: salutation }, 1, false)
     assert.equal(result.salutation_int, expected[index])
