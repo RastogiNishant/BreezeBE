@@ -137,7 +137,6 @@ class ImportService {
     const trx = await Database.beginTransaction()
     const opt = { concurrency: 1 }
     try {
-      console.log('process data here=', data)
       const result = await Promise.map(
         data,
         (i) => {
