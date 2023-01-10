@@ -1948,6 +1948,7 @@ class MatchService {
         '_u.firstname',
         '_u.secondname',
         '_u.birthday',
+        '_u.sex',
         '_u.email',
         '_u.avatar',
         '_v.landlord_followup_meta as followups',
