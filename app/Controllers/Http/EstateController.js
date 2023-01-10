@@ -64,7 +64,7 @@ const INVITE_CODE_STRING_LENGTH = 8
 
 const {
   exceptions: { ESTATE_NOT_EXISTS },
-} = require('../../excepions')
+} = require('../../exceptions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -189,7 +189,12 @@ class EstateController {
       auth.user.id,
       PROPERTY_MANAGE_ALLOWED
     )
-    const result = await EstateService.getEstatesByUserId({ ids: landlordIds, limit, page, params })
+    const result = await EstateService.getEstatesByUserId({
+      ids: landlordIds,
+      limit,
+      page,
+      params,
+    })
     result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
     delete result.rows
     response.res(result)
@@ -259,7 +264,7 @@ class EstateController {
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
     const user_id = auth.user instanceof Admin ? null : auth.user.id
-    let estate = await EstateService.getEstateWithDetails(id, user_id)
+    let estate = await EstateService.getEstateWithDetails({ id, user_id, role: auth.user.role })
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
@@ -328,10 +333,10 @@ class EstateController {
         importFilePathName.headers['content-type'] !==
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       ) {
-        throw new HttpException('No excel format', 400)
+        throw new HttpException('Not an excel format', 400)
       }
     } else {
-      throw new HttpException('There is no excel data to import', 400)
+      throw new HttpException('Error found while uploading file.', 400)
     }
     const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
     return response.res(result)
@@ -522,6 +527,10 @@ class EstateController {
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_TIFF,
+      FileBucket.IMAGE_WEBP,
+      FileBucket.IMAGE_HEIC,
+      FileBucket.IMAGE_GIF,
       FileBucket.IMAGE_PDF,
       FileBucket.MIME_DOC,
       FileBucket.MIME_DOCX,
@@ -594,7 +603,11 @@ class EstateController {
   async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
 
-    let estate = await EstateService.getEstateWithDetails(id)
+    let estate = await EstateService.getEstateWithDetails({
+      id,
+      user_id: auth.user.id,
+      role: auth.user.role,
+    })
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)

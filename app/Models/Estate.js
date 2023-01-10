@@ -3,6 +3,7 @@
 const moment = require('moment')
 const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
+const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
@@ -232,12 +233,7 @@ class Estate extends Model {
       }
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
-        instance.address = trim(
-          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
-            instance.city || ''
-          }, ${instance.country || ''}`,
-          ', '
-        ).toLowerCase()
+        instance.address = generateAddress(instance)
         instance.coord = null
         instance.coord_raw = null
       }
@@ -311,7 +307,7 @@ class Estate extends Model {
    *
    */
   rooms() {
-    return this.hasMany('App/Models/Room')
+    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
   }
 
   activeTasks() {
@@ -426,6 +422,10 @@ class Estate extends Model {
 
   amenities() {
     return this.hasMany('App/Models/Amenity')
+  }
+
+  notifications() {
+    return this.hasOne('App/Models/Notice')
   }
 
   /**

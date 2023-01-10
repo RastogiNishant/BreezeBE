@@ -208,6 +208,7 @@ class NotificationsService {
       notification: {
         title: title || body,
         body: body || title,
+        sound: 'my_sound.mp3',
       },
       data: {
         type,
@@ -673,13 +674,13 @@ class NotificationsService {
    *
    */
   static async sendProspectHasSuperMatch(notices) {
-    const title = 'prospect.notification.event.best_match'
+    const title = `prospect.notification.event.new_multi_matches`
 
     return NotificationsService.sendNotes(notices, title, (data, lang) => {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.next.best_match.message', lang)
+        l.get('prospect.notification.next.new_match.message', lang)
       )
     })
   }

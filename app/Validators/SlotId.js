@@ -4,7 +4,7 @@ const yup = require('yup')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, POSITIVE_NUMBER },
-} = require('../excepions.js')
+} = require('../exceptions.js')
 const { id } = require('../Libs/schemas.js')
 const Base = require('./Base')
 

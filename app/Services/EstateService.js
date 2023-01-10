@@ -25,6 +25,8 @@ const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
+const Ws = use('Ws')
+
 const {
   STATUS_DRAFT,
   STATUS_DELETE,
@@ -55,11 +57,12 @@ const {
   TASK_STATUS_UNRESOLVED,
   IMPORT_TYPE_OPENIMMO,
   IMPORT_ENTITY_ESTATES,
+  WEBSOCKET_EVENT_VALID_ADDRESS,
 } = require('../constants')
 
 const {
   exceptions: { NO_ESTATE_EXIST },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -93,7 +96,7 @@ class EstateService {
     return await this.getActiveEstateQuery().where({ id }).first()
   }
 
-  static async getEstateWithDetails(id, user_id) {
+  static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
@@ -112,6 +115,9 @@ class EstateService {
       )
       .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
+      .withCount('notifications', function (n) {
+        n.where('user_id', user_id)
+      })
       .with('point')
       .with('files')
       .with('current_tenant', function (q) {
@@ -145,7 +151,7 @@ class EstateService {
           })
       })
 
-    if (user_id) {
+    if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
@@ -328,8 +334,12 @@ class EstateService {
   /**
    *
    */
-  static getEstates(params = {}) {
+  static getEstates(user_ids, params = {}) {
     let query = Estate.query()
+      .withCount('notifications', function (n) {
+        user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        n.whereIn('user_id', user_ids)
+      })
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -352,9 +362,9 @@ class EstateService {
    *
    */
   static getUpcomingShows(ids, query = '') {
-    return this.getEstates()
+    return this.getEstates(ids)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('user_id', ids)
+      .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -900,15 +910,14 @@ class EstateService {
 
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
     if (page === -1 || limit === -1) {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(ids, params)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(ids, params)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
     }
@@ -1397,6 +1406,19 @@ class EstateService {
 
   static async deletePermanent(user_id) {
     await Estate.query().where('user_id', user_id).delete()
+  }
+
+  static emitValidAddress({ id, user_id, coord, address }) {
+    const channel = role === `landlord:*`
+    const topicName = `landlord:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_VALID_ADDRESS, {
+        id,
+        coord,
+        address,
+      })
+    }
   }
 }
 module.exports = EstateService

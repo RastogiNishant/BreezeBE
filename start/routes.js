@@ -423,6 +423,9 @@ Route.group(() => {
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
   ])
+  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
+    'valid:CreateBulkRoom,EstateId',
+  ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
@@ -1028,6 +1031,14 @@ Route.group(() => {
   Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
     'valid:EstateCurrentTenantFilter',
   ])
+  Route.get('/:id', 'EstateCurrentTenantController.get').middleware(['valid:Id'])
+  Route.put('/:id/lease_contract', 'EstateCurrentTenantController.addLeaseContract').middleware([
+    'valid:Id',
+  ])
+  Route.delete(
+    '/:id/lease_contract',
+    'EstateCurrentTenantController.removeLeaseContract'
+  ).middleware(['valid:Id,RemoveImage'])
 })
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/current_tenant')
@@ -1141,6 +1152,9 @@ Route.group(() => {
   Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
+  ])
+  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
+    'valid:CreateBulkRoom,EstateId',
   ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
 

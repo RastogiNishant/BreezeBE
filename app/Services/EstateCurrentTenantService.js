@@ -16,6 +16,7 @@ const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const DataStorage = use('DataStorage')
 const Ws = use('Ws')
 const Estate = use('App/Models/Estate')
+const File = use('App/Classes/File')
 
 const {
   ROLE_USER,
@@ -23,7 +24,6 @@ const {
   STATUS_EXPIRE,
   DEFAULT_LANG,
   DAY_FORMAT,
-  SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
   MATCH_STATUS_FINISH,
@@ -41,7 +41,21 @@ const {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME,
   STATUS_DRAFT,
   WEBSOCKET_EVENT_TENANT_CONNECTED,
+  GENDER_ANY,
+  GENDER_NEUTRAL,
+  SALUTATION_NEUTRAL_LABEL,
+  GENDER_FEMALE,
+  GENDER_MALE,
 } = require('../constants')
+
+const {
+  exceptions: {
+    FAILED_UPLOAD_LEASE_CONTRACT,
+    INVALID_QR_CODE,
+    ALREADY_USED_QR_CODE,
+    EXPIRED_QR_CODE,
+  },
+} = require('../exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -50,8 +64,9 @@ const NoticeService = use('App/Services/NoticeService')
 const l = use('Localize')
 const { trim } = require('lodash')
 const { phoneSchema } = require('../Libs/schemas')
+const BaseService = require('./BaseService')
 
-class EstateCurrentTenantService {
+class EstateCurrentTenantService extends BaseService {
   /**
    * Right now there is no way to determine if the email address is the right tenant's email address or not
    * So we can't prevent duplicated record for the same estate
@@ -134,12 +149,14 @@ class EstateCurrentTenantService {
         member?.phone && member?.phone_verified ? member.phone : user.phone_number || '',
       status: STATUS_ACTIVE,
       salutation:
-        user.sex === 1
+        user.sex === GENDER_MALE
           ? SALUTATION_MR_LABEL
-          : user.sex === 2
+          : user.sex === GENDER_FEMALE
           ? SALUTATION_MS_LABEL
+          : user.sex === GENDER_NEUTRAL
+          ? SALUTATION_NEUTRAL_LABEL
           : SALUTATION_SIR_OR_MADAM_LABEL,
-      salutation_int: user.sex || SALUTATION_SIR_OR_MADAM,
+      salutation_int: user.sex || GENDER_ANY,
     })
 
     await currentTenant.save(trx)
@@ -228,6 +245,9 @@ class EstateCurrentTenantService {
       .firstOrFail()
   }
 
+  static async getWithAbsoluteAttachments(id, user_id) {
+    return await this.getWithAbsoluteUrl((await this.hasPermission(id, user_id)).toJSON())
+  }
   static async getCurrentTenantByEstateId(estate_id) {
     return await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
@@ -288,6 +308,8 @@ class EstateCurrentTenantService {
       .where('id', estateCurrentTeant.estate_id)
       .where('letting_type', LETTING_TYPE_LET)
       .firstOrFail()
+
+    return estateCurrentTeant
   }
 
   static async expire(id, user_id) {
@@ -523,13 +545,43 @@ class EstateCurrentTenantService {
 
   static async validateInvitationQRCode({ data1, data2 }) {
     const { estate_id, id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+    let estateCurrentTenant
 
-    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
-      id,
-      estate_id,
-    })
-    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
-    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+    try {
+      estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+        id,
+        estate_id,
+      })
+    } catch (e) {
+      if (e.code === ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED) {
+        throw new HttpException(
+          ALREADY_USED_QR_CODE,
+          400,
+          ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
+        )
+      }
+      throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    }
+
+    try {
+      EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    } catch (e) {
+      throw new HttpException(
+        INVALID_QR_CODE,
+        400,
+        e.code || ERROR_OUTSIDE_TENANT_INVITATION_INVALID
+      )
+    }
+
+    try {
+      EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+    } catch (e) {
+      throw new HttpException(
+        EXPIRED_QR_CODE,
+        400,
+        e.code || ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED
+      )
+    }
 
     return true
   }
@@ -798,7 +850,12 @@ class EstateCurrentTenantService {
 
       if (data.email) ect.email = data.email
       if (data.sex) {
-        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation =
+          data.sex === 1
+            ? SALUTATION_MR_LABEL
+            : data.sex === 2
+            ? SALUTATION_MS_LABEL
+            : SALUTATION_SIR_OR_MADAM_LABEL
         ect.salutation_int = data.sex
       }
       if (data.secondname) ect.surname = data.secondname
@@ -815,7 +872,62 @@ class EstateCurrentTenantService {
       await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
         expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
       })
-      throw new AppException('Code did not match.')
+      throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    }
+  }
+
+  static async addLeaseContract(request, user) {
+    const { id } = request.all()
+    let currentEstate = await this.hasPermission(id, user.id)
+
+    const files = await this.saveFiles(request)
+    if (files && files.file) {
+      const paths = !Array.isArray(files.file) ? [files.file] : files.file
+      const originalFileNames = !Array.isArray(files.original_file)
+        ? [files.original_file]
+        : files.original_file
+      const pathJSON = paths.map((p, index) => {
+        return { user_id: user.id, uri: p, original_file_name: originalFileNames[index] }
+      })
+
+      const attachments = JSON.stringify(
+        (currentEstate.toJSON().attachments || []).concat(pathJSON)
+      )
+      currentEstate = {
+        ...currentEstate.toJSON(),
+        attachments,
+      }
+
+      await EstateCurrentTenant.query()
+        .where('id', id)
+        .update({ ...currentEstate })
+
+      return await this.getAbsoluteUrl(paths, user.id)
+    }
+    throw new HttpException(FAILED_UPLOAD_LEASE_CONTRACT, 400)
+  }
+
+  static async removeLeaseContract({ id, user, uri }) {
+    uri = uri.split(',')
+
+    const currentEstate = await this.hasPermission(id, user.id)
+
+    try {
+      const attachments = currentEstate
+        .toJSON()
+        .attachments.filter(
+          (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
+        )
+
+      await EstateCurrentTenant.query()
+        .where('id', id)
+        .update({
+          ...currentEstate.toJSON(),
+          attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
+        })
+      return true
+    } catch (e) {
+      throw new HttpException(e.message, 500)
     }
   }
 

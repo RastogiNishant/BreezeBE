@@ -728,7 +728,7 @@ class MatchService {
   /**
    * Cancel invite if already invited
    */
-  static async cancelInvite(estateId, userId) {
+  static async cancelInvite(estateId, userId, role) {
     const match = await Database.query()
       .table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_INVITE, estate_id: estateId })
@@ -749,7 +749,7 @@ class MatchService {
         old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_KNOCK,
       },
-      role: ROLE_USER,
+      role: role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD,
     })
   }
 
@@ -1417,6 +1417,27 @@ class MatchService {
     return query.first()
   }
 
+  static getCountTenantMatchesWithFilterQuery(
+    userId,
+    { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
+  ) {
+    return this.getTenantMatchesWithFilterQuery(userId, {
+      buddy,
+      like,
+      dislike,
+      knock,
+      invite,
+      visit,
+      share,
+      top,
+      commit,
+      final,
+    })
+      .clearSelect()
+      .clearOrder()
+      .select(Database.raw(`count(DISTINCT("estates"."id"))`))
+      .fetch()
+  }
   /**
    *
    */
@@ -1430,6 +1451,9 @@ class MatchService {
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
+      .withCount('notifications', function (n) {
+        n.where('user_id', userId)
+      })
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', defaultWhereIn)
 
@@ -1895,7 +1919,7 @@ class MatchService {
   }
 
   static searchForLandlord(userId, searchQuery) {
-    const query = EstateService.getEstates()
+    const query = EstateService.getEstates(userId)
       .select('*')
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -1924,6 +1948,7 @@ class MatchService {
         '_u.firstname',
         '_u.secondname',
         '_u.birthday',
+        '_u.sex',
         '_u.email',
         '_u.avatar',
         '_v.landlord_followup_meta as followups',
