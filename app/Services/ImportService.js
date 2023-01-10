@@ -137,9 +137,12 @@ class ImportService {
     const trx = await Database.beginTransaction()
     const opt = { concurrency: 1 }
     try {
+      console.log('process data here=', data)
       const result = await Promise.map(
         data,
-        (i) => ImportService.createSingleEstate(i, userId, trx),
+        (i) => {
+          if (i) ImportService.createSingleEstate(i, userId, trx)
+        },
         opt
       )
       const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
