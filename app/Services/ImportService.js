@@ -132,7 +132,7 @@ class ImportService {
    *
    */
   static async process(filePath, userId, type) {
-    const reader = new EstateImportReader(filePath)
+    const reader = new EstateImportReader(filePath.tmpPath)
     let { errors, data, warnings } = await reader.process()
     const trx = await Database.beginTransaction()
     const opt = { concurrency: 1 }

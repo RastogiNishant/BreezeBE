@@ -81,7 +81,7 @@ class EstateImportReader {
   data = []
 
   constructor(filePath, overrides = {}) {
-    const data = xlsx.parse(filePath.tmpPath, { cellDates: true })
+    const data = xlsx.parse(filePath, { cellDates: true })
     if (overrides?.sheetName) {
       this.sheetName = overrides.sheetName
     }
@@ -90,6 +90,9 @@ class EstateImportReader {
     }
     if (overrides?.dataStart) {
       this.dataStart = overrides.dataStart
+    }
+    if (overrides?.validHeaderVars) {
+      this.validHeaderVars = overrides.validHeaderVars
     }
     const sheet = data.find((i) => i.name === this.sheetName)
     this.sheet = sheet
@@ -100,6 +103,9 @@ class EstateImportReader {
     this.reverseTranslator = new EstateAttributeTranslations()
     this.dataMapping = this.reverseTranslator.getMap()
     this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
+    if (!this.validateColumns(this.validColumns)) {
+      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+    }
     return this
   }
 
@@ -120,6 +126,14 @@ class EstateImportReader {
     }, [])
     this.validColumns = columns
     return columns
+  }
+
+  validateColumns(columns) {
+    if (columns.length !== this.validHeaderVars.length) {
+      //probably one or more hidden keys are altered or sheet is not updated.
+      return false
+    }
+    return true
   }
 
   async setData(data) {
@@ -160,7 +174,13 @@ class EstateImportReader {
     //deposit
     row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
     //address
-    row.address = generateAddress(row)
+    row.address = generateAddress({
+      street: row.street || '',
+      house_number: row.house_number || '',
+      zip: row.zip || '',
+      city: row.city || '',
+      country: row.country || '',
+    })
     //letting
     if (row.letting) {
       let matches
