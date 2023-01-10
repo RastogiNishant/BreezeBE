@@ -840,7 +840,7 @@ class MatchController {
     const user = auth.user
     // filters = { knock, buddy, invite, visit, top, commit }
     let filters = {}
-    const { estate_id, page, limit } = request.all()
+    const { estate_id, page, limit, ...params } = request.all()
     const estate = await EstateService.getQuery({
       id: estate_id,
       'estates.user_id': user.id,
@@ -874,7 +874,8 @@ class MatchController {
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { knock: true })
+      (filters = { knock: true }),
+      { ...params }
     ).paginate(page, 100)
 
     let extraFields = [...fields]

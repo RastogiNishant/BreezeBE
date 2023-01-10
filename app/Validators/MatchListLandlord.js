@@ -22,23 +22,26 @@ class MatchListLandlord extends Base {
     yup.object().shape({
       estate_id: id.required(),
       budget_min: yup.number().positive().max(100),
-      budget_min: yup.number().positive().max(100),
       budget_max: yup.number().positive().max(100),
       credit_score_min: yup.number().positive().max(100),
       credit_score_max: yup.number().positive().max(100),
       income_type: yup
         .array()
-        .of([
-          INCOME_TYPE_EMPLOYEE,
-          INCOME_TYPE_WORKER,
-          INCOME_TYPE_UNEMPLOYED,
-          INCOME_TYPE_CIVIL_SERVANT,
-          INCOME_TYPE_FREELANCER,
-          INCOME_TYPE_HOUSE_WORK,
-          INCOME_TYPE_PENSIONER,
-          INCOME_TYPE_SELF_EMPLOYED,
-          INCOME_TYPE_TRAINEE,
-        ]),
+        .of(
+          yup
+            .string()
+            .oneOf([
+              INCOME_TYPE_EMPLOYEE,
+              INCOME_TYPE_WORKER,
+              INCOME_TYPE_UNEMPLOYED,
+              INCOME_TYPE_CIVIL_SERVANT,
+              INCOME_TYPE_FREELANCER,
+              INCOME_TYPE_HOUSE_WORK,
+              INCOME_TYPE_PENSIONER,
+              INCOME_TYPE_SELF_EMPLOYED,
+              INCOME_TYPE_TRAINEE,
+            ])
+        ),
       is_phone_verified: yup.boolean(),
       is_id_verified: yup.boolean(),
       filters: yup.lazy((value) => {
