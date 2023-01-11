@@ -427,6 +427,9 @@ Route.group(() => {
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
   ])
+  Route.delete('/:estate_id/files', 'EstateController.removeMultipleFiles').middleware([
+    'valid:EstateId,Ids',
+  ])
   Route.get('/:estate_id/rooms/:room_id', 'RoomController.getRoomById').middleware([
     'valid:EstateId,RoomId',
     'LandlordOwnsThisEstate',
