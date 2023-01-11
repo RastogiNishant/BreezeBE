@@ -552,6 +552,7 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
+
     const file = await File.query()
       .select('files.*')
       .where('files.id', id)
@@ -569,13 +570,19 @@ class EstateController {
 
   async updateOrder({ request, auth, response }) {
     const { estate_id, ids, type } = request.all()
-    const imageIds = await EstateService.getFiles({ estate_id, ids, type })
-    if (imageIds.length != ids.length) {
-      throw new HttpException(SOME_IMAGE_NOT_EXIST)
-    }
 
     const trx = await Database.beginTransaction()
     try {
+      await EstateService.hasPermission({
+        id: estate_id,
+        user_id: auth.user.id,
+      })
+
+      const imageIds = await EstateService.getFiles({ estate_id, ids, type })
+      if (imageIds.length != ids.length) {
+        throw new HttpException(SOME_IMAGE_NOT_EXIST)
+      }
+
       await Promise.all(
         ids.map(async (id, index) => {
           await File.query()
