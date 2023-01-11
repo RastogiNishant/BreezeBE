@@ -552,19 +552,13 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
+    await EstateService.removeFile({ id, estate_id, user_id: auth.user.id })
+    response.res(true)
+  }
 
-    const file = await File.query()
-      .select('files.*')
-      .where('files.id', id)
-      .innerJoin('estates', 'estates.id', 'files.estate_id')
-      .where('estates.id', estate_id)
-      .where('estates.user_id', auth.user.id)
-      .first()
-    if (!file) {
-      throw new HttpException('Image not found', 404)
-    }
-
-    await EstateService.removeFile(file)
+  async removeMultipleFiles({ request, auth, response }) {
+    const { estate_id, ids } = request.all()
+    await EstateService.removeFile({ id: ids, estate_id, user_id: auth.user.id })
     response.res(true)
   }
 

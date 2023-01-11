@@ -422,14 +422,28 @@ class EstateService {
   /**
    *
    */
-  static async removeFile(file) {
-    try {
-      await Drive.disk(file.disk).delete(file.url)
-    } catch (e) {
-      Logger.error(e.message)
+  static async removeFile({ id, estate_id, user_id }) {
+    const ids = Array.isArray(id) ? id : [id]
+    const files =
+      (
+        await File.query()
+          .select('files.*')
+          .whereIn('files.id', ids)
+          .innerJoin('estates', 'estates.id', 'files.estate_id')
+          .where('estates.id', estate_id)
+          .where('estates.user_id', user_id)
+          .fetch()
+      ).rows || []
+
+    if (!files) {
+      throw new HttpException('Image not found', 404)
     }
 
-    await File.query().delete().where('id', file.id)
+    if (files.length != ids.length) {
+      throw new HttpException("Some images don't exist")
+    }
+
+    await File.query().delete().whereIn('id', ids)
   }
 
   static async getFiles({ estate_id, ids, type }) {

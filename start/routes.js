@@ -427,6 +427,9 @@ Route.group(() => {
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
   ])
+  Route.delete('/:estate_id/files', 'EstateController.removeMultipleFiles').middleware([
+    'valid:EstateId,Ids',
+  ])
   Route.put('/:estate_id/files/order', 'EstateController.updateOrder').middleware([
     'valid:EstateAddFile,Ids',
   ])
