@@ -17,6 +17,7 @@ const {
   assign,
   pull,
   groupBy,
+  countBy,
 } = require('lodash')
 const Event = use('Event')
 const {
@@ -174,8 +175,6 @@ class RoomService {
   }
 
   static async createRoomsFromImport({ estate_id, rooms }, trx) {
-    await Room.query().where('estate_id', estate_id).delete()
-
     const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
       return [...roomsInfo, { ...room, estate_id }]
     }, [])
@@ -201,37 +200,60 @@ class RoomService {
   }
 
   static async updateRoomsFromImport({ estate_id, rooms }, trx) {
-    let roomSequences = [1, 2, 3, 4, 5, 6]
-    await Promise.all(
-      rooms.map(async (room) => {
-        let dRoom
-        dRoom = await Room.query()
-          .where('estate_id', estate_id)
-          .where('import_sequence', room.import_sequence)
-          .first()
-        if (dRoom) {
-          //update
-          room.id = dRoom.id
-          dRoom.fill(room)
-          dRoom.status = STATUS_ACTIVE
-          await dRoom.save()
-          pull(roomSequences, parseInt(dRoom.import_sequence))
-        } else {
-          //create
-          const newRoom = new Room()
-          newRoom.fill(room)
-          newRoom.estate_id = estate_id
-          newRoom.status = STATUS_ACTIVE
-          await newRoom.save()
-          pull(roomSequences, parseInt(newRoom.import_sequence))
-        }
-      })
-    )
-    //we remove rooms that are not anymore on the import
-    await Room.query()
-      .whereIn('import_sequence', roomSequences)
-      .where('estate_id', estate_id)
-      .update({ status: STATUS_DELETE })
+    const oldRooms =
+      (await Room.query().where('estate_id', estate_id).whereNot('status', STATUS_DELETE).fetch())
+        .rows || []
+
+    if (!oldRooms.length) {
+      this.createRoomsFromImport({ estate_id, rooms }, trx)
+    } else {
+      const roomTypes = [
+        ROOM_TYPE_GUEST_ROOM,
+        ROOM_TYPE_BATH,
+        ROOM_TYPE_BEDROOM,
+        ROOM_TYPE_KITCHEN,
+        ROOM_TYPE_CORRIDOR,
+        ROOM_TYPE_OFFICE,
+        ROOM_TYPE_PANTRY,
+        ROOM_TYPE_CHILDRENS_ROOM,
+        ROOM_TYPE_BALCONY,
+        ROOM_TYPE_WC,
+        ROOM_TYPE_OTHER_SPACE,
+        ROOM_TYPE_CHECKROOM,
+        ROOM_TYPE_DINING_ROOM,
+        ROOM_TYPE_ENTRANCE_HALL,
+        ROOM_TYPE_GYM,
+        ROOM_TYPE_IRONING_ROOM,
+        ROOM_TYPE_LIVING_ROOM,
+        ROOM_TYPE_LOBBY,
+        ROOM_TYPE_MASSAGE_ROOM,
+        ROOM_TYPE_STORAGE_ROOM,
+        ROOM_TYPE_PLACE_FOR_GAMES,
+        ROOM_TYPE_SAUNA,
+        ROOM_TYPE_SHOWER,
+        ROOM_TYPE_STAFF_ROOM,
+        ROOM_TYPE_SWIMMING_POOL,
+        ROOM_TYPE_TECHNICAL_ROOM,
+        ROOM_TYPE_TERRACE,
+        ROOM_TYPE_WASHING_ROOM,
+        ROOM_TYPE_EXTERNAL_CORRIDOR,
+        ROOM_TYPE_STAIRS,
+        ROOM_TYPE_GARDEN,
+        ROOM_TYPE_LOGGIA,
+      ]
+
+      const oldCountsByRoomTypes = roomTypes.map((type) =>
+        countBy(oldRooms, (room) => room.type === type)
+      )
+
+      const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+        return [...roomsInfo, { ...room, estate_id }]
+      }, [])
+
+      const newCountsByRoomTypes = roomTypes.map((type) =>
+        countBy(roomsInfo, (room) => room.type === type)
+      )
+    }
   }
 
   static async hasPermission(estate_id, user) {
