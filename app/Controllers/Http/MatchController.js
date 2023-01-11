@@ -867,11 +867,6 @@ class MatchController {
       'followups',
     ]
 
-    const matchesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('matches.status', [MATCH_STATUS_KNOCK])
-      .whereIn('estate_id', estatesId)
-
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -883,25 +878,15 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const matches = data
 
-    const buddiesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('matches.status', [MATCH_STATUS_NEW])
-      .where('buddy', true)
-      .whereIn('estate_id', estatesId)
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { buddy: true })
+      (filters = { buddy: true }),
+      { ...params }
     ).paginate(page, 100)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const buddies = data
-
-    const invitesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('matches.status', [MATCH_STATUS_INVITE])
-      .whereIn('estate_id', estatesId)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -912,11 +897,6 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const invites = data
 
-    const visitsCount = await Database.table('matches')
-      .count('*')
-      .whereIn('status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
-      .whereIn('estate_id', estatesId)
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
@@ -925,11 +905,6 @@ class MatchController {
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const visits = data
-
-    const topCount = await Database.table('matches')
-      .count('*')
-      .whereIn('status', [MATCH_STATUS_TOP])
-      .whereIn('estate_id', estatesId)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -949,16 +924,6 @@ class MatchController {
     if (finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0) {
       isFinalMatch = true
     }
-    if (
-      !finalMatchesCount ||
-      !finalMatchesCount.length ||
-      parseInt(finalMatchesCount[0].count) <= 0
-    ) {
-      finalMatchesCount = await Database.table('matches')
-        .count('*')
-        .whereIn('status', [MATCH_STATUS_COMMIT])
-        .whereIn('estate_id', estatesId)
-    }
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
 
@@ -973,13 +938,6 @@ class MatchController {
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const finalMatches = data
     return response.res({
-      matchesCount: matchesCount[0].count,
-      buddiesCount: buddiesCount[0].count,
-      invitesCount: invitesCount[0].count,
-      visitsCount: visitsCount[0].count,
-      topCount: topCount[0].count,
-      finalMatchesCount: finalMatchesCount[0].count,
-
       estate: estate.toJSON(),
       matches: matches,
       buddies: buddies,
