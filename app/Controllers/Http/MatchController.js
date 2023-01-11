@@ -841,6 +841,9 @@ class MatchController {
     // filters = { knock, buddy, invite, visit, top, commit }
     let filters = {}
     const { estate_id, page, limit, ...params } = request.all()
+    if (!page) {
+      throw new HttpException('Page param is required')
+    }
     const estate = await EstateService.getQuery({
       id: estate_id,
       'estates.user_id': user.id,
@@ -871,7 +874,7 @@ class MatchController {
       estate,
       (filters = { knock: true }),
       { ...params }
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
@@ -882,7 +885,7 @@ class MatchController {
       estate,
       (filters = { buddy: true }),
       { ...params }
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -891,7 +894,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -900,7 +903,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -909,7 +912,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { top: true })
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, fields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -932,7 +935,7 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
