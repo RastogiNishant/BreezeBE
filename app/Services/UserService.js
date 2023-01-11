@@ -81,7 +81,7 @@ const {
     ACCOUNT_ALREADY_VERIFIED,
     NO_CONTACT_EXIST,
   },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
 

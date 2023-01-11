@@ -49,8 +49,13 @@ const {
 } = require('../constants')
 
 const {
-  exceptions: { FAILED_UPLOAD_LEASE_CONTRACT, INVALID_QR_CODE, ALREADY_USED_QR_CODE, EXPIRED_QR_CODE },
-} = require('../excepions')
+  exceptions: {
+    FAILED_UPLOAD_LEASE_CONTRACT,
+    INVALID_QR_CODE,
+    ALREADY_USED_QR_CODE,
+    EXPIRED_QR_CODE,
+  },
+} = require('../exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
