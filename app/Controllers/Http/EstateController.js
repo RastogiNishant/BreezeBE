@@ -63,8 +63,8 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS },
-} = require('../../exceptions')
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
+} = require('../../excepions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -552,6 +552,7 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
+
     const file = await File.query()
       .select('files.*')
       .where('files.id', id)
@@ -567,6 +568,36 @@ class EstateController {
     response.res(true)
   }
 
+  async updateOrder({ request, auth, response }) {
+    const { estate_id, ids, type } = request.all()
+
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.hasPermission({
+        id: estate_id,
+        user_id: auth.user.id,
+      })
+
+      const imageIds = await EstateService.getFiles({ estate_id, ids, type })
+      if (imageIds.length != ids.length) {
+        throw new HttpException(SOME_IMAGE_NOT_EXIST)
+      }
+
+      await Promise.all(
+        ids.map(async (id, index) => {
+          await File.query()
+            .where('id', id)
+            .update({ order: index + 1 })
+            .transacting(trx)
+        })
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
   /**
    *
    */
