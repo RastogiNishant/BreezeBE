@@ -111,6 +111,9 @@ const {
 
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+
+  NOTICE_TYPE_EXPIRED_SHOW_TIME,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
 
 const mapping = [
@@ -167,6 +170,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID, NOTICE_TYPE_PROSPECT_TASK_RESOLVED],
   [NOTICE_TYPE_PROSPECT_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID],
+  [NOTICE_TYPE_EXPIRED_SHOW_TIME, NOTICE_TYPE_EXPIRED_SHOW_TIME_ID],
 ]
 
 class NotificationsService {
@@ -910,6 +914,12 @@ class NotificationsService {
   static async sendProspectDeactivated(notices) {
     const title = 'prospect.notification.event.profile_deactivated'
     const body = 'prospect.notification.next.profile_deactivated'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendExpiredShowTime(notices) {
+    const title = 'landlord.property.set_availability.txt_show_expired.message'
+    const body = 'landlord.property.set_availability.btn_new_show.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
