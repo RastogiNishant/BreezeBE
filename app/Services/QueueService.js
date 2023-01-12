@@ -145,7 +145,6 @@ class QueueService {
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case IMPORT_ESTATES_VIA_EXCEL:
-          console.log('IMPORT_ESTATES_VIA_EXCEL here=', IMPORT_ESTATES_VIA_EXCEL)
           return ImportService.process(job.data.fileName, job.data.user_id, job.data.template)
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()

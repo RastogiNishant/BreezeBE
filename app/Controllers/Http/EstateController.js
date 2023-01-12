@@ -339,8 +339,6 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    // const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
-    // response.res(result)
     QueueService.importEstate(importFilePathName, auth.user.id, 'xls')
     response.res(true)
   }

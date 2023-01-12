@@ -290,6 +290,7 @@ class EstateService {
       },
       trx
     )
+    // we can't get hash when we use transaction because that record won't be created before commiting the transaction
     if (!trx) {
       estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
     }

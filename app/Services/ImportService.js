@@ -8,6 +8,7 @@ const EstatePermissionService = use('App/Services/EstatePermissionService')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
 const Ws = use('Ws')
 
 const schema = require('../Validators/CreateBuddy').schema()
@@ -151,15 +152,18 @@ class ImportService {
     const reader = new EstateImportReader(filePath.tmpPath)
     let { errors, data, warnings } = await reader.process()
     const opt = { concurrency: 1 }
+
+    let createErrors = []
+    let result = []
     try {
-      const result = await Promise.map(
+      result = await Promise.map(
         data,
-        (i) => {
-          if (i) ImportService.createSingleEstate(i, userId)
+        async (i) => {
+          if (i) await ImportService.createSingleEstate(i, userId)
         },
         opt
       )
-      const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
+      createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
       result.map((row) => {
         if (has(row, 'warning')) {
           warnings.push(row.warning)
@@ -167,10 +171,12 @@ class ImportService {
       })
       await ImportService.addImportFile({
         user_id: userId,
-        filename: filePath.clientName,
+        filename: filePath?.clientName || null,
         type: IMPORT_TYPE_EXCEL,
         entity: IMPORT_ENTITY_ESTATES,
       })
+    } catch (err) {
+    } finally {
       this.emitImported({
         user_id: userId,
         data: {
@@ -183,10 +189,6 @@ class ImportService {
           warnings: [...warnings],
         },
       })
-
-      return true
-    } catch (err) {
-      throw new HttpException('Error found while importing: ', err.message)
     }
   }
 
