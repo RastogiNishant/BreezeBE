@@ -899,7 +899,7 @@ const constants = {
 
   //MATCH WEB SOCKET
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
-  //if address valid from importing estates, websocket will be emitted
+  //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   MATCH_SCORE_GOOD_MATCH: 70,
