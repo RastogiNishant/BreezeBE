@@ -63,7 +63,7 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST, EXPIRED_QR_CODE },
 } = require('../../../app/exceptions')
 
 class EstateController {
