@@ -22,6 +22,7 @@ const {
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_IMPORT_EXCEL,
 } = require('../constants')
+const RoomService = require('./RoomService')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
@@ -296,8 +297,9 @@ class ImportService {
       }
     }
     if (rooms.length) {
-      //await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
-      await require('./RoomService').createRoomsFromImport({ estate_id: estate.id, rooms }, trx)
+      await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
+    } else {
+      await RoomService.removeAllRoom(estate.id)
     }
 
     // Run task to separate get coords and point of estate

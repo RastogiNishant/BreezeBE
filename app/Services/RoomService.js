@@ -18,6 +18,7 @@ const {
   pull,
   groupBy,
   countBy,
+  filter,
 } = require('lodash')
 const Event = use('Event')
 const {
@@ -25,9 +26,44 @@ const {
   STATUS_ACTIVE,
   ROLE_PROPERTY_MANAGER,
   PROPERTY_MANAGE_ALLOWED,
+  ROOM_DEFAULT_ORDER,
+
+  ROOM_TYPE_GUEST_ROOM,
+  ROOM_TYPE_BATH,
+  ROOM_TYPE_BEDROOM,
+  ROOM_TYPE_KITCHEN,
+  ROOM_TYPE_CORRIDOR,
+  ROOM_TYPE_OFFICE,
+  ROOM_TYPE_PANTRY,
+  ROOM_TYPE_CHILDRENS_ROOM,
+  ROOM_TYPE_BALCONY,
+  ROOM_TYPE_WC,
+  ROOM_TYPE_OTHER_SPACE,
+  ROOM_TYPE_CHECKROOM,
+  ROOM_TYPE_DINING_ROOM,
+  ROOM_TYPE_ENTRANCE_HALL,
+  ROOM_TYPE_GYM,
+  ROOM_TYPE_IRONING_ROOM,
+  ROOM_TYPE_LIVING_ROOM,
+  ROOM_TYPE_LOBBY,
+  ROOM_TYPE_MASSAGE_ROOM,
+  ROOM_TYPE_STORAGE_ROOM,
+  ROOM_TYPE_PLACE_FOR_GAMES,
+  ROOM_TYPE_SAUNA,
+  ROOM_TYPE_SHOWER,
+  ROOM_TYPE_STAFF_ROOM,
+  ROOM_TYPE_SWIMMING_POOL,
+  ROOM_TYPE_TECHNICAL_ROOM,
+  ROOM_TYPE_TERRACE,
+  ROOM_TYPE_WASHING_ROOM,
+  ROOM_TYPE_EXTERNAL_CORRIDOR,
+  ROOM_TYPE_STAIRS,
+  ROOM_TYPE_GARDEN,
+  ROOM_TYPE_LOGGIA,
 } = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
+const uuid = require('uuid')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -71,8 +107,15 @@ class RoomService {
    */
   static async removeRoom(room, trx) {
     return await Room.query()
-      .update({ name: `deleted_${new Date().getTime()}_${room.name}`, status: STATUS_DELETE })
+      .update({ name: `deleted_${uuid.v4()}_${room.name}`, status: STATUS_DELETE })
       .where('id', room.id)
+      .transacting(trx)
+  }
+
+  static async removeAllRoom(estate_id, trx) {
+    return await Room.query()
+      .where('estate_id', estate_id)
+      .update({ name: `deleted_${uuid.v4()}`, status: STATUS_DELETE })
       .transacting(trx)
   }
 
@@ -201,9 +244,14 @@ class RoomService {
 
   static async updateRoomsFromImport({ estate_id, rooms }, trx) {
     const oldRooms =
-      (await Room.query().where('estate_id', estate_id).whereNot('status', STATUS_DELETE).fetch())
-        .rows || []
-
+      (
+        await Room.query()
+          .with('images')
+          .where('estate_id', estate_id)
+          .whereNot('status', STATUS_DELETE)
+          .orderBy('order', 'asc')
+          .fetch()
+      ).toJSON() || []
     if (!oldRooms.length) {
       this.createRoomsFromImport({ estate_id, rooms }, trx)
     } else {
@@ -242,17 +290,64 @@ class RoomService {
         ROOM_TYPE_LOGGIA,
       ]
 
-      const oldCountsByRoomTypes = roomTypes.map((type) =>
-        countBy(oldRooms, (room) => room.type === type)
+      const oldRoomsByRoomTypes = roomTypes.map((type) =>
+        filter(oldRooms, (room) => room.type === type)
       )
 
       const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
         return [...roomsInfo, { ...room, estate_id }]
       }, [])
 
-      const newCountsByRoomTypes = roomTypes.map((type) =>
-        countBy(roomsInfo, (room) => room.type === type)
+      const newRoomsByRoomTypes = roomTypes.map((type) =>
+        filter(roomsInfo, (room) => room.type === type)
       )
+
+      const differentRooms = newRoomsByRoomTypes.map((newRoomByType, index) => {
+        if (newRoomByType.length > oldRoomsByRoomTypes[index].length) {
+          return {
+            operation: 'add',
+            nameIndex: oldRoomsByRoomTypes[index].length,
+            orderIndex: oldRoomsByRoomTypes[index][oldRoomsByRoomTypes[index].length - 1].order,
+            rooms: newRoomByType.slice(oldRoomsByRoomTypes[index].length, newRoomByType.length),
+          }
+        } else if (newRoomByType.length < oldRoomsByRoomTypes[index].length) {
+          const oldRoomsNoImages =
+            oldRoomsByRoomTypes[index].filter((or) => !or.images?.length) || []
+          return { operation: 'delete', roomIds: oldRoomsNoImages.map((r) => r.id) }
+        }
+        return {}
+      })
+
+      const addRooms = []
+      let deleteRoomIds = []
+      differentRooms.map((element) => {
+        if (element && element.operation === 'add') {
+          element.rooms.map((room, index) => {
+            addRooms.push({
+              ...room,
+              name: element.nameIndex ? `${room.name} ${element.nameIndex + 1 + index}` : room.name,
+              import_sequence: null,
+              order:
+                element.orderIndex === ROOM_DEFAULT_ORDER
+                  ? ROOM_DEFAULT_ORDER
+                  : element.orderIndex + index,
+            })
+          })
+        } else if (element && element.operation === 'delete') {
+          deleteRoomIds = deleteRoomIds.concat(element.roomIds)
+        }
+      })
+
+      if (deleteRoomIds && deleteRoomIds.length) {
+        await Room.query()
+          .whereIn('id', deleteRoomIds)
+          .update({ name: `deleted_${uuid.v4()}`, status: STATUS_DELETE })
+          .transacting(trx)
+      }
+
+      if (addRooms && addRooms.length) {
+        await Room.createMany(addRooms, trx)
+      }
     }
   }
 

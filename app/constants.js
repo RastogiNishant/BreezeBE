@@ -909,6 +909,8 @@ const constants = {
 
   IMPORT_ACTION_IMPORT: 'import',
   IMPORT_ACTION_EXPORT: 'export',
+
+  ROOM_DEFAULT_ORDER: 100000,
 }
 
 module.exports = constants
