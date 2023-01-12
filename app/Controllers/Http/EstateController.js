@@ -59,11 +59,12 @@ const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
 const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
 const TimeSlotService = require('../../Services/TimeSlotService')
+const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST, EXPIRED_QR_CODE },
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
 } = require('../../../app/exceptions')
 
 class EstateController {
@@ -338,8 +339,8 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
-    return response.res(result)
+    QueueService.importEstate(importFilePathName, auth.user.id, 'xls')
+    response.res(true)
   }
 
   //import Estate by property manager
