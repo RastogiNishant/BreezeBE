@@ -607,7 +607,7 @@ components:
             could be any of:
             - LETTING_STATUS_STANDARD: 1
             - LETTING_STATUS_TERMINATED: 2
-            - LETTING_STATUS_VACANT: 3
+            - LETTING_STATUS_VACANCY: 3
             - LETTING_STATUS_NEW_RENOVATED: 4
           example: 3
           enum:

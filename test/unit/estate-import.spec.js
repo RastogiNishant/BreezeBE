@@ -72,9 +72,6 @@ const {
   LETTING_TYPE_LET,
   LETTING_STATUS_TERMINATED,
   LETTING_TYPE_VOID,
-  LETTING_STATUS_FIRST_TIME_USE,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_VACANCY,
   MAX_ROOM_TYPES_TO_IMPORT,
   PARKING_SPACE_TYPE_NO_PARKING,
@@ -103,6 +100,7 @@ const {
   GENDER_MALE,
   GENDER_FEMALE,
   LETTING_STATUS_STANDARD,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
@@ -264,11 +262,8 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
   const testRows = [
     { letting: 'n.a.' },
     { letting: 'Let - Standard' },
-    { letting: 'Let - Defected' },
     { letting: 'Let - Terminated' },
-    { letting: 'Void - First-time use' },
-    { letting: 'Void - Construction works' },
-    { letting: 'Void - Structural vacancy' },
+    { letting: 'Void - New or Renovated' },
     { letting: 'Void - Vacancy' },
     {},
   ]
@@ -276,9 +271,7 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
     { letting_type: LETTING_TYPE_NA },
     { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_STANDARD },
     { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_TERMINATED },
-    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_FIRST_TIME_USE },
-    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_CONSTRUCTION_WORKS },
-    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_STRUCTURAL_VACANCY },
+    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_NEW_RENOVATED },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_VACANCY },
     {},
   ]
@@ -306,9 +299,7 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
     { letting_type: LETTING_TYPE_NA },
     { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_STANDARD },
     { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_TERMINATED },
-    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_FIRST_TIME_USE },
-    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_CONSTRUCTION_WORKS },
-    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_STRUCTURAL_VACANCY },
+    { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_NEW_RENOVATED },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_VACANCY },
     {},
   ]

@@ -4,8 +4,8 @@ const {
   LETTING_TYPE_LET,
   LETTING_STATUS_STANDARD,
   LETTING_TYPE_VOID,
-  LETTING_STATUS_VACANT,
   LETTING_STATUS_NEW_RENOVATED,
+  LETTING_STATUS_VACANCY,
 } = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
@@ -34,7 +34,7 @@ class EstateLettingStatusChangedSchema extends Schema {
       await Estate.query()
         .where('letting_type', LETTING_TYPE_VOID)
         .where('letting_status', 4)
-        .update({ letting_status: LETTING_STATUS_VACANT })
+        .update({ letting_status: LETTING_STATUS_VACANCY})
         .transacting(trx)
       await Estate.query()
         .where('letting_type', LETTING_TYPE_VOID)
@@ -44,7 +44,7 @@ class EstateLettingStatusChangedSchema extends Schema {
       await Estate.query()
         .where('letting_type', LETTING_TYPE_VOID)
         .where('letting_status', 6)
-        .update({ letting_status: LETTING_STATUS_VACANT })
+        .update({ letting_status: LETTING_STATUS_VACANCY })
         .transacting(trx)
       await Estate.query()
         .where('letting_type', LETTING_TYPE_VOID)
