@@ -464,7 +464,15 @@ class EstateService {
   }
 
   static async getFiles({ estate_id, ids, type }) {
-    return (await File.query().where('estate_id', estate_id).whereIn('id', ids).where('type', type).fetch()).rows || []
+    return (
+      (
+        await File.query()
+          .where('estate_id', estate_id)
+          .whereIn('id', ids)
+          .where('type', type)
+          .fetch()
+      ).rows || []
+    )
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {

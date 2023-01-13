@@ -218,28 +218,30 @@ class RoomService {
   }
 
   static async createRoomsFromImport({ estate_id, rooms }, trx) {
-    const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
-      return [...roomsInfo, { ...room, estate_id }]
-    }, [])
+    try {
+      const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+        return [...roomsInfo, { ...room, estate_id }]
+      }, [])
 
-    const groupRooms = groupBy(roomsInfo, (room) => room.type)
-    const newRoomsInfo = []
-    Object.keys(groupRooms).map((key) => {
-      groupRooms[key].map((room, index) => {
-        newRoomsInfo.push({
-          ...room,
-          name: index ? `${room.name} ${index + 1}` : room.name,
-          import_sequence: null,
-          order: index + 1,
+      const groupRooms = groupBy(roomsInfo, (room) => room.type)
+      const newRoomsInfo = []
+      Object.keys(groupRooms).map((key) => {
+        groupRooms[key].map((room, index) => {
+          newRoomsInfo.push({
+            ...room,
+            name: index ? `${room.name} ${index + 1}` : room.name,
+            import_sequence: null,
+            order: index + 1,
+          })
         })
       })
-    })
-    if (newRoomsInfo && newRoomsInfo.length) {
-      newRoomsInfo[0].favorite = true
+      if (newRoomsInfo && newRoomsInfo.length) {
+        newRoomsInfo[0].favorite = true
+      }
+      await Room.createMany(newRoomsInfo, trx)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
     }
-    await Promise.map(newRoomsInfo, async (roomInfo) => {
-      await Room.createItem(roomInfo, trx)
-    })
   }
 
   static async updateRoomsFromImport({ estate_id, rooms }, trx) {
@@ -253,7 +255,7 @@ class RoomService {
           .fetch()
       ).toJSON() || []
     if (!oldRooms.length) {
-      this.createRoomsFromImport({ estate_id, rooms }, trx)
+      await this.createRoomsFromImport({ estate_id, rooms }, trx)
     } else {
       const roomTypes = [
         ROOM_TYPE_GUEST_ROOM,
