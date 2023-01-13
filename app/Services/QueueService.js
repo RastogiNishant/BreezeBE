@@ -1,7 +1,6 @@
 const Queue = use('Queue')
 const Logger = use('Logger')
 const MemberService = use('App/Services/MemberService')
-const NoticeService = use('App/Services/NoticeService')
 const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
@@ -79,6 +78,7 @@ class QueueService {
    *
    */
   static async sendEvery5Min() {
+    const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(QueueJobService.handleExpiredEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
@@ -141,6 +141,7 @@ class QueueService {
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case SCHEDULED_EVERY_5M_JOB:
+          console.log('SCHEDULED_EVERY_5M_JOB=', SCHEDULED_EVERY_5M_JOB)
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()

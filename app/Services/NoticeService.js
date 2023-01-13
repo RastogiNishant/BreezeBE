@@ -563,9 +563,9 @@ class NoticeService {
 
   static async expiredShowTime() {
     const knockMatches =
-      (await require('./MatchService').getEstatesByStatus({
-        status: MATCH_STATUS_KNOCK,
-      })) || []
+      (
+        await Match.query().where('status', MATCH_STATUS_KNOCK).whereNull('notified_at').fetch()
+      ).toJSON() || []
 
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
@@ -592,6 +592,7 @@ class NoticeService {
       await NoticeService.insertNotices(notices)
       NotificationsService.sendExpiredShowTime(notices)
     }
+    await Match.query().where('status', MATCH_STATUS_KNOCK).update({ notified_at: dateTime })
   }
 
   /**
