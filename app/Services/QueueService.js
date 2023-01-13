@@ -141,7 +141,6 @@ class QueueService {
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case SCHEDULED_EVERY_5M_JOB:
-          console.log('SCHEDULED_EVERY_5M_JOB=', SCHEDULED_EVERY_5M_JOB)
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
