@@ -93,9 +93,6 @@ class ImportService {
           await require('./RoomService').createRoomsFromImport({ estate_id: estate.id, rooms }, trx)
         }
 
-        // Run task to separate get coords and point of estate
-        require('./QueueService').getEstateCoords(estate.id)
-        //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.surname) {
           await EstateCurrentTenantService.addCurrentTenant(
@@ -113,6 +110,9 @@ class ImportService {
       }
       await trx.commit()
       await Estate.updateEstateInfo(estate.id)
+      // Run task to separate get coords and point of estate
+      require('./QueueService').getEstateCoords(estate.id)
+
       return estate
     } catch (e) {
       await trx.rollback()
@@ -306,9 +306,6 @@ class ImportService {
       } else {
         await RoomService.removeAllRoom(estate.id)
       }
-
-      // Run task to separate get coords and point of estate
-      require('./QueueService').getEstateCoords(estate.id)
 
       return estate
     } catch (e) {
