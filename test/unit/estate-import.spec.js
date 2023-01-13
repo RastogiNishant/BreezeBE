@@ -70,8 +70,6 @@ const {
   HOUSE_TYPE_GARDENHOUSE,
   LETTING_TYPE_NA,
   LETTING_TYPE_LET,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_DEFECTED,
   LETTING_STATUS_TERMINATED,
   LETTING_TYPE_VOID,
   LETTING_STATUS_FIRST_TIME_USE,
@@ -104,6 +102,7 @@ const {
   USE_TYPE_OTHER,
   GENDER_MALE,
   GENDER_FEMALE,
+  LETTING_STATUS_STANDARD,
 } = require('../../app/constants')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
@@ -275,8 +274,7 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
   ]
   const expected = [
     { letting_type: LETTING_TYPE_NA },
-    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_NORMAL },
-    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_DEFECTED },
+    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_STANDARD },
     { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_TERMINATED },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_FIRST_TIME_USE },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_CONSTRUCTION_WORKS },
@@ -306,8 +304,7 @@ test(`EstateImportReader.processRow adds letting_status and letting_type from le
   ]
   const expected = [
     { letting_type: LETTING_TYPE_NA },
-    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_NORMAL },
-    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_DEFECTED },
+    { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_STANDARD },
     { letting_type: LETTING_TYPE_LET, letting_status: LETTING_STATUS_TERMINATED },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_FIRST_TIME_USE },
     { letting_type: LETTING_TYPE_VOID, letting_status: LETTING_STATUS_CONSTRUCTION_WORKS },

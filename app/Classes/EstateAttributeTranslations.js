@@ -150,7 +150,7 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_NORMAL,
   LETTING_STATUS_CONSTRUCTION_WORKS,
@@ -909,22 +909,18 @@ class EstateAttributeTranslations {
       },
       let_status: {
         keys: [
-          'property.attribute.LETTING_STATUS.Defected.message',
+          'property.attribute.LETTING_STATUS.Normal.message',          
           'property.attribute.LETTING_STATUS.Terminated.message',
-          'property.attribute.LETTING_STATUS.Normal.message',
           'property.attribute.LETTING_STATUS.Construction.works.message',
           'property.attribute.LETTING_STATUS.Structural.vacancy.message',
           'property.attribute.LETTING_STATUS.First-time.use.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
         ],
         values: [
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
-          LETTING_STATUS_VACANCY,
+          LETTING_STATUS_VACANT,
+          LETTING_STATUS_NEW_RENOVATED,
         ],
       },
       salutation: {
