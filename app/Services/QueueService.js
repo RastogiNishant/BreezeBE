@@ -4,6 +4,7 @@ const MemberService = use('App/Services/MemberService')
 const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
+const ImportService = use('App/Services/ImportService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
@@ -14,7 +15,7 @@ const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
-
+const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const {
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_13H_DAY_JOB,
@@ -49,6 +50,10 @@ class QueueService {
 
   static getAnchorIsoline(tenantId) {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
+  }
+
+  static importEstate(fileName, user_id, template) {
+    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template }, { delay: 1 })
   }
 
   /**
@@ -88,7 +93,6 @@ class QueueService {
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
-      wrapException(NoticeService.expiredShowTime),
     ])
   }
 
@@ -140,6 +144,8 @@ class QueueService {
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case IMPORT_ESTATES_VIA_EXCEL:
+          return ImportService.process(job.data.fileName, job.data.user_id, job.data.template)
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:

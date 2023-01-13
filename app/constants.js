@@ -451,9 +451,6 @@ const constants = {
 
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED: 'notification_prospect_task_resolved',
   NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
-
-  NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
-
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
   NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID: 4,
@@ -502,7 +499,6 @@ const constants = {
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID: 52,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
-  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -905,6 +901,7 @@ const constants = {
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
   //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
+  WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
@@ -912,6 +909,8 @@ const constants = {
 
   IMPORT_ACTION_IMPORT: 'import',
   IMPORT_ACTION_EXPORT: 'export',
+
+  ROOM_DEFAULT_ORDER: 100000,
 }
 
 module.exports = constants

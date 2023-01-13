@@ -11,6 +11,7 @@ const {
 const Model = require('./BaseModel')
 const UserFilter = use('App/ModelFilters/UserFilter')
 const Hash = use('Hash')
+const randomstring = require('randomstring')
 
 class User extends Model {
   static get columns() {
@@ -58,6 +59,7 @@ class User extends Model {
       'source_estate_id',
       'ip',
       'ip_based_info',
+      'code',
     ]
   }
 
@@ -89,6 +91,11 @@ class User extends Model {
     this.addTrait('Sort', this.columns)
 
     this.addHook('beforeCreate', async (userInstance) => {
+      userInstance.code = randomstring.generate({
+        length: 10,
+        charset: 'alphanumeric',
+      })
+
       if (userInstance.role == ROLE_LANDLORD) {
         userInstance.activation_status = USER_ACTIVATION_STATUS_NOT_ACTIVATED
       }

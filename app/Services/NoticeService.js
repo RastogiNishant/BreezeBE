@@ -100,11 +100,7 @@ const {
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
   ESTATE_NOTIFICATION_FIELDS,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
-  STATUS_DELETE,
-  STATUS_DRAFT,
-  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
-const EstateService = require('./EstateService')
 
 class NoticeService {
   /**
