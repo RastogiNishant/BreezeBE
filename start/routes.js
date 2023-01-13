@@ -951,7 +951,10 @@ Route.group(() => {
     'valid:LandlordVisitCancel',
   ])
   // Share tenant profile to landlord
-  Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
+  Route.post('/share', 'MatchController.shareTenantData').middleware([
+    'auth:jwtLandlord',
+    'valid:ShareProspectProfile',
+  ])
   Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
   // Move/remove top tenant
   Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])

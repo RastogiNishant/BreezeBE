@@ -392,12 +392,17 @@ class MatchController {
    * Get access to user share data
    */
   async shareTenantData({ request, auth, response }) {
-    const { estate_id, code } = request.all()
+    const { estate_id, prospect_id, code } = request.all()
     const userId = auth.user.id
     await this.getOwnEstate(estate_id, userId)
 
     try {
-      const { tenantId } = await MatchService.share(userId, estate_id, code)
+      const { tenantId } = await MatchService.share({
+        landlord_id: userId,
+        estate_id,
+        prospect_id,
+        code,
+      })
       logEvent(
         request,
         LOG_TYPE_SHOWED,

@@ -53,6 +53,7 @@ class Tenant extends Model {
       'user_id',
       'id_verified',
       'sex',
+      'code',
       'status',
       'firstname',
       'secondname',
