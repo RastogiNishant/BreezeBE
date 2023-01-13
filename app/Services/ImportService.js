@@ -93,9 +93,6 @@ class ImportService {
           await require('./RoomService').createRoomsFromImport({ estate_id: estate.id, rooms }, trx)
         }
 
-        // Run task to separate get coords and point of estate
-        require('./QueueService').getEstateCoords(estate.id)
-        //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.surname) {
           await EstateCurrentTenantService.addCurrentTenant(
@@ -113,6 +110,9 @@ class ImportService {
       }
       await trx.commit()
       await Estate.updateEstateInfo(estate.id)
+      // Run task to separate get coords and point of estate
+      require('./QueueService').getEstateCoords(estate.id)
+
       return estate
     } catch (e) {
       await trx.rollback()
@@ -176,7 +176,9 @@ class ImportService {
         entity: IMPORT_ENTITY_ESTATES,
       })
     } catch (err) {
+      console.log('importing excel issue=', err.message)
     } finally {
+      console.log('emitting importing excel sucess count=', result.length - createErrors.length)
       this.emitImported({
         user_id: userId,
         data: {
@@ -255,59 +257,60 @@ class ImportService {
   }
 
   static async updateImportBySixCharCode({ six_char_code, data }, trx) {
-    let estate_data = omit(data, [
-      'room1_type',
-      'room2_type',
-      'room3_type',
-      'room4_type',
-      'room5_type',
-      'room6_type',
-      'txt_salutation',
-      'surname',
-      'contract_end',
-      'phone_number',
-      'email',
-      'salutation_int',
-    ])
-    let estate = await Estate.query().where('six_char_code', six_char_code).first()
-    if (!estate) {
-      throw new HttpException('estate no exists')
-    }
-    if (!estate_data.letting_type) {
-      estate_data.letting_type = LETTING_TYPE_NA
-    }
-    estate_data.id = estate.id
-    estate.fill(estate_data)
-    await estate.save(trx)
-
-    if (data.email) {
-      await EstateCurrentTenantService.updateCurrentTenant(
-        {
-          data,
-          estate_id: estate.id,
-          user_id: estate.user_id,
-        },
-        trx
-      )
-    }
-    //update Rooms
-    let rooms = []
-    let found
-    for (let key in data) {
-      if ((found = key.match(/^room(\d)_type$/))) {
-        rooms.push({ ...data[key], import_sequence: found[1] })
+    try {
+      let estate_data = omit(data, [
+        'room1_type',
+        'room2_type',
+        'room3_type',
+        'room4_type',
+        'room5_type',
+        'room6_type',
+        'txt_salutation',
+        'surname',
+        'contract_end',
+        'phone_number',
+        'email',
+        'salutation_int',
+      ])
+      let estate = await Estate.query().where('six_char_code', six_char_code).first()
+      if (!estate) {
+        throw new HttpException('estate no exists')
       }
-    }
-    if (rooms.length) {
-      await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
-    } else {
-      await RoomService.removeAllRoom(estate.id)
-    }
+      if (!estate_data.letting_type) {
+        estate_data.letting_type = LETTING_TYPE_NA
+      }
+      estate_data.id = estate.id
+      estate.fill(estate_data)
+      await estate.save(trx)
 
-    // Run task to separate get coords and point of estate
-    require('./QueueService').getEstateCoords(estate.id)
+      if (data.email) {
+        await EstateCurrentTenantService.updateCurrentTenant(
+          {
+            data,
+            estate_id: estate.id,
+            user_id: estate.user_id,
+          },
+          trx
+        )
+      }
+      //update Rooms
+      let rooms = []
+      let found
+      for (let key in data) {
+        if ((found = key.match(/^room(\d)_type$/))) {
+          rooms.push({ ...data[key], import_sequence: found[1] })
+        }
+      }
+      if (rooms.length) {
+        await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
+      } else {
+        await RoomService.removeAllRoom(estate.id)
+      }
 
-    return estate
+      return estate
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
   }
 
   static async addImportFile({

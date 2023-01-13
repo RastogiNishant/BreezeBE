@@ -195,7 +195,7 @@ class EstateImportReader {
     //rooms
     for (let count = 1; count <= MAX_ROOM_TYPES_TO_IMPORT; count++) {
       let roomValue = get(row, `room${count}_type`)
-      if (roomValue) {
+      if (roomValue && roomValue != '') {
         roomValue = this.escapeStr(roomValue)
         if (get(this.dataMapping, `room_type.${roomValue}`)) {
           row[`room${count}_type`] = {
