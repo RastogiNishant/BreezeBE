@@ -57,6 +57,7 @@ const {
   ROOM_TYPE_TERRACE,
   ROOM_TYPE_WASHING_ROOM,
   ROOM_TYPE_EXTERNAL_CORRIDOR,
+  ROOM_TYPE_PROPERTY_ENTRANCE,
   ROOM_TYPE_STAIRS,
   ROOM_TYPE_GARDEN,
   ROOM_TYPE_LOGGIA,
@@ -255,6 +256,7 @@ class RoomService {
           .fetch()
       ).toJSON() || []
     if (!oldRooms.length) {
+      console.log('updateRooms CreateRoomsFromImport=', rooms)
       await this.createRoomsFromImport({ estate_id, rooms }, trx)
     } else {
       const roomTypes = [
@@ -287,6 +289,7 @@ class RoomService {
         ROOM_TYPE_TERRACE,
         ROOM_TYPE_WASHING_ROOM,
         ROOM_TYPE_EXTERNAL_CORRIDOR,
+        ROOM_TYPE_PROPERTY_ENTRANCE,
         ROOM_TYPE_STAIRS,
         ROOM_TYPE_GARDEN,
         ROOM_TYPE_LOGGIA,
@@ -303,13 +306,15 @@ class RoomService {
       const newRoomsByRoomTypes = roomTypes.map((type) =>
         filter(roomsInfo, (room) => room.type === type)
       )
-
       const differentRooms = newRoomsByRoomTypes.map((newRoomByType, index) => {
         if (newRoomByType.length > oldRoomsByRoomTypes[index].length) {
+          const oldRoomLength = oldRoomsByRoomTypes[index].length
           return {
             operation: 'add',
             nameIndex: oldRoomsByRoomTypes[index].length,
-            orderIndex: oldRoomsByRoomTypes[index][oldRoomsByRoomTypes[index].length - 1].order,
+            orderIndex: oldRoomLength
+              ? oldRoomsByRoomTypes[index][oldRoomLength - 1].order
+              : ROOM_DEFAULT_ORDER,
             rooms: newRoomByType.slice(oldRoomsByRoomTypes[index].length, newRoomByType.length),
           }
         } else if (newRoomByType.length < oldRoomsByRoomTypes[index].length) {
