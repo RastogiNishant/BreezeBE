@@ -472,6 +472,7 @@ class EstateAttributeTranslations {
       if (i === undefined) {
         return Math.random().toString(36).substr(2, 8).toUpperCase()
       }
+      return i
     },
   }
 
