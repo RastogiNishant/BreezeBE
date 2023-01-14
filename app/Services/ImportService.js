@@ -300,7 +300,7 @@ class ImportService {
       let rooms = []
       let found
       for (let key in data) {
-        if ((found = key.match(/^room(\d)_type$/))) {
+        if ((found = key.match(/^room(\d)_type$/)) && data[key]) {
           rooms.push({ ...data[key], import_sequence: found[1] })
         }
       }
