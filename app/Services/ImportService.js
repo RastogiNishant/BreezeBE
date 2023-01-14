@@ -109,7 +109,10 @@ class ImportService {
         }
       }
       await trx.commit()
-      await Estate.updateEstateInfo(estate.id)
+
+      if (!six_char_code) {
+        await Estate.updateBreezeId(estate.id)
+      }
       // Run task to separate get coords and point of estate
       require('./QueueService').getEstateCoords(estate.id)
 
