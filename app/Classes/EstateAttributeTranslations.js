@@ -909,7 +909,6 @@ class EstateAttributeTranslations {
           'property.attribute.LETTING_STATUS.Normal.message',
           'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
-          'property.attribute.LETTING_STATUS.Structural.vacancy.message',
           'property.attribute.LETTING_STATUS.new_renovated.message',
         ],
         values: [
