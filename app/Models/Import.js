@@ -5,7 +5,7 @@ const Model = require('./BaseModel')
 
 class Import extends Model {
   static get columns() {
-    return ['id', 'user_id', 'filename', 'type', 'entity', 'action']
+    return ['id', 'user_id', 'filename', 'type', 'entity', 'action', 'status']
   }
 }
 
