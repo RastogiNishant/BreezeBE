@@ -17,7 +17,7 @@ const {
     TIME_SLOT_NOT_FOUND,
     SHOW_ALREADY_STARTED,
   },
-} = require('../excepions')
+} = require('../exceptions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length }, estate) {
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })

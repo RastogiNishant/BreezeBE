@@ -420,9 +420,18 @@ Route.group(() => {
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
   ])
+  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
+    'valid:CreateBulkRoom,EstateId',
+  ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
+  ])
+  Route.delete('/:estate_id/files', 'EstateController.removeMultipleFiles').middleware([
+    'valid:EstateId,Ids',
+  ])
+  Route.put('/:estate_id/files/order', 'EstateController.updateOrder').middleware([
+    'valid:EstateAddFile,Ids',
   ])
   Route.get('/:estate_id/rooms/:room_id', 'RoomController.getRoomById').middleware([
     'valid:EstateId,RoomId',
@@ -942,7 +951,10 @@ Route.group(() => {
     'valid:LandlordVisitCancel',
   ])
   // Share tenant profile to landlord
-  Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
+  Route.post('/share', 'MatchController.shareTenantData').middleware([
+    'auth:jwtLandlord',
+    'valid:ShareProspectProfile',
+  ])
   Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
   // Move/remove top tenant
   Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])
@@ -1146,6 +1158,9 @@ Route.group(() => {
   Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
+  ])
+  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
+    'valid:CreateBulkRoom,EstateId',
   ])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
 

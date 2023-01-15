@@ -1,43 +1,65 @@
 'use strict'
 
-const { countBy, includes, filter, orderBy } = require('lodash')
-const moment = require('moment')
-const uuid = require('uuid')
-const AppException = use('App/Exceptions/AppException')
 const Logger = use('Logger')
 const Database = use('Database')
-const Drive = use('Drive')
 const Event = use('Event')
-const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const File = use('App/Classes/File')
-const Option = use('App/Models/Option')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
 const { PROPERTY_MANAGE_ALLOWED, ROLE_PROPERTY_MANAGER, STATUS_DELETE } = require('../../constants')
+
 const ImageService = require('../../Services/ImageService')
 
 class RoomController {
   /**
    *
    */
+
+  async createBulkRoom({ request, auth, response }) {
+    const { estate_id, rooms } = request.all()
+    const trx = await Database.beginTransaction()
+    const newRooms = []
+    try {
+      await RoomService.hasPermission(estate_id, auth.user)
+
+      await Promise.all(
+        rooms.map(async (r) => {
+          if (r.favorite) {
+            await Room.query()
+              .where('estate_id', estate_id)
+              .where('type', r.type)
+              .update({ favorite: false })
+              .transacting(trx)
+          }
+          const room = await Room.createItem(
+            {
+              ...r,
+              estate_id,
+            },
+            trx
+          )
+          newRooms.push(room)
+        })
+      )
+      Event.fire('estate::update', estate_id)
+      await trx.commit()
+      response.res(newRooms)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
   async createRoom({ request, auth, response }) {
     const { estate_id, ...roomData } = request.all()
 
     const trx = await Database.beginTransaction()
 
     try {
-      let userIds = [auth.user.id]
-      if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-        userIds = await EstatePermissionService.getLandlordIds(
-          auth.user.id,
-          PROPERTY_MANAGE_ALLOWED
-        )
-      }
-
-      await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
+      await RoomService.hasPermission(estate_id, auth.user)
 
       if (roomData.favorite) {
         await Room.query()
@@ -117,7 +139,7 @@ class RoomController {
 
     const trx = await Database.beginTransaction()
     try {
-      await RoomService.removeRoom(room_id, trx)
+      await RoomService.removeRoom(room, trx)
       await EstateService.updateCover({ room: room.toJSON() }, trx)
       Event.fire('estate::update', room.estate_id)
       await trx.commit()

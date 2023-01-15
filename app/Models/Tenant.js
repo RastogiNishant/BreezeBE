@@ -52,6 +52,8 @@ class Tenant extends Model {
       'id',
       'user_id',
       'id_verified',
+      'sex',
+      'code',
       'status',
       'firstname',
       'secondname',
@@ -96,7 +98,7 @@ class Tenant extends Model {
       'coord',
       'transfer_budget_min',
       'transfer_budget_max',
-      'residency_duration',      
+      'residency_duration',
     ]
   }
 

@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class File extends Model {
   static get columns() {
-    return ['url', 'estate_id', 'type', 'disk']
+    return ['url', 'estate_id', 'type', 'disk', 'order']
   }
 
   static get traits() {

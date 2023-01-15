@@ -1,6 +1,6 @@
 'use strict'
 
-const { isEmpty, chunk, isArray } = require('lodash')
+const { isEmpty, chunk, groupBy } = require('lodash')
 const moment = require('moment')
 const P = require('bluebird')
 const File = use('App/Classes/File')
@@ -120,6 +120,7 @@ class NoticeService {
         data.map(({ user_id, type, data }) => ({
           user_id,
           type,
+          estate_id: data?.estate_id || null,
           data,
           created_at: Database.fn.now(),
           updated_at: Database.fn.now(),
@@ -642,30 +643,17 @@ class NoticeService {
    */
   static async prospectSuperMatch(matches, estateId = null) {
     if (matches.length > 0) {
-      let estate = estateId
-        ? await Estate.query().select(ESTATE_NOTIFICATION_FIELDS).where('id', estateId).first()
-        : null
+      const groupMatches = groupBy(matches, (match) => match.user_id)
+      const notices = Object.keys(groupMatches).map((key) => {
+        return {
+          user_id: groupMatches[key][0].user_id,
+          type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+          data: {
+            count: matches?.length || 0,
+          },
+        }
+      })
 
-      const notices = await Promise.all(
-        matches.map(async ({ user_id, estate_id }) => {
-          if (!estateId) {
-            estate = await Estate.query()
-              .select(ESTATE_NOTIFICATION_FIELDS)
-              .where('id', estate_id)
-              .first()
-          }
-          return {
-            user_id,
-            type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
-            data: {
-              estate_id: estate_id,
-              estate_address: estate.address,
-              params: estate.getAptParams(),
-            },
-            image: File.getPublicUrl(estate.cover),
-          }
-        })
-      )
       await NoticeService.insertNotices(notices)
       await NotificationsService.sendProspectHasSuperMatch(notices)
     }

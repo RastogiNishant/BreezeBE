@@ -397,7 +397,11 @@ class MatchController {
     await this.getOwnEstate(estate_id, userId)
 
     try {
-      const { tenantId } = await MatchService.share(userId, estate_id, code)
+      const { tenantId } = await MatchService.share({
+        landlord_id: userId,
+        estate_id,
+        code,
+      })
       logEvent(
         request,
         LOG_TYPE_SHOWED,
@@ -406,7 +410,7 @@ class MatchController {
         false
       )
       Event.fire('mautic:syncContact', auth.user.id, { showedproperty_count: 1 })
-      return response.res(true)
+      return response.res({ user_id: tenantId })
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
