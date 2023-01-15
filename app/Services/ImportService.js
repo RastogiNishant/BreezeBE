@@ -1,16 +1,16 @@
 const Promise = require('bluebird')
 const { has, omit, isEmpty } = require('lodash')
 const moment = require('moment')
+const EstateImportReader = use('App/Classes/EstateImportReader')
 const Database = use('Database')
-const ExcelReader = use('App/Classes/ExcelReader')
 const BuddiesReader = use('App/Classes/BuddiesReader')
-const EstateService = use('App/Services/EstateService')
-const QueueService = use('App/Services/QueueService')
-const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
-const AppException = use('App/Exceptions/AppException')
 const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
+const HttpException = use('App/Exceptions/HttpException')
+const AppException = use('App/Exceptions/AppException')
+const Ws = use('Ws')
+
 const schema = require('../Validators/CreateBuddy').schema()
 const {
   STATUS_DRAFT,
@@ -21,7 +21,9 @@ const {
   ISO_DATE_FORMAT,
   IMPORT_TYPE_EXCEL,
   IMPORT_ENTITY_ESTATES,
+  WEBSOCKET_EVENT_IMPORT_EXCEL,
 } = require('../constants')
+const RoomService = require('./RoomService')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
@@ -29,21 +31,6 @@ const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService'
  *
  */
 class ImportService {
-  /**
-   *
-   */
-  static async readFile(filePath) {
-    const reader = new ExcelReader()
-    return await reader.readFile(filePath)
-  }
-
-  static async readFileFromWeb(filePath) {
-    const reader = new ExcelReader()
-    reader.headerCol = 1
-    reader.sheetName = 'Import_Data'
-    return await reader.readFileEstateImport(filePath)
-  }
-
   static async readBuddyFile(filePath) {
     const reader = new BuddiesReader()
     return await reader.readFile(filePath)
@@ -52,25 +39,32 @@ class ImportService {
   /**
    *
    */
-  static async createSingleEstate({ data, line, six_char_code }, userId, trx) {
+  static async createSingleEstate({ data, line, six_char_code }, userId) {
     let estate
-    if (six_char_code) {
-      //check if this is an edit...
-      estate = await Estate.query()
-        .where('six_char_code', six_char_code)
-        .where('user_id', userId)
-        .first()
-      if (!estate) {
-        return { error: [`${six_char_code} is an invalid Breeze ID`], line, address: data.address }
-      }
-      await ImportService.updateImportBySixCharCode(six_char_code, data)
-    } else {
-      try {
+    const trx = await Database.beginTransaction()
+    try {
+      if (six_char_code) {
+        //check if this is an edit...
+        estate = await Estate.query()
+          .where('six_char_code', six_char_code)
+          .where('user_id', userId)
+          .first()
+        if (!estate) {
+          await trx.rollback()
+          return {
+            error: [`${six_char_code} is an invalid Breeze ID`],
+            line,
+            address: data.address,
+          }
+        }
+        await ImportService.updateImportBySixCharCode({ six_char_code, data }, trx)
+      } else {
         if (!data.address) {
           throw new AppException('Invalid address')
         }
         const address = data.address.toLowerCase()
-        const existingEstate = await EstateService.getQuery()
+        const existingEstate = await require('./EstateService')
+          .getQuery()
           .where('user_id', userId)
           .where('address', 'LIKE', `%${address}%`)
           .where('status', STATUS_ACTIVE)
@@ -86,8 +80,8 @@ class ImportService {
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }
-        estate = await EstateService.createEstate({ data, userId }, true, trx)
 
+        estate = await require('./EstateService').createEstate({ data, userId }, true, trx)
         let rooms = []
         let found
         for (let key in data) {
@@ -96,26 +90,36 @@ class ImportService {
           }
         }
         if (rooms.length) {
-          await RoomService.createRoomsFromImport(estate.id, rooms)
+          await require('./RoomService').createRoomsFromImport({ estate_id: estate.id, rooms }, trx)
         }
 
-        // Run task to separate get coords and point of estate
-        QueueService.getEstateCoords(estate.id)
-        //await EstateService.updateEstateCoord(estate.id)
         //add current tenant
         if (data.surname) {
-          await EstateCurrentTenantService.addCurrentTenant({
-            data,
-            estate_id: estate.id,
-          })
+          await EstateCurrentTenantService.addCurrentTenant(
+            {
+              data,
+              estate_id: estate.id,
+            },
+            trx
+          )
         }
         if (warning) {
+          await trx.rollback()
           return { warning, line, address: data.address }
         }
-        return estate
-      } catch (e) {
-        return { error: [e.message], line, address: data.address }
       }
+      await trx.commit()
+
+      if (!six_char_code) {
+        await Estate.updateBreezeId(estate.id)
+      }
+      // Run task to separate get coords and point of estate
+      require('./QueueService').getEstateCoords(estate.id)
+
+      return estate
+    } catch (e) {
+      await trx.rollback()
+      return { error: [e.message], line, address: data.address }
     }
   }
 
@@ -148,43 +152,48 @@ class ImportService {
    *
    */
   static async process(filePath, userId, type) {
-    let { errors, data, warnings } = await ImportService.readFileFromWeb(filePath.tmpPath)
-    const trx = await Database.beginTransaction()
+    const reader = new EstateImportReader(filePath.tmpPath)
+    let { errors, data, warnings } = await reader.process()
     const opt = { concurrency: 1 }
+
+    let createErrors = []
+    let result = []
     try {
-      const result = await Promise.map(
+      result = await Promise.map(
         data,
-        (i) => ImportService.createSingleEstate(i, userId, trx),
+        async (i) => {
+          if (i) await ImportService.createSingleEstate(i, userId)
+        },
         opt
       )
-      const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
+      createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
       result.map((row) => {
         if (has(row, 'warning')) {
           warnings.push(row.warning)
         }
       })
-      await ImportService.addImportFile(
-        {
-          user_id: userId,
-          filename: filePath.clientName,
-          type: IMPORT_TYPE_EXCEL,
-          entity: IMPORT_ENTITY_ESTATES,
-        },
-        trx
-      )
-      await trx.commit()
-      return {
-        last_activity: {
-          file: filePath?.clientName || null,
-          created_at: moment().utc().format(),
-        },
-        errors: [...errors, ...createErrors],
-        success: result.length - createErrors.length,
-        warnings: [...warnings],
-      }
+      await ImportService.addImportFile({
+        user_id: userId,
+        filename: filePath?.clientName || null,
+        type: IMPORT_TYPE_EXCEL,
+        entity: IMPORT_ENTITY_ESTATES,
+      })
     } catch (err) {
-      await trx.rollback()
-      throw new HttpException('Error found while importing: ', err.message)
+      console.log('importing excel issue=', err.message)
+    } finally {
+      console.log('emitting importing excel sucess count=', result.length - createErrors.length)
+      this.emitImported({
+        user_id: userId,
+        data: {
+          last_activity: {
+            file: filePath?.clientName || null,
+            created_at: moment().utc().format(),
+          },
+          errors: [...errors, ...createErrors],
+          success: result.length - createErrors.length,
+          warnings: [...warnings],
+        },
+      })
     }
   }
 
@@ -196,6 +205,15 @@ class ImportService {
    * @param {*} type
    * @returns
    */
+
+  static async emitImported({ data, user_id }) {
+    const channel = `landlord:*`
+    const topicName = `landlord:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_IMPORT_EXCEL, data)
+    }
+  }
 
   static async processByPM(filePath, userId, type) {
     const { errors, data } = await ImportService.readFileFromWeb(filePath)
@@ -241,62 +259,70 @@ class ImportService {
     }
   }
 
-  static async updateImportBySixCharCode(six_char_code, data) {
-    let estate_data = omit(data, [
-      'room1_type',
-      'room2_type',
-      'room3_type',
-      'room4_type',
-      'room5_type',
-      'room6_type',
-      'txt_salutation',
-      'surname',
-      'contract_end',
-      'phone_number',
-      'email',
-      'salutation_int',
-    ])
-    let estate = await Estate.query().where('six_char_code', six_char_code).first()
-    if (!estate) {
-      throw new HttpException('estate no exists')
-    }
-    if (!estate_data.letting_type) {
-      estate_data.letting_type = LETTING_TYPE_NA
-    }
-    estate_data.id = estate.id
-    estate.fill(estate_data)
-    await estate.save()
-
-    if (data.email) {
-      await EstateCurrentTenantService.updateCurrentTenant({
-        data,
-        estate_id: estate.id,
-        user_id: estate.user_id,
-      })
-    }
-    //update Rooms
-    let rooms = []
-    let found
-    for (let key in data) {
-      if ((found = key.match(/^room(\d)_type$/))) {
-        rooms.push({ ...data[key], import_sequence: found[1] })
+  static async updateImportBySixCharCode({ six_char_code, data }, trx) {
+    try {
+      let estate_data = omit(data, [
+        'room1_type',
+        'room2_type',
+        'room3_type',
+        'room4_type',
+        'room5_type',
+        'room6_type',
+        'txt_salutation',
+        'surname',
+        'contract_end',
+        'phone_number',
+        'email',
+        'salutation_int',
+      ])
+      let estate = await Estate.query().where('six_char_code', six_char_code).first()
+      if (!estate) {
+        throw new HttpException('estate no exists')
       }
-    }
-    if (rooms.length) {
-      await RoomService.updateRoomsFromImport(estate.id, rooms)
-    }
+      if (!estate_data.letting_type) {
+        estate_data.letting_type = LETTING_TYPE_NA
+      }
+      estate_data.id = estate.id
+      estate.fill(estate_data)
+      await estate.save(trx)
 
-    // Run task to separate get coords and point of estate
-    QueueService.getEstateCoords(estate.id)
+      if (data.email) {
+        await EstateCurrentTenantService.updateCurrentTenant(
+          {
+            data,
+            estate_id: estate.id,
+            user_id: estate.user_id,
+          },
+          trx
+        )
+      }
+      //update Rooms
+      let rooms = []
+      let found
+      for (let key in data) {
+        if ((found = key.match(/^room(\d)_type$/)) && data[key]) {
+          rooms.push({ ...data[key], import_sequence: found[1] })
+        }
+      }
+      if (rooms.length) {
+        await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
+      } else {
+        await RoomService.removeAllRoom(estate.id)
+      }
 
-    return estate
+      return estate
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
   }
 
-  static async addImportFile(
-    { user_id, filename, type = IMPORT_TYPE_EXCEL, entity = IMPORT_ENTITY_ESTATES },
-    trx
-  ) {
-    await Import.query().insert({ user_id, filename, type, entity }, trx)
+  static async addImportFile({
+    user_id,
+    filename,
+    type = IMPORT_TYPE_EXCEL,
+    entity = IMPORT_ENTITY_ESTATES,
+  }) {
+    await Import.query().insert({ user_id, filename, type, entity })
   }
 
   static async getLastImportActivities(

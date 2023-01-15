@@ -9,7 +9,7 @@ const File = use('App/Classes/File')
 const Database = use('Database')
 const {
   exceptions: { MESSAGE_NOT_SAVED },
-} = require('../../excepions')
+} = require('../../exceptions')
 class BaseController {
   constructor({ socket, auth, request, channel }) {
     this.socket = socket
