@@ -7,7 +7,6 @@ const { id } = require('../Libs/schemas.js')
 class ShareProspectProfile extends Base {
   static schema = () =>
     yup.object().shape({
-      prospect_id: id.required(),
       estate_id: id.required(),
       code: yup.string().required(),
     })

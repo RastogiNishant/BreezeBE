@@ -992,9 +992,8 @@ class MatchService {
   /**
    * Share tenant personal data to landlord
    */
-  static async share({ landlord_id, estate_id, prospect_id, code }) {
+  static async share({ landlord_id, estate_id, code }) {
     const userTenant = await User.findByOrFail({
-      id: prospect_id,
       code,
       role: ROLE_USER,
     })
