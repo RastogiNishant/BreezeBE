@@ -675,17 +675,12 @@ class NotificationsService {
    */
   static async sendProspectHasSuperMatch(notices) {
     const title = `prospect.notification.event.new_multi_matches`
+    const body = 'prospect.notification.next.new_match.message'
 
     return NotificationsService.sendNotes(
       notices,
       (data, lang) => `${rc(l.get(title, lang), [{ number: data?.count }])}`,
-      (data, lang) => {
-        return (
-          capitalize(data.estate_address) +
-          ' \n' +
-          l.get('prospect.notification.next.new_match.message', lang)
-        )
-      }
+      body
     )
   }
 
