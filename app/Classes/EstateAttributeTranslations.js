@@ -2,6 +2,8 @@ const l = use('Localize')
 const { trim, isEmpty } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
 const {
+  AVAILABLE_LANGUAGES,
+
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
@@ -155,17 +157,21 @@ const {
   LETTING_STATUS_STRUCTURAL_VACANCY,
   LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
-
-  SALUTATION_MR,
-  SALUTATION_MS,
-  SALUTATION_SIR_OR_MADAM,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_NA,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  GENDER_MALE,
+  GENDER_FEMALE,
+  GENDER_NEUTRAL,
+  GENDER_ANY,
 } = require('../constants')
+
+const {
+  exceptions: { SETTINGS_ERROR },
+} = require('../exceptions')
 
 escapeStr = (v) => {
   return (v || '')
@@ -425,7 +431,7 @@ class EstateAttributeTranslations {
     },
     stp_garage: (i) => parseInt(i) || 0,
     budget: (i) => parseInt(i * 100),
-    deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
+    deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
@@ -462,6 +468,12 @@ class EstateAttributeTranslations {
     min_age: (i) => parseInt(i) || 0,
     max_age: (i) => parseInt(i) || 0,
     currency: (i) => (isEmpty(i) ? 'EUR' : i),
+    property_id: (i) => {
+      if (i === undefined) {
+        return Math.random().toString(36).substr(2, 8).toUpperCase()
+      }
+      return i
+    },
   }
 
   constructor(lang = 'en') {
@@ -901,9 +913,9 @@ class EstateAttributeTranslations {
           'property.attribute.LETTING_STATUS.Defected.message',
           'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Normal.message',
-          'property.attribute.LETTING_STATUS.Construction works.message',
-          'property.attribute.LETTING_STATUS.Structural vacancy.message',
-          'property.attribute.LETTING_STATUS.First-time use.message',
+          'property.attribute.LETTING_STATUS.Construction.works.message',
+          'property.attribute.LETTING_STATUS.Structural.vacancy.message',
+          'property.attribute.LETTING_STATUS.First-time.use.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
         ],
         values: [
@@ -920,9 +932,10 @@ class EstateAttributeTranslations {
         keys: [
           'landlord.profile.user_details.salut.mr.message',
           'landlord.profile.user_details.salut.ms.message',
+          'landlord.profile.user_details.salut.not_def.message',
           'landlord.profile.user_details.salut.sir_madam.message',
         ],
-        values: [SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM],
+        values: [GENDER_MALE, GENDER_FEMALE, GENDER_ANY, GENDER_NEUTRAL],
       },
       floor_direction: {
         keys: [
@@ -956,11 +969,13 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
+        throw new HttpException(SETTINGS_ERROR, 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
-        keyValue[escapeStr(l.get(dataMap[attribute].keys[k], this.lang))] =
-          dataMap[attribute].values[k]
+        AVAILABLE_LANGUAGES.map((lang) => {
+          keyValue[escapeStr(l.get(dataMap[attribute].keys[k], lang))] =
+            dataMap[attribute].values[k]
+        })
       }
       this.dataMapping[attribute] = keyValue
     }
@@ -977,7 +992,7 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110176)
+        throw new HttpException(SETTINGS_ERROR, 500, 110176)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
         keyValue[dataMap[attribute].values[k]] = l.get(dataMap[attribute].keys[k], this.lang)

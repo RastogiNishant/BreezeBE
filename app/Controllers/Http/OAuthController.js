@@ -27,7 +27,7 @@ const {
 const { logEvent } = require('../../Services/TrackingService')
 const {
   exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_UNIQUE, INVALID_USER_ROLE },
-} = require('../../../app/excepions')
+} = require('../../../app/exceptions')
 class OAuthController {
   /**
    *

@@ -6,7 +6,7 @@ const { ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER } = require('../constant
 const {
   getExceptionMessage,
   exceptionKeys: { MINLENGTH, MAXLENGTH, INVALID },
-} = require('../excepions')
+} = require('../exceptions')
 
 class SignInAppleMobile extends Base {
   static schema = () =>

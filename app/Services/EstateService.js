@@ -58,8 +58,8 @@ const {
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST },
-} = require('../../app/excepions')
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST },
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -93,7 +93,7 @@ class EstateService {
     return await this.getActiveEstateQuery().where({ id }).first()
   }
 
-  static async getEstateWithDetails(id, user_id) {
+  static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
@@ -112,6 +112,9 @@ class EstateService {
       )
       .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
+      .withCount('notifications', function (n) {
+        n.where('user_id', user_id)
+      })
       .with('point')
       .with('files')
       .with('current_tenant', function (q) {
@@ -145,7 +148,7 @@ class EstateService {
           })
       })
 
-    if (user_id) {
+    if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
     }
     return estateQuery.first()
@@ -244,7 +247,21 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, [
+        'room1_type',
+        'room2_type',
+        'room3_type',
+        'room4_type',
+        'room5_type',
+        'room6_type',
+        'txt_salutation',
+        'surname',
+        'contract_end',
+        'phone_number',
+        'email',
+        'salutation_int',
+        'rooms',
+      ]),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -267,21 +284,24 @@ class EstateService {
       createData.letting_status = null
     }
 
+    let estateHash
     const estate = await Estate.createItem(
       {
         ...createData,
       },
       trx
     )
-
-    const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+    // we can't get hash when we use transaction because that record won't be created before commiting the transaction
+    if (!trx) {
+      estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+    }
 
     // Run processing estate geo nearest
     QueueService.getEstateCoords(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
-      hash: estateHash.hash,
+      hash: estateHash?.hash || null,
       ...estateData,
     }
   }
@@ -375,8 +395,12 @@ class EstateService {
   /**
    *
    */
-  static getEstates(params = {}) {
+  static getEstates(user_ids, params = {}) {
     let query = Estate.query()
+      .withCount('notifications', function (n) {
+        user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        n.whereIn('user_id', user_ids)
+      })
       .withCount('visits')
       .withCount('knocked')
       .withCount('decided')
@@ -399,9 +423,9 @@ class EstateService {
    *
    */
   static getUpcomingShows(ids, query = '') {
-    return this.getEstates()
+    return this.getEstates(ids)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('user_id', ids)
+      .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -488,6 +512,18 @@ class EstateService {
       Logger.error(e.message)
       throw new HttpException(NO_FILE_EXIST, 400)
     }
+  }
+
+  static async getFiles({ estate_id, ids, type }) {
+    return (
+      (
+        await File.query()
+          .where('estate_id', estate_id)
+          .whereIn('id', ids)
+          .where('type', type)
+          .fetch()
+      ).rows || []
+    )
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {
@@ -964,15 +1000,14 @@ class EstateService {
 
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
     if (page === -1 || limit === -1) {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(ids, params)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
-      return await this.getEstates(params)
-        .whereIn('user_id', ids)
+      return await this.getEstates(ids, params)
+        .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
     }

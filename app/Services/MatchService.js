@@ -992,11 +992,15 @@ class MatchService {
   /**
    * Share tenant personal data to landlord
    */
-  static async share(landlordId, estateId, tenantCode) {
-    const userTenant = await User.findByOrFail({ uid: tenantCode, role: ROLE_USER })
+  static async share({ landlord_id, estate_id, code }) {
+    const userTenant = await User.findByOrFail({
+      code,
+      role: ROLE_USER,
+    })
+    
     const match = await Database.table('matches')
       .where({
-        estate_id: estateId,
+        estate_id,
         status: MATCH_STATUS_VISIT,
         user_id: userTenant.id,
       })
@@ -1012,12 +1016,12 @@ class MatchService {
       })
       .where({
         user_id: userTenant.id,
-        estate_id: estateId,
+        estate_id,
       })
 
     this.emitMatch({
       data: {
-        estate_id: estateId,
+        estate_id,
         user_id: userTenant.id,
         old_status: MATCH_STATUS_VISIT,
         status: MATCH_STATUS_SHARE,
@@ -1451,6 +1455,9 @@ class MatchService {
       .select('estates.*')
       .select('_m.percent as match')
       .select('_m.updated_at')
+      .withCount('notifications', function (n) {
+        n.where('user_id', userId)
+      })
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', defaultWhereIn)
 
@@ -1916,7 +1923,7 @@ class MatchService {
   }
 
   static searchForLandlord(userId, searchQuery) {
-    const query = EstateService.getEstates()
+    const query = EstateService.getEstates(userId)
       .select('*')
       .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -1945,8 +1952,10 @@ class MatchService {
         '_u.firstname',
         '_u.secondname',
         '_u.birthday',
+        '_u.sex',
         '_u.email',
         '_u.avatar',
+        '_u.code',
         '_v.landlord_followup_meta as followups',
       ])
       .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')

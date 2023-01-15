@@ -25,7 +25,7 @@ const {
 } = require('../constants')
 const {
   exceptions: { MESSAGE_ATTACHMENT_WRONG_FORMAT },
-} = require('../excepions')
+} = require('../exceptions')
 const { min, isBoolean, isArray, groupBy } = require('lodash')
 const Task = use('App/Models/Task')
 const Promise = require('bluebird')

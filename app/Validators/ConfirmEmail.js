@@ -5,7 +5,7 @@ const Base = require('./Base')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, NUMBER },
-} = require('../excepions')
+} = require('../exceptions')
 
 class ConfirmEmail extends Base {
   static schema = () =>

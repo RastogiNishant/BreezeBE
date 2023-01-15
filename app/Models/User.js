@@ -11,6 +11,7 @@ const {
 const Model = require('./BaseModel')
 const UserFilter = use('App/ModelFilters/UserFilter')
 const Hash = use('Hash')
+const randomstring = require('randomstring')
 
 class User extends Model {
   static get columns() {
@@ -58,6 +59,7 @@ class User extends Model {
       'source_estate_id',
       'ip',
       'ip_based_info',
+      'code',
     ]
   }
 
@@ -104,6 +106,13 @@ class User extends Model {
       if (userInstance.preferred_services && Array.isArray(userInstance.preferred_services)) {
         userInstance.preferred_services = JSON.stringify(userInstance.preferred_services)
       }
+    })
+  }
+
+  static getTenDigitCode() {
+    return randomstring.generate({
+      length: 10,
+      charset: 'alphanumeric',
     })
   }
 

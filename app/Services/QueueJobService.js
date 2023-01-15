@@ -6,7 +6,7 @@ const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
-const { isEmpty } = require('lodash')
+const { isEmpty, trim } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
@@ -42,13 +42,14 @@ class QueueJobService {
   }
 
   static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
-    if (!estate.address) {
-      throw new AppException('Estate address invalid')
+    const estate = await Estate.find(estateId)
+
+    if (!estate || !estate.address || trim(estate.address) === '') {
+      return
     }
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result) {
+    if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
       await estate.updateItem({ coord: coord })
       await QueueJobService.updateEstatePoint(estateId)
@@ -72,7 +73,11 @@ class QueueJobService {
           .fetch()
       ).rows || []
 
-    estates.map((estate) => QueueJobService.updateEstateCoord(estate.id))
+    let i = 0
+    while (i < estates.length) {
+      await QueueJobService.updateEstateCoord(estates[i].id)
+      i++
+    }
   }
 
   //Finds and handles the estates that available date is over

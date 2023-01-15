@@ -24,7 +24,6 @@ const {
   STATUS_EXPIRE,
   DEFAULT_LANG,
   DAY_FORMAT,
-  SALUTATION_SIR_OR_MADAM,
   STATUS_DELETE,
   LETTING_TYPE_LET,
   MATCH_STATUS_FINISH,
@@ -42,11 +41,21 @@ const {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME,
   STATUS_DRAFT,
   WEBSOCKET_EVENT_TENANT_CONNECTED,
+  GENDER_ANY,
+  GENDER_NEUTRAL,
+  SALUTATION_NEUTRAL_LABEL,
+  GENDER_FEMALE,
+  GENDER_MALE,
 } = require('../constants')
 
 const {
-  exceptions: { FAILED_UPLOAD_LEASE_CONTRACT },
-} = require('../excepions')
+  exceptions: {
+    FAILED_UPLOAD_LEASE_CONTRACT,
+    INVALID_QR_CODE,
+    ALREADY_USED_QR_CODE,
+    EXPIRED_QR_CODE,
+  },
+} = require('../exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
@@ -64,7 +73,7 @@ class EstateCurrentTenantService extends BaseService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id, trx }) {
+  static async addCurrentTenant({ data, estate_id }, trx) {
     const shouldCommitTrx = trx ? false : true
 
     if (shouldCommitTrx) {
@@ -140,12 +149,14 @@ class EstateCurrentTenantService extends BaseService {
         member?.phone && member?.phone_verified ? member.phone : user.phone_number || '',
       status: STATUS_ACTIVE,
       salutation:
-        user.sex === 1
+        user.sex === GENDER_MALE
           ? SALUTATION_MR_LABEL
-          : user.sex === 2
+          : user.sex === GENDER_FEMALE
           ? SALUTATION_MS_LABEL
+          : user.sex === GENDER_NEUTRAL
+          ? SALUTATION_NEUTRAL_LABEL
           : SALUTATION_SIR_OR_MADAM_LABEL,
-      salutation_int: user.sex || SALUTATION_SIR_OR_MADAM,
+      salutation_int: user.sex || GENDER_ANY,
     })
 
     await currentTenant.save(trx)
@@ -189,7 +200,7 @@ class EstateCurrentTenantService extends BaseService {
     return data
   }
 
-  static async updateCurrentTenant({ id, data, estate_id, user_id }) {
+  static async updateCurrentTenant({ id, data, estate_id, user_id }, trx = null) {
     if (id) {
       await this.hasPermission(id, user_id)
     }
@@ -202,10 +213,13 @@ class EstateCurrentTenantService extends BaseService {
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
 
-      const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
-        data,
-        estate_id,
-      })
+      const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant(
+        {
+          data,
+          estate_id,
+        },
+        trx
+      )
 
       return newCurrentTenant
     } else {
@@ -221,7 +235,7 @@ class EstateCurrentTenantService extends BaseService {
           salutation_int: data.salutation_int,
           email: data.email,
         })
-        await currentTenant.save()
+        await currentTenant.save(trx)
       }
       return currentTenant
     }
@@ -534,13 +548,43 @@ class EstateCurrentTenantService extends BaseService {
 
   static async validateInvitationQRCode({ data1, data2 }) {
     const { estate_id, id, code, expired_time } = this.decryptDynamicLink({ data1, data2 })
+    let estateCurrentTenant
 
-    const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
-      id,
-      estate_id,
-    })
-    EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
-    EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+    try {
+      estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
+        id,
+        estate_id,
+      })
+    } catch (e) {
+      if (e.code === ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED) {
+        throw new HttpException(
+          ALREADY_USED_QR_CODE,
+          400,
+          ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED
+        )
+      }
+      throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
+    }
+
+    try {
+      EstateCurrentTenantService.validateInvitationCode({ code, estateCurrentTenant })
+    } catch (e) {
+      throw new HttpException(
+        INVALID_QR_CODE,
+        400,
+        e.code || ERROR_OUTSIDE_TENANT_INVITATION_INVALID
+      )
+    }
+
+    try {
+      EstateCurrentTenantService.validateInvitationExpirationDate({ expired_time })
+    } catch (e) {
+      throw new HttpException(
+        EXPIRED_QR_CODE,
+        400,
+        e.code || ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED
+      )
+    }
 
     return true
   }
@@ -809,7 +853,12 @@ class EstateCurrentTenantService extends BaseService {
 
       if (data.email) ect.email = data.email
       if (data.sex) {
-        ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
+        ect.salutation =
+          data.sex === 1
+            ? SALUTATION_MR_LABEL
+            : data.sex === 2
+            ? SALUTATION_MS_LABEL
+            : SALUTATION_SIR_OR_MADAM_LABEL
         ect.salutation_int = data.sex
       }
       if (data.secondname) ect.surname = data.secondname
@@ -826,7 +875,7 @@ class EstateCurrentTenantService extends BaseService {
       await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
         expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
       })
-      throw new AppException('Code did not match.')
+      throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
   }
 
