@@ -57,6 +57,7 @@ const exceptions = {
   FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
   NO_ROOM_EXIST: 'Room not exists',
+  NO_ESTATE_EXIST: 'Estate not exists',
   MEDIA_NOT_EXIST: 'Media not exists',
   INVALID_IDS: 'ids must be an array of integers',
   NO_IMAGE_EXIST: 'Image not exists',
