@@ -81,7 +81,7 @@ const {
     ACCOUNT_ALREADY_VERIFIED,
     NO_CONTACT_EXIST,
   },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
 
@@ -101,6 +101,17 @@ class UserService {
       .first()
     userData.terms_id = latestTerm.id
     userData.agreements_id = latestAgreement.id
+
+    let isExist = true
+    let code = ''
+    while (isExist) {
+      code = User.getTenDigitCode()
+      const userByCode = await User.query().where('code', code).first()
+      if (!userByCode) {
+        userData.code = code
+        isExist = false
+      }
+    }
 
     const user = await User.createItem(userData, trx)
 
@@ -888,6 +899,7 @@ class UserService {
     if (availableUser) {
       throw new HttpException(USER_UNIQUE, 400)
     }
+
     try {
       const { user } = await this.createUser(
         {

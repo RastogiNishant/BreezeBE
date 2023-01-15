@@ -21,6 +21,7 @@ const constants = {
 
   LANG_EN: 'en',
   LANG_DE: 'de',
+  AVAILABLE_LANGUAGES: ['en', 'de'],
   DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
@@ -167,6 +168,7 @@ const constants = {
   ROOM_TYPE_WASHING_ROOM: 28,
   ROOM_TYPE_EXTERNAL_CORRIDOR: 29,
   ROOM_TYPE_STAIRS: 30,
+  ROOM_TYPE_PROPERTY_ENTRANCE: 31,  
   ROOM_TYPE_GARDEN: 32,
   ROOM_TYPE_LOGGIA: 33,
 
@@ -887,6 +889,8 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
+  MAX_ROOM_TYPES_TO_IMPORT: 6,
+
   WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
@@ -896,8 +900,9 @@ const constants = {
 
   //MATCH WEB SOCKET
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
-  //if address valid from importing estates, websocket will be emitted
+  //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
+  WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
@@ -905,6 +910,8 @@ const constants = {
 
   IMPORT_ACTION_IMPORT: 'import',
   IMPORT_ACTION_EXPORT: 'export',
+
+  ROOM_DEFAULT_ORDER: 100000,
 }
 
 module.exports = constants

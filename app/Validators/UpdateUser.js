@@ -36,7 +36,7 @@ const {
     ARRAY,
     CURRENT_PASSWORD_REQUIRED,
   },
-} = require('../excepions')
+} = require('../exceptions')
 
 class UpdateUser extends Base {
   static schema = () =>

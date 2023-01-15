@@ -58,7 +58,7 @@ const {
 
 const {
   exceptions: { NO_ESTATE_EXIST },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -246,7 +246,21 @@ class EstateService {
     }
 
     let createData = {
-      ...omit(data, ['rooms']),
+      ...omit(data, [
+        'room1_type',
+        'room2_type',
+        'room3_type',
+        'room4_type',
+        'room5_type',
+        'room6_type',
+        'txt_salutation',
+        'surname',
+        'contract_end',
+        'phone_number',
+        'email',
+        'salutation_int',
+        'rooms',
+      ]),
       user_id: userId,
       property_id: propertyId,
       status: STATUS_DRAFT,
@@ -269,21 +283,24 @@ class EstateService {
       createData.letting_status = null
     }
 
+    let estateHash
     const estate = await Estate.createItem(
       {
         ...createData,
       },
       trx
     )
-
-    const estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+    // we can't get hash when we use transaction because that record won't be created before commiting the transaction
+    if (!trx) {
+      estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+    }
 
     // Run processing estate geo nearest
     QueueService.getEstateCoords(estate.id)
 
     const estateData = await estate.toJSON({ isOwner: true })
     return {
-      hash: estateHash.hash,
+      hash: estateHash?.hash || null,
       ...estateData,
     }
   }
@@ -416,20 +433,46 @@ class EstateService {
    *
    */
   static async addFile({ url, disk, estate, type }) {
-    return File.createItem({ url, disk, estate_id: estate.id, type })
+    return await File.createItem({ url, disk, estate_id: estate.id, type })
   }
 
   /**
    *
    */
-  static async removeFile(file) {
-    try {
-      await Drive.disk(file.disk).delete(file.url)
-    } catch (e) {
-      Logger.error(e.message)
+  static async removeFile({ id, estate_id, user_id }) {
+    const ids = Array.isArray(id) ? id : [id]
+    const files =
+      (
+        await File.query()
+          .select('files.*')
+          .whereIn('files.id', ids)
+          .innerJoin('estates', 'estates.id', 'files.estate_id')
+          .where('estates.id', estate_id)
+          .where('estates.user_id', user_id)
+          .fetch()
+      ).rows || []
+
+    if (!files) {
+      throw new HttpException('Image not found', 404)
     }
 
-    await File.query().delete().where('id', file.id)
+    if (files.length != ids.length) {
+      throw new HttpException("Some images don't exist")
+    }
+
+    await File.query().delete().whereIn('id', ids)
+  }
+
+  static async getFiles({ estate_id, ids, type }) {
+    return (
+      (
+        await File.query()
+          .where('estate_id', estate_id)
+          .whereIn('id', ids)
+          .where('type', type)
+          .fetch()
+      ).rows || []
+    )
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {
@@ -909,7 +952,6 @@ class EstateService {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('rooms')
         .with('current_tenant')
         .fetch()
     } else {
