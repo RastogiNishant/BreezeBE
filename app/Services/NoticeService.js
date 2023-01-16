@@ -259,7 +259,7 @@ class NoticeService {
     data.map(async ({ address, id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
-          estate_id,
+          estate_id: id,
           status: MATCH_STATUS_KNOCK,
         })) || []
       knocks.map((match) => {
