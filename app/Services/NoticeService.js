@@ -256,17 +256,17 @@ class NoticeService {
 
   static async landlordEstateExpiredToKnockedProspect(data) {
     let notices = []
-    data.map(async ({ address, id, cover }) => {
+    data.map(async ({ address, estate_id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
-          estate_id: id,
+          estate_id,
           status: MATCH_STATUS_KNOCK,
         })) || []
       knocks.map((match) => {
         notices.push({
           user_id: match.user_id,
           type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
-          data: { estate_id: id, estate_address: address },
+          data: { estate_id, estate_address: address },
           image: File.getPublicUrl(cover),
         })
       })
