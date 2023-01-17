@@ -338,6 +338,7 @@ class ImportService {
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
       .select('filename')
       .select('action')
+      .select('status')
       .where({ user_id, type, entity, action: 'import' })
       .orderBy('created_at', 'desc')
       .first()
