@@ -610,6 +610,11 @@ class MatchController {
     return estate
   }
 
+  async getMatchByEstate({ request, auth, response }) {
+    const { estate_id } = request.all()
+    response.res(await MatchService.getMatches(auth.user.id, estate_id))
+  }
+
   async checkTenantMatchCommitedAlready({ request, auth, response }) {
     const { estate_id } = request.all()
     const { id } = auth.user

@@ -554,6 +554,7 @@ Route.group(() => {
   Route.get('/:estate_id/slots/free', 'EstateController.getEstateFreeTimeslots').middleware([
     'valid:EstateId',
   ])
+  Route.get('/:estate_id/match', 'MatchController.getMatchByEstate').middleware(['valid:EstateId'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwt'])
