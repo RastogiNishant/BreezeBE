@@ -1,5 +1,5 @@
 const url = require('url')
-const { isString, get, isEmpty, capitalize, includes } = require('lodash')
+const { isString, get, isEmpty, capitalize, includes, trim } = require('lodash')
 const {
   ROLE_USER,
   ROLE_LANDLORD,
@@ -99,6 +99,15 @@ const isHoliday = (date) => {
   return includes(GERMAN_HOLIDAYS, date)
 }
 
+const generateAddress = ({ street, house_number, zip, city, country }) => {
+  return trim(
+    `${street || ''} ${house_number || ''}, ${zip || ''} ${city || ''}, ${country || ''}`,
+    ', '
+  )
+    .replace(/\s,/g, ',')
+    .toLowerCase()
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -109,4 +118,5 @@ module.exports = {
   capitalize: capt,
   rc: localeTemplateToValue,
   isHoliday,
+  generateAddress,
 }

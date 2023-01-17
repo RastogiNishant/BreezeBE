@@ -1,7 +1,7 @@
 'use strict'
 
 const appleSignIn = require('apple-signin-auth')
-const { get } = require('lodash')
+const { get, isEmpty } = require('lodash')
 
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
@@ -27,7 +27,7 @@ const {
 const { logEvent } = require('../../Services/TrackingService')
 const {
   exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_UNIQUE, INVALID_USER_ROLE },
-} = require('../../../app/excepions')
+} = require('../../../app/exceptions')
 class OAuthController {
   /**
    *
@@ -65,7 +65,8 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    const { token, device_token, role, code, data1, data2 } = request.all()
+    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    ip = ip || request.ip()
     let ticket
     try {
       ticket = await UserService.verifyGoogleToken(token)
@@ -112,7 +113,6 @@ class OAuthController {
             throw new HttpException(USER_UNIQUE, 400)
           }
         }
-
         user = await UserService.createUserFromOAuth(request, {
           ...ticket.getPayload(),
           google_id: googleId,
@@ -121,6 +121,8 @@ class OAuthController {
           owner_id,
           is_household_invitation_onboarded,
           is_profile_onboarded,
+          ip,
+          ip_based_info,
         })
       } catch (e) {
         throw new HttpException(e.message, 400)
@@ -128,6 +130,10 @@ class OAuthController {
     }
 
     if (user) {
+      if (isEmpty(ip_based_info.country_code)) {
+        const QueueService = require('../../Services/QueueService')
+        QueueService.getIpBasedInfo(user.id, ip)
+      }
       const authenticator = getAuthByRole(auth, user.role)
       const token = await authenticator.generate(user)
       if (data1 && data2) {
@@ -157,7 +163,8 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    const { token, device_token, role, code, data1, data2 } = request.all()
+    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    ip = ip || request.ip()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
     try {
@@ -207,9 +214,16 @@ class OAuthController {
             name: 'Apple User',
             is_household_invitation_onboarded,
             is_profile_onboarded,
+            ip,
+            ip_based_info,
           },
           SIGN_IN_METHOD_APPLE
         )
+
+        if (isEmpty(ip_based_info.country_code)) {
+          const QueueService = require('../../Services/QueueService')
+          QueueService.getIpBasedInfo(user.id, ip)
+        }
 
         if (user && member_id) {
           await MemberService.setMemberOwner(member_id, user.id)

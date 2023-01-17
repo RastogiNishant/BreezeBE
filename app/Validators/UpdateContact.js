@@ -4,13 +4,18 @@ const yup = require('yup')
 
 const Base = require('./Base')
 const { phoneSchema } = require('../Libs/schemas.js')
-const { SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM } = require('../constants')
+const {
+  GENDER_MALE,
+  GENDER_FEMALE,
+  GENDER_NEUTRAL,
+  GENDER_ANY,
+} = require('../constants')
 
 class UpdateContact extends Base {
   static schema = () => {
     return yup.object().shape({
       email: yup.string().email().lowercase().max(255),
-      title: yup.number().oneOf([SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM]),
+      title: yup.number().oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY]),
       full_name: yup.string().min(2).max(255),
       phone: phoneSchema.nullable(),
       region: yup.string().max(255),
