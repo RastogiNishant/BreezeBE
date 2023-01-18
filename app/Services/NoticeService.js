@@ -654,8 +654,9 @@ class NoticeService {
         }
       })
 
-      await NoticeService.insertNotices(notices)
-      await NotificationsService.sendProspectHasSuperMatch(notices)
+      const testNotice = notices[0]
+      await NoticeService.insertNotices([testNotice])
+      await NotificationsService.sendProspectHasSuperMatch([testNotice])
     }
   }
 
