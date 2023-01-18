@@ -478,9 +478,9 @@ class MatchService {
       )
 
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-      if (superMatches.length > 0) {
-        await NoticeService.prospectSuperMatch(superMatches)
-      }
+      // if (superMatches.length > 0) {
+      //   await NoticeService.prospectSuperMatch(superMatches)
+      // }
     }
   }
 
@@ -997,7 +997,7 @@ class MatchService {
       code,
       role: ROLE_USER,
     })
-    
+
     const match = await Database.table('matches')
       .where({
         estate_id,
