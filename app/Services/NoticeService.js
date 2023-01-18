@@ -404,9 +404,9 @@ class NoticeService {
 
     await NoticeService.insertNotices(notices)
     const CHUNK_SIZE = 50
-    await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
-      concurrency: 1,
-    })
+    // await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
+    //   concurrency: 1,
+    // })
   }
 
   /**
