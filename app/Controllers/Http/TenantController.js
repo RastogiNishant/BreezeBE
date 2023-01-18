@@ -124,7 +124,7 @@ class TenantController {
         updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
       } else {
-        //await MatchService.matchByUser(auth.user.id)
+        await MatchService.matchByUser(auth.user.id)
       }
       response.res(updatedTenant)
     } catch (e) {
