@@ -404,9 +404,9 @@ class NoticeService {
 
     await NoticeService.insertNotices(notices)
     const CHUNK_SIZE = 50
-    // await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
-    //   concurrency: 1,
-    // })
+    await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
+      concurrency: 1,
+    })
   }
 
   /**
@@ -654,9 +654,8 @@ class NoticeService {
         }
       })
 
-      const testNotice = notices[0]
-      await NoticeService.insertNotices([testNotice])
-      await NotificationsService.sendProspectHasSuperMatch([testNotice])
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendProspectHasSuperMatch(notices)
     }
   }
 

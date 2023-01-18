@@ -535,9 +535,9 @@ class MatchService {
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-      // if (superMatches.length > 0) {
-      //   await NoticeService.prospectSuperMatch(superMatches, estateId)
-      // }
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(superMatches, estateId)
+      }
     }
   }
 
