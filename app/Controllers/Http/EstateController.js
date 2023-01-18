@@ -50,6 +50,7 @@ const {
   MATCH_STATUS_TOP,
   IMPORT_TYPE_EXCEL,
   IMPORT_ENTITY_ESTATES,
+  IMPORT_ACTIVITY_PENDING,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -339,7 +340,20 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    QueueService.importEstate(importFilePathName, auth.user.id, 'xls')
+    const importItem = await ImportService.addImportFile({
+      user_id: auth.user.id,
+      filename: importFilePathName?.clientName || null,
+      type: IMPORT_TYPE_EXCEL,
+      entity: IMPORT_ENTITY_ESTATES,
+      status: IMPORT_ACTIVITY_PENDING,
+    })
+
+    QueueService.importEstate({
+      fileName: importFilePathName,
+      user_id: auth.user.id,
+      template: 'xls',
+      import_id: importItem.id,
+    })
     response.res(true)
   }
 
