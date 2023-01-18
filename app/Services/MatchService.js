@@ -478,9 +478,9 @@ class MatchService {
       )
 
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-      // if (superMatches.length > 0) {
-      //   await NoticeService.prospectSuperMatch(superMatches)
-      // }
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(superMatches)
+      }
     }
   }
 
