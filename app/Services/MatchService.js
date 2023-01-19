@@ -23,6 +23,7 @@ const File = use('App/Classes/File')
 const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const TenantService = use('App/Services/TenantService')
+const EstateFilters = require('../Classes/EstateFilters')
 
 const {
   MATCH_STATUS_NEW,
@@ -2799,6 +2800,25 @@ class MatchService {
       query.where('estate_id', estate_id)
     }
     await query
+  }
+
+  static async getMatchList(user_id, params = {}) {
+    let matchQuery = require('./EstateService').getActiveEstateQuery()
+
+    matchQuery
+      .where('user_id', user_id)
+      .withCount('knocked')
+      .withCount('invited')
+      .withCount('visited')
+      .withCount('decided')
+      .withCount('final')
+
+    matchQuery = new EstateFilters(params, matchQuery).process()
+    matchQuery.orderBy('estates.id', 'desc')
+    if (params.page && params.page !== -1 && params.limit && params.limit !== -1) {
+      return await matchQuery.paginate(params.page, params.limit)
+    }
+    return await matchQuery.fetch()
   }
 }
 

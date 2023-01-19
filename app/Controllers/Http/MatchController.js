@@ -1021,6 +1021,11 @@ class MatchController {
 
     response.res(true)
   }
+
+  async getMatchList({ request, auth, response }) {
+    const { ...params } = request.all()
+    response.res(await MatchService.getMatchList(auth.user.id, params))
+  }
 }
 
 module.exports = MatchController
