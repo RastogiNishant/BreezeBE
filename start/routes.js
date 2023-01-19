@@ -823,6 +823,13 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/myTenants', 'LandlordController.getAllTenants')
+  Route.get('/tenant_budget_count', 'TenantController.tenantCountByBudget').middleware([
+    'valid:BudgetFilter',
+  ])
+  Route.get('/tenant_credit_score_count', 'TenantController.tenantCountByCreditScore').middleware([
+    'valid:CreditScoreFilter',
+  ])
+  Route.get('/tenant_count', 'TenantController.tenantCount')
 })
   .prefix('api/v1/landlords')
   .middleware(['auth:jwtLandlord'])
@@ -899,7 +906,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
-).middleware(['auth:jwtLandlord'])
+).middleware(['auth:jwtLandlord', 'valid:MatchListLandlord,Pagination'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',
