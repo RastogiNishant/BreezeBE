@@ -1784,6 +1784,13 @@ class MatchService {
     return data
   }
 
+  static async getMatchNewCount(userId, estateIds) {
+    const data = await Database.table('matches')
+      .where({ user_id: userId, status: MATCH_STATUS_NEW })
+      .whereIn('estate_id', estateIds)
+      .count('*')
+    return data
+  }
   // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId, estateIds) {
     const data = await Estate.query()
