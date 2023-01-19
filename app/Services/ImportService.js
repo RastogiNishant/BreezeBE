@@ -153,13 +153,18 @@ class ImportService {
    *
    */
   static async process({ filePath, user_id, type, import_id }) {
-    const reader = new EstateImportReader(filePath.tmpPath)
-    let { errors, data, warnings } = await reader.process()
-    const opt = { concurrency: 1 }
-
     let createErrors = []
     let result = []
+    let errors = []
+    let data = []
+    let warnings = []
     try {
+      const reader = new EstateImportReader(filePath.tmpPath)
+      const excelData = await reader.process()
+      errors = excelData.errors
+      warnings = excelData.warnings
+      data = excelData.data
+      const opt = { concurrency: 1 }
       result = await Promise.map(
         data,
         async (i) => {
@@ -174,7 +179,7 @@ class ImportService {
         }
       })
     } catch (err) {
-      console.log('importing excel issue=', err.message)
+      errors = [...errors, err.message]
     } finally {
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
@@ -207,7 +212,7 @@ class ImportService {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
-    console.log('topicName=', topic)
+
     if (topic) {
       topic.broadcast(WEBSOCKET_EVENT_IMPORT_EXCEL, data)
     }
