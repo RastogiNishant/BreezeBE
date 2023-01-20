@@ -997,7 +997,7 @@ class MatchService {
       code,
       role: ROLE_USER,
     })
-    
+
     const match = await Database.table('matches')
       .where({
         estate_id,
@@ -1784,6 +1784,13 @@ class MatchService {
     return data
   }
 
+  static async getMatchNewCount(userId, estateIds) {
+    const data = await Database.table('matches')
+      .where({ user_id: userId, status: MATCH_STATUS_NEW })
+      .whereIn('estate_id', estateIds)
+      .count('*')
+    return data
+  }
   // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId, estateIds) {
     const data = await Estate.query()
@@ -1944,7 +1951,8 @@ class MatchService {
    */
   static getLandlordMatchesWithFilterQuery(
     estate,
-    { knock, buddy, invite, visit, top, commit, final }
+    { knock, buddy, invite, visit, top, commit, final },
+    params
   ) {
     const query = Tenant.query()
       .select([
@@ -2106,7 +2114,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.income_type order by incomes.income desc))[1] as profession
+          (array_agg(incomes.income_type order by incomes.income desc)) as profession
         from
           members as primaryMember
         left join
@@ -2170,6 +2178,33 @@ class MatchService {
       '_m.user_id',
       '_mf.id_verified'
     )
+
+    if (params && params.budget_min) {
+      query.where('tenants.budget_min', '>=', params.budget_min)
+    }
+    if (params && params.budget_max) {
+      query.where('tenants.budget_max', '<=', params.budget_max)
+    }
+
+    if (params && params.credit_score_min) {
+      query.where('tenants.credit_score', '>=', params.credit_score_min)
+    }
+    if (params && params.credit_score_max) {
+      query.where('tenants.credit_score', '>=', params.credit_score_max)
+    }
+    if (params && params.phone_verified) {
+      query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
+    }
+    if (params && params.id_verified) {
+      query.where('_mf.id_verified', true)
+    }
+    if (params && params.income_type && params.income_type.length) {
+      query.andWhere(function () {
+        params.income_type.map((income_type) => {
+          this.query.orWhere(Database.raw(`'${income_type}' = any(_pm.profession)`))
+        })
+      })
+    }
 
     return query
   }

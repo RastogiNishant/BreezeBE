@@ -383,6 +383,26 @@ class TenantService {
       await tenant.save(trx)
     }
   }
+
+  static async getCountByFilter({ credit_score_min, credit_score_max, budget_min, budget_max }) {
+    let query = Tenant.query()
+    if (credit_score_min) {
+      query.where('credit_score', '>=', credit_score_min)
+    }
+    if (credit_score_max) {
+      query.where('credit_score', '<=', credit_score_max)
+    }
+
+    if (budget_min) {
+      query.where('budget_min', '>=', budget_min)
+    }
+
+    if (budget_max) {
+      query.where('budget_max', '<=', budget_max)
+    }
+
+    return (await query.count('*'))[0].count || []
+  }
 }
 
 module.exports = TenantService

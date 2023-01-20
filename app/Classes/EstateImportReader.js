@@ -142,12 +142,18 @@ class EstateImportReader {
         let row = {}
         //we only work with valid columns and disregard the rest
         this.validColumns.map((column) => {
-          row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
+          const value = get(data[k], `${column.index}`)
+          if (value) {
+            row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
+          }
         })
         row = await this.processRow(row, k)
-        this.data.push(row)
+        if (row) {
+          this.data.push(row)
+        }
       }
     }
+
     return this.data
   }
 
@@ -160,60 +166,72 @@ class EstateImportReader {
   }
 
   mapValue(columnName, value) {
-    if (isFunction(this.dataMapping[columnName])) {
-      return this.dataMapping[columnName](value)
-    } else if (isString(value)) {
-      if (has(this.dataMapping, columnName)) {
-        return get(this.dataMapping, `${columnName}.${this.escapeStr(value)}`)
+    try {
+      if (!value) {
+        return null
       }
+      if (isFunction(this.dataMapping[columnName])) {
+        return this.dataMapping[columnName](value)
+      } else if (isString(value)) {
+        if (has(this.dataMapping, columnName)) {
+          return get(this.dataMapping, `${columnName}.${this.escapeStr(value)}`)
+        }
+      }
+      return value
+    } catch (e) {
+      console.log('mapValue error', `${e.message} occurred for ${columnName} ${value}`)
     }
-    return value
   }
 
   async processRow(row, rowCount, validateRow = true) {
-    //deposit
-    row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
-    //address
-    row.address = generateAddress({
-      street: row.street || '',
-      house_number: row.house_number || '',
-      zip: row.zip || '',
-      city: row.city || '',
-      country: row.country || '',
-    })
-    //letting
-    if (row.letting) {
-      let matches
-      if ((matches = row.letting?.match(/^(.*?) \- (.*?)$/))) {
-        row.letting_status = get(this.dataMapping, `let_status.${this.escapeStr(matches[2])}`)
-        row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(matches[1])}`)
-      } else {
-        row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(row.letting)}`)
+    try {
+      //deposit
+      row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
+      //address
+      row.address = generateAddress({
+        street: row.street || '',
+        house_number: row.house_number || '',
+        zip: row.zip || '',
+        city: row.city || '',
+        country: row.country || '',
+      })
+      //letting
+      if (row.letting) {
+        let matches
+        if ((matches = row.letting?.match(/^(.*?) \- (.*?)$/))) {
+          row.letting_status = get(this.dataMapping, `let_status.${this.escapeStr(matches[2])}`)
+          row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(matches[1])}`)
+        } else {
+          row.letting_type = get(this.dataMapping, `let_type.${this.escapeStr(row.letting)}`)
+        }
       }
-    }
-    unset(row, 'letting') //remove letting
-    //rooms
-    for (let count = 1; count <= MAX_ROOM_TYPES_TO_IMPORT; count++) {
-      let roomValue = get(row, `room${count}_type`)
-      if (roomValue && roomValue != '') {
-        roomValue = this.escapeStr(roomValue)
-        if (get(this.dataMapping, `room_type.${roomValue}`)) {
-          row[`room${count}_type`] = {
-            type: get(this.dataMapping, `room_type.${roomValue}`),
-            name: get(this.dataMapping, `room_type_name.${roomValue}`),
+      unset(row, 'letting') //remove letting
+      //rooms
+      for (let count = 1; count <= MAX_ROOM_TYPES_TO_IMPORT; count++) {
+        let roomValue = get(row, `room${count}_type`)
+        if (roomValue && roomValue != '') {
+          roomValue = this.escapeStr(roomValue)
+          if (get(this.dataMapping, `room_type.${roomValue}`)) {
+            row[`room${count}_type`] = {
+              type: get(this.dataMapping, `room_type.${roomValue}`),
+              name: get(this.dataMapping, `room_type_name.${roomValue}`),
+            }
           }
         }
       }
+      //txt_salutation
+      const salutation = get(row, `txt_salutation`)
+      if (get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)) {
+        row.salutation_int = get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)
+      }
+      if (validateRow) {
+        row = await this.validateRow(row, rowCount)
+      }
+      return row
+    } catch (e) {
+      console.log('processRow error', e.message)
+      return null
     }
-    //txt_salutation
-    const salutation = get(row, `txt_salutation`)
-    if (get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)) {
-      row.salutation_int = get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)
-    }
-    if (validateRow) {
-      row = await this.validateRow(row, rowCount)
-    }
-    return row
   }
 
   async validateRow(row, rowCount) {
