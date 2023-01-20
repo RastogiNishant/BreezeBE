@@ -877,6 +877,10 @@ class MatchController {
       'inviteIn',
       'income',
       'followups',
+      'budget_min',
+      'budget_max',
+      'credit_score',
+      'is_verified',
     ]
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
@@ -892,6 +896,13 @@ class MatchController {
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
+      (filters = { knock: true })
+    ).fetch()
+
+    matches.counts = await MatchService.getMatchesByFilter(tenants.toJSON(), params)
+
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(
+      estate,
       (filters = { buddy: true }),
       { ...params }
     ).paginate(page, limit || 10)
@@ -899,6 +910,13 @@ class MatchController {
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const buddies = data
+
+    tenants = await MatchService.getLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { buddy: true })
+    ).fetch()
+
+    buddies.counts = await MatchService.getMatchesByFilter(tenants.toJSON(), params)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
