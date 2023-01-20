@@ -657,7 +657,6 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
 Route.get('/api/v1/dashboard/count', 'DashboardController.getDashboardCount').middleware([
   'auth:jwtLandlord',
 ])
-
 // Tenant members
 Route.group(() => {
   Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
