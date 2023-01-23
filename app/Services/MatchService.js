@@ -2835,6 +2835,37 @@ class MatchService {
     }
     await query
   }
+
+  static async getInviteList({ user_id, estate_id, filter, buddy, invite }) {
+    const estateQuery = await Estate()
+      .query()
+      .withCount('knocked')
+      .withCount('inviteBuddies')
+      .withCount('visits')
+      .withCount('decided')
+
+    const inviteQuery = await Match()
+      .query()
+      .where('estate_id', estate_id)
+      .where('user_id', user_id)
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.id', 'matches.user_id').with('tenant')
+      })
+
+    if (buddy) {
+      estateQuery.where('matches.status', MATCH_STATUS_NEW)
+      estateQuery.where('matches.buddy', true)
+    }
+    if (invite) {
+      estateQuery.where('matches.status', MATCH_STATUS_INVITE)
+    }
+    if (filter) {
+      inviteQuery.where(function () {
+        this.orWhere('_u.firstname', 'ilike', `%${filter}%`)
+        this.orWhere('_u.lastname', 'ilike', `%${filter}%`)
+      })
+    }
+  }
 }
 
 module.exports = MatchService

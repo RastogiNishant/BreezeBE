@@ -983,6 +983,11 @@ class MatchController {
 
     response.res(true)
   }
+
+  async getInviteList({request, auth, response}) {
+    const {estate_id} = request.all()
+    
+  }
 }
 
 module.exports = MatchController
