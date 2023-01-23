@@ -55,7 +55,7 @@ const {
     ALREADY_USED_QR_CODE,
     EXPIRED_QR_CODE,
   },
-} = require('../excepions')
+} = require('../exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const UserService = use('App/Services/UserService')
