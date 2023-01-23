@@ -4,7 +4,7 @@ const yup = require('yup')
 const {
   getExceptionMessage,
   exceptionKeys: { ARRAY },
-} = require('../excepions')
+} = require('../exceptions')
 
 const Base = require('./Base')
 class Ids extends Base {
