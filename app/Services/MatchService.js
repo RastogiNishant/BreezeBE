@@ -2205,15 +2205,31 @@ class MatchService {
       '_mf.id_verified'
     )
 
-    if (params && params.budget_min) {
+    if (params && !isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+      query.where(function () {
+        this.orWhere(function () {
+          this.andWhere('tenants.budget_max', '>=', params.budget_min).andWhere(
+            'tenants.budget_max',
+            '<=',
+            params.budget_max
+          )
+        })
+        this.orWhere(function () {
+          this.andWhere('tenants.budget_min', '>=', params.budget_min).andWhere(
+            'tenants.budget_min',
+            '<=',
+            params.budget_max
+          )
+        })
+      })
+    } else if (params && !isNaN(params.budget_min) && isNaN(params.budget_max)) {
       query.where('tenants.budget_min', '>=', params.budget_min)
-    }
-    if (params && params.budget_max) {
+    } else if (params && isNaN(params.budget_min) && !isNaN(params.budget_max)) {
       query.where('tenants.budget_max', '<=', params.budget_max)
     }
 
-    if (params && params.credit_score_min) {
-      query.where('tenants.credit_score', '>=', params.credit_score_min)
+    if (params && !isNaN(params.credit_score_min)) {
+      query.where('tenants.credit_score', '<=', params.credit_score_min)
     }
     if (params && params.credit_score_max) {
       query.where('tenants.credit_score', '>=', params.credit_score_max)
