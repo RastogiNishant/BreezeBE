@@ -430,6 +430,12 @@ Route.group(() => {
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
   ])
+  Route.delete('/:estate_id/files', 'EstateController.removeMultipleFiles').middleware([
+    'valid:EstateId,Ids',
+  ])
+  Route.put('/:estate_id/files/order', 'EstateController.updateOrder').middleware([
+    'valid:EstateAddFile,Ids',
+  ])
   Route.get('/:estate_id/rooms/:room_id', 'RoomController.getRoomById').middleware([
     'valid:EstateId,RoomId',
     'LandlordOwnsThisEstate',
@@ -551,6 +557,7 @@ Route.group(() => {
   Route.get('/:estate_id/slots/free', 'EstateController.getEstateFreeTimeslots').middleware([
     'valid:EstateId',
   ])
+  Route.get('/:estate_id/match', 'MatchController.getMatchByEstate').middleware(['valid:EstateId'])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwt'])
@@ -650,6 +657,9 @@ Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware
   'valid:ProtectedFile',
 ])
 
+Route.get('/api/v1/dashboard/count', 'DashboardController.getDashboardCount').middleware([
+  'auth:jwtLandlord',
+])
 // Tenant members
 Route.group(() => {
   Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
@@ -819,6 +829,13 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/myTenants', 'LandlordController.getAllTenants')
+  Route.get('/tenant_budget_count', 'TenantController.tenantCountByBudget').middleware([
+    'valid:BudgetFilter',
+  ])
+  Route.get('/tenant_credit_score_count', 'TenantController.tenantCountByCreditScore').middleware([
+    'valid:CreditScoreFilter',
+  ])
+  Route.get('/tenant_count', 'TenantController.tenantCount')
 })
   .prefix('api/v1/landlords')
   .middleware(['auth:jwtLandlord'])
@@ -895,7 +912,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
-).middleware(['auth:jwtLandlord'])
+).middleware(['auth:jwtLandlord', 'valid:MatchListLandlord,Pagination'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',
@@ -948,7 +965,10 @@ Route.group(() => {
     'valid:LandlordVisitCancel',
   ])
   // Share tenant profile to landlord
-  Route.post('/share', 'MatchController.shareTenantData').middleware(['auth:jwtLandlord'])
+  Route.post('/share', 'MatchController.shareTenantData').middleware([
+    'auth:jwtLandlord',
+    'valid:ShareProspectProfile',
+  ])
   Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
   // Move/remove top tenant
   Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])

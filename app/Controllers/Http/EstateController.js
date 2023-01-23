@@ -50,6 +50,7 @@ const {
   MATCH_STATUS_TOP,
   IMPORT_TYPE_EXCEL,
   IMPORT_ENTITY_ESTATES,
+  IMPORT_ACTIVITY_PENDING,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
@@ -59,12 +60,13 @@ const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
 const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
 const TimeSlotService = require('../../Services/TimeSlotService')
+const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS },
-} = require('../../exceptions')
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
+} = require('../../../app/exceptions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -338,8 +340,21 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    const result = await ImportService.process(importFilePathName, auth.user.id, 'xls')
-    return response.res(result)
+    const importItem = await ImportService.addImportFile({
+      user_id: auth.user.id,
+      filename: importFilePathName?.clientName || null,
+      type: IMPORT_TYPE_EXCEL,
+      entity: IMPORT_ENTITY_ESTATES,
+      status: IMPORT_ACTIVITY_PENDING,
+    })
+
+    QueueService.importEstate({
+      fileName: importFilePathName,
+      user_id: auth.user.id,
+      template: 'xls',
+      import_id: importItem.id,
+    })
+    response.res(true)
   }
 
   //import Estate by property manager
@@ -552,21 +567,46 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
-    const file = await File.query()
-      .select('files.*')
-      .where('files.id', id)
-      .innerJoin('estates', 'estates.id', 'files.estate_id')
-      .where('estates.id', estate_id)
-      .where('estates.user_id', auth.user.id)
-      .first()
-    if (!file) {
-      throw new HttpException('Image not found', 404)
-    }
-
-    await EstateService.removeFile(file)
+    await EstateService.removeFile({ id, estate_id, user_id: auth.user.id })
     response.res(true)
   }
 
+  async removeMultipleFiles({ request, auth, response }) {
+    const { estate_id, ids } = request.all()
+    await EstateService.removeFile({ id: ids, estate_id, user_id: auth.user.id })
+    response.res(true)
+  }
+
+  async updateOrder({ request, auth, response }) {
+    const { estate_id, ids, type } = request.all()
+
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.hasPermission({
+        id: estate_id,
+        user_id: auth.user.id,
+      })
+
+      const imageIds = await EstateService.getFiles({ estate_id, ids, type })
+      if (imageIds.length != ids.length) {
+        throw new HttpException(SOME_IMAGE_NOT_EXIST)
+      }
+
+      await Promise.all(
+        ids.map(async (id, index) => {
+          await File.query()
+            .where('id', id)
+            .update({ order: index + 1 })
+            .transacting(trx)
+        })
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
   /**
    *
    */

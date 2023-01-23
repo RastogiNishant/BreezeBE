@@ -175,6 +175,27 @@ class TenantController {
       throw new HttpException(e.message, 400, e.code)
     }
   }
+
+  async tenantCountByCreditScore({ request, auth, response }) {
+    const { credit_score_min, credit_score_max } = request.all()
+    response.res(await TenantService.getCountByFilter({ credit_score_min, credit_score_max }))
+  }
+
+  async tenantCountByBudget({ request, auth, response }) {
+    const { budget_min, budget_max } = request.all()
+    response.res(await TenantService.getCountByFilter({ budget_min, budget_max }))
+  }
+
+  async tenantCount({ request, auth, response }) {
+    const phoneVerifiedCount = await MemberService.getPhoneVerifieldCount()
+    const idVerifiedCount = await MemberService.getIdVerifiedCount()
+    const incomeCounts = await MemberService.getIncomesCountByFilter()
+    response.res({
+      phone: phoneVerifiedCount,
+      id: idVerifiedCount,
+      income: incomeCounts,
+    })
+  }
 }
 
 module.exports = TenantController

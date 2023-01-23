@@ -159,6 +159,7 @@ class Estate extends Model {
       'is_new_tenant_transfer',
       'transfer_budget',
       'rent_end_at',
+      'income_sources',
     ]
   }
 
@@ -271,22 +272,25 @@ class Estate extends Model {
     })
 
     this.addHook('afterCreate', async (instance) => {
-      await Database.table('estates')
-        .update({ hash: Estate.getHash(instance.id) })
-        .where('id', instance.id)
-      let exists
-      let randomString
-      do {
-        randomString = this.generateRandomString(6)
-        exists = await Database.table('estates')
-          .where('six_char_code', randomString)
-          .select('id')
-          .first()
-      } while (exists)
-      await Database.table('estates')
-        .where('id', instance.id)
-        .update({ six_char_code: randomString })
+      await this.updateBreezeId(instance.id)
     })
+  }
+
+  static async updateBreezeId(id) {
+    await Database.table('estates')
+      .update({ hash: Estate.getHash(id) })
+      .where('id', id)
+
+    let exists
+    let randomString
+    do {
+      randomString = this.generateRandomString(6)
+      exists = await Database.table('estates')
+        .where('six_char_code', randomString)
+        .select('id')
+        .first()
+    } while (exists)
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
   }
 
   /**
@@ -417,7 +421,7 @@ class Estate extends Model {
    *
    */
   files() {
-    return this.hasMany('App/Models/File')
+    return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
   amenities() {

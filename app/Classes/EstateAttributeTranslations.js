@@ -150,12 +150,8 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
@@ -167,6 +163,7 @@ const {
   GENDER_FEMALE,
   GENDER_NEUTRAL,
   GENDER_ANY,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
 
 const {
@@ -472,6 +469,7 @@ class EstateAttributeTranslations {
       if (i === undefined) {
         return Math.random().toString(36).substr(2, 8).toUpperCase()
       }
+      return i
     },
   }
 
@@ -909,22 +907,16 @@ class EstateAttributeTranslations {
       },
       let_status: {
         keys: [
-          'property.attribute.LETTING_STATUS.Defected.message',
-          'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Normal.message',
-          'property.attribute.LETTING_STATUS.Construction.works.message',
-          'property.attribute.LETTING_STATUS.Structural.vacancy.message',
-          'property.attribute.LETTING_STATUS.First-time.use.message',
+          'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
+          'property.attribute.LETTING_STATUS.new_renovated.message',
         ],
         values: [
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
           LETTING_STATUS_VACANCY,
+          LETTING_STATUS_NEW_RENOVATED,
         ],
       },
       salutation: {

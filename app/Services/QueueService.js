@@ -5,6 +5,7 @@ const NoticeService = use('App/Services/NoticeService')
 const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
+const ImportService = use('App/Services/ImportService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
@@ -16,7 +17,7 @@ const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
-
+const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const {
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_13H_DAY_JOB,
@@ -57,6 +58,10 @@ class QueueService {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
   }
 
+  static importEstate({ fileName, user_id, template, import_id }) {
+    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template, import_id }, { delay: 1 })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
@@ -85,14 +90,14 @@ class QueueService {
    */
   static async sendEvery5Min() {
     return Promise.all([
-      // wrapException(QueueJobService.handleExpiredEstates),
-      // wrapException(QueueJobService.handleShowDateEndedEstates),
-      // wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
-      // wrapException(NoticeService.landlordVisitIn90m),
-      // wrapException(NoticeService.prospectVisitIn90m),
-      // wrapException(NoticeService.landlordVisitIn30m),
-      // wrapException(NoticeService.prospectVisitIn30m),
-      // wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(QueueJobService.handleExpiredEstates),
+      wrapException(QueueJobService.handleShowDateEndedEstates),
+      wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
+      wrapException(NoticeService.landlordVisitIn90m),
+      wrapException(NoticeService.prospectVisitIn90m),
+      wrapException(NoticeService.landlordVisitIn30m),
+      wrapException(NoticeService.prospectVisitIn30m),
+      wrapException(NoticeService.getProspectVisitIn3H),
     ])
   }
 
@@ -146,6 +151,13 @@ class QueueService {
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case IMPORT_ESTATES_VIA_EXCEL:
+          return ImportService.process({
+            filePath: job.data.fileName,
+            user_id: job.data.user_id,
+            type: job.data.template,
+            import_id: job.data.import_id,
+          })
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:
