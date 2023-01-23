@@ -2802,9 +2802,13 @@ class MatchService {
     await query
   }
 
-  static async getMatchList(user_id, params = {}) {
+  static getMatchListQuery(user_id, params = {}) {
     let matchQuery = require('./EstateService').getActiveEstateQuery()
-
+    matchQuery = new EstateFilters(params, matchQuery).process()
+    return matchQuery
+  }
+  static async getMatchList(user_id, params = {}) {
+    let matchQuery = this.getMatchListQuery(user_id, params)
     matchQuery
       .where('user_id', user_id)
       .withCount('knocked')
@@ -2812,13 +2816,15 @@ class MatchService {
       .withCount('visited')
       .withCount('decided')
       .withCount('final')
-
-    matchQuery = new EstateFilters(params, matchQuery).process()
     matchQuery.orderBy('estates.id', 'desc')
     if (params.page && params.page !== -1 && params.limit && params.limit !== -1) {
       return await matchQuery.paginate(params.page, params.limit)
     }
     return await matchQuery.fetch()
+  }
+
+  static async getCountMatchList(user_id, params = {}) {
+    return await this.getMatchListQuery(user_id, params).count()
   }
 }
 
