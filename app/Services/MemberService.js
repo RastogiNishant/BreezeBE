@@ -836,6 +836,22 @@ class MemberService {
     )
     return counts
   }
+
+  static async getIncomes(user_id) {
+    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const incomeProofs =
+      (
+        await IncomeProof.query()
+          .select('_i.id', '_i.income_type')
+          .where('income_proofs.expire_date', '>=', startOf)
+          .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+          .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+          .where('_m.user_id', user_id)
+          .fetch()
+      ).toJSON() || []
+
+    return incomeProofs
+  }
 }
 
 module.exports = MemberService
