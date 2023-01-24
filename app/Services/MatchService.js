@@ -2836,7 +2836,7 @@ class MatchService {
     await query
   }
 
-  static async getInviteList({ user_id, estate_id, filter, buddy, invite }) {
+  static async getInviteList({ user_id, estate_id, query, buddy, invite }) {
     const estateQuery = await Estate()
       .query()
       .withCount('knocked')
@@ -2859,10 +2859,10 @@ class MatchService {
     if (invite) {
       estateQuery.where('matches.status', MATCH_STATUS_INVITE)
     }
-    if (filter) {
+    if (query) {
       inviteQuery.where(function () {
-        this.orWhere('_u.firstname', 'ilike', `%${filter}%`)
-        this.orWhere('_u.lastname', 'ilike', `%${filter}%`)
+        this.orWhere('_u.firstname', 'ilike', `%${query}%`)
+        this.orWhere('_u.lastname', 'ilike', `%${query}%`)
       })
     }
   }
