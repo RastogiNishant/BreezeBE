@@ -642,20 +642,27 @@ class NoticeService {
    *
    */
   static async prospectSuperMatch(matches, estateId = null) {
+    let notices = []
     if (matches.length > 0) {
       const groupMatches = groupBy(matches, (match) => match.user_id)
-      const notices = Object.keys(groupMatches).map((key) => {
-        return {
-          user_id: groupMatches[key][0].user_id,
-          type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
-          data: {
-            count: matches?.length || 0,
-          },
+      await P.map(Object.keys(groupMatches), async (key) => {
+        const estate_ids = groupMatches[key].map((m) => m.estate_id)
+        const knockCount = await require('./MatchService').getMatchNewCount(key, estate_ids)
+        if (knockCount[0].count) {
+          notices.push({
+            user_id: key,
+            type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+            data: {
+              count: knockCount[0].count || 0,
+            },
+          })
         }
       })
+    }
 
+    if (notices.length) {
       await NoticeService.insertNotices(notices)
-      await NotificationsService.sendProspectHasSuperMatch(notices)
+      NotificationsService.sendProspectHasSuperMatch(notices)
     }
   }
 

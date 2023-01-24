@@ -1,6 +1,6 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection } = require('lodash')
+const { get, isNumber, isEmpty, intersection, countBy } = require('lodash')
 const { props } = require('bluebird')
 
 const Database = use('Database')
@@ -68,6 +68,15 @@ const {
   WEBSOCKET_EVENT_MATCH,
   NO_MATCH_STATUS,
   MATCH_SCORE_GOOD_MATCH,
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -94,11 +103,23 @@ class MatchService {
   /**
    * Get matches percent between estate/prospect
    */
-  static calculateMatchPercent(prospect, estate) {
+  static async calculateMatchPercent(prospect, estate) {
     // Property Score weight
     // landlordBudgetWeight = 1
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
+
+    const incomes = await require('./MemberService').getIncomes(prospect.user_id)
+    const income_types = incomes.map((ic) => ic.income_type)
+    if (!estate.income_sources) {
+      return 0
+    }
+
+    const isExistIncomeSource = estate.income_sources.some((ic) => income_types.includes(ic))
+    if (!isExistIncomeSource) {
+      return 0
+    }
+
     const ageWeight = 0.6
     const householdSizeWeight = 0.3
     const petsWeight = 0.1
@@ -447,21 +468,23 @@ class MatchService {
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
     }, [])
-    estates = await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
-    const matches = estates
-      .toJSON()
-      .reduce((n, v) => {
-        const percent = MatchService.calculateMatchPercent(tenant, v)
-        if (percent >= MATCH_PERCENT_PASS) {
-          return [...n, { estate_id: v.id, percent }]
-        }
-        return n
-      }, [])
-      .map((i) => ({
-        user_id: userId,
-        estate_id: i.estate_id,
-        percent: i.percent,
-      }))
+    estates =
+      (
+        await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
+      ).toJSON() || []
+
+    let passedEstates = []
+    estates.map(async (estate) => {
+      const percent = await MatchService.calculateMatchPercent(tenant, estate)
+      if (percent >= MATCH_PERCENT_PASS) {
+        passedEstates.push({ estate_id: estate.id, percent })
+      }
+    })
+    const matches = passedEstates.map((i) => ({
+      user_id: userId,
+      estate_id: i.estate_id,
+      percent: i.percent,
+    }))
 
     // Delete old matches without any activity
     await Database.query()
@@ -503,24 +526,26 @@ class MatchService {
       (tenantUserIds, tenant) => [...tenantUserIds, tenant.user_id],
       []
     )
-    tenants = await MatchService.getProspectForScoringQuery()
-      .whereIn('tenants.user_id', tenantUserIds)
-      .fetch()
+    tenants =
+      (
+        await MatchService.getProspectForScoringQuery()
+          .whereIn('tenants.user_id', tenantUserIds)
+          .fetch()
+      ).toJSON() || []
+
     // Calculate matches for tenants to current estate
-    const matches = tenants
-      .toJSON()
-      .reduce((n, v) => {
-        const percent = MatchService.calculateMatchPercent(v, estate)
-        if (percent >= MATCH_PERCENT_PASS) {
-          return [...n, { user_id: v.user_id, percent }]
-        }
-        return n
-      }, [])
-      .map((i) => ({
-        user_id: i.user_id,
-        estate_id: estate.id,
-        percent: i.percent,
-      }))
+    let passedEstates = []
+    tenants.map(async (tenant) => {
+      const percent = await MatchService.calculateMatchPercent(tenant, estate)
+      if (percent >= MATCH_PERCENT_PASS) {
+        passedEstates.push({ user_id: tenant.user_id, percent })
+      }
+    })
+    const matches = passedEstates.map((i) => ({
+      user_id: i.user_id,
+      estate_id: estate.id,
+      percent: i.percent,
+    }))
 
     // Delete old matches without any activity
     await Database.query()
@@ -997,7 +1022,7 @@ class MatchService {
       code,
       role: ROLE_USER,
     })
-    
+
     const match = await Database.table('matches')
       .where({
         estate_id,
@@ -1784,6 +1809,13 @@ class MatchService {
     return data
   }
 
+  static async getMatchNewCount(userId, estateIds) {
+    const data = await Database.table('matches')
+      .where({ user_id: userId, status: MATCH_STATUS_NEW })
+      .whereIn('estate_id', estateIds)
+      .count('*')
+    return data
+  }
   // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId, estateIds) {
     const data = await Estate.query()
@@ -1944,7 +1976,8 @@ class MatchService {
    */
   static getLandlordMatchesWithFilterQuery(
     estate,
-    { knock, buddy, invite, visit, top, commit, final }
+    { knock, buddy, invite, visit, top, commit, final },
+    params
   ) {
     const query = Tenant.query()
       .select([
@@ -2106,7 +2139,7 @@ class MatchService {
         (select
           (array_agg(primaryMember.user_id))[1] as user_id,
           incomes.member_id,
-          (array_agg(incomes.income_type order by incomes.income desc))[1] as profession
+          (array_agg(incomes.income_type order by incomes.income desc)) as profession
         from
           members as primaryMember
         left join
@@ -2158,6 +2191,7 @@ class MatchService {
       '_mb.avatar',
       '_mb.last_address',
       '_mb.phone_verified',
+      '_mb.is_verified',
       '_v.date',
       '_v.start_date AS visit_start_date',
       '_v.end_date AS visit_end_date',
@@ -2171,9 +2205,109 @@ class MatchService {
       '_mf.id_verified'
     )
 
+    if (params && !isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+      query.where(function () {
+        this.orWhere(function () {
+          this.andWhere('tenants.budget_max', '>=', params.budget_min).andWhere(
+            'tenants.budget_max',
+            '<=',
+            params.budget_max
+          )
+        })
+        this.orWhere(function () {
+          this.andWhere('tenants.budget_min', '>=', params.budget_min).andWhere(
+            'tenants.budget_min',
+            '<=',
+            params.budget_max
+          )
+        })
+      })
+    } else if (params && !isNaN(params.budget_min) && isNaN(params.budget_max)) {
+      query.where('tenants.budget_min', '>=', params.budget_min)
+    } else if (params && isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+      query.where('tenants.budget_max', '<=', params.budget_max)
+    }
+
+    if (params && !isNaN(params.credit_score_min)) {
+      query.where('tenants.credit_score', '>=', params.credit_score_min)
+    }
+    if (params && params.credit_score_max) {
+      query.where('tenants.credit_score', '<=', params.credit_score_max)
+    }
+    if (params && params.phone_verified) {
+      query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
+    }
+    if (params && params.id_verified) {
+      query.where('_mf.id_verified', true)
+    }
+    if (params && params.income_type && params.income_type.length) {
+      query.andWhere(function () {
+        params.income_type.map((income_type) => {
+          this.query.orWhere(Database.raw(`'${income_type}' = any(_pm.profession)`))
+        })
+      })
+    }
+
     return query
   }
 
+  static getMatchesByFilter(matches, params = {}) {
+    matches = matches || []
+    if (!params.budget_min) {
+      params.budget_min = 0
+    }
+    if (!params.budget_max) {
+      params.budget_max = 100
+    }
+    if (!params.credit_score_min) {
+      params.credit_score_min = 0
+    }
+    if (!params.credit_score_max) {
+      params.credit_score_max = 1
+    }
+
+    const phoneVerifiedCount =
+      countBy(matches, (match) => match.phone_verified && match.is_verified).true || 0
+    const idVeriedCount = countBy(matches, (match) => match.id_verified).true || 0
+    const budetLimitCount =
+      countBy(
+        matches,
+        (match) => match.budget_min >= params.budget_min && match.budget_max <= params.budget_max
+      ).true || 0
+    const creditScoreLimitCount =
+      countBy(
+        matches,
+        (match) =>
+          match.credit_score >= params.credit_score_min &&
+          match.credit_score <= params.credit_score_max
+      ).true || 0
+    const incomeTypes = [
+      INCOME_TYPE_EMPLOYEE,
+      INCOME_TYPE_WORKER,
+      INCOME_TYPE_UNEMPLOYED,
+      INCOME_TYPE_CIVIL_SERVANT,
+      INCOME_TYPE_FREELANCER,
+      INCOME_TYPE_HOUSE_WORK,
+      INCOME_TYPE_PENSIONER,
+      INCOME_TYPE_SELF_EMPLOYED,
+      INCOME_TYPE_TRAINEE,
+    ]
+
+    const incomeCount = incomeTypes.map((it) => {
+      return {
+        key: it,
+        count: countBy(matches, (match) => match.profession.includes(it)).true || 0,
+      }
+    })
+
+    return {
+      budget: budetLimitCount,
+      credit_score: creditScoreLimitCount,
+      income: incomeCount,
+      phoneVerified: phoneVerifiedCount,
+      idVerified: idVeriedCount,
+    }
+  }
   /**
    *
    */
@@ -2527,7 +2661,8 @@ class MatchService {
         'vacant_date',
         'amenities.options',
         'area',
-        'apt_type'
+        'apt_type',
+        'income_sources'
       )
       .leftJoin(
         Database.raw(`
@@ -2648,20 +2783,21 @@ class MatchService {
     const estateIds = matches.reduce((estateIds, match) => {
       return [...estateIds, match.estate_id]
     }, [])
-    let estates = await MatchService.getEstateForScoringQuery()
-      .whereIn('estates.id', estateIds)
-      .fetch()
-    const matchScores = estates
-      .toJSON()
-      .reduce((n, v) => {
-        const percent = MatchService.calculateMatchPercent(prospect, v)
-        return [...n, { estate_id: v.id, percent }]
-      }, [])
-      .map((i) => ({
-        user_id: userId,
-        estate_id: i.estate_id,
-        percent: i.percent,
-      }))
+    let estates =
+      (
+        await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
+      ).toJSON() || []
+
+    let passedEstates = []
+    estates.map(async (estate) => {
+      const percent = await MatchService.calculateMatchPercent(prospect, estate)
+      passedEstates.push({ estate_id: estate.id, percent })
+    })
+    const matchScores = passedEstates.map((i) => ({
+      user_id: userId,
+      estate_id: i.estate_id,
+      percent: i.percent,
+    }))
 
     if (!isEmpty(matchScores)) {
       const insertQuery = Database.query().into('matches').insert(matchScores).toString()

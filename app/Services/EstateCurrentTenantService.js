@@ -298,9 +298,10 @@ class EstateCurrentTenantService extends BaseService {
     return await query.paginate(page, limit)
   }
 
-  static async delete(id, user_id) {
-    await this.hasPermission(id, user_id)
-    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_DELETE })
+  static async delete(ids, user_id) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    await Promise.map(ids, async (id) => await this.hasPermission(id, user_id))
+    return await EstateCurrentTenant.query().whereIn('id', ids).update({ status: STATUS_DELETE })
   }
 
   static async hasPermission(id, user_id) {
