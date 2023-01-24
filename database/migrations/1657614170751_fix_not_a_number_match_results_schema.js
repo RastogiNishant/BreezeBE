@@ -19,7 +19,7 @@ class FixNotANumberMatchResultsSchema extends Schema {
             const estate = await MatchService.getEstateForScoringQuery()
               .where('estates.id', match.estate_id)
               .first()
-            const matchScore = MatchService.calculateMatchPercent(prospect, estate).toFixed(2)
+            const matchScore = await MatchService.calculateMatchPercent(prospect, estate).toFixed(2)
             await Match.query()
               .where('user_id', match.user_id)
               .where('estate_id', match.estate_id)

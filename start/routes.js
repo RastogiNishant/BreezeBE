@@ -1043,7 +1043,7 @@ Route.group(() => {
   Route.put('/:id', 'EstateCurrentTenantController.update').middleware([
     'valid:CreateEstateCurrentTenant,Id',
   ])
-  Route.delete('/:id', 'EstateCurrentTenantController.delete').middleware(['valid:Id'])
+  Route.delete('/', 'EstateCurrentTenantController.delete').middleware(['valid:Ids'])
   Route.put('/expire/:id', 'EstateCurrentTenantController.expire').middleware(['valid:Id'])
   Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
     'valid:EstateCurrentTenantFilter',
