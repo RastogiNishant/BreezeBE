@@ -2,7 +2,9 @@
 
 const { ERROR_OUTSIDE_TENANT_INVITATION_INVALID } = require('../../constants')
 const HttpException = require('../../Exceptions/HttpException')
+const EstateService = require('../../Services/EstateService')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const Database = use('Database')
 
 class EstateCurrentTenantController {
   async create({ request, auth, response }) {
@@ -60,7 +62,7 @@ class EstateCurrentTenantController {
 
   async delete({ request, auth, response }) {
     const { ids } = request.all()
-    response.res(await EstateCurrentTenantService.delete(ids, auth.user.id))
+    response.res(await EstateCurrentTenantService.handleDelete({ ids, user_id: auth.user.id }))
   }
 
   async expire({ request, auth, response }) {
