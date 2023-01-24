@@ -54,6 +54,7 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_VALID_ADDRESS,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
 
 const {
@@ -1351,6 +1352,18 @@ class EstateService {
       )
     }
     return estate
+  }
+
+  static async notAvailable(estate_ids, trx = null) {
+    const query = Estate.query()
+      .whereIn('id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+      .whereNot('status', STATUS_DELETE)
+      .update({ letting_type: LETTING_TYPE_NA, letting_status: LETTING_STATUS_NEW_RENOVATED })
+
+    if (!trx) {
+      return await query
+    }
+    return await query.transacting(trx)
   }
 
   static async unrented(estate_ids, trx = null) {
