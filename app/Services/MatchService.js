@@ -2229,10 +2229,10 @@ class MatchService {
     }
 
     if (params && !isNaN(params.credit_score_min)) {
-      query.where('tenants.credit_score', '<=', params.credit_score_min)
+      query.where('tenants.credit_score', '>=', params.credit_score_min)
     }
     if (params && params.credit_score_max) {
-      query.where('tenants.credit_score', '>=', params.credit_score_max)
+      query.where('tenants.credit_score', '<=', params.credit_score_max)
     }
     if (params && params.phone_verified) {
       query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
