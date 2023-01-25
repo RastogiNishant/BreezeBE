@@ -23,8 +23,9 @@ const {
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_IMPORT_EXCEL,
   IMPORT_ACTIVITY_DONE,
+  LETTING_TYPE_LET,
 } = require('../constants')
-const RoomService = require('./RoomService')
+
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
@@ -95,7 +96,7 @@ class ImportService {
         }
 
         //add current tenant
-        if (data.surname) {
+        if (data.letting_type === LETTING_TYPE_LET) {
           await EstateCurrentTenantService.addCurrentTenant(
             {
               data,
@@ -279,6 +280,7 @@ class ImportService {
         'salutation_int',
       ])
       let estate = await Estate.query().where('six_char_code', six_char_code).first()
+      const user_id = estate.user_id
       if (!estate) {
         throw new HttpException('estate no exists')
       }
@@ -290,14 +292,24 @@ class ImportService {
       await estate.save(trx)
 
       if (data.email) {
-        await EstateCurrentTenantService.updateCurrentTenant(
-          {
-            data,
-            estate_id: estate.id,
-            user_id: estate.user_id,
-          },
-          trx
-        )
+        if (data.letting_type === LETTING_TYPE_LET) {
+          await EstateCurrentTenantService.updateCurrentTenant(
+            {
+              data,
+              estate_id: estate.id,
+              user_id,
+            },
+            trx
+          )
+        } else {
+          await EstateCurrentTenantService.deleteByEstate(
+            {
+              estate_ids: [estate.id],
+              user_id,
+            },
+            trx
+          )
+        }
       }
       //update Rooms
       let rooms = []
@@ -310,7 +322,7 @@ class ImportService {
       if (rooms.length) {
         await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
       } else {
-        await RoomService.removeAllRoom(estate.id)
+        await require('./RoomService').removeAllRoom(estate.id, trx)
       }
 
       return estate
