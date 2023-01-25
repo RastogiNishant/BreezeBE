@@ -158,7 +158,6 @@ class MatchService {
     })
 
     if (!userIncome) {
-      console.log('isExistIncomeSource userIncome=', isExistIncomeSource)
       //added to prevent division by zero on calculation for realBudget
       return 0
     }
@@ -187,7 +186,6 @@ class MatchService {
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       log("Prospect can't afford.")
-      console.log('isExistIncomeSource realBudget=', isExistIncomeSource)
       return 0
     }
     let estateBudgetRel = estateBudget / 100
@@ -234,7 +232,6 @@ class MatchService {
     })
     if (estate.min_age && estate.max_age && prospect.members_age) {
       const isInRangeArray = (prospect.members_age || []).map((age) => {
-        console.log('isExistIncomeSource inRange=', isExistIncomeSource)
         return inRange(age, estate.min_age, estate.max_age)
       })
       if (isInRangeArray.every((val, i, arr) => val === arr[0]) && isInRangeArray[0] === true) {
@@ -293,7 +290,6 @@ class MatchService {
     // Check if we need to proceed
     if (scoreLPer < 0.5) {
       log('landlord score fails.')
-      console.log('isExistIncomeSource scoreLPer=', isExistIncomeSource)
       return 0
     }
 
@@ -430,11 +426,9 @@ class MatchService {
     // Check is need calculation next step
     if (scoreTPer < 0.5) {
       log('prospect score fails')
-      console.log('isExistIncomeSource score fails=', isExistIncomeSource)
       return 0
     }
     log('\n\n')
-    console.log('isExistIncomeSource last=', ((scoreTPer + scoreLPer) / 2) * 100)
     return ((scoreTPer + scoreLPer) / 2) * 100
   }
 
@@ -557,7 +551,6 @@ class MatchService {
       estate_id: estate.id,
       percent: i.percent,
     }))
-    console.log('MATCH_PERCENT_PASS matches=', matches)
     // Delete old matches without any activity
     await Database.query()
       .from('matches')
