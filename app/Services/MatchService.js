@@ -474,12 +474,16 @@ class MatchService {
       ).toJSON() || []
 
     let passedEstates = []
-    estates.map(async (estate) => {
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
+    let idx = 0
+
+    while (idx < estates.length) {
+      const percent = await MatchService.calculateMatchPercent(tenant, estates[idx])
       if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ estate_id: estate.id, percent })
+        passedEstates.push({ estate_id: estates[idx].id, percent })
       }
-    })
+      idx++
+    }
+
     const matches = passedEstates.map((i) => ({
       user_id: userId,
       estate_id: i.estate_id,
@@ -528,25 +532,25 @@ class MatchService {
     )
     tenants =
       (
-        await MatchService.getProspectForScoringQuery()
-          .whereIn('tenants.user_id', tenantUserIds)
-          .fetch()
+        await MatchService.getProspectForScoringQuery().whereIn('tenants.user_id', [315]).fetch()
       ).toJSON() || []
 
     // Calculate matches for tenants to current estate
     let passedEstates = []
-    tenants.map(async (tenant) => {
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
+    let idx = 0
+    while (idx < tenants.length) {
+      const percent = await MatchService.calculateMatchPercent(tenants[idx], estate)
       if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ user_id: tenant.user_id, percent })
+        passedEstates.push({ user_id: tenants[idx].user_id, percent })
       }
-    })
+      idx++
+    }
+
     const matches = passedEstates.map((i) => ({
       user_id: i.user_id,
       estate_id: estate.id,
       percent: i.percent,
     }))
-
     // Delete old matches without any activity
     await Database.query()
       .from('matches')
@@ -2789,10 +2793,13 @@ class MatchService {
       ).toJSON() || []
 
     let passedEstates = []
-    estates.map(async (estate) => {
-      const percent = await MatchService.calculateMatchPercent(prospect, estate)
-      passedEstates.push({ estate_id: estate.id, percent })
-    })
+    let idx = 0
+    while (idx < estates.length) {
+      const percent = await MatchService.calculateMatchPercent(prospect, estates[idx])
+      passedEstates.push({ estate_id: estates[idx].id, percent })
+      idx++
+    }
+
     const matchScores = passedEstates.map((i) => ({
       user_id: userId,
       estate_id: i.estate_id,
