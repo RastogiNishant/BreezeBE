@@ -5,6 +5,7 @@ const { STATUS_DELETE, LETTING_TYPE_LET } = require('../constants')
 const Estate = use('App/Models/Estate')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Match = use('App/Models/Match')
+const Database = use('Database')
 
 class DashboardService {
   static async getDashboardCounts(user_id) {
@@ -25,7 +26,7 @@ class DashboardService {
           .on('_e.user_id', user_id)
           .onNotIn('_e.status', STATUS_DELETE)
       })
-      .count()
+      .count(Database.raw(`DISTINCT(_e.id)`))
 
     return {
       estate: estateCount[0].count,
