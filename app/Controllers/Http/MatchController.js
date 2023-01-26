@@ -984,14 +984,13 @@ class MatchController {
     response.res(true)
   }
 
-  async getInviteList({ request, auth, response }) {
-    const { estate_id, query, buddy, invite } = request.all()
-    const result = await MatchService.getInviteList({
+  async getMatchStageList({ request, auth, response }) {
+    const { page, limit, ...params } = request.post()
+    const result = await MatchService.getMatchStageList({
       user_id: auth.user.id,
-      estate_id,
-      query,
-      buddy,
-      invite,
+      params,
+      page: page || -1,
+      limit: limit || -1,
     })
     response.res(result)
   }

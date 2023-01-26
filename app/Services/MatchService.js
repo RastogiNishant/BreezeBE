@@ -23,6 +23,7 @@ const File = use('App/Classes/File')
 const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const TenantService = use('App/Services/TenantService')
+const MatchFilters = require('../Classes/MatchFilters')
 
 const {
   MATCH_STATUS_NEW,
@@ -69,6 +70,8 @@ const {
   NO_MATCH_STATUS,
   MATCH_SCORE_GOOD_MATCH,
 } = require('../constants')
+
+const { ESTATE_NOT_EXISTS } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
 
 const MATCH_PERCENT_PASS = 40
@@ -2836,34 +2839,60 @@ class MatchService {
     await query
   }
 
-  static async getInviteList({ user_id, estate_id, query, buddy, invite }) {
-    const estateQuery = await Estate()
+  static async getMatchStageList({ user_id, params, page = -1, limit = -1 }) {
+    const estate = await Estate()
       .query()
+      .where('estate_id', params.estate_id)
+      .where('user_id', user_id)
       .withCount('knocked')
       .withCount('inviteBuddies')
       .withCount('visits')
       .withCount('decided')
+      .first()
 
+    if (!estate) {
+      throw new HttpException(ESTATE_NOT_EXISTS)
+    }
+    const startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
     const inviteQuery = await Match()
       .query()
-      .where('estate_id', estate_id)
-      .where('user_id', user_id)
-      .innerJoin({ _u: 'users' }, function () {
-        this.on('_u.id', 'matches.user_id').with('tenant')
+      .where('estate_id', params.estate_id)
+      .leftJoin({ _u: 'users' }, function () {
+        this.on('_u.id', 'matches.user_id').onNotIn('_u.status', STATUS_DELETE)
+      })
+      .leftJoin({
+        _t: 'tenants',
+        function() {
+          this.on('_t.user_id', '_u.id')
+        },
+      })
+      .leftJoin({ _m: 'members' }, function () {
+        this.on('_m.user_id', '_u.id')
+      })
+      .leftJoin({
+        _i: 'incomes',
+        function() {
+          this.on('_i.member_id', '_m.id')
+        },
+      })
+      .leftJoin({
+        _ip: 'income_proofs',
+        function() {
+          this.on('_ip.income_id', '_i.id').on('_ip.expire_date', '>=', startOf)
+        },
       })
 
-    if (buddy) {
-      estateQuery.where('matches.status', MATCH_STATUS_NEW)
-      estateQuery.where('matches.buddy', true)
+    new MatchFilters(params, inviteQuery)
+
+    if (params.match_status) {
+      inviteQuery.whereIn('matches.status', params.match_status)
     }
-    if (invite) {
-      estateQuery.where('matches.status', MATCH_STATUS_INVITE)
-    }
-    if (query) {
-      inviteQuery.where(function () {
-        this.orWhere('_u.firstname', 'ilike', `%${query}%`)
-        this.orWhere('_u.lastname', 'ilike', `%${query}%`)
-      })
+
+    let result = null
+    if (limit === -1 || page === -1) {
+      result = await query.fetch()
+    } else {
+      result = await query.paginate(page, limit)
     }
   }
 }
