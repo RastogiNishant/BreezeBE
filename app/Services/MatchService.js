@@ -2303,7 +2303,7 @@ class MatchService {
     const incomeCount = incomeTypes.map((it) => {
       return {
         key: it,
-        count: countBy(matches, (match) => match.profession.includes(it)).true || 0,
+        count: countBy(matches, (match) => (match.profession || []).includes(it)).true || 0,
       }
     })
 
