@@ -1992,9 +1992,9 @@ class MatchService {
         '_u.firstname as u_firstname',
         '_u.secondname as u_secondname',
         '_u.birthday as u_birthday',
+        '_u.avatar as u_avatar',
         '_u.sex',
         '_u.email',
-        '_u.avatar',
         '_u.code',
         '_v.landlord_followup_meta as followups',
       ])
