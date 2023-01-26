@@ -435,7 +435,7 @@ class MatchService {
   /**
    *
    */
-  static async matchByUser(userId, ignoreNullFields = false) {
+  static async matchByUser({ userId, ignoreNullFields = false, has_notification_sent = true }) {
     const tenant = await MatchService.getProspectForScoringQuery()
       .select('_p.data as polygon')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
@@ -498,15 +498,18 @@ class MatchService {
       .delete()
 
     // Create new matches
+
     if (!isEmpty(matches)) {
       const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
 
-      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-      if (superMatches.length > 0) {
-        await NoticeService.prospectSuperMatch(superMatches)
+      if (has_notification_sent) {
+        const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+        if (superMatches.length > 0) {
+          await NoticeService.prospectSuperMatch(superMatches)
+        }
       }
     }
   }
