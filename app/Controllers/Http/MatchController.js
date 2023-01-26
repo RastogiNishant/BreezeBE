@@ -984,9 +984,16 @@ class MatchController {
     response.res(true)
   }
 
-  async getInviteList({request, auth, response}) {
-    const {estate_id} = request.all()
-    
+  async getInviteList({ request, auth, response }) {
+    const { estate_id, query, buddy, invite } = request.all()
+    const result = await MatchService.getInviteList({
+      user_id: auth.user.id,
+      estate_id,
+      query,
+      buddy,
+      invite,
+    })
+    response.res(result)
   }
 }
 
