@@ -880,6 +880,7 @@ class MatchController {
       'u_firstname',
       'u_secondname',
       'u_birthday',
+      'u_avatar',
     ]
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
