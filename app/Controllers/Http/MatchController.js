@@ -877,10 +877,10 @@ class MatchController {
       'inviteIn',
       'income',
       'followups',
-      'budget_min',
-      'budget_max',
-      'credit_score',
-      'is_verified',
+      'u_firstname',
+      'u_secondname',
+      'u_birthday',
+      'u_avatar',
     ]
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
@@ -896,13 +896,6 @@ class MatchController {
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { knock: true })
-    ).fetch()
-
-    matches.counts = await MatchService.getMatchesByFilter(tenants.toJSON(), params)
-
-    tenants = await MatchService.getLandlordMatchesWithFilterQuery(
-      estate,
       (filters = { buddy: true }),
       { ...params }
     ).paginate(page, limit || 10)
@@ -910,13 +903,6 @@ class MatchController {
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const buddies = data
-
-    tenants = await MatchService.getLandlordMatchesWithFilterQuery(
-      estate,
-      (filters = { buddy: true })
-    ).fetch()
-
-    buddies.counts = await MatchService.getMatchesByFilter(tenants.toJSON(), params)
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -1000,6 +986,18 @@ class MatchController {
     await MatchService.inviteUserToCome(estate_id, user_id)
 
     response.res(true)
+  }
+
+  async getInviteList({ request, auth, response }) {
+    const { estate_id, query, buddy, invite } = request.all()
+    const result = await MatchService.getInviteList({
+      user_id: auth.user.id,
+      estate_id,
+      query,
+      buddy,
+      invite,
+    })
+    response.res(result)
   }
 }
 
