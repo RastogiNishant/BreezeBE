@@ -7,7 +7,7 @@ const Base = require('./Base')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED },
-} = require('../excepions')
+} = require('../exceptions')
 
 class Id extends Base {
   static schema = () =>

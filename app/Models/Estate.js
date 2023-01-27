@@ -3,6 +3,7 @@
 const moment = require('moment')
 const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
+const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
@@ -45,6 +46,8 @@ const {
   LETTING_TYPE_LET,
   STATUS_DRAFT,
   STATUS_DELETE,
+  ROLE_LANDLORD,
+  ROLE_USER,
 } = require('../constants')
 
 class Estate extends Model {
@@ -156,6 +159,7 @@ class Estate extends Model {
       'is_new_tenant_transfer',
       'transfer_budget',
       'rent_end_at',
+      'income_sources',
     ]
   }
 
@@ -230,12 +234,9 @@ class Estate extends Model {
       }
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
-        instance.address = trim(
-          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
-            instance.city || ''
-          }, ${instance.country || ''}`,
-          ', '
-        ).toLowerCase()
+        instance.address = generateAddress(instance)
+        instance.coord = null
+        instance.coord_raw = null
       }
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
@@ -271,22 +272,25 @@ class Estate extends Model {
     })
 
     this.addHook('afterCreate', async (instance) => {
-      await Database.table('estates')
-        .update({ hash: Estate.getHash(instance.id) })
-        .where('id', instance.id)
-      let exists
-      let randomString
-      do {
-        randomString = this.generateRandomString(6)
-        exists = await Database.table('estates')
-          .where('six_char_code', randomString)
-          .select('id')
-          .first()
-      } while (exists)
-      await Database.table('estates')
-        .where('id', instance.id)
-        .update({ six_char_code: randomString })
+      await this.updateBreezeId(instance.id)
     })
+  }
+
+  static async updateBreezeId(id) {
+    await Database.table('estates')
+      .update({ hash: Estate.getHash(id) })
+      .where('id', id)
+
+    let exists
+    let randomString
+    do {
+      randomString = this.generateRandomString(6)
+      exists = await Database.table('estates')
+        .where('six_char_code', randomString)
+        .select('id')
+        .first()
+    } while (exists)
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
   }
 
   /**
@@ -307,7 +311,7 @@ class Estate extends Model {
    *
    */
   rooms() {
-    return this.hasMany('App/Models/Room')
+    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
   }
 
   activeTasks() {
@@ -317,11 +321,28 @@ class Estate extends Model {
       .orderBy('urgency', 'desc')
   }
 
-  tasks() {
+  tenant_has_unread_task() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
-      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
-      .orderBy('updated_at', 'desc')
-      .orderBy('urgency', 'desc')
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .where('unread_role', ROLE_USER)
+      .where('unread_count', '>', 0)
+  }
+
+  static landlord_has_unread_messages(active_tasks, role = ROLE_LANDLORD) {
+    return active_tasks.findIndex((task) => task.unread_role === role && task.unread_count) !== -1
+  }
+
+  tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
+  }
+  all_tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
   }
 
   /**
@@ -364,7 +385,10 @@ class Estate extends Model {
   }
 
   current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
+    return this.hasOne('App/Models/EstateCurrentTenant', 'id', 'estate_id').where(
+      'status',
+      STATUS_ACTIVE
+    )
   }
 
   /**
@@ -397,11 +421,15 @@ class Estate extends Model {
    *
    */
   files() {
-    return this.hasMany('App/Models/File')
+    return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
   amenities() {
     return this.hasMany('App/Models/Amenity')
+  }
+
+  notifications() {
+    return this.hasOne('App/Models/Notice')
   }
 
   /**

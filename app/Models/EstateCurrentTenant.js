@@ -15,6 +15,7 @@ class EstateCurrentTenant extends Model {
       'status',
       'salutation_int',
       'user_id',
+      'attachments',
     ]
   }
 
