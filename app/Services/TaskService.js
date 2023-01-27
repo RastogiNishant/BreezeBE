@@ -15,6 +15,8 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
+  TASK_STATUS_UNRESOLVED,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const l = use('Localize')
@@ -44,7 +46,9 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
-class TaskService {
+const NoticeService = require('./NoticeService')
+const BaseService = require('./BaseService')
+class TaskService extends BaseService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
     const tenant_id = await this.hasPermission({
@@ -61,7 +65,7 @@ class TaskService {
       status_changed_by: user.role,
     }
 
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const attachments = path.map((p) => {
@@ -236,8 +240,24 @@ class TaskService {
     const taskRow = await query.firstOrFail()
 
     task.status_changed_by = user.role
-    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
-    return await taskRow.updateItem({ ...task })
+    let taskResult = null
+    if (trx) {
+      taskResult = await taskRow.updateItemWithTrx({ ...task }, trx)
+    } else {
+      taskResult = await taskRow.updateItem({ ...task })
+    }
+
+    // send notification to tenant to inform task has been resolved
+    if (user.role === ROLE_LANDLORD && task.status === TASK_STATUS_RESOLVED) {
+      NoticeService.notifyTenantTaskResolved([
+        {
+          user_id: taskRow.tenant_id,
+          estate_id: taskRow.estate_id,
+        },
+      ])
+    }
+
+    return taskResult
   }
 
   /**
@@ -303,23 +323,7 @@ class TaskService {
       throw new HttpException('No Permission')
     }
 
-    task = await TaskService.getItemWithAbsoluteUrl(task)
-
-    // const chats = await ChatService.getChatsByTask({ task_id: task.id, has_attachment: true })
-
-    // await Promise.all(
-    //   (chats || []).map(async (chat) => {
-    //     const chatsAttachment = await ChatService.getAbsoluteUrl(chat.attachments, chat.sender_id)
-    //     if (chatsAttachment) {
-    //       if (task.attachments) {
-    //         task.attachments = task.attachments.concat(chatsAttachment)
-    //       } else {
-    //         task.attachments = chatsAttachment
-    //       }
-    //     }
-    //   })
-    // )
-
+    task = await this.getWithAbsoluteUrl(task)
     return task
   }
 
@@ -328,8 +332,8 @@ class TaskService {
       .select('tasks.*')
       .select(
         Database.raw(`coalesce(
-        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}  
-          or ("tasks"."status" = ${TASK_STATUS_RESOLVED} 
+        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED}
           and "tasks"."updated_at" > '${moment
             .utc()
             .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
@@ -372,7 +376,7 @@ class TaskService {
 
     tasks = await Promise.all(
       tasks.rows.map(async (t) => {
-        return await TaskService.getItemWithAbsoluteUrl(t)
+        return await TaskService.getWithAbsoluteUrl(t)
       })
     )
 
@@ -437,7 +441,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -445,18 +449,9 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .with('estate')
       .with('users')
-  }
-
-  static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
-    const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
-    ])
-
-    return files
   }
 
   static async hasPermission({ estate_id, user_id, role }) {
@@ -467,16 +462,23 @@ class TaskService {
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 500)
+      throw new HttpException('No final match yet for property', 400)
     }
 
     // to check if the user is the tenant for that property.
     if (role === ROLE_USER && finalMatch.user_id !== user_id) {
-      throw new HttpException('No permission for task', 500)
+      throw new HttpException('No permission for task', 400)
     }
 
     if (!finalMatch.user_id) {
       throw new HttpException('Database issue', 500)
+    }
+
+    if (
+      role === ROLE_USER &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+    ) {
+      throw new HttpException('You are not a breeze member yet', 400)
     }
 
     return finalMatch.user_id
@@ -486,7 +488,7 @@ class TaskService {
     const { id } = request.all()
     let task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const pathJSON = path.map((p) => {
@@ -502,7 +504,7 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
-      files.attachments = await ChatService.getAbsoluteUrl(
+      files.attachments = await this.getAbsoluteUrl(
         Array.isArray(files.file) ? files.file : [files.file]
       )
       return files
@@ -559,43 +561,12 @@ class TaskService {
     }
   }
 
-  static async getItemWithAbsoluteUrl(item) {
-    try {
-      if (item.attachments) {
-        item.attachments = await Promise.all(
-          item.attachments.map(async (attachment) => {
-            const thumb =
-              attachment.uri.split('/').length === 2
-                ? await File.getProtectedUrl(
-                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-                      attachment.uri.split('/')[1]
-                    }`
-                  )
-                : ''
-
-            if (attachment.uri.search('http') !== 0) {
-              return {
-                user_id: attachment.user_id,
-                url: await File.getProtectedUrl(attachment.uri),
-                uri: attachment.uri,
-                thumb: thumb,
-              }
-            }
-
-            return {
-              user_id: attachment.user_id,
-              url: attachment.uri,
-              uri: attachment.uri,
-              thumb: thumb,
-            }
-          })
-        )
-      }
-      return item
-    } catch (e) {
-      console.log(e.message, 500)
-      return null
-    }
+  static async archiveTask(estate_id, trx) {
+    estate_id = !Array.isArray(estate_id) ? [estate_id] : estate_id
+    await Task.query()
+      .whereIn('estate_id', estate_id)
+      .update({ status: TASK_STATUS_ARCHIVED })
+      .transacting(trx)
   }
 
   static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {

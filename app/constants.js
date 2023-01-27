@@ -21,9 +21,11 @@ const constants = {
 
   LANG_EN: 'en',
   LANG_DE: 'de',
+  AVAILABLE_LANGUAGES: ['en', 'de'],
   DEFAULT_LANG: 'de',
   FILE_TYPE_COVER: 'cover',
   FILE_TYPE_PLAN: 'plan',
+  FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
 
@@ -71,7 +73,13 @@ const constants = {
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
+  GENDER_NEUTRAL: 4,
   GENDER_ANY: 3,
+
+  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
+  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
+  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
+  SALUTATION_NEUTRAL_LABEL: 'landlord.profile.user_details.salut.not_def.message',
 
   OCCUPATION_TYPE_OCCUPIED_OWN: 1,
   OCCUPATION_TYPE_OCCUPIED_TENANT: 2,
@@ -321,6 +329,7 @@ const constants = {
   FAMILY_STATUS_WITH_CHILD: 3,
   FAMILY_STATUS_NO_CHILD: 2,
 
+  NO_MATCH_STATUS: -1,
   MATCH_STATUS_NEW: 1,
   MATCH_STATUS_KNOCK: 2,
   MATCH_STATUS_INVITE: 3,
@@ -377,6 +386,15 @@ const constants = {
     'fitted_kitchen',
   ],
 
+  ESTATE_NOTIFICATION_FIELDS: [
+    'id',
+    'address',
+    'cover',
+    'rooms_number',
+    'area',
+    'floor',
+    'number_floors',
+  ],
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
@@ -430,7 +448,10 @@ const constants = {
   NOTICE_TYPE_TENANT_DISCONNECTION: 'notification_tenant_disconnection',
 
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT: 'notification_landlord_update_slot',
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED: 'notification_prospect_knock_property_expired',
 
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED: 'notification_prospect_task_resolved',
+  NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
   NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID: 4,
@@ -477,6 +498,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID: 50,
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID: 51, // landlord updated timeslot
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID: 52,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -624,21 +647,10 @@ const constants = {
   LETTING_TYPE_VOID: 2,
   LETTING_TYPE_NA: 3,
 
-  LETTING_STATUS_DEFECTED: 1,
+  LETTING_STATUS_STANDARD: 1,
   LETTING_STATUS_TERMINATED: 2,
-  LETTING_STATUS_NORMAL: 3,
-  LETTING_STATUS_CONSTRUCTION_WORKS: 4,
-  LETTING_STATUS_STRUCTURAL_VACANCY: 5,
-  LETTING_STATUS_FIRST_TIME_USE: 6,
-  LETTING_STATUS_VACANCY: 7,
-
-  SALUTATION_MR_LABEL: 'Mr.',
-  SALUTATION_MS_LABEL: 'Ms.',
-  SALUTATION_SIR_OR_MADAM_LABEL: 'Mx.',
-
-  SALUTATION_MR: 1,
-  SALUTATION_MS: 2,
-  SALUTATION_SIR_OR_MADAM: 3,
+  LETTING_STATUS_VACANCY: 3,
+  LETTING_STATUS_NEW_RENOVATED: 4,
 
   MINIMUM_SHOW_PERIOD: 5,
   ROOM_CUSTOM_AMENITIES_MAX_COUNT: 3,
@@ -716,6 +728,7 @@ const constants = {
     avatar: '/img/breezeLogo.png',
   },
 
+  TASK_STATUS_ARCHIVED: 99,
   TASK_STATUS_DRAFT: 100,
   TASK_STATUS_DELETE: 101,
 
@@ -873,10 +886,32 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
+  MAX_ROOM_TYPES_TO_IMPORT: 6,
+
   WEBSOCKET_EVENT_ESTATE_VERIED_ADDRESS: 'estate_address_verified',
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
+
+  //MATCH WEB SOCKET
+  WEBSOCKET_EVENT_MATCH: 'matchChanged',
+  //if address valid from  importing estates, websocket will be emitted
+  WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
+  WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
+  MATCH_SCORE_GOOD_MATCH: 70,
+
+  IMPORT_TYPE_EXCEL: 'excel',
+  IMPORT_ENTITY_ESTATES: 'estates',
+
+  IMPORT_ACTION_IMPORT: 'import',
+  IMPORT_ACTION_EXPORT: 'export',
+
+  ROOM_DEFAULT_ORDER: 100000,
+
+  IMPORT_ACTIVITY_PENDING: 'pending',
+  IMPORT_ACTIVITY_DONE: 'done',
 }
 
 module.exports = constants

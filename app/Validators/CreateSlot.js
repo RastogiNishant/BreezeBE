@@ -5,7 +5,7 @@ const yup = require('yup')
 const {
   getExceptionMessage,
   exceptionKeys: { OPTION },
-} = require('../excepions')
+} = require('../exceptions')
 
 const Base = require('./Base')
 const UpdateSlot = require('./UpdateSlot')

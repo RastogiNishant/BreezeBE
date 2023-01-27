@@ -5,7 +5,7 @@ const Base = require('./Base')
 const {
   getExceptionMessage,
   exceptionKeys: { MINLENGTH, MAXLENGTH },
-} = require('../excepions')
+} = require('../exceptions')
 
 class ChangePassword extends Base {
   static schema = () =>
