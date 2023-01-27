@@ -2840,9 +2840,8 @@ class MatchService {
   }
 
   static async getMatchStageList({ user_id, params, page = -1, limit = -1 }) {
-    const estate = await Estate()
-      .query()
-      .where('estate_id', params.estate_id)
+    const estate = await Estate.query()
+      .where('id', params.estate_id)
       .where('user_id', user_id)
       .withCount('knocked')
       .withCount('inviteBuddies')
@@ -2851,48 +2850,47 @@ class MatchService {
       .first()
 
     if (!estate) {
-      throw new HttpException(ESTATE_NOT_EXISTS)
+      throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
     const startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
-    const inviteQuery = await Match()
-      .query()
-      .where('estate_id', params.estate_id)
+    let inviteQuery = Match.query()
+      .select('matches.*')
+      .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
+      .select('_t.members_count', '_t.minors_count')
       .leftJoin({ _u: 'users' }, function () {
         this.on('_u.id', 'matches.user_id').onNotIn('_u.status', STATUS_DELETE)
       })
-      .leftJoin({
-        _t: 'tenants',
-        function() {
-          this.on('_t.user_id', '_u.id')
-        },
+      .leftJoin({ _t: 'tenants' }, function () {
+        this.on('_t.user_id', '_u.id')
       })
       .leftJoin({ _m: 'members' }, function () {
         this.on('_m.user_id', '_u.id')
       })
-      .leftJoin({
-        _i: 'incomes',
-        function() {
-          this.on('_i.member_id', '_m.id')
-        },
+      .leftJoin({ _i: 'incomes' }, function () {
+        this.on('_i.member_id', '_m.id')
       })
-      .leftJoin({
-        _ip: 'income_proofs',
-        function() {
-          this.on('_ip.income_id', '_i.id').on('_ip.expire_date', '>=', startOf)
-        },
+      .leftJoin({ _ip: 'income_proofs' }, function () {
+        this.on('_ip.income_id', '_i.id').on(Database.raw(`_ip.expire_date >= '${startOf}'`))
       })
 
-    new MatchFilters(params, inviteQuery)
+    // const filter = new MatchFilters(params, inviteQuery)
+    // inviteQuery = filter.process()
 
     if (params.match_status) {
       inviteQuery.whereIn('matches.status', params.match_status)
     }
 
-    let result = null
+    inviteQuery.where('estate_id', params.estate_id)
+    let match = null
     if (limit === -1 || page === -1) {
-      result = await query.fetch()
+      match = await inviteQuery.fetch()
     } else {
-      result = await query.paginate(page, limit)
+      match = await inviteQuery.paginate(page, limit)
+    }
+
+    return {
+      estate,
+      match: match.toJSON({ isShort: true }),
     }
   }
 }

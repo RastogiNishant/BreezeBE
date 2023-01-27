@@ -1,5 +1,5 @@
-'user strict'
-
+'use strict'
+const { isEmpty, trim, lowerCase } = require('lodash')
 const {
   INCOME_TYPE_EMPLOYEE,
   INCOME_TYPE_WORKER,
@@ -27,12 +27,6 @@ class MatchFilters extends Filter {
     }
 
     Filter.MappingInfo = {
-      urgency: {
-        low: URGENCY_LOW,
-        normal: URGENCY_NORMAL,
-        high: URGENCY_HIGH,
-        urgent: URGENCY_SUPER,
-      },
       income_sources: {
         employee: INCOME_TYPE_EMPLOYEE,
         worker: INCOME_TYPE_WORKER,

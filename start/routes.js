@@ -356,7 +356,7 @@ Route.group(() => {
   ])
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
-  Route.post('/invite', 'MatchController.getMatchStageList').middleware([
+  Route.post('/match/invite', 'MatchController.getMatchStageList').middleware([
     'valid:MatchFilter,Pagination',
   ])
   Route.post('/import', 'EstateController.importEstate')
