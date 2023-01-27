@@ -80,7 +80,7 @@ class File {
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.gif`
 
-      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
+      ////gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
 
       let command = `gifsicle -i ${filePath} `
       if (options.optimize) {
