@@ -1,5 +1,5 @@
 'use strict'
-const { isEmpty, trim, lowerCase } = require('lodash')
+const { isEmpty } = require('lodash')
 const {
   INCOME_TYPE_EMPLOYEE,
   INCOME_TYPE_WORKER,
@@ -10,6 +10,10 @@ const {
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
+  MATCH_HOUSEHOLD_HAS_CHILD_LABEL,
+  LOW_MATCH_ICON,
+  MEDIUM_MATCH_ICON,
+  SUPER_MATCH_ICON,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -46,14 +50,46 @@ class MatchFilters extends Filter {
       updated_at: 'matches',
       firstname: '_u',
       secondname: '_u',
+      birthday: '_u',
     }
 
     Filter.paramToField = {
       status: 'updated_at',
       tenant: ['firstname', 'secondname'],
+      age: 'any(_m.members_age)',
     }
 
-    this.matchFilter(['income', 'income_sources', 'status', 'tenant'], params)
+    this.matchFilter(['income', 'income_sources', 'status', 'tenant', 'age'], params)
+
+    if (params.percent && params.percent.value !== null) {
+      this.query.andWhere(function () {
+        if (params.percent.value.includes(LOW_MATCH_ICON)) {
+          this.query.orWhere('matches.percent', '<=', 60)
+        }
+        if (params.percent.value.includes(MEDIUM_MATCH_ICON)) {
+          this.query.orWhere(function () {
+            this.query.andWhere('matches.percent', '>', 60).andWhere('matches.percent', '<=', 80)
+          })
+        }
+        if (params.percent.value.includes(SUPER_MATCH_ICON)) {
+          this.query.orWhere('matches.percent', '>', 80)
+        }
+      })
+    }
+
+    if (params.has_child && params.has_child.value !== null) {
+      this.query.andWhere(function () {
+        if (params.has_child.value.includes(MATCH_HOUSEHOLD_HAS_CHILD_LABEL)) {
+          this.query.andWhere('_t.minors_count', '>', 0)
+        }
+        if (params.has_child.value.includes(MEDIUM_MATCH_ICON)) {
+          this.query.andWhere(function () {
+            this.query.orWhereNull('_t.minors_count')
+            this.query.orWhere('_t.minors_count', '=', 0)
+          })
+        }
+      })
+    }
   }
 }
 

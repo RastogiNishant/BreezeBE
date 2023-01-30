@@ -200,6 +200,9 @@ class Filter {
         }
         return `${field} <> '${value}'`
       case 'lt':
+        if (field.toUpperCase().includes(`ANY`)) {
+          return `'${value}' > ${field}`
+        }
         if (isArray(field)) {
           const filterList = field.map((f) => `${this.getField(f)} < '${value}'`)
           const filter = `( ${filterList.join(` or `)} )`
@@ -208,6 +211,9 @@ class Filter {
         return `${field} < '${value}'`
       case 'lte':
       case 'dateBefore':
+        if (field.toUpperCase().includes(`ANY`)) {
+          return `'${value}' >= ${field}`
+        }
         if (isArray(field)) {
           const filterList = field.map((f) => `${this.getField(f)} <= '${value}'`)
           const filter = `( ${filterList.join(` or `)} )`
@@ -215,6 +221,9 @@ class Filter {
         }
         return `${field} <= '${value}'`
       case 'gt':
+        if (field.toUpperCase().includes(`ANY`)) {
+          return `'${value}' < ${field}`
+        }
         if (isArray(field)) {
           const filterList = field.map((f) => `${this.getField(f)} > '${value}'`)
           const filter = `( ${filterList.join(` or `)} )`
@@ -223,6 +232,9 @@ class Filter {
         return `${field} > '${value}'`
       case 'gte':
       case 'dateAfter':
+        if (field.toUpperCase().includes(`ANY`)) {
+          return `${value} <= ${field}`
+        }
         if (isArray(field)) {
           const filterList = field.map((f) => `${this.getField(f)} >= '${value}'`)
           const filter = `( ${filterList.join(` or `)} )`

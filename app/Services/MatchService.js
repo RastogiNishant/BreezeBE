@@ -2856,25 +2856,99 @@ class MatchService {
     let inviteQuery = Match.query()
       .select('matches.*')
       .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
-      .select('_t.members_count', '_t.minors_count')
+      .select('_t.members_count', '_t.minors_count', '_t.income')
+      .select(
+        '_m.credit_score_proofs',
+        '_m.no_rent_arrears_proofs',
+        '_m.rent_arrears',
+        '_m.credit_score',
+        '_m.members_age'
+      )
       .leftJoin({ _u: 'users' }, function () {
         this.on('_u.id', 'matches.user_id').onNotIn('_u.status', STATUS_DELETE)
       })
       .leftJoin({ _t: 'tenants' }, function () {
         this.on('_t.user_id', '_u.id')
       })
-      .leftJoin({ _m: 'members' }, function () {
-        this.on('_m.user_id', '_u.id')
-      })
-      .leftJoin({ _i: 'incomes' }, function () {
-        this.on('_i.member_id', '_m.id')
-      })
-      .leftJoin({ _ip: 'income_proofs' }, function () {
-        this.on('_ip.income_id', '_i.id').on(Database.raw(`_ip.expire_date >= '${startOf}'`))
-      })
+      .leftJoin(
+        //members...
+        Database.raw(`
+      (select
+        user_id,
+        avg(credit_score) as credit_score,
+        count(id) as members_count,
+        bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
+        bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
+        bool_or(coalesce(unpaid_rental, 0) > 0) as rent_arrears,
+        -- sum(income) as income,
+        array_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
+      from members
+      group by user_id
+      ) as _m
+      `),
+        function () {
+          this.on('_t.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //members incomes and income_proofs
+        Database.raw(`
+        (-- tenant has members
+          select
+            members.user_id,
+            sum(member_total_income) as total_income,
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs
+          from
+            members
+          left join
+            (
+            -- whether or not member has all proofs, get also member's total income
+            select
+              incomes.member_id,
+              sum(_mip.income) as member_total_income,
+              bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+            from
+              incomes
+            left join
+              (
+              -- how many proofs are submitted for each income
+              select
+                incomes.id,
+                incomes.income as income,
+                incomes.member_id,
+                count(income_proofs.file) as submitted_proofs
+              from
+                incomes
+              left join
+                income_proofs
+              on
+                income_proofs.income_id = incomes.id
+              group by incomes.id) as _mip
+            on
+              _mip.id=incomes.id
+            group by
+              incomes.id
+            ) as _mi
+          on _mi.member_id=members.id
+          group by
+            members.user_id
+        ) as _me`),
+        function () {
+          this.on('_me.user_id', '_m.user_id')
+        }
+      )
+    // .leftJoin({ _m: 'members' }, function () {
+    //   this.on('_m.user_id', '_u.id')
+    // })
+    // .leftJoin({ _i: 'incomes' }, function () {
+    //   this.on('_i.member_id', '_m.id')
+    // })
+    // .leftJoin({ _ip: 'income_proofs' }, function () {
+    //   this.on('_ip.income_id', '_i.id').on(Database.raw(`_ip.expire_date >= '${startOf}'`))
+    // })
 
-    // const filter = new MatchFilters(params, inviteQuery)
-    // inviteQuery = filter.process()
+    const filter = new MatchFilters(params, inviteQuery)
+    inviteQuery = filter.process()
 
     if (params.match_status) {
       inviteQuery.whereIn('matches.status', params.match_status)

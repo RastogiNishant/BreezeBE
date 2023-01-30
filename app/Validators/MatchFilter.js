@@ -75,7 +75,7 @@ class MatchFilter extends Base {
             .nullable(),
         })
         .nullable(),
-      household: yup
+      has_child: yup
         .object()
         .shape({
           matchMode: yup.string(),
@@ -94,7 +94,7 @@ class MatchFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.number().nullable(),
+              value: yup.number().positive().nullable(),
             })
           ),
         })
