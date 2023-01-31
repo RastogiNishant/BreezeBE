@@ -2852,7 +2852,29 @@ class MatchService {
     if (!estate) {
       throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
-    const startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
+
+    const inviteQuery = this.getMatchStageQuery({ params })
+    let match = null
+    let count = 0
+    if (limit === -1 || page === -1) {
+      match = await inviteQuery.fetch()
+      count = match.rows?.length || 0
+    } else {
+      match = await inviteQuery.paginate(page, limit)
+      count = (
+        await inviteQuery
+          .clearSelect()
+          .count(Database.raw(`DISTINCT("matches"."user_id", "matches"."estate_id")`))
+      )[0].count
+    }
+    return {
+      estate,
+      match: match.toJSON({ isShort: true }),
+      count,
+    }
+  }
+
+  static getMatchStageQuery({ params }) {
     let inviteQuery = Match.query()
       .select('matches.*')
       .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
@@ -2865,10 +2887,11 @@ class MatchService {
         '_m.members_age',
         '_me.income_sources',
         '_me.work_exp',
-        '_me.total_work_exp'
+        '_me.total_work_exp',
+        '_me.income_proofs'
       )
       .leftJoin({ _u: 'users' }, function () {
-        this.on('_u.id', 'matches.user_id').onNotIn('_u.status', STATUS_DELETE)
+        this.on('_u.id', 'matches.user_id')
       })
       .leftJoin({ _t: 'tenants' }, function () {
         this.on('_t.user_id', '_u.id')
@@ -2945,15 +2968,6 @@ class MatchService {
           this.on('_me.user_id', '_m.user_id')
         }
       )
-    // .leftJoin({ _m: 'members' }, function () {
-    //   this.on('_m.user_id', '_u.id')
-    // })
-    // .leftJoin({ _i: 'incomes' }, function () {
-    //   this.on('_i.member_id', '_m.id')
-    // })
-    // .leftJoin({ _ip: 'income_proofs' }, function () {
-    //   this.on('_ip.income_id', '_i.id').on(Database.raw(`_ip.expire_date >= '${startOf}'`))
-    // })
 
     const filter = new MatchFilters(params, inviteQuery)
     inviteQuery = filter.process()
@@ -2961,19 +2975,13 @@ class MatchService {
     if (params.match_status) {
       inviteQuery.whereIn('matches.status', params.match_status)
     }
+    if (params.buddy) {
+      inviteQuery.where('matches.buddy', true)
+      inviteQuery.where('matches.status', MATCH_STATUS_NEW)
+    }
 
     inviteQuery.where('estate_id', params.estate_id)
-    let match = null
-    if (limit === -1 || page === -1) {
-      match = await inviteQuery.fetch()
-    } else {
-      match = await inviteQuery.paginate(page, limit)
-    }
-
-    return {
-      estate,
-      match: match.toJSON({ isShort: true }),
-    }
+    return inviteQuery
   }
 }
 

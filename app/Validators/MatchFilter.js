@@ -63,8 +63,8 @@ class MatchFilter extends Base {
               MATCH_STATUS_COMMIT,
               MATCH_STATUS_FINISH,
             ])
-        )
-        .required(),
+        ),
+      buddy: yup.boolean(),
       percent: yup
         .object()
         .shape({
@@ -161,7 +161,7 @@ class MatchFilter extends Base {
             .nullable(),
         })
         .nullable(),
-      status: yup.object().shape({
+      knocked_at: yup.object().shape({
         operator: yup.string().oneOf(['and', 'or']),
         constraints: yup.array().of(
           yup.object().shape({
