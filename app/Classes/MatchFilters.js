@@ -16,6 +16,7 @@ const {
   SUPER_MATCH_ICON,
 } = require('../constants')
 const Filter = require('./Filter')
+const Database = use('Database')
 
 class MatchFilters extends Filter {
   // static HouseHoldMap = {
@@ -36,7 +37,7 @@ class MatchFilters extends Filter {
         worker: INCOME_TYPE_WORKER,
         unemployed: INCOME_TYPE_UNEMPLOYED,
         civil_servant: INCOME_TYPE_CIVIL_SERVANT,
-        freelance: INCOME_TYPE_FREELANCER,
+        freelancer: INCOME_TYPE_FREELANCER,
         housekeeper: INCOME_TYPE_HOUSE_WORK,
         pensioner: INCOME_TYPE_PENSIONER,
         self_employeed: INCOME_TYPE_SELF_EMPLOYED,
@@ -45,12 +46,11 @@ class MatchFilters extends Filter {
     }
 
     Filter.TableInfo = {
-      income_sources: '_i',
       income: '_t',
       updated_at: 'matches',
       firstname: '_u',
       secondname: '_u',
-      birthday: '_u',
+      total_work_exp: '_me',
     }
 
     Filter.paramToField = {
@@ -59,7 +59,7 @@ class MatchFilters extends Filter {
       age: 'any(_m.members_age)',
     }
 
-    this.matchFilter(['income', 'income_sources', 'status', 'tenant', 'age'], params)
+    this.matchFilter(['income', 'status', 'tenant', 'age', 'total_work_exp'], params)
 
     if (params.percent && params.percent.value !== null) {
       this.query.andWhere(function () {
@@ -75,6 +75,13 @@ class MatchFilters extends Filter {
           this.query.orWhere('matches.percent', '>', 80)
         }
       })
+    }
+
+    if (params.income_sources && params.income_sources.value != null) {
+      const income_sources = this.getValues('income_sources', params.income_sources.value)
+      this.query.where(
+        Database.raw(`_me.income_sources::jsonb \\?| array['${income_sources.join(',')}']`)
+      )
     }
 
     if (params.has_child && params.has_child.value !== null) {

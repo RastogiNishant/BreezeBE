@@ -133,7 +133,7 @@ class Filter {
 
     if (Filter.MappingInfo && Filter.MappingInfo[param]) {
       const mappingVals = values.map(
-        (v) => Filter.MappingInfo[param][toLower(v.replace(/ /g, ''))] || null
+        (v) => Filter.MappingInfo[param][toLower(v.replace(/ /g, '_').replace(/-/, '_'))] || null
       )
       if (mappingVals.includes(null)) {
         throw new HttpException(`No matching value for params ${param} value ${values}`, 500)

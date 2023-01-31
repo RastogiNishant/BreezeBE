@@ -135,7 +135,7 @@ class MatchFilter extends Base {
             .nullable(),
         })
         .nullable(),
-      duration: yup
+      total_work_exp: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),

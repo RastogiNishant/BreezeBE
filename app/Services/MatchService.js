@@ -2862,7 +2862,10 @@ class MatchService {
         '_m.no_rent_arrears_proofs',
         '_m.rent_arrears',
         '_m.credit_score',
-        '_m.members_age'
+        '_m.members_age',
+        '_me.income_sources',
+        '_me.work_exp',
+        '_me.total_work_exp'
       )
       .leftJoin({ _u: 'users' }, function () {
         this.on('_u.id', 'matches.user_id').onNotIn('_u.status', STATUS_DELETE)
@@ -2897,7 +2900,10 @@ class MatchService {
           select
             members.user_id,
             sum(member_total_income) as total_income,
-            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs,
+            json_agg(_mi.income_type) as income_sources,
+            json_agg(work_exp) as work_exp,
+            sum(work_exp) as total_work_exp
           from
             members
           left join
@@ -2906,6 +2912,8 @@ class MatchService {
             select
               incomes.member_id,
               sum(_mip.income) as member_total_income,
+              incomes.income_type,
+              coalesce(incomes.work_exp, 0) as work_exp,
               bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
             from
               incomes
