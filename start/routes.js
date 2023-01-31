@@ -357,6 +357,7 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.post('/with-filters', 'EstateController.getEstates').middleware([
     'valid:Pagination,EstateFilter',
   ])

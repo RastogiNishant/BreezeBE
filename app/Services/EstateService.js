@@ -55,6 +55,7 @@ const {
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_VALID_ADDRESS,
   LETTING_STATUS_NEW_RENOVATED,
+  LETTING_STATUS_STANDARD,
 } = require('../constants')
 
 const {
@@ -1006,6 +1007,30 @@ class EstateService {
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
+  }
+
+  static async getEstatesByQuery({ user_id, query }) {
+    return await Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('user_id', user_id)
+      .andWhere(function () {
+        this.orWhere(function () {
+          this.where('letting_type', LETTING_TYPE_LET).whereNot(
+            'letting_status',
+            LETTING_STATUS_STANDARD
+          )
+        })
+        this.orWhere(function () {
+          this.whereNot('letting_type', LETTING_TYPE_LET)
+        })
+      })
+      .andWhere(function () {
+        this.orWhere('estates.street', 'ilike', `%${query}%`)
+        this.orWhere('estates.zip', 'ilike', `${query}%`)
+        this.orWhere('estates.city', 'ilike', `${query}%`)
+        this.orWhere('estates.address', 'ilike', `${query}%`)
+      })
+      .fetch()
   }
 
   static async getFilteredCounts(userId, params) {
