@@ -205,7 +205,7 @@ class EstateController {
   async searchEstates({ request, auth, response }) {
     const { query } = request.all()
     const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query })
-    response.res(estates.toJSON({ isShort: true }))
+    response.res(estates)
   }
   /**
    *

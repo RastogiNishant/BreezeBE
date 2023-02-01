@@ -551,6 +551,7 @@ const constants = {
     'net_rent',
     'area',
     'cover',
+    'country',
     'street',
     'city',
     'zip',
