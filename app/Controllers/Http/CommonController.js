@@ -2,6 +2,8 @@
 
 const constants = require('../../constants')
 const { get, map } = require('lodash')
+const { DEFAULT_LANG } = require('../../constants')
+const File = use('App/Classes/File')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
@@ -110,6 +112,14 @@ class CommonController {
     const { query } = request.all()
     const result = await CommonService.searchProfession(query)
     response.res(map(result, (i) => i.value))
+  }
+
+  async getExcelTemplate({ request, response }) {
+    let { lang } = request.all()
+    lang = lang ? lang : DEFAULT_LANG
+    const template_dir = process.env.EXCEL_TEMPLATE_DIR || 'excel-template'
+    const relative_path = `${template_dir}/${lang}_template.xlsx`
+    response.res(File.getPublicUrl(relative_path))
   }
 }
 
