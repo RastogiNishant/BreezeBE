@@ -1023,6 +1023,12 @@ class EstateService {
     let existingEstates =
       (
         await Estate.query()
+          .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+            this.on('_ect.estate_id', 'estates.id').onNotIn('_ect.status', [
+              STATUS_DELETE,
+              STATUS_EXPIRE,
+            ])
+          })
           .select(
             'estates.id',
             'estates.address',
@@ -1034,19 +1040,17 @@ class EstateService {
             'estates.floor_direction'
           )
           .select(Database.raw(`true as is_exist`))
-          .whereNot('status', STATUS_DELETE)
-          .where('user_id', user_id)
+          .whereNot('estates.status', STATUS_DELETE)
+          .where('estates.user_id', user_id)
           .andWhere(function () {
             this.orWhere(function () {
-              this.where('letting_type', LETTING_TYPE_LET).whereNot(
-                'letting_status',
-                LETTING_STATUS_STANDARD
-              )
+              this.where('letting_type', LETTING_TYPE_LET)
             })
             this.orWhere(function () {
               this.whereNot('letting_type', LETTING_TYPE_LET)
             })
           })
+          .whereNull('_ect.user_id')
           .whereIn('coord_raw', coords)
           .fetch()
       ).toJSON() || []
