@@ -1,6 +1,6 @@
 'use strict'
 
-const { isEmpty, chunk, isArray } = require('lodash')
+const { isEmpty, chunk, groupBy } = require('lodash')
 const moment = require('moment')
 const P = require('bluebird')
 const File = use('App/Classes/File')
@@ -97,6 +97,9 @@ const {
   LANDLORD_ACTOR,
   MATCH_STATUS_KNOCK,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
+  ESTATE_NOTIFICATION_FIELDS,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -117,6 +120,7 @@ class NoticeService {
         data.map(({ user_id, type, data }) => ({
           user_id,
           type,
+          estate_id: data?.estate_id || null,
           data,
           created_at: Database.fn.now(),
           updated_at: Database.fn.now(),
@@ -252,7 +256,7 @@ class NoticeService {
 
   static async landlordEstateExpiredToKnockedProspect(data) {
     let notices = []
-    data.map(async ({ address, id, cover }) => {
+    data.map(async ({ address, estate_id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
           estate_id,
@@ -262,7 +266,7 @@ class NoticeService {
         notices.push({
           user_id: match.user_id,
           type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
-          data: { estate_id: id, estate_address: address },
+          data: { estate_id, estate_address: address },
           image: File.getPublicUrl(cover),
         })
       })
@@ -403,43 +407,6 @@ class NoticeService {
     await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
       concurrency: 1,
     })
-  }
-
-  /**
-   *
-   */
-  static async getNewWeekMatches() {
-    const start = moment().add(2, 'hours').startOf('minute')
-    const end = start.clone().add(5, 'min')
-    const withQuery = Database.table({ _e: 'estates' })
-      .select('id')
-      .where({ '_e.status': STATUS_ACTIVE })
-      .where('_e.available_date', '>=', start.format(DATE_FORMAT))
-      .where('_e.available_date', '<', end.format(DATE_FORMAT))
-
-    const result = await Database.table({ _l: 'likes' })
-      .select('_l.user_id', '_l.estate_id', '_e.address', '_e.cover')
-      .innerJoin({ _e: 'estates' }, '_e.id', '_l.estate_id')
-      .whereIn('_l.estate_id', function () {
-        this.select('*').from('expiring_estates')
-      })
-      .with('expiring_estates', withQuery)
-    // .limit(1)
-    if (isEmpty(result)) {
-      return false
-    }
-
-    const notices = result.map(({ estate_id, user_id, address, cover }) => ({
-      user_id,
-      type: NOTICE_TYPE_PROSPECT_MATCH_LEFT_ID,
-      data: {
-        estate_id,
-        estate_address: address,
-      },
-      image: File.getPublicUrl(cover),
-    }))
-    await NoticeService.insertNotices(notices)
-    await NotificationsService.sendProspectEstateExpiring(notices)
   }
 
   /**
@@ -674,24 +641,28 @@ class NoticeService {
   /**
    *
    */
-  static async prospectSuperMatch(estateId, matches) {
+  static async prospectSuperMatch(matches, estateId = null) {
+    let notices = []
     if (matches.length > 0) {
-      const estate = await Estate.query().select('*').where('id', estateId).first()
-
-      const notices = matches.map(({ user_id }) => {
-        return {
-          user_id,
-          type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
-          data: {
-            estate_id: estateId,
-            estate_address: estate.address,
-            params: estate.getAptParams(),
-          },
-          image: File.getPublicUrl(estate.cover),
+      const groupMatches = groupBy(matches, (match) => match.user_id)
+      await P.map(Object.keys(groupMatches), async (key) => {
+        const estate_ids = groupMatches[key].map((m) => m.estate_id)
+        const knockCount = await require('./MatchService').getMatchNewCount(key, estate_ids)
+        if (knockCount[0].count) {
+          notices.push({
+            user_id: key,
+            type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+            data: {
+              count: knockCount[0].count || 0,
+            },
+          })
         }
       })
+    }
+
+    if (notices.length) {
       await NoticeService.insertNotices(notices)
-      await NotificationsService.sendProspectHasSuperMatch(notices)
+      NotificationsService.sendProspectHasSuperMatch(notices)
     }
   }
 
@@ -1025,6 +996,15 @@ class NoticeService {
     await NotificationsService.sendProspectHouseholdDisconnected([notice])
   }
 
+  static async prospectAccountDeactivated(userId) {
+    const notice = {
+      user_id: userId,
+      type: NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.sendProspectDeactivated([notice])
+  }
+
   /**
    * 
    * @param {*} userIds 
@@ -1138,9 +1118,14 @@ class NoticeService {
         'tasks.title',
         'tasks.description',
         'tasks.urgency',
-        'tasks.estate_id'
+        'tasks.estate_id',
+        'users.firstname',
+        'users.secondname',
+        'users.sex',
+        'users.avatar'
       )
-      .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('users', 'users.id', 'estates.user_id')
       .where('tasks.id', task_id)
       .first()
 
@@ -1148,6 +1133,10 @@ class NoticeService {
       user_id: recipient_id,
       type,
       data: {
+        firstname: task.firstname,
+        secondname: task.secondname,
+        sex: task.sex,
+        avatar: task.avatar,
         estate_id: task.estate_id,
         estate_address: task.address,
         task_id,
@@ -1182,6 +1171,30 @@ class NoticeService {
     })
     await NoticeService.insertNotices(notices)
     await NotificationsService.notifyTenantDisconnected(notices)
+  }
+
+  static async notifyTenantTaskResolved(tenants = []) {
+    if (!tenants || !tenants.length) {
+      return
+    }
+
+    const estateIds = tenants.map(({ estate_id }) => estate_id)
+    const estates = (await Estate.query().whereIn('id', estateIds).fetch()).rows
+
+    const notices = tenants.map(({ estate_id, user_id }) => {
+      const estate = estates.find(({ id }) => id === estate_id)
+      return {
+        user_id,
+        type: NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
+        data: {
+          estate_id,
+          estate_address: estate.address || ``,
+        },
+        image: File.getPublicUrl(estate.cover),
+      }
+    })
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.notifyTenantTaskResolved(notices)
   }
 }
 

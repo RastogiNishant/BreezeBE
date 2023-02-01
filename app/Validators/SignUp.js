@@ -17,12 +17,13 @@ const {
   TRANSPORT_TYPE_WALK,
   TRANSPORT_TYPE_SOCIAL,
   ROLE_PROPERTY_MANAGER,
+  GENDER_NEUTRAL,
 } = require('../constants')
 
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH },
-} = require('../excepions')
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
+} = require('../exceptions')
 
 class SignUp extends Base {
   static schema = () =>
@@ -51,7 +52,7 @@ class SignUp extends Base {
             coord: yup
               .string()
               .matches(
-                /^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/,
+                /^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/,
                 getExceptionMessage('address', MATCH)
               ),
           }),
@@ -80,8 +81,12 @@ class SignUp extends Base {
       sex: yup
         .number()
         .oneOf(
-          [GENDER_MALE, GENDER_FEMALE, GENDER_ANY],
-          getExceptionMessage('sex', OPTION, `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_ANY}]`)
+          [GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY],
+          getExceptionMessage(
+            'sex',
+            OPTION,
+            `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL}, ${GENDER_ANY}]`
+          )
         )
         .required(getExceptionMessage('sex', REQUIRED)),
       phone: phoneSchema,
@@ -122,6 +127,20 @@ class SignUp extends Base {
       from_web: yup.boolean().typeError(getExceptionMessage('from_web', BOOLEAN)),
       data1: yup.string(),
       data2: yup.string(),
+      ip: yup
+        .string()
+        .min(7, MINLENGTH)
+        .max(45, MAXLENGTH)
+        //just crude validation for now just numbers and : and .
+        .matches(/^[0-9a-f:.]+$/, getExceptionMessage('Ip Address', INVALID)),
+      ip_based_info: yup.object().shape({
+        country_code: yup.string(),
+        country_name: yup.string(),
+        city: yup.string().nullable(),
+        postal: yup.string().nullable(),
+        latitude: yup.string().nullable(),
+        longitude: yup.string().nullable(),
+      }),
     })
 }
 

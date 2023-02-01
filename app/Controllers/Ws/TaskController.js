@@ -12,7 +12,7 @@ const {
 
 const {
   exceptions: { MESSAGE_NOT_SAVED },
-} = require('../../excepions')
+} = require('../../exceptions')
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')

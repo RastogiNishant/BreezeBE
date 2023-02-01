@@ -5,6 +5,7 @@ const NoticeService = use('App/Services/NoticeService')
 const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
+const ImportService = use('App/Services/ImportService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
@@ -14,7 +15,8 @@ const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
-
+const GET_IP_BASED_INFO = 'getIpBasedInfo'
+const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const {
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_13H_DAY_JOB,
@@ -51,6 +53,10 @@ class QueueService {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
   }
 
+  static importEstate({ fileName, user_id, template, import_id }) {
+    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template, import_id }, { delay: 1 })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
@@ -70,20 +76,23 @@ class QueueService {
     Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
   }
 
+  static getIpBasedInfo(userId, ip) {
+    Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
+  }
+
   /**
    *
    */
   static async sendEvery5Min() {
     return Promise.all([
-      // wrapException(QueueJobService.handleExpiredEstates),
-      // wrapException(QueueJobService.handleShowDateEndedEstates),
-      // wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
-      // wrapException(NoticeService.landlordVisitIn90m),
-      // wrapException(NoticeService.prospectVisitIn90m),
-      // wrapException(NoticeService.getNewWeekMatches),
-      // wrapException(NoticeService.landlordVisitIn30m),
-      // wrapException(NoticeService.prospectVisitIn30m),
-      // wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(QueueJobService.handleExpiredEstates),
+      wrapException(QueueJobService.handleShowDateEndedEstates),
+      wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
+      wrapException(NoticeService.landlordVisitIn90m),
+      wrapException(NoticeService.prospectVisitIn90m),
+      wrapException(NoticeService.landlordVisitIn30m),
+      wrapException(NoticeService.prospectVisitIn30m),
+      wrapException(NoticeService.getProspectVisitIn3H),
     ])
   }
 
@@ -110,13 +119,16 @@ class QueueService {
    *
    */
   static async sendEveryDay9AM() {
-    return Promise.all([wrapException(NoticeService.prospectProfileExpiring)])
+    return Promise.all([
+      wrapException(NoticeService.prospectProfileExpiring),
+      wrapException(QueueJobService.updateAllMisseEstateCoord),
+    ])
   }
 
   /**
    *
    */
-  static async sendEveryEveryMonth12AM() {
+  static async sendEveryMonth12AM() {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
@@ -132,6 +144,13 @@ class QueueService {
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case IMPORT_ESTATES_VIA_EXCEL:
+          return ImportService.process({
+            filePath: job.data.fileName,
+            user_id: job.data.user_id,
+            type: job.data.template,
+            import_id: job.data.import_id,
+          })
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:
@@ -141,13 +160,15 @@ class QueueService {
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
         case SCHEDULED_MONTHLY_JOB:
-          return QueueService.sendEveryEveryMonth12AM()
+          return QueueService.sendEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
           return QueueJobService.createThumbnailImages()
         case DEACTIVATE_LANDLORD:
           return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
+        case GET_IP_BASED_INFO:
+          return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

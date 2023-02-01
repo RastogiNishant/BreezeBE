@@ -3,8 +3,8 @@
 const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
-  LETTING_STATUS_NORMAL,
   MATCH_STATUS_FINISH,
+  LETTING_STATUS_STANDARD,
 } = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
@@ -20,7 +20,7 @@ class UpdateLettingStatusAndTypeSchema extends Schema {
 
     // Update final matched estates' letting status and type
     await Estate.query().whereIn('id', finalMatchedIds).update({
-      letting_status: LETTING_STATUS_NORMAL,
+      letting_status: LETTING_STATUS_STANDARD,
       letting_type: LETTING_TYPE_LET,
     })
 
