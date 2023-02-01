@@ -24,6 +24,7 @@ const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
 const Ws = use('Ws')
+const GeoAPI = use('GeoAPI')
 
 const {
   STATUS_DRAFT,
@@ -1010,27 +1011,62 @@ class EstateService {
   }
 
   static async getEstatesByQuery({ user_id, query }) {
-    return await Estate.query()
-      .whereNot('status', STATUS_DELETE)
-      .where('user_id', user_id)
-      .andWhere(function () {
-        this.orWhere(function () {
-          this.where('letting_type', LETTING_TYPE_LET).whereNot(
-            'letting_status',
-            LETTING_STATUS_STANDARD
+    let estates = await GeoAPI.getGeoByAddress(query)
+    estates = estates.map((estate) => {
+      return {
+        address: estate.properties.formatted,
+        coord: { lat: estate.properties.lat, lon: estate.properties.lon },
+      }
+    })
+
+    const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
+    let existingEstates =
+      (
+        await Estate.query()
+          .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+            this.on('_ect.estate_id', 'estates.id').onNotIn('_ect.status', [
+              STATUS_DELETE,
+              STATUS_EXPIRE,
+            ])
+          })
+          .select(
+            'estates.id',
+            'estates.address',
+            'estates.city',
+            'estates.country',
+            'estates.zip',
+            'estates.coord_raw',
+            'estates.floor',
+            'estates.floor_direction'
           )
-        })
-        this.orWhere(function () {
-          this.whereNot('letting_type', LETTING_TYPE_LET)
-        })
-      })
-      .andWhere(function () {
-        this.orWhere('estates.street', 'ilike', `%${query}%`)
-        this.orWhere('estates.zip', 'ilike', `${query}%`)
-        this.orWhere('estates.city', 'ilike', `${query}%`)
-        this.orWhere('estates.address', 'ilike', `${query}%`)
-      })
-      .fetch()
+          .select(Database.raw(`true as is_exist`))
+          .whereNot('estates.status', STATUS_DELETE)
+          .where('estates.user_id', user_id)
+          .andWhere(function () {
+            this.orWhere(function () {
+              this.where('letting_type', LETTING_TYPE_LET)
+            })
+            this.orWhere(function () {
+              this.whereNot('letting_type', LETTING_TYPE_LET)
+            })
+          })
+          .whereNull('_ect.user_id')
+          .whereIn('coord_raw', coords)
+          .fetch()
+      ).toJSON() || []
+
+    const existingCoords = existingEstates.map((estate) => estate.coord_raw)
+    const notExistingEstates = estates.filter(
+      (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
+    )
+
+    const notGroupExistingEstates = groupBy(notExistingEstates, (estate) => estate.address)
+    existingEstates = groupBy(existingEstates, (estate) => estate.address)
+
+    return {
+      ...existingEstates,
+      ...notGroupExistingEstates,
+    }
   }
 
   static async getFilteredCounts(userId, params) {
