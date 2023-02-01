@@ -256,6 +256,12 @@ Route.group(() => {
 Route.get('/api/v1/me', 'AccountController.me').middleware([
   'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper',
 ])
+
+Route.get('/api/v1/excel', 'CommonController.getExcelTemplate').middleware([
+  'auth:jwtLandlord,jwtAdministrator',
+  'valid:Lang',
+])
+
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
   'valid:ConfirmEmail',
 ])
@@ -351,6 +357,7 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.post('/with-filters', 'EstateController.getEstates').middleware([
     'valid:Pagination,EstateFilter',
   ])
