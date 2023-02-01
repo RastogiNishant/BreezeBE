@@ -43,7 +43,7 @@ class UpdateTenant extends Base {
       non_smoker: yup.boolean(),
       parking_space: yup.number().min(0),
       minors_count: yup.number().min(0).max(MAX_MINOR_COUNT),
-      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       address: yup
         .string()
         .max(255)
@@ -54,8 +54,8 @@ class UpdateTenant extends Base {
         .string()
         .oneOf([TRANSPORT_TYPE_CAR, TRANSPORT_TYPE_WALK, TRANSPORT_TYPE_SOCIAL]),
       dist_min: yup.number().integer().oneOf([15, 30, 45, 60]),
-      budget_min: yup.number().positive().max(100),
-      budget_max: yup.number().positive().max(100),
+      budget_min: yup.number().integer().min(0).max(100),
+      budget_max: yup.number().integer().min(0).max(100),
       include_utility: yup.boolean(),
       rooms_min: yup.number().positive().max(6),
       rooms_max: yup.number().positive().max(6),

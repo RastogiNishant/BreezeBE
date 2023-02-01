@@ -4,7 +4,7 @@ const yup = require('yup')
 const {
   getExceptionMessage,
   exceptionKeys: { MATCH, POSITIVE_NUMBER },
-} = require('../excepions')
+} = require('../exceptions')
 
 const { PHONE_REG_EXP } = require('../constants')
 const phoneSchema = yup.string().matches(PHONE_REG_EXP, getExceptionMessage(undefined, MATCH))

@@ -11,7 +11,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
-const { reduce, isEmpty, isNull } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -161,7 +161,7 @@ class MatchController {
     await this.getOwnEstate(estate_id, auth.user.id)
 
     try {
-      await MatchService.cancelInvite(estate_id, user_id)
+      await MatchService.cancelInvite(estate_id, user_id, auth.user.role)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -178,7 +178,7 @@ class MatchController {
   async removeInviteByTenant({ request, auth, response }) {
     const { estate_id } = request.all()
     try {
-      await MatchService.cancelInvite(estate_id, auth.user.id)
+      await MatchService.cancelInvite(estate_id, auth.user.id, auth.user.role)
       return response.res(true)
     } catch (e) {
       Logger.error(e)
@@ -263,7 +263,7 @@ class MatchController {
               },
               iosInfo: {
                 iosBundleId: process.env.IOS_BUNDLE_ID,
-                iosAppStoreId: process.env.IOS_APPSTORE_ID,                
+                iosAppStoreId: process.env.IOS_APPSTORE_ID,
               },
             },
           })
@@ -397,7 +397,11 @@ class MatchController {
     await this.getOwnEstate(estate_id, userId)
 
     try {
-      const { tenantId } = await MatchService.share(userId, estate_id, code)
+      const { tenantId } = await MatchService.share({
+        landlord_id: userId,
+        estate_id,
+        code,
+      })
       logEvent(
         request,
         LOG_TYPE_SHOWED,
@@ -406,7 +410,7 @@ class MatchController {
         false
       )
       Event.fire('mautic:syncContact', auth.user.id, { showedproperty_count: 1 })
-      return response.res(true)
+      return response.res({ user_id: tenantId })
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
@@ -571,9 +575,14 @@ class MatchController {
       isDislikeFilter ? 9999 : limit
     )
 
+    const countResult =
+      (await MatchService.getCountTenantMatchesWithFilterQuery(user.id, filters)).toJSON() || []
+
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-
+    estates.data = uniqBy(estates.data, 'id')
+    estates.total = countResult.length ? parseInt(countResult[0]?.count) : 0
+    estates.lastPage = parseInt(estates.total / limit) + 1
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)
       estates = {
@@ -599,6 +608,11 @@ class MatchController {
     }
 
     return estate
+  }
+
+  async getMatchByEstate({ request, auth, response }) {
+    const { estate_id } = request.all()
+    response.res(await MatchService.getMatches(auth.user.id, estate_id))
   }
 
   async checkTenantMatchCommitedAlready({ request, auth, response }) {
@@ -835,7 +849,10 @@ class MatchController {
     const user = auth.user
     // filters = { knock, buddy, invite, visit, top, commit }
     let filters = {}
-    const { estate_id, page, limit } = request.all()
+    const { estate_id, page, limit, ...params } = request.all()
+    if (!page) {
+      throw new HttpException('Page param is required')
+    }
     const estate = await EstateService.getQuery({
       id: estate_id,
       'estates.user_id': user.id,
@@ -860,75 +877,55 @@ class MatchController {
       'inviteIn',
       'income',
       'followups',
+      'u_firstname',
+      'u_secondname',
+      'u_birthday',
+      'u_avatar',
     ]
-
-    const matchesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('matches.status', [MATCH_STATUS_KNOCK])
-      .whereIn('estate_id', estatesId)
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { knock: true })
-    ).paginate(page, 100)
+      (filters = { knock: true }),
+      { ...params }
+    ).paginate(page, limit || 10)
 
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const matches = data
 
-    const buddiesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('matches.status', [MATCH_STATUS_NEW])
-      .where('buddy', true)
-      .whereIn('estate_id', estatesId)
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { buddy: true })
-    ).paginate(page, 100)
+      (filters = { buddy: true }),
+      { ...params }
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const buddies = data
 
-    const invitesCount = await Database.table('matches')
-      .count('*')
-      .whereIn('matches.status', [MATCH_STATUS_INVITE])
-      .whereIn('estate_id', estatesId)
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const invites = data
 
-    const visitsCount = await Database.table('matches')
-      .count('*')
-      .whereIn('status', [MATCH_STATUS_VISIT, MATCH_STATUS_SHARE])
-      .whereIn('estate_id', estatesId)
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const visits = data
 
-    const topCount = await Database.table('matches')
-      .count('*')
-      .whereIn('status', [MATCH_STATUS_TOP])
-      .whereIn('estate_id', estatesId)
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { top: true })
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, fields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
@@ -943,16 +940,6 @@ class MatchController {
     if (finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0) {
       isFinalMatch = true
     }
-    if (
-      !finalMatchesCount ||
-      !finalMatchesCount.length ||
-      parseInt(finalMatchesCount[0].count) <= 0
-    ) {
-      finalMatchesCount = await Database.table('matches')
-        .count('*')
-        .whereIn('status', [MATCH_STATUS_COMMIT])
-        .whereIn('estate_id', estatesId)
-    }
 
     extraFields = ['email', 'phone', 'last_address', ...fields]
 
@@ -961,19 +948,12 @@ class MatchController {
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
-    ).paginate(page, 100)
+    ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
     const finalMatches = data
     return response.res({
-      matchesCount: matchesCount[0].count,
-      buddiesCount: buddiesCount[0].count,
-      invitesCount: invitesCount[0].count,
-      visitsCount: visitsCount[0].count,
-      topCount: topCount[0].count,
-      finalMatchesCount: finalMatchesCount[0].count,
-
       estate: estate.toJSON(),
       matches: matches,
       buddies: buddies,
@@ -1006,6 +986,18 @@ class MatchController {
     await MatchService.inviteUserToCome(estate_id, user_id)
 
     response.res(true)
+  }
+
+  async getInviteList({ request, auth, response }) {
+    const { estate_id, query, buddy, invite } = request.all()
+    const result = await MatchService.getInviteList({
+      user_id: auth.user.id,
+      estate_id,
+      query,
+      buddy,
+      invite,
+    })
+    response.res(result)
   }
 }
 

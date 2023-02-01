@@ -2,7 +2,9 @@
 
 const { ERROR_OUTSIDE_TENANT_INVITATION_INVALID } = require('../../constants')
 const HttpException = require('../../Exceptions/HttpException')
+const EstateService = require('../../Services/EstateService')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const Database = use('Database')
 
 class EstateCurrentTenantController {
   async create({ request, auth, response }) {
@@ -38,9 +40,29 @@ class EstateCurrentTenantController {
     )
   }
 
-  async delete({ request, auth, response }) {
+  async get({ request, auth, response }) {
     const { id } = request.all()
-    response.res(await EstateCurrentTenantService.delete(id, auth.user.id))
+    try {
+      response.res(await EstateCurrentTenantService.getWithAbsoluteAttachments(id, auth.user.id))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
+  async removeLeaseContract({ request, auth, response }) {
+    const { id, uri } = request.all()
+    try {
+      response.res(
+        await EstateCurrentTenantService.removeLeaseContract({ id, uri, user: auth.user })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
+  async delete({ request, auth, response }) {
+    const { ids } = request.all()
+    response.res(await EstateCurrentTenantService.handleDelete({ ids, user_id: auth.user.id }))
   }
 
   async expire({ request, auth, response }) {
@@ -156,10 +178,14 @@ class EstateCurrentTenantController {
   async retrieveLinkByCode({ request, auth, response }) {
     const { code } = request.all()
     const ip = request.ip()
+    response.res(await EstateCurrentTenantService.retrieveLinkByCode(code, ip))
+  }
+
+  async addLeaseContract({ request, auth, response }) {
     try {
-      response.res(await EstateCurrentTenantService.retrieveLinkByCode(code, ip))
+      response.res(await EstateCurrentTenantService.addLeaseContract(request, auth.user))
     } catch (e) {
-      throw new HttpException(e.message, 422)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 }
