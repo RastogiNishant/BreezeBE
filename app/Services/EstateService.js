@@ -57,6 +57,7 @@ const {
   WEBSOCKET_EVENT_VALID_ADDRESS,
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
+  LETTING_STATUS_VACANCY,
 } = require('../constants')
 
 const {
@@ -283,7 +284,7 @@ class EstateService {
 
     if (!fromImport) {
       createData.letting_type = LETTING_TYPE_VOID
-      createData.letting_status = null
+      createData.letting_status = LETTING_STATUS_VACANCY
     }
 
     let estateHash
@@ -1042,14 +1043,7 @@ class EstateService {
           .select(Database.raw(`true as is_exist`))
           .whereNot('estates.status', STATUS_DELETE)
           .where('estates.user_id', user_id)
-          .andWhere(function () {
-            this.orWhere(function () {
-              this.where('letting_type', LETTING_TYPE_LET)
-            })
-            this.orWhere(function () {
-              this.whereNot('letting_type', LETTING_TYPE_LET)
-            })
-          })
+          .whereNot('estates.letting_type', LETTING_TYPE_NA)
           .whereNull('_ect.user_id')
           .whereIn('coord_raw', coords)
           .fetch()
@@ -1396,7 +1390,11 @@ class EstateService {
     // Make estate status DRAFT to hide from tenants' matches list
     await Database.table('estates')
       .where({ id: estateId })
-      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .update({
+        status: STATUS_DRAFT,
+        letting_type: LETTING_TYPE_LET,
+        letting_status: LETTING_STATUS_STANDARD,
+      })
       .transacting(trx)
   }
 

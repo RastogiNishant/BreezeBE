@@ -474,6 +474,10 @@ Route.group(() => {
     ['valid:EstateId,TenantId']
   )
 
+  Route.post('/tenant/invite', 'EstateCurrentTenantController.inviteTenantToApp').middleware([
+    'valid:TenantInvitation',
+  ])
+
   Route.post(
     '/tenant/invite/email',
     'EstateCurrentTenantController.inviteTenantToAppByEmail'

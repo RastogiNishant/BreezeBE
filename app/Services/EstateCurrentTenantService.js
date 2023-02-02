@@ -347,19 +347,20 @@ class EstateCurrentTenantService extends BaseService {
     return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_EXPIRE })
   }
 
-  static async inviteTenantToAppByEmail({ ids, user_id }) {
-    let { failureCount, links } = await this.getDynamicLinks({
-      ids,
-      user_id,
-    })
-
+  static async inviteTenantToAppByEmail({ ids, user_id }, trx) {
+    let { failureCount, links } = await this.getDynamicLinks(
+      {
+        ids,
+        user_id,
+      },
+      trx
+    )
     const validLinks = links.filter(
       (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
     )
 
     failureCount += (links.length || 0) - (validLinks.length || 0)
     const successCount = (ids.length || 0) - failureCount
-
     if (validLinks && validLinks.length) {
       MailService.sendInvitationToOusideTenant(validLinks)
     }
@@ -367,11 +368,58 @@ class EstateCurrentTenantService extends BaseService {
     return { successCount, failureCount }
   }
 
-  static async inviteTenantToAppBySMS({ ids, user_id }) {
-    let { failureCount, links } = await this.getDynamicLinks({
-      ids,
-      user_id,
-    })
+  static async inviteTenantToApp({ user_id, estate_id, address, coord, email, phone, surname }) {
+    const trx = await Database.beginTransaction()
+    try {
+      if (!estate_id) {
+        const { id } = await require('./EstateService').createEstate(
+          { data: { address, coord, letting_type: LETTING_TYPE_LET }, userId: user_id },
+          false,
+          trx
+        )
+        estate_id = id
+      } else {
+        await require('./EstateService').rented(estate_id, trx)
+      }
+      const currentTenant = await this.updateCurrentTenant(
+        {
+          data: {
+            email,
+            phone_number: phone,
+            surname,
+            salutation_int: GENDER_ANY,
+            txt_salutation: SALUTATION_SIR_OR_MADAM_LABEL,
+          },
+          estate_id,
+          user_id,
+        },
+        trx
+      )
+      await trx.commit()
+
+      let inviteResult
+      if (email) {
+        console.log('email here=', email)
+        inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
+      } else if (phone) {
+        inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
+      }
+
+      return inviteResult
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
+  static async inviteTenantToAppBySMS({ ids, user_id }, trx = null) {
+    let { failureCount, links } = await this.getDynamicLinks(
+      {
+        ids,
+        user_id,
+      },
+      trx
+    )
 
     const validLinks = links.filter(
       (link) =>
@@ -421,9 +469,8 @@ class EstateCurrentTenantService extends BaseService {
     ).rows
   }
 
-  static async getDynamicLinks({ ids, user_id }) {
+  static async getDynamicLinks({ ids, user_id }, trx = null) {
     let estateCurrentTenants = await this.getOutsideTenantByIds(ids)
-
     const EstateService = require('./EstateService')
     let failureCount = (ids.length || 0) - (estateCurrentTenants.length || 0)
 
@@ -440,9 +487,14 @@ class EstateCurrentTenantService extends BaseService {
         }
       })
     )
-
     estateCurrentTenants = estateCurrentTenants.filter((ect) => ect)
-    const trx = await Database.beginTransaction()
+
+    const shouldTrxProceed = trx
+
+    if (!trx) {
+      trx = await Database.beginTransaction()
+    }
+
     try {
       let links = await Promise.all(
         estateCurrentTenants.map(async (ect) => {
@@ -453,78 +505,89 @@ class EstateCurrentTenantService extends BaseService {
         link.code = await InvitationLinkCode.create(link.id, link.shortLink, trx)
         return link
       })
-      await trx.commit()
+      if (!shouldTrxProceed) {
+        await trx.commit()
+      }
       return { failureCount, links }
     } catch (err) {
       console.log(err.message)
-      await trx.rollback()
-      throw new AppException('Error found while creating links.')
+      if (!shouldTrxProceed) {
+        await trx.rollback()
+      }
+      throw new AppException('Error found while creating links.', 500)
     }
   }
 
   static async createDynamicLink(estateCurrentTenant, trx) {
-    const iv = crypto.randomBytes(16)
-    const password = process.env.CRYPTO_KEY
-    if (!password) {
-      throw new HttpException('Server configuration error')
-    }
+    try {
+      const iv = crypto.randomBytes(16)
+      const password = process.env.CRYPTO_KEY
+      if (!password) {
+        throw new HttpException('Server configuration error')
+      }
 
-    const key = Buffer.from(password)
-    const cipher = crypto.createCipheriv('aes-256-ctr', key, iv)
+      const key = Buffer.from(password)
+      const cipher = crypto.createCipheriv('aes-256-ctr', key, iv)
 
-    const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
-    const code = uuid.v4()
-    await EstateCurrentTenant.query()
-      .where('id', estateCurrentTenant.id)
-      .update({ code: code, invite_sent_at: time }, trx)
+      const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+      const code = uuid.v4()
 
-    const txtSrc = JSON.stringify({
-      id: estateCurrentTenant.id,
-      estate_id: estateCurrentTenant.estate_id,
-      code: code,
-      expired_time: time,
-    })
+      await EstateCurrentTenant.query()
+        .where('id', estateCurrentTenant.id)
+        .update({ code: code, invite_sent_at: time }, trx)
 
-    let encDst = cipher.update(txtSrc, 'utf8', 'base64')
-    encDst += cipher.final('base64')
+      const txtSrc = JSON.stringify({
+        id: estateCurrentTenant.id,
+        estate_id: estateCurrentTenant.estate_id,
+        code: code,
+        expired_time: time,
+      })
 
-    let uri =
-      `&data1=${encodeURIComponent(encDst)}` + `&data2=${encodeURIComponent(iv.toString('base64'))}`
+      let encDst = cipher.update(txtSrc, 'utf8', 'base64')
+      encDst += cipher.final('base64')
 
-    if (estateCurrentTenant.email) {
-      uri += `&email=${estateCurrentTenant.email}`
-    }
+      let uri =
+        `&data1=${encodeURIComponent(encDst)}` +
+        `&data2=${encodeURIComponent(iv.toString('base64'))}`
 
-    const existingUser = await User.query()
-      .where('email', estateCurrentTenant.email)
-      .where('role', ROLE_USER)
-      .first()
+      if (estateCurrentTenant.email) {
+        uri += `&email=${estateCurrentTenant.email}`
+      }
 
-    if (existingUser) {
-      uri += `&user_id=${existingUser.id}`
-    }
+      const existingUser = await User.query()
+        .where('email', estateCurrentTenant.email)
+        .where('role', ROLE_USER)
+        .first()
 
-    const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+      if (existingUser) {
+        uri += `&user_id=${existingUser.id}`
+      }
 
-    const { shortLink } = await firebaseDynamicLinks.createLink({
-      dynamicLinkInfo: {
-        domainUriPrefix: process.env.DOMAIN_PREFIX,
-        link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
-        androidInfo: {
-          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+      const { shortLink } = await firebaseDynamicLinks.createLink({
+        dynamicLinkInfo: {
+          domainUriPrefix: process.env.DOMAIN_PREFIX,
+          link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
+          androidInfo: {
+            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          },
+          iosInfo: {
+            iosBundleId: process.env.IOS_BUNDLE_ID,
+            iosAppStoreId: process.env.IOS_APPSTORE_ID,
+          },
         },
-        iosInfo: {
-          iosBundleId: process.env.IOS_BUNDLE_ID,
-          iosAppStoreId: process.env.IOS_APPSTORE_ID,
-        },
-      },
-    })
-    return {
-      id: estateCurrentTenant.id,
-      estate_id: estateCurrentTenant.estate_id,
-      email: estateCurrentTenant.email,
-      phone_number: estateCurrentTenant.phone_number,
-      shortLink,
+      })
+      return {
+        id: estateCurrentTenant.id,
+        estate_id: estateCurrentTenant.estate_id,
+        email: estateCurrentTenant.email,
+        phone_number: estateCurrentTenant.phone_number,
+        shortLink,
+      }
+    } catch (e) {
+      console.log('createDynamic link error=', e.message)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
