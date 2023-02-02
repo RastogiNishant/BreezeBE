@@ -199,13 +199,15 @@ class MatchService {
     scoreL += landlordBudgetPoints
 
     // Get credit score income
-    const userCurrentCredit = prospect.credit_score || 0
-    const userRequiredCredit = estate.credit_score || 0
+    const userCurrentCredit = Number(prospect.credit_score) || 0
+    const userRequiredCredit = Number(estate.credit_score) || 0
 
     log({ userCurrentCredit, userRequiredCredit })
 
-    if (userCurrentCredit == 100 && userRequiredCredit == 100) {
+    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
       creditScorePoints = 1
+    } else if (userRequiredCredit === 100) {
+      creditScorePoints = 0
     } else if (userCurrentCredit > userRequiredCredit) {
       creditScorePoints =
         0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
