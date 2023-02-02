@@ -1,6 +1,5 @@
 const xml2js = require('xml2js')
 const AppException = use('App/Exceptions/AppException')
-const fs = require('fs')
 const fsPromises = require('fs/promises')
 const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get } = require('lodash')
@@ -343,24 +342,25 @@ class OpenImmoReader {
   }
 
   async process() {
-    let dfile
-    if (this.contentType === 'application/zip') {
-      await this.extractZip(this.filePath)
-      const files = await fsPromises.readdir(this.dir)
-      const file = files.find((file) => file.match(/\.xml$/))
-      if (!file) {
-        throw new Error('No valid xml file found.')
-      }
-      dfile = `${this.dir}/${file}`
-    } else if (this.contentType === 'application/xml') {
-      dfile = this.filePath
-    }
-    let data
     try {
+      let dfile
+      if (this.contentType === 'application/zip') {
+        await this.extractZip(this.filePath)
+        const files = await fsPromises.readdir(this.dir)
+        const file = files.find((file) => file.match(/\.xml$/))
+        if (!file) {
+          throw new Error('No valid xml file found.')
+        }
+        dfile = `${this.dir}/${file}`
+      } else if (this.contentType === 'application/xml') {
+        dfile = this.filePath
+      }
+      let data
       data = await fsPromises.readFile(dfile)
     } catch (err) {
       throw new Error(err.message)
     }
+
     let json = this.extractJson(data)
     try {
       if ((json = this.validate(json))) {
