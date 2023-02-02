@@ -26,6 +26,7 @@ const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
+const GeoAPI = use('GeoAPI')
 
 const {
   STATUS_DRAFT,
@@ -58,6 +59,8 @@ const {
   IMPORT_TYPE_OPENIMMO,
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_VALID_ADDRESS,
+  LETTING_STATUS_NEW_RENOVATED,
+  LETTING_STATUS_STANDARD,
 } = require('../constants')
 
 const {
@@ -1011,6 +1014,65 @@ class EstateService {
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
+  static async getEstatesByQuery({ user_id, query }) {
+    let estates = await GeoAPI.getGeoByAddress(query)
+    estates = estates.map((estate) => {
+      return {
+        address: estate.properties.formatted,
+        coord: { lat: estate.properties.lat, lon: estate.properties.lon },
+      }
+    })
+
+    const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
+    let existingEstates =
+      (
+        await Estate.query()
+          .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+            this.on('_ect.estate_id', 'estates.id').onNotIn('_ect.status', [
+              STATUS_DELETE,
+              STATUS_EXPIRE,
+            ])
+          })
+          .select(
+            'estates.id',
+            'estates.address',
+            'estates.city',
+            'estates.country',
+            'estates.zip',
+            'estates.coord_raw',
+            'estates.floor',
+            'estates.floor_direction'
+          )
+          .select(Database.raw(`true as is_exist`))
+          .whereNot('estates.status', STATUS_DELETE)
+          .where('estates.user_id', user_id)
+          .andWhere(function () {
+            this.orWhere(function () {
+              this.where('letting_type', LETTING_TYPE_LET)
+            })
+            this.orWhere(function () {
+              this.whereNot('letting_type', LETTING_TYPE_LET)
+            })
+          })
+          .whereNull('_ect.user_id')
+          .whereIn('coord_raw', coords)
+          .fetch()
+      ).toJSON() || []
+
+    const existingCoords = existingEstates.map((estate) => estate.coord_raw)
+    const notExistingEstates = estates.filter(
+      (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
+    )
+
+    const notGroupExistingEstates = groupBy(notExistingEstates, (estate) => estate.address)
+    existingEstates = groupBy(existingEstates, (estate) => estate.address)
+
+    return {
+      ...existingEstates,
+      ...notGroupExistingEstates,
+    }
+  }
+
   static async getFilteredCounts(userId, params) {
     let query = EstateService.getCounts()
       .whereNot('estates.status', STATUS_DELETE)
@@ -1355,6 +1417,18 @@ class EstateService {
       )
     }
     return estate
+  }
+
+  static async notAvailable(estate_ids, trx = null) {
+    const query = Estate.query()
+      .whereIn('id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
+      .whereNot('status', STATUS_DELETE)
+      .update({ letting_type: LETTING_TYPE_NA, letting_status: LETTING_STATUS_NEW_RENOVATED })
+
+    if (!trx) {
+      return await query
+    }
+    return await query.transacting(trx)
   }
 
   static async unrented(estate_ids, trx = null) {

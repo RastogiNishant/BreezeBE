@@ -435,7 +435,7 @@ class MatchService {
   /**
    *
    */
-  static async matchByUser(userId, ignoreNullFields = false) {
+  static async matchByUser({ userId, ignoreNullFields = false, has_notification_sent = true }) {
     const tenant = await MatchService.getProspectForScoringQuery()
       .select('_p.data as polygon')
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
@@ -474,12 +474,16 @@ class MatchService {
       ).toJSON() || []
 
     let passedEstates = []
-    estates.map(async (estate) => {
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
+    let idx = 0
+
+    while (idx < estates.length) {
+      const percent = await MatchService.calculateMatchPercent(tenant, estates[idx])
       if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ estate_id: estate.id, percent })
+        passedEstates.push({ estate_id: estates[idx].id, percent })
       }
-    })
+      idx++
+    }
+
     const matches = passedEstates.map((i) => ({
       user_id: userId,
       estate_id: i.estate_id,
@@ -494,15 +498,18 @@ class MatchService {
       .delete()
 
     // Create new matches
+
     if (!isEmpty(matches)) {
       const insertQuery = Database.query().into('matches').insert(matches).toString()
       await Database.raw(
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
 
-      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-      if (superMatches.length > 0) {
-        await NoticeService.prospectSuperMatch(superMatches)
+      if (has_notification_sent) {
+        const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+        if (superMatches.length > 0) {
+          await NoticeService.prospectSuperMatch(superMatches)
+        }
       }
     }
   }
@@ -528,25 +535,25 @@ class MatchService {
     )
     tenants =
       (
-        await MatchService.getProspectForScoringQuery()
-          .whereIn('tenants.user_id', tenantUserIds)
-          .fetch()
+        await MatchService.getProspectForScoringQuery().whereIn('tenants.user_id', [315]).fetch()
       ).toJSON() || []
 
     // Calculate matches for tenants to current estate
     let passedEstates = []
-    tenants.map(async (tenant) => {
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
+    let idx = 0
+    while (idx < tenants.length) {
+      const percent = await MatchService.calculateMatchPercent(tenants[idx], estate)
       if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ user_id: tenant.user_id, percent })
+        passedEstates.push({ user_id: tenants[idx].user_id, percent })
       }
-    })
+      idx++
+    }
+
     const matches = passedEstates.map((i) => ({
       user_id: i.user_id,
       estate_id: estate.id,
       percent: i.percent,
     }))
-
     // Delete old matches without any activity
     await Database.query()
       .from('matches')
@@ -1982,12 +1989,12 @@ class MatchService {
     const query = Tenant.query()
       .select([
         'tenants.*',
-        '_u.firstname',
-        '_u.secondname',
-        '_u.birthday',
+        '_u.firstname as u_firstname',
+        '_u.secondname as u_secondname',
+        '_u.birthday as u_birthday',
+        '_u.avatar as u_avatar',
         '_u.sex',
         '_u.email',
-        '_u.avatar',
         '_u.code',
         '_v.landlord_followup_meta as followups',
       ])
@@ -2205,18 +2212,34 @@ class MatchService {
       '_mf.id_verified'
     )
 
-    if (params && params.budget_min) {
+    if (params && !isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+      query.where(function () {
+        this.orWhere(function () {
+          this.andWhere('tenants.budget_max', '>=', params.budget_min).andWhere(
+            'tenants.budget_max',
+            '<=',
+            params.budget_max
+          )
+        })
+        this.orWhere(function () {
+          this.andWhere('tenants.budget_min', '>=', params.budget_min).andWhere(
+            'tenants.budget_min',
+            '<=',
+            params.budget_max
+          )
+        })
+      })
+    } else if (params && !isNaN(params.budget_min) && isNaN(params.budget_max)) {
       query.where('tenants.budget_min', '>=', params.budget_min)
-    }
-    if (params && params.budget_max) {
+    } else if (params && isNaN(params.budget_min) && !isNaN(params.budget_max)) {
       query.where('tenants.budget_max', '<=', params.budget_max)
     }
 
-    if (params && params.credit_score_min) {
+    if (params && !isNaN(params.credit_score_min)) {
       query.where('tenants.credit_score', '>=', params.credit_score_min)
     }
     if (params && params.credit_score_max) {
-      query.where('tenants.credit_score', '>=', params.credit_score_max)
+      query.where('tenants.credit_score', '<=', params.credit_score_max)
     }
     if (params && params.phone_verified) {
       query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
@@ -2280,7 +2303,7 @@ class MatchService {
     const incomeCount = incomeTypes.map((it) => {
       return {
         key: it,
-        count: countBy(matches, (match) => match.profession.includes(it)).true || 0,
+        count: countBy(matches, (match) => (match.profession || []).includes(it)).true || 0,
       }
     })
 
@@ -2773,10 +2796,13 @@ class MatchService {
       ).toJSON() || []
 
     let passedEstates = []
-    estates.map(async (estate) => {
-      const percent = await MatchService.calculateMatchPercent(prospect, estate)
-      passedEstates.push({ estate_id: estate.id, percent })
-    })
+    let idx = 0
+    while (idx < estates.length) {
+      const percent = await MatchService.calculateMatchPercent(prospect, estates[idx])
+      passedEstates.push({ estate_id: estates[idx].id, percent })
+      idx++
+    }
+
     const matchScores = passedEstates.map((i) => ({
       user_id: userId,
       estate_id: i.estate_id,

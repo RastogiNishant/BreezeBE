@@ -248,6 +248,14 @@ class EstateCurrentTenantService extends BaseService {
       .firstOrFail()
   }
 
+  static async getByIds(ids) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    return await EstateCurrentTenant.query()
+      .whereIn('id', ids)
+      .whereNot('status', STATUS_DELETE)
+      .fetch()
+  }
+
   static async getWithAbsoluteAttachments(id, user_id) {
     return await this.getWithAbsoluteUrl((await this.hasPermission(id, user_id)).toJSON())
   }
@@ -298,9 +306,28 @@ class EstateCurrentTenantService extends BaseService {
     return await query.paginate(page, limit)
   }
 
-  static async delete(id, user_id) {
-    await this.hasPermission(id, user_id)
-    return await EstateCurrentTenant.query().where('id', id).update({ status: STATUS_DELETE })
+  static async handleDelete({ ids, user_id }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const currentTenants = (await this.getByIds(ids)).toJSON() || []
+      const estateIds = currentTenants.map((ct) => ct.estate_id)
+      await require('./EstateService').notAvailable(estateIds, trx)
+      const deleteResult = await this.delete({ ids, user_id }, trx)
+      await trx.commit()
+      return deleteResult
+    } catch (e) {
+      await trx.rollback()
+      return false
+    }
+  }
+
+  static async delete({ ids, user_id }, trx) {
+    ids = Array.isArray(ids) ? ids : [ids]
+    await Promise.map(ids, async (id) => await this.hasPermission(id, user_id))
+    return await EstateCurrentTenant.query()
+      .whereIn('id', ids)
+      .update({ status: STATUS_DELETE })
+      .transacting(trx)
   }
 
   static async hasPermission(id, user_id) {
@@ -468,7 +495,10 @@ class EstateCurrentTenantService extends BaseService {
       uri += `&email=${estateCurrentTenant.email}`
     }
 
-    const existingUser = await User.query().where('email', estateCurrentTenant.email).first()
+    const existingUser = await User.query()
+      .where('email', estateCurrentTenant.email)
+      .where('role', ROLE_USER)
+      .first()
 
     if (existingUser) {
       uri += `&user_id=${existingUser.id}`

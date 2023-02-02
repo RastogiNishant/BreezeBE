@@ -8,5 +8,5 @@ MatchListener.matchByEstate = async (estateId) => {
 }
 
 MatchListener.matchByUser = async (userId) => {
-  await MatchService.matchByUser(userId)
+  await MatchService.matchByUser({ userId })
 }

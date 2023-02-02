@@ -139,7 +139,7 @@ class RoomController {
 
     const trx = await Database.beginTransaction()
     try {
-      await RoomService.removeRoom(room, trx)
+      await RoomService.handleRemoveRoom(room, trx)
       await EstateService.updateCover({ room: room.toJSON() }, trx)
       Event.fire('estate::update', room.estate_id)
       await trx.commit()
