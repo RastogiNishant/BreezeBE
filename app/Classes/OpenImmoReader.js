@@ -357,21 +357,16 @@ class OpenImmoReader {
       }
       let data
       data = await fsPromises.readFile(dfile)
-    } catch (err) {
-      throw new Error(err.message)
-    }
-
-    let json = this.extractJson(data)
-    try {
+      let json = this.extractJson(data)
+      let properties = []
       if ((json = this.validate(json))) {
-        let properties = this.processProperties(json)
+        properties = this.processProperties(json)
         properties = this.parseMultipleValuesWithOptions(properties)
         properties = this.parseSingleValues(properties)
         properties = this.processEnergyPass(properties)
         properties = await this.processImages(properties)
-
-        return properties
       }
+      return properties
     } catch (err) {
       throw new Error(err.message)
     }
