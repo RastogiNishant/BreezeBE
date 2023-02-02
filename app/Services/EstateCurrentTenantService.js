@@ -399,7 +399,6 @@ class EstateCurrentTenantService extends BaseService {
 
       let inviteResult
       if (email) {
-        console.log('email here=', email)
         inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
       } else if (phone) {
         inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
