@@ -346,7 +346,7 @@ class OpenImmoReader {
     let dfile
     if (this.contentType === 'application/zip') {
       await this.extractZip(this.filePath)
-      const files = fs.readdirSync(this.dir)
+      const files = await fsPromises.readdir(this.dir)
       const file = files.find((file) => file.match(/\.xml$/))
       if (!file) {
         throw new Error('No valid xml file found.')
