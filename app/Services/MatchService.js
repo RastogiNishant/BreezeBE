@@ -2875,11 +2875,12 @@ class MatchService {
     } else if (params.buddy) {
       invite_count = parseInt(estate?.__meta__?.knocked_count || 0) + parseInt(count)
     }
+
+    estate.__meta__.invite_count = invite_count.toString()
     return {
       estate,
       match: match.toJSON({ isShort: true }),
-      count: parseInt(count),
-      invite_count,
+      count,
     }
   }
 
