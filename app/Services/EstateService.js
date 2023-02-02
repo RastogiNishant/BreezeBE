@@ -7,7 +7,6 @@ const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
-const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
@@ -870,7 +869,7 @@ class EstateService {
     { exclude_from = 0, exclude_to = 0, exclude = [] },
     limit = 20
   ) {
-    const tenant = await TenantService.getTenantWithGeo(userId)
+    const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
@@ -1008,6 +1007,54 @@ class EstateService {
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
+  }
+
+  static async getShortEstatesByQuery({ user_id, query }) {
+    return await this.getActiveEstateQuery()
+      .select(
+        'id',
+        'area',
+        'rooms_number',
+        'floor',
+        'number_floors',
+        'property_type',
+        'description',
+        'house_number',
+        'rent_per_sqm',
+        'address',
+        'city',
+        'country',
+        'street',
+        'zip',
+        'cover',
+        'net_rent',
+        'cold_rent',
+        'additional_costs',
+        'heating_costs',
+        'deposit',
+        'stp_garage',
+        'currency',
+        'building_status',
+        'property_id',
+        'floor_direction',
+        'six_char_code',
+        'avail_duration',
+        'available_date',
+        'from_date',
+        'to_date',
+        'rent_end_at',
+        'status'
+      )
+      .where('user_id', user_id)
+      .andWhere(function () {
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('city', 'ilike', `%${query}%`)
+        this.orWhere('country', 'ilike', `%${query}%`)
+        this.orWhere('zip', 'ilike', `%${query}%`)
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('street', 'ilike', `%${query}%`)
+      })
+      .fetch()
   }
 
   static async getEstatesByQuery({ user_id, query }) {

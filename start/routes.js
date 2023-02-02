@@ -358,6 +358,9 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
+  Route.get('/quick_search', 'EstateController.shortSearchEstates').middleware([
+    'valid:EstateFilter',
+  ])
   Route.post('/with-filters', 'EstateController.getEstates').middleware([
     'valid:Pagination,EstateFilter',
   ])
