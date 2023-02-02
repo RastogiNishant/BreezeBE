@@ -239,6 +239,12 @@ class OptionService {
         name: 'Balcony',
         locale_key: 'landlord.property.inside_view.rooms.balcony',
       },
+      {
+        key_index: ROOM_TYPE_PROPERTY_ENTRANCE,
+        key_name: `ROOM_TYPE_PROPERTY_ENTRANCE`,
+        name: 'Property entrance',
+        locale_key: 'landlord.property.inside_view.rooms.property_entrance',
+      },
     ]
   }
 }

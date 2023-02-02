@@ -157,8 +157,13 @@ class GeoPify {
           return null
         }
 
-        const item = response.features.find((i) => get(i, 'properties.result_type') === 'building')
+        let item = response.features.find((i) => get(i, 'properties.result_type') === 'building')
+        if (!item) {
+          item = response.features[0]
+        }
+
         const [lon, lat] = get(item, 'geometry.coordinates') || []
+
         return { lon, lat }
       })
       .catch((e) => {

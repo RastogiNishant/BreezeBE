@@ -91,11 +91,6 @@ class User extends Model {
     this.addTrait('Sort', this.columns)
 
     this.addHook('beforeCreate', async (userInstance) => {
-      userInstance.code = randomstring.generate({
-        length: 10,
-        charset: 'alphanumeric',
-      })
-
       if (userInstance.role == ROLE_LANDLORD) {
         userInstance.activation_status = USER_ACTIVATION_STATUS_NOT_ACTIVATED
       }
@@ -111,6 +106,13 @@ class User extends Model {
       if (userInstance.preferred_services && Array.isArray(userInstance.preferred_services)) {
         userInstance.preferred_services = JSON.stringify(userInstance.preferred_services)
       }
+    })
+  }
+
+  static getTenDigitCode() {
+    return randomstring.generate({
+      length: 10,
+      charset: 'alphanumeric',
     })
   }
 

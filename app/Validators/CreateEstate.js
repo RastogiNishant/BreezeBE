@@ -181,12 +181,8 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   PARKING_SPACE_TYPE_NO_PARKING,
   ESTATE_FLOOR_DIRECTION_LEFT,
@@ -197,6 +193,17 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   ESTATE_FLOOR_DIRECTION_NA,
   GENDER_NEUTRAL,
+  LETTING_STATUS_NEW_RENOVATED,
+
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -503,7 +510,7 @@ class CreateEstate extends Base {
       city: yup.string().max(40),
       zip: yup.string().max(8),
       budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().integer().min(0).max(100),
+      credit_score: yup.number().min(0).max(100),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
@@ -530,12 +537,9 @@ class CreateEstate extends Base {
       letting_status: yup
         .number()
         .oneOf([
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
+          LETTING_STATUS_NEW_RENOVATED,
           LETTING_STATUS_VACANCY,
         ])
         .nullable(),
@@ -584,6 +588,23 @@ class CreateEstate extends Base {
         then: yup.number().integer().required(),
         otherwise: yup.number().nullable(),
       }),
+      income_sources: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf([
+              INCOME_TYPE_EMPLOYEE,
+              INCOME_TYPE_WORKER,
+              INCOME_TYPE_UNEMPLOYED,
+              INCOME_TYPE_CIVIL_SERVANT,
+              INCOME_TYPE_FREELANCER,
+              INCOME_TYPE_HOUSE_WORK,
+              INCOME_TYPE_PENSIONER,
+              INCOME_TYPE_SELF_EMPLOYED,
+              INCOME_TYPE_TRAINEE,
+            ])
+        ),
     })
 }
 

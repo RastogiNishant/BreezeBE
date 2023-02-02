@@ -159,6 +159,7 @@ class Estate extends Model {
       'is_new_tenant_transfer',
       'transfer_budget',
       'rent_end_at',
+      'income_sources',
     ]
   }
 
@@ -271,11 +272,11 @@ class Estate extends Model {
     })
 
     this.addHook('afterCreate', async (instance) => {
-      await this.updateEstateInfo(instance.id)
+      await this.updateBreezeId(instance.id)
     })
   }
 
-  static async updateEstateInfo(id) {
+  static async updateBreezeId(id) {
     await Database.table('estates')
       .update({ hash: Estate.getHash(id) })
       .where('id', id)

@@ -52,8 +52,8 @@ class QueueService {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
   }
 
-  static importEstate(fileName, user_id, template) {
-    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template }, { delay: 1 })
+  static importEstate({ fileName, user_id, template, import_id }) {
+    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template, import_id }, { delay: 1 })
   }
 
   /**
@@ -93,6 +93,7 @@ class QueueService {
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(NoticeService.expiredShowTime),
     ])
   }
 
@@ -145,7 +146,12 @@ class QueueService {
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case IMPORT_ESTATES_VIA_EXCEL:
-          return ImportService.process(job.data.fileName, job.data.user_id, job.data.template)
+          return ImportService.process({
+            filePath: job.data.fileName,
+            user_id: job.data.user_id,
+            type: job.data.template,
+            import_id: job.data.import_id,
+          })
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:
