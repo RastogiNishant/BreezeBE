@@ -1,6 +1,6 @@
 'use strict'
 
-const { isEmpty, chunk, isArray } = require('lodash')
+const { isEmpty, chunk, groupBy } = require('lodash')
 const moment = require('moment')
 const P = require('bluebird')
 const File = use('App/Classes/File')
@@ -100,7 +100,11 @@ const {
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
   ESTATE_NOTIFICATION_FIELDS,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+  STATUS_DELETE,
+  STATUS_DRAFT,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
+const EstateService = require('./EstateService')
 
 class NoticeService {
   /**
@@ -120,6 +124,7 @@ class NoticeService {
         data.map(({ user_id, type, data }) => ({
           user_id,
           type,
+          estate_id: data?.estate_id || null,
           data,
           created_at: Database.fn.now(),
           updated_at: Database.fn.now(),
@@ -255,7 +260,7 @@ class NoticeService {
 
   static async landlordEstateExpiredToKnockedProspect(data) {
     let notices = []
-    data.map(async ({ address, id, cover }) => {
+    data.map(async ({ address, estate_id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
           estate_id,
@@ -265,7 +270,7 @@ class NoticeService {
         notices.push({
           user_id: match.user_id,
           type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
-          data: { estate_id: id, estate_address: address },
+          data: { estate_id, estate_address: address },
           image: File.getPublicUrl(cover),
         })
       })
@@ -556,6 +561,40 @@ class NoticeService {
     await NotificationsService.sendProspectFirstVisitConfirm(notices)
   }
 
+  static async expiredShowTime() {
+    const knockMatches =
+      (
+        await Match.query().where('status', MATCH_STATUS_KNOCK).whereNull('notified_at').fetch()
+      ).toJSON() || []
+
+    const notices = []
+    const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
+
+    let i = 0
+    while (i < Object.keys(groupMatches).length) {
+      const estate_id = Object.keys(groupMatches)[i]
+      const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
+      if (!Object.keys(freeTimeSlots).length) {
+        const estate = await EstateService.getActiveById(estate_id)
+        if (estate) {
+          notices.push({
+            user_id: estate.user_id,
+            type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+            data: { estate_id, estate_address: estate.address },
+            image: File.getPublicUrl(estate.cover),
+          })
+        }
+      }
+      i++
+    }
+
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendExpiredShowTime(notices)
+    }
+    await Match.query().where('status', MATCH_STATUS_KNOCK).update({ notified_at: dateTime })
+  }
+
   /**
    *
    */
@@ -641,33 +680,27 @@ class NoticeService {
    *
    */
   static async prospectSuperMatch(matches, estateId = null) {
+    let notices = []
     if (matches.length > 0) {
-      let estate = estateId
-        ? await Estate.query().select(ESTATE_NOTIFICATION_FIELDS).where('id', estateId).first()
-        : null
-
-      const notices = await Promise.all(
-        matches.map(async ({ user_id, estate_id }) => {
-          if (!estateId) {
-            estate = await Estate.query()
-              .select(ESTATE_NOTIFICATION_FIELDS)
-              .where('id', estate_id)
-              .first()
-          }
-          return {
-            user_id,
+      const groupMatches = groupBy(matches, (match) => match.user_id)
+      await P.map(Object.keys(groupMatches), async (key) => {
+        const estate_ids = groupMatches[key].map((m) => m.estate_id)
+        const knockCount = await require('./MatchService').getMatchNewCount(key, estate_ids)
+        if (knockCount[0].count) {
+          notices.push({
+            user_id: key,
             type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
             data: {
-              estate_id: estateId,
-              estate_address: estate.address,
-              params: estate.getAptParams(),
+              count: knockCount[0].count || 0,
             },
-            image: File.getPublicUrl(estate.cover),
-          }
-        })
-      )
+          })
+        }
+      })
+    }
+
+    if (notices.length) {
       await NoticeService.insertNotices(notices)
-      await NotificationsService.sendProspectHasSuperMatch(notices)
+      NotificationsService.sendProspectHasSuperMatch(notices)
     }
   }
 
@@ -1123,9 +1156,14 @@ class NoticeService {
         'tasks.title',
         'tasks.description',
         'tasks.urgency',
-        'tasks.estate_id'
+        'tasks.estate_id',
+        'users.firstname',
+        'users.secondname',
+        'users.sex',
+        'users.avatar'
       )
-      .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('estates', 'estates.id', 'tasks.estate_id')
+      .leftJoin('users', 'users.id', 'estates.user_id')
       .where('tasks.id', task_id)
       .first()
 
@@ -1133,6 +1171,10 @@ class NoticeService {
       user_id: recipient_id,
       type,
       data: {
+        firstname: task.firstname,
+        secondname: task.secondname,
+        sex: task.sex,
+        avatar: task.avatar,
         estate_id: task.estate_id,
         estate_address: task.address,
         task_id,

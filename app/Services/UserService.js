@@ -32,6 +32,7 @@ const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
 const Ws = use('Ws')
+const { getIpBasedInfo } = use('App/Libs/getIpBasedInfo')
 const Admin = use('App/Models/Admin')
 
 const {
@@ -57,6 +58,7 @@ const {
   STATUS_DELETE,
   WRONG_INVITATION_LINK,
   WEBSOCKET_EVENT_USER_ACTIVATE,
+  SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN,
 } = require('../constants')
 
 const {
@@ -79,7 +81,7 @@ const {
     ACCOUNT_ALREADY_VERIFIED,
     NO_CONTACT_EXIST,
   },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
 const TaskService = require('./TaskService.js')
@@ -100,6 +102,17 @@ class UserService {
       .first()
     userData.terms_id = latestTerm.id
     userData.agreements_id = latestAgreement.id
+
+    let isExist = true
+    let code = ''
+    while (isExist) {
+      code = User.getTenDigitCode()
+      const userByCode = await User.query().where('code', code).first()
+      if (!userByCode) {
+        userData.code = code
+        isExist = false
+      }
+    }
 
     const user = await User.createItem(userData, trx)
 
@@ -864,6 +877,8 @@ class UserService {
       landord_invite = false,
       data1,
       data2,
+      ip,
+      ip_based_info,
       ...userData
     },
     trx = null
@@ -905,10 +920,11 @@ class UserService {
           firstname,
           status: STATUS_EMAIL_VERIFY,
           source_estate_id,
+          ip,
+          ip_based_info,
         },
         trx
       )
-
       //TODO: Manage outside landlord invitation flow
       if (landord_invite && data1 && data2) {
         await require('./OutsideLandlordService').updateOutsideLandlordInfo(
@@ -919,6 +935,11 @@ class UserService {
           },
           trx
         )
+      }
+      
+      if (isEmpty(ip_based_info.country_code)) {
+        const QueueService = require('./QueueService.js')
+        QueueService.getIpBasedInfo(user.id, ip)
       }
 
       if (!trx && process.env.NODE_ENV !== TEST_ENVIRONMENT) {
@@ -984,6 +1005,7 @@ class UserService {
       .select('*')
       .where('email', email)
       .whereIn('role', roles)
+      .whereNot('status', STATUS_DELETE)
       .orderBy('updated_at', 'desc')
       .first()
 
@@ -1008,9 +1030,17 @@ class UserService {
     if (device_token) {
       await User.query().where({ id: user.id }).update({ device_token })
     }
-
     Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
     return user
+  }
+
+  static async setIpBasedInfo(user, ip) {
+    if (!user.ip_based_info && SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN) {
+      const ip_based_info = await getIpBasedInfo(ip)
+      if (ip_based_info) {
+        await User.query().where('id', user.id).update({ ip, ip_based_info })
+      }
+    }
   }
 
   static async handleAdminLoginFromLandlord(email, auth) {

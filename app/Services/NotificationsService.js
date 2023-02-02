@@ -111,6 +111,9 @@ const {
 
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+
+  NOTICE_TYPE_EXPIRED_SHOW_TIME,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
 
 const mapping = [
@@ -167,6 +170,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID, NOTICE_TYPE_PROSPECT_TASK_RESOLVED],
   [NOTICE_TYPE_PROSPECT_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID],
+  [NOTICE_TYPE_EXPIRED_SHOW_TIME, NOTICE_TYPE_EXPIRED_SHOW_TIME_ID],
 ]
 
 class NotificationsService {
@@ -208,6 +212,7 @@ class NotificationsService {
       notification: {
         title: title || body,
         body: body || title,
+        sound: 'my_sound.mp3',
       },
       data: {
         type,
@@ -673,15 +678,14 @@ class NotificationsService {
    *
    */
   static async sendProspectHasSuperMatch(notices) {
-    const title = 'prospect.notification.event.best_match'
+    const title = `prospect.notification.event.new_multi_matches`
+    const body = 'prospect.notification.next.new_match.message'
 
-    return NotificationsService.sendNotes(notices, title, (data, lang) => {
-      return (
-        capitalize(data.estate_address) +
-        ' \n' +
-        l.get('prospect.notification.next.best_match.message', lang)
-      )
-    })
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ number: data?.count }])}`,
+      body
+    )
   }
 
   /**
@@ -909,6 +913,12 @@ class NotificationsService {
   static async sendProspectDeactivated(notices) {
     const title = 'prospect.notification.event.profile_deactivated'
     const body = 'prospect.notification.next.profile_deactivated'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendExpiredShowTime(notices) {
+    const title = 'landlord.property.set_availability.txt_show_expired.message'
+    const body = 'landlord.property.set_availability.btn_new_show.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

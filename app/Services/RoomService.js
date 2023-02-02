@@ -16,12 +16,56 @@ const {
   pick,
   assign,
   pull,
+  groupBy,
+  countBy,
+  filter,
 } = require('lodash')
 const Event = use('Event')
-const { STATUS_DELETE, STATUS_ACTIVE } = require('../constants')
+const {
+  STATUS_DELETE,
+  STATUS_ACTIVE,
+  ROLE_PROPERTY_MANAGER,
+  PROPERTY_MANAGE_ALLOWED,
+  ROOM_DEFAULT_ORDER,
+
+  ROOM_TYPE_GUEST_ROOM,
+  ROOM_TYPE_BATH,
+  ROOM_TYPE_BEDROOM,
+  ROOM_TYPE_KITCHEN,
+  ROOM_TYPE_CORRIDOR,
+  ROOM_TYPE_OFFICE,
+  ROOM_TYPE_PANTRY,
+  ROOM_TYPE_CHILDRENS_ROOM,
+  ROOM_TYPE_BALCONY,
+  ROOM_TYPE_WC,
+  ROOM_TYPE_OTHER_SPACE,
+  ROOM_TYPE_CHECKROOM,
+  ROOM_TYPE_DINING_ROOM,
+  ROOM_TYPE_ENTRANCE_HALL,
+  ROOM_TYPE_GYM,
+  ROOM_TYPE_IRONING_ROOM,
+  ROOM_TYPE_LIVING_ROOM,
+  ROOM_TYPE_LOBBY,
+  ROOM_TYPE_MASSAGE_ROOM,
+  ROOM_TYPE_STORAGE_ROOM,
+  ROOM_TYPE_PLACE_FOR_GAMES,
+  ROOM_TYPE_SAUNA,
+  ROOM_TYPE_SHOWER,
+  ROOM_TYPE_STAFF_ROOM,
+  ROOM_TYPE_SWIMMING_POOL,
+  ROOM_TYPE_TECHNICAL_ROOM,
+  ROOM_TYPE_TERRACE,
+  ROOM_TYPE_WASHING_ROOM,
+  ROOM_TYPE_EXTERNAL_CORRIDOR,
+  ROOM_TYPE_PROPERTY_ENTRANCE,
+  ROOM_TYPE_STAIRS,
+  ROOM_TYPE_GARDEN,
+  ROOM_TYPE_LOGGIA,
+} = require('../constants')
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
-
+const uuid = require('uuid')
+const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 
 class RoomService {
@@ -62,8 +106,54 @@ class RoomService {
   /**
    *
    */
-  static async removeRoom(roomId, trx) {
-    return await Room.query().update({ status: STATUS_DELETE }).where('id', roomId).transacting(trx)
+  static async removeRoom(room, trx) {
+    await Room.query()
+      .update({ name: `deleted_${uuid.v4()}_${room.name}`, status: STATUS_DELETE })
+      .where('id', room.id)
+      .transacting(trx)
+  }
+
+  static async handleRemoveRoom(room, trx) {
+    await this.removeRoom(room, trx)
+    await this.reIndexRooms(
+      { estate_id: room.estate_id, type: room.type, deleteIds: [room.id] },
+      trx
+    )
+  }
+
+  static async reIndexRooms({ estate_id, type, deleteIds = null }, trx) {
+    let rooms = await Room.query()
+      .where('estate_id', estate_id)
+      .where('type', type)
+      .whereNot('status', STATUS_DELETE)
+      .fetch()
+    if (deleteIds) {
+      rooms = (rooms.toJSON() || []).filter((r) => !deleteIds.includes(r.id))
+    }
+    const groupRooms = groupBy(rooms, (room) => room.type)
+    const updateRooms = []
+    Object.keys(groupRooms).map((key) => {
+      groupRooms[key].map((room, index) => {
+        const name = room.name.split(' ')[0]
+        updateRooms.push({
+          ...room,
+          name: index ? `${name} ${index}` : name,
+        })
+      })
+    })
+
+    await Promise.all(
+      updateRooms.map(async (room) => {
+        await Room.query().where('id', room.id).update({ name: room.name }).transacting(trx)
+      })
+    )
+  }
+
+  static async removeAllRoom(estate_id, trx) {
+    return await Room.query()
+      .where('estate_id', estate_id)
+      .update({ name: `deleted_${uuid.v4()}`, status: STATUS_DELETE })
+      .transacting(trx)
   }
 
   /**
@@ -73,9 +163,9 @@ class RoomService {
     const roomQuery = Room.query()
       .select('rooms.*')
       .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'rooms.estate_id')
+        this.on('_e.id', 'rooms.estate_id').onNotIn('_e.status', [STATUS_DELETE])
       })
-      .whereNot('_e.status', STATUS_DELETE)
+      .whereNot('rooms.status', STATUS_DELETE)
       .where('rooms.estate_id', estateId)
     if (withImage) {
       roomQuery.with('images')
@@ -164,45 +254,174 @@ class RoomService {
     return rooms
   }
 
-  static async createRoomsFromImport(estate_id, rooms) {
-    const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
-      return [...roomsInfo, { ...room, estate_id }]
-    }, [])
-    await Room.createMany(roomsInfo)
+  static async createRoomsFromImport({ estate_id, rooms }, trx) {
+    try {
+      const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+        return [...roomsInfo, { ...room, estate_id }]
+      }, [])
+
+      const groupRooms = groupBy(roomsInfo, (room) => room.type)
+      const newRoomsInfo = []
+      Object.keys(groupRooms).map((key) => {
+        groupRooms[key].map((room, index) => {
+          newRoomsInfo.push({
+            ...room,
+            name: index ? `${room.name} ${index + 1}` : room.name,
+            import_sequence: null,
+            order: index + 1,
+          })
+        })
+      })
+      if (newRoomsInfo && newRoomsInfo.length) {
+        newRoomsInfo[0].favorite = true
+      }
+      await Room.createMany(newRoomsInfo, trx)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
   }
 
-  static async updateRoomsFromImport(estate_id, rooms) {
-    let roomSequences = [1, 2, 3, 4, 5, 6]
-    await Promise.all(
-      rooms.map(async (room) => {
-        let dRoom
-        dRoom = await Room.query()
-          .where('estate_id', estate_id)
-          .where('import_sequence', room.import_sequence)
-          .first()
-        if (dRoom) {
-          //update
-          room.id = dRoom.id
-          dRoom.fill(room)
-          dRoom.status = STATUS_ACTIVE
-          await dRoom.save()
-          pull(roomSequences, parseInt(dRoom.import_sequence))
-        } else {
-          //create
-          const newRoom = new Room()
-          newRoom.fill(room)
-          newRoom.estate_id = estate_id
-          newRoom.status = STATUS_ACTIVE
-          await newRoom.save()
-          pull(roomSequences, parseInt(newRoom.import_sequence))
+  static async updateRoomsFromImport({ estate_id, rooms }, trx) {
+    try {
+      const oldRooms =
+        (
+          await Room.query()
+            .with('images')
+            .where('estate_id', estate_id)
+            .whereNot('status', STATUS_DELETE)
+            .orderBy('order', 'asc')
+            .fetch()
+        ).toJSON() || []
+      if (!oldRooms.length) {
+        await this.createRoomsFromImport({ estate_id, rooms }, trx)
+      } else {
+        const roomTypes = [
+          ROOM_TYPE_GUEST_ROOM,
+          ROOM_TYPE_BATH,
+          ROOM_TYPE_BEDROOM,
+          ROOM_TYPE_KITCHEN,
+          ROOM_TYPE_CORRIDOR,
+          ROOM_TYPE_OFFICE,
+          ROOM_TYPE_PANTRY,
+          ROOM_TYPE_CHILDRENS_ROOM,
+          ROOM_TYPE_BALCONY,
+          ROOM_TYPE_WC,
+          ROOM_TYPE_OTHER_SPACE,
+          ROOM_TYPE_CHECKROOM,
+          ROOM_TYPE_DINING_ROOM,
+          ROOM_TYPE_ENTRANCE_HALL,
+          ROOM_TYPE_GYM,
+          ROOM_TYPE_IRONING_ROOM,
+          ROOM_TYPE_LIVING_ROOM,
+          ROOM_TYPE_LOBBY,
+          ROOM_TYPE_MASSAGE_ROOM,
+          ROOM_TYPE_STORAGE_ROOM,
+          ROOM_TYPE_PLACE_FOR_GAMES,
+          ROOM_TYPE_SAUNA,
+          ROOM_TYPE_SHOWER,
+          ROOM_TYPE_STAFF_ROOM,
+          ROOM_TYPE_SWIMMING_POOL,
+          ROOM_TYPE_TECHNICAL_ROOM,
+          ROOM_TYPE_TERRACE,
+          ROOM_TYPE_WASHING_ROOM,
+          ROOM_TYPE_EXTERNAL_CORRIDOR,
+          ROOM_TYPE_PROPERTY_ENTRANCE,
+          ROOM_TYPE_STAIRS,
+          ROOM_TYPE_GARDEN,
+          ROOM_TYPE_LOGGIA,
+        ]
+
+        const oldRoomsByRoomTypes = roomTypes.map((type) =>
+          filter(oldRooms, (room) => room.type === type)
+        )
+
+        const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
+          return [...roomsInfo, { ...room, estate_id }]
+        }, [])
+
+        const newRoomsByRoomTypes = roomTypes.map((type) =>
+          filter(roomsInfo, (room) => room.type === type)
+        )
+        const differentRooms = newRoomsByRoomTypes.map((newRoomByType, index) => {
+          if (newRoomByType.length > oldRoomsByRoomTypes[index].length) {
+            const oldRoomLength = oldRoomsByRoomTypes[index].length
+            return {
+              operation: 'add',
+              nameIndex: oldRoomsByRoomTypes[index].length,
+              orderIndex: oldRoomLength
+                ? oldRoomsByRoomTypes[index][oldRoomLength - 1].order
+                : ROOM_DEFAULT_ORDER,
+              rooms: newRoomByType.slice(oldRoomsByRoomTypes[index].length, newRoomByType.length),
+            }
+          } else if (newRoomByType.length < oldRoomsByRoomTypes[index].length) {
+            const oldRoomsNoImages =
+              oldRoomsByRoomTypes[index].filter((or) => !or.images?.length) || []
+            return {
+              operation: 'delete',
+              type: oldRoomsByRoomTypes[index][0].type,
+              rooms: oldRoomsNoImages.map((r) => {
+                return { id: r.id, name: r.name }
+              }),
+            }
+          }
+          return {}
+        })
+
+        const addRooms = []
+        let deleteRoomIdsByType = []
+        differentRooms.map((element) => {
+          if (element && element.operation === 'add') {
+            element.rooms.map((room, index) => {
+              addRooms.push({
+                ...room,
+                name: element.nameIndex
+                  ? `${room.name} ${element.nameIndex + 1 + index}`
+                  : room.name,
+                import_sequence: null,
+                order:
+                  element.orderIndex === ROOM_DEFAULT_ORDER
+                    ? ROOM_DEFAULT_ORDER
+                    : element.orderIndex + index,
+              })
+            })
+          } else if (element && element.operation === 'delete') {
+            deleteRoomIdsByType.push(element)
+          }
+        })
+
+        if (deleteRoomIdsByType && deleteRoomIdsByType.length) {
+          await Promise.map(deleteRoomIdsByType, async (dr) => {
+            await Promise.map(dr.rooms, async (r) => {
+              await Room.query()
+                .where('id', r.id)
+                .update({ name: `deleted_${uuid.v4()}_${r.name}`, status: STATUS_DELETE })
+                .transacting(trx)
+            })
+            await this.reIndexRooms(
+              { estate_id, type: dr.type, deleteIds: dr.rooms.map((r) => r.id) },
+              trx
+            )
+          })
         }
-      })
-    )
-    //we remove rooms that are not anymore on the import
-    await Room.query()
-      .whereIn('import_sequence', roomSequences)
-      .where('estate_id', estate_id)
-      .update({ status: STATUS_DELETE })
+
+        if (addRooms && addRooms.length) {
+          await Room.createMany(addRooms, trx)
+        }
+      }
+    } catch (e) {
+      console.log('update room error', e.message)
+    }
+  }
+
+  static async hasPermission(estate_id, user) {
+    let userIds = [user.id]
+    if (user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await require('./EstatePermissionService').getLandlordIds(
+        user.id,
+        PROPERTY_MANAGE_ALLOWED
+      )
+    }
+    await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
   }
 }
 

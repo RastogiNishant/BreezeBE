@@ -6,7 +6,7 @@ const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
-const { isEmpty } = require('lodash')
+const { isEmpty, trim } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
@@ -17,6 +17,7 @@ const {
   MIN_TIME_SLOT,
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
+  STATUS_DELETE,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -41,15 +42,41 @@ class QueueJobService {
   }
 
   static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
-    if (!estate.address) {
-      throw new AppException('Estate address invalid')
+    const estate = await Estate.find(estateId)
+
+    if (!estate || !estate.address || trim(estate.address) === '') {
+      return
     }
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result) {
-      await estate.updateItem({ coord: `${result.lat},${result.lon}` })
+    if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
+      const coord = `${result.lat},${result.lon}`
+      await estate.updateItem({ coord: coord })
       await QueueJobService.updateEstatePoint(estateId)
+      require('./EstateService').emitValidAddress({
+        user_id: estate.user_id,
+        id: estate.id,
+        coord,
+        address: estate.address,
+      })
+    }
+  }
+
+  static async updateAllMisseEstateCoord() {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .whereNull('coord')
+          .whereNotNull('address')
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+      ).rows || []
+
+    let i = 0
+    while (i < estates.length) {
+      await QueueJobService.updateEstateCoord(estates[i].id)
+      i++
     }
   }
 
@@ -213,6 +240,12 @@ class QueueJobService {
     } else {
       console.log(`deactivating ${deactivationId} is not valid anymore.`)
     }
+  }
+
+  static async getIpBasedInfo(userId, ip) {
+    const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
+    const ip_based_info = await getIpBasedInfo(ip)
+    await User.query().where('id', userId).update({ ip_based_info })
   }
 }
 

@@ -5,7 +5,7 @@ const Base = require('./Base')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED },
-} = require('../excepions')
+} = require('../exceptions')
 
 class PostImportLastActivity extends Base {
   static schema = () =>

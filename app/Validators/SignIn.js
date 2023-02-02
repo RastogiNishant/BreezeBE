@@ -7,7 +7,7 @@ const { ROLE_USER, ROLE_LANDLORD, ROLE_ADMIN, ROLE_PROPERTY_MANAGER } = require(
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH },
-} = require('../excepions')
+} = require('../exceptions')
 
 class SignIn extends Base {
   static schema = () =>

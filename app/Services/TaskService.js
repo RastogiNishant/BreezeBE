@@ -46,7 +46,8 @@ const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
-class TaskService {
+const BaseService = require('./BaseService')
+class TaskService extends BaseService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
     const tenant_id = await this.hasPermission({
@@ -63,7 +64,7 @@ class TaskService {
       status_changed_by: user.role,
     }
 
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const attachments = path.map((p) => {
@@ -331,8 +332,7 @@ class TaskService {
       throw new HttpException('No Permission')
     }
 
-    task = await TaskService.getItemWithAbsoluteUrl(task)
-
+    task = await this.getWithAbsoluteUrl(task)
     return task
   }
 
@@ -403,7 +403,7 @@ class TaskService {
 
     tasks = await Promise.all(
       tasks.rows.map(async (t) => {
-        return await TaskService.getItemWithAbsoluteUrl(t)
+        return await TaskService.getWithAbsoluteUrl(t)
       })
     )
 
@@ -481,24 +481,6 @@ class TaskService {
       .with('users')
   }
 
-  static async saveTaskImages(request) {
-    const imageMimes = [
-      File.IMAGE_JPG,
-      File.IMAGE_JPEG,
-      File.IMAGE_PNG,
-      File.IMAGE_PDF,
-      File.IMAGE_TIFF,
-      File.IMAGE_GIF,
-      File.IMAGE_WEBP,
-      File.IMAGE_HEIC,
-    ]
-    const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
-    ])
-
-    return files
-  }
-
   static async hasPermission({ estate_id, user_id, role }) {
     //to check if the user has permission
     if (role === ROLE_LANDLORD) {
@@ -533,7 +515,7 @@ class TaskService {
     const { id } = request.all()
     let task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const pathJSON = path.map((p) => {
@@ -549,7 +531,7 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
-      files.attachments = await ChatService.getAbsoluteUrl(
+      files.attachments = await this.getAbsoluteUrl(
         Array.isArray(files.file) ? files.file : [files.file]
       )
       return files
@@ -607,49 +589,11 @@ class TaskService {
   }
 
   static async archiveTask(estate_id, trx) {
+    estate_id = !Array.isArray(estate_id) ? [estate_id] : estate_id
     await Task.query()
       .whereIn('estate_id', estate_id)
       .update({ status: TASK_STATUS_ARCHIVED })
       .transacting(trx)
-  }
-
-  static async getItemWithAbsoluteUrl(item) {
-    try {
-      if (item.attachments) {
-        item.attachments = await Promise.all(
-          item.attachments.map(async (attachment) => {
-            const thumb =
-              attachment.uri.split('/').length === 2
-                ? await File.getProtectedUrl(
-                    `thumbnail/${attachment.uri.split('/')[0]}/thumb_${
-                      attachment.uri.split('/')[1]
-                    }`
-                  )
-                : ''
-
-            if (attachment.uri.search('http') !== 0) {
-              return {
-                user_id: attachment.user_id,
-                url: await File.getProtectedUrl(attachment.uri),
-                uri: attachment.uri,
-                thumb: thumb,
-              }
-            }
-
-            return {
-              user_id: attachment.user_id,
-              url: attachment.uri,
-              uri: attachment.uri,
-              thumb: thumb,
-            }
-          })
-        )
-      }
-      return item
-    } catch (e) {
-      console.log(e.message, 500)
-      return null
-    }
   }
 
   static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {

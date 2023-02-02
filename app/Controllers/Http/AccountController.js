@@ -13,7 +13,7 @@ const { pick } = require('lodash')
 
 const {
   exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },
-} = require('../../../app/excepions')
+} = require('../../../app/exceptions')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
@@ -32,7 +32,8 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, from_web, data1, data2, landord_invite, ...userData } = request.all()
+    const { email, from_web, data1, data2, landord_invite, ip_based_info, ...userData } =
+      request.all()
     const trx = await Database.beginTransaction()
     try {
       const user = await UserService.signUp(
@@ -42,6 +43,7 @@ class AccountController {
           data1,
           data2,
           landord_invite,
+          ip_based_info,
           ...userData,
         },
         trx
@@ -166,9 +168,12 @@ class AccountController {
         token = await authenticator.attempt(uid, password)
       } catch (e) {
         const [message] = e.message.split(':')
+        //FIXME: message should be json here to be consistent with being a backend
+        //that provides JSON RESTful API
         throw new HttpException(message, 400, 0)
       }
-
+      const ip = request.ip()
+      await UserService.setIpBasedInfo(user, ip)
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_EMAIL,
         role,

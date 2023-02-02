@@ -40,10 +40,7 @@ class Recalc extends Command {
         estate = estates[matchEstateUser.estate_id]
       }
       if (prospect && estate) {
-        let matchScore = MatchService.calculateMatchPercent(prospect, estate).toFixed(2)
-        console.log(
-          `User: ${matchEstateUser.user_id}, Estate: ${matchEstateUser.estate_id}, Score: ${matchScore}`
-        )
+        const matchScore = await MatchService.calculateMatchPercent(prospect, estate).toFixed(2)
         try {
           await Match.query()
             .where('user_id', matchEstateUser.user_id)

@@ -3,6 +3,7 @@
 const moment = require('moment')
 const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
+const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
@@ -158,6 +159,7 @@ class Estate extends Model {
       'is_new_tenant_transfer',
       'transfer_budget',
       'rent_end_at',
+      'income_sources',
     ]
   }
 
@@ -232,12 +234,7 @@ class Estate extends Model {
       }
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
-        instance.address = trim(
-          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
-            instance.city || ''
-          }, ${instance.country || ''}`,
-          ', '
-        ).toLowerCase()
+        instance.address = generateAddress(instance)
         instance.coord = null
         instance.coord_raw = null
       }
@@ -275,22 +272,25 @@ class Estate extends Model {
     })
 
     this.addHook('afterCreate', async (instance) => {
-      await Database.table('estates')
-        .update({ hash: Estate.getHash(instance.id) })
-        .where('id', instance.id)
-      let exists
-      let randomString
-      do {
-        randomString = this.generateRandomString(6)
-        exists = await Database.table('estates')
-          .where('six_char_code', randomString)
-          .select('id')
-          .first()
-      } while (exists)
-      await Database.table('estates')
-        .where('id', instance.id)
-        .update({ six_char_code: randomString })
+      await this.updateBreezeId(instance.id)
     })
+  }
+
+  static async updateBreezeId(id) {
+    await Database.table('estates')
+      .update({ hash: Estate.getHash(id) })
+      .where('id', id)
+
+    let exists
+    let randomString
+    do {
+      randomString = this.generateRandomString(6)
+      exists = await Database.table('estates')
+        .where('six_char_code', randomString)
+        .select('id')
+        .first()
+    } while (exists)
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
   }
 
   /**
@@ -311,7 +311,7 @@ class Estate extends Model {
    *
    */
   rooms() {
-    return this.hasMany('App/Models/Room')
+    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
   }
 
   activeTasks() {
@@ -421,11 +421,15 @@ class Estate extends Model {
    *
    */
   files() {
-    return this.hasMany('App/Models/File')
+    return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
   amenities() {
     return this.hasMany('App/Models/Amenity')
+  }
+
+  notifications() {
+    return this.hasOne('App/Models/Notice')
   }
 
   /**
