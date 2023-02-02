@@ -2840,7 +2840,7 @@ class MatchService {
   }
 
   static async getMatchStageList({ user_id, params, page = -1, limit = -1 }) {
-    const estate = await Estate.query()
+    let estate = await Estate.query()
       .where('id', params.estate_id)
       .where('user_id', user_id)
       .withCount('knocked')
@@ -2853,6 +2853,7 @@ class MatchService {
       throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
 
+    estate = estate.toJSON()
     const inviteQuery = this.getMatchStageQuery({ params })
     let match = null
     let count = 0
@@ -2867,10 +2868,18 @@ class MatchService {
           .count(Database.raw(`DISTINCT("matches"."user_id", "matches"."estate_id")`))
       )[0].count
     }
+    let invite_count = 0
+
+    if (params.match_status.includes(MATCH_STATUS_KNOCK)) {
+      invite_count = parseInt(estate?.__meta__?.inviteBuddies_count || 0) + parseInt(count)
+    } else if (params.buddy) {
+      invite_count = parseInt(estate?.__meta__?.knocked_count || 0) + parseInt(count)
+    }
     return {
       estate,
       match: match.toJSON({ isShort: true }),
-      count,
+      count: parseInt(count),
+      invite_count,
     }
   }
 
