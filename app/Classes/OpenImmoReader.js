@@ -1,12 +1,11 @@
 const xml2js = require('xml2js')
 const AppException = use('App/Exceptions/AppException')
+const HttpException = use('App/Exceptions/AppException')
 const fsPromises = require('fs/promises')
 const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const Drive = use('Drive')
-const QueueService = use('App/Services/QueueService')
 
 const imageTypes = {
   TITELBILD: 'cover',

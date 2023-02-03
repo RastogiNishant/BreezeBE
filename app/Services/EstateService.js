@@ -1486,9 +1486,9 @@ class EstateService {
   static async importOpenimmo(importFile, user_id) {
     const filename = importFile.clientName
     const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
-    const result = await reader.process()
     const trx = await Database.beginTransaction()
     try {
+      const result = await reader.process()
       await Promise.map(result, async (property) => {
         property.user_id = user_id
         property.status = STATUS_DRAFT
@@ -1517,7 +1517,7 @@ class EstateService {
     } catch (err) {
       await trx.rollback()
       console.log(err)
-      throw new HttpException('Error found while importing xml.')
+      throw new HttpException(err.message)
     }
   }
 
