@@ -955,11 +955,14 @@ class EstateService {
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .with('current_tenant')
+        .with('slots')
         .fetch()
     } else {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
+        .with('current_tenant')
+        .with('slots')
         .paginate(page, limit)
     }
   }
