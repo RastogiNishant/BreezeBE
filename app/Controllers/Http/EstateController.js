@@ -65,7 +65,7 @@ const QueueService = require('../../Services/QueueService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST, WRONG_PARAMS },
 } = require('../../../app/exceptions')
 
 class EstateController {
@@ -203,9 +203,17 @@ class EstateController {
   }
 
   async searchEstates({ request, auth, response }) {
-    const { query } = request.all()
-    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query })
+    const { query, coord } = request.all()
+    if (!coord && !query) {
+      throw new HttpException(WRONG_PARAMS, 400)
+    }
+    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query, coord })
     response.res(estates)
+  }
+
+  async shortSearchEstates({ request, auth, response }) {
+    const { query } = request.all()
+    response.res(await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query }))
   }
   /**
    *
