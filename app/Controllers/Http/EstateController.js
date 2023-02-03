@@ -53,7 +53,7 @@ const {
   IMPORT_ACTIVITY_PENDING,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -65,7 +65,7 @@ const QueueService = require('../../Services/QueueService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST, WRONG_PARAMS },
 } = require('../../../app/exceptions')
 
 class EstateController {
@@ -203,8 +203,11 @@ class EstateController {
   }
 
   async searchEstates({ request, auth, response }) {
-    const { query } = request.all()
-    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query })
+    const { query, coord } = request.all()
+    if (!coord && !query) {
+      throw new HttpException(WRONG_PARAMS, 400)
+    }
+    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query, coord })
     response.res(estates)
   }
 
@@ -1071,6 +1074,15 @@ class EstateController {
       .update({ letting_type: letting_type })
 
     response.res(true)
+  }
+
+  async importOpenimmo({ request, response, auth }) {
+    try {
+      await EstateService.importOpenimmo(request.importFile, auth.user.id)
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 412)
+    }
   }
 }
 

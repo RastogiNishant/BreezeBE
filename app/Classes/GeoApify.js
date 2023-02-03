@@ -144,6 +144,24 @@ class GeoPify {
   /**
    *
    */
+  getPlacesByCoord({ lat, lon }) {
+    return this.request
+      .send({
+        url: '/v1/geocode/reverse',
+        data: { lat, lon, apiKey: this.settings.apiKey },
+        method: 'GET',
+      })
+      .then((response) => {
+        return response.features || null
+      })
+      .catch((e) => {
+        console.log(e.message)
+        return null
+      })
+  }
+  /**
+   *
+   */
   getAddressSuggestions = (text) => {
     return this.request
       .send({
@@ -182,7 +200,13 @@ class GeoPify {
         data: { text: address, apiKey: this.settings.apiKey },
         method: 'GET',
       })
-      .then((response) => response.features)
+      .then((response) => {
+        return response.features || null
+      })
+      .catch((e) => {
+        console.log(e.message)
+        return null
+      })
   }
 
   /**

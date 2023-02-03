@@ -49,6 +49,7 @@ class EstateFilter extends Base {
             ])
         )
         .nullable(),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       address: yup
         .object()
         .shape({

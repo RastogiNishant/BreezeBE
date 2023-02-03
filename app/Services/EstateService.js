@@ -19,9 +19,11 @@ const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
+const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
+const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
 const GeoAPI = use('GeoAPI')
 
@@ -53,6 +55,8 @@ const {
   ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  IMPORT_TYPE_OPENIMMO,
+  IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_VALID_ADDRESS,
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
@@ -1060,8 +1064,18 @@ class EstateService {
       .fetch()
   }
 
-  static async getEstatesByQuery({ user_id, query }) {
-    let estates = await GeoAPI.getGeoByAddress(query)
+  static async getEstatesByQuery({ user_id, query, coord }) {
+    let estates
+    if (coord) {
+      const [lat, lon] = coord.split(',')
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon })
+    } else {
+      estates = await GeoAPI.getGeoByAddress(query)
+    }
+    if (!estates) {
+      return null
+    }
+
     estates = estates.map((estate) => {
       return {
         address: estate.properties.formatted,
@@ -1527,6 +1541,44 @@ class EstateService {
       return false
     }
     return true
+  }
+
+  static async importOpenimmo(importFile, user_id) {
+    const filename = importFile.clientName
+    const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
+    const trx = await Database.beginTransaction()
+    try {
+      const result = await reader.process()
+      await Promise.map(result, async (property) => {
+        property.user_id = user_id
+        property.status = STATUS_DRAFT
+        let images = property.images
+        let result
+        const existingProperty = await Estate.query()
+          .where({ property_id: property.property_id, user_id })
+          .first()
+        if (existingProperty) {
+          existingProperty.merge(omit(property, ['images']))
+          result = await existingProperty.save(trx)
+          QueueService.uploadOpenImmoImages(images, existingProperty.id)
+        } else {
+          result = await Estate.createItem(omit(property, ['images']), trx)
+          QueueService.uploadOpenImmoImages(images, result.id)
+        }
+      })
+      await Import.createItem({
+        user_id,
+        filename,
+        type: IMPORT_TYPE_OPENIMMO,
+        entity: IMPORT_ENTITY_ESTATES,
+      })
+      await trx.commit()
+      return result
+    } catch (err) {
+      await trx.rollback()
+      console.log(err)
+      throw new HttpException(err.message)
+    }
   }
 
   static async deletePermanent(user_id) {
