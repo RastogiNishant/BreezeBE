@@ -130,6 +130,9 @@ class EstateFilters extends Filter {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
         this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
         this.orWhere('estates.city', 'ilike', `${params.query}%`)
+        this.orWhere('estates.address', 'ilike', `${params.query}%`)
+        this.orWhere('estates.country', 'ilike', `${params.query}%`)
+        this.orWhere('estates.zip', 'ilike', `${params.query}%`)
       })
     }
     /* status */
