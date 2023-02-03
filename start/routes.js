@@ -364,6 +364,9 @@ Route.group(() => {
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
+  Route.post('/import/openimmo', 'EstateController.importOpenimmo').middleware([
+    'ValidOpenImmoImport',
+  ])
   Route.get('/import/last-activity', 'EstateController.importLastActivity')
   Route.post('/import/last-activity', 'EstateController.postImportLastActivity').middleware([
     'valid:PostImportLastActivity',
