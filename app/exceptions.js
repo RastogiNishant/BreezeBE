@@ -58,6 +58,7 @@ const exceptions = {
   ALREADY_USED_QR_CODE: 'Already used QR code',
   EXPIRED_QR_CODE: 'Expired QR code',
   SOME_IMAGE_NOT_EXIST: "Some images don't exist",
+  WRONG_PARAMS: 'Params not correct',
 }
 
 const exceptionCodes = {

@@ -1061,8 +1061,18 @@ class EstateService {
       .fetch()
   }
 
-  static async getEstatesByQuery({ user_id, query }) {
-    let estates = await GeoAPI.getGeoByAddress(query)
+  static async getEstatesByQuery({ user_id, query, coord }) {
+    let estates
+    if (coord) {
+      const [lat, lon] = coord.split(',')
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon })
+    } else {
+      estates = await GeoAPI.getGeoByAddress(query)
+    }
+    if (!estates) {
+      return null
+    }
+
     estates = estates.map((estate) => {
       return {
         address: estate.properties.formatted,

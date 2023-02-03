@@ -26,6 +26,7 @@ class EstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
       query: yup.string().min(2),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       filter: yup.array().of(yup.number()).nullable(),
       address: yup
         .object()

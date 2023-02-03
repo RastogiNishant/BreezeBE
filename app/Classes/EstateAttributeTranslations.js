@@ -448,7 +448,7 @@ class EstateAttributeTranslations {
         case escapeStr(l.get('apt_roof_floor.message', this.lang)):
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {
