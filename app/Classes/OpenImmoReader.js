@@ -3,7 +3,7 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/AppException')
 const fsPromises = require('fs/promises')
 const extract = require('extract-zip')
-const { has, includes, isArray, forOwn, get } = require('lodash')
+const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
 
@@ -317,8 +317,16 @@ class OpenImmoReader {
         property.coord = `${property.coord.breitengrad},${property.coord.laengengrad}`
       }
       //force dates to be of the format YYYY-MM-DD
-      property.available_date = moment(new Date(property.available_date)).format('YYYY-MM-DD')
-      property.from_date = moment(new Date(property.from_date)).format('YYYY-MM-DD')
+      if (property.available_date) {
+        property.available_date = moment(new Date(property.available_date)).format('YYYY-MM-DD')
+      } else {
+        unset(property, 'available_date')
+      }
+      if (property.from_date) {
+        property.from_date = moment(new Date(property.from_date)).format('YYYY-MM-DD')
+      } else {
+        unset(property, 'from_date')
+      }
 
       property.construction_year = property.construction_year
         ? `${property.construction_year}-01-01`
