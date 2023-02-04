@@ -1107,8 +1107,15 @@ class EstateService {
           .select(Database.raw(`true as is_exist`))
           .whereNot('estates.status', STATUS_DELETE)
           .where('estates.user_id', user_id)
-          .whereNot('estates.letting_type', LETTING_TYPE_NA)
-          .whereNull('_ect.user_id')
+          .where(
+            Database.raw(`
+              _ect.user_id IS NULL AND
+              ( _ect.code IS NULL OR
+              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+                .utc(new Date())
+                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+                .format(DATE_FORMAT)}') )`)
+          )
           .whereIn('coord_raw', coords)
           .fetch()
       ).toJSON() || []
