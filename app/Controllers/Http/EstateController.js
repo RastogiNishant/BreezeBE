@@ -1058,7 +1058,9 @@ class EstateController {
       )
     }
 
-    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId(id)
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId({
+      estate_id: id,
+    })
 
     if (estateCurrentTenant) {
       throw new HttpException(
