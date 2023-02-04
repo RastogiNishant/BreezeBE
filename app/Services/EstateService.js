@@ -283,8 +283,8 @@ class EstateService {
     }
 
     if (!fromImport) {
-      createData.letting_type = LETTING_TYPE_VOID
-      createData.letting_status = LETTING_STATUS_VACANCY
+      createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
+      createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
     }
 
     let estateHash

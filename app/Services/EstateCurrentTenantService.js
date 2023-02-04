@@ -46,6 +46,8 @@ const {
   SALUTATION_NEUTRAL_LABEL,
   GENDER_FEMALE,
   GENDER_MALE,
+  DATE_FORMAT,
+  LETTING_STATUS_STANDARD,
 } = require('../constants')
 
 const {
@@ -54,6 +56,7 @@ const {
     INVALID_QR_CODE,
     ALREADY_USED_QR_CODE,
     EXPIRED_QR_CODE,
+    TENANT_EXIST,
   },
 } = require('../exceptions')
 
@@ -259,11 +262,34 @@ class EstateCurrentTenantService extends BaseService {
   static async getWithAbsoluteAttachments(id, user_id) {
     return await this.getWithAbsoluteUrl((await this.hasPermission(id, user_id)).toJSON())
   }
-  static async getCurrentTenantByEstateId(estate_id) {
-    return await EstateCurrentTenant.query()
+
+  static async getCurrentTenantByEstateId({
+    estate_id,
+    notDisconnected = false,
+    connected = false,
+  }) {
+    let query = EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
-      .first()
+
+    if (notDisconnected) {
+      query.andWhere(function () {
+        this.orWhere(Database.raw(`user_id IS NOT NULL`))
+        this.orWhere(
+          Database.raw(`
+            user_id IS NULL AND code IS NOT NULL AND invite_sent_at >= '${moment
+              .utc(new Date())
+              .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+              .format(DATE_FORMAT)}'`)
+        )
+      })
+    }
+
+    if (connected) {
+      query.whereNotNull('user_id')
+    }
+
+    return await query.first()
   }
 
   static async getAllInsideCurrentTenant(estate_ids) {
@@ -348,40 +374,56 @@ class EstateCurrentTenantService extends BaseService {
   }
 
   static async inviteTenantToAppByEmail({ ids, user_id }, trx) {
-    let { failureCount, links } = await this.getDynamicLinks(
-      {
-        ids,
-        user_id,
-      },
-      trx
-    )
-    const validLinks = links.filter(
-      (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
-    )
+    try {
+      let { failureCount, links } = await this.getDynamicLinks(
+        {
+          ids,
+          user_id,
+        },
+        trx
+      )
+      const validLinks = links.filter(
+        (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
+      )
 
-    failureCount += (links.length || 0) - (validLinks.length || 0)
-    const successCount = (ids.length || 0) - failureCount
-    if (validLinks && validLinks.length) {
-      MailService.sendInvitationToOusideTenant(validLinks)
+      failureCount += (links.length || 0) - (validLinks.length || 0)
+      const successCount = (ids.length || 0) - failureCount
+      if (validLinks && validLinks.length) {
+        MailService.sendInvitationToOusideTenant(validLinks)
+      }
+
+      return { successCount, failureCount }
+    } catch (e) {
+      return { successCount: 0, failureCount: ids.length || 0 }
     }
-
-    return { successCount, failureCount }
   }
 
-  static async inviteTenantToApp({ user_id, estate_id, address, coord, email, phone, surname }) {
+  static async singleInvitation({ user_id, estate_id, address, coord, email, phone, surname }) {
     const trx = await Database.beginTransaction()
+    let inviteResult, currentTenant
     try {
       if (!estate_id) {
         const { id } = await require('./EstateService').createEstate(
-          { data: { address, coord, letting_type: LETTING_TYPE_LET }, userId: user_id },
+          {
+            data: {
+              address,
+              coord,
+              letting_type: LETTING_TYPE_LET,
+              letting_status: LETTING_STATUS_STANDARD,
+            },
+            userId: user_id,
+          },
           false,
           trx
         )
         estate_id = id
       } else {
+        if (await this.getCurrentTenantByEstateId({ estate_id, notDisconnected: true })) {
+          throw new HttpException(TENANT_EXIST, 400)
+        }
         await require('./EstateService').rented(estate_id, trx)
       }
-      const currentTenant = await this.updateCurrentTenant(
+      currentTenant = await this.updateCurrentTenant(
         {
           data: {
             email,
@@ -396,19 +438,87 @@ class EstateCurrentTenantService extends BaseService {
         trx
       )
       await trx.commit()
-
-      let inviteResult
-      if (email) {
-        inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
-      } else if (phone) {
-        inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
-      }
-
-      return inviteResult
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, e.status || 500)
+    } finally {
+      let ret = {}
+      if (currentTenant) {
+        if (email) {
+          inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
+          ret = {
+            successCount: inviteResult.successCount,
+            failureCount: inviteResult.failureCount,
+            email: {
+              sucessCount: inviteResult.successCount,
+              failureCount: inviteResult.failureCount,
+            },
+          }
+        } else if (phone) {
+          inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
+          ret = {
+            successCount: inviteResult.successCount,
+            failureCount: inviteResult.failureCount,
+            phone: {
+              sucessCount: inviteResult.successCount,
+              failureCount: inviteResult.failureCount,
+            },
+          }
+        }
+        return ret
+      }
+      return {
+        failureCount: 1,
+      }
     }
+  }
+  static async inviteTenantToApp({ user_id, invites }) {
+    let result = {
+      email: {},
+      phone: {},
+    }
+
+    await Promise.map(invites, async ({ estate_id, address, coord, email, phone, surname }) => {
+      const singleResult = await EstateCurrentTenantService.singleInvitation({
+        user_id,
+        estate_id,
+        address,
+        coord,
+        email,
+        phone,
+        surname,
+      })
+
+      if (singleResult?.successCount) {
+        result.successCount = (result?.successCount || 0) + singleResult.successCount
+      }
+      if (singleResult?.failureCount) {
+        result.failureCount = (result?.failureCount || 0) + singleResult.failureCount
+      }
+
+      if (singleResult?.email) {
+        if (singleResult?.email?.successCount) {
+          result.email.successCount =
+            (result?.email?.successCount || 0) + singleResult.email.successCount
+        }
+        if (singleResult?.email?.failureCount) {
+          result.email.failureCount =
+            (result?.email?.failureCount || 0) + singleResult.email.failureCount
+        }
+      }
+
+      if (singleResult?.phone) {
+        if (singleResult?.phone?.successCount) {
+          result.phone.successCount =
+            (result?.phone?.successCount || 0) + singleResult.phone.successCount
+        }
+        if (singleResult?.phone?.failureCount) {
+          result.phone.failureCount =
+            (result?.phone?.failureCount || 0) + singleResult.phone.failureCount
+        }
+      }
+    })
+
+    return result
   }
 
   static async inviteTenantToAppBySMS({ ids, user_id }, trx = null) {
@@ -476,7 +586,7 @@ class EstateCurrentTenantService extends BaseService {
     estateCurrentTenants = await Promise.all(
       (estateCurrentTenants || []).map(async (ect) => {
         const estate = await EstateService.getEstateHasTenant({
-          condition: { id: ect.estate_id, user_id: user_id },
+          condition: { id: ect.estate_id, user_id },
         })
         if (!estate) {
           failureCount++

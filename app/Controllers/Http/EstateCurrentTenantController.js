@@ -71,9 +71,9 @@ class EstateCurrentTenantController {
   }
 
   async inviteTenantToApp({ request, auth, response }) {
-    const { ...params } = request.all()
+    const { invites } = request.all()
     response.res(
-      await EstateCurrentTenantService.inviteTenantToApp({ user_id: auth.user.id, ...params })
+      await EstateCurrentTenantService.inviteTenantToApp({ user_id: auth.user.id, invites })
     )
   }
 
