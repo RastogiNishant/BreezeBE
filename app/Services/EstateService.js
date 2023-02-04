@@ -7,7 +7,6 @@ const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
-const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
@@ -20,9 +19,11 @@ const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
+const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
+const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
 const GeoAPI = use('GeoAPI')
 
@@ -54,6 +55,8 @@ const {
   ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  IMPORT_TYPE_OPENIMMO,
+  IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_VALID_ADDRESS,
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
@@ -871,7 +874,7 @@ class EstateService {
     { exclude_from = 0, exclude_to = 0, exclude = [] },
     limit = 20
   ) {
-    const tenant = await TenantService.getTenantWithGeo(userId)
+    const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
@@ -957,11 +960,14 @@ class EstateService {
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .with('current_tenant')
+        .with('slots')
         .fetch()
     } else {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
+        .with('current_tenant')
+        .with('slots')
         .paginate(page, limit)
     }
   }
@@ -1011,8 +1017,66 @@ class EstateService {
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
-  static async getEstatesByQuery({ user_id, query }) {
-    let estates = await GeoAPI.getGeoByAddress(query)
+  static async getShortEstatesByQuery({ user_id, query }) {
+    return await this.getActiveEstateQuery()
+      .select(
+        'id',
+        'area',
+        'rooms_number',
+        'floor',
+        'number_floors',
+        'property_type',
+        'description',
+        'house_number',
+        'rent_per_sqm',
+        'address',
+        'city',
+        'country',
+        'street',
+        'zip',
+        'cover',
+        'net_rent',
+        'cold_rent',
+        'additional_costs',
+        'heating_costs',
+        'deposit',
+        'stp_garage',
+        'currency',
+        'building_status',
+        'property_id',
+        'floor_direction',
+        'six_char_code',
+        'avail_duration',
+        'available_date',
+        'from_date',
+        'to_date',
+        'rent_end_at',
+        'status'
+      )
+      .where('user_id', user_id)
+      .andWhere(function () {
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('city', 'ilike', `%${query}%`)
+        this.orWhere('country', 'ilike', `%${query}%`)
+        this.orWhere('zip', 'ilike', `%${query}%`)
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('street', 'ilike', `%${query}%`)
+      })
+      .fetch()
+  }
+
+  static async getEstatesByQuery({ user_id, query, coord }) {
+    let estates
+    if (coord) {
+      const [lat, lon] = coord.split(',')
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon })
+    } else {
+      estates = await GeoAPI.getGeoByAddress(query)
+    }
+    if (!estates) {
+      return null
+    }
+
     estates = estates.map((estate) => {
       return {
         address: estate.properties.formatted,
@@ -1475,6 +1539,44 @@ class EstateService {
       return false
     }
     return true
+  }
+
+  static async importOpenimmo(importFile, user_id) {
+    const filename = importFile.clientName
+    const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
+    const trx = await Database.beginTransaction()
+    try {
+      const result = await reader.process()
+      await Promise.map(result, async (property) => {
+        property.user_id = user_id
+        property.status = STATUS_DRAFT
+        let images = property.images
+        let result
+        const existingProperty = await Estate.query()
+          .where({ property_id: property.property_id, user_id })
+          .first()
+        if (existingProperty) {
+          existingProperty.merge(omit(property, ['images']))
+          result = await existingProperty.save(trx)
+          QueueService.uploadOpenImmoImages(images, existingProperty.id)
+        } else {
+          result = await Estate.createItem(omit(property, ['images']), trx)
+          QueueService.uploadOpenImmoImages(images, result.id)
+        }
+      })
+      await Import.createItem({
+        user_id,
+        filename,
+        type: IMPORT_TYPE_OPENIMMO,
+        entity: IMPORT_ENTITY_ESTATES,
+      })
+      await trx.commit()
+      return result
+    } catch (err) {
+      await trx.rollback()
+      console.log(err)
+      throw new HttpException(err.message)
+    }
   }
 
   static async deletePermanent(user_id) {
