@@ -929,6 +929,8 @@ const constants = {
 
   IMPORT_ACTIVITY_PENDING: 'pending',
   IMPORT_ACTIVITY_DONE: 'done',
+
+  FILE_LIMIT_LENGTH: 5,
 }
 
 module.exports = constants
