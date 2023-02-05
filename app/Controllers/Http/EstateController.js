@@ -985,19 +985,8 @@ class EstateController {
   }
 
   async importLastActivity({ auth, request, response }) {
-    let last_excel_import_activity = await ImportService.getLastImportActivities(
-      auth.user.id,
-      IMPORT_TYPE_EXCEL,
-      IMPORT_ENTITY_ESTATES
-    )
-    /*
-    if (last_excel_import_activity) {
-      last_excel_import_activity = last_excel_import_activity?.toJSON()
-      last_excel_import_activity.created_at = moment(last_excel_import_activity.created_at)
-        .utc()
-        .format()
-    }*/
-    return response.res(last_excel_import_activity)
+    let last_import_activities = await ImportService.getLastImportActivities(auth.user.id)
+    return response.res(last_import_activities)
   }
 
   async postImportLastActivity({ auth, request, response }) {
