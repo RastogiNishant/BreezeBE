@@ -351,7 +351,10 @@ class OpenImmoReader {
   async process() {
     try {
       let dfile
-      if (this.contentType === 'application/zip') {
+      if (
+        this.contentType === 'application/zip' ||
+        this.contentType === 'application/x-zip-compressed'
+      ) {
         await this.extractZip(this.filePath)
         const files = await fsPromises.readdir(this.dir)
         const file = files.find((file) => file.match(/\.xml$/))
