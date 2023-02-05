@@ -351,9 +351,9 @@ Route.group(() => {
 //Unassigned media
 Route.group(() => {
   Route.get('/', 'GalleryController.getAll').middleware(['valid:Pagination'])
-  Route.post('/', 'GalleryController.addFile')
+  Route.post('/', 'GalleryController.addFile').middleware(['valid:EstateId'])
   Route.post('/assign', 'GalleryController.assign').middleware(['valid:GalleryAssign'])
-  Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id'])
+  Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id,EstateId'])
 })
   .prefix('/api/v1/gallery')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])

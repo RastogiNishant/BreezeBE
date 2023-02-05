@@ -13,9 +13,9 @@ class GalleryController {
   }
 
   async removeFile({ request, auth, response }) {
-    const { id } = request.all()
+    const { id, estate_id } = request.all()
     try {
-      response.res(await GalleryService.removeFile({ user_id: auth.user.id, id }))
+      response.res(await GalleryService.removeFile({ estate_id, ids: [id] }))
     } catch (e) {
       throw new HttpException(e.message, e.status || 400)
     }

@@ -253,7 +253,7 @@ class RoomController {
     try {
       const image = await RoomService.removeImage(id, trx)
       await GalleryService.addFromView(
-        { user_id: auth.user.id, url: image.url, file_name: image.file_name },
+        { estate_id: room.estate_id, url: image.url, file_name: image.file_name },
         trx
       )
       await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)

@@ -3,11 +3,12 @@
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
 const BaseService = require('./BaseService')
-const Gallery = use('App/Models/Gallery')
+const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
+const Promise = require('bluebird')
 const {
   exceptions: { MEDIA_NOT_EXIST },
-} = require('../excepions')
+} = require('../exceptions')
 const {
   STATUS_DELETE,
   STATUS_ACTIVE,
@@ -16,55 +17,72 @@ const {
   FILE_TYPE_PLAN,
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
+  FILE_TYPE_GALLERY,
 } = require('../constants')
 
 class GalleryService extends BaseService {
   static async addFile(request, user_id) {
+    const { estate_id } = request.all()
     const files = await this.saveFiles(request, { isPublic: true })
     if (files && files.file) {
       const path = !Array.isArray(files.file) ? [files.file] : files.file
       const file_names = !Array.isArray(files.original_file)
         ? [files.original_file]
         : files.original_file
-      const galleris = path.map((p, index) => {
-        return { user_id, disk: 's3public', url: p, file_name: file_names[index] }
+      const galleries = path.map((p, index) => {
+        return {
+          disk: 's3public',
+          estate_id,
+          url: p,
+          file_name: file_names[index],
+          type: FILE_TYPE_GALLERY,
+        }
       })
-      return await Gallery.createMany(galleris)
+
+      return await File.createMany(galleries)
     }
     return null
   }
 
-  static async addFromView({ user_id, url, file_name = null }, trx) {
-    const gallery = {
-      user_id,
+  static async addFromView({ estate_id, url, file_name = null }, trx) {
+    const file = {
       url,
       file_name,
+      estate_id,
+      type: FILE_TYPE_GALLERY,
       disk: 's3public',
     }
-    await Gallery.createItem(gallery, trx)
+
+    await File.createItem(file, trx)
   }
 
   static async getById(id, user_id) {
-    return await Gallery.query()
+    return await File.query()
       .where('id', id)
       .where('status', STATUS_ACTIVE)
+      .where('type', FILE_TYPE_GALLERY)
       .where('user_id', user_id)
       .first()
   }
 
-  static async removeFile({ user_id, id }) {
-    const media = await this.getById(id, user_id)
-    if (!media) {
+  static async removeFile({ estate_id, ids }, trx = null) {
+    const { galleries } = await this.getAll({ ids, estate_id })
+
+    if (!galleries || galleries.rows?.length !== ids.length) {
       throw new HttpException(MEDIA_NOT_EXIST, 400)
     }
 
-    await Gallery.query().where('id', id).update({ status: STATUS_DELETE })
-    FileBucket.remove(media.url)
+    if (!trx) {
+      await File.query().whereIn('id', ids).delete()
+    } else {
+      await File.query().whereIn('id', ids).delete().transacting(trx)
+    }
+    Promise.map(galleries, (gallery) => FileBucket.remove(gallery.url))
     return true
   }
 
-  static async getAll({ user_id, page = -1, limit = -1, ids = null }) {
-    const query = Gallery.query().where('user_id', user_id).where('status', STATUS_ACTIVE)
+  static async getAll({ estate_id, page = -1, limit = -1, ids = null }) {
+    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_GALLERY)
     let galleries, count
 
     if (ids) {
@@ -86,7 +104,7 @@ class GalleryService extends BaseService {
   }
 
   static async assign({ user_id, estate_id, data }) {
-    const { galleries } = await this.getAll({ user_id, ids: data.ids })
+    const { galleries } = await this.getAll({ estate_id, ids: data.ids })
     let successGalleryIds = null
 
     const trx = await Database.beginTransaction()
@@ -102,49 +120,38 @@ class GalleryService extends BaseService {
             },
             trx
           )
+          await this.removeFile({ estate_id, ids: data.ids }, trx)
           break
         case GALLERY_DOCUMENT_VIEW_TYPE:
           switch (data.document_type) {
             case FILE_TYPE_PLAN:
-              successGalleryIds = await require('./EstateService').addFileFromGallery(
-                {
-                  user_id,
-                  estate_id,
-                  type: FILE_TYPE_PLAN,
-                  galleries: galleries.rows || [],
-                },
-                trx
-              )
-              break
             case FILE_TYPE_CUSTOM:
-              successGalleryIds = await require('./EstateService').addFileFromGallery(
+              await require('./EstateService').restoreFromGallery(
                 {
-                  user_id,
+                  ids: data.ids,
                   estate_id,
-                  type: FILE_TYPE_CUSTOM,
-                  galleries: galleries.rows || [],
-                },
-                trx
-              )
-              break
-            case DOCUMENT_VIEW_ENERGY_TYPE:
-              successGalleryIds = await require('./EstateService').updateEnergyProofFromGallery(
-                {
+                  type: data.document_type,
                   user_id,
-                  estate_id,
-                  galleries: galleries.rows || [],
                 },
                 trx
               )
               break
           }
           break
+        case DOCUMENT_VIEW_ENERGY_TYPE:
+          successGalleryIds = await require('./EstateService').updateEnergyProofFromGallery(
+            {
+              user_id,
+              estate_id,
+              galleries: galleries.rows || [],
+            },
+            trx
+          )
+          await this.removeFile({ estate_id, ids: data.ids }, trx)
+          break
         default:
       }
 
-      if (successGalleryIds) {
-        await Gallery.query().whereIn('id', successGalleryIds).delete().transacting(trx)
-      }
       await trx.commit()
     } catch (e) {
       await trx.rollback()

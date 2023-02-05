@@ -55,6 +55,7 @@ const {
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_VALID_ADDRESS,
   FILE_TYPE_PLAN,
+  FILE_TYPE_GALLERY,
 } = require('../constants')
 
 const {
@@ -316,6 +317,10 @@ class EstateService {
 
     let energy_proof = null
     const estate = await this.getById(data.id)
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
     const trx = await Database.beginTransaction()
     try {
       if (data.delete_energy_proof) {
@@ -324,8 +329,8 @@ class EstateService {
         if (energy_proof) {
           await require('./GalleryService').addFromView(
             {
-              user_id,
               url: energy_proof,
+              estate_id: data.id,
               file_name: estate.energy_proof_original_file,
             },
             trx
@@ -512,6 +517,32 @@ class EstateService {
       Logger.error(e.message)
       throw new HttpException(NO_FILE_EXIST, 400)
     }
+  }
+
+  static async moveToGallery({ ids, estate_id, user_id }, trx=null) {
+    await this.hasPermission({ id: estate_id, user_id })
+
+
+    let query = File.query()
+      .update({ type: FILE_TYPE_GALLERY })
+      .whereIn('id', ids)
+      .where('estate_id', estate_id)
+    
+    if( trx) {
+      query.transacting(trx)
+    }else{
+      await query
+    }
+      
+  }
+
+  static async restoreFromGallery({ ids, estate_id, user_id, type }, trx) {
+    await this.hasPermission({ id: estate_id, user_id })
+    await File.query()
+      .update({ type })
+      .whereIn('id', ids)
+      .where('estate_id', estate_id)
+      .transacting(trx)
   }
 
   static async getFiles({ estate_id, ids, type }) {

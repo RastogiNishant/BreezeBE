@@ -65,7 +65,7 @@ const {
 } = require('../constants')
 const {
   exceptions: { NO_ROOM_EXIST, NO_IMAGE_EXIST },
-} = require('../excepions')
+} = require('../exceptions')
 
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')

@@ -573,12 +573,11 @@ class EstateController {
 
     const trx = await Database.beginTransaction()
     try {
-      const removedFile = await EstateService.removeFile(file, trx)
-      await GalleryService.addFromView(
+      await EstateService.moveToGallery(
         {
+          ids: [file.id],
+          estate_id,
           user_id: auth.user.id,
-          url: removedFile.url,
-          file_name: removedFile.file_name,
         },
         trx
       )
@@ -592,7 +591,7 @@ class EstateController {
 
   async removeMultipleFiles({ request, auth, response }) {
     const { estate_id, ids } = request.all()
-    await EstateService.removeFile({ id: ids, estate_id, user_id: auth.user.id })
+    await EstateService.moveToGallery({ ids, estate_id, user_id: auth.user.id })
     response.res(true)
   }
 

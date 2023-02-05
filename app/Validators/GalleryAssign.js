@@ -13,7 +13,7 @@ const { id } = require('../Libs/schemas.js')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
-} = require('../excepions')
+} = require('../exceptions')
 
 class GalleryAssign extends Base {
   static schema = () =>
@@ -22,11 +22,11 @@ class GalleryAssign extends Base {
       view_type: yup
         .string()
         .oneOf(
-          [GALLERY_INSIDE_VIEW_TYPE, GALLERY_DOCUMENT_VIEW_TYPE],
+          [GALLERY_INSIDE_VIEW_TYPE, GALLERY_DOCUMENT_VIEW_TYPE, DOCUMENT_VIEW_ENERGY_TYPE],
           getExceptionMessage(
             'view_type',
             OPTION,
-            `[${GALLERY_INSIDE_VIEW_TYPE},${GALLERY_DOCUMENT_VIEW_TYPE}]`
+            `[${GALLERY_INSIDE_VIEW_TYPE},${GALLERY_DOCUMENT_VIEW_TYPE},${DOCUMENT_VIEW_ENERGY_TYPE}]`
           )
         )
         .required(),
