@@ -13,10 +13,12 @@ class ValidOpenImmoImport {
   async handle({ request }, next) {
     // call next to advance the request
     const importFile = request.file('file')
+    console.log(importFile.headers)
     if (
       !(
         importFile.headers['content-type'] === 'application/xml' ||
-        importFile.headers['content-type'] === 'application/zip'
+        importFile.headers['content-type'] === 'application/zip' ||
+        importFile.headers['content-type'] === 'application/x-zip-compressed'
       )
     ) {
       throw new HttpException('Invalid Openimmo file', 412)
