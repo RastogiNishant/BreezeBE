@@ -336,7 +336,7 @@ class ImportService {
   static async getLastImportActivities(user_id) {
     const importActivity = await Database.raw(
       `SELECT 
-      type, filename, action, to_char(created_at, '${ISO_DATE_FORMAT}') as created_at
+      type, filename, action, to_char(created_at, '${ISO_DATE_FORMAT}') as created_at, status
     FROM imports
     WHERE (type, action, created_at) in 
     (
@@ -346,16 +346,29 @@ class ImportService {
       GROUP BY type, action
     )`
     )
-    if (importActivity) {
-      return importActivity.rows
+    let ret = {
+      excel: {
+        import: {},
+        export: {},
+      },
+      openimmo: {
+        import: {},
+        export: {},
+      },
     }
-    return importActivity
+    if (importActivity) {
+      importActivity.rows.map((row) => {
+        ret[row.type][row.action] = row
+      })
+      return ret
+    }
+    return {}
   }
 
   static async postLastActivity({ user_id, filename, action, type, entity }) {
     const trx = await Database.beginTransaction()
     try {
-      await Import.createItem({ user_id, filename, action, type, entity }, trx)
+      await Import.createItem({ user_id, filename, action, type, entity, status: 'done' }, trx)
       await trx.commit()
       return true
     } catch (err) {
