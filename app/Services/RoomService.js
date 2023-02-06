@@ -62,9 +62,10 @@ const {
   ROOM_TYPE_STAIRS,
   ROOM_TYPE_GARDEN,
   ROOM_TYPE_LOGGIA,
+  FILE_LIMIT_LENGTH,
 } = require('../constants')
 const {
-  exceptions: { NO_ROOM_EXIST, NO_IMAGE_EXIST },
+  exceptions: { NO_ROOM_EXIST, NO_IMAGE_EXIST, IMAGE_COUNT_LIMIT },
 } = require('../exceptions')
 
 const schema = require('../Validators/CreateRoom').schema()
@@ -437,6 +438,10 @@ class RoomService {
     const room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
     if (!room) {
       throw new HttpException(NO_ROOM_EXIST, 400)
+    }
+
+    if (room.images && room.toJSON().images.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
 
     const imagesInfo = []

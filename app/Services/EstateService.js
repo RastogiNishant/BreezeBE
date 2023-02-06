@@ -63,10 +63,11 @@ const {
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
   LETTING_STATUS_VACANCY,
+  FILE_LIMIT_LENGTH,
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST },
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT },
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
@@ -543,6 +544,12 @@ class EstateService {
 
   static async restoreFromGallery({ ids, estate_id, user_id, type }, trx) {
     await this.hasPermission({ id: estate_id, user_id })
+
+    const files = await this.getFiles({ estate_id, type })
+    if (files && files.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+    }
+
     await File.query()
       .update({ type })
       .whereIn('id', ids)
@@ -551,15 +558,15 @@ class EstateService {
   }
 
   static async getFiles({ estate_id, ids, type }) {
-    return (
-      (
-        await File.query()
-          .where('estate_id', estate_id)
-          .whereIn('id', ids)
-          .where('type', type)
-          .fetch()
-      ).rows || []
-    )
+    let query = File.query().where('estate_id', estate_id)
+    if (ids) {
+      query.whereIn('id', ids)
+    }
+    if (type) {
+      query.where('type', type)
+    }
+
+    return (await query.fetch()).rows || []
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {
