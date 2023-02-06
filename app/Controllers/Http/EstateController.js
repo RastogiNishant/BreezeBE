@@ -66,7 +66,13 @@ const QueueService = require('../../Services/QueueService')
 const INVITE_CODE_STRING_LENGTH = 8
 
 const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST, WRONG_PARAMS, IMAGE_COUNT_LIMIT },
+  exceptions: {
+    ESTATE_NOT_EXISTS,
+    SOME_IMAGE_NOT_EXIST,
+    WRONG_PARAMS,
+    IMAGE_COUNT_LIMIT,
+    FAILED_IMPORT_FILE_UPLOAD,
+  },
 } = require('../../../app/exceptions')
 
 class EstateController {
@@ -355,21 +361,32 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    const importItem = await ImportService.addImportFile({
-      user_id: auth.user.id,
-      filename: importFilePathName?.clientName || null,
-      type: IMPORT_TYPE_EXCEL,
-      entity: IMPORT_ENTITY_ESTATES,
-      status: IMPORT_ACTIVITY_PENDING,
-    })
 
-    QueueService.importEstate({
-      fileName: importFilePathName,
-      user_id: auth.user.id,
-      template: 'xls',
-      import_id: importItem.id,
-    })
-    response.res(true)
+    const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'file', mime: imageMimes, isPublic: false },
+    ])
+
+    if (files?.file) {
+      const importItem = await ImportService.addImportFile({
+        user_id: auth.user.id,
+        filename: importFilePathName?.clientName || null,
+        type: IMPORT_TYPE_EXCEL,
+        entity: IMPORT_ENTITY_ESTATES,
+        status: IMPORT_ACTIVITY_PENDING,
+      })
+
+      QueueService.importEstate({
+        s3_bucket_file_name: files?.file,
+        fileName: importFilePathName,
+        user_id: auth.user.id,
+        template: 'xls',
+        import_id: importItem.id,
+      })
+      response.res(true)
+    } else {
+      throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+    }
   }
 
   //import Estate by property manager
@@ -557,7 +574,6 @@ class EstateController {
       .whereIn('user_id', userIds)
       .firstOrFail()
 
-    console.log('add File here=', estate.toJSON().files)
     if (estate.toJSON().files && estate.toJSON().files.length >= FILE_LIMIT_LENGTH) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
