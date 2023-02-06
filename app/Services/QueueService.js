@@ -53,8 +53,12 @@ class QueueService {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
   }
 
-  static importEstate({ fileName, user_id, template, import_id }) {
-    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template, import_id }, { delay: 1 })
+  static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
+    Queue.addJob(
+      IMPORT_ESTATES_VIA_EXCEL,
+      { s3_bucket_file_name, fileName, user_id, template, import_id },
+      { delay: 1 }
+    )
   }
 
   /**
@@ -146,6 +150,7 @@ class QueueService {
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case IMPORT_ESTATES_VIA_EXCEL:
           return ImportService.process({
+            s3_bucket_file_name: job.data.s3_bucket_file_name,
             filePath: job.data.fileName,
             user_id: job.data.user_id,
             type: job.data.template,
