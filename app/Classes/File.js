@@ -15,6 +15,7 @@ const imageThumbnail = require('image-thumbnail')
 const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
 const heicConvert = require('heic-convert')
+const axios = require('axios')
 const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
 
 class File {
@@ -72,8 +73,6 @@ class File {
       throw new AppException(e.message, 500)
     }
   }
-
-
 
   static async compressWebp(filePath, options = {}) {
     try {
@@ -184,6 +183,8 @@ class File {
         }
       } else if ([this.IMAGE_PDF].includes(mime)) {
         img_data = await this.compressPDF(file.tmpPath)
+      } else {
+        img_data = await fsPromise.readFile(file.tmpPath)
       }
 
       const filename = `${uuid.v4()}.${ext}`
@@ -332,6 +333,43 @@ class File {
   static async remove(file, isPublic = true) {
     const disk = isPublic ? 's3public' : 's3'
     return Drive.disk(disk).delete(file)
+  }
+
+  static async saveFileTo({ url, ext = 'jpg' }) {
+    try {
+      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
+
+      const writeFile = async () => {
+        const writer = fs.createWriteStream(outputFileName)
+        const response = await axios.get(url, { responseType: 'arraybuffer' })
+        return new Promise((resolve, reject) => {
+          if (response.data instanceof Buffer) {
+            writer.write(response.data)
+            resolve(outputFileName)
+          } else {
+            response.data.pipe(writer)
+            let error = null
+            writer.on('error', (err) => {
+              error = err
+              writer.close()
+              reject(err)
+            })
+            writer.on('close', () => {
+              if (!error) {
+                resolve(outputFileName)
+              }
+            })
+          }
+        })
+      }
+
+      await writeFile(outputFileName)
+      return outputFileName
+    } catch (e) {
+      console.log('saveFunctionalTestImage Error', e.message)
+      return null
+    }
   }
 }
 

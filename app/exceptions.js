@@ -62,6 +62,7 @@ const exceptions = {
   TENANT_EXIST: 'Tenant already exists',
   WRONG_PARAMS: 'Params not correct',
   IMAGE_COUNT_LIMIT: `can upload up to ${FILE_LIMIT_LENGTH}`,
+  FAILED_IMPORT_FILE_UPLOAD: 'import estate faied',
 }
 
 const exceptionCodes = {
