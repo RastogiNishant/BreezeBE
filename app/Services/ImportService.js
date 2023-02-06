@@ -368,7 +368,10 @@ class ImportService {
   static async postLastActivity({ user_id, filename, action, type, entity }) {
     const trx = await Database.beginTransaction()
     try {
-      await Import.createItem({ user_id, filename, action, type, entity, status: 'done' }, trx)
+      await Import.createItem(
+        { user_id, filename, action, type, entity, status: IMPORT_ACTIVITY_DONE },
+        trx
+      )
       await trx.commit()
       return true
     } catch (err) {
