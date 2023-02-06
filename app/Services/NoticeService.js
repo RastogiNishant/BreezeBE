@@ -100,6 +100,9 @@ const {
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
   ESTATE_NOTIFICATION_FIELDS,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+  STATUS_DELETE,
+  STATUS_DRAFT,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -256,7 +259,7 @@ class NoticeService {
 
   static async landlordEstateExpiredToKnockedProspect(data) {
     let notices = []
-    data.map(async ({ address, id, cover }) => {
+    data.map(async ({ address, estate_id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
           estate_id,
@@ -266,7 +269,7 @@ class NoticeService {
         notices.push({
           user_id: match.user_id,
           type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
-          data: { estate_id: id, estate_address: address },
+          data: { estate_id, estate_address: address },
           image: File.getPublicUrl(cover),
         })
       })
@@ -557,6 +560,40 @@ class NoticeService {
     await NotificationsService.sendProspectFirstVisitConfirm(notices)
   }
 
+  static async expiredShowTime() {
+    const knockMatches =
+      (
+        await Match.query().where('status', MATCH_STATUS_KNOCK).whereNull('notified_at').fetch()
+      ).toJSON() || []
+
+    const notices = []
+    const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
+
+    let i = 0
+    while (i < Object.keys(groupMatches).length) {
+      const estate_id = Object.keys(groupMatches)[i]
+      const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
+      if (!Object.keys(freeTimeSlots).length) {
+        const estate = await require('./EstateService').getActiveById(estate_id)
+        if (estate) {
+          notices.push({
+            user_id: estate.user_id,
+            type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+            data: { estate_id, estate_address: estate.address },
+            image: File.getPublicUrl(estate.cover),
+          })
+        }
+      }
+      i++
+    }
+
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendExpiredShowTime(notices)
+    }
+    await Match.query().where('status', MATCH_STATUS_KNOCK).update({ notified_at: dateTime })
+  }
+
   /**
    *
    */
@@ -642,20 +679,27 @@ class NoticeService {
    *
    */
   static async prospectSuperMatch(matches, estateId = null) {
+    let notices = []
     if (matches.length > 0) {
       const groupMatches = groupBy(matches, (match) => match.user_id)
-      const notices = Object.keys(groupMatches).map((key) => {
-        return {
-          user_id: groupMatches[key][0].user_id,
-          type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
-          data: {
-            count: matches?.length || 0,
-          },
+      await P.map(Object.keys(groupMatches), async (key) => {
+        const estate_ids = groupMatches[key].map((m) => m.estate_id)
+        const knockCount = await require('./MatchService').getMatchNewCount(key, estate_ids)
+        if (knockCount[0].count) {
+          notices.push({
+            user_id: key,
+            type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
+            data: {
+              count: knockCount[0].count || 0,
+            },
+          })
         }
       })
+    }
 
+    if (notices.length) {
       await NoticeService.insertNotices(notices)
-      await NotificationsService.sendProspectHasSuperMatch(notices)
+      NotificationsService.sendProspectHasSuperMatch(notices)
     }
   }
 

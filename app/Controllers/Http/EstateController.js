@@ -50,9 +50,11 @@ const {
   MATCH_STATUS_TOP,
   IMPORT_TYPE_EXCEL,
   IMPORT_ENTITY_ESTATES,
+  IMPORT_ACTIVITY_PENDING,
+  FILE_LIMIT_LENGTH,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -62,11 +64,10 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
-
-const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
-} = require('../../exceptions')
 const GalleryService = require('../../Services/GalleryService')
+const {
+  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST, WRONG_PARAMS, IMAGE_COUNT_LIMIT },
+} = require('../../../app/exceptions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -200,6 +201,20 @@ class EstateController {
     result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
     delete result.rows
     response.res(result)
+  }
+
+  async searchEstates({ request, auth, response }) {
+    const { query, coord } = request.all()
+    if (!coord && !query) {
+      throw new HttpException(WRONG_PARAMS, 400)
+    }
+    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query, coord })
+    response.res(estates)
+  }
+
+  async shortSearchEstates({ request, auth, response }) {
+    const { query } = request.all()
+    response.res(await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query }))
   }
   /**
    *
@@ -340,7 +355,20 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    QueueService.importEstate(importFilePathName, auth.user.id, 'xls')
+    const importItem = await ImportService.addImportFile({
+      user_id: auth.user.id,
+      filename: importFilePathName?.clientName || null,
+      type: IMPORT_TYPE_EXCEL,
+      entity: IMPORT_ENTITY_ESTATES,
+      status: IMPORT_ACTIVITY_PENDING,
+    })
+
+    QueueService.importEstate({
+      fileName: importFilePathName,
+      user_id: auth.user.id,
+      template: 'xls',
+      import_id: importItem.id,
+    })
     response.res(true)
   }
 
@@ -523,9 +551,16 @@ class EstateController {
 
     const estate = await Estate.query()
       .where('id', estate_id)
+      .with('files', function (f) {
+        f.where('type', type)
+      })
       .whereIn('user_id', userIds)
       .firstOrFail()
 
+    console.log('add File here=', estate.toJSON().files)
+    if (estate.toJSON().files && estate.toJSON().files.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+    }
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
@@ -1062,7 +1097,9 @@ class EstateController {
       )
     }
 
-    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId(id)
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId({
+      estate_id: id,
+    })
 
     if (estateCurrentTenant) {
       throw new HttpException(
@@ -1078,6 +1115,15 @@ class EstateController {
       .update({ letting_type: letting_type })
 
     response.res(true)
+  }
+
+  async importOpenimmo({ request, response, auth }) {
+    try {
+      await EstateService.importOpenimmo(request.importFile, auth.user.id)
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 412)
+    }
   }
 }
 

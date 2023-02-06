@@ -4,11 +4,7 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_FIRST_TIME_USE,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_DEFECTED,
-  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_TERMINATED,
   STATUS_ACTIVE,
@@ -28,6 +24,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -38,11 +35,8 @@ class EstateFilters extends Filter {
     na: LETTING_TYPE_NA,
   }
   static lettingStatusString = {
-    construction_works: LETTING_STATUS_CONSTRUCTION_WORKS,
-    first_time_use: LETTING_STATUS_FIRST_TIME_USE,
-    structural_vacancy: LETTING_STATUS_STRUCTURAL_VACANCY,
-    defected: LETTING_STATUS_DEFECTED,
-    standard: LETTING_STATUS_NORMAL,
+    new_renovated: LETTING_STATUS_NEW_RENOVATED,
+    standard: LETTING_STATUS_STANDARD,
     vacancy: LETTING_STATUS_VACANCY,
     terminated: LETTING_STATUS_TERMINATED,
   }
@@ -136,6 +130,9 @@ class EstateFilters extends Filter {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
         this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
         this.orWhere('estates.city', 'ilike', `${params.query}%`)
+        this.orWhere('estates.address', 'ilike', `${params.query}%`)
+        this.orWhere('estates.country', 'ilike', `${params.query}%`)
+        this.orWhere('estates.zip', 'ilike', `${params.query}%`)
       })
     }
     /* status */

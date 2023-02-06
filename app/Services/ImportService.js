@@ -22,6 +22,7 @@ const {
   IMPORT_TYPE_EXCEL,
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_IMPORT_EXCEL,
+  IMPORT_ACTIVITY_DONE,
 } = require('../constants')
 const RoomService = require('./RoomService')
 const Import = use('App/Models/Import')
@@ -151,18 +152,23 @@ class ImportService {
   /**
    *
    */
-  static async process(filePath, userId, type) {
-    const reader = new EstateImportReader(filePath.tmpPath)
-    let { errors, data, warnings } = await reader.process()
-    const opt = { concurrency: 1 }
-
+  static async process({ filePath, user_id, type, import_id }) {
     let createErrors = []
     let result = []
+    let errors = []
+    let data = []
+    let warnings = []
     try {
+      const reader = new EstateImportReader(filePath.tmpPath)
+      const excelData = await reader.process()
+      errors = excelData.errors
+      warnings = excelData.warnings
+      data = excelData.data
+      const opt = { concurrency: 1 }
       result = await Promise.map(
         data,
         async (i) => {
-          if (i) await ImportService.createSingleEstate(i, userId)
+          if (i) await ImportService.createSingleEstate(i, user_id)
         },
         opt
       )
@@ -172,18 +178,14 @@ class ImportService {
           warnings.push(row.warning)
         }
       })
-      await ImportService.addImportFile({
-        user_id: userId,
-        filename: filePath?.clientName || null,
-        type: IMPORT_TYPE_EXCEL,
-        entity: IMPORT_ENTITY_ESTATES,
-      })
     } catch (err) {
-      console.log('importing excel issue=', err.message)
+      errors = [...errors, err.message]
     } finally {
-      console.log('emitting importing excel sucess count=', result.length - createErrors.length)
+      if (import_id && !isNaN(import_id)) {
+        await ImportService.completeImportFile(import_id)
+      }
       this.emitImported({
-        user_id: userId,
+        user_id,
         data: {
           last_activity: {
             file: filePath?.clientName || null,
@@ -210,6 +212,7 @@ class ImportService {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
+
     if (topic) {
       topic.broadcast(WEBSOCKET_EVENT_IMPORT_EXCEL, data)
     }
@@ -321,8 +324,13 @@ class ImportService {
     filename,
     type = IMPORT_TYPE_EXCEL,
     entity = IMPORT_ENTITY_ESTATES,
+    status,
   }) {
-    await Import.query().insert({ user_id, filename, type, entity })
+    return await Import.createItem({ user_id, filename, type, entity, status })
+  }
+
+  static async completeImportFile(id) {
+    return await Import.query().where('id', id).update({ status: IMPORT_ACTIVITY_DONE })
   }
 
   static async getLastImportActivities(
@@ -335,6 +343,7 @@ class ImportService {
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
       .select('filename')
       .select('action')
+      .select('status')
       .where({ user_id, type, entity, action: 'import' })
       .orderBy('created_at', 'desc')
       .first()

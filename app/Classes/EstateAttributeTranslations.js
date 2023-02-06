@@ -150,12 +150,8 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
@@ -167,6 +163,7 @@ const {
   GENDER_FEMALE,
   GENDER_NEUTRAL,
   GENDER_ANY,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
 
 const {
@@ -183,7 +180,17 @@ escapeStr = (v) => {
 
 // items to percent
 toPercent = (i) => {
-  return (parseFloat(i) || 0) * 100
+  i = trim(i)
+  if (i.includes('%')) {
+    i = i.replace('%', '')
+  }
+  if (isNaN(parseFloat(i))) {
+    i = NULL
+  } else {
+    i = parseFloat(i) * 100
+  }
+
+  return i
 }
 
 toBool = (v) => {
@@ -430,7 +437,8 @@ class EstateAttributeTranslations {
       PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: (i) => parseInt(i * 100),
+    budget: toPercent,
+    credit_score: toPercent,
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
@@ -440,7 +448,7 @@ class EstateAttributeTranslations {
         case escapeStr(l.get('apt_roof_floor.message', this.lang)):
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {
@@ -910,22 +918,16 @@ class EstateAttributeTranslations {
       },
       let_status: {
         keys: [
-          'property.attribute.LETTING_STATUS.Defected.message',
-          'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Normal.message',
-          'property.attribute.LETTING_STATUS.Construction.works.message',
-          'property.attribute.LETTING_STATUS.Structural.vacancy.message',
-          'property.attribute.LETTING_STATUS.First-time.use.message',
+          'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
+          'property.attribute.LETTING_STATUS.new_renovated.message',
         ],
         values: [
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
           LETTING_STATUS_VACANCY,
+          LETTING_STATUS_NEW_RENOVATED,
         ],
       },
       salutation: {
