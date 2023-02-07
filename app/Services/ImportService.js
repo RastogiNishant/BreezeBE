@@ -363,9 +363,8 @@ class ImportService {
       importActivity.rows.map((row) => {
         ret[row.type][row.action] = row
       })
-      return ret
     }
-    return {}
+    return ret
   }
 
   static async postLastActivity({ user_id, filename, action, type, entity }) {
