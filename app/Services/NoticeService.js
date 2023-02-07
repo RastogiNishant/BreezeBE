@@ -591,7 +591,9 @@ class NoticeService {
       await NoticeService.insertNotices(notices)
       NotificationsService.sendExpiredShowTime(notices)
     }
-    await Match.query().where('status', MATCH_STATUS_KNOCK).update({ notified_at: dateTime })
+    await Match.query()
+      .where('status', MATCH_STATUS_KNOCK)
+      .update({ notified_at: moment.utc().format(DATE_FORMAT) })
   }
 
   /**
