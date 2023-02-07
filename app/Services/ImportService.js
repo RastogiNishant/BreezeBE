@@ -383,3 +383,5 @@ class ImportService {
     }
   }
 }
+
+module.exports = ImportService
