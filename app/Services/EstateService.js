@@ -1102,6 +1102,7 @@ class EstateService {
             'estates.zip',
             'estates.coord_raw',
             'estates.floor',
+            'estates.house_number',
             'estates.floor_direction'
           )
           .select(Database.raw(`true as is_exist`))

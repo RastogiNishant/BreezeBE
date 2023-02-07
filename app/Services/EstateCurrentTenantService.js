@@ -495,7 +495,6 @@ class EstateCurrentTenantService extends BaseService {
       }
 
       if (singleResult?.email) {
-        console.log('inviteTenantToApp=', singleResult?.email)
         if (singleResult?.email?.successCount) {
           result.email.successCount =
             (result?.email?.successCount || 0) + singleResult.email.successCount
