@@ -9,8 +9,15 @@ const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
-const { PROPERTY_MANAGE_ALLOWED, ROLE_PROPERTY_MANAGER, STATUS_DELETE } = require('../../constants')
-
+const {
+  PROPERTY_MANAGE_ALLOWED,
+  ROLE_PROPERTY_MANAGER,
+  STATUS_DELETE,
+  FILE_LIMIT_LENGTH,
+} = require('../../constants')
+const {
+  exceptions: { IMAGE_COUNT_LIMIT },
+} = require('../../exceptions')
 const ImageService = require('../../Services/ImageService')
 
 class RoomController {
@@ -207,6 +214,10 @@ class RoomController {
     const room = await RoomService.getRoomByUser(userIds, room_id)
     if (!room) {
       throw new HttpException('Invalid room', 404)
+    }
+
+    if (room.toJSON().images && room.toJSON().images.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
 
     const trx = await Database.beginTransaction()

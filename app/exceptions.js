@@ -1,5 +1,6 @@
 const HttpException = use('App/Exceptions/HttpException')
 const { replace, trim } = require('lodash')
+const { FILE_LIMIT_LENGTH } = require('./constants')
 
 const exceptions = {
   REQUIRED: 'is a required field',
@@ -60,6 +61,8 @@ const exceptions = {
   SOME_IMAGE_NOT_EXIST: "Some images don't exist",
   TENANT_EXIST: 'Tenant already exists',
   WRONG_PARAMS: 'Params not correct',
+  IMAGE_COUNT_LIMIT: `can upload up to ${FILE_LIMIT_LENGTH}`,
+  FAILED_IMPORT_FILE_UPLOAD: 'import estate faied',
 }
 
 const exceptionCodes = {
