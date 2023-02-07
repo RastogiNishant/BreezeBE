@@ -1081,6 +1081,7 @@ class EstateService {
       return {
         address: estate.properties.formatted,
         coord: { lat: estate.properties.lat, lon: estate.properties.lon },
+        house_number: estate.properties.housenumber,
       }
     })
 
