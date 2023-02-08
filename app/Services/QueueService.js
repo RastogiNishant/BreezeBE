@@ -23,6 +23,7 @@ const {
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
+  SCHEDULED_15H_DAY_JOB,
 } = require('../constants')
 
 /**
@@ -142,6 +143,10 @@ class QueueService {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
+  static async processEveryDay15H() {
+    return Promise.all([wrapException(QueueJobService.pullOhneMakler)])
+  }
+
   /**
    *
    */
@@ -174,6 +179,8 @@ class QueueService {
           return QueueService.sendEveryDay9AM()
         case SCHEDULED_MONTHLY_JOB:
           return QueueService.sendEveryMonth12AM()
+        case SCHEDULED_15H_DAY_JOB:
+          return QueueService.processEveryDay15H()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:

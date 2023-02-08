@@ -411,6 +411,7 @@ const constants = {
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
   SCHEDULED_MONTHLY_JOB: 'scheduledStartOfEveryMonth',
+  SCHEDULED_15H_DAY_JOB: 'scheduledEveryDay15H',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE: 'notification_landlord_fill_profile',
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY: 'notification_landlord_new_property',
@@ -917,7 +918,7 @@ const constants = {
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   MATCH_SCORE_GOOD_MATCH: 70,
-  
+
   IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_TYPE_OPENIMMO: 'openimmo',
   IMPORT_ENTITY_ESTATES: 'estates',
