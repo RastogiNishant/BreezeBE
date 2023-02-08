@@ -51,9 +51,10 @@ const {
   IMPORT_TYPE_EXCEL,
   IMPORT_ENTITY_ESTATES,
   IMPORT_ACTIVITY_PENDING,
+  FILE_LIMIT_LENGTH,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -63,9 +64,15 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
-
+const GalleryService = require('../../Services/GalleryService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, SOME_IMAGE_NOT_EXIST },
+  exceptions: {
+    ESTATE_NOT_EXISTS,
+    SOME_IMAGE_NOT_EXIST,
+    WRONG_PARAMS,
+    IMAGE_COUNT_LIMIT,
+    FAILED_IMPORT_FILE_UPLOAD,
+  },
 } = require('../../../app/exceptions')
 
 class EstateController {
@@ -134,7 +141,7 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      const newEstate = await EstateService.updateEstate(request)
+      const newEstate = await EstateService.updateEstate(request, auth.user.id)
       response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -150,7 +157,7 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    const newEstate = await EstateService.updateEstate(request)
+    const newEstate = await EstateService.updateEstate(request, auth.user.id)
     response.res(newEstate)
   }
 
@@ -200,6 +207,22 @@ class EstateController {
     result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
     delete result.rows
     response.res(result)
+  }
+
+  async searchEstates({ request, auth, response }) {
+    const { query, coord } = request.all()
+    if (!coord && !query) {
+      throw new HttpException(WRONG_PARAMS, 400)
+    }
+    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query, coord })
+    response.res(estates)
+  }
+
+  async shortSearchEstates({ request, auth, response }) {
+    const { query, letting_type } = request.all()
+    response.res(
+      await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
+    )
   }
   /**
    *
@@ -340,21 +363,32 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
-    const importItem = await ImportService.addImportFile({
-      user_id: auth.user.id,
-      filename: importFilePathName?.clientName || null,
-      type: IMPORT_TYPE_EXCEL,
-      entity: IMPORT_ENTITY_ESTATES,
-      status: IMPORT_ACTIVITY_PENDING,
-    })
 
-    QueueService.importEstate({
-      fileName: importFilePathName,
-      user_id: auth.user.id,
-      template: 'xls',
-      import_id: importItem.id,
-    })
-    response.res(true)
+    const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'file', mime: imageMimes, isPublic: false },
+    ])
+
+    if (files?.file) {
+      const importItem = await ImportService.addImportFile({
+        user_id: auth.user.id,
+        filename: importFilePathName?.clientName || null,
+        type: IMPORT_TYPE_EXCEL,
+        entity: IMPORT_ENTITY_ESTATES,
+        status: IMPORT_ACTIVITY_PENDING,
+      })
+
+      QueueService.importEstate({
+        s3_bucket_file_name: files?.file,
+        fileName: importFilePathName,
+        user_id: auth.user.id,
+        template: 'xls',
+        import_id: importItem.id,
+      })
+      response.res(importItem)
+    } else {
+      throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+    }
   }
 
   //import Estate by property manager
@@ -536,9 +570,15 @@ class EstateController {
 
     const estate = await Estate.query()
       .where('id', estate_id)
+      .with('files', function (f) {
+        f.where('type', type)
+      })
       .whereIn('user_id', userIds)
       .firstOrFail()
 
+    if (estate.toJSON().files && estate.toJSON().files.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+    }
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
@@ -556,7 +596,13 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({ disk: 's3public', url: files.file, type, estate })
+    const fileObj = await EstateService.addFile({
+      disk: 's3public',
+      url: files.file,
+      file_name: files.original_file,
+      type,
+      estate,
+    })
     Event.fire('estate::update', estate_id)
 
     response.res(fileObj)
@@ -567,13 +613,38 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
-    await EstateService.removeFile({ id, estate_id, user_id: auth.user.id })
-    response.res(true)
+    const file = await File.query()
+      .select('files.*')
+      .where('files.id', id)
+      .innerJoin('estates', 'estates.id', 'files.estate_id')
+      .where('estates.id', estate_id)
+      .where('estates.user_id', auth.user.id)
+      .first()
+    if (!file) {
+      throw new HttpException('Image not found', 404)
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.moveToGallery(
+        {
+          ids: [file.id],
+          estate_id,
+          user_id: auth.user.id,
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   async removeMultipleFiles({ request, auth, response }) {
     const { estate_id, ids } = request.all()
-    await EstateService.removeFile({ id: ids, estate_id, user_id: auth.user.id })
+    await EstateService.moveToGallery({ ids, estate_id, user_id: auth.user.id })
     response.res(true)
   }
 
@@ -1044,7 +1115,9 @@ class EstateController {
       )
     }
 
-    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId(id)
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId({
+      estate_id: id,
+    })
 
     if (estateCurrentTenant) {
       throw new HttpException(
@@ -1060,6 +1133,15 @@ class EstateController {
       .update({ letting_type: letting_type })
 
     response.res(true)
+  }
+
+  async importOpenimmo({ request, response, auth }) {
+    try {
+      await EstateService.importOpenimmo(request.importFile, auth.user.id)
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 412)
+    }
   }
 }
 

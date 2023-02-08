@@ -53,6 +53,7 @@ const namedMiddleware = {
   UserCanGetInvitationLink: 'App/Middleware/UserCanGetInvitationLink',
   LandlordOwnsThisEstate: 'App/Middleware/LandlordOwnsThisEstate',
   RoomBelongsToEstate: 'App/Middleware/RoomBelongsToEstate',
+  ValidOpenImmoImport: 'App/Middleware/ValidOpenImmoImport',
 }
 
 /*

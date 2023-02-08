@@ -180,7 +180,17 @@ escapeStr = (v) => {
 
 // items to percent
 toPercent = (i) => {
-  return (parseFloat(i) || 0) * 100
+  i = trim(i)
+  if (i.includes('%')) {
+    i = i.replace('%', '')
+  }
+  if (isNaN(parseFloat(i))) {
+    i = NULL
+  } else {
+    i = parseFloat(i) * 100
+  }
+
+  return i
 }
 
 toBool = (v) => {
@@ -427,7 +437,8 @@ class EstateAttributeTranslations {
       PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: (i) => parseInt(i * 100),
+    budget: toPercent,
+    credit_score: toPercent,
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
@@ -437,7 +448,7 @@ class EstateAttributeTranslations {
         case escapeStr(l.get('apt_roof_floor.message', this.lang)):
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {

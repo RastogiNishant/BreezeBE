@@ -24,13 +24,36 @@ const {
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_FINISH,
 } = require('../constants')
 
 class EstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
       query: yup.string().min(2),
-      filter: yup.array().of(yup.number()).nullable(),
+      filter: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              MATCH_STATUS_KNOCK,
+              MATCH_STATUS_INVITE,
+              MATCH_STATUS_VISIT,
+              MATCH_STATUS_SHARE,
+              MATCH_STATUS_TOP,
+              MATCH_STATUS_COMMIT,
+              MATCH_STATUS_FINISH,
+            ])
+        )
+        .nullable(),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       address: yup
         .object()
         .shape({

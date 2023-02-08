@@ -36,7 +36,7 @@ const {
 
 const {
   exceptions: { USER_NOT_EXIST, SMS_CODE_NOT_CORERECT, INVALID_TOKEN, ACCOUNT_ALREADY_VERIFIED },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 const EstateService = require('../../app/Services/EstateService')
 const MatchService = require('../../app/Services/MatchService')

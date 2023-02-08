@@ -37,6 +37,17 @@ const {
   STATUS_ACTIVE,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   MEMBER_FILE_EXTRA_PASSPORT_DOC,
+  MEMBER_FILE_TYPE_PASSPORT,
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
+  STATUS_DELETE,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -785,6 +796,61 @@ class MemberService {
       member_id: id,
     })
     return await memberFile.save()
+  }
+
+  static async getPhoneVerifieldCount() {
+    return (
+      await Member.query().count('*').where('phone_verified', true).where('is_verified', true)
+    )[0].count
+  }
+
+  static async getIdVerifiedCount() {
+    return (
+      await MemberFile.query()
+        .count(Database.raw(`DISTINCT(member_id)`))
+        .where('type', MEMBER_FILE_TYPE_PASSPORT)
+        .whereNot('status', STATUS_DELETE)
+    )[0].count
+  }
+
+  static async getIncomesCountByFilter() {
+    const counts = await Promise.all(
+      [
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_WORKER,
+        INCOME_TYPE_UNEMPLOYED,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_PENSIONER,
+        INCOME_TYPE_SELF_EMPLOYED,
+        INCOME_TYPE_TRAINEE,
+      ].map(async (income_source) => {
+        const count = (
+          await Income.query()
+            .count(Database.raw(`DISTINCT(member_id)`))
+            .where('income_type', income_source)
+        )[0].count
+        return { count, key: income_source }
+      })
+    )
+    return counts
+  }
+
+  static async getIncomes(user_id) {
+    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const incomeProofs =
+      (
+        await IncomeProof.query()
+          .select('_i.id', '_i.income_type')
+          .where('income_proofs.expire_date', '>=', startOf)
+          .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+          .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+          .where('_m.user_id', user_id)
+          .fetch()
+      ).toJSON() || []
+
+    return incomeProofs
   }
 }
 

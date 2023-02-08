@@ -159,6 +159,7 @@ class Estate extends Model {
       'is_new_tenant_transfer',
       'transfer_budget',
       'rent_end_at',
+      'income_sources',
     ]
   }
 
@@ -174,8 +175,8 @@ class Estate extends Model {
    */
   static get options() {
     return {
-      bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
-      kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
+      //bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
+      //kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
       equipment: [
         EQUIPMENT_STACK,
         EQUIPMENT_AIR_CONDITIONED,

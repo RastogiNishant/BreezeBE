@@ -10,7 +10,7 @@ const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const Ws = use('Ws')
-
+const FileBucket = use('App/Classes/File')
 const schema = require('../Validators/CreateBuddy').schema()
 const {
   STATUS_DRAFT,
@@ -150,16 +150,23 @@ class ImportService {
     }
   }
   /**
-   *
+   * s3_bucket_file_name: s3 bucket relative URL
    */
-  static async process({ filePath, user_id, type, import_id }) {
-    const reader = new EstateImportReader(filePath.tmpPath)
-    let { errors, data, warnings } = await reader.process()
-    const opt = { concurrency: 1 }
-
+  static async process({ s3_bucket_file_name, filePath, user_id, type, import_id }) {
     let createErrors = []
     let result = []
+    let errors = []
+    let data = []
+    let warnings = []
     try {
+      const url = await FileBucket.getProtectedUrl(s3_bucket_file_name)
+      const localPath = await FileBucket.saveFileTo({ url, ext: 'xlsx' })
+      const reader = new EstateImportReader(localPath)
+      const excelData = await reader.process()
+      errors = excelData.errors
+      warnings = excelData.warnings
+      data = excelData.data
+      const opt = { concurrency: 1 }
       result = await Promise.map(
         data,
         async (i) => {
@@ -174,8 +181,9 @@ class ImportService {
         }
       })
     } catch (err) {
-      console.log('importing excel issue=', err.message)
+      errors = [...errors, err.message]
     } finally {
+      FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
       }
@@ -207,7 +215,7 @@ class ImportService {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
-    console.log('topicName=', topic)
+
     if (topic) {
       topic.broadcast(WEBSOCKET_EVENT_IMPORT_EXCEL, data)
     }
@@ -336,6 +344,7 @@ class ImportService {
     const importActivity = {}
     let importExcelActivity = await Import.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('id')
       .select('filename')
       .select('action')
       .select('status')
@@ -351,6 +360,7 @@ class ImportService {
 
     let exportExcelActivity = await Import.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('id')
       .select('filename')
       .select('action')
       .where({ user_id, type, entity, action: 'export' })

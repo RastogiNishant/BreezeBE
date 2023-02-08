@@ -15,6 +15,7 @@ const imageThumbnail = require('image-thumbnail')
 const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
 const heicConvert = require('heic-convert')
+const axios = require('axios')
 const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
 
 class File {
@@ -70,40 +71,6 @@ class File {
       return data
     } catch (e) {
       throw new AppException(e.message, 500)
-    }
-  }
-
-  static async compressGif(filePath, options = {}) {
-    try {
-      // need to install gifsicle to linux so this shell will work.
-      // need to give read/write permission to tmp directly
-
-      const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.gif`
-
-      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
-
-      let command = `gifsicle -i ${filePath} `
-      if (options.optimize) {
-        command += ` --optimize=${options.optimize}`
-      }
-      if (options.lossy) {
-        command += ` --lossy=${options.lossy}`
-      }
-      if (options.colors) {
-        command += ` --colors=${options.colors}`
-      }
-
-      command += ` --output ${outputFileName}`
-      await exec({
-        cmd: `${command}`,
-      })
-
-      const data = await fsPromise.readFile(outputFileName)
-      fsPromise.unlink(outputFileName)
-      return data
-    } catch (e) {
-      console.log('compress gif error=', e)
-      throw new AppException(e?.message || 'Error compress gif', 500)
     }
   }
 
@@ -179,7 +146,7 @@ class File {
     try {
       // let img_data = Drive.getStream(file.tmpPath)
       let img_data
-      if ([this.IMAGE_TIFF].includes(mime)) {
+      if ([this.IMAGE_TIFF, this.IMAGE_GIF].includes(mime)) {
         img_data = await this.convertTiffToJPG(file.tmpPath)
         ext = `jpg`
         contentType = File.IMAGE_JPEG
@@ -194,8 +161,6 @@ class File {
 
         ext = `jpg`
         contentType = File.IMAGE_JPEG
-      } else if ([this.IMAGE_GIF].includes(mime)) {
-        img_data = await this.compressGif(file.tmpPath, { optimize: 3, lossy: 80, colors: 128 })
       } else if ([this.IMAGE_WEBP].includes(mime)) {
         img_data = await this.compressWebp(file.tmpPath, { quality: 50 })
       } else if ([this.IMAGE_JPEG, this.IMAGE_PNG].includes(mime)) {
@@ -218,6 +183,8 @@ class File {
         }
       } else if ([this.IMAGE_PDF].includes(mime)) {
         img_data = await this.compressPDF(file.tmpPath)
+      } else {
+        img_data = await fsPromise.readFile(file.tmpPath)
       }
 
       const filename = `${uuid.v4()}.${ext}`
@@ -366,6 +333,43 @@ class File {
   static async remove(file, isPublic = true) {
     const disk = isPublic ? 's3public' : 's3'
     return Drive.disk(disk).delete(file)
+  }
+
+  static async saveFileTo({ url, ext = 'jpg' }) {
+    try {
+      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
+
+      const writeFile = async () => {
+        const writer = fs.createWriteStream(outputFileName)
+        const response = await axios.get(url, { responseType: 'arraybuffer' })
+        return new Promise((resolve, reject) => {
+          if (response.data instanceof Buffer) {
+            writer.write(response.data)
+            resolve(outputFileName)
+          } else {
+            response.data.pipe(writer)
+            let error = null
+            writer.on('error', (err) => {
+              error = err
+              writer.close()
+              reject(err)
+            })
+            writer.on('close', () => {
+              if (!error) {
+                resolve(outputFileName)
+              }
+            })
+          }
+        })
+      }
+
+      await writeFile(outputFileName)
+      return outputFileName
+    } catch (e) {
+      console.log('saveFunctionalTestImage Error', e.message)
+      return null
+    }
   }
 }
 
