@@ -219,8 +219,10 @@ class EstateController {
   }
 
   async shortSearchEstates({ request, auth, response }) {
-    const { query } = request.all()
-    response.res(await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query }))
+    const { query, letting_type } = request.all()
+    response.res(
+      await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
+    )
   }
   /**
    *
