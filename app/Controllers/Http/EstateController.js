@@ -383,7 +383,7 @@ class EstateController {
         template: 'xls',
         import_id: importItem.id,
       })
-      response.res(true)
+      response.res(importItem)
     } else {
       throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
     }
