@@ -1097,6 +1097,7 @@ class EstateService {
           })
           .select(
             'estates.id',
+            'estates.street',
             'estates.address',
             'estates.city',
             'estates.country',
@@ -1128,8 +1129,11 @@ class EstateService {
     )
 
     const notGroupExistingEstates = groupBy(notExistingEstates, (estate) => estate.address)
-    existingEstates = groupBy(existingEstates, (estate) => estate.address)
-
+    existingEstates = groupBy(existingEstates, (estate) => {
+      return `${estate.street || ''} ${estate.house_number || ''}, ${estate.zip || ''} ${
+        estate.city || ''
+      }`
+    })
     return {
       ...existingEstates,
       ...notGroupExistingEstates,
