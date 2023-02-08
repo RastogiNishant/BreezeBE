@@ -354,6 +354,16 @@ Route.group(() => {
   .prefix('/api/v1/estates/:estate_id/rooms/:room_id')
   .middleware(['auth:jwtLandlord'])
 
+//Unassigned media
+Route.group(() => {
+  Route.get('/', 'GalleryController.getAll').middleware(['valid:Pagination'])
+  Route.post('/', 'GalleryController.addFile').middleware(['valid:EstateId'])
+  Route.post('/assign', 'GalleryController.assign').middleware(['valid:GalleryAssign'])
+  Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id,EstateId'])
+})
+  .prefix('/api/v1/gallery')
+  .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
 // Estate management
 Route.group(() => {
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])

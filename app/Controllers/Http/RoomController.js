@@ -9,6 +9,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
+const GalleryService = use('App/Services/GalleryService')
 const {
   PROPERTY_MANAGE_ALLOWED,
   ROLE_PROPERTY_MANAGER,
@@ -107,7 +108,7 @@ class RoomController {
       userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
-    const room = await RoomService.getRoomByUser(userIds, room_id)
+    const room = await RoomService.getRoomByUser({ userIds, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -139,7 +140,7 @@ class RoomController {
    */
   async removeRoom({ request, auth, response }) {
     const { room_id } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    const room = await RoomService.getRoomByUser({ userIds: auth.user.id, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -178,7 +179,7 @@ class RoomController {
 
   async orderRoomPhoto({ request, auth, response }) {
     const { room_id, ids } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    const room = await RoomService.getRoomByUser({ userIds: auth.user.id, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -211,7 +212,7 @@ class RoomController {
       userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
-    const room = await RoomService.getRoomByUser(userIds, room_id)
+    const room = await RoomService.getRoomByUser({ userIds, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -227,7 +228,15 @@ class RoomController {
         { field: 'file', mime: imageMimes, isPublic: true },
       ])
 
-      const image = await RoomService.addImage(files.file, room, 's3public', trx)
+      const image = await RoomService.addImage(
+        {
+          url: files.file,
+          file_name: files.original_file,
+          room,
+          disk: 's3public',
+        },
+        trx
+      )
 
       await EstateService.updateCover({ room: room.toJSON(), addImage: image }, trx)
 
@@ -246,7 +255,7 @@ class RoomController {
    */
   async removeRoomPhoto({ request, auth, response }) {
     const { room_id, id } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    const room = await RoomService.getRoomByUser({ userIds: auth.user.id, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -254,6 +263,10 @@ class RoomController {
     const trx = await Database.beginTransaction()
     try {
       const image = await RoomService.removeImage(id, trx)
+      await GalleryService.addFromView(
+        { estate_id: room.estate_id, url: image.url, file_name: image.file_name },
+        trx
+      )
       await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
       Event.fire('estate::update', room.estate_id)
 

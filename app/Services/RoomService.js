@@ -2,6 +2,7 @@ const Drive = use('Drive')
 const Logger = use('Logger')
 const Room = use('App/Models/Room')
 const Image = use('App/Models/Image')
+const File = use('App/Classes/File')
 const QueueService = use('App/Services/QueueService')
 const {
   get,
@@ -61,7 +62,12 @@ const {
   ROOM_TYPE_STAIRS,
   ROOM_TYPE_GARDEN,
   ROOM_TYPE_LOGGIA,
+  FILE_LIMIT_LENGTH,
 } = require('../constants')
+const {
+  exceptions: { NO_ROOM_EXIST, NO_IMAGE_EXIST, IMAGE_COUNT_LIMIT },
+} = require('../exceptions')
+
 const schema = require('../Validators/CreateRoom').schema()
 const Promise = require('bluebird')
 const uuid = require('uuid')
@@ -72,16 +78,19 @@ class RoomService {
   /**
    *
    */
-  static async getRoomByUser(userId, roomId) {
+  static async getRoomByUser({ userIds, room_id, estate_id = null }) {
     return await Room.query()
       .select('rooms.*', '_e.cover')
       .with('images')
-      .where('rooms.id', roomId)
+      .where('rooms.id', room_id)
       .innerJoin({ _e: 'estates' }, function () {
-        if (isArray(userId)) {
-          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userId)
+        if (estate_id) {
+          this.on('_e.id', estate_id)
+        }
+        if (isArray(userIds)) {
+          this.on('_e.id', 'rooms.estate_id').onIn('_e.user_id', userIds)
         } else {
-          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userId)
+          this.on('_e.id', 'rooms.estate_id').on('_e.user_id', userIds)
         }
       })
       .first()
@@ -176,8 +185,8 @@ class RoomService {
   /**
    *
    */
-  static async addImage(url, room, disk, trx = null) {
-    return Image.createItem({ url, disk, room_id: room.id }, trx)
+  static async addImage({ url, file_name, room, disk }, trx = null) {
+    return Image.createItem({ url, file_name, disk, room_id: room.id }, trx)
   }
 
   /**
@@ -186,11 +195,12 @@ class RoomService {
   static async removeImage(id, trx) {
     try {
       const image = await Image.findOrFail(id)
-      await Drive.disk(image.disk).delete(image.url)
+
+      //await Drive.disk(image.disk).delete(image.url)
       await image.delete(trx)
       return image
     } catch (e) {
-      return null
+      throw new HttpException(NO_IMAGE_EXIST, 400)
     }
   }
 
@@ -422,6 +432,40 @@ class RoomService {
       )
     }
     await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
+  }
+
+  static async addImageFromGallery({ user_id, room_id, estate_id, galleries }, trx) {
+    const room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
+    if (!room) {
+      throw new HttpException(NO_ROOM_EXIST, 400)
+    }
+
+    if (room.images && room.toJSON().images.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+    }
+
+    const imagesInfo = []
+    // const images =
+    //   galleries.filter((gallery) => File.SUPPORTED_IMAGE_FORMAT.includes(gallery.url)) || []
+    const images =
+      galleries.filter((gallery) =>
+        File.SUPPORTED_IMAGE_FORMAT.some((format) => gallery.url.indexOf(format) >= 0)
+      ) || []
+
+    images.map((image) => {
+      imagesInfo.push({
+        url: image.url,
+        file_name: image.file_name,
+        room_id: room.id,
+        disk: 's3public',
+      })
+    })
+
+    if (imagesInfo) {
+      await Image.createMany(imagesInfo, trx)
+    }
+
+    return images.map((image) => image.id)
   }
 }
 
