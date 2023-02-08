@@ -95,7 +95,7 @@ class EstateService {
    *
    */
   static getActiveEstateQuery() {
-    return Estate.query().whereNot('status', STATUS_DELETE)
+    return Estate.query().whereNot('estates.status', STATUS_DELETE)
   }
 
   static async getById(id) {
@@ -1104,10 +1104,10 @@ class EstateService {
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
-  static async getShortEstatesByQuery({ user_id, query }) {
-    return await this.getActiveEstateQuery()
+  static async getShortEstatesByQuery({ user_id, query, letting_type }) {
+    let estateQuery = this.getActiveEstateQuery()
       .select(
-        'id',
+        'estates.id',
         'area',
         'rooms_number',
         'floor',
@@ -1138,10 +1138,11 @@ class EstateService {
         'from_date',
         'to_date',
         'rent_end_at',
-        'status'
+        'estates.status'
       )
-      .where('user_id', user_id)
-      .andWhere(function () {
+      .where('estates.user_id', user_id)
+    if (query) {
+      estateQuery.andWhere(function () {
         this.orWhere('address', 'ilike', `%${query}%`)
         this.orWhere('city', 'ilike', `%${query}%`)
         this.orWhere('country', 'ilike', `%${query}%`)
@@ -1149,7 +1150,18 @@ class EstateService {
         this.orWhere('property_id', 'ilike', `%${query}%`)
         this.orWhere('street', 'ilike', `%${query}%`)
       })
-      .fetch()
+    }
+
+    if (letting_type.includes(LETTING_TYPE_LET)) {
+      estateQuery.where('estates.letting_type', LETTING_TYPE_LET)
+      estateQuery.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+        this.on('_ect.estate_id', 'estates.id')
+          .on(Database.raw(`_ect.user_id IS NOT NULL`))
+          .on('_ect.status', STATUS_ACTIVE)
+      })
+    }
+
+    return await estateQuery.fetch()
   }
 
   static async getEstatesByQuery({ user_id, query, coord }) {
