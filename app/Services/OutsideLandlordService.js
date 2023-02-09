@@ -62,7 +62,7 @@ class OutsideLandlordService {
 
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
-      `&data2=${encodeURIComponent(iv.toString('base64'))}&landord_invite=true`
+      `&data2=${encodeURIComponent(iv.toString('base64'))}&landlord_invite=true`
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 

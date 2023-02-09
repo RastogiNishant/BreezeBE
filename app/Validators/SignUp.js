@@ -127,7 +127,7 @@ class SignUp extends Base {
       from_web: yup.boolean().typeError(getExceptionMessage('from_web', BOOLEAN)),
       data1: yup.string(),
       data2: yup.string(),
-      landlord_invite: yup.boolean().typeError(getExceptionMessage('landord_invite', BOOLEAN)),
+      landlord_invite: yup.boolean().typeError(getExceptionMessage('landlord_invite', BOOLEAN)),
       ip: yup
         .string()
         .min(7, MINLENGTH)
