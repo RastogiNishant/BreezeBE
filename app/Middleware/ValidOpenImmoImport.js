@@ -13,7 +13,6 @@ class ValidOpenImmoImport {
   async handle({ request }, next) {
     // call next to advance the request
     const importFile = request.file('file')
-    console.log(importFile.headers)
     if (
       !(
         importFile.headers['content-type'] === 'application/xml' ||
