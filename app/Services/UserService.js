@@ -84,7 +84,6 @@ const {
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
-const TaskService = require('./TaskService.js')
 
 class UserService {
   /**
