@@ -48,6 +48,21 @@ class TaskController {
     response.res(await TaskService.delete({ id, estate_id, user: auth.user }))
   }
 
+  async getUnassignedTasks({ request, auth, response }) {
+    try {
+      const { page, limit } = request.all()
+      response.res(
+        await TaskService.getAllUnassignedTasks({
+          user_id: auth.user.id,
+          page,
+          limit,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
   async getAllTasks({ request, auth, response }) {
     try {
       const { estate_id, status, page, limit } = request.all()

@@ -15,7 +15,6 @@ const {
   TASK_STATUS_RESOLVED,
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
-  TASK_STATUS_UNRESOLVED,
   TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
@@ -86,7 +85,7 @@ class TaskService extends BaseService {
       predefined_message_id,
       prev_predefined_message_id,
       predefined_message_choice_id,
-      estate_id,
+      estate_id = null,
       task_id,
       answer,
     } = data
@@ -100,21 +99,26 @@ class TaskService extends BaseService {
       .firstOrFail()
 
     // Fetch estate and also check the tenant has valid "EstateCurrentTenant" for this estate
-    const estate = await Estate.query()
-      .whereNot('estates.status', STATUS_DELETE)
-      .select('estates.user_id')
-      .where('estates.id', estate_id)
-      .innerJoin('estate_current_tenants', function () {
-        this.on('estate_current_tenants.estate_id', 'estates.id').on(
-          'estate_current_tenants.user_id',
-          user.id
-        )
-      })
-      .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
-      .first()
 
-    if (!estate) {
-      throw new HttpException('Estate not found', 404)
+    let estate = null
+
+    if (estate_id) {
+      estate = await Estate.query()
+        .whereNot('estates.status', STATUS_DELETE)
+        .select('estates.user_id')
+        .where('estates.id', estate_id)
+        .innerJoin('estate_current_tenants', function () {
+          this.on('estate_current_tenants.estate_id', 'estates.id').on(
+            'estate_current_tenants.user_id',
+            user.id
+          )
+        })
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .first()
+
+      if (!estate) {
+        throw new HttpException('Estate not found', 404)
+      }
     }
 
     if (predefinedMessage.step === undefined || predefinedMessage.step === null) {
@@ -144,7 +148,7 @@ class TaskService extends BaseService {
       const landlordMessage = await Chat.createItem(
         {
           task_id: task.id,
-          sender_id: estate.user_id,
+          sender_id: estate?.user_id || null,
           text: rc(l.get(predefinedMessage.text, lang), [
             { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
           ]),
@@ -156,6 +160,12 @@ class TaskService extends BaseService {
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
         task.status = TASK_STATUS_NEW
+        /*
+         * need to determine to send email to a user who will be a landlord later after signing up
+         * Here figma design goes
+         *
+         */
+        await require('./OutsideLandlordService').handleTaskWithoutEstate(task, trx)
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
@@ -204,7 +214,6 @@ class TaskService extends BaseService {
       await task.save(trx)
 
       messages = await ChatService.getItemsWithAbsoluteUrl(messages)
-
       await trx.commit()
       return { task, messages }
     } catch (error) {
@@ -325,6 +334,24 @@ class TaskService extends BaseService {
 
     task = await this.getWithAbsoluteUrl(task)
     return task
+  }
+
+  static async getAllUnassignedTasks({ user_id, page = -1, limit = -1 }) {
+    const query = Task.query().where('landlord_id', user_id)
+
+    let tasks, count
+    if (page === -1 || limit === -1) {
+      tasks = await query.fetch()
+      count = tasks.rows.length
+    } else {
+      tasks = await query.paginate(page, limit)
+      count = tasks.pages.total
+    }
+
+    return {
+      tasks,
+      count,
+    }
   }
 
   static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {

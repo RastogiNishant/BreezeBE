@@ -996,6 +996,16 @@ class MatchController {
     response.res(true)
   }
 
+  async getMatchStageList({ request, auth, response }) {
+    const { page, limit, ...params } = request.post()
+    const result = await MatchService.getMatchStageList({
+      user_id: auth.user.id,
+      params,
+      page: page || -1,
+      limit: limit || -1,
+    })
+  }
+
   async getMatchList({ request, auth, response }) {
     const { ...params } = request.all()
     const inLetMatches = await MatchService.getMatchList(auth.user.id, params)
