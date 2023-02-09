@@ -35,10 +35,7 @@ class OutsideLandlordService {
     const landlords = (
       await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)
     ).rows
-    if (landlords && landlords.length) {
-      return true
-    }
-    return false
+    return landlords && landlords.length
   }
 
   static async createDynamicLink(task, trx) {

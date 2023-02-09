@@ -874,7 +874,7 @@ class UserService {
       firstname,
       from_web,
       source_estate_id = null,
-      landord_invite = false,
+      landlord_invite = false,
       data1,
       data2,
       ip,
@@ -884,7 +884,7 @@ class UserService {
     trx = null
   ) {
     // Manages the outside tenant invitation flow
-    if (!source_estate_id && !landord_invite && data1 && data2) {
+    if (!source_estate_id && !landlord_invite && data1 && data2) {
       const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
         data1,
         data2,
@@ -925,8 +925,8 @@ class UserService {
         },
         trx
       )
-      //TODO: Manage outside landlord invitation flow
-      if (landord_invite && data1 && data2) {
+
+      if (landlord_invite && data1 && data2) {
         await require('./OutsideLandlordService').updateOutsideLandlordInfo(
           {
             new_email: email,
@@ -936,7 +936,7 @@ class UserService {
           trx
         )
       }
-      
+
       if (isEmpty(ip_based_info.country_code)) {
         const QueueService = require('./QueueService.js')
         QueueService.getIpBasedInfo(user.id, ip)

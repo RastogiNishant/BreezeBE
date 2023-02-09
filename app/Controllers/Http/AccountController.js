@@ -32,7 +32,7 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, from_web, data1, data2, landord_invite, ip_based_info, ...userData } =
+    const { email, from_web, data1, data2, landlord_invite, ip_based_info, ...userData } =
       request.all()
     const trx = await Database.beginTransaction()
     try {
@@ -42,7 +42,7 @@ class AccountController {
           from_web,
           data1,
           data2,
-          landord_invite,
+          landlord_invite,
           ip_based_info,
           ...userData,
         },
