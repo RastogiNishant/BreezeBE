@@ -1,10 +1,13 @@
 const HttpException = use('App/Exceptions/HttpException')
 const { replace, trim } = require('lodash')
+const { FILE_LIMIT_LENGTH } = require('./constants')
 
 const exceptions = {
   REQUIRED: 'is a required field',
   MINLENGTH: 'must be at least ${value} characters',
   MAXLENGTH: 'must be at most ${value} characters',
+  MAXSIZE: 'must be at most ${value} count',
+  SIZE: 'must be ${value} count',
   OPTION: 'must be one of the following values:${value}',
   DATE: 'must be a `YYYY-MM-DD` type',
   BOOLEAN: 'must be true or false',
@@ -54,10 +57,20 @@ const exceptions = {
   ONLY_ONE_CONTACT_ALLOWED: 'only 1 contact can be added',
   FAILED_UPLOAD_LEASE_CONTRACT: 'Lease contract Not saved',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
+  NO_ROOM_EXIST: 'Room not exists',
+  NO_ESTATE_EXIST: 'Estate not exists',
+  MEDIA_NOT_EXIST: 'Media not exists',
+  INVALID_IDS: 'ids must be an array of integers',
+  NO_IMAGE_EXIST: 'Image not exists',
+  NO_FILE_EXIST: 'File not exists',
   INVALID_QR_CODE: 'Invalid QR code',
   ALREADY_USED_QR_CODE: 'Already used QR code',
   EXPIRED_QR_CODE: 'Expired QR code',
   SOME_IMAGE_NOT_EXIST: "Some images don't exist",
+  TENANT_EXIST: 'Tenant already exists',
+  WRONG_PARAMS: 'Params not correct',
+  IMAGE_COUNT_LIMIT: `can upload up to ${FILE_LIMIT_LENGTH}`,
+  FAILED_IMPORT_FILE_UPLOAD: 'import estate faied',
 }
 
 const exceptionCodes = {
@@ -68,6 +81,8 @@ const exceptionKeys = {
   REQUIRED: 'REQUIRED',
   MINLENGTH: 'MINLENGTH',
   MAXLENGTH: 'MAXLENGTH',
+  MAXSIZE: 'MAXSIZE',
+  SIZE: 'SIZE',
   OPTION: 'OPTION',
   DATE: 'DATE',
   STRING: 'STRING',
@@ -113,6 +128,11 @@ const exceptionKeys = {
   NO_CONTACT_EXIST: 'NO_CONTACT_EXIST',
   ONLY_ONE_CONTACT_ALLOWED: 'ONLY_ONE_CONTACT_ALLOWED',
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'ONLY_ONE_FAVORITE_ROOM_ALLOWED',
+  MEDIA_NOT_EXIST: 'MEDIA_NOT_EXIST',
+  INVALID_IDS: 'INVALID_IDS',
+  NO_ROOM_EXISTS: 'NO_ROOM_EXISTS',
+  NO_IMAGE_EXIST: 'NO_IMAGE_EXIST',
+  NO_FILE_EXIST: 'NO_FILE_EXIST',
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {

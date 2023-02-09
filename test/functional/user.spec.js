@@ -62,7 +62,7 @@ const {
     INVALID_CONFIRM_CODE,
     NO_CONTACT_EXIST,
   },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 
 trait('Test/ApiClient')
 trait('Auth/Client')

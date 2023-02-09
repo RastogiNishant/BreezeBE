@@ -11,7 +11,7 @@ const Chat = use('App/Models/Chat')
 
 const { ROLE_LANDLORD, ROLE_USER } = use('App/constants')
 
-const { sleep } = require('../../app/excepions')
+const { sleep } = require('../../app/exceptions')
 
 let TestLandlord
 let TenantUser

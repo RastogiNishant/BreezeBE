@@ -41,6 +41,14 @@ const {
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
   VISIT_MAX_ALLOWED_FOLLOWUPS,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+  LETTING_TYPE_LET,
+  STATUS_DRAFT,
+  LETTING_STATUS_STANDARD,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_VACANCY,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -877,6 +885,10 @@ class MatchController {
       'inviteIn',
       'income',
       'followups',
+      'u_firstname',
+      'u_secondname',
+      'u_birthday',
+      'u_avatar',
     ]
 
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
@@ -991,6 +1003,52 @@ class MatchController {
       params,
       page: page || -1,
       limit: limit || -1,
+    })
+  }
+
+  async getMatchList({ request, auth, response }) {
+    const { ...params } = request.all()
+    const inLetMatches = await MatchService.getMatchList(auth.user.id, params)
+    const inLetMatchCount = await MatchService.getCountMatchList(auth.user.id, {
+      letting_status: [
+        LETTING_STATUS_TERMINATED,
+        LETTING_STATUS_VACANCY,
+        LETTING_STATUS_NEW_RENOVATED,
+      ],
+      status: [STATUS_ACTIVE, STATUS_EXPIRE],
+    })
+    const finalMatchCount = await MatchService.getCountMatchList(auth.user.id, {
+      letting_type: [LETTING_TYPE_LET],
+      letting_status: [LETTING_STATUS_STANDARD],
+      status: [STATUS_DRAFT],
+    })
+    const prepareCount = await MatchService.getCountMatchList(auth.user.id, {
+      letting_status: [
+        LETTING_STATUS_TERMINATED,
+        LETTING_STATUS_VACANCY,
+        LETTING_STATUS_NEW_RENOVATED,
+      ],
+      status: [STATUS_DRAFT],
+    })
+
+    response.res({
+      matches: inLetMatches,
+      counts: {
+        match: inLetMatchCount[0].count,
+        final: finalMatchCount[0].count,
+        preparation: prepareCount[0].count,
+      },
+    })
+  }
+
+  async getInviteList({ request, auth, response }) {
+    const { estate_id, query, buddy, invite } = request.all()
+    const result = await MatchService.getInviteList({
+      user_id: auth.user.id,
+      estate_id,
+      query,
+      buddy,
+      invite,
     })
     response.res(result)
   }

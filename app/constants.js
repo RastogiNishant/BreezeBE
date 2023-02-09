@@ -28,10 +28,16 @@ const constants = {
   FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
+  FILE_TYPE_GALLERY: 'gallery',
 
   MAX_MINOR_COUNT: 5,
 
   MAX_SEARCH_ITEMS: 10000,
+
+  GALLERY_INSIDE_VIEW_TYPE: 'inside',
+  GALLERY_DOCUMENT_VIEW_TYPE: 'document',
+
+  DOCUMENT_VIEW_ENERGY_TYPE: 'energy',
 
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
@@ -137,6 +143,7 @@ const constants = {
   BUILDING_STATUS_DEVELOPED: 13,
   BUILDING_STATUS_ABRISSOBJEKT: 14,
   BUILDING_STATUS_PROJECTED: 15,
+  BUILDING_STATUS_FULLY_REFURBISHED: 16,
 
   ROOM_TYPE_GUEST_ROOM: 1,
   ROOM_TYPE_BATH: 2,
@@ -173,6 +180,7 @@ const constants = {
   ROOM_TYPE_LOGGIA: 33,
 
   // apartment type
+  APARTMENT_TYPE_NO_INFORMATION: 0,
   APARTMENT_TYPE_FLAT: 1,
   APARTMENT_TYPE_GROUND: 2,
   APARTMENT_TYPE_ROOF: 3,
@@ -181,6 +189,12 @@ const constants = {
   APARTMENT_TYPE_SOCIAL: 6,
   APARTMENT_TYPE_SOUTERRAIN: 7,
   APARTMENT_TYPE_PENTHOUSE: 8,
+  APARTMENT_TYPE_TERRACES: 9,
+  APARTMENT_TYPE_ETAGE: 10,
+  APARTMENT_TYPE_HOLIDAY: 11,
+  APARTMENT_TYPE_GALLERY: 12,
+  APARTMENT_TYPE_RAW_ATTIC: 13,
+  APARTMENT_TYPE_ATTIC: 14,
 
   // Building type
   HOUSE_TYPE_MULTIFAMILY_HOUSE: 1,
@@ -289,6 +303,9 @@ const constants = {
 
   SOURCE_TYPE_BUDDY: 1,
   SOURCE_TYPE_MATCHED: 2,
+
+  BUILDING_AGE_NEW: 1,
+  BUILDING_AGE_OLD: 2,
 
   ADULT_AGE_25: 1,
   ADULT_AGE_25_59: 2,
@@ -452,6 +469,9 @@ const constants = {
 
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED: 'notification_prospect_task_resolved',
   NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
+
+  NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
+
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
   NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID: 4,
@@ -500,6 +520,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID: 52,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -551,6 +572,7 @@ const constants = {
     'net_rent',
     'area',
     'cover',
+    'country',
     'street',
     'city',
     'zip',
@@ -903,6 +925,7 @@ const constants = {
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
+  IMPORT_TYPE_OPENIMMO: 'openimmo',
   IMPORT_ENTITY_ESTATES: 'estates',
 
   IMPORT_ACTION_IMPORT: 'import',
@@ -933,6 +956,7 @@ const constants = {
   DOC_INCOME_PROOF_LABEL: 'Income proof',
   DOC_RENT_ARREARS_LABEL: 'Rent arrears',
   DOC_CREDIT_SCORE_LABEL: 'Credit score',
+  FILE_LIMIT_LENGTH: 5,
 }
 
 module.exports = constants

@@ -194,6 +194,16 @@ const {
   ESTATE_FLOOR_DIRECTION_NA,
   GENDER_NEUTRAL,
   LETTING_STATUS_NEW_RENOVATED,
+
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -500,7 +510,7 @@ class CreateEstate extends Base {
       city: yup.string().max(40),
       zip: yup.string().max(8),
       budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().integer().min(0).max(100),
+      credit_score: yup.number().min(0).max(100),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
@@ -578,6 +588,23 @@ class CreateEstate extends Base {
         then: yup.number().integer().required(),
         otherwise: yup.number().nullable(),
       }),
+      income_sources: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf([
+              INCOME_TYPE_EMPLOYEE,
+              INCOME_TYPE_WORKER,
+              INCOME_TYPE_UNEMPLOYED,
+              INCOME_TYPE_CIVIL_SERVANT,
+              INCOME_TYPE_FREELANCER,
+              INCOME_TYPE_HOUSE_WORK,
+              INCOME_TYPE_PENSIONER,
+              INCOME_TYPE_SELF_EMPLOYED,
+              INCOME_TYPE_TRAINEE,
+            ])
+        ),
     })
 }
 

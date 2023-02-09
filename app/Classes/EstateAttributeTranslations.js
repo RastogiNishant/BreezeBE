@@ -180,7 +180,17 @@ escapeStr = (v) => {
 
 // items to percent
 toPercent = (i) => {
-  return (parseFloat(i) || 0) * 100
+  i = trim(i)
+  if (i.includes('%')) {
+    i = i.replace('%', '')
+  }
+  if (isNaN(parseFloat(i))) {
+    i = NULL
+  } else {
+    i = parseFloat(i) * 100
+  }
+
+  return i
 }
 
 toBool = (v) => {
@@ -427,17 +437,18 @@ class EstateAttributeTranslations {
       PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: (i) => parseInt(i * 100),
+    budget: toPercent,
+    credit_score: toPercent,
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
-        case escapeStr(l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', this.lang)): //'Ground floor':
+        case extractValue(`property.attribute.APARTMENT_TYPE.Ground_floor.message`, escapeStr(i)): //'Ground floor':
           return 0
-        case escapeStr(l.get('apt_roof_floor.message', this.lang)):
+        case extractValue(`apt_roof_floor.message`, escapeStr(i)): //'Root floor':
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {
@@ -471,6 +482,15 @@ class EstateAttributeTranslations {
       }
       return i
     },
+  }
+
+  extractValue(key, value) {
+    const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
+    const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
+    if (filterValues && filterValues.length) {
+      return filterValues[0]
+    }
+    return null
   }
 
   constructor(lang = 'en') {
