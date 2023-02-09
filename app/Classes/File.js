@@ -136,7 +136,6 @@ class File {
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
-    console.log(mime, 'mime', 'ext', ext, allowedTypes)
     if (!isEmpty(allowedTypes)) {
       if (!allowedTypes.includes(mime)) {
         throw new AppException('Invalid file mime type')
@@ -211,7 +210,6 @@ class File {
       return {
         filePathName: filePathName,
         thumbnailFilePathName: thumbnailFilePathName,
-        contentType,
       }
     } catch (e) {
       throw new AppException(e, 400)
