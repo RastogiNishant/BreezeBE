@@ -45,11 +45,11 @@ class ImageService {
     try {
       for (let image of images) {
         if (image.image && fs.existsSync(image.image)) {
-          const FileExists = await FileModel.query()
+          const fileExists = await FileModel.query()
             .where('estate_id', estateId)
             .where('file_name', image.file_name)
             .first()
-          if (!FileExists) {
+          if (!fileExists) {
             const options = { ContentType: image.format, ACL: 'public-read' }
             const ext = ContentType.getExt(image.image)
             const filename = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
