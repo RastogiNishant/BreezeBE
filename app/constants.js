@@ -28,10 +28,16 @@ const constants = {
   FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
+  FILE_TYPE_GALLERY: 'gallery',
 
   MAX_MINOR_COUNT: 5,
 
   MAX_SEARCH_ITEMS: 10000,
+
+  GALLERY_INSIDE_VIEW_TYPE: 'inside',
+  GALLERY_DOCUMENT_VIEW_TYPE: 'document',
+
+  DOCUMENT_VIEW_ENERGY_TYPE: 'energy',
 
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',

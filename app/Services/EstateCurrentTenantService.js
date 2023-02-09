@@ -398,7 +398,17 @@ class EstateCurrentTenantService extends BaseService {
     }
   }
 
-  static async singleInvitation({ user_id, estate_id, address, coord, email, phone, surname }) {
+  static async singleInvitation({
+    user_id,
+    estate_id,
+    address,
+    coord,
+    floor,
+    floor_direction,
+    email,
+    phone,
+    surname,
+  }) {
     const trx = await Database.beginTransaction()
     let inviteResult, currentTenant
     try {
@@ -408,6 +418,8 @@ class EstateCurrentTenantService extends BaseService {
             data: {
               address,
               coord,
+              floor,
+              floor_direction,
               letting_type: LETTING_TYPE_LET,
               letting_status: LETTING_STATUS_STANDARD,
             },
@@ -477,46 +489,50 @@ class EstateCurrentTenantService extends BaseService {
       phone: {},
     }
 
-    await Promise.map(invites, async ({ estate_id, address, coord, email, phone, surname }) => {
-      const singleResult = await EstateCurrentTenantService.singleInvitation({
-        user_id,
-        estate_id,
-        address,
-        coord,
-        email,
-        phone,
-        surname,
-      })
-      if (singleResult?.successCount) {
-        result.successCount = (result?.successCount || 0) + singleResult.successCount
-      }
-      if (singleResult?.failureCount) {
-        result.failureCount = (result?.failureCount || 0) + singleResult.failureCount
-      }
+    await Promise.map(
+      invites,
+      async ({ estate_id, address, coord, floor, floor_direction, email, phone, surname }) => {
+        const singleResult = await EstateCurrentTenantService.singleInvitation({
+          user_id,
+          estate_id,
+          address,
+          coord,
+          floor,
+          floor_direction,
+          email,
+          phone,
+          surname,
+        })
+        if (singleResult?.successCount) {
+          result.successCount = (result?.successCount || 0) + singleResult.successCount
+        }
+        if (singleResult?.failureCount) {
+          result.failureCount = (result?.failureCount || 0) + singleResult.failureCount
+        }
 
-      if (singleResult?.email) {
-        console.log('inviteTenantToApp=', singleResult?.email)
-        if (singleResult?.email?.successCount) {
-          result.email.successCount =
-            (result?.email?.successCount || 0) + singleResult.email.successCount
+        if (singleResult?.email) {
+          if (singleResult?.email?.successCount) {
+            result.email.successCount =
+              (result?.email?.successCount || 0) + singleResult.email.successCount
+          }
+          if (singleResult?.email?.failureCount) {
+            result.email.failureCount =
+              (result?.email?.failureCount || 0) + singleResult.email.failureCount
+          }
         }
-        if (singleResult?.email?.failureCount) {
-          result.email.failureCount =
-            (result?.email?.failureCount || 0) + singleResult.email.failureCount
-        }
-      }
 
-      if (singleResult?.phone) {
-        if (singleResult?.phone?.successCount) {
-          result.phone.successCount =
-            (result?.phone?.successCount || 0) + singleResult.phone.successCount
-        }
-        if (singleResult?.phone?.failureCount) {
-          result.phone.failureCount =
-            (result?.phone?.failureCount || 0) + singleResult.phone.failureCount
+        if (singleResult?.phone) {
+          if (singleResult?.phone?.successCount) {
+            result.phone.successCount =
+              (result?.phone?.successCount || 0) + singleResult.phone.successCount
+          }
+          if (singleResult?.phone?.failureCount) {
+            result.phone.failureCount =
+              (result?.phone?.failureCount || 0) + singleResult.phone.failureCount
+          }
         }
       }
-    })
+    )
 
     return result
   }

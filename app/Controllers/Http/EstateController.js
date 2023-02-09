@@ -64,7 +64,7 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
-
+const GalleryService = require('../../Services/GalleryService')
 const {
   exceptions: {
     ESTATE_NOT_EXISTS,
@@ -141,7 +141,7 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      const newEstate = await EstateService.updateEstate(request)
+      const newEstate = await EstateService.updateEstate(request, auth.user.id)
       response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -157,7 +157,7 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    const newEstate = await EstateService.updateEstate(request)
+    const newEstate = await EstateService.updateEstate(request, auth.user.id)
     response.res(newEstate)
   }
 
@@ -219,8 +219,10 @@ class EstateController {
   }
 
   async shortSearchEstates({ request, auth, response }) {
-    const { query } = request.all()
-    response.res(await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query }))
+    const { query, letting_type } = request.all()
+    response.res(
+      await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
+    )
   }
   /**
    *
@@ -383,7 +385,7 @@ class EstateController {
         template: 'xls',
         import_id: importItem.id,
       })
-      response.res(true)
+      response.res(importItem)
     } else {
       throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
     }
@@ -594,7 +596,13 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({ disk: 's3public', url: files.file, type, estate })
+    const fileObj = await EstateService.addFile({
+      disk: 's3public',
+      url: files.file,
+      file_name: files.original_file,
+      type,
+      estate,
+    })
     Event.fire('estate::update', estate_id)
 
     response.res(fileObj)
@@ -605,13 +613,38 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
-    await EstateService.removeFile({ id, estate_id, user_id: auth.user.id })
-    response.res(true)
+    const file = await File.query()
+      .select('files.*')
+      .where('files.id', id)
+      .innerJoin('estates', 'estates.id', 'files.estate_id')
+      .where('estates.id', estate_id)
+      .where('estates.user_id', auth.user.id)
+      .first()
+    if (!file) {
+      throw new HttpException('Image not found', 404)
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.moveToGallery(
+        {
+          ids: [file.id],
+          estate_id,
+          user_id: auth.user.id,
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   async removeMultipleFiles({ request, auth, response }) {
     const { estate_id, ids } = request.all()
-    await EstateService.removeFile({ id: ids, estate_id, user_id: auth.user.id })
+    await EstateService.moveToGallery({ ids, estate_id, user_id: auth.user.id })
     response.res(true)
   }
 
