@@ -18,6 +18,7 @@ const {
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
   FILE_TYPE_GALLERY,
+  FILE_TYPE_IMAGE,
 } = require('../constants')
 
 class GalleryService extends BaseService {
@@ -126,6 +127,7 @@ class GalleryService extends BaseService {
           switch (data.document_type) {
             case FILE_TYPE_PLAN:
             case FILE_TYPE_CUSTOM:
+            case FILE_TYPE_IMAGE:
               await require('./EstateService').restoreFromGallery(
                 {
                   ids: data.ids,

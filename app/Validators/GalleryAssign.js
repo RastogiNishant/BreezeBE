@@ -7,6 +7,7 @@ const {
   FILE_TYPE_PLAN,
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
+  FILE_TYPE_IMAGE,
 } = require('../constants')
 const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
@@ -48,11 +49,11 @@ class GalleryAssign extends Base {
         then: yup
           .string()
           .oneOf(
-            [FILE_TYPE_PLAN, FILE_TYPE_CUSTOM, DOCUMENT_VIEW_ENERGY_TYPE],
+            [FILE_TYPE_PLAN, FILE_TYPE_CUSTOM, FILE_TYPE_IMAGE],
             getExceptionMessage(
               'document_type',
               OPTION,
-              `[${FILE_TYPE_PLAN},${FILE_TYPE_CUSTOM}, ${DOCUMENT_VIEW_ENERGY_TYPE}]`
+              `[${FILE_TYPE_PLAN},${FILE_TYPE_CUSTOM}, ${FILE_TYPE_IMAGE}]`
             )
           )
           .required(getExceptionMessage('document_type', REQUIRED)),
