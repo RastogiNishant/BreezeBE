@@ -374,6 +374,7 @@ Route.group(() => {
   Route.post('/with-filters', 'EstateController.getEstates').middleware([
     'valid:Pagination,EstateFilter',
   ])
+  Route.get('/match', 'MatchController.getMatchList').middleware(['valid:EstateFilter,Pagination'])
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
   Route.post('/import', 'EstateController.importEstate')
