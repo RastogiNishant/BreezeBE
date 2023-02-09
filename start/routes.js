@@ -377,6 +377,9 @@ Route.group(() => {
   Route.get('/match', 'MatchController.getMatchList').middleware(['valid:EstateFilter,Pagination'])
   Route.delete('/', 'EstateController.deleteMultiple').middleware(['valid:EstateMultipleDelete'])
   Route.post('/', 'EstateController.createEstate').middleware(['valid:CreateEstate'])
+  Route.post('/match/invite', 'MatchController.getMatchStageList').middleware([
+    'valid:MatchFilter,Pagination',
+  ])
   Route.post('/import', 'EstateController.importEstate')
   Route.post('/import/openimmo', 'EstateController.importOpenimmo').middleware([
     'ValidOpenImmoImport',
