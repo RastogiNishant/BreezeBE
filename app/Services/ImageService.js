@@ -62,6 +62,7 @@ class ImageService {
                 estate_id: estateId,
                 disk: 's3public',
                 file_name: image.file_name,
+                file_format: image.format,
               },
               trx
             )
