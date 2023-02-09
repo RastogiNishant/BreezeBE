@@ -12,6 +12,7 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
+const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
@@ -48,12 +49,20 @@ class QueueService {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
   }
 
+  static uploadOpenImmoImages(images, estateId) {
+    Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
+  }
+
   static getAnchorIsoline(tenantId) {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
   }
 
-  static importEstate({ fileName, user_id, template, import_id }) {
-    Queue.addJob(IMPORT_ESTATES_VIA_EXCEL, { fileName, user_id, template, import_id }, { delay: 1 })
+  static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
+    Queue.addJob(
+      IMPORT_ESTATES_VIA_EXCEL,
+      { s3_bucket_file_name, fileName, user_id, template, import_id },
+      { delay: 1 }
+    )
   }
 
   /**
@@ -139,6 +148,8 @@ class QueueService {
   static async processJob(job) {
     try {
       switch (job.name) {
+        case UPLOAD_OPENIMMO_IMAGES:
+          return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
@@ -147,6 +158,7 @@ class QueueService {
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case IMPORT_ESTATES_VIA_EXCEL:
           return ImportService.process({
+            s3_bucket_file_name: job.data.s3_bucket_file_name,
             filePath: job.data.fileName,
             user_id: job.data.user_id,
             type: job.data.template,

@@ -104,7 +104,6 @@ const {
   STATUS_DRAFT,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
-const EstateService = require('./EstateService')
 
 class NoticeService {
   /**
@@ -575,7 +574,7 @@ class NoticeService {
       const estate_id = Object.keys(groupMatches)[i]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
       if (!Object.keys(freeTimeSlots).length) {
-        const estate = await EstateService.getActiveById(estate_id)
+        const estate = await require('./EstateService').getActiveById(estate_id)
         if (estate) {
           notices.push({
             user_id: estate.user_id,
@@ -592,7 +591,9 @@ class NoticeService {
       await NoticeService.insertNotices(notices)
       NotificationsService.sendExpiredShowTime(notices)
     }
-    await Match.query().where('status', MATCH_STATUS_KNOCK).update({ notified_at: dateTime })
+    await Match.query()
+      .where('status', MATCH_STATUS_KNOCK)
+      .update({ notified_at: moment.utc().format(DATE_FORMAT) })
   }
 
   /**

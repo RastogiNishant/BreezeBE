@@ -23,6 +23,7 @@ const File = use('App/Classes/File')
 const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const TenantService = use('App/Services/TenantService')
+const EstateFilters = require('../Classes/EstateFilters')
 
 const {
   MATCH_STATUS_NEW,
@@ -199,13 +200,15 @@ class MatchService {
     scoreL += landlordBudgetPoints
 
     // Get credit score income
-    const userCurrentCredit = prospect.credit_score || 0
-    const userRequiredCredit = estate.credit_score || 0
+    const userCurrentCredit = Number(prospect.credit_score) || 0
+    const userRequiredCredit = Number(estate.credit_score) || 0
 
     log({ userCurrentCredit, userRequiredCredit })
 
-    if (userCurrentCredit == 100 && userRequiredCredit == 100) {
+    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
       creditScorePoints = 1
+    } else if (userRequiredCredit === 100) {
+      creditScorePoints = 0
     } else if (userCurrentCredit > userRequiredCredit) {
       creditScorePoints =
         0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
@@ -2945,6 +2948,31 @@ class MatchService {
       query.where('estate_id', estate_id)
     }
     await query
+  }
+
+  static getMatchListQuery(user_id, params = {}) {
+    let matchQuery = require('./EstateService').getActiveEstateQuery()
+    matchQuery = new EstateFilters(params, matchQuery).process()
+    return matchQuery
+  }
+  static async getMatchList(user_id, params = {}) {
+    let matchQuery = this.getMatchListQuery(user_id, params)
+    matchQuery
+      .where('user_id', user_id)
+      .withCount('knocked')
+      .withCount('invited')
+      .withCount('visited')
+      .withCount('decided')
+      .withCount('final')
+    matchQuery.orderBy('estates.id', 'desc')
+    if (params.page && params.page !== -1 && params.limit && params.limit !== -1) {
+      return await matchQuery.paginate(params.page, params.limit)
+    }
+    return await matchQuery.fetch()
+  }
+
+  static async getCountMatchList(user_id, params = {}) {
+    return await this.getMatchListQuery(user_id, params).count()
   }
 }
 
