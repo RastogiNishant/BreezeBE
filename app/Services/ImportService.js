@@ -344,6 +344,7 @@ class ImportService {
     const importActivity = {}
     let importExcelActivity = await Import.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('id')
       .select('filename')
       .select('action')
       .select('status')
@@ -359,6 +360,7 @@ class ImportService {
 
     let exportExcelActivity = await Import.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
+      .select('id')
       .select('filename')
       .select('action')
       .where({ user_id, type, entity, action: 'export' })

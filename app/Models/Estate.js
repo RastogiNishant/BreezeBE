@@ -417,6 +417,16 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
+  invited() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_INVITE })
+  }
+
+  visited() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
+    ])
+  }  
   /**
    *
    */

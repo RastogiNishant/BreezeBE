@@ -20,6 +20,10 @@ const {
   ESTATE_VALID_ADDRESS_LABEL,
   ESTATE_INVALID_ADDRESS_LABEL,
   ESTATE_ALL_ADDRESS_LABEL,
+  LETTING_STATUS_STANDARD,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_VACANCY,
+  LETTING_STATUS_NEW_RENOVATED,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_VISIT,
@@ -199,6 +203,20 @@ class EstateFilter extends Base {
       letting_type: yup
         .array()
         .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]).nullable()),
+      letting_status: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              LETTING_STATUS_STANDARD,
+              LETTING_STATUS_TERMINATED,
+              LETTING_STATUS_VACANCY,
+              LETTING_STATUS_NEW_RENOVATED,
+            ])
+            .nullable()
+        ),
+
       letting: yup.array().of(yup.string()),
       floor_direction: yup
         .object()

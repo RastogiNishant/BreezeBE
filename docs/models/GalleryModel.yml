@@ -1,0 +1,102 @@
+components:
+  schemas:
+    UploadGallery:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+    AssignGallerySchema:
+      type: object
+      properties: 
+        view_type:
+          description: |
+            Values could either be:
+            - Inside view: 'inside'
+            - Document view: 'document'
+          enum:
+            - 'inside'
+            - 'document'
+          type: string
+          required: true
+          example: 'inside'
+        document_type:
+          description: |
+            It must be required if `view_type` is `document` 
+            
+            Values could either be:
+            - Floor Plan: 'plan'
+            - Custom: 'custom'
+            - Energy: 'energy' 
+          enum:
+            - 'plan'
+            - 'custom'
+            - 'energy'
+          type: string
+          required: true
+          example: 'plan'
+        room_id:
+          description: |
+            It must be required if `view_type` is `inside` 
+          type: integer
+          required: true
+          example: '1'
+        ids:
+          description: |
+            `galler's id` must be only 1 if `document_type` is `energy`
+          type: array
+          required: true
+          example: [1,2]
+    UploadGalleryReturn:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+          summary: success when ok error when something's wrong
+        data:
+          type: array
+          example: [
+                      {
+                          "id": 11,
+                          "user_id": 13,
+                          "file_name": "output_heic.jpg",
+                          "url": "https://s3.eu-central-1.amazonaws.com/breeze-files-dev/202301/0be44025-a60f-4e53-ae21-dd98374b7277.jpg",
+                          "relativeUrl": "202301/0be44025-a60f-4e53-ae21-dd98374b7277.jpg",
+                          "thumb": "https://s3.eu-central-1.amazonaws.com/breeze-files-dev/thumbnail/202301/thumb_0be44025-a60f-4e53-ae21-dd98374b7277.jpg"
+                      }
+                  ]
+    GetGalleryReturn:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+          summary: success when ok error when something's wrong
+        data:
+          type: json
+          example: {
+                  "galleries": [
+                      {
+                          "id": 14,
+                          "user_id": 13,
+                          "status": 1,
+                          "url": "https://s3.eu-central-1.amazonaws.com/breeze-files-dev/202301/8e8259d7-2f2f-4aeb-92ed-64e050dfcf24.jpg",
+                          "relativeUrl": "202301/8e8259d7-2f2f-4aeb-92ed-64e050dfcf24.jpg",
+                          "thumb": "https://s3.eu-central-1.amazonaws.com/breeze-files-dev/thumbnail/202301/thumb_8e8259d7-2f2f-4aeb-92ed-64e050dfcf24.jpg"
+                      }
+                  ],
+                  "count": 1
+              }
+    GalleryAssignReturn:
+      type: object
+      properties: 
+        status: 
+          type: string
+          example: success
+          summary: success when ok error when something's wrong
+        data: 
+          type: json
+          example: [1]
+          description: |
+            ids in array means ids succesfully assigned to view
