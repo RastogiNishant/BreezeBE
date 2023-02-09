@@ -1653,6 +1653,25 @@ class EstateService {
     return true
   }
 
+  static async getEstateByAddress({ email, address }) {
+    if (!email || !address) {
+      return null
+    }
+
+    const estates =
+      (
+        await Estate.query()
+          .innerJoin({ _u: 'users' }, function () {
+            this.on('_u.user_id', 'estates.id').on('status', STATUS_ACTIVE).on('_u.email', email)
+          })
+          .whereNot('status', STATUS_DELETE)
+          .where('address', address)
+          .fetch()
+      ).rows || []
+
+    return estates
+  }
+
   static async importOpenimmo(importFile, user_id) {
     const filename = importFile.clientName
     const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])

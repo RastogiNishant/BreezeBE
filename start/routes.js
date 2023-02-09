@@ -775,29 +775,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.get('/unread_messages', 'ChatController.getUnreadMessages')
-  Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
-  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
-  Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
-  Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
-  Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
-  Route.put('/:id/addImage', 'TaskController.addImage').middleware(['valid:Id'])
-  Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
-    'valid:Id,RemoveImage',
-  ])
-  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
-  //Route.post('/edit', 'TaskController.onEditMessage')
-})
-  .prefix('api/v1/connect/task')
-  .middleware(['auth:jwt,jwtLandlord'])
-
-Route.group(() => {
-  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
-})
-  .prefix('api/v1/connect/chat')
-  .middleware(['auth:jwt,jwtLandlord'])
-
-Route.group(() => {
+  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
     'valid:Pagination,Id,TaskFilter',
   ])
@@ -809,9 +787,27 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
+  Route.get('/unread_messages', 'ChatController.getUnreadMessages')
+  Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
+  Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
+  Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
+  Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
+  Route.put('/:id/addImage', 'TaskController.addImage').middleware(['valid:Id'])
+  Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
+    'valid:Id,RemoveImage',
+  ])
+  Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
+  //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
+  .middleware(['auth:jwt,jwtLandlord'])
+
+Route.group(() => {
+  Route.get('/', 'ChatController.getByTaskId').middleware(['valid:TaskId,Pagination,LastId'])
+})
+  .prefix('api/v1/connect/chat')
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
