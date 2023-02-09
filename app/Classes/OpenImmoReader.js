@@ -6,14 +6,7 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-
-const imageTypes = {
-  TITELBILD: 'cover',
-  INNENANSICHTEN: 'image',
-  AUSSENANSICHTEN: 'image',
-  GRUNDRISS: 'plan',
-  BILD: 'image',
-}
+const { FILE_TYPE_GALLERY } = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -218,17 +211,11 @@ class OpenImmoReader {
     properties.map((property, index) => {
       if (property.images) {
         property.images.map(async (image, k) => {
-          if (
-            includes(
-              ['TITELBILD', 'INNENANSICHTEN', 'AUSSENANSICHTEN', 'GRUNDRISS', 'BILD'],
-              image.$.gruppe
-            )
-          ) {
-            properties[index].images[k] = {
-              image: `${this.dir}/${image.daten[0].pfad[0]}`,
-              type: imageTypes[image.$.gruppe],
-              format: image.format[0],
-            }
+          properties[index].images[k] = {
+            image: `${this.dir}/${image.daten[0].pfad[0]}`,
+            file_name: `${image.daten[0].pfad[0]}`,
+            type: FILE_TYPE_GALLERY,
+            format: image.format[0],
           }
         })
       }
