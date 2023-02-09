@@ -211,7 +211,10 @@ class OpenImmoReader {
     properties.map((property, index) => {
       ;(property?.images || []).map(async (image, k) => {
         properties[index].images[k] = {
-          image: `${this.dir}/${image.daten[0].pfad[0]}`,
+          tmpPath: `${this.dir}/${image.daten[0].pfad[0]}`,
+          headers: {
+            'content-type': image.format[0],
+          },
           file_name: `${image.daten[0].pfad[0]}`,
           type: FILE_TYPE_GALLERY,
           format: image.format[0],
