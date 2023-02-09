@@ -281,7 +281,6 @@ class UserController {
         isArray(activation_status) ? activation_status : [activation_status]
       )
       .with('estates', function (e) {
-        e.select('id', 'user_id', 'status')
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
         e.withCount('current_tenant', function (q) {
