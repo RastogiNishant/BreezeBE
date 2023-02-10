@@ -417,7 +417,7 @@ class TaskService extends BaseService {
     let query = Database.table('tasks')
       .count('*')
       .where('estate_id', estate_id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVED])
 
     if (status) {
       if (!isArray(status)) {
