@@ -22,8 +22,8 @@ class GalleryController {
   }
 
   async getAll({ request, auth, response }) {
-    const { page, limit } = request.all()
-    response.res(await GalleryService.getAll({ user_id: auth.user.id, page, limit }))
+    const { id, page, limit } = request.all()
+    response.res(await GalleryService.getAll({ estate_id: id, user_id: auth.user.id, page, limit }))
   }
 
   async assign({ request, auth, response }) {
