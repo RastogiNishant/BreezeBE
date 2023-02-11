@@ -83,14 +83,13 @@ class ImageService {
       if (err) throw err // Fail if the file can't be read.
       try {
         const ext = ContentType.getExt(imagePath)
-        const filename = `${uuid.v4()}`
-        const filePathName = `${moment().format('YYYYMM')}/${filename}.${ext}`
-
-        await Drive.disk('s3public').put(filePathName, data, {
-          ACL: 'public-read',
-          ContentType: ContentType.getContentType(ext),
-        })
-
+        const image = {
+          tmpPath: imagePath,
+          header: {
+            'content-type': ContentType.getContentType(ext),
+          },
+        }
+        const { filePathName } = await File.saveToDisk(image, [], true)
         await Image.createItem({
           url: filePathName,
           room_id: roomId,
@@ -101,6 +100,7 @@ class ImageService {
       }
     })
   }
+
   static async getImagesByRoom(roomId, imageIds) {
     return await Image.query()
       .select('images.*')
