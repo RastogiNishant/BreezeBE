@@ -375,6 +375,8 @@ class EstateCurrentTenantService extends BaseService {
 
   static async inviteTenantToAppByEmail({ ids, user_id }, trx) {
     try {
+      const data = await UserService.getTokenWithLocale([user_id])
+      const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
       let { failureCount, links } = await this.getDynamicLinks(
         {
           ids,
@@ -389,7 +391,7 @@ class EstateCurrentTenantService extends BaseService {
       failureCount += (links.length || 0) - (validLinks.length || 0)
       const successCount = (ids.length || 0) - failureCount
       if (validLinks && validLinks.length) {
-        MailService.sendInvitationToOusideTenant(validLinks)
+        MailService.sendInvitationToOusideTenant(validLinks, lang)
       }
 
       return { successCount, failureCount }
@@ -551,11 +553,13 @@ class EstateCurrentTenantService extends BaseService {
         link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
     )
     failureCount += (links.length || 0) - (validLinks.length || 0)
+    const data = await UserService.getTokenWithLocale([user_id])
+    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
 
     await Promise.all(
       validLinks.map(async (link) => {
         try {
-          const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${link.shortLink}`
+          const txt = l.get('sms.tenant.invitation', lang) + ` ${link.shortLink}`
           await SMSService.send({ to: link.phone_number, txt })
         } catch (e) {
           failureCount++
