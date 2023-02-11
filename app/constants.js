@@ -29,7 +29,10 @@ const constants = {
   FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
+  FILE_TYPE_EXTERNAL: 'external',
   FILE_TYPE_GALLERY: 'gallery',
+  FILE_TYPE_UNASSIGNED: 'unassigned',
+  FILE_TYPE_ENERGY_CERTIFICATE: 'energy_certificate',
 
   MAX_MINOR_COUNT: 5,
 
