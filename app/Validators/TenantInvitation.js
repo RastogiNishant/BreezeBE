@@ -47,7 +47,7 @@ class TenantInvitation extends Base {
               ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
               ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
             ]),
-          surname: yup.string().required(),
+          surname: yup.string(),
           email: yup.string().email().max(255, getExceptionMessage('email', MAXLENGTH, 255)),
           phone: phoneSchema.nullable(),
         })
