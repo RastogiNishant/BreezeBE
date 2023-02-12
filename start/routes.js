@@ -356,7 +356,7 @@ Route.group(() => {
 
 //Unassigned media
 Route.group(() => {
-  Route.get('/', 'GalleryController.getAll').middleware(['valid:Pagination'])
+  Route.get('/:id', 'GalleryController.getAll').middleware(['valid:Pagination,Id'])
   Route.post('/', 'GalleryController.addFile').middleware(['valid:EstateId'])
   Route.post('/assign', 'GalleryController.assign').middleware(['valid:GalleryAssign'])
   Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id,EstateId'])
@@ -782,6 +782,7 @@ Route.group(() => {
   Route.post('/with-filters', 'TaskController.getLandlordTasks').middleware([
     'valid:Pagination,TaskFilter',
   ])
+  Route.get('/estate/:id/counts', 'TaskController.getTaskCountsByEstate').middleware(['valid:Id'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
