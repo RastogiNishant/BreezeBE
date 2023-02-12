@@ -18,7 +18,7 @@ class FilesImageToExternalSchema extends Schema {
     await File.query().where('type', FILE_TYPE_IMAGE).update({ type: FILE_TYPE_EXTERNAL })
     await File.query().where('type', FILE_TYPE_GALLERY).update({ type: FILE_TYPE_UNASSIGNED })
     await Database.raw(
-      "ALTER TABLE files ADD CONSTRAINT files_type_check check (type in ('cover', 'plan', 'doc', 'custom', 'external', 'unassigned'));;"
+      "ALTER TABLE files ADD CONSTRAINT files_type_check check (type in ('cover', 'plan', 'doc', 'custom', 'energy_certificate', 'external', 'unassigned'));;"
     )
   }
 
