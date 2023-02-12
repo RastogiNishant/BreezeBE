@@ -1132,6 +1132,15 @@ class EstateController {
       throw new HttpException(err.message, 412)
     }
   }
+
+  async getFiles({ response, params }) {
+    const { estate_id } = params
+    try {
+      response.res(await EstateService.getFiles(estate_id))
+    } catch (err) {
+      throw new HttpException(err.message)
+    }
+  }
 }
 
 module.exports = EstateController

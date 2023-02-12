@@ -1726,5 +1726,28 @@ class EstateService {
       })
     }
   }
+
+  static async getFiles(estateId) {
+    const File = use('App/Models/File')
+    const files = await File.query().where('estate_id', estateId).fetch()
+    let typeAssigned = {
+      external: ['external'],
+      documents: ['plan', 'energy_certificate', 'custom', 'doc'],
+      unassigned: ['unassigned'],
+    }
+    let ret = {
+      external: [],
+      documents: { plan: [], energy_certificate: [], custom: [] },
+      unassigned: [],
+    }
+    files.toJSON().map((file) => {
+      if (typeAssigned[file.type].includes(file.type)) {
+        ret[file.type] = [...ret[file.type], file]
+      } else if (typeAssigned.documents.includes(file.type)) {
+        ret.documents[file.type] = [...ret.documents[file.type], file]
+      }
+    })
+    return ret
+  }
 }
 module.exports = EstateService
