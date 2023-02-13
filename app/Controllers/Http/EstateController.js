@@ -54,7 +54,7 @@ const {
   FILE_LIMIT_LENGTH,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
+const { isEmpty, isArray, isFunction, isNumber, pick, trim, omit } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -596,16 +596,30 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({
-      disk: 's3public',
-      url: files.file,
-      file_name: files.original_file,
-      type,
-      estate,
-    })
+    if (isArray(files.file)) {
+      files.file.map(async (dfile, index) => {
+        await EstateService.addFile({
+          disk: 's3public',
+          url: files.file[index],
+          file_name: files.original_file[index],
+          file_format: files.format[index],
+          type,
+          estate,
+        })
+      })
+    } else {
+      await EstateService.addFile({
+        disk: 's3public',
+        url: files.file,
+        file_name: files.original_file,
+        file_format: files.format,
+        type,
+        estate,
+      })
+    }
     Event.fire('estate::update', estate_id)
 
-    response.res(fileObj)
+    response.res(files)
   }
 
   /**

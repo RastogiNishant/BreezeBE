@@ -269,7 +269,6 @@ class File {
         size: process.env.MAX_IMAGE_SIZE || '20M',
         extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
-
       if (!file) {
         return null
       }
@@ -288,8 +287,9 @@ class File {
       const filePathName = fileInfo.map((fi) => fi.filePathName)
       const fileName = fileInfo.map((fi) => fi.fileName)
       const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
+      const fileFormat = (file._files || [file]).map((fi) => fi.headers['content-type'])
 
-      return { field, filePathName, fileName, thumbnailFilePathName }
+      return { field, filePathName, fileName, thumbnailFilePathName, fileFormat }
     }
     const files = await Promise.map(fields, saveFile)
     return files.reduce(
@@ -303,6 +303,7 @@ class File {
                 v.thumbnailFilePathName.length > 1
                   ? v.thumbnailFilePathName
                   : v.thumbnailFilePathName[0],
+              ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0],
             }
           : n,
       {}

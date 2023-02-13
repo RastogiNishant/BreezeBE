@@ -493,8 +493,8 @@ class EstateService {
   /**
    *
    */
-  static async addFile({ url, file_name, disk, estate, type }) {
-    return File.createItem({ url, disk, file_name, estate_id: estate.id, type })
+  static async addFile({ url, file_name, disk, estate, type, file_format }) {
+    return File.createItem({ url, disk, file_name, estate_id: estate.id, type, file_format })
   }
 
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
