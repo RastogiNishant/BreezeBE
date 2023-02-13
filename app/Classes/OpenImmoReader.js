@@ -1,12 +1,11 @@
 const xml2js = require('xml2js')
 const AppException = use('App/Exceptions/AppException')
-const HttpException = use('App/Exceptions/AppException')
 const fsPromises = require('fs/promises')
 const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_GALLERY } = require('../constants')
+const { FILE_TYPE_UNASSIGNED } = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -216,7 +215,7 @@ class OpenImmoReader {
             'content-type': image.format[0],
           },
           file_name: `${image.daten[0].pfad[0]}`,
-          type: FILE_TYPE_GALLERY,
+          type: FILE_TYPE_UNASSIGNED,
           format: image.format[0],
         }
       })
