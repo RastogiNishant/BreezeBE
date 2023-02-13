@@ -59,11 +59,11 @@ const {
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_VALID_ADDRESS,
   FILE_TYPE_PLAN,
-  FILE_TYPE_GALLERY,
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
   LETTING_STATUS_VACANCY,
   FILE_LIMIT_LENGTH,
+  FILE_TYPE_UNASSIGNED,
 } = require('../constants')
 
 const {
@@ -531,7 +531,7 @@ class EstateService {
     await this.hasPermission({ id: estate_id, user_id })
 
     let query = File.query()
-      .update({ type: FILE_TYPE_GALLERY })
+      .update({ type: FILE_TYPE_UNASSIGNED })
       .whereIn('id', ids)
       .where('estate_id', estate_id)
 
