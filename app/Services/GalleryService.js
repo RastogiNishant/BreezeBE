@@ -78,7 +78,9 @@ class GalleryService extends BaseService {
     } else {
       await File.query().whereIn('id', ids).delete().transacting(trx)
     }
-    Promise.map(galleries, (gallery) => FileBucket.remove(gallery.url))
+    try {
+      Promise.map(galleries.rows || [], (gallery) => FileBucket.remove(gallery.url))
+    } catch (e) {}
     return true
   }
 
