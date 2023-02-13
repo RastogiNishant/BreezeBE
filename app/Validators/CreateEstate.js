@@ -323,16 +323,20 @@ class CreateEstate extends Base {
           OCCUPATION_TYPE_NOT_OCCUPIED,
         ]),
       use_type: yup
-        .number()
-        .positive()
-        .oneOf([
-          USE_TYPE_RESIDENTIAL,
-          USE_TYPE_COMMERCIAL,
-          USE_TYPE_CONSTRUCT,
-          USE_TYPE_WAZ,
-          USE_TYPE_PLANT,
-          USE_TYPE_OTHER,
-        ]),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              USE_TYPE_RESIDENTIAL,
+              USE_TYPE_COMMERCIAL,
+              USE_TYPE_CONSTRUCT,
+              USE_TYPE_WAZ,
+              USE_TYPE_PLANT,
+              USE_TYPE_OTHER,
+            ])
+        ),
       ownership_type: yup
         .number()
         .positive()
@@ -343,28 +347,36 @@ class CreateEstate extends Base {
           OWNERSHIP_TYPE_OTHER,
         ]),
       marketing_type: yup
-        .number()
-        .positive()
-        .oneOf([
-          MARKETING_TYPE_PURCHASE,
-          MARKETING_TYPE_RENT_LEASE,
-          MARKETING_TYPE_LEASEHOLD,
-          MARKETING_TYPE_LEASING,
-        ]),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              MARKETING_TYPE_PURCHASE,
+              MARKETING_TYPE_RENT_LEASE,
+              MARKETING_TYPE_LEASEHOLD,
+              MARKETING_TYPE_LEASING,
+            ])
+        ),
       energy_type: yup
-        .number()
-        .positive()
-        .oneOf([
-          ENERGY_TYPE_LOW_ENERGY,
-          ENERGY_TYPE_PASSIVE_HOUSE,
-          ENERGY_TYPE_NEW_BUILDING_STANDARD,
-          ENERGY_TYPE_KFW40,
-          ENERGY_TYPE_KFW60,
-          ENERGY_TYPE_KFW55,
-          ENERGY_TYPE_KFW70,
-          ENERGY_TYPE_MINERGIE_CONSTRUCTION,
-          ENERGY_TYPE_MINERGIE_CERTIFIED,
-        ]),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              ENERGY_TYPE_LOW_ENERGY,
+              ENERGY_TYPE_PASSIVE_HOUSE,
+              ENERGY_TYPE_NEW_BUILDING_STANDARD,
+              ENERGY_TYPE_KFW40,
+              ENERGY_TYPE_KFW60,
+              ENERGY_TYPE_KFW55,
+              ENERGY_TYPE_KFW70,
+              ENERGY_TYPE_MINERGIE_CONSTRUCTION,
+              ENERGY_TYPE_MINERGIE_CERTIFIED,
+            ])
+        ),
       vacant_date: yup.date(),
       avail_duration: yup.number().integer().positive().max(5000),
       from_date: yup.date().nullable(),
@@ -422,77 +434,83 @@ class CreateEstate extends Base {
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
-        .number()
-        .positive()
-        .oneOf([
-          FIRING_OEL,
-          FIRING_GAS,
-          FIRING_ELECTRIC,
-          FIRING_ALTERNATIVE,
-          FIRING_SOLAR,
-          FIRING_GROUND_HEAT,
-          FIRING_AIRWP,
-          FIRING_REMOTE,
-          FIRING_BLOCK,
-          FIRING_WATER_ELECTRIC,
-          FIRING_PELLET,
-          FIRING_COAL,
-          FIRING_WOOD,
-          FIRING_LIQUID_GAS,
-        ]),
-      heating_type: yup
-        .number()
-        // .positive()
-        .oneOf([
-          HEATING_TYPE_NO,
-          HEATING_TYPE_OVEN,
-          HEATING_TYPE_FLOOR,
-          HEATING_TYPE_CENTRAL,
-          HEATING_TYPE_REMOTE,
-          HEATING_TYPE_FLOOR_HEATING,
-        ]),
-      equipment: yup
         .array()
         .of(
           yup
             .number()
             .positive()
             .oneOf([
-              EQUIPMENT_STACK,
-              EQUIPMENT_AIR_CONDITIONED,
-              EQUIPMENT_ELEVATOR,
-              EQUIPMENT_GARDEN_USE,
-              EQUIPMENT_WHEELCHAIR_ACCESSIBLE,
-              EQUIPMENT_BIKE_ROOM,
-              EQUIPMENT_GUEST_WC,
-              EQUIPMENT_WG_SUITABLE,
+              FIRING_OEL,
+              FIRING_GAS,
+              FIRING_ELECTRIC,
+              FIRING_ALTERNATIVE,
+              FIRING_SOLAR,
+              FIRING_GROUND_HEAT,
+              FIRING_AIRWP,
+              FIRING_REMOTE,
+              FIRING_BLOCK,
+              FIRING_WATER_ELECTRIC,
+              FIRING_PELLET,
+              FIRING_COAL,
+              FIRING_WOOD,
+              FIRING_LIQUID_GAS,
             ])
         ),
+      heating_type: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              HEATING_TYPE_NO,
+              HEATING_TYPE_OVEN,
+              HEATING_TYPE_FLOOR,
+              HEATING_TYPE_CENTRAL,
+              HEATING_TYPE_REMOTE,
+              HEATING_TYPE_FLOOR_HEATING,
+            ])
+        ),
+      equipment: yup
+        .number()
+        .positive()
+        .oneOf([
+          EQUIPMENT_STACK,
+          EQUIPMENT_AIR_CONDITIONED,
+          EQUIPMENT_ELEVATOR,
+          EQUIPMENT_GARDEN_USE,
+          EQUIPMENT_WHEELCHAIR_ACCESSIBLE,
+          EQUIPMENT_BIKE_ROOM,
+          EQUIPMENT_GUEST_WC,
+          EQUIPMENT_WG_SUITABLE,
+        ]),
       equipment_standard: yup
         .number()
         .positive()
         .oneOf([EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED]),
       ground: yup
-        .number()
-        .positive()
-        .oneOf([
-          GROUND_TILES,
-          GROUND_STONE,
-          GROUND_CARPET,
-          GROUND_PARQUET,
-          GROUND_FINISHED_PARQUET,
-          GROUND_LAMINATE,
-          GROUND_DIELEN,
-          GROUND_PLASTIC,
-          GROUND_ESTRICH,
-          GROUND_DOUBLE_FLOOR,
-          GROUND_LINOLEUM,
-          GROUND_MARMOR,
-          GROUND_TERRAKOTTA,
-          GROUND_GRANITE,
-          null,
-        ])
-        .nullable(),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              GROUND_TILES,
+              GROUND_STONE,
+              GROUND_CARPET,
+              GROUND_PARQUET,
+              GROUND_FINISHED_PARQUET,
+              GROUND_LAMINATE,
+              GROUND_DIELEN,
+              GROUND_PLASTIC,
+              GROUND_ESTRICH,
+              GROUND_DOUBLE_FLOOR,
+              GROUND_LINOLEUM,
+              GROUND_MARMOR,
+              GROUND_TERRAKOTTA,
+              GROUND_GRANITE,
+              null,
+            ])
+        ),
       energy_efficiency: yup.number().positive().nullable(),
       energy_pass: yup
         .mixed()
