@@ -190,6 +190,11 @@ class AccountController {
    *
    */
   async me({ auth, response, request }) {
+    if (auth.current.user instanceof Admin) {
+      let admin = auth.current.user
+      admin.is_admin = true
+      return response.res(admin)
+    }
     const { pushToken } = request.all()
     const user = await UserService.me(auth.current.user, pushToken)
     logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
