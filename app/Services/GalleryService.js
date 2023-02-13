@@ -17,8 +17,8 @@ const {
   FILE_TYPE_PLAN,
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
-  FILE_TYPE_GALLERY,
-  FILE_TYPE_IMAGE,
+  FILE_TYPE_UNASSIGNED,
+  FILE_TYPE_EXTERNAL,
 } = require('../constants')
 
 class GalleryService extends BaseService {
@@ -36,7 +36,7 @@ class GalleryService extends BaseService {
           estate_id,
           url: p,
           file_name: file_names[index],
-          type: FILE_TYPE_GALLERY,
+          type: FILE_TYPE_UNASSIGNED,
         }
       })
 
@@ -50,7 +50,7 @@ class GalleryService extends BaseService {
       url,
       file_name,
       estate_id,
-      type: FILE_TYPE_GALLERY,
+      type: FILE_TYPE_UNASSIGNED,
       disk: 's3public',
     }
 
@@ -61,7 +61,7 @@ class GalleryService extends BaseService {
     return await File.query()
       .where('id', id)
       .where('status', STATUS_ACTIVE)
-      .where('type', FILE_TYPE_GALLERY)
+      .where('type', FILE_TYPE_UNASSIGNED)
       .where('user_id', user_id)
       .first()
   }
@@ -85,7 +85,7 @@ class GalleryService extends BaseService {
   }
 
   static async getAll({ estate_id, page = -1, limit = -1, ids = null }) {
-    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_GALLERY)
+    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_UNASSIGNED)
     let galleries, count
 
     if (ids) {
@@ -129,7 +129,7 @@ class GalleryService extends BaseService {
           switch (data.document_type) {
             case FILE_TYPE_PLAN:
             case FILE_TYPE_CUSTOM:
-            case FILE_TYPE_IMAGE:
+            case FILE_TYPE_EXTERNAL:
               await require('./EstateService').restoreFromGallery(
                 {
                   ids: data.ids,
