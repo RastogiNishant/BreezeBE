@@ -19,6 +19,7 @@ const {
   DOCUMENT_VIEW_ENERGY_TYPE,
   FILE_TYPE_GALLERY,
   FILE_TYPE_IMAGE,
+  FILE_TYPE_UNASSIGNED,
 } = require('../constants')
 
 class GalleryService extends BaseService {
@@ -83,7 +84,7 @@ class GalleryService extends BaseService {
   }
 
   static async getAll({ estate_id, page = -1, limit = -1, ids = null }) {
-    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_GALLERY)
+    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_UNASSIGNED)
     let galleries, count
 
     if (ids) {
