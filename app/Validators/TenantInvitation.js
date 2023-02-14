@@ -26,6 +26,39 @@ class TenantInvitation extends Base {
           address: yup.string().when('estate_id', (estate_id, schema) => {
             return estate_id ? schema : yup.string().required()
           }),
+          city: yup
+            .string()
+            .max(40)
+            .when('estate_id', (estate_id, schema) => {
+              return estate_id ? schema : yup.string().max(40).required()
+            }),
+          zip: yup
+            .string()
+            .max(8)
+            .when('estate_id', (estate_id, schema) => {
+              return estate_id ? schema : yup.string().max(8).required()
+            }),
+          street: yup
+            .string()
+            .min(2)
+            .max(255)
+            .when('estate_id', (estate_id, schema) => {
+              return estate_id ? schema : yup.string().min(2).max(255).required()
+            }),
+          house_number: yup
+            .string()
+            .min(1)
+            .max(255)
+            .when('estate_id', (estate_id, schema) => {
+              return estate_id ? schema : yup.string().min(1).max(255).required()
+            }),
+          country: yup
+            .string()
+            .min(1)
+            .max(255)
+            .when('estate_id', (estate_id, schema) => {
+              return estate_id ? schema : yup.string().min(1).max(255).required()
+            }),
           coord: yup
             .string()
             .matches(

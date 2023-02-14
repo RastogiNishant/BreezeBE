@@ -403,6 +403,11 @@ class EstateCurrentTenantService extends BaseService {
   static async singleInvitation({
     user_id,
     estate_id,
+    country,
+    city,
+    street,
+    house_number,
+    zip,
     address,
     coord,
     floor,
@@ -415,9 +420,15 @@ class EstateCurrentTenantService extends BaseService {
     let inviteResult, currentTenant
     try {
       if (!estate_id) {
+        console.log('create new estate here')
         const { id } = await require('./EstateService').createEstate(
           {
             data: {
+              country,
+              city,
+              street,
+              house_number,
+              zip,
               address,
               coord,
               floor,
@@ -430,6 +441,7 @@ class EstateCurrentTenantService extends BaseService {
           false,
           trx
         )
+        console.log('estate id here newly=', id)
         estate_id = id
       } else {
         if (await this.getCurrentTenantByEstateId({ estate_id, notDisconnected: true })) {
@@ -493,12 +505,31 @@ class EstateCurrentTenantService extends BaseService {
 
     await Promise.map(
       invites,
-      async ({ estate_id, address, coord, floor, floor_direction, email, phone, surname }) => {
+      async ({
+        estate_id,
+        country,
+        city,
+        street,
+        house_number,
+        zip,
+        address,
+        coord,
+        floor,
+        floor_direction,
+        email,
+        phone,
+        surname,
+      }) => {
         const singleResult = await EstateCurrentTenantService.singleInvitation({
           user_id,
           estate_id,
           address,
           coord,
+          country,
+          city,
+          street,
+          house_number,
+          zip,
           floor,
           floor_direction,
           email,
