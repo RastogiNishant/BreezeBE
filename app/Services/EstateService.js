@@ -1727,7 +1727,7 @@ class EstateService {
     }
   }
 
-  static async getFiles(estateId) {
+  static async getFilesByEstateId(estateId) {
     const File = use('App/Models/File')
     const files = await File.query().where('estate_id', estateId).fetch()
     let typeAssigned = {
