@@ -23,6 +23,8 @@ const File = use('App/Classes/File')
 const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const TenantService = use('App/Services/TenantService')
+const MatchFilters = require('../Classes/MatchFilters')
+const EstateFilters = require('../Classes/EstateFilters')
 
 const {
   MATCH_STATUS_NEW,
@@ -78,6 +80,8 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
 } = require('../constants')
+
+const { ESTATE_NOT_EXISTS } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
 
 const MATCH_PERCENT_PASS = 40
@@ -199,13 +203,15 @@ class MatchService {
     scoreL += landlordBudgetPoints
 
     // Get credit score income
-    const userCurrentCredit = prospect.credit_score || 0
-    const userRequiredCredit = estate.credit_score || 0
+    const userCurrentCredit = Number(prospect.credit_score) || 0
+    const userRequiredCredit = Number(estate.credit_score) || 0
 
     log({ userCurrentCredit, userRequiredCredit })
 
-    if (userCurrentCredit == 100 && userRequiredCredit == 100) {
+    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
       creditScorePoints = 1
+    } else if (userRequiredCredit === 100) {
+      creditScorePoints = 0
     } else if (userCurrentCredit > userRequiredCredit) {
       creditScorePoints =
         0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
@@ -2945,6 +2951,186 @@ class MatchService {
       query.where('estate_id', estate_id)
     }
     await query
+  }
+
+  static async getMatchStageList({ user_id, params, page = -1, limit = -1 }) {
+    let estate = await Estate.query()
+      .where('id', params.estate_id)
+      .where('user_id', user_id)
+      .withCount('knocked')
+      .withCount('inviteBuddies')
+      .withCount('visits')
+      .withCount('decided')
+      .first()
+
+    if (!estate) {
+      throw new HttpException(ESTATE_NOT_EXISTS, 400)
+    }
+
+    estate = estate.toJSON()
+    const inviteQuery = this.getMatchStageQuery({ params })
+    let match = null
+    let count = 0
+    if (limit === -1 || page === -1) {
+      match = await inviteQuery.fetch()
+      count = match.rows?.length || 0
+    } else {
+      match = await inviteQuery.paginate(page, limit)
+      count = (
+        await inviteQuery
+          .clearSelect()
+          .count(Database.raw(`DISTINCT("matches"."user_id", "matches"."estate_id")`))
+      )[0].count
+    }
+    let invite_count = 0
+
+    if (params.match_status.includes(MATCH_STATUS_KNOCK)) {
+      invite_count = parseInt(estate?.__meta__?.inviteBuddies_count || 0) + parseInt(count)
+    } else if (params.buddy) {
+      invite_count = parseInt(estate?.__meta__?.knocked_count || 0) + parseInt(count)
+    }
+
+    estate.__meta__.invite_count = invite_count.toString()
+    return {
+      estate,
+      match: match.toJSON({ isShort: true }),
+      count,
+    }
+  }
+
+  static getMatchStageQuery({ params }) {
+    let inviteQuery = Match.query()
+      .select('matches.*')
+      .select('_u.firstname', '_u.secondname', '_u.birthday', '_u.avatar')
+      .select('_t.members_count', '_t.minors_count', '_t.income')
+      .select(
+        '_m.credit_score_proofs',
+        '_m.no_rent_arrears_proofs',
+        '_m.rent_arrears',
+        '_m.credit_score',
+        '_m.members_age',
+        '_me.income_sources',
+        '_me.work_exp',
+        '_me.total_work_exp',
+        '_me.income_proofs'
+      )
+      .leftJoin({ _u: 'users' }, function () {
+        this.on('_u.id', 'matches.user_id')
+      })
+      .leftJoin({ _t: 'tenants' }, function () {
+        this.on('_t.user_id', '_u.id')
+      })
+      .leftJoin(
+        //members...
+        Database.raw(`
+      (select
+        user_id,
+        avg(credit_score) as credit_score,
+        count(id) as members_count,
+        bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
+        bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
+        bool_or(coalesce(unpaid_rental, 0) > 0) as rent_arrears,
+        -- sum(income) as income,
+        array_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
+      from members
+      group by user_id
+      ) as _m
+      `),
+        function () {
+          this.on('_t.user_id', '_m.user_id')
+        }
+      )
+      .leftJoin(
+        //members incomes and income_proofs
+        Database.raw(`
+        (-- tenant has members
+          select
+            members.user_id,
+            sum(member_total_income) as total_income,
+            coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs,
+            json_agg(_mi.income_type) as income_sources,
+            json_agg(work_exp) as work_exp,
+            sum(work_exp) as total_work_exp
+          from
+            members
+          left join
+            (
+            -- whether or not member has all proofs, get also member's total income
+            select
+              incomes.member_id,
+              sum(_mip.income) as member_total_income,
+              incomes.income_type,
+              coalesce(incomes.work_exp, 0) as work_exp,
+              bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+            from
+              incomes
+            left join
+              (
+              -- how many proofs are submitted for each income
+              select
+                incomes.id,
+                incomes.income as income,
+                incomes.member_id,
+                count(income_proofs.file) as submitted_proofs
+              from
+                incomes
+              left join
+                income_proofs
+              on
+                income_proofs.income_id = incomes.id
+              group by incomes.id) as _mip
+            on
+              _mip.id=incomes.id
+            group by
+              incomes.id
+            ) as _mi
+          on _mi.member_id=members.id
+          group by
+            members.user_id
+        ) as _me`),
+        function () {
+          this.on('_me.user_id', '_m.user_id')
+        }
+      )
+
+    const filter = new MatchFilters(params, inviteQuery)
+    inviteQuery = filter.process()
+
+    if (params.match_status) {
+      inviteQuery.whereIn('matches.status', params.match_status)
+    }
+    if (params.buddy) {
+      inviteQuery.where('matches.buddy', true)
+      inviteQuery.where('matches.status', MATCH_STATUS_NEW)
+    }
+
+    inviteQuery.where('estate_id', params.estate_id)
+    return inviteQuery
+  }
+
+  static getMatchListQuery(user_id, params = {}) {
+    let matchQuery = require('./EstateService').getActiveEstateQuery()
+    matchQuery = new EstateFilters(params, matchQuery).process()
+    return matchQuery
+  }
+  static async getMatchList(user_id, params = {}) {
+    let matchQuery = this.getMatchListQuery(user_id, params)
+    matchQuery
+      .where('user_id', user_id)
+      .withCount('knocked')
+      .withCount('invited')
+      .withCount('visited')
+      .withCount('decided')
+      .withCount('final')
+    matchQuery.orderBy('estates.id', 'desc')
+    if (params.page && params.page !== -1 && params.limit && params.limit !== -1) {
+      return await matchQuery.paginate(params.page, params.limit)
+    }
+    return await matchQuery.fetch()
+  }
+
+  static async getCountMatchList(user_id, params = {}) {
+    return await this.getMatchListQuery(user_id, params).count()
   }
 }
 

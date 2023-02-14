@@ -175,8 +175,8 @@ class Estate extends Model {
    */
   static get options() {
     return {
-      bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
-      kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
+      //bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
+      //kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
       equipment: [
         EQUIPMENT_STACK,
         EQUIPMENT_AIR_CONDITIONED,
@@ -417,6 +417,16 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
+  invited() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_INVITE })
+  }
+
+  visited() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
+    ])
+  }  
   /**
    *
    */

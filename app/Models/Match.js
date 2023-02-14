@@ -10,6 +10,9 @@ class Match extends Model {
   user() {
     return this.belongsTo('App/Models/User', 'user_id', 'id')
   }
+  tenant() {
+    return this.belongsTo('App/Models/Tenant', 'user_id', 'user_id')
+  }
 }
 
 module.exports = Match
