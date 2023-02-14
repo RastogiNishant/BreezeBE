@@ -1136,7 +1136,7 @@ class EstateController {
   async getFiles({ response, params }) {
     const { estate_id } = params
     try {
-      response.res(await EstateService.getFiles(estate_id))
+      response.res(await EstateService.getFilesByEstateId(estate_id))
     } catch (err) {
       throw new HttpException(err.message)
     }
