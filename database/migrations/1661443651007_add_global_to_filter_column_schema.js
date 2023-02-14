@@ -4,17 +4,17 @@
 const Schema = use('Schema')
 
 class AddGlobalToFilterColumnSchema extends Schema {
-  up () {
+  up() {
     this.table('filter_columns', (table) => {
       // alter table
       table.boolean('used_global_search').defaultTo(false)
     })
   }
 
-  down () {
+  down() {
     this.table('filter_columns', (table) => {
       // reverse alternations
-      table.dropColumn('used_global_serach')
+      table.dropColumn('used_global_search')
     })
   }
 }

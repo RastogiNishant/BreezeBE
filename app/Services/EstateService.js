@@ -1007,7 +1007,9 @@ class EstateService {
   }
 
   static async getEstatesByUserId({ landlordIds, limit, page, params, user_id }) {
-    if (params.return_all && params.return_all == 1) {
+    landlordIds = Array.isArray(landlordIds) ? landlordIds : [landlordIds]
+
+    if (params && params.return_all === 1) {
       return await this.getEstates(params, user_id)
         .whereIn('user_id', landlordIds)
         .whereNot('estates.status', STATUS_DELETE)
@@ -1016,7 +1018,7 @@ class EstateService {
         .fetch()
     } else {
       return await this.getEstates(params, user_id)
-        .whereIn('user_id', ids)
+        .whereIn('user_id', landlordIds)
         .whereNot('estates.status', STATUS_DELETE)
         .paginate(page, limit)
     }
