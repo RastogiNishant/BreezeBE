@@ -22,7 +22,6 @@ class EstateAddFile extends Base {
         .oneOf([
           FILE_TYPE_PLAN,
           FILE_TYPE_DOC,
-          FILE_TYPE_ENERGY_CERTIFICATE,
           FILE_TYPE_EXTERNAL,
           FILE_TYPE_UNASSIGNED,
           FILE_TYPE_CUSTOM,

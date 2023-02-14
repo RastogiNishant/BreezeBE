@@ -497,6 +497,10 @@ class EstateService {
     return File.createItem({ url, disk, file_name, estate_id: estate.id, type })
   }
 
+  static async addManyFiles(data) {
+    return await File.createMany(data)
+  }
+
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
     await this.hasPermission({ id: estate_id, user_id })
     const files = galleries.map((gallery) => {

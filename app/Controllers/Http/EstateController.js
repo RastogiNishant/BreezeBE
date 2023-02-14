@@ -72,6 +72,7 @@ const {
     WRONG_PARAMS,
     IMAGE_COUNT_LIMIT,
     FAILED_IMPORT_FILE_UPLOAD,
+    FAILED_TO_ADD_FILE,
   },
 } = require('../../../app/exceptions')
 
@@ -290,7 +291,6 @@ class EstateController {
     const { id } = request.all()
     const user_id = auth.user instanceof Admin ? null : auth.user.id
     let estate = await EstateService.getEstateWithDetails({ id, user_id, role: auth.user.role })
-
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
@@ -596,16 +596,23 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({
-      disk: 's3public',
-      url: files.file,
-      file_name: files.original_file,
-      type,
-      estate,
-    })
-    Event.fire('estate::update', estate_id)
+    if (files && files.file) {
+      const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const data = paths.map((path, index) => {
+        return {
+          disk: 's3public',
+          url: path,
+          file_name: files.original_file[index],
+          type,
+          estate_id: estate.id,
+        }
+      })
 
-    response.res(fileObj)
+      const result = await EstateService.addManyFiles(data)
+      Event.fire('estate::update', estate_id)
+      return response.res(result)
+    }
+    throw new HttpException(FAILED_TO_ADD_FILE, 500)
   }
 
   /**
