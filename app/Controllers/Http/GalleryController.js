@@ -4,14 +4,6 @@ const GalleryService = use('App/Services/GalleryService')
 const HttpException = use('App/Exceptions/HttpException')
 
 class GalleryController {
-  async addFile({ request, auth, response }) {
-    try {
-      response.res(await GalleryService.addFile(request, auth.user.id))
-    } catch (e) {
-      throw new HttpException(e.message, e.status || 400)
-    }
-  }
-
   async removeFile({ request, auth, response }) {
     const { id, estate_id } = request.all()
     try {

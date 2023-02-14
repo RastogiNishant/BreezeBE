@@ -357,7 +357,7 @@ Route.group(() => {
 //Unassigned media
 Route.group(() => {
   Route.get('/:id', 'GalleryController.getAll').middleware(['valid:Pagination,Id'])
-  Route.post('/', 'GalleryController.addFile').middleware(['valid:EstateId'])
+  Route.post('/', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
   Route.post('/assign', 'GalleryController.assign').middleware(['valid:GalleryAssign'])
   Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id,EstateId'])
 })
