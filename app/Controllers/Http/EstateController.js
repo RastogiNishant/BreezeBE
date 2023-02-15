@@ -56,6 +56,7 @@ const {
   FILE_TYPE_EXTERNAL,
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
+  FILE_TYPE_GALLERY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -312,12 +313,17 @@ class EstateController {
       (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
         ? true
         : false
+    const unassigned_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_GALLERY)
+      ? true
+      : false
+
     estate = await EstateService.assignEstateAmenities(estate)
     estate = {
       ...estate,
       inside_view_has_media,
       outside_view_has_media,
       document_view_has_media,
+      unassigned_view_has_media,
     }
     response.res(estate)
   }
