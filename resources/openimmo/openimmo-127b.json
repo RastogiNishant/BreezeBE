@@ -1,0 +1,5239 @@
+[
+	{
+		"name": "openimmo",
+		"description": "Dokument Element",
+		"sequence": [
+			{
+				"ref": "uebertragung"
+			},
+			{
+				"ref": "anbieter",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "uebertragung",
+		"description": "�bertragungsangaben",
+		"attributes": [
+			{
+				"name": "art",
+				"use": "required",
+				"base": "string",
+				"restriction": [
+					"ONLINE",
+					"OFFLINE"
+				]
+			},
+			{
+				"name": "umfang",
+				"use": "required",
+				"base": "string",
+				"restriction": [
+					"TEIL",
+					"VOLL"
+				]
+			},
+			{
+				"name": "modus",
+				"base": "string",
+				"restriction": [
+					"NEW",
+					"CHANGE",
+					"DELETE"
+				]
+			},
+			{
+				"name": "version",
+				"type": "string",
+				"use": "required"
+			},
+			{
+				"name": "sendersoftware",
+				"type": "string",
+				"use": "required"
+			},
+			{
+				"name": "senderversion",
+				"type": "string",
+				"use": "required"
+			},
+			{
+				"name": "techn_email",
+				"type": "string",
+				"use": "optional"
+			},
+			{
+				"name": "regi_id",
+				"type": "string",
+				"use": "optional"
+			},
+			{
+				"name": "timestamp",
+				"type": "dateTime",
+				"use": "optional"
+			}
+		]
+	},
+	{
+		"name": "anbieter",
+		"description": "Anbieterangaben",
+		"sequence": [
+			{
+				"ref": "anbieternr",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "firma"
+			},
+			{
+				"ref": "openimmo_anid"
+			},
+			{
+				"ref": "lizenzkennung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anhang",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "immobilie",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "impressum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "impressum_strukt",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "immobilie",
+		"description": "Angaben einer einzelnen Immobile",
+		"sequence": [
+			{
+				"ref": "objektkategorie"
+			},
+			{
+				"ref": "geo"
+			},
+			{
+				"ref": "kontaktperson"
+			},
+			{
+				"ref": "weitere_adresse",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "preise",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bieterverfahren",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "versteigerung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "flaechen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ausstattung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zustand_angaben",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bewertung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "infrastruktur",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "freitexte",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anhaenge",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "verwaltung_objekt",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "verwaltung_techn"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "objektkategorie",
+		"sequence": [
+			{
+				"ref": "nutzungsart"
+			},
+			{
+				"ref": "vermarktungsart"
+			},
+			{
+				"ref": "objektart"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "geo",
+		"sequence": [
+			{
+				"ref": "strasse",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hausnummer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bundesland",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "land",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gemeindecode",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "flur",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "flurstueck",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gemarkung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "etage",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_etagen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "lage_im_bau",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "wohnungsnr",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "lage_gebiet",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "regionaler_zusatz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "karten_makro",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "karten_mikro",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "virtuelletour",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "luftbildern",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "kontaktperson",
+		"sequence": [
+			{
+				"ref": "name"
+			},
+			{
+				"ref": "vorname",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "titel",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anrede",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "position",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anrede_brief",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "firma",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zusatzfeld",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "strasse",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hausnummer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "plz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ort",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "postfach",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "postf_plz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "postf_ort",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "land",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "email_privat",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "email_sonstige",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "email_feedback",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_privat",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_sonstige",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "url",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "adressfreigabe",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "personennummer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "immobilientreuhaenderid",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "foto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "referenz_id",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "freitextfeld",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "weitere_adresse",
+		"attributes": [
+			{
+				"name": "adressart",
+				"type": "string",
+				"use": "required"
+			}
+		],
+		"sequence": [
+			{
+				"ref": "vorname",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "name",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "titel",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anrede",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anrede_brief",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "firma",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zusatzfeld",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "strasse",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hausnummer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "plz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ort",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "postfach",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "postf_plz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "postf_ort",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "land",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "email_zentrale",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "email_direkt",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "email_privat",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "email_sonstige",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "tel_durchw",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_zentrale",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_handy",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_fax",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_privat",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "tel_sonstige",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "url",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "adressfreigabe",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "personennummer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "freitextfeld",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "preise",
+		"sequence": [
+			{
+				"ref": "kaufpreis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kaufpreisnetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kaufpreisbrutto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nettokaltmiete",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kaltmiete",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "warmmiete",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nebenkosten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "heizkosten_enthalten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "heizkosten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zzg_mehrwertsteuer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mietzuschlaege",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hauptmietzinsnetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "pauschalmiete",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "betriebskostennetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "evbnetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gesamtmietenetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gesamtmietebrutto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gesamtbelastungnetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gesamtbelastungbrutto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gesamtkostenprom2von",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "heizkostennetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "monatlichekostennetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "monatlichekostenbrutto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nebenkostenprom2von",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ruecklagenetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sonstigekostennetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sonstigemietenetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "summemietenetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nettomieteprom2von",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "pacht",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "erbpacht",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hausgeld",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "abstand",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "preis_zeitraum_von",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "preis_zeitraum_bis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "preis_zeiteinheit",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mietpreis_pro_qm",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kaufpreis_pro_qm",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "provisionspflichtig",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "provision_teilen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "innen_courtage",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "aussen_courtage",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "courtage_hinweis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "provisionnetto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "provisionbrutto",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "waehrung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mwst_satz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mwst_gesamt",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "freitext_preis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "x_fache",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nettorendite",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nettorendite_soll",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nettorendite_ist",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mieteinnahmen_ist",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mieteinnahmen_soll",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "erschliessungskosten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kaution",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kaution_text",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "geschaeftsguthaben",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_carport",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_duplex",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_freiplatz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_garage",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_parkhaus",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_tiefgarage",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stp_sonstige",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "richtpreis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "richtpreisprom2",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "bieterverfahren",
+		"description": "Angaben zum Bieterverfahren",
+		"sequence": [
+			{
+				"ref": "beginn_angebotsphase",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "besichtigungstermin",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "besichtigungstermin_2",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "beginn_bietzeit",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ende_bietzeit",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hoechstgebot_zeigen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "mindestpreis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "versteigerung",
+		"description": "Angaben zu einer Versteigerung. Wenn es ein Objekt in Zwangsverteigerung ist, dann muss das element \"zwangsversteigerung\" auf true/1 gesetzt werden.",
+		"sequence": [
+			{
+				"ref": "zwangsversteigerung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "aktenzeichen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zvtermin",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zusatztermin",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "amtsgericht",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "verkehrswert",
+				"minOccurs": "0"
+			}
+		]
+	},
+	{
+		"name": "flaechen",
+		"sequence": [
+			{
+				"ref": "wohnflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nutzflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gesamtflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ladenflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "lagerflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "verkaufsflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "freiflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bueroflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bueroteilflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "fensterfront",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "verwaltungsflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gastroflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "grz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gfz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bmz",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bgf",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "grundstuecksflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sonstflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_zimmer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_schlafzimmer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_badezimmer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_sep_wc",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_balkone",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_terrassen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_logia",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "balkon_terrasse_flaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_wohn_schlafzimmer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gartenflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kellerflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "fensterfront_qm",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "grundstuecksfront",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "dachbodenflaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "teilbar_ab",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "beheizbare_flaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_stellplaetze",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "plaetze_gastraum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_betten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_tagungsraeume",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "vermietbare_flaeche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_wohneinheiten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anzahl_gewerbeeinheiten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "einliegerwohnung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kubatur",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ausnuetzungsziffer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "flaechevon",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "flaechebis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "ausstattung",
+		"sequence": [
+			{
+				"ref": "ausstatt_kategorie",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "wg_geeignet",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "raeume_veraenderbar",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bad",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kueche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "boden",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kamin",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "heizungsart",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "befeuerung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "klimatisiert",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "fahrstuhl",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stellplatzart",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "gartennutzung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ausricht_balkon_terrasse",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "moebliert",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "rollstuhlgerecht",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kabel_sat_tv",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "dvbt",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "barrierefrei",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sauna",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "swimmingpool",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "wasch_trockenraum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "wintergarten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "dv_verkabelung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "rampe",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hebebuehne",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kran",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gastterrasse",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stromanschlusswert",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kantine_cafeteria",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "teekueche",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hallenhoehe",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "angeschl_gastronomie",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "brauereibindung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sporteinrichtungen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "wellnessbereich",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "serviceleistungen",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "telefon_ferienimmobilie",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "breitband_zugang",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "umts_empfang",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sicherheitstechnik",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "unterkellert",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "abstellraum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "fahrradraum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "rolladen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "dachform",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bauweise",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ausbaustufe",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "energietyp",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bibliothek",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "dachboden",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gaestewc",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "kabelkanaele",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "seniorengerecht",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "zustand_angaben",
+		"sequence": [
+			{
+				"ref": "baujahr",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "letztemodernisierung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zustand",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "alter",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bebaubar_nach",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "erschliessung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "erschliessung_umfang",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bauzone",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "altlasten",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "energiepass",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "verkaufstatus",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "bewertung",
+		"description": "Container f�r detailierte Bewertungs Parmater",
+		"sequence": [
+			{
+				"name": "feld",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded",
+				"sequence": [
+					{
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"name": "wert",
+						"type": "string"
+					},
+					{
+						"name": "typ",
+						"type": "string",
+						"minOccurs": "0",
+						"maxOccurs": "unbounded"
+					},
+					{
+						"name": "modus",
+						"type": "string",
+						"minOccurs": "0",
+						"maxOccurs": "unbounded"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name": "infrastruktur",
+		"sequence": [
+			{
+				"ref": "zulieferung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ausblick",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "distanzen",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "distanzen_sport",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "freitexte",
+		"sequence": [
+			{
+				"ref": "objekttitel",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "dreizeiler",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "lage",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "ausstatt_beschr",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "objektbeschreibung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sonstige_angaben",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "objekt_text",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "anhaenge",
+		"sequence": [
+			{
+				"ref": "anhang",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "verwaltung_objekt",
+		"sequence": [
+			{
+				"ref": "objektadresse_freigeben",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "verfuegbar_ab",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "abdatum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "bisdatum",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "min_mietdauer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "max_mietdauer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "versteigerungstermin",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "wbs_sozialwohnung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "vermietet",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gruppennummer",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "zugang",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "laufzeit",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "max_personen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "nichtraucher",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "haustiere",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "geschlecht",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "denkmalgeschuetzt",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "als_ferien",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gewerbliche_nutzung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "branchen",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "hochhaus",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "verwaltung_techn",
+		"sequence": [
+			{
+				"ref": "objektnr_intern",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "objektnr_extern"
+			},
+			{
+				"ref": "aktion"
+			},
+			{
+				"ref": "aktiv_von",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "aktiv_bis",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "openimmo_obid"
+			},
+			{
+				"ref": "kennung_ursprung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "stand_vom"
+			},
+			{
+				"ref": "weitergabe_generell",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "weitergabe_positiv",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "weitergabe_negativ",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "gruppen_kennung",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "master",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "sprache",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "user_defined_simplefield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_anyfield",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			},
+			{
+				"ref": "user_defined_extend",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "openimmo_anid",
+		"type": "string",
+		"description": "openimmo-Anbieter ID. Aufbau:\r\n\t\t\t\tKennbuchstabe: ([O]bjekt|[A]nbieter) {K};\r\n\t\t\t\tOI Mitglied Firmen Kennung = 3 chars, {P}; LIN= Lizenznehmer,   \r\n\t\t\t\tTimestamp (date-time) 17 Stellen, {YMThmst};\r\n\t\t\t\tZufall 10 Stellen; {R};\r\n\t\t\t\tForm: KPPPYYYYMMTThhmmsstttRRRRRRRRRR;\r\n\t\t\t\tBsp:  OABC20011128124930123asd43fer34;\t\t\r\n\t\t\t"
+	},
+	{
+		"name": "lizenzkennung",
+		"type": "string",
+		"description": "Lizenzkennung aus der Zuteilung �ber Nutzungslizenz.  Mind 3, Max 8 Chars"
+	},
+	{
+		"name": "strasse",
+		"type": "string",
+		"description": "Stra�e"
+	},
+	{
+		"name": "hausnummer",
+		"type": "string",
+		"description": "Hausnummer, alphanummerisch"
+	},
+	{
+		"name": "plz",
+		"type": "string",
+		"description": "PLZ, Pflichtfeld, alternativ mit Ort, Geokoordinaten"
+	},
+	{
+		"name": "ort",
+		"type": "string",
+		"description": "Ort, Pflichtfeld, alternativ mit PLZ, Geokoordinaten"
+	},
+	{
+		"name": "bundesland",
+		"type": "string",
+		"description": "Bundesland, keine Festlegung der K�rzel, da evtl. auch ausl�ndische Bundesl�nder betroffen sein k�nnen"
+	},
+	{
+		"name": "geokoordinaten",
+		"description": "Geokoordinaten der Immobilie, Pflichtfeld, alternativ mit Ort, PLZ",
+		"attributes": [
+			{
+				"name": "breitengrad",
+				"type": "float",
+				"use": "required"
+			},
+			{
+				"name": "laengengrad",
+				"type": "float",
+				"use": "required"
+			}
+		]
+	},
+	{
+		"name": "gemeindecode",
+		"type": "string",
+		"description": "Gemeindecode (GKZ), frei formulierbar"
+	},
+	{
+		"name": "flur",
+		"type": "string",
+		"description": "Flurangabe"
+	},
+	{
+		"name": "flurstueck",
+		"type": "string",
+		"description": "Flurst�ckangabe"
+	},
+	{
+		"name": "gemarkung",
+		"type": "string",
+		"description": "Gemarkungskennzeichen"
+	},
+	{
+		"name": "etage",
+		"type": "int",
+		"description": "Lage im Objekt(Etage), negative Zahlen f�r Kellergeschosse"
+	},
+	{
+		"name": "anzahl_etagen",
+		"type": "int",
+		"description": "Gesamtanzahl Etagen"
+	},
+	{
+		"name": "lage_im_bau",
+		"description": "Angabe �ber die Lage der Immobilie im Gesamtgeb�ude, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "LINKS",
+				"type": "boolean"
+			},
+			{
+				"name": "RECHTS",
+				"type": "boolean"
+			},
+			{
+				"name": "VORNE",
+				"type": "boolean"
+			},
+			{
+				"name": "HINTEN",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "wohnungsnr",
+		"type": "string",
+		"description": "Nummer der Wohnung bei Wohnanlagen"
+	},
+	{
+		"name": "lage_gebiet",
+		"description": "Lage Gebiet, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "gebiete",
+				"base": "string",
+				"restriction": [
+					"WOHN",
+					"GEWERBE",
+					"INDUSTRIE",
+					"MISCH",
+					"NEUBAU",
+					"ORTSLAGE",
+					"SIEDLUNG",
+					"STADTRAND",
+					"STADTTEIL",
+					"STADTZENTRUM",
+					"NEBENZENTRUM",
+					"1A",
+					"1B"
+				]
+			}
+		]
+	},
+	{
+		"name": "regionaler_zusatz",
+		"type": "string",
+		"description": "Freier Text, z.B Landschaft/Kulturlandschaft: Plattensee; Stadtgebiet: P�seldorf"
+	},
+	{
+		"name": "karten_makro",
+		"type": "boolean",
+		"description": "Anzeige in einer Karte im \"Makro\" Ausschnitt "
+	},
+	{
+		"name": "karten_mikro",
+		"type": "boolean",
+		"description": "Anzeige in einer Karte im \"Mikro\" Ausschnitt "
+	},
+	{
+		"name": "virtuelletour",
+		"type": "boolean",
+		"description": "Objekt hat Daten zu einer Virtuellen Tour"
+	},
+	{
+		"name": "luftbildern",
+		"type": "boolean",
+		"description": "Objekt hat Luftbilder"
+	},
+	{
+		"name": "referenz_id",
+		"type": "string",
+		"description": "Vorgriff auf zuk�nftige OpenImmo Version. Bezug zwischen immobilie und kontakt Daten"
+	},
+	{
+		"name": "vorname",
+		"type": "string",
+		"description": "Vorname"
+	},
+	{
+		"name": "name",
+		"type": "string",
+		"description": "Nachname, Pflicht bei Kontaktperson"
+	},
+	{
+		"name": "titel",
+		"type": "string",
+		"description": "Titel zur Person"
+	},
+	{
+		"name": "anrede",
+		"type": "string",
+		"description": "Herr/ Frau ohne Titel, do weiter oben"
+	},
+	{
+		"name": "position",
+		"type": "string",
+		"description": "z.B. Gesch�ftsf�hrung, Leitung, Vorstand o.�"
+	},
+	{
+		"name": "anrede_brief",
+		"type": "string",
+		"description": "Briefanrede"
+	},
+	{
+		"name": "firma",
+		"type": "string",
+		"description": "Firma"
+	},
+	{
+		"name": "zusatzfeld",
+		"type": "string",
+		"description": "Freiverwendbares Zusatzfeld zu Adresse"
+	},
+	{
+		"name": "postfach",
+		"type": "string",
+		"description": "Postfach"
+	},
+	{
+		"name": "postf_plz",
+		"type": "string",
+		"description": "Postfach-Postleitzahl"
+	},
+	{
+		"name": "postf_ort",
+		"type": "string",
+		"description": "Ort zum Postfach"
+	},
+	{
+		"name": "email_direkt",
+		"type": "kontakt"
+	},
+	{
+		"name": "email_zentrale",
+		"type": "kontakt"
+	},
+	{
+		"name": "email_privat",
+		"type": "kontakt"
+	},
+	{
+		"name": "email_sonstige",
+		"simple": {
+			"base": "kontakt",
+			"attribute": [
+				{
+					"name": "emailart",
+					"base": "string",
+					"restriction": [
+						"EM_ZENTRALE",
+						"EM_DIREKT",
+						"EM_PRIVAT",
+						"EM_SONSTIGE"
+					]
+				},
+				{
+					"name": "bemerkung",
+					"type": "string"
+				}
+			]
+		}
+	},
+	{
+		"name": "email_feedback",
+		"type": "kontakt"
+	},
+	{
+		"name": "tel_zentrale",
+		"type": "kontakt"
+	},
+	{
+		"name": "tel_durchw",
+		"type": "kontakt"
+	},
+	{
+		"name": "tel_privat",
+		"type": "kontakt"
+	},
+	{
+		"name": "tel_handy",
+		"type": "kontakt"
+	},
+	{
+		"name": "tel_fax",
+		"type": "kontakt"
+	},
+	{
+		"name": "tel_sonstige",
+		"simple": {
+			"base": "kontakt",
+			"attribute": [
+				{
+					"name": "telefonart",
+					"base": "string",
+					"restriction": [
+						"TEL_ZENTRALE",
+						"TEL_DURCHW",
+						"TEL_PRIVAT",
+						"TEL_HANDY",
+						"TEL_FAX",
+						"TEL_SONSTIGE"
+					]
+				},
+				{
+					"name": "bemerkung",
+					"type": "string"
+				}
+			]
+		}
+	},
+	{
+		"name": "url",
+		"type": "string",
+		"description": "URL der Hompage"
+	},
+	{
+		"name": "adressfreigabe",
+		"type": "boolean",
+		"description": "Darf die Adresse angezeigt/weitergegeben werden, fehlender Eintrag entspricht: ja"
+	},
+	{
+		"name": "personennummer",
+		"type": "string",
+		"description": "Diese ID wird in �sterreich in der Immobiliencard,\r\neinem Personen Ausweis verwendet.  Siehe www.immobiliencard.at\r\nbzw. www.immobiliencard.at/uploads/wko_immocard_k.pdf\r\n\r\n"
+	},
+	{
+		"name": "immobilientreuhaenderid",
+		"type": "string",
+		"description": "Nummer der Personenadresse"
+	},
+	{
+		"name": "freitextfeld",
+		"type": "string",
+		"description": "Freier Text zur Adresse, keine Begrenzung"
+	},
+	{
+		"name": "objektart",
+		"description": "Objektarten",
+		"sequence": [
+			{
+				"ref": "objektart_zusatz",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded"
+			}
+		]
+	},
+	{
+		"name": "vermarktungsart",
+		"description": "Vermarktungsart, Optionen kombinierbar, Kauf + Miete",
+		"attributes": [
+			{
+				"name": "KAUF",
+				"type": "boolean",
+				"use": "required"
+			},
+			{
+				"name": "MIETE_PACHT",
+				"type": "boolean",
+				"use": "required"
+			},
+			{
+				"name": "ERBPACHT",
+				"type": "boolean"
+			},
+			{
+				"name": "LEASING",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "nutzungsart",
+		"description": "nutzungsart",
+		"attributes": [
+			{
+				"name": "WOHNEN",
+				"type": "boolean",
+				"use": "required"
+			},
+			{
+				"name": "GEWERBE",
+				"type": "boolean",
+				"use": "required"
+			},
+			{
+				"name": "ANLAGE",
+				"type": "boolean"
+			},
+			{
+				"name": "WAZ",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "hauptmietzinsnetto",
+		"description": "",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "hauptmietzinsust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "pauschalmiete",
+		"type": "decimal",
+		"description": ""
+	},
+	{
+		"name": "betriebskostennetto",
+		"description": "Betriebskosten eines Objektes bei Vermietun, UmSt. im Attribut",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "betriebskostenust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "evbnetto",
+		"description": "Erhaltungs- und Verbesserungsbeitrag. �hnlich Instanthaltungsr�cklage, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "evbust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "flaechevon",
+		"type": "decimal",
+		"description": "Bei Gewerbe Objekten in Miete und Kauf"
+	},
+	{
+		"name": "flaechebis",
+		"type": "decimal",
+		"description": "Bei Gewerbe Objekten in Miete und Kauf"
+	},
+	{
+		"name": "gesamtmietenetto",
+		"description": "Summe alle Mietzins Zahlungen, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "gesamtmieteust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "gesamtmietebrutto",
+		"type": "decimal",
+		"description": "Erg�nzung zum Netto Wert"
+	},
+	{
+		"name": "gesamtbelastungnetto",
+		"description": "Die Summe alle Nebenkosten und Mietzinse bei Miete, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "gesamtbelastungust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "gesamtbelastungbrutto",
+		"type": "decimal",
+		"description": "Die Summe alle Nebenkosten und Mietzinse bei Miete als Brutto Wert."
+	},
+	{
+		"name": "gesamtkostenprom2von",
+		"description": "Gesamtkosten bei Gewerbeobjekten Von - Bis.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "gesamtkostenprom2bis",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "heizkostennetto",
+		"description": "Die Heizkosten einer Einheit als Nettowert. Die Umsatzsteuer optional im Attribut ",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "heizkostenust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "kaufpreisnetto",
+		"description": "Ausgewiesene Kaufpreis Netto, Optional mit Umst im Attribut. Speziell f�r Gewerbe",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "kaufpreisust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "kaufpreisbrutto",
+		"type": "decimal",
+		"description": "Kaufpreis Brutto. Speziell f�r Gewerbe. Bei Wohnimmo entspricht das dem \"kaufpreis\" "
+	},
+	{
+		"name": "monatlichekostennetto",
+		"description": "Summe der Monatlichen Kosten einer Wohnung  als Information f�r einen K�ufer (Netto), Umst im Attribut. ",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "monatlichekostenust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "monatlichekostenbrutto",
+		"type": "decimal",
+		"description": "Summe der Monatlichen Kosten  Brutto"
+	},
+	{
+		"name": "nebenkostenprom2von",
+		"description": "Angaben bei Gewerbe Miete,UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "nebenkostenprom2bis",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "nettomieteprom2von",
+		"description": "Angaben bei Gewerbe Miete, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "nettomieteprom2bis",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "provisionnetto",
+		"description": "Wenn unterschiedliche Provisionen anfallen, dann hier Netto und UmSt. einzeln",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "provisionust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "provisionbrutto",
+		"type": "decimal",
+		"description": "Brutto Wert der Provision. Erg�nzende zu Netto und UmSt."
+	},
+	{
+		"name": "ruecklagenetto",
+		"description": "Vorhanden R�cklagen bei einem Kauf Objekt, UmSt. im Attribut.  ",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "ruecklageust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "sonstigekostennetto",
+		"description": "Anganen bei Miet-Objekten, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "sonstigekostenust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "sonstigemietenetto",
+		"description": "Erg�nzenden Mietkosten, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "sonstigemieteust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "summemietenetto",
+		"description": "Gesamtsumme der Mietkosten, UmSt. im Attribut.",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "summemieteust",
+					"type": "decimal"
+				}
+			]
+		}
+	},
+	{
+		"name": "richtpreisprom2",
+		"type": "decimal",
+		"description": "Ein Preis zur Orientierung. F�r die Einsortierung, falls kein Kaufpreis angegeben wird."
+	},
+	{
+		"name": "kaufpreis",
+		"description": "Gesamt- (Angebots-)Kaufpreis der Immobilie. Wenn \"Auf Anfrage\" dann Wert = 0 und Attribut auf TRUE ",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "auf_anfrage",
+					"type": "boolean"
+				}
+			]
+		}
+	},
+	{
+		"name": "nettokaltmiete",
+		"type": "decimal",
+		"description": "Nettokaltmiete, ohne Betriebskosten"
+	},
+	{
+		"name": "kaltmiete",
+		"type": "decimal",
+		"description": "Kaltmiete, entspricht Nettokaltmiete mit Betriebs-/Nebenkosten, ohne Heizkosten!"
+	},
+	{
+		"name": "nebenkosten",
+		"type": "decimal",
+		"description": "monatliche Betriebskosten/Nebenkosten, ohne Heizkosten!"
+	},
+	{
+		"name": "warmmiete",
+		"type": "decimal",
+		"description": "Brutto-Warmmiete"
+	},
+	{
+		"name": "heizkosten_enthalten",
+		"type": "boolean",
+		"description": "Heizkosten in der Warmmiete enthalten"
+	},
+	{
+		"name": "heizkosten",
+		"type": "decimal",
+		"description": "monatliche Heizkosten - Vorauszahlungen"
+	},
+	{
+		"name": "zzg_mehrwertsteuer",
+		"type": "boolean",
+		"description": "kommt eine MWST dazu, einmal pro Immobilie"
+	},
+	{
+		"name": "mietzuschlaege",
+		"type": "decimal",
+		"description": "weitere Mietzuschl�ge"
+	},
+	{
+		"name": "pacht",
+		"type": "decimal",
+		"description": "Pacht"
+	},
+	{
+		"name": "erbpacht",
+		"type": "decimal",
+		"description": "Erbpacht"
+	},
+	{
+		"name": "hausgeld",
+		"type": "decimal",
+		"description": "Hausgeld, Umlage der gemeinschaftlichen Kosten eines Objektes nach WEG (ohne Mehrwertsteuerausweis)"
+	},
+	{
+		"name": "abstand",
+		"type": "decimal",
+		"description": "Abstand oder Abschlagszahlungen"
+	},
+	{
+		"name": "preis_zeitraum_von",
+		"type": "date",
+		"description": "Beginn des Zeitraumes ab dem der Preis gilt, vorrangig bei Ferienobjekten, Datumsformat YYYY-MM-DD (ISO 8601)"
+	},
+	{
+		"name": "preis_zeitraum_bis",
+		"type": "date",
+		"description": "Ende des Zeitraumes bis zu dem der Preis gilt, vorrangig bei Ferienobjekten, Datumsformat YYYY-MM-DD (ISO 8601)"
+	},
+	{
+		"name": "preis_zeiteinheit",
+		"description": "Zeiteinheit f�r die der Preis gilt, vorrangig bei Ferienobjekten",
+		"attributes": [
+			{
+				"name": "zeiteinheit",
+				"base": "string",
+				"restriction": [
+					"TAG",
+					"WOCHE",
+					"MONAT",
+					"JAHR"
+				]
+			}
+		]
+	},
+	{
+		"name": "mietpreis_pro_qm",
+		"type": "decimal",
+		"description": "Mietpreis pro m� (netto-kalt)"
+	},
+	{
+		"name": "kaufpreis_pro_qm",
+		"type": "decimal",
+		"description": "Kaufpreis pro m�"
+	},
+	{
+		"name": "richtpreis",
+		"type": "decimal",
+		"description": "Ein Wert f�r Kaufpreis/Mietpreis der f�r eine Einsortierung angegeben werden kann, wenn keine Kauf/Mietpreis angegeben wird. Portale k�nnen damit das Objekt besser in der Sortierung einordnen"
+	},
+	{
+		"name": "stp_freiplatz",
+		"type": "stellplatz"
+	},
+	{
+		"name": "stp_tiefgarage",
+		"type": "stellplatz"
+	},
+	{
+		"name": "stp_garage",
+		"type": "stellplatz"
+	},
+	{
+		"name": "stp_carport",
+		"type": "stellplatz"
+	},
+	{
+		"name": "stp_duplex",
+		"type": "stellplatz"
+	},
+	{
+		"name": "stp_parkhaus",
+		"type": "stellplatz"
+	},
+	{
+		"name": "stp_sonstige"
+	},
+	{
+		"name": "provisionspflichtig",
+		"type": "boolean",
+		"description": "Zus�tzlich Boolean, weil courtage auch als String genutzt wird"
+	},
+	{
+		"name": "provision_teilen",
+		"description": "Aufteilen der provision bei Partnergesch�ften. Auch \"A Meta\" Gesch�ft.  Attribut zeigt, wie der Wert angegeben wird: fester wert, prozent, oder Text Information",
+		"attributes": [
+			{
+				"name": "wert",
+				"base": "string",
+				"restriction": [
+					"absolut",
+					"prozent",
+					"text"
+				]
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "aussen_courtage",
+		"description": "Courtage, die der Kunde zu zahlen hat, als Betrag in ? / % / MM, daher Textfeld",
+		"attributes": [
+			{
+				"name": "mit_mwst",
+				"type": "boolean"
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "innen_courtage",
+		"description": "Maklercourtage, bei Vermittlungs- bzw. Nachweisgesch�ften als Betrag in ? / % / MM, daher Textfeld",
+		"attributes": [
+			{
+				"name": "mit_mwst",
+				"type": "boolean"
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "courtage_hinweis",
+		"type": "string",
+		"description": "Erg�nzenden Anmerkungen zur Courtage"
+	},
+	{
+		"name": "mwst_satz",
+		"description": "Mehrwertsteuersatz, z.B. 19,00"
+	},
+	{
+		"name": "mwst_gesamt",
+		"description": "Bei unterschiedlichen Mehrwertsteuers�tzen"
+	},
+	{
+		"name": "freitext_preis",
+		"type": "string",
+		"description": "Angaben zum Preis und dessen Zusammensetzung"
+	},
+	{
+		"name": "x_fache",
+		"type": "string",
+		"description": "X-fache, Kaufpreis bezogen auf Jahresmiete"
+	},
+	{
+		"name": "nettorendite",
+		"type": "decimal",
+		"description": "Nettorendite (%)"
+	},
+	{
+		"name": "nettorendite_ist",
+		"type": "decimal",
+		"description": "Nettorendite ist, Momentanrendite (%)"
+	},
+	{
+		"name": "nettorendite_soll",
+		"type": "decimal",
+		"description": "Nettorendite soll, Normalrendite(%)"
+	},
+	{
+		"name": "mieteinnahmen_ist",
+		"description": "Mieteinnahmen pro Periode, Momentan-/Isteinnahmen (Ohne Periode = JAHR)",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "periode",
+					"base": "string",
+					"restriction": [
+						"TAG",
+						"WOCHE",
+						"MONAT",
+						"JAHR"
+					]
+				}
+			]
+		}
+	},
+	{
+		"name": "mieteinnahmen_soll",
+		"description": "Mieteinnahmen pro Periode, Normal-/Solleinnahmen (Ohne Periode = JAHR)",
+		"simple": {
+			"base": "decimal",
+			"attribute": [
+				{
+					"name": "periode",
+					"base": "string",
+					"restriction": [
+						"TAG",
+						"WOCHE",
+						"MONAT",
+						"JAHR"
+					]
+				}
+			]
+		}
+	},
+	{
+		"name": "erschliessungskosten",
+		"type": "decimal",
+		"description": "Erschlie�ungskosten"
+	},
+	{
+		"name": "kaution",
+		"type": "decimal",
+		"description": "Kaution"
+	},
+	{
+		"name": "kaution_text",
+		"type": "string",
+		"description": "Kaution als textliche beschreibung"
+	},
+	{
+		"name": "geschaeftsguthaben",
+		"type": "decimal",
+		"description": "Gesch�ftsguthaben (Gewerbe)"
+	},
+	{
+		"name": "wohnflaeche",
+		"type": "decimal",
+		"description": "Wohnfl�che in m�"
+	},
+	{
+		"name": "nutzflaeche",
+		"type": "decimal",
+		"description": "Nutzfl�che in m�"
+	},
+	{
+		"name": "gesamtflaeche",
+		"type": "decimal",
+		"description": "Gesamtfl�che in m�"
+	},
+	{
+		"name": "ladenflaeche",
+		"type": "decimal",
+		"description": "Ladenfl�che in m�"
+	},
+	{
+		"name": "lagerflaeche",
+		"type": "decimal",
+		"description": "Lagerfl�che in m�"
+	},
+	{
+		"name": "verkaufsflaeche",
+		"type": "decimal",
+		"description": "Verkaufsfl�che in m�, Unterschied zu Ladenfl�che liegt in der Gr��e des Objektes und den entsprechenden Richtlinien"
+	},
+	{
+		"name": "freiflaeche",
+		"type": "decimal",
+		"description": "Freifl�che in m�"
+	},
+	{
+		"name": "bueroflaeche",
+		"type": "decimal",
+		"description": "Buerofl�che in m�"
+	},
+	{
+		"name": "bueroteilflaeche",
+		"type": "decimal",
+		"description": "B�roteilfl�che in m�"
+	},
+	{
+		"name": "fensterfront",
+		"type": "decimal",
+		"description": "Fensterfront, L�nge!"
+	},
+	{
+		"name": "sonstflaeche",
+		"type": "decimal",
+		"description": "Sonstige Fl�che in m�"
+	},
+	{
+		"name": "verwaltungsflaeche",
+		"type": "decimal",
+		"description": "Verwaltungsflaeche in m�"
+	},
+	{
+		"name": "gastroflaeche",
+		"type": "decimal",
+		"description": "Gastroflaeche in m�"
+	},
+	{
+		"name": "grz",
+		"type": "string",
+		"description": "Grundfl�chenzahl"
+	},
+	{
+		"name": "gfz",
+		"type": "string",
+		"description": "Geschossfl�chenzahl"
+	},
+	{
+		"name": "bmz",
+		"type": "string",
+		"description": "Baumassen-Zahl"
+	},
+	{
+		"name": "bgf",
+		"type": "string",
+		"description": "Brutto-Geschossfl�chen-Zahl nach Din277 (www.glossar.de/glossar/z_din277.htm)"
+	},
+	{
+		"name": "grundstuecksflaeche",
+		"type": "decimal",
+		"description": "Grundst�cksfl�che in m�, nicht zu Verwechseln mit Grundfl�che eines Bauwerkes"
+	},
+	{
+		"name": "anzahl_zimmer",
+		"type": "decimal",
+		"description": "Gesamtzahl aller Zimmer"
+	},
+	{
+		"name": "anzahl_schlafzimmer",
+		"type": "decimal",
+		"description": "Anzahl der reinen Schlafzimmer"
+	},
+	{
+		"name": "anzahl_badezimmer",
+		"type": "decimal",
+		"description": "Anzahl Badezimmer"
+	},
+	{
+		"name": "anzahl_sep_wc",
+		"type": "decimal",
+		"description": "Anzahl separate WCs"
+	},
+	{
+		"name": "balkon_terrasse_flaeche",
+		"type": "decimal",
+		"description": "Gr��e aller Balkon/Terrasse m�"
+	},
+	{
+		"name": "anzahl_wohn_schlafzimmer",
+		"type": "decimal",
+		"description": "Anzahl der Wohn-Schlafzimmer"
+	},
+	{
+		"name": "gartenflaeche",
+		"type": "decimal",
+		"description": "Gartenfl�che in m�"
+	},
+	{
+		"name": "anzahl_balkon_terrassen",
+		"type": "decimal",
+		"description": "Anzahl der Balkons/Terrassen: Wird ab V1.2.3 erseztzt. siehe unten."
+	},
+	{
+		"name": "anzahl_balkone",
+		"type": "decimal",
+		"description": "Anzahl der Balkone"
+	},
+	{
+		"name": "anzahl_terrassen",
+		"type": "decimal",
+		"description": "Anzahl der Terrassen"
+	},
+	{
+		"name": "anzahl_logia",
+		"type": "decimal",
+		"description": "Anzahl der Loggien"
+	},
+	{
+		"name": "kellerflaeche",
+		"type": "decimal",
+		"description": "Kellerfl�che in m�"
+	},
+	{
+		"name": "fensterfront_qm",
+		"type": "decimal",
+		"description": "Fensterfront in m�"
+	},
+	{
+		"name": "grundstuecksfront",
+		"type": "decimal",
+		"description": "Grundst�cksfront in m zur Strasse hin"
+	},
+	{
+		"name": "dachbodenflaeche",
+		"type": "decimal",
+		"description": "Dachboden Fl�che in m�"
+	},
+	{
+		"name": "teilbar_ab",
+		"type": "decimal",
+		"description": "ab welcher Mindestgr��e kann die Immobilie unterteilt werden (z.B. durch Innenraumausbau), in m�"
+	},
+	{
+		"name": "beheizbare_flaeche",
+		"type": "decimal",
+		"description": "Beheizbare F�che in m�"
+	},
+	{
+		"name": "anzahl_stellplaetze",
+		"type": "positiveInteger",
+		"description": "Gesamtanzahl der Stellpl�tze, als einfache Alternative zu den stp_.. Elementen"
+	},
+	{
+		"name": "plaetze_gastraum",
+		"type": "decimal",
+		"description": "Anzahl de Pl�tze im (in den) Gastraum(-r�umen)"
+	},
+	{
+		"name": "anzahl_betten",
+		"type": "decimal",
+		"description": "Anzahl der Betten im Hotel/Pension"
+	},
+	{
+		"name": "anzahl_tagungsraeume",
+		"type": "decimal",
+		"description": "Anzahl der Tagungsr�ume"
+	},
+	{
+		"name": "vermietbare_flaeche",
+		"type": "decimal",
+		"description": "Gesamte vermietbare Fl�che (vorrangig bei Renditeobjekten)"
+	},
+	{
+		"name": "anzahl_wohneinheiten",
+		"type": "decimal",
+		"description": "Anzahl der Wohneinheiten (vorrangig bei Renditeobjekten)"
+	},
+	{
+		"name": "anzahl_gewerbeeinheiten",
+		"type": "decimal",
+		"description": "Anzahl der Gewerbeeinheiten (vorrangig bei Renditeobjekten)"
+	},
+	{
+		"name": "einliegerwohnung",
+		"type": "boolean",
+		"description": "Ist eine Einliegerwohnung vorhanden?"
+	},
+	{
+		"name": "kubatur",
+		"type": "decimal",
+		"description": "Das Volumen eines Bauwerks im m� "
+	},
+	{
+		"name": "ausnuetzungsziffer",
+		"type": "decimal",
+		"description": "Verh�ltnis zwischen Parzellenfl�che und Bruttogeschossfl�che; definiert die maximal zul�ssige �berbauung eines Grundst�cks. Haupts�chlich in der Schweiz zu finden. Wert z.B. 0.2  ... 0.6 "
+	},
+	{
+		"name": "beginn_angebotsphase",
+		"type": "date",
+		"description": ""
+	},
+	{
+		"name": "besichtigungstermin",
+		"type": "date",
+		"description": ""
+	},
+	{
+		"name": "besichtigungstermin_2",
+		"type": "date",
+		"description": "Alternativ Termin"
+	},
+	{
+		"name": "beginn_bietzeit",
+		"type": "dateTime",
+		"description": ""
+	},
+	{
+		"name": "ende_bietzeit",
+		"type": "date",
+		"description": ""
+	},
+	{
+		"name": "hoechstgebot_zeigen",
+		"type": "boolean",
+		"description": ""
+	},
+	{
+		"name": "mindestpreis",
+		"type": "decimal",
+		"description": ""
+	},
+	{
+		"name": "zwangsversteigerung",
+		"type": "boolean",
+		"description": "muss true sein, wenn der das Element Versteigerung eine Zwandsversteigerung ist."
+	},
+	{
+		"name": "aktenzeichen",
+		"type": "string",
+		"description": "Aktenzeichen des Amtsgerits"
+	},
+	{
+		"name": "zvtermin",
+		"type": "dateTime",
+		"description": "Datum und Zeit des Termins"
+	},
+	{
+		"name": "zusatztermin",
+		"type": "dateTime",
+		"description": ""
+	},
+	{
+		"name": "amtsgericht",
+		"type": "string",
+		"description": "Stadt, Kennung"
+	},
+	{
+		"name": "verkehrswert",
+		"type": "decimal",
+		"description": "der  vom Gericht angesetzte Preis"
+	},
+	{
+		"name": "wg_geeignet",
+		"type": "boolean",
+		"description": "Ist die Wohnung f�r eine WG geeignet?"
+	},
+	{
+		"name": "ausstatt_kategorie",
+		"description": "Grobe Differenzierung"
+	},
+	{
+		"name": "raeume_veraenderbar",
+		"type": "boolean",
+		"description": "K�nnen die R�ume anders eingeteilt werden?"
+	},
+	{
+		"name": "bad",
+		"description": "Welche Eigenschaft besitzt das Bad, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "DUSCHE",
+				"type": "boolean"
+			},
+			{
+				"name": "WANNE",
+				"type": "boolean"
+			},
+			{
+				"name": "FENSTER",
+				"type": "boolean"
+			},
+			{
+				"name": "BIDET",
+				"type": "boolean"
+			},
+			{
+				"name": "PISSOIR",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "kueche",
+		"description": "Welche Eigenschaften besitzt die K�che, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "EBK",
+				"type": "boolean"
+			},
+			{
+				"name": "OFFEN",
+				"type": "boolean"
+			},
+			{
+				"name": "PANTRY",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "boden",
+		"description": "Welche Eigenschaft besitzt der Bodenbelag, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "FLIESEN",
+				"type": "boolean"
+			},
+			{
+				"name": "STEIN",
+				"type": "boolean"
+			},
+			{
+				"name": "TEPPICH",
+				"type": "boolean"
+			},
+			{
+				"name": "PARKETT",
+				"type": "boolean"
+			},
+			{
+				"name": "FERTIGPARKETT",
+				"type": "boolean"
+			},
+			{
+				"name": "LAMINAT",
+				"type": "boolean"
+			},
+			{
+				"name": "DIELEN",
+				"type": "boolean"
+			},
+			{
+				"name": "KUNSTSTOFF",
+				"type": "boolean"
+			},
+			{
+				"name": "ESTRICH",
+				"type": "boolean"
+			},
+			{
+				"name": "DOPPELBODEN",
+				"type": "boolean"
+			},
+			{
+				"name": "LINOLEUM",
+				"type": "boolean"
+			},
+			{
+				"name": "MARMOR",
+				"type": "boolean"
+			},
+			{
+				"name": "TERRAKOTTA",
+				"type": "boolean"
+			},
+			{
+				"name": "GRANIT",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "kamin",
+		"type": "boolean",
+		"description": "Ist ein offener Kamin vorhanden?"
+	},
+	{
+		"name": "heizungsart",
+		"description": "Welche Heizungsarten sind vorhanden, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "OFEN",
+				"type": "boolean"
+			},
+			{
+				"name": "ETAGE",
+				"type": "boolean"
+			},
+			{
+				"name": "ZENTRAL",
+				"type": "boolean"
+			},
+			{
+				"name": "FERN",
+				"type": "boolean"
+			},
+			{
+				"name": "FUSSBODEN",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "befeuerung",
+		"description": "Welche Befeuerungsarten sind vorhanden, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "OEL",
+				"type": "boolean"
+			},
+			{
+				"name": "GAS",
+				"type": "boolean"
+			},
+			{
+				"name": "ELEKTRO",
+				"type": "boolean"
+			},
+			{
+				"name": "ALTERNATIV",
+				"type": "boolean"
+			},
+			{
+				"name": "SOLAR",
+				"type": "boolean"
+			},
+			{
+				"name": "ERDWAERME",
+				"type": "boolean"
+			},
+			{
+				"name": "LUFTWP",
+				"type": "boolean"
+			},
+			{
+				"name": "FERN",
+				"type": "boolean"
+			},
+			{
+				"name": "BLOCK",
+				"type": "boolean"
+			},
+			{
+				"name": "WASSER-ELEKTRO",
+				"type": "boolean"
+			},
+			{
+				"name": "PELLET",
+				"type": "boolean"
+			},
+			{
+				"name": "KOHLE",
+				"type": "boolean"
+			},
+			{
+				"name": "HOLZ",
+				"type": "boolean"
+			},
+			{
+				"name": "FLUESSIGGAS",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "klimatisiert",
+		"type": "boolean",
+		"description": "Ist eine Klimaanlage vorhanden?"
+	},
+	{
+		"name": "fahrstuhl",
+		"description": "Welche Art von Fahrstuhl, Aufzug, Lift - Mehrfachnennung m�glich",
+		"attributes": [
+			{
+				"name": "PERSONEN",
+				"type": "boolean"
+			},
+			{
+				"name": "LASTEN",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "stellplatzart",
+		"description": "Welche Stellplatzarten sind vorhanden, Optionen kombinierbar, als einfache Alternative zu den stp...Elementen",
+		"attributes": [
+			{
+				"name": "GARAGE",
+				"type": "boolean"
+			},
+			{
+				"name": "TIEFGARAGE",
+				"type": "boolean"
+			},
+			{
+				"name": "CARPORT",
+				"type": "boolean"
+			},
+			{
+				"name": "FREIPLATZ",
+				"type": "boolean"
+			},
+			{
+				"name": "PARKHAUS",
+				"type": "boolean"
+			},
+			{
+				"name": "DUPLEX",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "gartennutzung",
+		"type": "boolean",
+		"description": "Ist ein Garten vorhanden bzw. Gartennutzung m�glich?"
+	},
+	{
+		"name": "ausricht_balkon_terrasse",
+		"description": "Ausrichtung der Balkone bzw. der Terrassen, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "NORD",
+				"type": "boolean"
+			},
+			{
+				"name": "OST",
+				"type": "boolean"
+			},
+			{
+				"name": "SUED",
+				"type": "boolean"
+			},
+			{
+				"name": "WEST",
+				"type": "boolean"
+			},
+			{
+				"name": "NORDOST",
+				"type": "boolean"
+			},
+			{
+				"name": "NORDWEST",
+				"type": "boolean"
+			},
+			{
+				"name": "SUEDOST",
+				"type": "boolean"
+			},
+			{
+				"name": "SUEDWEST",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "moebliert",
+		"description": "Wie ist die M�blierung: Voll, Teil oder keine Aussage",
+		"attributes": [
+			{
+				"name": "moeb",
+				"base": "string",
+				"restriction": [
+					"VOLL",
+					"TEIL"
+				]
+			}
+		]
+	},
+	{
+		"name": "rollstuhlgerecht",
+		"type": "boolean",
+		"description": "Rollstuhlgerechtes Objekt?"
+	},
+	{
+		"name": "kabel_sat_tv",
+		"type": "boolean",
+		"description": "Kabel / Sat-TV Ger�t vorhanden?"
+	},
+	{
+		"name": "dvbt",
+		"type": "boolean",
+		"description": "DVBT Digtal Terrestrial TV, Gilt nur f�r D, und Teilgebiete"
+	},
+	{
+		"name": "barrierefrei",
+		"type": "boolean",
+		"description": "Barrierefreies Objekt?"
+	},
+	{
+		"name": "sauna",
+		"type": "boolean",
+		"description": "Sauna vorhanden?"
+	},
+	{
+		"name": "swimmingpool",
+		"type": "boolean",
+		"description": "Swimmingpool vorhanden?"
+	},
+	{
+		"name": "wasch_trockenraum",
+		"type": "boolean",
+		"description": "Wasch oder/und Trockenraum vorhanden?"
+	},
+	{
+		"name": "wintergarten",
+		"type": "boolean",
+		"description": "Ist ein Wintergarten vorhanden?"
+	},
+	{
+		"name": "dv_verkabelung",
+		"type": "boolean",
+		"description": "DV-Verkabelung vorhanden?"
+	},
+	{
+		"name": "rampe",
+		"type": "boolean",
+		"description": "Rampe vorhanden?"
+	},
+	{
+		"name": "hebebuehne",
+		"type": "boolean",
+		"description": "Hebeb�hne vorhanden?"
+	},
+	{
+		"name": "kran",
+		"type": "boolean",
+		"description": "Kran vorhanden?"
+	},
+	{
+		"name": "gastterrasse",
+		"type": "boolean",
+		"description": "Hat das G�stezimmer eine eigene Terrasse?"
+	},
+	{
+		"name": "stromanschlusswert",
+		"type": "string",
+		"description": "H�he des Stromanschlusswertes in KW"
+	},
+	{
+		"name": "kantine_cafeteria",
+		"type": "boolean",
+		"description": "Ist eine Kantine/Cafeteria vorhanden?"
+	},
+	{
+		"name": "teekueche",
+		"type": "boolean",
+		"description": "Ist eine Teek�che vorhanden?"
+	},
+	{
+		"name": "hallenhoehe",
+		"type": "decimal",
+		"description": "H�he der Halle in m"
+	},
+	{
+		"name": "angeschl_gastronomie",
+		"description": "Welcher Art ist die angeschlossene Gastronomie, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "HOTELRESTAURANT",
+				"type": "boolean"
+			},
+			{
+				"name": "BAR",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "brauereibindung",
+		"type": "boolean",
+		"description": "Besteht eine Brauereianbindung (vorrangig bei Gastronomie-Objekten)?"
+	},
+	{
+		"name": "sporteinrichtungen",
+		"type": "boolean",
+		"description": "Sind Sporteinrichtungen vorhanden?"
+	},
+	{
+		"name": "wellnessbereich",
+		"type": "boolean",
+		"description": "Ist ein Wellnessbeeich vorhanden? "
+	},
+	{
+		"name": "serviceleistungen",
+		"description": "Welche Serviceleistungen werden angeboten? Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "BETREUTES_WOHNEN",
+				"type": "boolean"
+			},
+			{
+				"name": "CATERING",
+				"type": "boolean"
+			},
+			{
+				"name": "REINIGUNG",
+				"type": "boolean"
+			},
+			{
+				"name": "EINKAUF",
+				"type": "boolean"
+			},
+			{
+				"name": "WACHDIENST",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "telefon_ferienimmobilie",
+		"type": "boolean",
+		"description": "Ist in dem Objekt ein Telefon (Ferienimmobilie) vorhanden?"
+	},
+	{
+		"name": "breitband_zugang",
+		"description": "Informationen �ber die Breitbandm�glichkeiten.",
+		"attributes": [
+			{
+				"name": "art",
+				"type": "string"
+			},
+			{
+				"name": "speed",
+				"type": "decimal"
+			}
+		]
+	},
+	{
+		"name": "umts_empfang",
+		"type": "boolean",
+		"description": "UMTS Handy Zugang"
+	},
+	{
+		"name": "sicherheitstechnik",
+		"description": "Welche Sicherheitstechnik ist geboten, Optionen kombinierbar",
+		"attributes": [
+			{
+				"name": "ALARMANLAGE",
+				"type": "boolean"
+			},
+			{
+				"name": "KAMERA",
+				"type": "boolean"
+			},
+			{
+				"name": "POLIZEIRUF",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "unterkellert",
+		"description": "Ist das Objekt unterkellert? Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "keller",
+				"base": "string",
+				"restriction": [
+					"JA",
+					"NEIN",
+					"TEIL"
+				]
+			}
+		]
+	},
+	{
+		"name": "abstellraum",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "fahrradraum",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "rolladen",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "bibliothek",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "dachboden",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "gaestewc",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "kabelkanaele",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "seniorengerecht",
+		"type": "boolean",
+		"description": " "
+	},
+	{
+		"name": "dachform",
+		"attributes": [
+			{
+				"name": "KRUEPPELWALMDACH",
+				"type": "boolean"
+			},
+			{
+				"name": "MANSARDDACH",
+				"type": "boolean"
+			},
+			{
+				"name": "PULTDACH",
+				"type": "boolean"
+			},
+			{
+				"name": "SATTELDACH",
+				"type": "boolean"
+			},
+			{
+				"name": "WALMDACH",
+				"type": "boolean"
+			},
+			{
+				"name": "FLACHDACH",
+				"type": "boolean"
+			},
+			{
+				"name": "PYRAMIDENDACH",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "bauweise",
+		"attributes": [
+			{
+				"name": "MASSIV",
+				"type": "boolean"
+			},
+			{
+				"name": "FERTIGTEILE",
+				"type": "boolean"
+			},
+			{
+				"name": "HOLZ",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "ausbaustufe",
+		"attributes": [
+			{
+				"name": "BAUSATZHAUS",
+				"type": "boolean"
+			},
+			{
+				"name": "AUSBAUHAUS",
+				"type": "boolean"
+			},
+			{
+				"name": "SCHLUESSELFERTIGMITKELLER",
+				"type": "boolean"
+			},
+			{
+				"name": "SCHLUESSELFERTIGOHNEBODENPLATTE",
+				"type": "boolean"
+			},
+			{
+				"name": "SCHLUESSELFERTIGMITBODENPLATTE",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "energietyp",
+		"attributes": [
+			{
+				"name": "PASSIVHAUS",
+				"type": "boolean"
+			},
+			{
+				"name": "NIEDRIGENERGIE",
+				"type": "boolean"
+			},
+			{
+				"name": "NEUBAUSTANDARD",
+				"type": "boolean"
+			},
+			{
+				"name": "KFW40",
+				"type": "boolean"
+			},
+			{
+				"name": "KFW60",
+				"type": "boolean"
+			},
+			{
+				"name": "KFW55",
+				"type": "boolean"
+			},
+			{
+				"name": "KFW70",
+				"type": "boolean"
+			},
+			{
+				"name": "MINERGIEBAUWEISE",
+				"type": "boolean"
+			},
+			{
+				"name": "MINERGIE_ZERTIFIZIERT",
+				"type": "boolean"
+			}
+		]
+	},
+	{
+		"name": "baujahr",
+		"type": "string",
+		"description": "Baujahr"
+	},
+	{
+		"name": "letztemodernisierung",
+		"type": "string",
+		"description": "Text f�r die Angabe von verschiedenen Modernisierungen wie z.B. \"Bad 1997, K�che 2010\""
+	},
+	{
+		"name": "zustand",
+		"description": "Zustand des Objektes, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "zustand_art",
+				"base": "string",
+				"restriction": [
+					"ERSTBEZUG",
+					"TEIL_VOLLRENOVIERUNGSBED",
+					"NEUWERTIG",
+					"TEIL_VOLLSANIERT",
+					"TEIL_VOLLRENOVIERT",
+					"TEIL_SANIERT",
+					"VOLL_SANIERT",
+					"SANIERUNGSBEDUERFTIG",
+					"BAUFAELLIG",
+					"NACH_VEREINBARUNG",
+					"MODERNISIERT",
+					"GEPFLEGT",
+					"ROHBAU",
+					"ENTKERNT",
+					"ABRISSOBJEKT",
+					"PROJEKTIERT"
+				]
+			}
+		]
+	},
+	{
+		"name": "alter",
+		"description": "Ist es ein Neu- oder Altbau, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "alter_attr",
+				"base": "string",
+				"restriction": [
+					"ALTBAU",
+					"NEUBAU"
+				]
+			}
+		]
+	},
+	{
+		"name": "bebaubar_nach",
+		"description": "Bebaubar nach Bebauungsrichtlinien, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "bebaubar_attr",
+				"base": "string",
+				"restriction": [
+					"34_NACHBARSCHAFT",
+					"35_AUSSENGEBIET",
+					"B_PLAN",
+					"KEIN BAULAND",
+					"BAUERWARTUNGSLAND",
+					"LAENDERSPEZIFISCH",
+					"BAULAND_OHNE_B_PLAN"
+				]
+			}
+		]
+	},
+	{
+		"name": "erschliessung",
+		"description": "Stand der Erschlie�ung, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "erschl_attr",
+				"base": "string",
+				"restriction": [
+					"UNERSCHLOSSEN",
+					"TEILERSCHLOSSEN",
+					"VOLLERSCHLOSSEN",
+					"ORTSUEBLICHERSCHLOSSEN"
+				]
+			}
+		]
+	},
+	{
+		"name": "erschliessung_umfang",
+		"description": "Detailbeschreibung der Massnahmen",
+		"attributes": [
+			{
+				"name": "erschl_attr",
+				"base": "string",
+				"restriction": [
+					"GAS",
+					"WASSER",
+					"STROM",
+					"TK"
+				]
+			}
+		]
+	},
+	{
+		"name": "bauzone",
+		"type": "string",
+		"description": "In der Schweiz z.B. W2 oder Dorfzone"
+	},
+	{
+		"name": "altlasten",
+		"type": "string",
+		"description": "Allgemeine Informationen �ber vorhandene Altlasten"
+	},
+	{
+		"name": "energiepass",
+		"description": "Energiepass/Ausweis ab 7/2008 vorgeschrieben",
+		"sequence": [
+			{
+				"name": "epart",
+				"minOccurs": "0"
+			},
+			{
+				"name": "gueltig_bis",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "energieverbrauchkennwert",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "mitwarmwasser",
+				"type": "boolean",
+				"minOccurs": "0"
+			},
+			{
+				"name": "endenergiebedarf",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "primaerenergietraeger",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "stromwert",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "waermewert",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "wertklasse",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "baujahr",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "ausstelldatum",
+				"type": "date",
+				"minOccurs": "0"
+			},
+			{
+				"name": "jahrgang",
+				"minOccurs": "0"
+			},
+			{
+				"name": "gebaeudeart",
+				"minOccurs": "0"
+			},
+			{
+				"name": "epasstext",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "geg2018",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "hwbwert",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "hwbklasse",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "fgeewert",
+				"type": "string",
+				"minOccurs": "0"
+			},
+			{
+				"name": "fgeeklasse",
+				"type": "string",
+				"minOccurs": "0"
+			}
+		]
+	},
+	{
+		"name": "verkaufstatus",
+		"description": "Anzeige ob z.B schon verkauft, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "stand",
+				"base": "string",
+				"restriction": [
+					"OFFEN",
+					"RESERVIERT",
+					"VERKAUFT"
+				]
+			}
+		]
+	},
+	{
+		"name": "zulieferung",
+		"type": "boolean",
+		"description": "Ist eine Zulieferung (z.B. Zufahrt f�r LKW m�glich)?"
+	},
+	{
+		"name": "ausblick",
+		"description": "Welcher Ausblick ist vorhanden, Optionen nicht kombinierbar",
+		"attributes": [
+			{
+				"name": "blick",
+				"base": "string",
+				"restriction": [
+					"FERNE",
+					"SEE",
+					"BERGE",
+					"MEER"
+				]
+			}
+		]
+	},
+	{
+		"name": "distanzen",
+		"description": "Welche Distanz zu dem ausgew�hlten Ziel besteht (Angabe in km), \r\n\t\t\t\t\t\t\t   Optionen nicht kombinierbar, Distanzelement ist mehrfach erfassbar\r\n\t\t\t",
+		"simple": {
+			"base": "float",
+			"attribute": [
+				{
+					"name": "distanz_zu",
+					"use": "required",
+					"base": "string",
+					"restriction": [
+						"FLUGHAFEN",
+						"FERNBAHNHOF",
+						"AUTOBAHN",
+						"US_BAHN",
+						"BUS",
+						"KINDERGAERTEN",
+						"GRUNDSCHULE",
+						"HAUPTSCHULE",
+						"REALSCHULE",
+						"GESAMTSCHULE",
+						"GYMNASIUM",
+						"ZENTRUM",
+						"EINKAUFSMOEGLICHKEITEN",
+						"GASTSTAETTEN"
+					]
+				}
+			]
+		},
+		"mixed": "true"
+	},
+	{
+		"name": "distanzen_sport",
+		"description": "Welche Distanz zu dem ausgew�hlen Sport-/Freizeitziel besteht(Angabe in km), \r\n\t\t\t\t\t\t\t   Optionen nicht kombinierbar, Distanzelement ist mehrfach erfassbar\r\n\t\t\t",
+		"simple": {
+			"base": "float",
+			"attribute": [
+				{
+					"name": "distanz_zu_sport",
+					"use": "required",
+					"base": "string",
+					"restriction": [
+						"STRAND",
+						"SEE",
+						"MEER",
+						"SKIGEBIET",
+						"SPORTANLAGEN",
+						"WANDERGEBIETE",
+						"NAHERHOLUNG"
+					]
+				}
+			]
+		}
+	},
+	{
+		"name": "objekttitel",
+		"type": "string",
+		"description": "Titel (des Objektes f�r Expos� etc.)"
+	},
+	{
+		"name": "dreizeiler",
+		"type": "string",
+		"description": "Drei Zeilen � 72 Zeichen (insg. 216 Zeichen) f�r eine Kurzbeschreibung"
+	},
+	{
+		"name": "lage",
+		"type": "string",
+		"description": "Ausf�hrliche Lagebeschreibung"
+	},
+	{
+		"name": "ausstatt_beschr",
+		"type": "string",
+		"description": "Ausf�hrliche Ausstattungsbeschreibung"
+	},
+	{
+		"name": "objektbeschreibung",
+		"type": "string",
+		"description": "Ausf�hrliche Objektbeschreibung"
+	},
+	{
+		"name": "sonstige_angaben",
+		"type": "string",
+		"description": "Ausf�hrliche Beschreibung von Sonstigem. Angaben zum Fernabsatzgesetz"
+	},
+	{
+		"name": "objekt_text",
+		"description": "Beschreibung in anderer Sprache. \"lang\" Attribut muss dann vorhanden sein. W3- Language Code ",
+		"attributes": [
+			{
+				"name": "lang",
+				"type": "string",
+				"use": "required"
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "anhang",
+		"description": "Element f�r Anh�nge",
+		"attributes": [
+			{
+				"name": "location",
+				"use": "required",
+				"base": "string",
+				"restriction": [
+					"INTERN",
+					"EXTERN",
+					"REMOTE"
+				]
+			},
+			{
+				"name": "gruppe",
+				"base": "string",
+				"restriction": [
+					"TITELBILD",
+					"INNENANSICHTEN",
+					"AUSSENANSICHTEN",
+					"GRUNDRISS",
+					"KARTEN_LAGEPLAN",
+					"ANBIETERLOGO",
+					"BILD",
+					"DOKUMENTE",
+					"LINKS",
+					"PANORAMA",
+					"QRCODE",
+					"FILM",
+					"FILMLINK",
+					"EPASS-SKALA",
+					"ANBOBJURL"
+				]
+			}
+		],
+		"sequence": [
+			{
+				"ref": "anhangtitel",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "format"
+			},
+			{
+				"ref": "check",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "daten"
+			}
+		]
+	},
+	{
+		"name": "foto",
+		"description": "Foto bei der Kontaktperson. Datentyp �hnlich \"Anhang\"",
+		"attributes": [
+			{
+				"name": "location",
+				"use": "required",
+				"base": "string",
+				"restriction": [
+					"EXTERN",
+					"REMOTE"
+				]
+			}
+		],
+		"sequence": [
+			{
+				"ref": "format"
+			},
+			{
+				"ref": "daten"
+			}
+		]
+	},
+	{
+		"name": "anhangtitel",
+		"type": "string",
+		"description": "Titel des Anhangs bzw. URL bei einem Link-"
+	},
+	{
+		"name": "format",
+		"type": "string",
+		"description": "Dateiformat des Anhanges"
+	},
+	{
+		"name": "check",
+		"description": "Angabe von Daten f�r die Pr�fung auf ein Update ",
+		"simple": {
+			"base": "dateTime",
+			"attribute": [
+				{
+					"name": "ctype",
+					"use": "required",
+					"base": "string",
+					"restriction": [
+						"MD5",
+						"DATETIME",
+						"ETAG"
+					]
+				}
+			]
+		}
+	},
+	{
+		"name": "daten",
+		"description": "Anhangdaten",
+		"choice": [
+			{
+				"ref": "pfad",
+				"minOccurs": "0"
+			},
+			{
+				"ref": "anhanginhalt",
+				"minOccurs": "0"
+			}
+		]
+	},
+	{
+		"name": "anhanginhalt",
+		"type": "base64Binary",
+		"description": "Base64 codierter Inhalt bei Bin�rdaten"
+	},
+	{
+		"name": "pfad",
+		"type": "string",
+		"description": "Pfad der angeh�ngten Datei, relativ zur XML-Datei"
+	},
+	{
+		"name": "objektadresse_freigeben",
+		"type": "boolean",
+		"description": "Darf die Adresse des Objektes freigeben/angezeigt werden, \r\n\t\t\t\t\t\t\t   fehlende Angabe wird als 'Ja' interpretiert\r\n\t\t\t"
+	},
+	{
+		"name": "verfuegbar_ab",
+		"type": "string",
+		"description": "Ab wann ist die Immobilie verf�gbar/beziehbar/zur �bernahme bereit, \r\n\t\t\t\t\t\t\t   Inhalt Text wie 'ab sofort' aber auch eine Datumsangabe\r\n\t\t\t"
+	},
+	{
+		"name": "abdatum",
+		"type": "date",
+		"description": "Ab wann ist die Immobilie verf�gbar/beziehbar/zur �bernahme bereit, \r\n\t\t\t\t\t\t\t   Inhalt Datum; Datumsformat YYYY-MM-DD (ISO 8601) zus�tzlich zu 'verfuegbar_ab'\r\n\t\t\t"
+	},
+	{
+		"name": "bisdatum",
+		"type": "date",
+		"description": "Bis wann ist die Immobilie verf�gbar/beziehbar/zur �bernahme bereit, \r\n\t\t\t\t\t\t\t   Inhalt Datum; Datumsformat YYYY-MM-DD (ISO 8601) anstelle des urspr. 'verfuegbar_bis', vorrangig bei WAZ - Objekten\r\n\t\t\t"
+	},
+	{
+		"name": "min_mietdauer",
+		"description": "Mindestzeitraum f�r den die Immobilie gemietet werden muss, Optionen nicht kombinierbar, vorrangig bei WaZ",
+		"attributes": [
+			{
+				"name": "min_dauer",
+				"base": "string",
+				"restriction": [
+					"TAG",
+					"WOCHE",
+					"MONAT",
+					"JAHR"
+				]
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "max_mietdauer",
+		"description": "Maximalzeitraum f�r den die Immobilie gemietet werdenkann, Optionen nicht kombinierbar, vorrangig bei WaZ",
+		"attributes": [
+			{
+				"name": "max_dauer",
+				"base": "string",
+				"restriction": [
+					"TAG",
+					"WOCHE",
+					"MONAT",
+					"JAHR"
+				]
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "versteigerungstermin",
+		"type": "date",
+		"description": "Termin der Versteigerung, Datumsformat YYYY-MM-DD (ISO 8601)"
+	},
+	{
+		"name": "wbs_sozialwohnung",
+		"type": "boolean",
+		"description": "WBS erforderlich/Sozialwohnung?"
+	},
+	{
+		"name": "vermietet",
+		"type": "boolean",
+		"description": "Ist das Objekt noch/bereits vermietet?"
+	},
+	{
+		"name": "anbieternr",
+		"type": "string",
+		"description": "Kundennummer des Anbieters (Anbieterschl�ssel) bei dem Immobilienportal, an das �bertragen wird"
+	},
+	{
+		"name": "objektnr_intern",
+		"type": "string",
+		"description": "Eindeutiger Identifikator, mit der das generierende bzw. auch das importierende System den Datensatz identifiziert, Pflichtfeld"
+	},
+	{
+		"name": "objektnr_extern",
+		"type": "string",
+		"description": "Identifikator, der im Expose dargestellt wird. Auf diesen bezieht sich dann eine Kundenanfrage. \r\n\t\t\t\t\t\t\t   Kann mit der internen Objektnummmer identisch sein (f�r Systeme, die nur einen Nummernkreis verwalten), Pflichtfeld\r\n\t\t\t"
+	},
+	{
+		"name": "gruppennummer",
+		"type": "string",
+		"description": "Gruppennummer/Mutterobjekt falls Objekte gruppiert sind oder ein gemeinsames Mutterobjekt"
+	},
+	{
+		"name": "zugang",
+		"type": "string",
+		"description": "Ab wann besteht Zugang zur Wohnung, allg. Text"
+	},
+	{
+		"name": "aktiv_von",
+		"type": "date",
+		"description": "Ab wann soll das Objekt im Immobilienportal aktiv sein, Datumsformat YYYY-MM-DD (ISO 8601)"
+	},
+	{
+		"name": "aktiv_bis",
+		"type": "date",
+		"description": "Bis wann soll das Objekt im Immobilienportal aktiv sein, Datumsformat YYYY-MM-DD (ISO 8601)"
+	},
+	{
+		"name": "laufzeit",
+		"type": "decimal",
+		"description": "(Rest-)Laufzeit der Erbpacht in Jahren"
+	},
+	{
+		"name": "max_personen",
+		"type": "positiveInteger",
+		"description": "Max. Personenzahl, die in dem Objekt wohnen/schlafen k�nnen"
+	},
+	{
+		"name": "nichtraucher",
+		"type": "boolean",
+		"description": "Wird das Objekt nur an Nichtraucher vermietet?"
+	},
+	{
+		"name": "haustiere",
+		"type": "boolean",
+		"description": "Sind Haustiere gestattet?"
+	},
+	{
+		"name": "geschlecht",
+		"description": "Soll das Objekt nur an Frauen bzw. nur an M�nner vermietet werden, \r\n\t\t\t\t\t\t\t   fehlende Angabe wird als 'Ja' interpretiert\r\n\t\t\t",
+		"attributes": [
+			{
+				"name": "geschl_attr",
+				"base": "string",
+				"restriction": [
+					"EGAL",
+					"NUR_MANN",
+					"NUR_FRAU"
+				]
+			}
+		]
+	},
+	{
+		"name": "denkmalgeschuetzt",
+		"type": "boolean",
+		"description": "Steht das Objekt unter Denkmalschutz?"
+	},
+	{
+		"name": "stand_vom",
+		"type": "date",
+		"description": "Datum der letzten �nderung im exportierenden System, Datumsformat YYYY-MM-DD (ISO 8601), Pflichtfeld"
+	},
+	{
+		"name": "kennung_ursprung",
+		"type": "string",
+		"description": "Kennung des urspr�nglichen Datenlieferanten (generierenden/ursprung Systems)"
+	},
+	{
+		"name": "openimmo_obid",
+		"type": "string",
+		"description": "Eindeutiger Identifikator der Immobilie. Optionale Erg�nzung zu \"objektnr_intern\"\t\t\t"
+	},
+	{
+		"name": "weitergabe_generell",
+		"type": "boolean",
+		"description": "Darf die Immobilie an andere B�rsenportale weitergegeben werden"
+	},
+	{
+		"name": "weitergabe_negativ",
+		"type": "string",
+		"description": "ExpliziteListe der B�rsenportale, an die das Objekt nicht weiter gegeben werden darf, \r\n\t\t\t\t\t\t\t   Angabe der der jeweiligen Dom�nen mit Semikolon separiert. \r\n\t\t\t\t\t\t\t   Falls eine Dom�ne hier und in weitergabe_positiv aufgef�hrt wird, \r\n\t\t\t\t\t\t\t   hat die Angabe in diesem Feld den Vorrang!\r\n\t\t\t"
+	},
+	{
+		"name": "weitergabe_positiv",
+		"type": "string",
+		"description": "Explizite Liste der B�rsenportale, an die das Objekt weiter gegeben werden darf, \r\n\t\t\t\t\t\t\t   Angabe der der jeweiligen Dom�nen mit Semikolon separiert.\r\n\t\t\t"
+	},
+	{
+		"name": "gruppen_kennung",
+		"type": "string",
+		"description": "Frei w�hlbare alphanumerische Kennung um Objekte mit gleicher Kennung\r\nzu gruppieren. Anwendung z.b. in Neubau Projekten.  Siehe  auch Element \"master\".\r\n\t\t\t"
+	},
+	{
+		"name": "sprache",
+		"type": "string",
+		"description": "Optionale Angabe der Sprache, falls nicht Deutsch (de-DE)\r\nLanguage Code als zusammengesetzte Kennung gem�� RFC 1766. D.h. Sprache gem�� ISO 639-1 und L�nderkennung nach ISO 3166\r\n(Gro�buchstaben) z.B. de-DE oder de-CH, en-US amerikanisches Englisch, en-GB Britisches Englisch.\r\n\t\t\t"
+	},
+	{
+		"name": "master",
+		"description": "Frei w�hlbare alphanumerische Kennung um Objekte einem �bergeordneten Objekt zuzuordnen. \r\nDas Eltern Objekte hat in  \"gruppen_kennung\" die gleiche ID wie \"master\". Anwendung z.b. in Neubau Projekten.\r\nDamit die Anzeige des Master Objektes gesteuert werden kann, wird im Master ein Flag\r\n visible eingesetzt. Das Attribut ist dann zwingend anzugeben\r\n\t\t\t",
+		"attributes": [
+			{
+				"name": "visible",
+				"type": "boolean",
+				"use": "required"
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "als_ferien",
+		"type": "boolean",
+		"description": "Ist das Objekt auch als Ferienimmoblie geeignet?"
+	},
+	{
+		"name": "gewerbliche_nutzung",
+		"type": "boolean",
+		"description": "Ist zus�tzlich eine gewerbliche Nutzung m�glich? - evtl. �berschneidung mit Nutzungsart"
+	},
+	{
+		"name": "branchen",
+		"type": "string",
+		"description": "F�r welche Branchen ist eine zus�tzliche gewerbliche Nutzung m�glich?"
+	},
+	{
+		"name": "hochhaus",
+		"type": "boolean",
+		"description": "Befindet sich die Wohnung in einem Hochhaus,"
+	},
+	{
+		"name": "user_defined_simplefield",
+		"description": "Benutzerdefinierte Angaben",
+		"attributes": [
+			{
+				"name": "feldname",
+				"type": "string",
+				"use": "required"
+			}
+		],
+		"mixed": "true"
+	},
+	{
+		"name": "user_defined_anyfield",
+		"sequence": {
+			"processContents": "lax"
+		},
+		"mixed": "true"
+	},
+	{
+		"name": "user_defined_extend",
+		"sequence": [
+			{
+				"name": "feld",
+				"minOccurs": "0",
+				"maxOccurs": "unbounded",
+				"sequence": [
+					{
+						"name": "name",
+						"type": "string"
+					},
+					{
+						"name": "wert",
+						"type": "string"
+					},
+					{
+						"name": "typ",
+						"type": "string",
+						"minOccurs": "0",
+						"maxOccurs": "unbounded"
+					},
+					{
+						"name": "modus",
+						"type": "string",
+						"minOccurs": "0",
+						"maxOccurs": "unbounded"
+					}
+				]
+			}
+		]
+	},
+	{
+		"name": "aktion",
+		"description": "Aktion f�r Objekt. Wenn nicht vorhanden, dann \"ADD\", als neu.\r\n\t\t\tChange= Update der Objektdaten,   Delete = L�schen des Objektes\r\n\t\t\tReferenz=  Die M�glichkeit Objekte in Portalen als �Verkauft� oder �Archiv� zu  definieren.\r\n\t\t\t\r\n\t\t\t",
+		"attributes": [
+			{
+				"name": "aktionart",
+				"base": "string",
+				"restriction": [
+					"CHANGE",
+					"DELETE",
+					"REFERENZ"
+				]
+			}
+		]
+	},
+	{
+		"name": "zimmer",
+		"description": "Objekart / Typ f. Zimmer",
+		"attributes": [
+			{
+				"name": "zimmertyp",
+				"base": "string",
+				"restriction": [
+					"ZIMMER"
+				]
+			}
+		]
+	},
+	{
+		"name": "wohnung",
+		"description": "Objektart / Typ f. Wohnungen",
+		"attributes": [
+			{
+				"name": "wohnungtyp",
+				"base": "string",
+				"restriction": [
+					"DACHGESCHOSS",
+					"MAISONETTE",
+					"LOFT-STUDIO-ATELIER",
+					"PENTHOUSE",
+					"TERRASSEN",
+					"ETAGE",
+					"ERDGESCHOSS",
+					"SOUTERRAIN",
+					"APARTMENT",
+					"FERIENWOHNUNG",
+					"GALERIE",
+					"ROHDACHBODEN",
+					"ATTIKAWOHNUNG",
+					"KEINE_ANGABE"
+				]
+			}
+		]
+	},
+	{
+		"name": "haus",
+		"description": "Objektart / Typ f. Haus",
+		"attributes": [
+			{
+				"name": "haustyp",
+				"base": "string",
+				"restriction": [
+					"REIHENHAUS",
+					"REIHENEND",
+					"REIHENMITTEL",
+					"REIHENECK",
+					"DOPPELHAUSHAELFTE",
+					"EINFAMILIENHAUS",
+					"STADTHAUS",
+					"BUNGALOW",
+					"VILLA",
+					"RESTHOF",
+					"BAUERNHAUS",
+					"LANDHAUS",
+					"SCHLOSS",
+					"ZWEIFAMILIENHAUS",
+					"MEHRFAMILIENHAUS",
+					"FERIENHAUS",
+					"BERGHUETTE",
+					"CHALET",
+					"STRANDHAUS",
+					"LAUBE-DATSCHE-GARTENHAUS",
+					"APARTMENTHAUS",
+					"BURG",
+					"HERRENHAUS",
+					"FINCA",
+					"RUSTICO",
+					"FERTIGHAUS",
+					"KEINE_ANGABE"
+				]
+			}
+		]
+	},
+	{
+		"name": "grundstueck",
+		"description": "Objektart / Typ f. Grundst�cke",
+		"attributes": [
+			{
+				"name": "grundst_typ",
+				"base": "string",
+				"restriction": [
+					"WOHNEN",
+					"GEWERBE",
+					"INDUSTRIE",
+					"LAND_FORSTWIRSCHAFT",
+					"FREIZEIT",
+					"GEMISCHT",
+					"GEWERBEPARK",
+					"SONDERNUTZUNG",
+					"SEELIEGENSCHAFT"
+				]
+			}
+		]
+	},
+	{
+		"name": "buero_praxen",
+		"description": "Objektart / Typ f. B�ro/Praxen",
+		"attributes": [
+			{
+				"name": "buero_typ",
+				"base": "string",
+				"restriction": [
+					"BUEROFLAECHE",
+					"BUEROHAUS",
+					"BUEROZENTRUM",
+					"LOFT_ATELIER",
+					"PRAXIS",
+					"PRAXISFLAECHE",
+					"PRAXISHAUS",
+					"AUSSTELLUNGSFLAECHE",
+					"COWORKING",
+					"SHARED_OFFICE"
+				]
+			}
+		]
+	},
+	{
+		"name": "einzelhandel",
+		"description": "Objektart / Typ f. Handel",
+		"attributes": [
+			{
+				"name": "handel_typ",
+				"base": "string",
+				"restriction": [
+					"LADENLOKAL",
+					"EINZELHANDELSLADEN",
+					"VERBRAUCHERMARKT",
+					"EINKAUFSZENTRUM",
+					"KAUFHAUS",
+					"FACTORY_OUTLET",
+					"KIOSK",
+					"VERKAUFSFLAECHE",
+					"AUSSTELLUNGSFLAECHE"
+				]
+			}
+		]
+	},
+	{
+		"name": "gastgewerbe",
+		"description": "Objektart / Typ f. Gastgewerbe",
+		"attributes": [
+			{
+				"name": "gastgew_typ",
+				"base": "string",
+				"restriction": [
+					"GASTRONOMIE",
+					"GASTRONOMIE_UND_WOHNUNG",
+					"PENSIONEN",
+					"HOTELS",
+					"WEITERE_BEHERBERGUNGSBETRIEBE",
+					"BAR",
+					"CAFE",
+					"DISCOTHEK",
+					"RESTAURANT",
+					"RAUCHERLOKAL",
+					"EINRAUMLOKAL"
+				]
+			}
+		]
+	},
+	{
+		"name": "hallen_lager_prod",
+		"description": "Objektart / Typ f. Hallen/Lager/Produktion",
+		"attributes": [
+			{
+				"name": "hallen_typ",
+				"base": "string",
+				"restriction": [
+					"HALLE",
+					"INDUSTRIEHALLE",
+					"LAGER",
+					"LAGERFLAECHEN",
+					"LAGER_MIT_FREIFLAECHE",
+					"HOCHREGALLAGER",
+					"SPEDITIONSLAGER",
+					"PRODUKTION",
+					"WERKSTATT",
+					"SERVICE",
+					"FREIFLAECHEN",
+					"KUEHLHAUS"
+				]
+			}
+		]
+	},
+	{
+		"name": "land_und_forstwirtschaft",
+		"description": "Objektart / Typ f. Land-/Forstwirtschaft",
+		"attributes": [
+			{
+				"name": "land_typ",
+				"base": "string",
+				"restriction": [
+					"LANDWIRTSCHAFTLICHE_BETRIEBE",
+					"BAUERNHOF",
+					"AUSSIEDLERHOF",
+					"GARTENBAU",
+					"ACKERBAU",
+					"WEINBAU",
+					"VIEHWIRTSCHAFT",
+					"JAGD_UND_FORSTWIRTSCHAFT",
+					"TEICH_UND_FISCHWIRTSCHAFT",
+					"SCHEUNEN",
+					"REITERHOEFE",
+					"SONSTIGE_LANDWIRTSCHAFTSIMMOBILIEN",
+					"ANWESEN",
+					"JAGDREVIER"
+				]
+			}
+		]
+	},
+	{
+		"name": "parken",
+		"description": "Objektart f�r diverse Parkplatz Angaben",
+		"attributes": [
+			{
+				"name": "parken_typ",
+				"base": "string",
+				"restriction": [
+					"STELLPLATZ",
+					"CARPORT",
+					"DOPPELGARAGE",
+					"DUPLEX",
+					"TIEFGARAGE",
+					"BOOTSLIEGEPLATZ",
+					"EINZELGARAGE",
+					"PARKHAUS",
+					"TIEFGARAGENSTELLPLATZ",
+					"PARKPLATZ_STROM"
+				]
+			}
+		]
+	},
+	{
+		"name": "sonstige",
+		"description": "Objektart / Typ f. Sonstiges\r\nBitte ab Version 1.2.3 die Attribute GARAGEN, PARKFLACHE nicht mehr verwenden. \r\nObjekte befinden sich jetzt unter Element parken.\r\nAus kompatibilit�tegr�nden bleiben die Attribute NOCH! erhalten.\r\nIn nachfolgenden Versionen wird die Unterst�tzung an dieser Stelle eingestellt.\r\n\t\t\t",
+		"attributes": [
+			{
+				"name": "sonstige_typ",
+				"base": "string",
+				"restriction": [
+					"PARKHAUS",
+					"TANKSTELLE",
+					"KRANKENHAUS",
+					"SONSTIGE"
+				]
+			}
+		]
+	},
+	{
+		"name": "freizeitimmobilie_gewerblich",
+		"description": " Objektart / Typ f. gew. Freizeitimmobilen",
+		"attributes": [
+			{
+				"name": "freizeit_typ",
+				"base": "string",
+				"restriction": [
+					"SPORTANLAGEN",
+					"VERGNUEGUNGSPARKS_UND_CENTER",
+					"FREIZEITANLAGE"
+				]
+			}
+		]
+	},
+	{
+		"name": "zinshaus_renditeobjekt",
+		"description": "Objektyp / Typ f. Zins und Renditeh�user",
+		"attributes": [
+			{
+				"name": "zins_typ",
+				"base": "string",
+				"restriction": [
+					"MEHRFAMILIENHAUS",
+					"WOHN_UND_GESCHAEFTSHAUS",
+					"GESCHAEFTSHAUS",
+					"BUEROGEBAEUDE",
+					"SB_MAERKTE",
+					"EINKAUFSCENTREN",
+					"WOHNANLAGEN",
+					"VERBRAUCHERMAERKTE",
+					"INDUSTRIEANLAGEN",
+					"PFLEGEHEIM",
+					"SANATORIUM",
+					"SENIORENHEIM",
+					"BETREUTES-WOHNEN"
+				]
+			}
+		]
+	},
+	{
+		"name": "objektart_zusatz",
+		"type": "string"
+	},
+	{
+		"name": "impressum",
+		"type": "string"
+	},
+	{
+		"name": "impressum_strukt",
+		"description": "Erg�nzung  ($V120)",
+		"sequence": [
+			{
+				"name": "firmenname",
+				"type": "string"
+			},
+			{
+				"name": "firmenanschrift",
+				"type": "string"
+			},
+			{
+				"name": "telefon",
+				"type": "string"
+			},
+			{
+				"name": "vertretungsberechtigter",
+				"type": "string"
+			},
+			{
+				"name": "berufsaufsichtsbehoerde",
+				"type": "string"
+			},
+			{
+				"name": "handelsregister",
+				"type": "string"
+			},
+			{
+				"name": "handelsregister_nr",
+				"type": "string"
+			},
+			{
+				"name": "umsst-id",
+				"type": "string"
+			},
+			{
+				"name": "steuernummer",
+				"type": "string"
+			},
+			{
+				"name": "weiteres",
+				"type": "string"
+			}
+		]
+	},
+	{
+		"name": "waehrung",
+		"description": "W�hrung ",
+		"attributes": [
+			{
+				"name": "iso_waehrung",
+				"base": "string",
+				"restriction": [
+					"AED",
+					"AFA",
+					"ALL",
+					"AMD",
+					"ANG",
+					"AON",
+					"ARP",
+					"ATS",
+					"AUD",
+					"AWF",
+					"AZM",
+					"BAK",
+					"BBD",
+					"BDT",
+					"BEF",
+					"BGL",
+					"BHD",
+					"BIF",
+					"BMD",
+					"BND",
+					"BOB",
+					"BES",
+					"BRL",
+					"BSD",
+					"BTR",
+					"BWP",
+					"BYR",
+					"BZD",
+					"CAD",
+					"CDF",
+					"CHF",
+					"CLP",
+					"CNY",
+					"COP",
+					"CRC",
+					"CZK",
+					"CUP",
+					"CVE",
+					"CUW",
+					"CYP",
+					"DEM",
+					"DJF",
+					"DKK",
+					"DOP",
+					"DZD",
+					"ECS",
+					"EEK",
+					"EGP",
+					"ERN",
+					"ESP",
+					"ETB",
+					"EUR",
+					"FIM",
+					"FJD",
+					"FKP",
+					"FRF",
+					"GBP",
+					"GEL",
+					"GHC",
+					"GIP",
+					"GMD",
+					"GNF",
+					"GRD",
+					"GTQ",
+					"GYD",
+					"HKD",
+					"HNL",
+					"HRK",
+					"HTG",
+					"HUF",
+					"IDR",
+					"IEP",
+					"IEP",
+					"ILS",
+					"INR",
+					"IQD",
+					"IRR",
+					"ISK",
+					"ITL",
+					"JMD",
+					"JOD",
+					"JPY",
+					"KES",
+					"KGS",
+					"KHR",
+					"KMF",
+					"KPW",
+					"KRW",
+					"KWD",
+					"KYD",
+					"KZT",
+					"LAK",
+					"LBP",
+					"LKR",
+					"LRD",
+					"LSL",
+					"LTL",
+					"LUF",
+					"LVL",
+					"LYD",
+					"MAD",
+					"MDL",
+					"MGF",
+					"MMK",
+					"MNT",
+					"MOP",
+					"MRO",
+					"MTL",
+					"MUR",
+					"MVR",
+					"MWK",
+					"MXP",
+					"MYR",
+					"MZM",
+					"NAD",
+					"NGN",
+					"NIO",
+					"NLG",
+					"NOK",
+					"NPR",
+					"NZD",
+					"OMR",
+					"PAB",
+					"PEN",
+					"PGK",
+					"PHP",
+					"PKR",
+					"PLZ",
+					"PTE",
+					"PYG",
+					"QAR",
+					"ROL",
+					"RUR",
+					"RWF",
+					"SAR",
+					"SBD",
+					"SBL",
+					"SCR",
+					"SDD",
+					"SEK",
+					"SGD",
+					"SHP",
+					"SIT",
+					"SKK",
+					"SLL",
+					"SOS",
+					"SRG",
+					"STD",
+					"SVC",
+					"SYP",
+					"SZL",
+					"THB",
+					"TJR",
+					"TMM",
+					"TND",
+					"TOP",
+					"TRL",
+					"TTD",
+					"TWD",
+					"TZS",
+					"UAH",
+					"UGX",
+					"USD",
+					"UYU",
+					"UZS",
+					"VEB",
+					"VND",
+					"VUV",
+					"WST",
+					"XAF",
+					"XAG",
+					"XAU",
+					"XCD",
+					"XCO",
+					"XDR",
+					"XPD",
+					"XPF",
+					"XPT",
+					"YER",
+					"YUN",
+					"ZAR",
+					"ZMK",
+					"ZWD"
+				]
+			}
+		]
+	},
+	{
+		"name": "land",
+		"description": "Land",
+		"attributes": [
+			{
+				"name": "iso_land",
+				"base": "string",
+				"restriction": [
+					"AFG",
+					"ALB",
+					"DZA",
+					"ASM",
+					"AND",
+					"AGO",
+					"AIA",
+					"ATG",
+					"ARG",
+					"ARM",
+					"ABW",
+					"AUS",
+					"AUT",
+					"AZE",
+					"BHS",
+					"BHR",
+					"BGD",
+					"BRB",
+					"BLR",
+					"BEL",
+					"BLZ",
+					"BEN",
+					"BMU",
+					"BTN",
+					"BOL",
+					"BIH",
+					"BWA",
+					"BRA",
+					"VGB",
+					"BRN",
+					"BGR",
+					"BFA",
+					"BDI",
+					"KHM",
+					"CMR",
+					"CAN",
+					"CPV",
+					"CYM",
+					"CAF",
+					"TCD",
+					"CHL",
+					"CHN",
+					"HKG",
+					"MAC",
+					"COL",
+					"COM",
+					"COG",
+					"COK",
+					"CRI",
+					"CIV",
+					"HRV",
+					"CUB",
+					"CYP",
+					"CZE",
+					"PRK",
+					"COD",
+					"DNK",
+					"DJI",
+					"DMA",
+					"DOM",
+					"TMP",
+					"ECU",
+					"EGY",
+					"SLV",
+					"GNQ",
+					"ERI",
+					"EST",
+					"ETH",
+					"FRO",
+					"FLK",
+					"FJI",
+					"FIN",
+					"FRA",
+					"GUF",
+					"PYF",
+					"GAB",
+					"GMB",
+					"GEO",
+					"DEU",
+					"GHA",
+					"GIB",
+					"GRC",
+					"GRL",
+					"GRD",
+					"GLP",
+					"GUM",
+					"GTM",
+					"GIN",
+					"GNB",
+					"GUY",
+					"HTI",
+					"VAT",
+					"HND",
+					"HUN",
+					"ISL",
+					"IND",
+					"IDN",
+					"IRN",
+					"IRQ",
+					"IRL",
+					"ISR",
+					"ITA",
+					"JAM",
+					"JPN",
+					"JOR",
+					"KAZ",
+					"KEN",
+					"KIR",
+					"KWT",
+					"KGZ",
+					"LAO",
+					"LVA",
+					"LBN",
+					"LSO",
+					"LBR",
+					"LBY",
+					"LIE",
+					"LTU",
+					"LUX",
+					"MDG",
+					"MWI",
+					"MYS",
+					"MDV",
+					"MLI",
+					"MLT",
+					"MHL",
+					"MTQ",
+					"MRT",
+					"MUS",
+					"MEX",
+					"FSM",
+					"MCO",
+					"MNG",
+					"MNE",
+					"MSR",
+					"MAR",
+					"MOZ",
+					"MMR",
+					"NAM",
+					"NRU",
+					"NPL",
+					"NLD",
+					"ANT",
+					"NCL",
+					"NZL",
+					"NIC",
+					"NER",
+					"NGA",
+					"NIU",
+					"NFK",
+					"MNP",
+					"NOR",
+					"PSE",
+					"OMN",
+					"PAK",
+					"PLW",
+					"PAN",
+					"PNG",
+					"PRY",
+					"PER",
+					"PHL",
+					"PCN",
+					"POL",
+					"PRT",
+					"PRI",
+					"QAT",
+					"KOR",
+					"MDA",
+					"REU",
+					"ROM",
+					"RUS",
+					"RWA",
+					"SHN",
+					"KNA",
+					"LCA",
+					"SPM",
+					"VCT",
+					"WSM",
+					"SMR",
+					"STP",
+					"SAU",
+					"SEN",
+					"SRB",
+					"SYC",
+					"SLE",
+					"SGP",
+					"SMX",
+					"SVK",
+					"SVN",
+					"SLB",
+					"SOM",
+					"ZAF",
+					"ESP",
+					"LKA",
+					"SDN",
+					"SUR",
+					"SJM",
+					"SWZ",
+					"SWE",
+					"CHE",
+					"SYR",
+					"TWN",
+					"TJK",
+					"THA",
+					"MKD",
+					"TGO",
+					"TKL",
+					"TON",
+					"TTO",
+					"TUN",
+					"TUR",
+					"TKM",
+					"TCA",
+					"TUV",
+					"UGA",
+					"UKR",
+					"ARE",
+					"GBR",
+					"TZA",
+					"USA",
+					"VIR",
+					"URY",
+					"UZB",
+					"VUT",
+					"VEN",
+					"VNM",
+					"WLF",
+					"ESH",
+					"YEM",
+					"YUG",
+					"ZMB",
+					"ZWE"
+				]
+			}
+		]
+	}
+]

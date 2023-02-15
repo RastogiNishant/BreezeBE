@@ -70,6 +70,13 @@ class EstateCurrentTenantController {
     response.res(await EstateCurrentTenantService.expire(id, auth.user.id))
   }
 
+  async inviteTenantToApp({ request, auth, response }) {
+    const { invites } = request.all()
+    response.res(
+      await EstateCurrentTenantService.inviteTenantToApp({ user_id: auth.user.id, invites })
+    )
+  }
+
   async inviteTenantToAppByEmail({ request, auth, response }) {
     const { ids } = request.all()
 

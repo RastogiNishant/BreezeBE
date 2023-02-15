@@ -28,7 +28,7 @@ const {
 
 const {
   exceptions: { INVALID_TIME_RANGE, TIME_SLOT_CROSSING_EXISTING },
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
 const { DATE_FORMAT } = require('../../app/constants')
 

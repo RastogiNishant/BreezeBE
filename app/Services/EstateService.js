@@ -7,7 +7,6 @@ const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
-const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
@@ -20,10 +19,13 @@ const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
+const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
+const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
+const GeoAPI = use('GeoAPI')
 
 const {
   STATUS_DRAFT,
@@ -53,13 +55,19 @@ const {
   ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  IMPORT_TYPE_OPENIMMO,
+  IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_VALID_ADDRESS,
+  FILE_TYPE_PLAN,
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
+  LETTING_STATUS_VACANCY,
+  FILE_LIMIT_LENGTH,
+  FILE_TYPE_UNASSIGNED,
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST },
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT },
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
@@ -87,7 +95,7 @@ class EstateService {
    *
    */
   static getActiveEstateQuery() {
-    return Estate.query().whereNot('status', STATUS_DELETE)
+    return Estate.query().whereNot('estates.status', STATUS_DELETE)
   }
 
   static async getById(id) {
@@ -281,8 +289,8 @@ class EstateService {
     }
 
     if (!fromImport) {
-      createData.letting_type = LETTING_TYPE_VOID
-      createData.letting_status = null
+      createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
+      createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
     }
 
     let estateHash
@@ -307,7 +315,7 @@ class EstateService {
     }
   }
 
-  static async updateEstate(request) {
+  static async updateEstate(request, user_id) {
     const { ...data } = request.all()
 
     let updateData = {
@@ -317,33 +325,84 @@ class EstateService {
 
     let energy_proof = null
     const estate = await this.getById(data.id)
-    if (data.delete_energy_proof) {
-      energy_proof = estate?.energy_proof
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
 
-      updateData = {
-        ...updateData,
-        energy_proof: null,
-        energy_proof_original_file: null,
-      }
-    } else {
-      const files = await this.saveEnergyProof(request)
-      if (files && files.energy_proof) {
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.delete_energy_proof) {
+        energy_proof = estate?.energy_proof
+
+        if (energy_proof) {
+          await require('./GalleryService').addFromView(
+            {
+              url: energy_proof,
+              estate_id: data.id,
+              file_name: estate.energy_proof_original_file,
+            },
+            trx
+          )
+        }
+
         updateData = {
           ...updateData,
-          energy_proof: files.energy_proof,
-          energy_proof_original_file: files.original_energy_proof,
+          energy_proof: null,
+          energy_proof_original_file: null,
+        }
+      } else {
+        const files = await this.saveEnergyProof(request)
+        if (files && files.energy_proof) {
+          updateData = {
+            ...updateData,
+            energy_proof: files.energy_proof,
+            energy_proof_original_file: files.original_energy_proof,
+          }
         }
       }
+
+      await estate.updateItemWithTrx(updateData, trx)
+
+      if (data.delete_energy_proof && energy_proof) {
+        FileBucket.remove(energy_proof)
+      }
+      // Run processing estate geo nearest
+      if (data.address) {
+        QueueService.getEstateCoords(estate.id)
+      }
+      await trx.commit()
+      return estate
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
+  static async updateEnergyProofFromGallery({ estate_id, user_id, galleries }, trx) {
+    if (!galleries || !galleries.length) {
+      return null
     }
 
-    await estate.updateItem(updateData)
-
-    if (data.delete_energy_proof && energy_proof) {
-      FileBucket.remove(energy_proof)
+    //need to backup this energy proof to gallery to be used later
+    const estate = await this.getById(estate_id)
+    if (estate && estate.energy_proof) {
+      await require('./GalleryService').addFromView(
+        {
+          user_id,
+          url: estate.energy_proof,
+          file_name: estate.energy_proof_original_file,
+        },
+        trx
+      )
     }
-    // Run processing estate geo nearest
-    QueueService.getEstateCoords(estate.id)
-    return estate
+
+    const estateData = {
+      user_id,
+      energy_proof: galleries[0].url,
+      energy_proof_original_file: galleries[0].file_name,
+    }
+    await Estate.query().where('id', estate_id).update(estateData).transacting(trx)
+    return galleries.map((gallery) => gallery.id)
   }
 
   /**
@@ -434,47 +493,80 @@ class EstateService {
   /**
    *
    */
-  static async addFile({ url, disk, estate, type }) {
-    return await File.createItem({ url, disk, estate_id: estate.id, type })
+  static async addFile({ url, file_name, disk, estate, type }) {
+    return File.createItem({ url, disk, file_name, estate_id: estate.id, type })
+  }
+
+  static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
+    await this.hasPermission({ id: estate_id, user_id })
+    const files = galleries.map((gallery) => {
+      return {
+        url: gallery.url,
+        file_name: gallery.file_name,
+        disk: 's3public',
+        estate_id,
+        type,
+      }
+    })
+    await File.createMany(files, trx)
+    return galleries.map((gallery) => gallery.id)
   }
 
   /**
    *
    */
-  static async removeFile({ id, estate_id, user_id }) {
-    const ids = Array.isArray(id) ? id : [id]
-    const files =
-      (
-        await File.query()
-          .select('files.*')
-          .whereIn('files.id', ids)
-          .innerJoin('estates', 'estates.id', 'files.estate_id')
-          .where('estates.id', estate_id)
-          .where('estates.user_id', user_id)
-          .fetch()
-      ).rows || []
+  static async removeFile(file, trx) {
+    try {
+      // await Drive.disk(file.disk).delete(file.url)
+      const oldFile = await File.findOrFail(file.id)
+      await File.query().delete().where('id', file.id).transacting(trx)
+      return oldFile
+    } catch (e) {
+      Logger.error(e.message)
+      throw new HttpException(NO_FILE_EXIST, 400)
+    }
+  }
 
-    if (!files) {
-      throw new HttpException('Image not found', 404)
+  static async moveToGallery({ ids, estate_id, user_id }, trx = null) {
+    await this.hasPermission({ id: estate_id, user_id })
+
+    let query = File.query()
+      .update({ type: FILE_TYPE_UNASSIGNED })
+      .whereIn('id', ids)
+      .where('estate_id', estate_id)
+
+    if (trx) {
+      query.transacting(trx)
+    } else {
+      await query
+    }
+  }
+
+  static async restoreFromGallery({ ids, estate_id, user_id, type }, trx) {
+    await this.hasPermission({ id: estate_id, user_id })
+
+    const files = await this.getFiles({ estate_id, type })
+    if (files && files.length >= FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
 
-    if (files.length != ids.length) {
-      throw new HttpException("Some images don't exist")
-    }
-
-    await File.query().delete().whereIn('id', ids)
+    await File.query()
+      .update({ type })
+      .whereIn('id', ids)
+      .where('estate_id', estate_id)
+      .transacting(trx)
   }
 
   static async getFiles({ estate_id, ids, type }) {
-    return (
-      (
-        await File.query()
-          .where('estate_id', estate_id)
-          .whereIn('id', ids)
-          .where('type', type)
-          .fetch()
-      ).rows || []
-    )
+    let query = File.query().where('estate_id', estate_id)
+    if (ids) {
+      query.whereIn('id', ids)
+    }
+    if (type) {
+      query.where('type', type)
+    }
+
+    return (await query.fetch()).rows || []
   }
 
   static async updateCover({ room, removeImage, addImage }, trx = null) {
@@ -869,7 +961,7 @@ class EstateService {
     { exclude_from = 0, exclude_to = 0, exclude = [] },
     limit = 20
   ) {
-    const tenant = await TenantService.getTenantWithGeo(userId)
+    const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
@@ -955,11 +1047,14 @@ class EstateService {
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
         .with('current_tenant')
+        .with('slots')
         .fetch()
     } else {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
+        .with('current_tenant')
+        .with('slots')
         .paginate(page, limit)
     }
   }
@@ -1009,28 +1104,139 @@ class EstateService {
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
   }
 
-  static async getEstatesByQuery({ user_id, query }) {
-    return await Estate.query()
-      .whereNot('status', STATUS_DELETE)
-      .where('user_id', user_id)
-      .andWhere(function () {
-        this.orWhere(function () {
-          this.where('letting_type', LETTING_TYPE_LET).whereNot(
-            'letting_status',
-            LETTING_STATUS_STANDARD
+  static async getShortEstatesByQuery({ user_id, query, letting_type }) {
+    let estateQuery = this.getActiveEstateQuery()
+      .select(
+        'estates.id',
+        'area',
+        'rooms_number',
+        'floor',
+        'number_floors',
+        'property_type',
+        'description',
+        'house_number',
+        'rent_per_sqm',
+        'address',
+        'city',
+        'country',
+        'street',
+        'zip',
+        'cover',
+        'net_rent',
+        'cold_rent',
+        'additional_costs',
+        'heating_costs',
+        'deposit',
+        'stp_garage',
+        'currency',
+        'building_status',
+        'property_id',
+        'floor_direction',
+        'six_char_code',
+        'avail_duration',
+        'available_date',
+        'from_date',
+        'to_date',
+        'rent_end_at',
+        'estates.status'
+      )
+      .where('estates.user_id', user_id)
+    if (query) {
+      estateQuery.andWhere(function () {
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('city', 'ilike', `%${query}%`)
+        this.orWhere('country', 'ilike', `%${query}%`)
+        this.orWhere('zip', 'ilike', `%${query}%`)
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('street', 'ilike', `%${query}%`)
+      })
+    }
+
+    if (letting_type.includes(LETTING_TYPE_LET)) {
+      estateQuery.where('estates.letting_type', LETTING_TYPE_LET)
+      estateQuery.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+        this.on('_ect.estate_id', 'estates.id')
+          .on(Database.raw(`_ect.user_id IS NOT NULL`))
+          .on('_ect.status', STATUS_ACTIVE)
+      })
+    }
+
+    return await estateQuery.fetch()
+  }
+
+  static async getEstatesByQuery({ user_id, query, coord }) {
+    let estates
+    if (coord) {
+      const [lat, lon] = coord.split(',')
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon })
+    } else {
+      estates = await GeoAPI.getGeoByAddress(query)
+    }
+    if (!estates) {
+      return null
+    }
+
+    estates = estates.map((estate) => {
+      return {
+        address: estate.properties.formatted,
+        coord: { lat: estate.properties.lat, lon: estate.properties.lon },
+        house_number: estate.properties.housenumber,
+      }
+    })
+
+    const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
+    let existingEstates =
+      (
+        await Estate.query()
+          .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+            this.on('_ect.estate_id', 'estates.id').onNotIn('_ect.status', [
+              STATUS_DELETE,
+              STATUS_EXPIRE,
+            ])
+          })
+          .select(
+            'estates.id',
+            'estates.street',
+            'estates.address',
+            'estates.city',
+            'estates.country',
+            'estates.zip',
+            'estates.coord_raw',
+            'estates.floor',
+            'estates.house_number',
+            'estates.floor_direction'
           )
-        })
-        this.orWhere(function () {
-          this.whereNot('letting_type', LETTING_TYPE_LET)
-        })
-      })
-      .andWhere(function () {
-        this.orWhere('estates.street', 'ilike', `%${query}%`)
-        this.orWhere('estates.zip', 'ilike', `${query}%`)
-        this.orWhere('estates.city', 'ilike', `${query}%`)
-        this.orWhere('estates.address', 'ilike', `${query}%`)
-      })
-      .fetch()
+          .select(Database.raw(`true as is_exist`))
+          .whereNot('estates.status', STATUS_DELETE)
+          .where('estates.user_id', user_id)
+          .where(
+            Database.raw(`
+              _ect.user_id IS NULL AND
+              ( _ect.code IS NULL OR
+              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+                .utc(new Date())
+                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+                .format(DATE_FORMAT)}') )`)
+          )
+          .whereIn('coord_raw', coords)
+          .fetch()
+      ).toJSON() || []
+
+    const existingCoords = existingEstates.map((estate) => estate.coord_raw)
+    const notExistingEstates = estates.filter(
+      (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
+    )
+
+    const notGroupExistingEstates = groupBy(notExistingEstates, (estate) => estate.address)
+    existingEstates = groupBy(existingEstates, (estate) => {
+      return `${estate.street || ''} ${estate.house_number || ''}, ${estate.zip || ''} ${
+        estate.city || ''
+      }`
+    })
+    return {
+      ...existingEstates,
+      ...notGroupExistingEstates,
+    }
   }
 
   static async getFilteredCounts(userId, params) {
@@ -1360,7 +1566,11 @@ class EstateService {
     // Make estate status DRAFT to hide from tenants' matches list
     await Database.table('estates')
       .where({ id: estateId })
-      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .update({
+        status: STATUS_DRAFT,
+        letting_type: LETTING_TYPE_LET,
+        letting_status: LETTING_STATUS_STANDARD,
+      })
       .transacting(trx)
   }
 
@@ -1443,6 +1653,63 @@ class EstateService {
     return true
   }
 
+  static async getEstateByAddress({ email, address }) {
+    if (!email || !address) {
+      return null
+    }
+
+    const estates =
+      (
+        await Estate.query()
+          .innerJoin({ _u: 'users' }, function () {
+            this.on('_u.user_id', 'estates.id').on('status', STATUS_ACTIVE).on('_u.email', email)
+          })
+          .whereNot('status', STATUS_DELETE)
+          .where('address', address)
+          .fetch()
+      ).rows || []
+
+    return estates
+  }
+
+  static async importOpenimmo(importFile, user_id) {
+    const filename = importFile.clientName
+    const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
+    const trx = await Database.beginTransaction()
+    try {
+      const result = await reader.process()
+      await Promise.map(result, async (property) => {
+        property.user_id = user_id
+        property.status = STATUS_DRAFT
+        let images = property.images
+        let result
+        const existingProperty = await Estate.query()
+          .where({ property_id: property.property_id, user_id })
+          .first()
+        if (existingProperty) {
+          existingProperty.merge(omit(property, ['images']))
+          result = await existingProperty.save(trx)
+          QueueService.uploadOpenImmoImages(images, existingProperty.id)
+        } else {
+          result = await Estate.createItem(omit(property, ['images']), trx)
+          QueueService.uploadOpenImmoImages(images, result.id)
+        }
+      })
+      await Import.createItem({
+        user_id,
+        filename,
+        type: IMPORT_TYPE_OPENIMMO,
+        entity: IMPORT_ENTITY_ESTATES,
+      })
+      await trx.commit()
+      return result
+    } catch (err) {
+      await trx.rollback()
+      console.log(err)
+      throw new HttpException(err.message)
+    }
+  }
+
   static async deletePermanent(user_id) {
     await Estate.query().where('user_id', user_id).delete()
   }
@@ -1458,6 +1725,29 @@ class EstateService {
         address,
       })
     }
+  }
+
+  static async getFilesByEstateId(estateId) {
+    const File = use('App/Models/File')
+    const files = await File.query().where('estate_id', estateId).fetch()
+    let typeAssigned = {
+      external: ['external'],
+      documents: ['plan', 'energy_certificate', 'custom', 'doc'],
+      unassigned: ['unassigned'],
+    }
+    let ret = {
+      external: [],
+      documents: { plan: [], energy_certificate: [], custom: [] },
+      unassigned: [],
+    }
+    files.toJSON().map((file) => {
+      if (typeAssigned[file.type].includes(file.type)) {
+        ret[file.type] = [...ret[file.type], file]
+      } else if (typeAssigned.documents.includes(file.type)) {
+        ret.documents[file.type] = [...ret.documents[file.type], file]
+      }
+    })
+    return ret
   }
 }
 module.exports = EstateService
