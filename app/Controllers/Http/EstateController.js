@@ -313,7 +313,9 @@ class EstateController {
       (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
         ? true
         : false
-    const unassigned_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_GALLERY)
+    const unassigned_view_has_media = (estate.files || []).find(
+      (f) => f.type == FILE_TYPE_UNASSIGNED
+    )
       ? true
       : false
 
