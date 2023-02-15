@@ -1055,14 +1055,22 @@ class EstateService {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant')
+        .with('current_tenant', function (c) {
+          c.with('user', function (u) {
+            u.select('id', 'avatar')
+          })
+        })
         .with('slots')
         .fetch()
     } else {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant')
+        .with('current_tenant', function (c) {
+          c.with('user', function (u) {
+            u.select('id', 'avatar')
+          })
+        })
         .with('slots')
         .paginate(page, limit)
     }
