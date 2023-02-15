@@ -437,11 +437,11 @@ class EstateCurrentTenantService extends BaseService {
               letting_status: LETTING_STATUS_STANDARD,
             },
             userId: user_id,
+            is_coord_changed: false,
           },
           false,
           trx
         )
-        console.log('estate id here newly=', id)
         estate_id = id
       } else {
         if (await this.getCurrentTenantByEstateId({ estate_id, notDisconnected: true })) {
