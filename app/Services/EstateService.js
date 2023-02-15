@@ -497,6 +497,10 @@ class EstateService {
     return File.createItem({ url, disk, file_name, estate_id: estate.id, type, file_format })
   }
 
+  static async addManyFiles(data) {
+    return await File.createMany(data)
+  }
+
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
     await this.hasPermission({ id: estate_id, user_id })
     const files = galleries.map((gallery) => {
@@ -1727,7 +1731,7 @@ class EstateService {
     }
   }
 
-  static async getFiles(estateId) {
+  static async getFilesByEstateId(estateId) {
     const File = use('App/Models/File')
     const files = await File.query().where('estate_id', estateId).fetch()
     let typeAssigned = {
@@ -1740,8 +1744,9 @@ class EstateService {
       documents: { plan: [], energy_certificate: [], custom: [] },
       unassigned: [],
     }
+    //return files
     files.toJSON().map((file) => {
-      if (typeAssigned[file.type].includes(file.type)) {
+      if (typeAssigned[file.type]?.includes(file.type)) {
         ret[file.type] = [...ret[file.type], file]
       } else if (typeAssigned.documents.includes(file.type)) {
         ret.documents[file.type] = [...ret.documents[file.type], file]

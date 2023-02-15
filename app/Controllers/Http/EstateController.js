@@ -72,6 +72,7 @@ const {
     WRONG_PARAMS,
     IMAGE_COUNT_LIMIT,
     FAILED_IMPORT_FILE_UPLOAD,
+    FAILED_TO_ADD_FILE,
   },
 } = require('../../../app/exceptions')
 
@@ -290,7 +291,6 @@ class EstateController {
     const { id } = request.all()
     const user_id = auth.user instanceof Admin ? null : auth.user.id
     let estate = await EstateService.getEstateWithDetails({ id, user_id, role: auth.user.role })
-
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
@@ -596,30 +596,24 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    if (isArray(files.file)) {
-      files.file.map(async (dfile, index) => {
-        await EstateService.addFile({
+    if (files && files.file) {
+      const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const data = paths.map((path, index) => {
+        return {
           disk: 's3public',
-          url: files.file[index],
+          url: path,
           file_name: files.original_file[index],
-          file_format: files.format[index],
           type,
-          estate,
-        })
+          estate_id: estate.id,
+          file_format: files.format[index],
+        }
       })
-    } else {
-      await EstateService.addFile({
-        disk: 's3public',
-        url: files.file,
-        file_name: files.original_file,
-        file_format: files.format,
-        type,
-        estate,
-      })
-    }
-    Event.fire('estate::update', estate_id)
 
-    response.res(files)
+      const result = await EstateService.addManyFiles(data)
+      Event.fire('estate::update', estate_id)
+      return response.res(result)
+    }
+    throw new HttpException(FAILED_TO_ADD_FILE, 500)
   }
 
   /**
@@ -1150,7 +1144,7 @@ class EstateController {
   async getFiles({ response, params }) {
     const { estate_id } = params
     try {
-      response.res(await EstateService.getFiles(estate_id))
+      response.res(await EstateService.getFilesByEstateId(estate_id))
     } catch (err) {
       throw new HttpException(err.message)
     }
