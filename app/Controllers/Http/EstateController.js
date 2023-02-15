@@ -52,6 +52,7 @@ const {
   IMPORT_ENTITY_ESTATES,
   IMPORT_ACTIVITY_PENDING,
   FILE_LIMIT_LENGTH,
+  FILE_TYPE_UNASSIGNED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
@@ -576,9 +577,14 @@ class EstateController {
       .whereIn('user_id', userIds)
       .firstOrFail()
 
-    if (estate.toJSON().files && estate.toJSON().files.length >= FILE_LIMIT_LENGTH) {
+    if (
+      type !== FILE_TYPE_UNASSIGNED &&
+      estate.toJSON().files &&
+      estate.toJSON().files.length >= FILE_LIMIT_LENGTH
+    ) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
+
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
