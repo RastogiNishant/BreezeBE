@@ -235,9 +235,12 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = generateAddress(instance)
-        instance.coord = null
-        instance.coord_raw = null
+        if (instance.dirty.is_coord_changed) {
+          instance.coord = null
+          instance.coord_raw = null
+        }
       }
+
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
@@ -269,6 +272,8 @@ class Estate extends Model {
         instance.additional_costs = 0
         instance.heating_costs = 0
       }
+
+      delete instance.is_coord_changed
     })
 
     this.addHook('afterCreate', async (instance) => {
@@ -426,7 +431,7 @@ class Estate extends Model {
       MATCH_STATUS_VISIT,
       MATCH_STATUS_SHARE,
     ])
-  }  
+  }
   /**
    *
    */
