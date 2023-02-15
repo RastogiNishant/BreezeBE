@@ -53,9 +53,12 @@ const {
   IMPORT_ACTIVITY_PENDING,
   FILE_LIMIT_LENGTH,
   FILE_TYPE_UNASSIGNED,
+  FILE_TYPE_EXTERNAL,
+  FILE_TYPE_CUSTOM,
+  FILE_TYPE_PLAN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -296,7 +299,26 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
     estate = estate.toJSON({ isOwner: true })
+    const outside_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_EXTERNAL)
+      ? true
+      : false
+    const inside_view_has_media = (estate?.rooms || []).find(
+      (room) => room.images && room.images.length
+    )
+      ? true
+      : false
+    const document_view_has_media =
+      (estate.energy_proof && trim(estate.energy_proof) != '') ||
+      (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
+        ? true
+        : false
     estate = await EstateService.assignEstateAmenities(estate)
+    estate = {
+      ...estate,
+      inside_view_has_media,
+      outside_view_has_media,
+      document_view_has_media,
+    }
     response.res(estate)
   }
 
