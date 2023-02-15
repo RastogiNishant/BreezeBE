@@ -244,7 +244,11 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ request, data, userId }, fromImport = false, trx = null) {
+  static async createEstate(
+    { request, data, userId, is_coord_changed = true },
+    fromImport = false,
+    trx = null
+  ) {
     data = request ? request.all() : data
 
     const propertyId = data.property_id
@@ -297,6 +301,7 @@ class EstateService {
     const estate = await Estate.createItem(
       {
         ...createData,
+        is_coord_changed,
       },
       trx
     )
