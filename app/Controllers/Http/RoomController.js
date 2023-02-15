@@ -67,27 +67,9 @@ class RoomController {
     const trx = await Database.beginTransaction()
 
     try {
-      await RoomService.hasPermission(estate_id, auth.user)
-
-      if (roomData.favorite) {
-        await Room.query()
-          .where('estate_id', estate_id)
-          .where('type', roomData.type)
-          .update({ favorite: false })
-          .transacting(trx)
-      }
-
-      const room = await Room.createItem(
-        {
-          ...roomData,
-          estate_id,
-        },
-        trx
-      )
-
+      const room = await RoomService.createRoom({ user: auth.user, estate_id, roomData }, trx)
       Event.fire('estate::update', estate_id)
       await trx.commit()
-
       response.res(room)
     } catch (e) {
       Logger.error('Create Room error', e)

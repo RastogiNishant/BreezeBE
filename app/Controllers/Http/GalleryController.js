@@ -20,7 +20,7 @@ class GalleryController {
 
   async assign({ request, auth, response }) {
     const { estate_id, ...data } = request.all()
-    response.res(await GalleryService.assign({ user_id: auth.user.id, estate_id, data }))
+    response.res(await GalleryService.assign({ user: auth.user, estate_id, data }))
   }
 }
 

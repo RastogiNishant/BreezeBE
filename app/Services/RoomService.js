@@ -264,6 +264,27 @@ class RoomService {
     return rooms
   }
 
+  static async createRoom({ user, estate_id, roomData }, trx) {
+    await this.hasPermission(estate_id, user)
+
+    if (roomData.favorite) {
+      await Room.query()
+        .where('estate_id', estate_id)
+        .where('type', roomData.type)
+        .update({ favorite: false })
+        .transacting(trx)
+    }
+
+    const room = await Room.createItem(
+      {
+        ...roomData,
+        estate_id,
+      },
+      trx
+    )
+
+    return room
+  }
   static async createRoomsFromImport({ estate_id, rooms }, trx) {
     try {
       const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
@@ -434,10 +455,12 @@ class RoomService {
     await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
   }
 
-  static async addImageFromGallery({ user_id, room_id, estate_id, galleries }, trx) {
-    const room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
+  static async addImageFromGallery({ user_id, room_id, estate_id, galleries, room }, trx) {
     if (!room) {
-      throw new HttpException(NO_ROOM_EXIST, 400)
+      room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
+      if (!room) {
+        throw new HttpException(NO_ROOM_EXIST, 400)
+      }
     }
 
     if (room.images && room.toJSON().images.length >= FILE_LIMIT_LENGTH) {
