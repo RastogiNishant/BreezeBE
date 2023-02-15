@@ -15,6 +15,7 @@ const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
 } = require('../exceptions')
+const CreateRoom = require('./CreateRoom')
 
 class GalleryAssign extends Base {
   static schema = () =>
@@ -37,13 +38,15 @@ class GalleryAssign extends Base {
         .typeError(getExceptionMessage('room_id', NUMBER))
         .when('view_type', {
           is: GALLERY_INSIDE_VIEW_TYPE,
-          then: yup
-            .number()
-            .integer()
-            .required(getExceptionMessage('room_id', REQUIRED))
-            .typeError(getExceptionMessage('room_id', NUMBER)),
+          then: yup.number().integer().typeError(getExceptionMessage('room_id', NUMBER)),
         }),
-
+      room: yup
+        .object()
+        .shape({})
+        .when(['view_type', 'room_id'], {
+          is: (view_type, room_id) => view_type === GALLERY_INSIDE_VIEW_TYPE && !room_id,
+          then: yup.object().concat(CreateRoom.schema()).required(),
+        }),
       document_type: yup.string().when('view_type', {
         is: GALLERY_DOCUMENT_VIEW_TYPE,
         then: yup
