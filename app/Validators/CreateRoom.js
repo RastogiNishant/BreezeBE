@@ -47,7 +47,7 @@ class CreateRoom extends Base {
       type: yup
         .number()
         .positive()
-        .oneof([
+        .oneOf([
           ROOM_TYPE_GUEST_ROOM,
           ROOM_TYPE_BATH,
           ROOM_TYPE_BEDROOM,
