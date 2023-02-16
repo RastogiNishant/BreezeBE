@@ -640,7 +640,7 @@ class EstateController {
     if (
       type !== FILE_TYPE_UNASSIGNED &&
       estate.toJSON().files &&
-      image_length + count >= FILE_LIMIT_LENGTH
+      image_length + count > FILE_LIMIT_LENGTH
     ) {
       throw new HttpException(`${IMAGE_COUNT_LIMIT} ${CURRENT_IMAGE_COUNT}:${image_length}`, 400)
     }
@@ -664,11 +664,15 @@ class EstateController {
 
     if (files && files.file) {
       const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const original_file_names = Array.isArray(files.original_file)
+        ? files.original_file
+        : [files.original_file]
+      console.log('files here=', files)
       const data = paths.map((path, index) => {
         return {
           disk: 's3public',
           url: path,
-          file_name: files.original_file[index],
+          file_name: original_file_names[index],
           type,
           estate_id: estate.id,
         }
