@@ -208,11 +208,14 @@ class RoomService {
 
       if (files && files.file) {
         const paths = Array.isArray(files.file) ? files.file : [files.file]
+        const original_file_names = Array.isArray(files.original_file)
+          ? files.original_file
+          : [files.original_file]
         const data = paths.map((path, index) => {
           return {
             disk: 's3public',
             url: path,
-            file_name: files.original_file[index],
+            file_name: original_file_names[index],
             room_id: room.id,
           }
         })
