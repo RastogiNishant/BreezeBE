@@ -22,13 +22,8 @@ const {
 } = require('../constants')
 
 class TaskFilters extends Filter {
-
   constructor(params, query, user_id) {
     super(params, query, user_id, FILTER_NAME_CONNECT)
-
-    if (isEmpty(params)) {
-      return
-    }
   }
 
   async init() {
@@ -51,13 +46,13 @@ class TaskFilters extends Filter {
       },
     }
 
-    this.paramToField = {
+    Filter.paramToField = {
       active_task: 'count(tasks.id)',
       in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
       task_name: ['title', 'description'],
     }
-    this.matchFilters = without(this.matchFilters, 'active_task', 'breeze_type')
+    this.matchFilters = without(this.matchFilters, 'active_task', 'in_progress_task', 'breeze_type')
 
     this.matchFilter(this.matchFilters, params)
 
@@ -103,7 +98,11 @@ class TaskFilters extends Filter {
     }
 
     const active_task_params = params['active_task']
-    if (active_task_params && this.isExist('active_task') && active_task_params.constraints.length) {
+    if (
+      active_task_params &&
+      this.isExist('active_task') &&
+      active_task_params.constraints.length
+    ) {
       const values = active_task_params.constraints.filter(
         (c) => c.value !== null && c.value !== undefined
       )
@@ -126,7 +125,9 @@ class TaskFilters extends Filter {
   }
 
   afterQuery() {
-    const matchCountFilterFields = ['active_task', 'in_progress_task'].filter( column => this.isExist(column) )
+    const matchCountFilterFields = ['active_task', 'in_progress_task'].filter((column) =>
+      this.isExist(column)
+    )
     this.matchCountFilter(matchCountFilterFields, this.params)
     return this.query
   }

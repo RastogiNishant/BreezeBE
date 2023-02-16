@@ -8,7 +8,7 @@ const FilterColumnsService = use('App/Services/FilterColumnsService')
 class Filter {
   params
   query = null
-  paramToField = null
+  static paramToField = null
   MappingInfo = null
   TableInfo = {}
   globalSearchFields = []
@@ -35,24 +35,31 @@ class Filter {
       return
     }
 
-    this.columns = (await FilterColumnsService.getAll({ user_id: this.user_id, filter: { filterName: this.filterName } })).toJSON({ isOwner: true })
-    this.globalSearchFields = (this.columns || []).filter(column => column.used_global_search && column.visible).map(column => `${column.tableAlias || column.tableName}.${column.fieldName}`)
-    this.matchFilters = (this.columns || []).filter(column => !column.is_used_filter && column.visible).map(column => column.fieldName)
+    this.columns = (
+      await FilterColumnsService.getAll({
+        user_id: this.user_id,
+        filter: { filterName: this.filterName },
+      })
+    ).toJSON({ isOwner: true })
+    this.globalSearchFields = (this.columns || [])
+      .filter((column) => column.used_global_search && column.visible)
+      .map((column) => `${column.tableAlias || column.tableName}.${column.fieldName}`)
 
-    this.TableInfo = (this.columns || []).reduce(
-      (tableInfo, column) => {
-        const fieldName = column.fieldName
-        return {
-          ...tableInfo,
-          [fieldName]: (column.tableAlias || column.tableName)
-        }
-      },
-      {}
-    );
+    this.matchFilters = (this.columns || [])
+      .filter((column) => !column.is_used_filter && column.visible)
+      .map((column) => column.fieldName)
+
+    this.TableInfo = (this.columns || []).reduce((tableInfo, column) => {
+      const fieldName = column.fieldName
+      return {
+        ...tableInfo,
+        [fieldName]: column.tableAlias || column.tableName,
+      }
+    }, {})
   }
 
   isExist(fieldName) {
-    return this.columns.find(column => column.fieldName === fieldName && column.visible)
+    return this.columns.find((column) => column.fieldName === fieldName && column.visible)
   }
 
   processGlobals() {
@@ -178,9 +185,7 @@ class Filter {
   }
 
   static getField(param) {
-    return this.TableInfo && this.TableInfo[param]
-      ? `${this.TableInfo[param]}.${param}`
-      : param
+    return this.TableInfo && this.TableInfo[param] ? `${this.TableInfo[param]}.${param}` : param
   }
 
   static parseMatchMode(param, value, matchMode) {
