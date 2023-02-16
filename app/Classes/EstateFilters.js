@@ -1,4 +1,4 @@
-const { toLower, isArray, isEmpty, trim, includes, isBoolean } = require('lodash')
+const { toLower, isArray, trim, includes, without } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -25,6 +25,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   LETTING_STATUS_NEW_RENOVATED,
+  FILTER_NAME_ESTATE,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -63,31 +64,54 @@ class EstateFilters extends Filter {
     site: PROPERTY_TYPE_SITE,
     office: PROPERTY_TYPE_OFFICE,
   }
-  static possibleStringParams = [
-    'address',
-    'customArea',
-    'customFloor',
-    'property_id',
-    'customRent',
-    'customNumFloor',
-    'rooms_number',
-  ]
-  globalSearchFields = ['property_id', 'address', 'six_char_code']
+
+  static possibleStringParams = []
 
   constructor(params, query, user_id = null) {
-    super(params, query, user_id)
-    if (isEmpty(params)) {
-      return
-    }
-    this.processGlobals()
+    super(params, query, user_id, FILTER_NAME_ESTATE)
+  }
+
+  async init() {
+    await super.init()
+    const params = this.params
     Filter.paramToField = {
+      ...Filter.paramToField,
       customArea: 'area',
       customFloor: 'floor',
       customNumFloor: 'number_floors',
       customRent: 'net_rent',
+      customPropertyType: 'property_type',
+      customStatus: 'status',
+      customFloorDirection: 'floor_direction',
     }
 
-    this.matchFilter(EstateFilters.possibleStringParams, params)
+    Filter.MappingInfo = {
+      customStatus: {
+        online: STATUS_ACTIVE,
+        offline: STATUS_DRAFT,
+        expired: STATUS_EXPIRE,
+      },
+      customPropertyType: {
+        apartment: PROPERTY_TYPE_APARTMENT,
+        room: PROPERTY_TYPE_ROOM,
+        house: PROPERTY_TYPE_HOUSE,
+        site: PROPERTY_TYPE_SITE,
+        office: PROPERTY_TYPE_OFFICE,
+      },
+      customFloorDirection: {
+        na: ESTATE_FLOOR_DIRECTION_NA,
+        left: ESTATE_FLOOR_DIRECTION_LEFT,
+        right: ESTATE_FLOOR_DIRECTION_RIGHT,
+        straight: ESTATE_FLOOR_DIRECTION_STRAIGHT,
+        straight_left: ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+        straight_right: ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+      },
+    }
+
+    EstateFilters.possibleStringParams = this.matchFilters
+    this.matchFilters = without(this.matchFilters, 'customLettingStatus')
+    this.matchFilter(this.matchFilters, params)
+    this.processGlobals()
 
     /* address, area, property_id, net_rent */
     /* filter for combined letting_status and letting_type */
@@ -96,6 +120,8 @@ class EstateFilters extends Filter {
         params.customLettingStatus.value.map((letting) => {
           const letting_str = EstateFilters.parseLetting(letting)
           const { letting_type, letting_status } = EstateFilters.lettingToIntVal(letting_str)
+          console.log('letting type=', letting_type)
+          console.log('letting status=', letting_status)
           this.orWhere(function () {
             if (letting_type) {
               this.andWhere('letting_type', letting_type)
@@ -135,11 +161,6 @@ class EstateFilters extends Filter {
         this.orWhere('estates.zip', 'ilike', `${params.query}%`)
       })
     }
-    /* status */
-    if (params.customStatus && params.customStatus.value) {
-      let statuses = EstateFilters.customStatusesToValue(params.customStatus.value)
-      this.query.whereIn('estates.status', statuses)
-    }
 
     if (params.status) {
       this.query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
@@ -149,12 +170,6 @@ class EstateFilters extends Filter {
     if (params.floor_direction && params.floor_direction.value) {
       let floor_directions = EstateFilters.customFloorDirectionToValue(params.floor_direction.value)
       this.query.whereIn('estates.floor_direction', floor_directions)
-    }
-
-    /* property_type */
-    if (params.customPropertyType && params.customPropertyType.value) {
-      let propertyTypes = EstateFilters.customPropertyTypesToValue(params.customPropertyType.value)
-      this.query.whereIn('estates.property_type', propertyTypes)
     }
 
     if (params.property_type) {

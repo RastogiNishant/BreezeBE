@@ -73,7 +73,6 @@ const {
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
-const ChatService = require('./ChatService')
 const MAX_DIST = 10000
 
 /**
@@ -413,11 +412,10 @@ class EstateService {
   /**
    *
    */
-  static getEstates(user_ids, params = {}) {
+  static getEstates(user_id) {
     let query = Estate.query()
       .withCount('notifications', function (n) {
-        user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
-        n.whereIn('user_id', user_ids)
+        n.where('user_id', user_id)
       })
       .withCount('visits')
       .withCount('knocked')
@@ -433,18 +431,16 @@ class EstateService {
       })
       .with('files')
 
-    const Filter = new EstateFilters(params, query, user_id)
-    query = Filter.process()
     return query.orderBy('estates.id', 'desc')
   }
 
   /**
    *
    */
-  static getUpcomingShows(ids, query = '') {
-    return this.getEstates(ids)
+  static async getUpcomingShows(user_id, query = '') {
+    return this.getEstates(user_id)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('estates.user_id', ids)
+      .where('estates.user_id', user_id)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -1051,10 +1047,12 @@ class EstateService {
     NoticeService.prospectPropertDeactivated(matches.rows)
   }
 
-  static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
+  static async getEstatesByUserId({ user_id, limit = -1, page = -1, params = {} }) {
+    let query = this.getEstates(user_id)
+    await new EstateFilters(params, query, user_id).init()
     if (page === -1 || limit === -1) {
-      return await this.getEstates(ids, params)
-        .whereIn('estates.user_id', ids)
+      return query
+        .where('estates.user_id', user_id)
         .whereNot('estates.status', STATUS_DELETE)
         .with('current_tenant', function (c) {
           c.with('user', function (u) {
@@ -1064,8 +1062,8 @@ class EstateService {
         .with('slots')
         .fetch()
     } else {
-      return await this.getEstates(ids, params)
-        .whereIn('estates.user_id', ids)
+      return query
+        .where('estates.user_id', user_id)
         .whereNot('estates.status', STATUS_DELETE)
         .with('current_tenant', function (c) {
           c.with('user', function (u) {
@@ -1261,8 +1259,7 @@ class EstateService {
     let query = EstateService.getCounts()
       .whereNot('estates.status', STATUS_DELETE)
       .where('user_id', userId)
-    const Filter = new EstateFilters(params, query)
-    query = Filter.process()
+    await new EstateFilters(params, query, userId).init()
     let filteredCounts = await query.first()
 
     filteredCounts = omit(filteredCounts.toJSON(), [

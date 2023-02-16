@@ -47,6 +47,7 @@ class TaskFilters extends Filter {
     }
 
     Filter.paramToField = {
+      ...Filter.paramToField,
       active_task: 'count(tasks.id)',
       in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
@@ -98,11 +99,7 @@ class TaskFilters extends Filter {
     }
 
     const active_task_params = params['active_task']
-    if (
-      active_task_params &&
-      this.isExist('active_task') &&
-      active_task_params.constraints.length
-    ) {
+    if (active_task_params && active_task_params.constraints.length) {
       const values = active_task_params.constraints.filter(
         (c) => c.value !== null && c.value !== undefined
       )

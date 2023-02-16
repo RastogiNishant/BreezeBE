@@ -8,7 +8,7 @@ const FilterColumnsService = use('App/Services/FilterColumnsService')
 class Filter {
   params
   query = null
-  static paramToField = null
+  static paramToField = {}
   MappingInfo = null
   TableInfo = {}
   globalSearchFields = []
@@ -185,7 +185,9 @@ class Filter {
   }
 
   static getField(param) {
-    return this.TableInfo && this.TableInfo[param] ? `${this.TableInfo[param]}.${param}` : param
+    return this.TableInfo && this.TableInfo[param]
+      ? `${this.TableInfo[param]}.${Filter.mapParamToField(param)}`
+      : Filter.mapParamToField(param)
   }
 
   static parseMatchMode(param, value, matchMode) {
