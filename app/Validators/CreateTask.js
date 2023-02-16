@@ -12,7 +12,6 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
 } = require('../constants')
 class CreateTask extends Base {
   static schema = () =>
@@ -31,7 +30,6 @@ class CreateTask extends Base {
           TASK_STATUS_INPROGRESS,
           TASK_STATUS_UNRESOLVED,
           TASK_STATUS_RESOLVED,
-          TASK_STATUS_CLOSED,
         ]),
       description: yup.string(),
       file: yup.mixed(),

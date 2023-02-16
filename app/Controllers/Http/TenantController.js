@@ -18,6 +18,9 @@ const {
   STATUS_ACTIVE,
   LOG_TYPE_ACTIVATED_PROFILE,
   MEMBER_FILE_TYPE_PASSPORT,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -49,7 +52,15 @@ class TenantController {
       throw new HttpException('No access', 403)
     }
 
-    if (file_type === MEMBER_FILE_TYPE_INCOME || file_type === MEMBER_FILE_TYPE_PASSPORT) {
+    if (
+      [
+        MEMBER_FILE_TYPE_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_RENT,
+        MEMBER_FILE_TYPE_EXTRA_DEBT,
+        MEMBER_FILE_TYPE_INCOME,
+      ].includes(file_type)
+    ) {
       if (!file_id) {
         throw new HttpException('File id required', 400)
       }
@@ -113,7 +124,7 @@ class TenantController {
         updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
       } else {
-        await MatchService.matchByUser(auth.user.id)
+        await MatchService.matchByUser({ userId: auth.user.id, has_notification_sent: false })
       }
       response.res(updatedTenant)
     } catch (e) {
@@ -132,10 +143,9 @@ class TenantController {
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
       Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
-      console.log(e.message)
       throw new HttpException(e.message, 400, e.code)
     }
-    await MatchService.matchByUser(auth.user.id, true)
+    await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
 
     response.res(true)
   }
@@ -163,6 +173,27 @@ class TenantController {
     } catch (e) {
       throw new HttpException(e.message, 400, e.code)
     }
+  }
+
+  async tenantCountByCreditScore({ request, auth, response }) {
+    const { credit_score_min, credit_score_max } = request.all()
+    response.res(await TenantService.getCountByFilter({ credit_score_min, credit_score_max }))
+  }
+
+  async tenantCountByBudget({ request, auth, response }) {
+    const { budget_min, budget_max } = request.all()
+    response.res(await TenantService.getCountByFilter({ budget_min, budget_max }))
+  }
+
+  async tenantCount({ request, auth, response }) {
+    const phoneVerifiedCount = await MemberService.getPhoneVerifieldCount()
+    const idVerifiedCount = await MemberService.getIdVerifiedCount()
+    const incomeCounts = await MemberService.getIncomesCountByFilter()
+    response.res({
+      phone: phoneVerifiedCount,
+      id: idVerifiedCount,
+      income: incomeCounts,
+    })
   }
 }
 

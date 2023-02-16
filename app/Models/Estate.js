@@ -3,6 +3,7 @@
 const moment = require('moment')
 const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
+const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
@@ -28,7 +29,6 @@ const {
   EQUIPMENT_GUEST_WC,
   EQUIPMENT_WG_SUITABLE,
 
-  STATUS_DRAFT,
   STATUS_ACTIVE,
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -43,6 +43,11 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_DELETE,
   TASK_STATUS_DRAFT,
+  LETTING_TYPE_LET,
+  STATUS_DRAFT,
+  STATUS_DELETE,
+  ROLE_LANDLORD,
+  ROLE_USER,
 } = require('../constants')
 
 class Estate extends Model {
@@ -154,6 +159,7 @@ class Estate extends Model {
       'is_new_tenant_transfer',
       'transfer_budget',
       'rent_end_at',
+      'income_sources',
     ]
   }
 
@@ -169,8 +175,8 @@ class Estate extends Model {
    */
   static get options() {
     return {
-      bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
-      kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
+      //bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
+      //kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
       equipment: [
         EQUIPMENT_STACK,
         EQUIPMENT_AIR_CONDITIONED,
@@ -210,6 +216,16 @@ class Estate extends Model {
   static boot() {
     super.boot()
     this.addTrait('@provider:SerializerExtender')
+
+    this.addHook('beforeUpdate', async (instance) => {
+      if (
+        instance.letting_type === LETTING_TYPE_LET &&
+        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+      ) {
+        instance.status = STATUS_DRAFT
+      }
+    })
+
     this.addHook('beforeSave', async (instance) => {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
@@ -218,13 +234,13 @@ class Estate extends Model {
       }
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
-        instance.address = trim(
-          `${instance.street || ''} ${instance.house_number || ''}, ${instance.zip || ''} ${
-            instance.city || ''
-          }, ${instance.country || ''}`,
-          ', '
-        ).toLowerCase()
+        instance.address = generateAddress(instance)
+        if (instance.dirty.is_coord_changed) {
+          instance.coord = null
+          instance.coord_raw = null
+        }
       }
+
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
@@ -256,25 +272,30 @@ class Estate extends Model {
         instance.additional_costs = 0
         instance.heating_costs = 0
       }
+
+      delete instance.is_coord_changed
     })
 
     this.addHook('afterCreate', async (instance) => {
-      await Database.table('estates')
-        .update({ hash: Estate.getHash(instance.id) })
-        .where('id', instance.id)
-      let exists
-      let randomString
-      do {
-        randomString = this.generateRandomString(6)
-        exists = await Database.table('estates')
-          .where('six_char_code', randomString)
-          .select('id')
-          .first()
-      } while (exists)
-      await Database.table('estates')
-        .where('id', instance.id)
-        .update({ six_char_code: randomString })
+      await this.updateBreezeId(instance.id)
     })
+  }
+
+  static async updateBreezeId(id) {
+    await Database.table('estates')
+      .update({ hash: Estate.getHash(id) })
+      .where('id', id)
+
+    let exists
+    let randomString
+    do {
+      randomString = this.generateRandomString(6)
+      exists = await Database.table('estates')
+        .where('six_char_code', randomString)
+        .select('id')
+        .first()
+    } while (exists)
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
   }
 
   /**
@@ -295,7 +316,7 @@ class Estate extends Model {
    *
    */
   rooms() {
-    return this.hasMany('App/Models/Room')
+    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
   }
 
   activeTasks() {
@@ -305,7 +326,24 @@ class Estate extends Model {
       .orderBy('urgency', 'desc')
   }
 
+  tenant_has_unread_task() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
+      .where('unread_role', ROLE_USER)
+      .where('unread_count', '>', 0)
+  }
+
+  static landlord_has_unread_messages(active_tasks, role = ROLE_LANDLORD) {
+    return active_tasks.findIndex((task) => task.unread_role === role && task.unread_count) !== -1
+  }
+
   tasks() {
+    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
+      TASK_STATUS_DELETE,
+      TASK_STATUS_DRAFT,
+    ])
+  }
+  all_tasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
       TASK_STATUS_DELETE,
       TASK_STATUS_DRAFT,
@@ -333,6 +371,13 @@ class Estate extends Model {
   /**
    *
    */
+  visit_relations() {
+    return this.hasMany('App/Models/Visit')
+  }
+
+  /**
+   *
+   */
   matches() {
     return this.hasMany('App/Models/Match')
   }
@@ -345,7 +390,10 @@ class Estate extends Model {
   }
 
   current_tenant() {
-    return this.hasOne('App/Models/EstateCurrentTenant').where('status', STATUS_ACTIVE)
+    return this.hasOne('App/Models/EstateCurrentTenant', 'id', 'estate_id').where(
+      'status',
+      STATUS_ACTIVE
+    )
   }
 
   /**
@@ -374,15 +422,29 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
+  invited() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_INVITE })
+  }
+
+  visited() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
+    ])
+  }
   /**
    *
    */
   files() {
-    return this.hasMany('App/Models/File')
+    return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
   amenities() {
     return this.hasMany('App/Models/Amenity')
+  }
+
+  notifications() {
+    return this.hasOne('App/Models/Notice')
   }
 
   /**
@@ -432,11 +494,13 @@ class Estate extends Model {
   /**
    *
    */
-  async getContacts() {
+  async getContacts(user_id) {
     const contact = await Contact.query()
       .select('contacts.*', '_c.avatar')
       .innerJoin({ _c: 'companies' }, '_c.id', 'contacts.company_id')
-      .where('_c.user_id', this.user_id)
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', '_c.id').on('_u.id', user_id)
+      })
       .orderBy('contacts.id')
       .first()
 

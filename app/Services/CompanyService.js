@@ -7,11 +7,9 @@ const Company = use('App/Models/Company')
 const Contact = use('App/Models/Contact')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
+const Database = use('Database')
+const { phoneSchema } = require('../Libs/schemas')
 
-// const CreateCompany = require('../Validators/CreateCompany')
-// const CreateContact = require('../Validators/CreateContact')
-
-const { wrapValidationError } = require('../Libs/utils.js')
 const {
   MATCH_STATUS_FINISH,
   COMPANY_TYPE_PRIVATE,
@@ -20,62 +18,101 @@ const {
   COMPANY_TYPE_MUNICIPAL_HOUSING,
   COMPANY_TYPE_HOUSING_COOPERATIVE,
   COMPANY_TYPE_LISTED_HOUSING,
+  COMPANY_TYPE_BROKER,
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
+  STATUS_DELETE,
 } = require('../constants')
 
 class CompanyService {
   /**
    *
    */
-  static async getUserCompany(userId) {
-    return Company.query().where({ user_id: userId }).with('contacts').first()
-  }
+  static async getUserCompany(userId, companyId = null) {
+    let query = Company.query()
+      .select('companies.*')
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', 'companies.id').on('_u.id', userId)
+      })
+      .whereNot('companies.status', STATUS_DELETE)
+      .with('contacts')
 
-  /**
-   *
-   */
-  static async createCompany(data, userId) {
-    const existing = await Company.query().where({ user_id: userId }).first()
-    if (existing) {
-      throw new AppException('User already has company')
+    if (companyId) {
+      query.where('companies.id', companyId)
     }
 
-    return Company.createItem({
-      ...data,
-      user_id: userId,
-    })
+    return await query.first()
   }
 
   /**
    *
    */
-  static async updateCompany(companyId, userId, data) {
-    const userCompany = await Company.query().where({ user_id: userId, id: companyId }).first()
+  static async createCompany(data, userId, trx) {
+    return Company.createItem(
+      {
+        ...data,
+        user_id: userId,
+      },
+      trx
+    )
+  }
+
+  /**
+   *
+   */
+  static async updateCompany(userId, data, trx = null) {
+    let userCompany = await this.getUserCompany(userId)
     if (!userCompany) {
-      throw new AppException('Company not exists')
+      throw new AppException('Company not exists', 400)
     }
-    await userCompany.updateItem(data)
 
+    if (trx) {
+      await userCompany.updateItemWithTrx(data, trx)
+    } else {
+      await userCompany.updateItem(data)
+    }
+
+    userCompany = await this.getUserCompany(userId)
     return userCompany
   }
 
   /**
    *
    */
-  static async removeCompany(companyId, userId, trx) {
-    return Company.query().where({ user_id: userId, id: companyId }).delete(trx)
+  static async removeCompany(companyId, userId) {
+    const company = await CompanyService.getUserCompany(userId, companyId)
+    if (!company) {
+      throw new HttpException('No permission to delete')
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await User.query().update({ company_id: null }).where('company_id', companyId)
+      const company = await Company.query().where('id', companyId).update({ status: STATUS_DELETE })
+      await trx.commit()
+      return company
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 500)
+    }
   }
 
   /**
    *
    */
-  static async getContacts(userId) {
-    return Contact.query()
+  static async getContacts(userId, companyId = null) {
+    return await Contact.query()
       .select('contacts.*')
-      .innerJoin({ _cm: 'companies' }, '_cm.id', 'contacts.company_id')
-      .where({ ' _cm.user_id ': userId })
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', 'contacts.company_id').on('_u.id', userId)
+      })
+      .innerJoin({ _cm: 'companies' }, function () {
+        this.on('_cm.id', '_u.company_id').onNotIn('_cm.status', [STATUS_DELETE])
+        if (companyId) {
+          this.on('_cm.id', companyId)
+        }
+      })
       .fetch()
   }
 
@@ -83,15 +120,21 @@ class CompanyService {
    *
    */
   static async createContact(data, userId) {
-    const company = await CompanyService.getUserCompany(userId)
-    if (!company) {
-      throw new AppException('User has no companies')
+    const currentContacts = await this.getContacts(userId)
+
+    if (currentContacts?.rows?.length > 0) {
+      throw new HttpException('only 1 contact can be added', 400)
     }
 
-    return Contact.createItem({
+    const user = await require('./UserService').getById(userId)
+    if (!user) {
+      throw new HttpException('User not exists', 500)
+    }
+
+    return await Contact.createItem({
       ...data,
+      company_id: user.company_id,
       user_id: userId,
-      company_id: company.id,
     })
   }
 
@@ -102,11 +145,13 @@ class CompanyService {
     const contact = await Contact.query()
       .select('contacts.*')
       .where({ 'contacts.id': id, 'contacts.user_id': userId })
-      .innerJoin({ _cm: 'companies' }, '_cm.id', 'contacts.company_id')
+      .innerJoin({ _cm: 'companies' }, function () {
+        this.on('_cm.id', 'contacts.company_id').onNotIn('_cm.status', [STATUS_DELETE])
+      })
       .first()
 
     if (!contact) {
-      throw new AppException('Invalid contact')
+      throw new AppException('No contact exist', 400)
     }
     await contact.updateItem(data)
 
@@ -117,14 +162,16 @@ class CompanyService {
    *
    */
   static async removeContact(id, userId) {
-    return Contact.query().where({ 'contacts.id': id, 'contacts.user_id': userId }).delete()
+    return await Contact.query()
+      .where({ 'contacts.id': id, 'contacts.user_id': userId })
+      .update({ status: STATUS_DELETE })
   }
 
   /**
    *
    */
   static async getLandlordContacts(userId, tenantUserId) {
-    return Company.query()
+    return await Company.query()
       .select('companies.*')
       .innerJoin({ _m: 'matches' }, function () {
         this.onIn('_m.estate_id', function () {
@@ -133,7 +180,10 @@ class CompanyService {
           .onIn('_m.user_id', [tenantUserId])
           .onIn('_m.status', [MATCH_STATUS_FINISH])
       })
-      .where({ 'companies.user_id': userId })
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', 'companies.id').on('_u.id', userId)
+      })
+      .whereNot('companies.status', STATUS_DELETE)
       .with('contacts')
       .first()
   }
@@ -143,8 +193,11 @@ class CompanyService {
    */
   static async validateUserContacts(userId) {
     const contacts = await Company.query()
-      .where({ 'companies.user_id': userId })
+      .innerJoin({ _u: 'users' }, function () {
+        this.on('_u.company_id', 'companies.id').on('_u.id', userId)
+      })
       .innerJoin({ _ct: 'contacts' }, '_ct.company_id', 'companies.id')
+      .whereNot('companies.status', STATUS_DELETE)
       .limit(10)
       .fetch()
 
@@ -167,26 +220,31 @@ class CompanyService {
           COMPANY_TYPE_MUNICIPAL_HOUSING,
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
+          COMPANY_TYPE_BROKER,
         ])
         .required(),
       email: yup.string().email().lowercase().max(255).required(),
       full_name: yup.string().min(2).max(255).required(),
-      phone: yup
-        .string()
-        .transform((v) => {
-          return String(v).replace(/[^\d]/gi, '')
-        })
-        .min(7)
-        .max(255)
-        .required(),
+      phone: phoneSchema.nullable(),
     })
     try {
       await map(contacts.rows, (i) => {
         return schema.validate(i)
       })
     } catch (e) {
-      throw wrapValidationError(e)
+      throw new HttpException(
+        'Please double check if you have added Your name, company size, type, email address, company name, phone number'
+      )
     }
+  }
+
+  /**
+   * Delete company completely
+   * It's only used for deleting test company
+   */
+
+  static async permanentDelete(id) {
+    await Company.query().where('id', id).delete()
   }
 }
 

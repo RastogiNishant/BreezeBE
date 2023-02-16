@@ -2,7 +2,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
-const { STATUS_ACTIVE, STATUS_DRAFT, LETTING_TYPE_LET } = require('../constants')
+const { STATUS_ACTIVE, STATUS_DRAFT, LETTING_TYPE_LET, ROLE_USER } = require('../constants')
 
 class EstateCurrentTenant extends Model {
   static get columns() {
@@ -14,6 +14,8 @@ class EstateCurrentTenant extends Model {
       'contract_end',
       'status',
       'salutation_int',
+      'user_id',
+      'attachments',
     ]
   }
 
@@ -23,6 +25,12 @@ class EstateCurrentTenant extends Model {
 
   user() {
     return this.hasOne('App/Models/User', 'user_id', 'id').where('status', STATUS_ACTIVE)
+  }
+
+  inside_breeze() {
+    return this.hasOne('App/Models/User', 'email', 'email')
+      .where('status', STATUS_ACTIVE)
+      .where('role', ROLE_USER)
   }
 
   estate() {

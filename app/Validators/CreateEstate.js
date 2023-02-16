@@ -12,6 +12,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   // type
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -180,18 +181,29 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   PARKING_SPACE_TYPE_NO_PARKING,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   DATE_FORMAT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  ESTATE_FLOOR_DIRECTION_NA,
+  GENDER_NEUTRAL,
+  LETTING_STATUS_NEW_RENOVATED,
+
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -208,7 +220,7 @@ class CreateEstate extends Base {
   static schema = () =>
     yup.object().shape({
       breeze_id: yup.string().nullable(),
-      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
         .number()
@@ -218,6 +230,7 @@ class CreateEstate extends Base {
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ]),
       apt_type: yup
         .number()
@@ -259,9 +272,12 @@ class CreateEstate extends Base {
         .number()
         .integer()
         .oneOf([
+          ESTATE_FLOOR_DIRECTION_NA,
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ]),
       number_floors: yup.number().integer().min(1).max(100),
       prices: yup.number().min(0).max(100000),
@@ -307,16 +323,20 @@ class CreateEstate extends Base {
           OCCUPATION_TYPE_NOT_OCCUPIED,
         ]),
       use_type: yup
-        .number()
-        .positive()
-        .oneOf([
-          USE_TYPE_RESIDENTIAL,
-          USE_TYPE_COMMERCIAL,
-          USE_TYPE_CONSTRUCT,
-          USE_TYPE_WAZ,
-          USE_TYPE_PLANT,
-          USE_TYPE_OTHER,
-        ]),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              USE_TYPE_RESIDENTIAL,
+              USE_TYPE_COMMERCIAL,
+              USE_TYPE_CONSTRUCT,
+              USE_TYPE_WAZ,
+              USE_TYPE_PLANT,
+              USE_TYPE_OTHER,
+            ])
+        ),
       ownership_type: yup
         .number()
         .positive()
@@ -327,28 +347,36 @@ class CreateEstate extends Base {
           OWNERSHIP_TYPE_OTHER,
         ]),
       marketing_type: yup
-        .number()
-        .positive()
-        .oneOf([
-          MARKETING_TYPE_PURCHASE,
-          MARKETING_TYPE_RENT_LEASE,
-          MARKETING_TYPE_LEASEHOLD,
-          MARKETING_TYPE_LEASING,
-        ]),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              MARKETING_TYPE_PURCHASE,
+              MARKETING_TYPE_RENT_LEASE,
+              MARKETING_TYPE_LEASEHOLD,
+              MARKETING_TYPE_LEASING,
+            ])
+        ),
       energy_type: yup
-        .number()
-        .positive()
-        .oneOf([
-          ENERGY_TYPE_LOW_ENERGY,
-          ENERGY_TYPE_PASSIVE_HOUSE,
-          ENERGY_TYPE_NEW_BUILDING_STANDARD,
-          ENERGY_TYPE_KFW40,
-          ENERGY_TYPE_KFW60,
-          ENERGY_TYPE_KFW55,
-          ENERGY_TYPE_KFW70,
-          ENERGY_TYPE_MINERGIE_CONSTRUCTION,
-          ENERGY_TYPE_MINERGIE_CERTIFIED,
-        ]),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              ENERGY_TYPE_LOW_ENERGY,
+              ENERGY_TYPE_PASSIVE_HOUSE,
+              ENERGY_TYPE_NEW_BUILDING_STANDARD,
+              ENERGY_TYPE_KFW40,
+              ENERGY_TYPE_KFW60,
+              ENERGY_TYPE_KFW55,
+              ENERGY_TYPE_KFW70,
+              ENERGY_TYPE_MINERGIE_CONSTRUCTION,
+              ENERGY_TYPE_MINERGIE_CERTIFIED,
+            ])
+        ),
       vacant_date: yup.date(),
       avail_duration: yup.number().integer().positive().max(5000),
       from_date: yup.date().nullable(),
@@ -367,7 +395,7 @@ class CreateEstate extends Base {
       gender: yup
         .number()
         .integer()
-        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY, null])
+        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY, null])
         .nullable(),
       monumental_protection: yup.boolean(),
       parking_space: yup.number().min(0).max(10),
@@ -406,77 +434,83 @@ class CreateEstate extends Base {
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
-        .number()
-        .positive()
-        .oneOf([
-          FIRING_OEL,
-          FIRING_GAS,
-          FIRING_ELECTRIC,
-          FIRING_ALTERNATIVE,
-          FIRING_SOLAR,
-          FIRING_GROUND_HEAT,
-          FIRING_AIRWP,
-          FIRING_REMOTE,
-          FIRING_BLOCK,
-          FIRING_WATER_ELECTRIC,
-          FIRING_PELLET,
-          FIRING_COAL,
-          FIRING_WOOD,
-          FIRING_LIQUID_GAS,
-        ]),
-      heating_type: yup
-        .number()
-        // .positive()
-        .oneOf([
-          HEATING_TYPE_NO,
-          HEATING_TYPE_OVEN,
-          HEATING_TYPE_FLOOR,
-          HEATING_TYPE_CENTRAL,
-          HEATING_TYPE_REMOTE,
-          HEATING_TYPE_FLOOR_HEATING,
-        ]),
-      equipment: yup
         .array()
         .of(
           yup
             .number()
             .positive()
             .oneOf([
-              EQUIPMENT_STACK,
-              EQUIPMENT_AIR_CONDITIONED,
-              EQUIPMENT_ELEVATOR,
-              EQUIPMENT_GARDEN_USE,
-              EQUIPMENT_WHEELCHAIR_ACCESSIBLE,
-              EQUIPMENT_BIKE_ROOM,
-              EQUIPMENT_GUEST_WC,
-              EQUIPMENT_WG_SUITABLE,
+              FIRING_OEL,
+              FIRING_GAS,
+              FIRING_ELECTRIC,
+              FIRING_ALTERNATIVE,
+              FIRING_SOLAR,
+              FIRING_GROUND_HEAT,
+              FIRING_AIRWP,
+              FIRING_REMOTE,
+              FIRING_BLOCK,
+              FIRING_WATER_ELECTRIC,
+              FIRING_PELLET,
+              FIRING_COAL,
+              FIRING_WOOD,
+              FIRING_LIQUID_GAS,
             ])
         ),
+      heating_type: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              HEATING_TYPE_NO,
+              HEATING_TYPE_OVEN,
+              HEATING_TYPE_FLOOR,
+              HEATING_TYPE_CENTRAL,
+              HEATING_TYPE_REMOTE,
+              HEATING_TYPE_FLOOR_HEATING,
+            ])
+        ),
+      equipment: yup
+        .number()
+        .positive()
+        .oneOf([
+          EQUIPMENT_STACK,
+          EQUIPMENT_AIR_CONDITIONED,
+          EQUIPMENT_ELEVATOR,
+          EQUIPMENT_GARDEN_USE,
+          EQUIPMENT_WHEELCHAIR_ACCESSIBLE,
+          EQUIPMENT_BIKE_ROOM,
+          EQUIPMENT_GUEST_WC,
+          EQUIPMENT_WG_SUITABLE,
+        ]),
       equipment_standard: yup
         .number()
         .positive()
         .oneOf([EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED]),
       ground: yup
-        .number()
-        .positive()
-        .oneOf([
-          GROUND_TILES,
-          GROUND_STONE,
-          GROUND_CARPET,
-          GROUND_PARQUET,
-          GROUND_FINISHED_PARQUET,
-          GROUND_LAMINATE,
-          GROUND_DIELEN,
-          GROUND_PLASTIC,
-          GROUND_ESTRICH,
-          GROUND_DOUBLE_FLOOR,
-          GROUND_LINOLEUM,
-          GROUND_MARMOR,
-          GROUND_TERRAKOTTA,
-          GROUND_GRANITE,
-          null,
-        ])
-        .nullable(),
+        .array()
+        .of(
+          yup
+            .number()
+            .positive()
+            .oneOf([
+              GROUND_TILES,
+              GROUND_STONE,
+              GROUND_CARPET,
+              GROUND_PARQUET,
+              GROUND_FINISHED_PARQUET,
+              GROUND_LAMINATE,
+              GROUND_DIELEN,
+              GROUND_PLASTIC,
+              GROUND_ESTRICH,
+              GROUND_DOUBLE_FLOOR,
+              GROUND_LINOLEUM,
+              GROUND_MARMOR,
+              GROUND_TERRAKOTTA,
+              GROUND_GRANITE,
+              null,
+            ])
+        ),
       energy_efficiency: yup.number().positive().nullable(),
       energy_pass: yup
         .mixed()
@@ -494,7 +528,7 @@ class CreateEstate extends Base {
       city: yup.string().max(40),
       zip: yup.string().max(8),
       budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().integer().min(0).max(100),
+      credit_score: yup.number().min(0).max(100),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
@@ -521,12 +555,9 @@ class CreateEstate extends Base {
       letting_status: yup
         .number()
         .oneOf([
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
+          LETTING_STATUS_NEW_RENOVATED,
           LETTING_STATUS_VACANCY,
         ])
         .nullable(),
@@ -575,6 +606,23 @@ class CreateEstate extends Base {
         then: yup.number().integer().required(),
         otherwise: yup.number().nullable(),
       }),
+      income_sources: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf([
+              INCOME_TYPE_EMPLOYEE,
+              INCOME_TYPE_WORKER,
+              INCOME_TYPE_UNEMPLOYED,
+              INCOME_TYPE_CIVIL_SERVANT,
+              INCOME_TYPE_FREELANCER,
+              INCOME_TYPE_HOUSE_WORK,
+              INCOME_TYPE_PENSIONER,
+              INCOME_TYPE_SELF_EMPLOYED,
+              INCOME_TYPE_TRAINEE,
+            ])
+        ),
     })
 }
 

@@ -9,7 +9,11 @@ const Config = use('Config')
 const moment = require('moment')
 const ContentType = use('App/Classes/ContentType')
 const File = use('App/Classes/File')
+const FileModel = use('App/Models/File')
 const Image = use('App/Models/Image')
+const fsPromise = require('fs/promises')
+const axios = require('axios')
+const Database = use('Database')
 
 class ImageService {
   /**
@@ -19,7 +23,6 @@ class ImageService {
   static async resizeAvatar(fileStream, filename) {
     const { width, height } = Config.get('app.images.avatar')
     const roundedCornerResize = sharp().rotate().resize(width, height).png()
-
     const resizeFile = (file, filename) =>
       new Promise((resolve, reject) => {
         const writableStream = fs.createWriteStream(filename)
@@ -34,8 +37,35 @@ class ImageService {
 
     const dest = Helpers.tmpPath(filename)
     await resizeFile(fileStream, dest)
-
     return dest
+  }
+
+  static async uploadOpenImmoImages(images, estateId) {
+    const trx = await Database.beginTransaction()
+    try {
+      for (let image of images) {
+        if (image.image && fs.existsSync(image.image)) {
+          const options = { ContentType: image.format, ACL: 'public-read' }
+          const ext = ContentType.getExt(image.image)
+          const filename = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
+          const imgData = Drive.getStream(image.image)
+          await Drive.disk('s3public').put(filename, imgData, options)
+          await FileModel.createItem(
+            {
+              url: filename,
+              type: image.type,
+              estate_id: estateId,
+              disk: 's3public',
+            },
+            trx
+          )
+        }
+      }
+      await trx.commit()
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+    }
   }
 
   static async savePropertyBulkImages(images) {
@@ -53,14 +83,13 @@ class ImageService {
       if (err) throw err // Fail if the file can't be read.
       try {
         const ext = ContentType.getExt(imagePath)
-        const filename = `${uuid.v4()}`
-        const filePathName = `${moment().format('YYYYMM')}/${filename}.${ext}`
-
-        await Drive.disk('s3public').put(filePathName, data, {
-          ACL: 'public-read',
-          ContentType: ContentType.getContentType(ext),
-        })
-
+        const image = {
+          tmpPath: imagePath,
+          header: {
+            'content-type': ContentType.getContentType(ext),
+          },
+        }
+        const { filePathName } = await File.saveToDisk(image, [], true)
         await Image.createItem({
           url: filePathName,
           room_id: roomId,
@@ -71,6 +100,7 @@ class ImageService {
       }
     })
   }
+
   static async getImagesByRoom(roomId, imageIds) {
     return await Image.query()
       .select('images.*')
@@ -103,7 +133,6 @@ class ImageService {
 
   static async createThumbnail() {
     const images = await ImageService.getAll()
-    console.log('Start creating estates thumbnail')
     await Promise.all(
       images.map(async (image) => {
         {
@@ -124,7 +153,6 @@ class ImageService {
                     options.ACL = 'public-read'
                   }
 
-                  console.log('Esates URL', url)
                   await File.saveThumbnailToDisk({
                     image: url,
                     fileName: fileName,
@@ -144,6 +172,43 @@ class ImageService {
       })
     )
     console.log('End creating estates thumbnail')
+  }
+
+  static async saveFunctionalTestImage(url) {
+    try {
+      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.jpg`
+
+      const writeFunctionalTestImage = async () => {
+        const writer = fs.createWriteStream(outputFileName)
+        const response = await axios.get(url, { responseType: 'arraybuffer' })
+        return new Promise((resolve, reject) => {
+          if (response.data instanceof Buffer) {
+            writer.write(response.data)
+            resolve(outputFileName)
+          } else {
+            response.data.pipe(writer)
+            let error = null
+            writer.on('error', (err) => {
+              error = err
+              writer.close()
+              reject(err)
+            })
+            writer.on('close', () => {
+              if (!error) {
+                resolve(outputFileName)
+              }
+            })
+          }
+        })
+      }
+
+      await writeFunctionalTestImage(outputFileName)
+      return outputFileName
+    } catch (e) {
+      return null
+      console.log('saveFunctionalTestImage Error', e.message)
+    }
   }
 }
 

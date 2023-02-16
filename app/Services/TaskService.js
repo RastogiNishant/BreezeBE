@@ -11,10 +11,16 @@ const {
   CHAT_TYPE_BOT_MESSAGE,
   DEFAULT_LANG,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_RESOLVED,
+  DATE_FORMAT,
+  TASK_RESOLVE_HISTORY_PERIOD,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
+const moment = require('moment')
 
 const { isArray } = require('lodash')
 const {
@@ -39,8 +45,9 @@ const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 const Database = use('Database')
 const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
-
-class TaskService {
+const NoticeService = require('./NoticeService')
+const BaseService = require('./BaseService')
+class TaskService extends BaseService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
     const tenant_id = await this.hasPermission({
@@ -54,9 +61,10 @@ class TaskService {
       creator_role: user.role,
       tenant_id: tenant_id,
       status: TASK_STATUS_NEW,
+      status_changed_by: user.role,
     }
 
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const attachments = path.map((p) => {
@@ -73,31 +81,44 @@ class TaskService {
   }
 
   static async init(user, data) {
-    const { predefined_message_id, prev_predefined_message_id, predefined_message_choice_id, estate_id, task_id, answer } = data
+    const {
+      predefined_message_id,
+      prev_predefined_message_id,
+      predefined_message_choice_id,
+      estate_id = null,
+      task_id,
+      answer,
+    } = data
     let { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
 
+    //FIXME: predefined_message_id should be required?
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
 
     // Fetch estate and also check the tenant has valid "EstateCurrentTenant" for this estate
-    const estate = await Estate.query()
-      .whereNot('estates.status', STATUS_DELETE)
-      .select('estates.user_id')
-      .where('estates.id', estate_id)
-      .innerJoin('estate_current_tenants', function () {
-        this.on('estate_current_tenants.estate_id', 'estates.id').on(
-          'estate_current_tenants.user_id',
-          user.id
-        )
-      })
-      .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
-      .first()
 
-    if (!estate) {
-      throw new HttpException('Estate not found', 404)
+    let estate = null
+
+    if (estate_id) {
+      estate = await Estate.query()
+        .whereNot('estates.status', STATUS_DELETE)
+        .select('estates.user_id')
+        .where('estates.id', estate_id)
+        .innerJoin('estate_current_tenants', function () {
+          this.on('estate_current_tenants.estate_id', 'estates.id').on(
+            'estate_current_tenants.user_id',
+            user.id
+          )
+        })
+        .whereNotIn('estate_current_tenants.status', [STATUS_DELETE, STATUS_EXPIRE])
+        .first()
+
+      if (!estate) {
+        throw new HttpException('Estate not found', 404)
+      }
     }
 
     if (predefinedMessage.step === undefined || predefinedMessage.step === null) {
@@ -127,7 +148,7 @@ class TaskService {
       const landlordMessage = await Chat.createItem(
         {
           task_id: task.id,
-          sender_id: estate.user_id,
+          sender_id: estate?.user_id || null,
           text: rc(l.get(predefinedMessage.text, lang), [
             { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
           ]),
@@ -135,11 +156,16 @@ class TaskService {
         },
         trx
       )
-
       messages.push(landlordMessage.toJSON())
 
       if (predefinedMessage.type === PREDEFINED_LAST) {
         task.status = TASK_STATUS_NEW
+        /*
+         * need to determine to send email to a user who will be a landlord later after signing up
+         * Here figma design goes
+         *
+         */
+        await require('./OutsideLandlordService').handleTaskWithoutEstate(task, trx)
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
@@ -188,7 +214,6 @@ class TaskService {
       await task.save(trx)
 
       messages = await ChatService.getItemsWithAbsoluteUrl(messages)
-
       await trx.commit()
       return { task, messages }
     } catch (error) {
@@ -223,8 +248,25 @@ class TaskService {
 
     const taskRow = await query.firstOrFail()
 
-    if (trx) return await taskRow.updateItemWithTrx({ ...task }, trx)
-    return await taskRow.updateItem({ ...task })
+    task.status_changed_by = user.role
+    let taskResult = null
+    if (trx) {
+      taskResult = await taskRow.updateItemWithTrx({ ...task }, trx)
+    } else {
+      taskResult = await taskRow.updateItem({ ...task })
+    }
+
+    // send notification to tenant to inform task has been resolved
+    if (user.role === ROLE_LANDLORD && task.status === TASK_STATUS_RESOLVED) {
+      NoticeService.notifyTenantTaskResolved([
+        {
+          user_id: taskRow.tenant_id,
+          estate_id: taskRow.estate_id,
+        },
+      ])
+    }
+
+    return taskResult
   }
 
   /**
@@ -290,15 +332,44 @@ class TaskService {
       throw new HttpException('No Permission')
     }
 
-    task = await TaskService.getItemWithAbsoluteUrl(task)
+    task = await this.getWithAbsoluteUrl(task)
     return task
   }
 
+  static async getAllUnassignedTasks({ user_id, page = -1, limit = -1 }) {
+    const query = Task.query().where('landlord_id', user_id)
+
+    let tasks, count
+    if (page === -1 || limit === -1) {
+      tasks = await query.fetch()
+      count = tasks.rows.length
+    } else {
+      tasks = await query.paginate(page, limit)
+      count = tasks.pages.total
+    }
+
+    return {
+      tasks,
+      count,
+    }
+  }
+
   static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
-    let taskQuery = Task.query().select('tasks.*')
+    let taskQuery = Task.query()
+      .select('tasks.*')
+      .select(
+        Database.raw(`coalesce(
+        ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
+          or ("tasks"."status" = ${TASK_STATUS_RESOLVED}
+          and "tasks"."updated_at" > '${moment
+            .utc()
+            .subtract(TASK_RESOLVE_HISTORY_PERIOD, 'd')
+            .format(DATE_FORMAT)}' 
+          and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`)
+      )
 
     if (role === ROLE_USER) {
-      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE])
+      taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
@@ -311,33 +382,34 @@ class TaskService {
     }
 
     if (status) {
-      taskQuery.whereIn('tasks.status', status)
+      taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
     }
     taskQuery
       .where('tasks.estate_id', estate_id)
+      .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
-      .orderBy('tasks.created_at', 'desc')
       .orderBy('tasks.urgency', 'desc')
 
     let tasks = null
+    let count = 0
 
     if (page === -1 || limit === -1) {
       tasks = await taskQuery.fetch()
+      count = tasks.rows.length
     } else {
       tasks = await taskQuery.paginate(page, limit)
+      count = tasks.pages.total
     }
-
-    const count = tasks.pages.total
 
     tasks = await Promise.all(
       tasks.rows.map(async (t) => {
-        return await TaskService.getItemWithAbsoluteUrl(t)
+        return await TaskService.getWithAbsoluteUrl(t)
       })
     )
 
     return {
       tasks,
-      count: count,
+      count,
     }
   }
 
@@ -345,7 +417,7 @@ class TaskService {
     let query = Database.table('tasks')
       .count('*')
       .where('estate_id', estate_id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVED])
 
     if (status) {
       if (!isArray(status)) {
@@ -396,7 +468,7 @@ class TaskService {
   static async getWithTenantId({ id, tenant_id }) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .where('tenant_id', tenant_id)
       .firstOrFail()
   }
@@ -404,18 +476,9 @@ class TaskService {
   static async getWithDependencies(id) {
     return await Task.query()
       .where('id', id)
-      .whereNot('status', TASK_STATUS_DELETE)
+      .whereNotIn('status', [TASK_STATUS_DELETE])
       .with('estate')
       .with('users')
-  }
-
-  static async saveTaskImages(request) {
-    const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
-    const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
-    ])
-
-    return files
   }
 
   static async hasPermission({ estate_id, user_id, role }) {
@@ -426,16 +489,23 @@ class TaskService {
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 500)
+      throw new HttpException('No final match yet for property', 400)
     }
 
     // to check if the user is the tenant for that property.
     if (role === ROLE_USER && finalMatch.user_id !== user_id) {
-      throw new HttpException('No permission for task', 500)
+      throw new HttpException('No permission for task', 400)
     }
 
     if (!finalMatch.user_id) {
       throw new HttpException('Database issue', 500)
+    }
+
+    if (
+      role === ROLE_USER &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+    ) {
+      throw new HttpException('You are not a breeze member yet', 400)
     }
 
     return finalMatch.user_id
@@ -445,7 +515,7 @@ class TaskService {
     const { id } = request.all()
     let task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const files = await TaskService.saveTaskImages(request)
+    const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
       const pathJSON = path.map((p) => {
@@ -461,7 +531,7 @@ class TaskService {
         .where('id', id)
         .update({ ...task })
 
-      files.attachments = await ChatService.getAbsoluteUrl(
+      files.attachments = await this.getAbsoluteUrl(
         Array.isArray(files.file) ? files.file : [files.file]
       )
       return files
@@ -470,61 +540,87 @@ class TaskService {
   }
 
   static async removeImages({ id, user, uri }) {
+    uri = uri.split(',')
+
     const task = await this.get(id)
     await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
-    const attachments = task
-      .toJSON()
-      .attachments.filter(
-        (attachment) =>
-          !(
-            attachment.user_id === user.id &&
-            (uri.includes(',') ? uri.split(',').includes(attachment.uri) : attachment.uri === uri)
-          )
-      )
 
-    return await Task.query()
-      .where('id', id)
-      .update({
-        ...task.toJSON(),
-        attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
-      })
-  }
-
-  static async getItemWithAbsoluteUrl(item) {
+    const trx = await Database.beginTransaction()
     try {
-      if (item.attachments) {
-        item.attachments = await Promise.all(
-          item.attachments.map(async (attachment) => {
-            const thumb =
-              attachment.uri.split('/').length === 2
-                ? await File.getProtectedUrl(
-                  `thumbnail/${attachment.uri.split('/')[0]}/thumb_${attachment.uri.split('/')[1]
-                  }`
-                )
-                : ''
+      const taskAttachments = task
+        .toJSON()
+        .attachments.filter(
+          (attachment) => !(attachment.user_id === user.id && uri.includes(attachment.uri))
+        )
 
-            if (attachment.uri.search('http') !== 0) {
-              return {
-                user_id: attachment.user_id,
-                url: await File.getProtectedUrl(attachment.uri),
-                uri: attachment.uri,
-                thumb: thumb,
-              }
-            }
+      await Task.query()
+        .where('id', id)
+        .update({
+          ...task.toJSON(),
+          attachments:
+            taskAttachments && taskAttachments.length ? JSON.stringify(taskAttachments) : null,
+        })
+        .transacting(trx)
 
-            return {
-              user_id: attachment.user_id,
-              url: attachment.uri,
-              uri: attachment.uri,
-              thumb: thumb,
-            }
-          })
+      const chat = await Chat.query()
+        .select('*')
+        .where('task_id', task.id)
+        .where('sender_id', user.id)
+        .where(Database.raw(`attachments::jsonb \\?| array['${uri.join(',')}']`))
+        .first()
+
+      if (chat) {
+        const attachments = chat.attachments.filter((attachment) => !uri.includes(attachment))
+        await ChatService.updateChatMessage(
+          {
+            id: chat.id,
+            message: chat.message,
+            attachments: attachments.length ? attachments : null,
+          },
+          trx
         )
       }
-      return item
+
+      await trx.commit()
     } catch (e) {
-      console.log(e.message, 500)
-      return null
+      console.log('Remove image error=', e.message)
+      await trx.rollback()
+    }
+  }
+
+  static async archiveTask(estate_id, trx) {
+    estate_id = !Array.isArray(estate_id) ? [estate_id] : estate_id
+    await Task.query()
+      .whereIn('estate_id', estate_id)
+      .update({ status: TASK_STATUS_ARCHIVED })
+      .transacting(trx)
+  }
+
+  static async updateUnreadMessageCount({ task_id, role, chat_id }, trx = null) {
+    const unread_role = role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD
+    const task = await Task.query().where('id', task_id).first()
+
+    if (task) {
+      if (!task.unread_role || task.unread_role === role) {
+        await Task.query()
+          .where('id', task.id)
+          .update({
+            unread_count: 1,
+            unread_role,
+            first_not_read_chat_id: chat_id,
+            status: TASK_STATUS_INPROGRESS,
+          })
+          .transacting(trx)
+      } else {
+        await Task.query()
+          .where('id', task.id)
+          .update({
+            unread_count: +(task.unread_count || 0) + 1,
+            unread_role,
+            status: TASK_STATUS_INPROGRESS,
+          })
+          .transacting(trx)
+      }
     }
   }
 }

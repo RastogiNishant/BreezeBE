@@ -1,53 +1,29 @@
 'use strict'
-const fs = require('fs')
-const moment = require('moment')
-const uuid = require('uuid')
 const _ = require('lodash')
-const Promise = require('bluebird')
 const Event = use('Event')
 const User = use('App/Models/User')
 const Admin = use('App/Models/Admin')
-const Member = use('App/Models/Member')
-const EstateViewInvite = use('App/Models/EstateViewInvite')
-const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
-const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
-const Company = use('App/Models/Company')
-const Tenant = use('App/Models/Tenant')
-const Buddy = use('App/Models/Buddy')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
-const Hash = use('Hash')
-const Drive = use('Drive')
-
 const Database = use('Database')
 const Logger = use('Logger')
-
 const UserService = use('App/Services/UserService')
-const ZendeskService = use('App/Services/ZendeskService')
-const MemberService = use('App/Services/MemberService')
-const ImageService = use('App/Services/ImageService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick } = require('lodash')
+
+const {
+  exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },
+} = require('../../../app/exceptions')
 
 const { getAuthByRole } = require('../../Libs/utils')
 /** @type {typeof import('/providers/Static')} */
 
 const {
   ROLE_LANDLORD,
-  ROLE_USER,
-  STATUS_EMAIL_VERIFY,
-  STATUS_DELETE,
-  ROLE_PROPERTY_MANAGER,
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
-  BUDDY_STATUS_PENDING,
-  STATUS_ACTIVE,
-  ERROR_USER_NOT_VERIFIED_LOGIN,
-  USER_ACTIVATION_STATUS_ACTIVATED,
-  GENDER_ANY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -56,212 +32,55 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    const { email, firstname, from_web, ...userData } = request.all()
+    const { email, from_web, data1, data2, landlord_invite, ip_based_info, ...userData } =
+      request.all()
+    const trx = await Database.beginTransaction()
     try {
-      const user = await UserService.signUp({ email, firstname, from_web, ...userData })
+      const user = await UserService.signUp(
+        {
+          email,
+          from_web,
+          data1,
+          data2,
+          landlord_invite,
+          ip_based_info,
+          ...userData,
+        },
+        trx
+      )
+      await trx.commit()
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
       response.res(user)
     } catch (e) {
+      await trx.rollback()
       if (e.constraint === 'users_uid_unique') {
-        throw new HttpException('User already exists', 400)
+        throw new HttpException(USER_UNIQUE, 400)
       }
 
       throw e
-    }
-  }
-
-  /**
-   * Signup prospect with code we email to him.
-   */
-  async signupProspectWithViewEstateInvitation({ request, response }) {
-    //create user
-    const { email, phone, role, password, ...userData } = request.all()
-    const trx = await Database.beginTransaction()
-    try {
-      //add this user
-      let user = await User.create(
-        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
-        trx
-      )
-      if (role === ROLE_USER) {
-        await Tenant.create(
-          {
-            user_id: user.id,
-          },
-          trx
-        )
-      }
-      //include him on estate_view_invited_users with sticky set to true
-      //this will add him even if he's not invited.
-      //Probably a situation where he has mail forwarded from a different email
-      const invitedUser = new EstateViewInvitedUser()
-      invitedUser.user_id = user.id
-      invitedUser.sticky = true
-      invitedUser.estate_view_invite_id = request.estate_view_invite_id
-      await invitedUser.save(trx)
-
-      //lets find other estates he's invited to view
-      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
-        .where('email', email)
-        .fetch()
-      await Promise.all(
-        myInvitesToViewEstates.toJSON().map(async (invite) => {
-          await EstateViewInvitedUser.findOrCreate(
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            trx
-          )
-        })
-      )
-      //send email for confirmation
-      await UserService.sendConfirmEmail(user)
-      await trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return response.res(true)
-    } catch (e) {
-      console.log(e)
-      await trx.rollback()
-      throw new HttpException('Signup failed.', 412)
-    }
-  }
-
-  /**
-   * Signup user with hash
-   */
-  async signupProspectWithHash({ request, response }) {
-    //create user
-    const { email, phone, role, password, ...userData } = request.all()
-    const trx = await Database.beginTransaction()
-    try {
-      //add this user
-      let user = await User.create(
-        { ...userData, email, phone, role, password, status: STATUS_EMAIL_VERIFY },
-        trx
-      )
-      let tenant
-      if (role === ROLE_USER) {
-        if (userData.signupData) {
-          tenant = await Tenant.findOrCreate(
-            { user_id: user.id },
-            {
-              user_id: user.id,
-              coord: userData.signupData.address.coord,
-              dist_type: userData.signupData.transport,
-              dist_min: userData.signupData.time,
-              address: userData.signupData.address.title,
-            }
-          )
-        } else {
-          tenant = await Tenant.findOrCreate({ user_id: user.id }, { user_id: user.id }, trx)
-        }
-      }
-      //add to estate_view_invites
-      let invitation = await EstateViewInvite.findOrCreate(
-        { code: request.estate.hash },
-        {
-          invited_by: request.estate.user_id,
-          estate_id: request.estate.id,
-          code: request.estate.hash,
-        },
-        trx
-      )
-      //include him on estate_view_invited_users with sticky set to true
-      const invitedUser = new EstateViewInvitedUser()
-      invitedUser.user_id = user.id
-      invitedUser.sticky = true
-      invitedUser.estate_view_invite_id = invitation.id
-      await invitedUser.save(trx)
-      //lets find other estates he's invited to view
-      const myInvitesToViewEstates = await EstateViewInvitedEmail.query()
-        .where('email', email)
-        .fetch()
-      await Promise.all(
-        myInvitesToViewEstates.toJSON().map(async (invite) => {
-          await EstateViewInvitedUser.findOrCreate(
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            { user_id: user.id, estate_view_invite_id: invite.estate_view_invite_id },
-            trx
-          )
-        })
-      )
-      //add user to buddies
-      await Buddy.create({
-        user_id: invitation.invited_by,
-        email,
-        phone,
-        tenant_id: tenant.id,
-        status: BUDDY_STATUS_PENDING,
-      })
-      //send email for confirmation
-      await UserService.sendConfirmEmail(user)
-      await trx.commit()
-      Event.fire('mautic:createContact', user.id)
-      return response.res(true)
-    } catch (e) {
-      console.log(e)
-      await trx.rollback()
-      throw new HttpException('Signup failed.', 412)
     }
   }
 
   async housekeeperSignup({ request, response }) {
     const { firstname, email, password, code, lang } = request.all()
     try {
-      const member = await Member.query()
-        .select('user_id', 'id')
-        .where('email', email)
-        .where('code', code)
-        .firstOrFail()
-
-      const member_id = member.id
-
-      // if (owner_id.toString() !== member.user_id.toString()) {
-      //   throw new HttpException('Not allowed', 400)
-      // }
-
-      // Check user not exists
-      const availableUser = await User.query().where('email', email).first()
-      if (availableUser) {
-        throw new HttpException('User already exists, can be switched', 400)
-      }
-
-      const user = await UserService.housekeeperSignup(
-        member.user_id,
+      const user = await UserService.housekeeperSignup({
+        code,
         email,
         password,
         firstname,
-        lang
-      )
+        lang,
+      })
 
-      if (user) {
-        await MemberService.setMemberOwner(member_id, user.id)
-      }
-      Event.fire('mautic:createContact', user.id)
-      return response.res(user)
+      response.res(user)
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
-        throw new HttpException('User already exists', 400)
+        throw new HttpException(USER_UNIQUE, 400)
       }
       throw e
-    }
-  }
-
-  async resendUserConfirmBySMS({ request, response }) {
-    const { email, phone, lang } = request.all()
-
-    try {
-      const availableUser = await User.query().select('id').where('email', email).first()
-      if (!availableUser) {
-        throw new HttpException("Your email doesn't exist", 400)
-      }
-
-      await UserService.sendSMS(availableUser.id, phone, lang)
-      return response.res(true)
-    } catch (e) {
-      throw new HttpException(e.message, 400)
     }
   }
 
@@ -269,7 +88,7 @@ class AccountController {
     const { email, phone, code } = request.all()
     try {
       await UserService.confirmSMS(email, phone, code)
-      return response.res(true)
+      response.res(true)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -280,9 +99,12 @@ class AccountController {
    */
   async resendUserConfirm({ request, response }) {
     const { user_id } = request.all()
-    const result = await UserService.resendUserConfirm(user_id)
-
-    return response.res(result)
+    try {
+      const result = await UserService.resendUserConfirm(user_id)
+      response.res(result)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || e.code, e.code || 0)
+    }
   }
 
   /**
@@ -292,19 +114,19 @@ class AccountController {
     const { code, user_id, from_web } = request.all()
     let user
     try {
-      user = await User.findOrFail(user_id)
+      user = await User.find(user_id)
+      if (!user) {
+        throw new HttpException(USER_NOT_EXIST, 400)
+      }
       await UserService.confirmEmail(user, code)
+      Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
     }
-
-    Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
-
     if (!from_web) {
       return response.res(true)
     }
-
     let authenticator
     try {
       authenticator = getAuthByRole(auth, user.role)
@@ -312,101 +134,55 @@ class AccountController {
       throw new HttpException(e.message, 403)
     }
     const token = await authenticator.generate(user)
-    return response.res(token)
+    response.res(token)
   }
 
   /**
    *
    */
   async login({ request, auth, response }) {
-    let { email, role, password, device_token } = request.all()
-
-    // Select role if not set, (allows only for non-admin users)
-    let user
-    let authenticator
-    let uid
-    if (role === ROLE_LANDLORD) {
-      //lets make this admin has a role of landlord for now
-      user = await Admin.query()
-        .select('admins.*')
-        .select(Database.raw(`${ROLE_LANDLORD} as role`))
-        .select(Database.raw(`true as is_admin`))
-        .select(Database.raw(`${STATUS_ACTIVE} as status`))
-        .select(Database.raw(`true as real_admin`))
-        .where('email', email)
-        .first()
-    }
-    if (!user) {
-      user = await User.query()
-        .select('users.*', Database.raw(`false as is_admin`))
-        .where('email', email)
-        .where('role', role)
-        .first()
-      uid = User.getHash(email, role)
-    } else {
-      authenticator = auth.authenticator('jwtAdministrator')
-      uid = Admin.getHash(email)
-    }
-
-    if (!user) {
-      throw new HttpException('User not found', 404)
-    }
-    if (user.status !== STATUS_ACTIVE) {
-      await UserService.sendConfirmEmail(user)
-      /* @description */
-      // Merge error code and user id and send as a response
-      // Because client needs user id to call verify code endpoint
-      throw new HttpException(
-        'User has not been verified yet',
-        400,
-        parseInt(`${ERROR_USER_NOT_VERIFIED_LOGIN}${user.id}`)
-      )
-    }
     try {
-      if (!authenticator) {
-        authenticator = getAuthByRole(auth, user.role)
+      let { email, role, password, device_token } = request.all()
+      let user, authenticator, token
+      const loginResult = await UserService.login({ email, role, device_token })
+      //TODO: implement test cases for admin login
+      if (loginResult?.isAdmin) {
+        const authenticator = auth.authenticator('jwtAdministrator')
+        const uid = Admin.getHash(email)
+        try {
+          const token = await authenticator.attempt(uid, password)
+          token.is_admin = true
+          return response.res(token)
+        } catch (e) {
+          const [message] = e.message.split(':')
+          throw new HttpException(message, 400, 0)
+        }
+      } else {
+        user = loginResult
       }
-    } catch (e) {
-      throw new HttpException(e.message, 403)
-    }
 
-    let token
-    try {
-      token = await authenticator.attempt(uid, password)
-    } catch (e) {
-      const [error, message] = e.message.split(':')
-      throw new HttpException(message, 401)
-    }
-    if (!user.is_admin) {
-      //we don't have device_token on admins table hence the test...
-      await User.query().where({ email }).update({ device_token: null })
-      if (device_token) {
-        await User.query().where({ id: user.id }).update({ device_token })
+      authenticator = getAuthByRole(auth, role)
+
+      const uid = User.getHash(email, role)
+      try {
+        token = await authenticator.attempt(uid, password)
+      } catch (e) {
+        const [message] = e.message.split(':')
+        //FIXME: message should be json here to be consistent with being a backend
+        //that provides JSON RESTful API
+        throw new HttpException(message, 400, 0)
       }
+      const ip = request.ip()
+      await UserService.setIpBasedInfo(user, ip)
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_EMAIL,
         role,
         email: user.email,
       })
-      Event.fire('mautic:syncContact', user.id, { last_signin_date: new Date() })
-      token['is_admin'] = false
-    } else {
-      token['is_admin'] = true
-    }
-    return response.res(token)
-  }
 
-  async createZendeskToken({ request, auth, response }) {
-    try {
-      const user = await User.query().where('users.id', auth.current.user.id).firstOrFail()
-      const token = await ZendeskService.createToken(
-        user.id,
-        user.email,
-        `${user.firstname} ${user.lastname}`
-      )
       return response.res(token)
     } catch (e) {
-      throw new HttpException(e.message, 400)
+      throw e.status && e.code ? e : new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
@@ -415,55 +191,14 @@ class AccountController {
    */
   async me({ auth, response, request }) {
     if (auth.current.user instanceof Admin) {
-      let admin = JSON.parse(JSON.stringify(auth.current.user))
-      admin.is_admin = true
-      return response.res(admin)
+      return response.res({ ...auth.current.user.toJSON(), is_admin: true })
     }
-    let user = await User.query()
-      .where('users.id', auth.current.user.id)
-      .with('household')
-      .with('plan')
-      .with('company')
-      .with('tenantPaymentPlan')
-      .firstOrFail()
-
-    const tenant = await Tenant.query()
-      .where({ user_id: auth.current.user.owner_id ?? auth.current.user.id })
-      .first()
-
     const { pushToken } = request.all()
-
-    if (user) {
-      if (pushToken && user.device_token !== pushToken) {
-        await user.updateItem({ device_token: pushToken })
-      }
-      logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
-        email: user.email,
-        role: user.role,
-      })
-
-      if (user.role == ROLE_LANDLORD) {
-        if (!user.company || !user.company.length) {
-          user.company = [
-            {
-              name: `${_.isEmpty(user.firstname) ? '' : user.firstname} ${
-                _.isEmpty(user.secondname) ? '' : user.secondname
-              }`,
-              address: null,
-            },
-          ]
-        }
-        user.is_activated = user.activation_status == USER_ACTIVATION_STATUS_ACTIVATED
-      }
-
-      Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
-    }
-
-    if (tenant) {
-      user.tenant = tenant
-    }
-    user = user.toJSON({ isOwner: true })
-    user.is_admin = false
+    const user = await UserService.me(auth.current.user, pushToken)
+    logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
+      email: user.email,
+      role: user.role,
+    })
     return response.res(user)
   }
 
@@ -481,20 +216,9 @@ class AccountController {
    *
    */
   async closeAccount({ auth, response }) {
-    const user = await User.query().where('id', auth.user.id).first()
-    const email = user.email
-    const newEmail = email.concat('_breezeClose')
-    user.email = newEmail
-    user.firstname = ' USER'
-    user.secondname = ' DELETED'
-    user.approved_landlord = false
-    user.is_admin = false
-    user.device_token = null
-    user.google_id = null
-    user.status = STATUS_DELETE
-    user.save()
-
-    return response.res({ message: 'User Account Closed' })
+    //TODO: check this endpoint response
+    await UserService.closeAccount(auth.user)
+    response.res({ message: USER_CLOSED })
   }
 
   async onboard({ auth, response }) {
@@ -536,103 +260,11 @@ class AccountController {
    *
    */
   async updateProfile({ request, auth, response }) {
-    const data = request.all()
-    let user = auth.user
-    auth.user.role === ROLE_USER
-      ? delete data.landlord_visibility
-      : auth.user.role === ROLE_LANDLORD
-      ? delete data.prospect_visibility
-      : data
-
-    const trx = await Database.beginTransaction()
-    let company
-
     try {
-      if (request.header('content-type').match(/^multipart/)) {
-        //this is an upload
-        const fileSettings = { types: ['image'], size: '10mb' }
-        const filename = `${uuid.v4()}.png`
-        let avatarUrl, tmpFile
-
-        request.multipart.file(`file`, fileSettings, async (file) => {
-          tmpFile = await ImageService.resizeAvatar(file, filename)
-          const sourceStream = fs.createReadStream(tmpFile)
-          avatarUrl = await Drive.disk('s3public').put(
-            `${moment().format('YYYYMM')}/${filename}`,
-            sourceStream,
-            { ACL: 'public-read', ContentType: 'image/png' }
-          )
-        })
-
-        await request.multipart.process()
-
-        if (!avatarUrl) {
-          throw new HttpException('No file uploaded.')
-        }
-
-        user.avatar = avatarUrl
-        await user.save(trx)
-
-        user = user.toJSON({ isOwner: true })
-      } else if (data.email) {
-        /**
-         * TODO:
-         * Do we need to update email????? if so we need 2 verifacations below
-         * Email unique checking,
-         * If new email, need to validate
-         */
-        user.email = data.email
-        await user.save(trx)
-
-        user = user.toJSON({ isOwner: true })
-      } else {
-        if (data.company_name && data.company_name.trim()) {
-          let company_name = data.company_name.trim()
-          company = await Company.findOrCreate(
-            { name: company_name, user_id: auth.user.id },
-            { name: company_name, user_id: auth.user.id }
-          )
-          _.unset(data, 'company_name')
-          data.company_id = company.id
-        }
-
-        await user.updateItemWithTrx(data, trx)
-        user = user.toJSON({ isOwner: true })
-      }
-
-      if (user.company_id) {
-        company = await Company.query().where('id', user.company_id).first()
-        user.company_name = company.name
-        user.company = company
-      } else {
-        const company_firstname = _.isEmpty(user.firstname) ? '' : user.firstname
-        const company_secondname = _.isEmpty(user.secondname) ? '' : user.secondname
-        const company_name = `${company_firstname} ${company_secondname}`.trim()
-        user.company_name = company_name
-        user.company = null
-      }
-
-      if (data.email || data.sex || data.secondname) {
-        let ect = {}
-
-        if (data.email) ect.email = data.email
-
-        if (data.sex) {
-          ect.salutation = data.sex === 1 ? 'Mr.' : data.sex === 2 ? 'Ms.' : 'Mx.'
-          ect.salutation_int = data.sex
-        }
-
-        if (data.secondname) ect.surname = data.secondname
-
-        await EstateCurrentTenant.query().where('user_id', user.id).update(ect).transacting(trx)
-      }
-
-      Event.fire('mautic:syncContact', user.id)
-      await trx.commit()
+      const user = await UserService.updateProfile(request, auth.user)
       response.res(user)
     } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 501)
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -642,22 +274,7 @@ class AccountController {
   async changePassword({ request, auth, response }) {
     const user = auth.current.user
     const { current_password, new_password } = request.all()
-    const verifyPassword = await Hash.verify(current_password, user.password)
-
-    if (!verifyPassword) {
-      throw new HttpException('Current password could not be verified! Please try again.', 400)
-    }
-    const users = (
-      await User.query()
-        .where('email', user.email)
-        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
-        .limit(2)
-        .fetch()
-    ).rows
-
-    const updatePass = async (user) => user.updateItem({ password: new_password }, true)
-    await Promise.map(users, updatePass)
-
+    await UserService.changePassword(user, current_password, new_password)
     return response.res(true)
   }
 
@@ -676,42 +293,12 @@ class AccountController {
    *
    */
   async updateAvatar({ request, auth, response }) {
-    const fileSettings = { types: ['image'], size: '10mb' }
-    const filename = `${uuid.v4()}.png`
-    let avatarUrl, tmpFile
-
-    request.multipart.file(`file`, fileSettings, async (file) => {
-      tmpFile = await ImageService.resizeAvatar(file, filename)
-      const sourceStream = fs.createReadStream(tmpFile)
-      avatarUrl = await Drive.disk('s3public').put(
-        `${moment().format('YYYYMM')}/${filename}`,
-        sourceStream,
-        { ACL: 'public-read', ContentType: 'image/png' }
-      )
-    })
-
-    await request.multipart.process()
-    if (avatarUrl) {
-      auth.user.avatar = avatarUrl
-      await auth.user.save()
+    try {
+      const user = await UserService.updateAvatar(request, auth.user)
+      response.res(user)
+    } catch (e) {
+      throw new HttpException(FAILED_UPLOAD_AVATAR, 500)
     }
-    fs.unlink(tmpFile, () => {})
-
-    response.res(auth.user)
-  }
-
-  /**
-   * Password recover send email with code
-   */
-  async passwordReset({ request, response }) {
-    let { email, from_web, lang } = request.only(['email', 'from_web', 'lang'])
-    // Send email with reset password code
-    //await UserService.requestPasswordReset(email)
-    if (from_web === undefined) {
-      from_web = false
-    }
-    await UserService.requestSendCodeForgotPassword(email, lang, from_web)
-    return response.res()
   }
 
   /**
@@ -747,62 +334,7 @@ class AccountController {
       throw e
     }
 
-    return response.res()
-  }
-
-  /**
-   * Confirm user password change with secret code
-   */
-  async passwordConfirm({ request, response }) {
-    const { code, password } = request.only(['code', 'password'])
-    try {
-      await UserService.resetPassword(code, password)
-    } catch (e) {
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
-    }
-
-    return response.res()
-  }
-
-  /**
-   *
-   */
-  async switchAccount({ auth, response }) {
-    const roleToSwitch = auth.user.role === ROLE_USER ? ROLE_LANDLORD : ROLE_USER
-    let userTarget = await User.query()
-      .where('email', auth.user.email)
-      .where('role', roleToSwitch)
-      .first()
-
-    const { id, ...data } = auth.user.toJSON({ isOwner: true })
-    if (!userTarget) {
-      const { user } = await UserService.createUser({
-        ...data,
-        password: String(new Date().getTime()),
-        role: roleToSwitch,
-      })
-      // Direct copy user password
-      await Database.raw(
-        'UPDATE users set password = (SELECT password FROM users WHERE id = ? LIMIT 1) WHERE id = ?',
-        [id, user.id]
-      )
-
-      userTarget = user
-    }
-    let authenticator
-    try {
-      authenticator = getAuthByRole(auth, roleToSwitch)
-    } catch (e) {
-      throw new HttpException(e.message, 403)
-    }
-    const token = await authenticator.generate(userTarget)
-    // Switch device_token
-    await UserService.switchDeviceToken(userTarget.id, userTarget.email)
-
-    response.res(token)
+    return response.res(true)
   }
 
   /**
@@ -819,21 +351,7 @@ class AccountController {
     }
   }
 
-  /**
-   *
-   */
-  async getLandlordProfile({ request, auth, response }) {
-    const { id } = request.all()
-    try {
-      const user = await UserService.getLandlordInfo(id, auth.user.id)
-      return response.res(user)
-    } catch (e) {
-      Logger.error(e)
-      throw new HttpException(e.message, 400)
-    }
-  }
-
-  async resetUnreadNotificationCount({ request, auth, response }) {
+  async resetUnreadNotificationCount({ auth, response }) {
     try {
       await UserService.resetUnreadNotificationCount(auth.user.id)
       return response.send(200)

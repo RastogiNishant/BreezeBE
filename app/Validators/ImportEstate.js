@@ -2,6 +2,10 @@
 
 const yup = require('yup')
 const Base = require('./Base')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED },
+} = require('../exceptions')
 
 const {
   STATUS_ACTIVE,
@@ -12,6 +16,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   // type
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -180,12 +185,8 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
   PARKING_SPACE_TYPE_NO_PARKING,
 
@@ -193,6 +194,10 @@ const {
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  GENDER_NEUTRAL,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -209,7 +214,7 @@ class ImportEstate extends Base {
   static schema = () =>
     yup.object().shape({
       breeze_id: yup.string().nullable(),
-      coord: yup.string().matches(/^\d{1,3}\.\d{5,8}\,\d{1,3}\.\d{5,8}$/),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
         .number()
@@ -219,8 +224,9 @@ class ImportEstate extends Base {
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ])
-        .required('Property type is required.'),
+        .required(getExceptionMessage('Property type', REQUIRED)),
       apt_type: yup
         .number()
         .positive()
@@ -253,9 +259,13 @@ class ImportEstate extends Base {
       category: yup.string().min(2).max(20),
       // TODO: add rooms schema
       rooms: yup.mixed(),
-      street: yup.string().min(2).max(255).required('Street is required.'),
-      house_number: yup.string().min(1).max(255).required('House Number is required.'),
-      country: yup.string().min(1).max(255).required('Country is required.'),
+      street: yup.string().min(2).max(255).required(getExceptionMessage('Street', REQUIRED)),
+      house_number: yup
+        .string()
+        .min(1)
+        .max(255)
+        .required(getExceptionMessage('House Number', REQUIRED)),
+      country: yup.string().min(1).max(255).required(getExceptionMessage('Country', REQUIRED)),
       floor: yup.number().integer().min(-10).max(200),
       floor_direction: yup
         .number()
@@ -265,6 +275,8 @@ class ImportEstate extends Base {
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ]),
       number_floors: yup.number().integer().min(1).max(100),
       prices: yup.number().min(0).max(100000),
@@ -286,7 +298,7 @@ class ImportEstate extends Base {
       area: yup.number().min(0),
       living_space: yup.number().min(0),
       usable_area: yup.number().min(0),
-      rooms_number: yup.number().min(0),
+      rooms_number: yup.number().max(99).min(0), //decimal with 1 decimal place, will truncate if more decimal places
       bedrooms_number: yup.number().min(0),
       bathrooms_number: yup.number().min(0),
       kitchen_options: yup
@@ -363,7 +375,7 @@ class ImportEstate extends Base {
       gender: yup
         .number()
         .integer()
-        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_ANY, null])
+        .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY, null])
         .nullable(),
       monumental_protection: yup.boolean(),
       parking_space: yup.number().min(0).max(10),
@@ -486,10 +498,10 @@ class ImportEstate extends Base {
         ])
         .nullable(),
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
-      city: yup.string().max(40).required('City is required.'),
-      zip: yup.string().max(8).required('Post Code is required.'),
+      city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
+      zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
       budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().integer().min(0).max(100),
+      credit_score: yup.number().min(0).max(100),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
@@ -516,12 +528,9 @@ class ImportEstate extends Base {
       letting_status: yup
         .number()
         .oneOf([
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
+          LETTING_STATUS_NEW_RENOVATED,
           LETTING_STATUS_VACANCY,
         ]),
       letting_type: yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]),

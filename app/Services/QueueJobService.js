@@ -6,7 +6,7 @@ const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
-const { isEmpty } = require('lodash')
+const { isEmpty, trim } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
@@ -17,6 +17,7 @@ const {
   MIN_TIME_SLOT,
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
+  STATUS_DELETE,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -41,15 +42,41 @@ class QueueJobService {
   }
 
   static async updateEstateCoord(estateId) {
-    const estate = await Estate.findOrFail(estateId)
-    if (!estate.address) {
-      throw new AppException('Estate address invalid')
+    const estate = await Estate.find(estateId)
+
+    if (!estate || !estate.address || trim(estate.address) === '') {
+      return
     }
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
-    if (result) {
-      await estate.updateItem({ coord: `${result.lat},${result.lon}` })
+    if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
+      const coord = `${result.lat},${result.lon}`
+      await estate.updateItem({ coord: coord })
       await QueueJobService.updateEstatePoint(estateId)
+      require('./EstateService').emitValidAddress({
+        user_id: estate.user_id,
+        id: estate.id,
+        coord,
+        address: estate.address,
+      })
+    }
+  }
+
+  static async updateAllMisseEstateCoord() {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .whereNull('coord')
+          .whereNotNull('address')
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+      ).rows || []
+
+    let i = 0
+    while (i < estates.length) {
+      await QueueJobService.updateEstateCoord(estates[i].id)
+      i++
     }
   }
 
@@ -73,9 +100,8 @@ class QueueJobService {
         .where('status', MATCH_STATUS_NEW)
         .delete()
         .transacting(trx)
-
-      await NoticeService.landLandlordEstateExpired(estateIds)
       await trx.commit()
+      NoticeService.landlordEstateExpired(estateIds)
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
@@ -87,7 +113,11 @@ class QueueJobService {
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
-      .where('available_date', '<=', moment().format(DATE_FORMAT))
+      .where(
+        'available_date',
+        '<=',
+        moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
+      )
       .fetch()
   }
 
@@ -177,22 +207,16 @@ class QueueJobService {
   }
 
   static async createThumbnailImages() {
-    console.log('Hey guys')
-
-    console.log('Start time', new Date().getTime())
-    //await Promise.all([ImageService.createThumbnail()])
     await Promise.all([ImageService.createThumbnail(), MemberService.createThumbnail()])
-    console.log('End time', new Date().getTime())
-    console.log('Creating thumbnails completed!!!!')
   }
 
   static async deactivateLandlord(deactivationId, userId) {
-    const trx = await Database.beginTransaction()
     const deactivationSchedule = await UserDeactivationSchedule.query()
       .where('id', deactivationId)
       .where('user_id', userId)
       .first()
     if (deactivationSchedule) {
+      const trx = await Database.beginTransaction()
       try {
         await User.query().where('id', userId).update(
           {
@@ -202,7 +226,7 @@ class QueueJobService {
         )
 
         await Estate.query()
-          .whereIn('user_id', userId)
+          .where('user_id', userId)
           .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
           .update({ status: STATUS_DRAFT }, trx)
 
@@ -219,6 +243,12 @@ class QueueJobService {
     } else {
       console.log(`deactivating ${deactivationId} is not valid anymore.`)
     }
+  }
+
+  static async getIpBasedInfo(userId, ip) {
+    const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
+    const ip_based_info = await getIpBasedInfo(ip)
+    await User.query().where('id', userId).update({ ip_based_info })
   }
 }
 

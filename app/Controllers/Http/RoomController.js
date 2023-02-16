@@ -1,63 +1,75 @@
 'use strict'
 
-const { countBy, includes, filter, orderBy } = require('lodash')
-const moment = require('moment')
-const uuid = require('uuid')
-const AppException = use('App/Exceptions/AppException')
 const Logger = use('Logger')
 const Database = use('Database')
-const Drive = use('Drive')
 const Event = use('Event')
-const Estate = use('App/Models/Estate')
 const Room = use('App/Models/Room')
 const File = use('App/Classes/File')
-const Option = use('App/Models/Option')
 const HttpException = use('App/Exceptions/HttpException')
 const RoomService = use('App/Services/RoomService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const EstateService = use('App/Services/EstateService')
-const { PROPERTY_MANAGE_ALLOWED, ROLE_PROPERTY_MANAGER, STATUS_DELETE } = require('../../constants')
+const GalleryService = use('App/Services/GalleryService')
+const {
+  PROPERTY_MANAGE_ALLOWED,
+  ROLE_PROPERTY_MANAGER,
+  STATUS_DELETE,
+  FILE_LIMIT_LENGTH,
+} = require('../../constants')
+const {
+  exceptions: { IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
+} = require('../../exceptions')
 const ImageService = require('../../Services/ImageService')
 
 class RoomController {
   /**
    *
    */
+
+  async createBulkRoom({ request, auth, response }) {
+    const { estate_id, rooms } = request.all()
+    const trx = await Database.beginTransaction()
+    const newRooms = []
+    try {
+      await RoomService.hasPermission(estate_id, auth.user)
+
+      await Promise.all(
+        rooms.map(async (r) => {
+          if (r.favorite) {
+            await Room.query()
+              .where('estate_id', estate_id)
+              .where('type', r.type)
+              .update({ favorite: false })
+              .transacting(trx)
+          }
+          const room = await Room.createItem(
+            {
+              ...r,
+              estate_id,
+            },
+            trx
+          )
+          newRooms.push(room)
+        })
+      )
+      Event.fire('estate::update', estate_id)
+      await trx.commit()
+      response.res(newRooms)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 500)
+    }
+  }
+
   async createRoom({ request, auth, response }) {
     const { estate_id, ...roomData } = request.all()
 
     const trx = await Database.beginTransaction()
 
     try {
-      let userIds = [auth.user.id]
-      if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-        userIds = await EstatePermissionService.getLandlordIds(
-          auth.user.id,
-          PROPERTY_MANAGE_ALLOWED
-        )
-      }
-
-      await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
-
-      if (roomData.favorite) {
-        await Room.query()
-          .where('estate_id', estate_id)
-          .where('type', roomData.type)
-          .update({ favorite: false })
-          .transacting(trx)
-      }
-
-      const room = await Room.createItem(
-        {
-          ...roomData,
-          estate_id,
-        },
-        trx
-      )
-
+      const room = await RoomService.createRoom({ user: auth.user, estate_id, roomData }, trx)
       Event.fire('estate::update', estate_id)
       await trx.commit()
-
       response.res(room)
     } catch (e) {
       Logger.error('Create Room error', e)
@@ -78,7 +90,7 @@ class RoomController {
       userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
     }
 
-    const room = await RoomService.getRoomByUser(userIds, room_id)
+    const room = await RoomService.getRoomByUser({ userIds, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -110,14 +122,14 @@ class RoomController {
    */
   async removeRoom({ request, auth, response }) {
     const { room_id } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    const room = await RoomService.getRoomByUser({ userIds: auth.user.id, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
 
     const trx = await Database.beginTransaction()
     try {
-      await RoomService.removeRoom(room_id, trx)
+      await RoomService.handleRemoveRoom(room, trx)
       await EstateService.updateCover({ room: room.toJSON() }, trx)
       Event.fire('estate::update', room.estate_id)
       await trx.commit()
@@ -149,7 +161,7 @@ class RoomController {
 
   async orderRoomPhoto({ request, auth, response }) {
     const { room_id, ids } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    const room = await RoomService.getRoomByUser({ userIds: auth.user.id, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -164,49 +176,19 @@ class RoomController {
 
       await ImageService.updateOrder(ids, trx)
       await EstateService.changeEstateCoverInFavorite(room, images, ids[0], trx)
-
       await trx.commit()
+      response.res(true)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
     }
-    response.res(true)
   }
   /**
    *
    */
   async addRoomPhoto({ request, auth, response }) {
     const { room_id } = request.all()
-
-    let userIds = [auth.user.id]
-    if (auth.user.role === ROLE_PROPERTY_MANAGER) {
-      userIds = await EstatePermissionService.getLandlordIds(auth.user.id, PROPERTY_MANAGE_ALLOWED)
-    }
-
-    const room = await RoomService.getRoomByUser(userIds, room_id)
-    if (!room) {
-      throw new HttpException('Invalid room', 404)
-    }
-
-    const trx = await Database.beginTransaction()
-    try {
-      const imageMimes = [File.IMAGE_JPEG, File.IMAGE_PNG]
-      const files = await File.saveRequestFiles(request, [
-        { field: 'file', mime: imageMimes, isPublic: true },
-      ])
-
-      const image = await RoomService.addImage(files.file, room, 's3public', trx)
-
-      await EstateService.updateCover({ room: room.toJSON(), addImage: image }, trx)
-
-      Event.fire('estate::update', room.estate_id)
-
-      await trx.commit()
-      response.res(image)
-    } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 400)
-    }
+    response.res(await RoomService.addRoomPhoto(request, { user: auth.user, room_id }))
   }
 
   /**
@@ -214,7 +196,7 @@ class RoomController {
    */
   async removeRoomPhoto({ request, auth, response }) {
     const { room_id, id } = request.all()
-    const room = await RoomService.getRoomByUser(auth.user.id, room_id)
+    const room = await RoomService.getRoomByUser({ userIds: auth.user.id, room_id })
     if (!room) {
       throw new HttpException('Invalid room', 404)
     }
@@ -222,6 +204,10 @@ class RoomController {
     const trx = await Database.beginTransaction()
     try {
       const image = await RoomService.removeImage(id, trx)
+      await GalleryService.addFromView(
+        { estate_id: room.estate_id, url: image.url, file_name: image.file_name },
+        trx
+      )
       await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
       Event.fire('estate::update', room.estate_id)
 

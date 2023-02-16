@@ -1,10 +1,10 @@
 const Queue = use('Queue')
 const Logger = use('Logger')
 const MemberService = use('App/Services/MemberService')
-const NoticeService = use('App/Services/NoticeService')
 const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
+const ImportService = use('App/Services/ImportService')
 const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
@@ -12,9 +12,11 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
+const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
-
+const GET_IP_BASED_INFO = 'getIpBasedInfo'
+const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const {
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_13H_DAY_JOB,
@@ -47,8 +49,20 @@ class QueueService {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
   }
 
+  static uploadOpenImmoImages(images, estateId) {
+    Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
+  }
+
   static getAnchorIsoline(tenantId) {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
+  }
+
+  static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
+    Queue.addJob(
+      IMPORT_ESTATES_VIA_EXCEL,
+      { s3_bucket_file_name, fileName, user_id, template, import_id },
+      { delay: 1 }
+    )
   }
 
   /**
@@ -70,20 +84,25 @@ class QueueService {
     Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
   }
 
+  static getIpBasedInfo(userId, ip) {
+    Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
+  }
+
   /**
    *
    */
   static async sendEvery5Min() {
+    const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(QueueJobService.handleExpiredEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
       wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
       wrapException(NoticeService.prospectVisitIn90m),
-      wrapException(NoticeService.getNewWeekMatches),
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(NoticeService.expiredShowTime),
     ])
   }
 
@@ -110,13 +129,16 @@ class QueueService {
    *
    */
   static async sendEveryDay9AM() {
-    return Promise.all([wrapException(NoticeService.prospectProfileExpiring)])
+    return Promise.all([
+      wrapException(NoticeService.prospectProfileExpiring),
+      wrapException(QueueJobService.updateAllMisseEstateCoord),
+    ])
   }
 
   /**
    *
    */
-  static async sendEveryEveryMonth12AM() {
+  static async sendEveryMonth12AM() {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
@@ -126,12 +148,22 @@ class QueueService {
   static async processJob(job) {
     try {
       switch (job.name) {
+        case UPLOAD_OPENIMMO_IMAGES:
+          return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case IMPORT_ESTATES_VIA_EXCEL:
+          return ImportService.process({
+            s3_bucket_file_name: job.data.s3_bucket_file_name,
+            filePath: job.data.fileName,
+            user_id: job.data.user_id,
+            type: job.data.template,
+            import_id: job.data.import_id,
+          })
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_13H_DAY_JOB:
@@ -141,13 +173,15 @@ class QueueService {
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
         case SCHEDULED_MONTHLY_JOB:
-          return QueueService.sendEveryEveryMonth12AM()
+          return QueueService.sendEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
           return QueueJobService.createThumbnailImages()
         case DEACTIVATE_LANDLORD:
           return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
+        case GET_IP_BASED_INFO:
+          return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

@@ -2,11 +2,16 @@
 
 const { toString } = require('lodash')
 const md5 = require('md5')
-const { ROLE_LANDLORD, USER_ACTIVATION_STATUS_NOT_ACTIVATED } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+  STATUS_DELETE,
+} = require('../constants')
 
 const Model = require('./BaseModel')
 const UserFilter = use('App/ModelFilters/UserFilter')
 const Hash = use('Hash')
+const randomstring = require('randomstring')
 
 class User extends Model {
   static get columns() {
@@ -50,6 +55,11 @@ class User extends Model {
       'is_household_invitation_onboarded',
       'is_landlord_verification_onboarded',
       'activation_status',
+      'preferred_services',
+      'source_estate_id',
+      'ip',
+      'ip_based_info',
+      'code',
     ]
   }
 
@@ -93,6 +103,16 @@ class User extends Model {
       if (userInstance.dirty.email || userInstance.dirty.role) {
         userInstance.uid = User.getHash(userInstance.email, userInstance.role)
       }
+      if (userInstance.preferred_services && Array.isArray(userInstance.preferred_services)) {
+        userInstance.preferred_services = JSON.stringify(userInstance.preferred_services)
+      }
+    })
+  }
+
+  static getTenDigitCode() {
+    return randomstring.generate({
+      length: 10,
+      charset: 'alphanumeric',
     })
   }
 
@@ -121,7 +141,14 @@ class User extends Model {
    *
    */
   company() {
-    return this.hasMany('App/Models/Company', 'id', 'user_id')
+    return this.belongsTo('App/Models/Company', 'company_id', 'id')
+  }
+
+  letter_template() {
+    return this.hasOne('App/Models/LetterTemplate', 'id', 'user_id').whereNot(
+      'status',
+      STATUS_DELETE
+    )
   }
 
   /**

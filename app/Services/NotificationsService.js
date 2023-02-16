@@ -7,8 +7,6 @@ const md5 = require('md5')
 /** @type {typeof import('/providers/Notifications')} */
 const Notifications = use('Notifications')
 const l = use('Localize')
-const UserService = use('App/Services/UserService')
-const User = use('App/Models/User')
 const uTime = require('moment')().format('X')
 
 const { capitalize, rc } = require('../Libs/utils')
@@ -90,14 +88,32 @@ const {
   NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
   NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
-  DEFAULT_LANG,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
   NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID,
   NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT,
+  NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD,
+  NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
   URGENCIES,
+  NOTICE_TYPE_TENANT_DISCONNECTION,
+  NOTICE_TYPE_TENANT_DISCONNECTION_ID,
+
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
+  NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
+  NOTICE_TYPE_PROSPECT_TASK_RESOLVED,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+  NOTICE_TYPE_PROSPECT_DEACTIVATED,
+
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED,
+  NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+
+  NOTICE_TYPE_EXPIRED_SHOW_TIME,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
 } = require('../constants')
 
 const mapping = [
@@ -139,6 +155,8 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_ARRIVED_ID, NOTICE_TYPE_PROSPECT_ARRIVED],
   [NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED],
   [NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID, NOTICE_TYPE_PROSPECT_SUPER_MATCH],
+  [NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID, NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT],
+  [NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID, NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD],
   [NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS],
   [NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE],
   [NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE],
@@ -147,6 +165,12 @@ const mapping = [
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
   ],
+  [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
+  [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
+  [NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID, NOTICE_TYPE_PROSPECT_TASK_RESOLVED],
+  [NOTICE_TYPE_PROSPECT_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_DEACTIVATED],
+  [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID],
+  [NOTICE_TYPE_EXPIRED_SHOW_TIME, NOTICE_TYPE_EXPIRED_SHOW_TIME_ID],
 ]
 
 class NotificationsService {
@@ -188,6 +212,7 @@ class NotificationsService {
       notification: {
         title: title || body,
         body: body || title,
+        sound: 'my_sound.mp3',
       },
       data: {
         type,
@@ -272,6 +297,21 @@ class NotificationsService {
   }
 
   /**
+   * Send notification to knocked prospect about estate expired
+   */
+
+  static async sendEstateExpiredToKnockedProspect(notices) {
+    const title = 'prospect.notification.event.knocked_property_expired'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      const address = capitalize(get(data, 'estate_address', ''))
+      return (
+        address + ' \n' + `${l.get('prospect.notification.next.knocked_property_expired', lang)}`
+      )
+    })
+  }
+
+  /**
    * Send Notification about estate expired soon
    */
   static async sendProspectPropertyDeactivated(notices) {
@@ -345,9 +385,10 @@ class NotificationsService {
     if (!isArray(notes) || isEmpty(notes)) {
       return false
     }
-
     // Users tokens and lang
-    const langTokens = await UserService.getTokenWithLocale(uniq(notes.map((i) => i.user_id)))
+    const langTokens = await require('./UserService').getTokenWithLocale(
+      uniq(notes.map((i) => i.user_id))
+    )
     // Mixin token data to existing data
     notes = notes.reduce((n, i) => {
       const token = langTokens.find(({ id, lang, device_token }) => +id === +i.user_id)
@@ -552,6 +593,16 @@ class NotificationsService {
     })
   }
 
+  static async sendTenantUpdateTimeSlot(notice) {
+    const title = 'tenant.notification.event.visit_changed'
+    return NotificationsService.sendNotes(notice, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('tenant.notification.next.visit_changed', lang)
+      )
+    })
+  }
   //  static async sendProspectNewVisit(notice) {
   //   const title = 'prospect.notification.event.new_visit_time'
   //   return NotificationsService.sendNotes(notice, title, (data, lang) => {
@@ -626,16 +677,15 @@ class NotificationsService {
   /**
    *
    */
-  static async sendProspectHasSuperMatch(notice) {
-    const title = 'prospect.notification.event.best_match'
+  static async sendProspectHasSuperMatch(notices) {
+    const title = `prospect.notification.event.new_multi_matches`
+    const body = 'prospect.notification.next.new_match.message'
 
-    return NotificationsService.sendNotes([notice], title, (data, lang) => {
-      return (
-        capitalize(data.estate_address) +
-        ' \n' +
-        l.get('prospect.notification.next.best_match.message', lang)
-      )
-    })
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ number: data?.count }])}`,
+      body
+    )
   }
 
   /**
@@ -785,6 +835,18 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, body)
   }
 
+  static async sendFollowUpVisit(notice) {
+    const title = 'prospect.notification.event.tenant_are_you_coming'
+    const body = (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.tenant_are_you_coming', lang)
+      )
+    }
+    return NotificationsService.sendNotes([notice], title, body)
+  }
+
   static async notifyDeactivatedLandlords(notices) {
     const title = 'landlord.notification.event.profile_deactivated_now'
     const body = 'landlord.notification.event.profile_deactivated_now.next.message'
@@ -834,6 +896,30 @@ class NotificationsService {
       return data.message
     }
     return NotificationsService.sendNotes([notice], title, body)
+  }
+
+  static async notifyTenantDisconnected(notices) {
+    const title = 'tenant.notification.event.tenant_disconnected.message'
+    const body = 'tenant.notification.next.tenant_disconnected.message'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyTenantTaskResolved(notices) {
+    const title = 'prospect.notification.event.task_resolved'
+    const body = 'prospect.notification.next.task_resolved'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendProspectDeactivated(notices) {
+    const title = 'prospect.notification.event.profile_deactivated'
+    const body = 'prospect.notification.next.profile_deactivated'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendExpiredShowTime(notices) {
+    const title = 'landlord.property.set_availability.txt_show_expired.message'
+    const body = 'landlord.property.set_availability.btn_new_show.message'
+    return NotificationsService.sendNotes(notices, title, body)
   }
 }
 

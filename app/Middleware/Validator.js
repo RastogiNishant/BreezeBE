@@ -2,22 +2,25 @@
 
 const { reduce, get } = require('lodash')
 const Promise = require('bluebird')
-const fs = require('fs')
+const fsPromises = require('fs/promises')
 const path = require('path')
 
 const { ValidationException } = use('Validator')
 
 const { wrapValidationError } = require('../Libs/utils.js')
 
-// Load classes
-const schemaClasses = reduce(
-  fs.readdirSync(path.join(__dirname, '../Validators/')),
-  (n, file) => {
-    const ClassName = require(path.join(__dirname, '../Validators/', file))
-    return { ...n, [ClassName.name]: ClassName }
-  },
-  {}
-)
+const getSchemaClasses = async () => {
+  const validators = await fsPromises.readdir(path.join(__dirname, '../Validators/'))
+  const schemaClasses = reduce(
+    validators,
+    (n, file) => {
+      const ClassName = require(path.join(__dirname, '../Validators/', file))
+      return { ...n, [ClassName.name]: ClassName }
+    },
+    {}
+  )
+  return schemaClasses
+}
 
 /**
  * Validate and sanitize request data
@@ -28,6 +31,7 @@ class SanitizeYup {
    */
   async validateSingleSchema(schemaName, data) {
     let result = {}
+    const schemaClasses = await getSchemaClasses()
     try {
       const Schema = get(schemaClasses, schemaName)
       if (Schema) {

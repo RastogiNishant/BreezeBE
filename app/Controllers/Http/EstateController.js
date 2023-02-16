@@ -1,6 +1,5 @@
 'use strict'
 
-const uuid = require('uuid')
 const moment = require('moment')
 
 const Admin = use('App/Models/Admin')
@@ -16,7 +15,6 @@ const ImportService = use('App/Services/ImportService')
 const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
-const NoticeService = use('App/Services/NoticeService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
@@ -32,7 +30,6 @@ const {
   STATUS_DRAFT,
   STATUS_DELETE,
   ERROR_BUDDY_EXISTS,
-  DATE_FORMAT,
   DAY_FORMAT,
   MATCH_STATUS_NEW,
   PROPERTY_MANAGE_ALLOWED,
@@ -45,6 +42,20 @@ const {
   LETTING_TYPE_NA,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
+  IMPORT_TYPE_EXCEL,
+  IMPORT_ENTITY_ESTATES,
+  IMPORT_ACTIVITY_PENDING,
+  FILE_LIMIT_LENGTH,
+  FILE_TYPE_UNASSIGNED,
+  FILE_TYPE_EXTERNAL,
+  FILE_TYPE_CUSTOM,
+  FILE_TYPE_PLAN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -52,8 +63,23 @@ const EstateAttributeTranslations = require('../../Classes/EstateAttributeTransl
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
 const UserService = require('../../Services/UserService')
-const GeoService = use('App/Services/GeoService')
+const EstateCurrentTenantService = require('../../Services/EstateCurrentTenantService')
+const TimeSlotService = require('../../Services/TimeSlotService')
+const QueueService = require('../../Services/QueueService')
+
 const INVITE_CODE_STRING_LENGTH = 8
+
+const {
+  exceptions: {
+    ESTATE_NOT_EXISTS,
+    SOME_IMAGE_NOT_EXIST,
+    WRONG_PARAMS,
+    IMAGE_COUNT_LIMIT,
+    FAILED_IMPORT_FILE_UPLOAD,
+    FAILED_TO_ADD_FILE,
+    CURRENT_IMAGE_COUNT,
+  },
+} = require('../../../app/exceptions')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -87,15 +113,18 @@ class EstateController {
       if (user.activation_status !== USER_ACTIVATION_STATUS_ACTIVATED) {
         const { street, house_number, zip, city, country } = request.all()
         const address = trim(
-          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${country || 'Germany'
+          `${street || ''}, ${house_number || ''}, ${zip || ''}, ${city || ''}, ${
+            country || 'Germany'
           }`
         ).toLowerCase()
 
-        const txt = `The landlord '${user.email
-          }' created a property with an address '${address}' in ${process.env.NODE_ENV || 'local'
-          } environment`
+        const txt = `The landlord '${
+          user.email
+        }' created a property with an address '${address}' in ${
+          process.env.NODE_ENV || 'local'
+        } environment`
 
-        await MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
+        MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
 
       response.res(estate)
@@ -118,7 +147,7 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      const newEstate = await EstateService.updateEstate(request)
+      const newEstate = await EstateService.updateEstate(request, auth.user.id)
       response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -134,66 +163,31 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    const newEstate = await EstateService.updateEstate(request)
+    const newEstate = await EstateService.updateEstate(request, auth.user.id)
     response.res(newEstate)
   }
 
-  async lanlordTenantDetailInfo({ request, auth, response }) {
+  async landlordTenantDetailInfo({ request, auth, response }) {
     const { estate_id, tenant_id } = request.all()
     try {
-      const lanlord = await EstateService.lanlordTenantDetailInfo(
+      const landlord = await EstateService.landlordTenantDetailInfo(
         auth.user.id,
         estate_id,
         tenant_id
       )
       let tenant = await TenantService.getTenant(tenant_id)
-      let members = await MemberService.getMembers(tenant_id)
+      let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
-      if (!lanlord.toJSON().share && lanlord.toJSON().status !== MATCH_STATUS_FINISH) {
-        members = members.toJSON().map((member) => pick(member, Member.limitFieldsList))
-        tenant = tenant.toJSON({ isShort: true })
-      } else {
-        members = await Promise.all(
-          members.toJSON().map(async (member) => {
-            const incomes = await Promise.all(
-              member.incomes.map(async (income) => {
-                const proofs = await Promise.all(
-                  income.proofs.map(async (proof) => {
-                    if (!proof.file) return proof
-                    proof.file = await FileBucket.getProtectedUrl(proof.file)
-                    return proof
-                  })
-                )
-                income = {
-                  ...income,
-                  proofs: proofs,
-                }
-                return income
-              })
-            )
 
-            const passports = await Promise.all(
-              member.passports.map(async (passport) => {
-                if (!passport.file) return passport
-                passport.file = await FileBucket.getProtectedUrl(passport.file)
-                return passport
-              })
-            )
-
-            member = {
-              ...member,
-              rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-              debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
-              incomes: incomes,
-              passports: passports,
-            }
-            return member
-          })
+      if (!landlord.toJSON().share && landlord.toJSON().status !== MATCH_STATUS_FINISH) {
+        members = (members || members.toJSON() || []).map((member) =>
+          pick(member, Member.limitFieldsList)
         )
+        tenant = tenant.toJSON({ isShort: true })
       }
 
       const result = {
-        ...lanlord.toJSON(),
+        ...landlord.toJSON(),
         company: company,
         tenant: tenant,
         members: members,
@@ -210,8 +204,31 @@ class EstateController {
       auth.user.id,
       PROPERTY_MANAGE_ALLOWED
     )
-    const result = await EstateService.getEstatesByUserId({ user_id: auth.user.id, landlordIds, limit, page, params })
+    const result = await EstateService.getEstatesByUserId({
+      ids: landlordIds,
+      limit,
+      page,
+      params,
+    })
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    delete result.rows
     response.res(result)
+  }
+
+  async searchEstates({ request, auth, response }) {
+    const { query, coord } = request.all()
+    if (!coord && !query) {
+      throw new HttpException(WRONG_PARAMS, 400)
+    }
+    const estates = await EstateService.getEstatesByQuery({ user_id: auth.user.id, query, coord })
+    response.res(estates)
+  }
+
+  async shortSearchEstates({ request, auth, response }) {
+    const { query, letting_type } = request.all()
+    response.res(
+      await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
+    )
   }
   /**
    *
@@ -222,8 +239,44 @@ class EstateController {
       params = request.post()
     }
     // Update expired estates status to unpublished
-    let result = await EstateService.getEstatesByUserId({ user_id: auth.user.id, landlordIds: [auth.user.id], limit, page, params })
-    result = result.toJSON()
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+      limit,
+      page,
+      params,
+    })
+
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = (result.data || []).map((estate) => {
+      const outside_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_EXTERNAL)
+        ? true
+        : false
+      const inside_view_has_media = (estate?.rooms || []).find(
+        (room) => room.images && room.images.length
+      )
+        ? true
+        : false
+      const document_view_has_media =
+        (estate.energy_proof && trim(estate.energy_proof) != '') ||
+        (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
+          ? true
+          : false
+      const unassigned_view_has_media = (estate.files || []).find(
+        (f) => f.type == FILE_TYPE_UNASSIGNED
+      )
+        ? true
+        : false
+
+      return {
+        ...estate,
+        inside_view_has_media,
+        outside_view_has_media,
+        document_view_has_media,
+        unassigned_view_has_media,
+      }
+    })
+    delete result?.rows
+
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
@@ -270,13 +323,38 @@ class EstateController {
   async getEstate({ request, auth, response }) {
     const { id } = request.all()
     const user_id = auth.user instanceof Admin ? null : auth.user.id
-    let estate = await EstateService.getEstateWithDetails(id, user_id)
-
+    let estate = await EstateService.getEstateWithDetails({ id, user_id, role: auth.user.role })
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
     estate = estate.toJSON({ isOwner: true })
+    const outside_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_EXTERNAL)
+      ? true
+      : false
+    const inside_view_has_media = (estate?.rooms || []).find(
+      (room) => room.images && room.images.length
+    )
+      ? true
+      : false
+    const document_view_has_media =
+      (estate.energy_proof && trim(estate.energy_proof) != '') ||
+      (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
+        ? true
+        : false
+    const unassigned_view_has_media = (estate.files || []).find(
+      (f) => f.type == FILE_TYPE_UNASSIGNED
+    )
+      ? true
+      : false
+
     estate = await EstateService.assignEstateAmenities(estate)
+    estate = {
+      ...estate,
+      inside_view_has_media,
+      outside_view_has_media,
+      document_view_has_media,
+      unassigned_view_has_media,
+    }
     response.res(estate)
   }
 
@@ -332,7 +410,6 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const { from_web } = request.all()
     const importFilePathName = request.file('file')
 
     if (importFilePathName && importFilePathName.tmpPath) {
@@ -340,13 +417,37 @@ class EstateController {
         importFilePathName.headers['content-type'] !==
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       ) {
-        throw new HttpException('No excel format', 400)
+        throw new HttpException('Not an excel format', 400)
       }
     } else {
-      throw new HttpException('There is no excel data to import', 400)
+      throw new HttpException('Error found while uploading file.', 400)
     }
-    const result = await ImportService.process(importFilePathName.tmpPath, auth.user.id, 'xls')
-    return response.res(result)
+
+    const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
+    const files = await FileBucket.saveRequestFiles(request, [
+      { field: 'file', mime: imageMimes, isPublic: false },
+    ])
+
+    if (files?.file) {
+      const importItem = await ImportService.addImportFile({
+        user_id: auth.user.id,
+        filename: importFilePathName?.clientName || null,
+        type: IMPORT_TYPE_EXCEL,
+        entity: IMPORT_ENTITY_ESTATES,
+        status: IMPORT_ACTIVITY_PENDING,
+      })
+
+      QueueService.importEstate({
+        s3_bucket_file_name: files?.file,
+        fileName: importFilePathName,
+        user_id: auth.user.id,
+        template: 'xls',
+        import_id: importItem.id,
+      })
+      response.res(importItem)
+    } else {
+      throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+    }
   }
 
   //import Estate by property manager
@@ -378,6 +479,7 @@ class EstateController {
    */
   async publishEstate({ request, auth, response }) {
     const { id, action } = request.all()
+
     const estate = await Estate.findOrFail(id)
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
@@ -425,7 +527,7 @@ class EstateController {
         await EstateService.handleOfflineEstate(estate.id, trx)
         await estate.save(trx)
         await trx.commit()
-        return response.res(true)
+        response.res(true)
       } else {
         throw new HttpException('You are attempted to edit wrong estate', 409)
       }
@@ -527,12 +629,29 @@ class EstateController {
 
     const estate = await Estate.query()
       .where('id', estate_id)
+      .with('files', function (f) {
+        f.where('type', type)
+      })
       .whereIn('user_id', userIds)
       .firstOrFail()
+
+    const count = FileBucket.filesCount(request, 'file')
+    const image_length = estate.toJSON().files?.length || 0
+    if (
+      type !== FILE_TYPE_UNASSIGNED &&
+      estate.toJSON().files &&
+      image_length + count >= FILE_LIMIT_LENGTH
+    ) {
+      throw new HttpException(`${IMAGE_COUNT_LIMIT} ${CURRENT_IMAGE_COUNT}:${image_length}`, 400)
+    }
 
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
+      FileBucket.IMAGE_TIFF,
+      FileBucket.IMAGE_WEBP,
+      FileBucket.IMAGE_HEIC,
+      FileBucket.IMAGE_GIF,
       FileBucket.IMAGE_PDF,
       FileBucket.MIME_DOC,
       FileBucket.MIME_DOCX,
@@ -543,10 +662,23 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({ disk: 's3public', url: files.file, type, estate })
-    Event.fire('estate::update', estate_id)
+    if (files && files.file) {
+      const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const data = paths.map((path, index) => {
+        return {
+          disk: 's3public',
+          url: path,
+          file_name: files.original_file[index],
+          type,
+          estate_id: estate.id,
+        }
+      })
 
-    response.res(fileObj)
+      const result = await EstateService.addManyFiles(data)
+      Event.fire('estate::update', estate_id)
+      return response.res(result)
+    }
+    throw new HttpException(FAILED_TO_ADD_FILE, 500)
   }
 
   /**
@@ -565,10 +697,60 @@ class EstateController {
       throw new HttpException('Image not found', 404)
     }
 
-    await EstateService.removeFile(file)
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.moveToGallery(
+        {
+          ids: [file.id],
+          estate_id,
+          user_id: auth.user.id,
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
+  async removeMultipleFiles({ request, auth, response }) {
+    const { estate_id, ids } = request.all()
+    await EstateService.moveToGallery({ ids, estate_id, user_id: auth.user.id })
     response.res(true)
   }
 
+  async updateOrder({ request, auth, response }) {
+    const { estate_id, ids, type } = request.all()
+
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.hasPermission({
+        id: estate_id,
+        user_id: auth.user.id,
+      })
+
+      const imageIds = await EstateService.getFiles({ estate_id, ids, type })
+      if (imageIds.length != ids.length) {
+        throw new HttpException(SOME_IMAGE_NOT_EXIST)
+      }
+
+      await Promise.all(
+        ids.map(async (id, index) => {
+          await File.query()
+            .where('id', id)
+            .update({ order: index + 1 })
+            .transacting(trx)
+        })
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
   /**
    *
    */
@@ -605,7 +787,11 @@ class EstateController {
   async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
 
-    let estate = await EstateService.getEstateWithDetails(id)
+    let estate = await EstateService.getEstateWithDetails({
+      id,
+      user_id: auth.user.id,
+      role: auth.user.role,
+    })
 
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
@@ -629,7 +815,7 @@ class EstateController {
     const { code } = request.all()
     const estate = await EstateService.getEstateByHash(code)
     if (!estate) {
-      throw new HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
     }
 
     try {
@@ -658,11 +844,11 @@ class EstateController {
     const estate = await estateQuery.first()
 
     if (!estate) {
-      throw new HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
     }
 
-    const slots = await EstateService.getTimeSlotsByEstate(estate)
-    response.res(slots.rows)
+    const slots = await TimeSlotService.getTimeSlotsByEstate(estate)
+    response.res(slots?.rows || [])
   }
 
   /**
@@ -675,12 +861,11 @@ class EstateController {
       .where('id', estate_id)
       .first()
     if (!estate) {
-      throw HttpException('Estate not exists', 404)
+      throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
 
     try {
-      const slot = await EstateService.createSlot(data, estate)
-
+      const slot = await TimeSlotService.createSlot(data, estate)
       return response.res(slot)
     } catch (e) {
       Logger.error(e)
@@ -692,15 +877,9 @@ class EstateController {
    *
    */
   async updateSlot({ request, auth, response }) {
-    const { estate_id, slot_id, ...rest } = request.all()
-    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
+    const data = request.all()
     try {
-      const updatedSlot = await EstateService.updateSlot(slot, rest)
-      return response.res(updatedSlot)
+      response.res(await TimeSlotService.updateTimeSlot(auth.user.id, data))
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
@@ -712,40 +891,11 @@ class EstateController {
    */
   async removeSlot({ request, auth, response }) {
     const { slot_id } = request.all()
-    const slot = await EstateService.getTimeSlotByOwner(auth.user.id, slot_id)
-    if (!slot) {
-      throw new HttpException('Time slot not found', 404)
-    }
-
-    // The landlord can't remove the slot if it is already started
-    if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException('Showing is already started', 500)
-    }
-
-    // If slot's end date is passed, we only delete the slot
-    // But if slot's end date is not passed, we delete the slot and all the visits
-    if (slot.end_at < new Date()) {
-      await slot.delete()
-      response.res(true)
-    } else {
-      const trx = await Database.beginTransaction()
-      try {
-        const estateId = slot.estate_id
-        const userIds = await MatchService.handleDeletedTimeSlotVisits(slot, trx)
-        await slot.delete(trx)
-
-        await trx.commit()
-
-        const notificationPromises = userIds.map((userId) =>
-          NoticeService.cancelVisit(estateId, userId)
-        )
-        await Promise.all(notificationPromises)
-        response.res(true)
-      } catch (e) {
-        Logger.error(e)
-        await trx.rollback()
-        throw new HttpException(e.message, 400)
-      }
+    try {
+      response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
+    } catch (e) {
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -798,9 +948,9 @@ class EstateController {
   /**
    *
    */
-  async getEstateFreeTimeslots({ request, auth, response }) {
+  async getEstateFreeTimeslots({ request, response }) {
     const { estate_id } = request.all()
-    const slots = await EstateService.getFreeTimeslots(estate_id)
+    const slots = await TimeSlotService.getFreeTimeslots(estate_id)
 
     return response.res(slots)
   }
@@ -821,7 +971,7 @@ class EstateController {
     response.res(!(estate.row_count > 0))
   }
 
-  async getInviteToViewCode({ request, auth, response }) { }
+  async getInviteToViewCode({ request, auth, response }) {}
 
   async createInviteToViewCode({ request, auth, response }) {
     req.res(request.all())
@@ -833,19 +983,20 @@ class EstateController {
 
     //Transaction start...
     const trx = await Database.beginTransaction()
-    let code
-    //check if this estate already has an invite
-    const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
-    if (invitation) {
-      code = invitation.code
-    } else {
-      do {
-        //generate code
-        code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
-      } while (await EstateViewInvite.findBy('code', code))
-    }
 
     try {
+      let code
+      //check if this estate already has an invite
+      const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
+      if (invitation) {
+        code = invitation.code
+      } else {
+        do {
+          //generate code
+          code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
+        } while (await EstateViewInvite.findBy('code', code))
+      }
+
       let newInvite = new EstateViewInvite()
       if (!invitation) {
         //this needs to be created
@@ -884,10 +1035,10 @@ class EstateController {
       )
       await trx.commit()
       //transaction end
-      return response.res({ code })
+      response.res({ code })
     } catch (e) {
-      console.log(e)
       await trx.rollback()
+      console.log(e)
       //transaction failed
       throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
@@ -895,8 +1046,9 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-
-    let result = await EstateService.getEstatesByUserId({ landlordIds: [auth.user.id], limit: 0, page: 0, params: { return_all: 1 } })
+    let result = await EstateService.getEstatesByUserId({
+      ids: [auth.user.id],
+    })
     let rows = []
 
     if (lang) {
@@ -912,7 +1064,7 @@ class EstateController {
                 //key value pairs
                 row[attribute] =
                   reverseMap[attribute][
-                  isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
+                    isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
                   ]
               }
             }
@@ -962,18 +1114,34 @@ class EstateController {
     return response.res(rows)
   }
 
+  async importLastActivity({ auth, request, response }) {
+    let last_import_activities = await ImportService.getLastImportActivities(auth.user.id)
+    return response.res(last_import_activities)
+  }
+
+  async postImportLastActivity({ auth, request, response }) {
+    const { filename, action, type, entity } = request.all()
+    const result = await ImportService.postLastActivity({
+      user_id: auth.user.id,
+      filename,
+      action,
+      type,
+      entity,
+    })
+    return response.res(result)
+  }
+
   async deleteMultiple({ auth, request, response }) {
     const { id } = request.all()
     const trx = await Database.beginTransaction()
-    let affectedRows
     try {
-      affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+      const affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
+      await trx.commit()
+      response.res({ deleted: affectedRows })
     } catch (error) {
       await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
-    await trx.commit()
-    return response.res({ deleted: affectedRows })
   }
 
   async getLatestEstates({ request, auth, response }) {
@@ -985,6 +1153,66 @@ class EstateController {
       estates,
       prospectCount,
     })
+  }
+
+  async changeLettingType({ request, auth, response }) {
+    const { id, letting_type } = request.all()
+    const matchCount = await MatchService.matchCount(
+      [
+        MATCH_STATUS_KNOCK,
+        MATCH_STATUS_INVITE,
+        MATCH_STATUS_VISIT,
+        MATCH_STATUS_SHARE,
+        MATCH_STATUS_COMMIT,
+        MATCH_STATUS_TOP,
+        MATCH_STATUS_FINISH,
+      ],
+      [id]
+    )
+
+    if (matchCount && matchCount.length && parseInt(matchCount[0].count)) {
+      throw new HttpException(
+        "There is a match for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    const estateCurrentTenant = await EstateCurrentTenantService.getCurrentTenantByEstateId({
+      estate_id: id,
+    })
+
+    if (estateCurrentTenant) {
+      throw new HttpException(
+        "There is a tenant for that property, You can't change type of let, Please contact to customer service to change it",
+        400
+      )
+    }
+
+    await Estate.query()
+      .where('id', id)
+      .where('user_id', auth.user.id)
+      .whereNot('status', STATUS_DELETE)
+      .update({ letting_type: letting_type })
+
+    response.res(true)
+  }
+
+  async importOpenimmo({ request, response, auth }) {
+    try {
+      await EstateService.importOpenimmo(request.importFile, auth.user.id)
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 412)
+    }
+  }
+
+  async getFiles({ response, params }) {
+    const { estate_id } = params
+    try {
+      response.res(await EstateService.getFilesByEstateId(estate_id))
+    } catch (err) {
+      throw new HttpException(err.message)
+    }
   }
 }
 

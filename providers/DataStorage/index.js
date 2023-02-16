@@ -33,6 +33,19 @@ class Storage {
     return true
   }
 
+  async increment(key, prefix = '', options = {}) {
+    await this.redis.incr(`${prefix}_${key}`)
+    if (!options.expire) {
+      options.expire = 3600
+    }
+
+    if (options.expire > 0) {
+      await this.redis.expire(`${prefix}_${key}`, options.expire)
+    }
+
+    return true
+  }
+
   async clearItem(key, prefix = '') {
     return this.redis.del(`${prefix}_${key}`)
   }

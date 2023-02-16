@@ -4,7 +4,18 @@ const Model = require('./BaseModel')
 
 class Contact extends Model {
   static get columns() {
-    return ['id', 'user_id', 'company_id', 'full_name', 'email', 'phone', 'region', 'avatar']
+    return [
+      'id',
+      'user_id',
+      'company_id',
+      'full_name',
+      'title',
+      'email',
+      'phone',
+      'region',
+      'avatar',
+      'status',
+    ]
   }
 
   /**

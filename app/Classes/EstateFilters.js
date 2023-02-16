@@ -4,11 +4,7 @@ const {
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_FIRST_TIME_USE,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_DEFECTED,
-  LETTING_STATUS_NORMAL,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_TERMINATED,
   STATUS_ACTIVE,
@@ -18,9 +14,17 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
   ESTATE_VALID_ADDRESS_LABEL,
   ESTATE_INVALID_ADDRESS_LABEL,
   ESTATE_ALL_ADDRESS_LABEL,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_NA,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -31,11 +35,8 @@ class EstateFilters extends Filter {
     na: LETTING_TYPE_NA,
   }
   static lettingStatusString = {
-    construction_works: LETTING_STATUS_CONSTRUCTION_WORKS,
-    first_time_use: LETTING_STATUS_FIRST_TIME_USE,
-    structural_vacancy: LETTING_STATUS_STRUCTURAL_VACANCY,
-    defected: LETTING_STATUS_DEFECTED,
-    normal: LETTING_STATUS_NORMAL,
+    new_renovated: LETTING_STATUS_NEW_RENOVATED,
+    standard: LETTING_STATUS_STANDARD,
     vacancy: LETTING_STATUS_VACANCY,
     terminated: LETTING_STATUS_TERMINATED,
   }
@@ -45,11 +46,22 @@ class EstateFilters extends Filter {
     offline: STATUS_DRAFT,
     expired: STATUS_EXPIRE,
   }
+
+  static floorDirectionStringToValMap = {
+    na: ESTATE_FLOOR_DIRECTION_NA,
+    left: ESTATE_FLOOR_DIRECTION_LEFT,
+    right: ESTATE_FLOOR_DIRECTION_RIGHT,
+    straight: ESTATE_FLOOR_DIRECTION_STRAIGHT,
+    straight_left: ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+    straight_right: ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  }
+
   static propertyTypeStringToValMap = {
     apartment: PROPERTY_TYPE_APARTMENT,
     room: PROPERTY_TYPE_ROOM,
     house: PROPERTY_TYPE_HOUSE,
     site: PROPERTY_TYPE_SITE,
+    office: PROPERTY_TYPE_OFFICE,
   }
   static possibleStringParams = [
     'address',
@@ -96,11 +108,13 @@ class EstateFilters extends Filter {
       })
     }
     /* filter for verified or not verified */
-    if (params.verified_address
-      && params.verified_address.value
-      && Array.isArray(params.verified_address.value)
-      && params.verified_address.value.length
-      && !params.verified_address.value.includes(ESTATE_ALL_ADDRESS_LABEL)) {
+    if (
+      params.verified_address &&
+      params.verified_address.value &&
+      Array.isArray(params.verified_address.value) &&
+      params.verified_address.value.length &&
+      !params.verified_address.value.includes(ESTATE_ALL_ADDRESS_LABEL)
+    ) {
       this.query.where(function () {
         if (params.verified_address.value.includes(ESTATE_VALID_ADDRESS_LABEL)) {
           this.orWhere(Database.raw(`coord_raw is not null`))
@@ -109,7 +123,6 @@ class EstateFilters extends Filter {
           this.orWhere(Database.raw(`coord_raw is null`))
         }
       })
-
     }
     /* query */
     if (params.query) {
@@ -117,6 +130,9 @@ class EstateFilters extends Filter {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
         this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
         this.orWhere('estates.city', 'ilike', `${params.query}%`)
+        this.orWhere('estates.address', 'ilike', `${params.query}%`)
+        this.orWhere('estates.country', 'ilike', `${params.query}%`)
+        this.orWhere('estates.zip', 'ilike', `${params.query}%`)
       })
     }
     /* status */
@@ -127,6 +143,12 @@ class EstateFilters extends Filter {
 
     if (params.status) {
       this.query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
+    }
+
+    /* floor direction */
+    if (params.floor_direction && params.floor_direction.value) {
+      let floor_directions = EstateFilters.customFloorDirectionToValue(params.floor_direction.value)
+      this.query.whereIn('estates.floor_direction', floor_directions)
     }
 
     /* property_type */
@@ -144,6 +166,10 @@ class EstateFilters extends Filter {
     /* letting_type */
     if (params.letting_type) {
       this.query.whereIn('estates.letting_type', params.letting_type)
+    }
+    /* letting_status */
+    if (params.letting_status) {
+      this.query.whereIn('estates.letting_status', params.letting_status)
     }
     /* this should be changed to match_status */
     if (params.filter) {
@@ -176,6 +202,16 @@ class EstateFilters extends Filter {
   static customStatusesToValue(statuses) {
     return statuses.reduce(
       (statuses, status) => [...statuses, EstateFilters.statusStringToValMap[toLower(status)]],
+      []
+    )
+  }
+
+  static customFloorDirectionToValue(directions) {
+    return directions.reduce(
+      (directions, direction) => [
+        ...directions,
+        EstateFilters.floorDirectionStringToValMap[toLower(direction.replace(/\./g, ''))],
+      ],
       []
     )
   }

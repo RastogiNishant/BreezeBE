@@ -52,6 +52,9 @@ const {
   INCOME_TYPE_HOUSE_WORK,
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_TRAINEE,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 
@@ -67,11 +70,18 @@ class TenantService {
    *
    */
   static async getProtectedFileLink(userId, fileId, fileType, memberId) {
-    if (fileType === MEMBER_FILE_TYPE_PASSPORT) {
+    if (
+      [
+        MEMBER_FILE_TYPE_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_RENT,
+        MEMBER_FILE_TYPE_EXTRA_DEBT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+      ].includes(fileType)
+    ) {
       const passport = await MemberFile.query()
         .where('member_id', memberId)
         .where('id', fileId)
-        .where('type', MEMBER_FILE_TYPE_PASSPORT)
+        .where('type', fileType)
         .where('status', STATUS_ACTIVE)
         .first()
       if (!passport) {
@@ -343,7 +353,7 @@ class TenantService {
       .first()
   }
 
-  static async updateSelectedAdultsCount(user, adultsCount, trx) {
+  static async updateSelectedAdultsCount(user, adultsCount, trx = null) {
     const tenant = await getOrCreateTenant(user)
     tenant.selected_adults_count = adultsCount
     return tenant.save(trx)
@@ -358,6 +368,40 @@ class TenantService {
     const member = await Member.query().where({ user_id: userId, child: false }).first()
 
     return tenant && tenant.selected_adults_count && member
+  }
+
+  static async updateTenantAddress({ user, address }, trx) {
+    if (user && address) {
+      let tenant = await getOrCreateTenant(user, trx)
+      tenant.address = address
+
+      const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}
+      if (lon && lat) {
+        tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
+      }
+
+      await tenant.save(trx)
+    }
+  }
+
+  static async getCountByFilter({ credit_score_min, credit_score_max, budget_min, budget_max }) {
+    let query = Tenant.query()
+    if (credit_score_min) {
+      query.where('credit_score', '>=', credit_score_min)
+    }
+    if (credit_score_max) {
+      query.where('credit_score', '<=', credit_score_max)
+    }
+
+    if (budget_min) {
+      query.where('budget_min', '>=', budget_min)
+    }
+
+    if (budget_max) {
+      query.where('budget_max', '<=', budget_max)
+    }
+
+    return (await query.count('*'))[0].count || []
   }
 }
 

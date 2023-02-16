@@ -17,6 +17,14 @@ class Task extends Model {
       'next_predefined_message_id',
       'created_at',
       'updated_at',
+      'status_changed_by',
+      'unread_count',
+      'unread_role',
+      'first_not_read_chat_id',
+      'email',
+      'address',
+      'address_detail',
+      'landlord_identify_key',
     ]
   }
   static get readonly() {

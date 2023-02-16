@@ -9,13 +9,11 @@ const {
   TASK_STATUS_INPROGRESS_LABEL,
   TASK_STATUS_UNRESOLVED_LABEL,
   TASK_STATUS_RESOLVED_LABEL,
-  TASK_STATUS_CLOSED_LABEL,
 
   TASK_STATUS_NEW,
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
-  TASK_STATUS_CLOSED,
 
   URGENCY_LOW_LABEL,
   URGENCY_NORMAL_LABEL,
@@ -23,8 +21,8 @@ const {
   URGENCY_SUPER_LABEL,
 
   ALL_BREEZE,
-  INSIDE_BREEZE_TEANT_LABEL,
-  OUTSIDE_BREEZE_TEANT_LABEL,
+  CONNECTED_BREEZE_TEANT_LABEL,
+  NOT_CONNECTED_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
 
   FILTER_CONSTRAINTS_MATCH_MODES,
@@ -35,6 +33,8 @@ const {
 class TaskFilter extends Base {
   static schema = () =>
     yup.object().shape({
+      order_by_unread_message: yup.boolean().nullable(),
+      filter_by_unread_message: yup.boolean().nullable(),
       global: yup
         .object()
         .shape({
@@ -56,7 +56,6 @@ class TaskFilter extends Base {
                   TASK_STATUS_INPROGRESS_LABEL,
                   TASK_STATUS_UNRESOLVED_LABEL,
                   TASK_STATUS_RESOLVED_LABEL,
-                  TASK_STATUS_CLOSED_LABEL,
                 ])
             )
             .nullable(),
@@ -93,7 +92,33 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
+
+      net_rent: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES).required(),
+              value: yup.number().min(0).nullable(),
+            })
+          ),
+        })
+        .nullable(),
+
       active_task: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES).required(),
+              value: yup.number().min(0).nullable(),
+            })
+          ),
+        })
+        .nullable(),
+      in_progress_task: yup
         .object()
         .shape({
           operator: yup.string().oneOf(['and', 'or']),
@@ -120,16 +145,18 @@ class TaskFilter extends Base {
       breeze_type: yup
         .object()
         .shape({
+          operator: yup.string().oneOf(['and', 'or']),
           matchMode: yup.string(),
           value: yup
             .array()
             .of(
               yup
-                .string().oneOf([
+                .string()
+                .oneOf([
                   ALL_BREEZE,
-                  INSIDE_BREEZE_TEANT_LABEL,
-                  OUTSIDE_BREEZE_TEANT_LABEL,
-                  PENDING_BREEZE_TEANT_LABEL
+                  CONNECTED_BREEZE_TEANT_LABEL,
+                  NOT_CONNECTED_BREEZE_TEANT_LABEL,
+                  PENDING_BREEZE_TEANT_LABEL,
                 ])
             )
             .nullable(),
@@ -197,10 +224,10 @@ class TaskFilter extends Base {
               TASK_STATUS_INPROGRESS,
               TASK_STATUS_RESOLVED,
               TASK_STATUS_UNRESOLVED,
-              TASK_STATUS_CLOSED,
             ])
         )
         .nullable(),
+      task_name: yup.string().min(2),
     })
 }
 

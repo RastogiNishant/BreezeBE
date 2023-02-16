@@ -4,9 +4,10 @@ const Member = use('App/Models/Member')
 const Tenant = use('App/Models/Tenant')
 const User = use('App/Models/User')
 const Income = use('App/Models/Income')
+const MemberFile = use('App/Models/MemberFile')
 const IncomeProof = use('App/Models/IncomeProof')
 const { getHash } = require('../Libs/utils.js')
-const { isEmpty, pick } = require('lodash')
+const { pick } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
@@ -15,10 +16,11 @@ const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
 const MemberPermissionService = use('App/Services/MemberPermissionService')
 const NoticeService = use('App/Services/NoticeService')
-const UserService = use('App/Services/UserService')
 const File = use('App/Classes/File')
+const FileBucket = use('App/Classes/File')
 const l = use('Localize')
 const Promise = require('bluebird')
+const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -27,6 +29,25 @@ const {
   SMS_MEMBER_PHONE_VERIFY_PREFIX,
   ROLE_USER,
   VISIBLE_TO_SPECIFIC,
+  MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
+  MEMBER_FILE_PASSPORT_DOC,
+  MEMBER_FILE_TYPE_EXTRA_RENT,
+  MEMBER_FILE_TYPE_EXTRA_DEBT,
+  STATUS_ACTIVE,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  MEMBER_FILE_EXTRA_PASSPORT_DOC,
+  MEMBER_FILE_TYPE_PASSPORT,
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
+  STATUS_DELETE,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -96,7 +117,7 @@ class MemberService {
     return members
   }
 
-  static async getMembers(householdId) {
+  static async getMembers(householdId, includes_absolute_url = false) {
     const query = Member.query()
       .select('members.*')
       .where('members.user_id', householdId)
@@ -104,9 +125,84 @@ class MemberService {
         b.with('proofs')
       })
       .with('passports')
+      .with('extra_passports')
+      .with('extra_residency_proofs')
+      .with('extra_score_proofs')
       .orderBy('id', 'asc')
 
-    return await query.fetch()
+    if (!includes_absolute_url) {
+      return await query.fetch()
+    } else {
+      let members = await query.fetch()
+
+      members = await Promise.all(
+        members.toJSON().map(async (member) => {
+          const incomes = await Promise.all(
+            member.incomes.map(async (income) => {
+              const proofs = await Promise.all(
+                income.proofs.map(async (proof) => {
+                  if (!proof.file) return proof
+                  proof.file = await FileBucket.getProtectedUrl(proof.file)
+                  return proof
+                })
+              )
+              income = {
+                ...income,
+                proofs: proofs,
+              }
+              return income
+            })
+          )
+
+          const passports = await Promise.all(
+            (member.passports || []).map(async (passport) => {
+              if (!passport.file) return passport
+              passport.file = await FileBucket.getProtectedUrl(passport.file)
+              return passport
+            })
+          )
+
+          const extra_passports = await Promise.all(
+            (member.extra_passports || []).map(async (extra_passport) => {
+              if (!extra_passport.file) return extra_passport
+              extra_passport.file = await FileBucket.getProtectedUrl(extra_passport.file)
+              return extra_passport
+            })
+          )
+
+          const extra_residency_proofs = await Promise.all(
+            (member.extra_residency_proofs || []).map(async (extra_residency_proof) => {
+              if (!extra_residency_proof.file) return extra_residency_proof
+              extra_residency_proof.file = await FileBucket.getProtectedUrl(
+                extra_residency_proof.file
+              )
+              return extra_residency_proof
+            })
+          )
+
+          const extra_score_proofs = await Promise.all(
+            (member.extra_score_proofs || []).map(async (extra_score_proof) => {
+              if (!extra_score_proof.file) return extra_score_proof
+              extra_score_proof.file = await FileBucket.getProtectedUrl(extra_score_proof.file)
+              return extra_score_proof
+            })
+          )
+
+          member = {
+            ...member,
+            rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
+            debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
+            incomes,
+            extra_passports,
+            passports,
+            extra_residency_proofs,
+            extra_score_proofs,
+          }
+          return member
+        })
+      )
+      return members
+    }
   }
 
   static async getMembersByHousehold(householdId) {
@@ -214,7 +310,9 @@ class MemberService {
         }
       )
 
-      const data = await UserService.getTokenWithLocale([member.owner_user_id || member.user_id])
+      const data = await require('./UserService').getTokenWithLocale([
+        member.owner_user_id || member.user_id,
+      ])
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
       const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
 
@@ -277,11 +375,9 @@ class MemberService {
   static async getMember(id, user_id, owner_id) {
     let member
     if (!owner_id) {
-      member = await Member.query()
-        .where('id', id)
-        .whereNull('owner_user_id')
-        .where('user_id', user_id)
-        .first()
+      const query = Member.query().whereNull('owner_user_id').where('user_id', user_id)
+      if (id) query.where('id', id)
+      member = await query.first()
     } else {
       member = await Member.query().where('id', id).where('owner_user_id', user_id).first()
     }
@@ -289,7 +385,7 @@ class MemberService {
   }
 
   static async allowEditMemberByPermission(user, memberId) {
-    const member = await Member.query().where('id', memberId).with('passports').firstOrFail()
+    const member = await this.getMemberWithPassport(memberId)
     const isEditingOwnMember = user.owner_id
       ? member.owner_user_id === user.id
       : member.user_id === user.id
@@ -307,6 +403,11 @@ class MemberService {
       }
       return member
     }
+  }
+
+  static async getMemberWithPassport(memberId) {
+    const member = await Member.query().where('id', memberId).with('passports').firstOrFail()
+    return member
   }
 
   /**
@@ -412,6 +513,7 @@ class MemberService {
             },
             iosInfo: {
               iosBundleId: process.env.IOS_BUNDLE_ID,
+              iosAppStoreId: process.env.IOS_APPSTORE_ID,
             },
           },
         })
@@ -499,6 +601,7 @@ class MemberService {
         member.is_verified = true
         member.owner_user_id = user.id
         member.email = user.email
+        member.code = null
         updatePromises.push(member.save(trx))
       }
 
@@ -588,7 +691,7 @@ class MemberService {
    *
    */
   static async handleOutdatedIncomeProofs() {
-    const startOf = moment().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
@@ -604,6 +707,7 @@ class MemberService {
       promises.push(IncomeProof.query().where('id', id).delete())
       if (!deactivatedUsers.includes(user_id)) {
         Event.fire('tenant::update', user_id)
+        NoticeService.prospectAccountDeactivated(user_id)
         deactivatedUsers.push(user_id)
       }
     })
@@ -613,7 +717,7 @@ class MemberService {
 
   static async createThumbnail() {
     const incomeProofs = (await IncomeProof.query().fetch()).rows
-    console.log('Start creating income proofs thumbnail')
+
     await Promise.all(
       incomeProofs.map(async (incomeProof) => {
         {
@@ -630,8 +734,6 @@ class MemberService {
                 if (isValidFormat) {
                   const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
                   const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
-
-                  console.log('Income Proof is saving', url)
                   await File.saveThumbnailToDisk({
                     image: url,
                     fileName: fileName,
@@ -651,8 +753,104 @@ class MemberService {
         }
       })
     )
+  }
 
-    console.log('End creating income proofs thumbnail')
+  static async addExtraProofs(request, user) {
+    const { id, file_type } = request.all()
+
+    const member = await this.allowEditMemberByPermission(user, id)
+    if (!member) {
+      throw new HttpException('No permission to add passport')
+    }
+
+    let doc = ''
+
+    switch (file_type) {
+      case MEMBER_FILE_TYPE_EXTRA_RENT:
+        doc = MEMBER_FILE_EXTRA_RENT_ARREARS_DOC
+        break
+      case MEMBER_FILE_TYPE_EXTRA_DEBT:
+        doc = MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC
+        break
+      case MEMBER_FILE_TYPE_EXTRA_PASSPORT:
+        doc = MEMBER_FILE_EXTRA_PASSPORT_DOC
+        break
+      default:
+        doc = MEMBER_FILE_PASSPORT_DOC
+        break
+    }
+
+    const files = await File.saveRequestFiles(request, [
+      { field: doc, mime: docMimes, isPublic: false },
+    ])
+
+    if (!files[doc]) {
+      throw new HttpException('Failure uploading image', 422)
+    }
+
+    let memberFile = new MemberFile()
+    memberFile.merge({
+      file: files[doc],
+      type: file_type,
+      status: STATUS_ACTIVE,
+      member_id: id,
+    })
+    return await memberFile.save()
+  }
+
+  static async getPhoneVerifieldCount() {
+    return (
+      await Member.query().count('*').where('phone_verified', true).where('is_verified', true)
+    )[0].count
+  }
+
+  static async getIdVerifiedCount() {
+    return (
+      await MemberFile.query()
+        .count(Database.raw(`DISTINCT(member_id)`))
+        .where('type', MEMBER_FILE_TYPE_PASSPORT)
+        .whereNot('status', STATUS_DELETE)
+    )[0].count
+  }
+
+  static async getIncomesCountByFilter() {
+    const counts = await Promise.all(
+      [
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_WORKER,
+        INCOME_TYPE_UNEMPLOYED,
+        INCOME_TYPE_CIVIL_SERVANT,
+        INCOME_TYPE_FREELANCER,
+        INCOME_TYPE_HOUSE_WORK,
+        INCOME_TYPE_PENSIONER,
+        INCOME_TYPE_SELF_EMPLOYED,
+        INCOME_TYPE_TRAINEE,
+      ].map(async (income_source) => {
+        const count = (
+          await Income.query()
+            .count(Database.raw(`DISTINCT(member_id)`))
+            .where('income_type', income_source)
+        )[0].count
+        return { count, key: income_source }
+      })
+    )
+    return counts
+  }
+
+  static async getIncomes(user_id) {
+    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const incomeProofs =
+      (
+        await IncomeProof.query()
+          .select('_i.id', '_i.income_type')
+          .where('income_proofs.expire_date', '>=', startOf)
+          .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+          .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+          .where('_m.user_id', user_id)
+          .fetch()
+      ).toJSON() || []
+
+    return incomeProofs
   }
 }
 

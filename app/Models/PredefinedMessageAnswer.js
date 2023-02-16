@@ -11,6 +11,7 @@ class PredefinedMessageAnswer extends Model {
       'predefined_message_choice_id',
       'text',
       'is_deleted',
+      'chat_id',
     ]
   }
 

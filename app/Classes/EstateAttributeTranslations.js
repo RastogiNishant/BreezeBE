@@ -2,10 +2,13 @@ const l = use('Localize')
 const { trim, isEmpty } = require('lodash')
 const HttpException = use('App/Exceptions/HttpException')
 const {
+  AVAILABLE_LANGUAGES,
+
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SITE,
+  PROPERTY_TYPE_OFFICE,
 
   APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_GROUND,
@@ -147,22 +150,25 @@ const {
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
 
-  LETTING_STATUS_DEFECTED,
+  LETTING_STATUS_STANDARD,
   LETTING_STATUS_TERMINATED,
-  LETTING_STATUS_NORMAL,
-  LETTING_STATUS_CONSTRUCTION_WORKS,
-  LETTING_STATUS_STRUCTURAL_VACANCY,
-  LETTING_STATUS_FIRST_TIME_USE,
   LETTING_STATUS_VACANCY,
-
-  SALUTATION_MR,
-  SALUTATION_MS,
-  SALUTATION_SIR_OR_MADAM,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_NA,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  GENDER_MALE,
+  GENDER_FEMALE,
+  GENDER_NEUTRAL,
+  GENDER_ANY,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../constants')
+
+const {
+  exceptions: { SETTINGS_ERROR },
+} = require('../exceptions')
 
 escapeStr = (v) => {
   return (v || '')
@@ -174,7 +180,17 @@ escapeStr = (v) => {
 
 // items to percent
 toPercent = (i) => {
-  return (parseFloat(i) || 0) * 100
+  i = trim(i)
+  if (i.includes('%')) {
+    i = i.replace('%', '')
+  }
+  if (isNaN(parseFloat(i))) {
+    i = NULL
+  } else {
+    i = parseFloat(i) * 100
+  }
+
+  return i
 }
 
 toBool = (v) => {
@@ -240,6 +256,7 @@ class EstateAttributeTranslations {
       Room: PROPERTY_TYPE_ROOM,
       House: PROPERTY_TYPE_HOUSE,
       Site: PROPERTY_TYPE_SITE,
+      Office: PROPERTY_TYPE_OFFICE,
     },
     apt_type: {
       flat: APARTMENT_TYPE_FLAT,
@@ -420,17 +437,18 @@ class EstateAttributeTranslations {
       PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: (i) => parseInt(i * 100),
-    deposit: (i, o) => (parseInt(i) || 0) * (parseFloat(o.net_rent) || 0),
+    budget: toPercent,
+    credit_score: toPercent,
+    deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
-        case escapeStr(l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', this.lang)): //'Ground floor':
+        case extractValue(`property.attribute.APARTMENT_TYPE.Ground_floor.message`, escapeStr(i)): //'Ground floor':
           return 0
-        case escapeStr(l.get('apt_roof_floor.message', this.lang)):
+        case extractValue(`apt_roof_floor.message`, escapeStr(i)): //'Root floor':
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {
@@ -458,6 +476,21 @@ class EstateAttributeTranslations {
     min_age: (i) => parseInt(i) || 0,
     max_age: (i) => parseInt(i) || 0,
     currency: (i) => (isEmpty(i) ? 'EUR' : i),
+    property_id: (i) => {
+      if (i === undefined) {
+        return Math.random().toString(36).substr(2, 8).toUpperCase()
+      }
+      return i
+    },
+  }
+
+  extractValue(key, value) {
+    const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
+    const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
+    if (filterValues && filterValues.length) {
+      return filterValues[0]
+    }
+    return null
   }
 
   constructor(lang = 'en') {
@@ -469,12 +502,14 @@ class EstateAttributeTranslations {
           'property.attribute.PROPERTY_TYPE.Room.message',
           'property.attribute.PROPERTY_TYPE.House.message',
           'property.attribute.PROPERTY_TYPE.Site.message',
+          'property.attribute.PROPERTY_TYPE.Office.message',
         ],
         values: [
           PROPERTY_TYPE_APARTMENT,
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
+          PROPERTY_TYPE_OFFICE,
         ],
       },
       apt_type: {
@@ -892,31 +927,26 @@ class EstateAttributeTranslations {
       },
       let_status: {
         keys: [
-          'property.attribute.LETTING_STATUS.Defected.message',
-          'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Normal.message',
-          'property.attribute.LETTING_STATUS.Construction works.message',
-          'property.attribute.LETTING_STATUS.Structural vacancy.message',
-          'property.attribute.LETTING_STATUS.First-time use.message',
+          'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
+          'property.attribute.LETTING_STATUS.new_renovated.message',
         ],
         values: [
-          LETTING_STATUS_DEFECTED,
+          LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
-          LETTING_STATUS_NORMAL,
-          LETTING_STATUS_CONSTRUCTION_WORKS,
-          LETTING_STATUS_STRUCTURAL_VACANCY,
-          LETTING_STATUS_FIRST_TIME_USE,
           LETTING_STATUS_VACANCY,
+          LETTING_STATUS_NEW_RENOVATED,
         ],
       },
       salutation: {
         keys: [
           'landlord.profile.user_details.salut.mr.message',
           'landlord.profile.user_details.salut.ms.message',
+          'landlord.profile.user_details.salut.not_def.message',
           'landlord.profile.user_details.salut.sir_madam.message',
         ],
-        values: [SALUTATION_MR, SALUTATION_MS, SALUTATION_SIR_OR_MADAM],
+        values: [GENDER_MALE, GENDER_FEMALE, GENDER_ANY, GENDER_NEUTRAL],
       },
       floor_direction: {
         keys: [
@@ -924,12 +954,16 @@ class EstateAttributeTranslations {
           'property.attribute.floor_direction.left.message',
           'property.attribute.floor_direction.right.message',
           'property.attribute.floor_direction.straight.message',
+          'property.attribute.floor_direction.straight.left.message',
+          'property.attribute.floor_direction.straight.right.message',
         ],
         values: [
           ESTATE_FLOOR_DIRECTION_NA,
           ESTATE_FLOOR_DIRECTION_LEFT,
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ],
       },
     }
@@ -946,11 +980,13 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110198)
+        throw new HttpException(SETTINGS_ERROR, 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
-        keyValue[escapeStr(l.get(dataMap[attribute].keys[k], this.lang))] =
-          dataMap[attribute].values[k]
+        AVAILABLE_LANGUAGES.map((lang) => {
+          keyValue[escapeStr(l.get(dataMap[attribute].keys[k], lang))] =
+            dataMap[attribute].values[k]
+        })
       }
       this.dataMapping[attribute] = keyValue
     }
@@ -967,7 +1003,7 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException('Settings Error. Please contact administrator.', 500, 110176)
+        throw new HttpException(SETTINGS_ERROR, 500, 110176)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
         keyValue[dataMap[attribute].values[k]] = l.get(dataMap[attribute].keys[k], this.lang)
