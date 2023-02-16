@@ -69,9 +69,11 @@ const exceptions = {
   SOME_IMAGE_NOT_EXIST: "Some images don't exist",
   TENANT_EXIST: 'Tenant already exists',
   WRONG_PARAMS: 'Params not correct',
-  IMAGE_COUNT_LIMIT: `can upload up to ${FILE_LIMIT_LENGTH}`,
+  IMAGE_COUNT_LIMIT: `can upload up to ${FILE_LIMIT_LENGTH}.`,
   FAILED_IMPORT_FILE_UPLOAD: 'import estate faied',
   FAILED_TO_ADD_FILE: 'Failed to upload files',
+  INVALID_ROOM: 'Invalid room',
+  CURRENT_IMAGE_COUNT: 'Current count',
 }
 
 const exceptionCodes = {

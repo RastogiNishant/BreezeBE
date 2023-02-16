@@ -555,7 +555,7 @@ class EstateService {
     await this.hasPermission({ id: estate_id, user_id })
 
     const files = await this.getFiles({ estate_id, type })
-    if (files && files.length >= FILE_LIMIT_LENGTH) {
+    if (files && (files?.length || 0) + ids.length > FILE_LIMIT_LENGTH) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
 

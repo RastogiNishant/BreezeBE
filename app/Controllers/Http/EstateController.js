@@ -56,7 +56,6 @@ const {
   FILE_TYPE_EXTERNAL,
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
-  FILE_TYPE_GALLERY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
@@ -69,7 +68,7 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
-const GalleryService = require('../../Services/GalleryService')
+
 const {
   exceptions: {
     ESTATE_NOT_EXISTS,
@@ -78,6 +77,7 @@ const {
     IMAGE_COUNT_LIMIT,
     FAILED_IMPORT_FILE_UPLOAD,
     FAILED_TO_ADD_FILE,
+    CURRENT_IMAGE_COUNT,
   },
 } = require('../../../app/exceptions')
 
@@ -635,12 +635,14 @@ class EstateController {
       .whereIn('user_id', userIds)
       .firstOrFail()
 
+    const count = FileBucket.filesCount(request, 'file')
+    const image_length = estate.toJSON().files?.length || 0
     if (
       type !== FILE_TYPE_UNASSIGNED &&
       estate.toJSON().files &&
-      estate.toJSON().files.length >= FILE_LIMIT_LENGTH
+      image_length + count >= FILE_LIMIT_LENGTH
     ) {
-      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+      throw new HttpException(`${IMAGE_COUNT_LIMIT} ${CURRENT_IMAGE_COUNT}:${image_length}`, 400)
     }
 
     const imageMimes = [
