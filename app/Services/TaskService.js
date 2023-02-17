@@ -449,7 +449,7 @@ class TaskService extends BaseService {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
 
-    const filter = new TaskFilters(param, query)
+    const filter = new TaskFilters(param, query, user_id)
     query = filter.process()
 
     query.orderBy('tasks.updated_at')
