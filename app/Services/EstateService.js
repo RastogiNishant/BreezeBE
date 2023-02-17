@@ -437,7 +437,7 @@ class EstateService {
   /**
    *
    */
-  static async getUpcomingShows(user_id, query = '') {
+  static getUpcomingShows(user_id, query = '') {
     return this.getEstates(user_id)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
       .where('estates.user_id', user_id)

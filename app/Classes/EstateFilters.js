@@ -120,8 +120,6 @@ class EstateFilters extends Filter {
         params.customLettingStatus.value.map((letting) => {
           const letting_str = EstateFilters.parseLetting(letting)
           const { letting_type, letting_status } = EstateFilters.lettingToIntVal(letting_str)
-          console.log('letting type=', letting_type)
-          console.log('letting status=', letting_status)
           this.orWhere(function () {
             if (letting_type) {
               this.andWhere('letting_type', letting_type)

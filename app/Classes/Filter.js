@@ -59,7 +59,7 @@ class Filter {
   }
 
   isExist(fieldName) {
-    return this.columns.find((column) => column.fieldName === fieldName && column.visible)
+    return !!this.columns.find((column) => column.fieldName === fieldName && column.visible)
   }
 
   processGlobals() {
