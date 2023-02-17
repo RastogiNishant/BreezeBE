@@ -58,7 +58,7 @@ const {
   FILE_TYPE_PLAN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -250,8 +250,9 @@ class EstateController {
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
-      const inside_view_has_media =
-        (estate?.rooms || []).filter((room) => room.images && room.images.length).length || 0
+      const inside_view_has_media = sum(
+        (estate?.rooms || []).map((room) => room?.images?.length || 0)
+      )
       const document_view_has_media =
         ((estate.files || []).filter(
           (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
@@ -324,8 +325,9 @@ class EstateController {
     estate = estate.toJSON({ isOwner: true })
     const outside_view_has_media =
       (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
-    const inside_view_has_media =
-      (estate?.rooms || []).filter((room) => room.images && room.images.length).length || 0
+    const inside_view_has_media = sum(
+      (estate?.rooms || []).map((room) => room?.images?.length || 0)
+    )
     const document_view_has_media =
       ((estate.files || []).filter(
         (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
@@ -656,7 +658,7 @@ class EstateController {
       const original_file_names = Array.isArray(files.original_file)
         ? files.original_file
         : [files.original_file]
-      console.log('files here=', files)
+
       const data = paths.map((path, index) => {
         return {
           disk: 's3public',
@@ -680,27 +682,9 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
-    const file = await File.query()
-      .select('files.*')
-      .where('files.id', id)
-      .innerJoin('estates', 'estates.id', 'files.estate_id')
-      .where('estates.id', estate_id)
-      .where('estates.user_id', auth.user.id)
-      .first()
-    if (!file) {
-      throw new HttpException('Image not found', 404)
-    }
-
     const trx = await Database.beginTransaction()
     try {
-      await EstateService.moveToGallery(
-        {
-          ids: [file.id],
-          estate_id,
-          user_id: auth.user.id,
-        },
-        trx
-      )
+      await EstateService.removeFile({ ids: [id], estate_id, user_id: auth.user.id }, trx)
       await trx.commit()
       response.res(true)
     } catch (e) {
@@ -711,7 +695,16 @@ class EstateController {
 
   async removeMultipleFiles({ request, auth, response }) {
     const { estate_id, ids } = request.all()
-    await EstateService.moveToGallery({ ids, estate_id, user_id: auth.user.id })
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.removeFile({ ids, estate_id, user_id: auth.user.id }, trx)
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+
     response.res(true)
   }
 

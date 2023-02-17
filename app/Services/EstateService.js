@@ -74,6 +74,7 @@ const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const ChatService = require('./ChatService')
+const { file } = require('googleapis/build/src/apis/file')
 const MAX_DIST = 10000
 
 /**
@@ -524,15 +525,33 @@ class EstateService {
   /**
    *
    */
-  static async removeFile(file, trx) {
+  static async removeFile({ ids, estate_id, user_id }, trx) {
+    let files
     try {
-      // await Drive.disk(file.disk).delete(file.url)
-      const oldFile = await File.findOrFail(file.id)
-      await File.query().delete().where('id', file.id).transacting(trx)
-      return oldFile
+      ids = Array.isArray(ids) ? ids : [ids]
+      files = (
+        await File.query()
+          .select('files.*')
+          .whereIn('files.id', ids)
+          .innerJoin('estates', 'estates.id', 'files.estate_id')
+          .where('estates.id', estate_id)
+          .where('estates.user_id', user_id)
+          .fetch()
+      ).rows
+      if (!files || !files.length) {
+        throw new HttpException(NO_FILE_EXIST, 404)
+      }
+
+      ids = files.map((file) => file.id)
+      await File.query().delete().whereIn('id', ids).transacting(trx)
     } catch (e) {
-      Logger.error(e.message)
-      throw new HttpException(NO_FILE_EXIST, 400)
+      throw new HttpException(e.message, e.status || 400)
+    } finally {
+      if (files) {
+        files.map((file) => {
+          FileBucket.remove(file.url)
+        })
+      }
     }
   }
 
