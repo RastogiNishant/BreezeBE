@@ -256,9 +256,7 @@ class EstateController {
       const document_view_has_media =
         ((estate.files || []).filter(
           (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
-        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) != '')
-          ? 1
-          : 0
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
       const unassigned_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
 
@@ -329,11 +327,8 @@ class EstateController {
       (estate?.rooms || []).map((room) => room?.images?.length || 0)
     )
     const document_view_has_media =
-      ((estate.files || []).filter(
-        (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
-      ) || 0) + (estate.energy_proof && trim(estate.energy_proof) != '')
-        ? 1
-        : 0
+      ((estate.files || []).filter((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
+        .length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
     const unassigned_view_has_media = (estate.files || []).filter(
       (f) => f.type == FILE_TYPE_UNASSIGNED
     ).length
