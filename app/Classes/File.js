@@ -255,6 +255,18 @@ class File {
     return await Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
   }
 
+  static filesCount(request, field) {
+    const file = request.file(field)
+    if (!file || file.hasErrors) {
+      return 0
+    }
+
+    if (file._files) {
+      return file._files.length
+    }
+
+    return 1
+  }
   /**
    *
    */

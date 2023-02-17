@@ -375,6 +375,8 @@ class EstateCurrentTenantService extends BaseService {
 
   static async inviteTenantToAppByEmail({ ids, user_id }, trx) {
     try {
+      const data = await UserService.getTokenWithLocale([user_id])
+      const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
       let { failureCount, links } = await this.getDynamicLinks(
         {
           ids,
@@ -389,7 +391,7 @@ class EstateCurrentTenantService extends BaseService {
       failureCount += (links.length || 0) - (validLinks.length || 0)
       const successCount = (ids.length || 0) - failureCount
       if (validLinks && validLinks.length) {
-        MailService.sendInvitationToOusideTenant(validLinks)
+        MailService.sendInvitationToOusideTenant(validLinks, lang)
       }
 
       return { successCount, failureCount }
@@ -401,6 +403,11 @@ class EstateCurrentTenantService extends BaseService {
   static async singleInvitation({
     user_id,
     estate_id,
+    country,
+    city,
+    street,
+    house_number,
+    zip,
     address,
     coord,
     floor,
@@ -410,12 +417,17 @@ class EstateCurrentTenantService extends BaseService {
     surname,
   }) {
     const trx = await Database.beginTransaction()
-    let inviteResult, currentTenant
+    let inviteResult, currentTenant, reason
     try {
       if (!estate_id) {
         const { id } = await require('./EstateService').createEstate(
           {
             data: {
+              country,
+              city,
+              street,
+              house_number,
+              zip,
               address,
               coord,
               floor,
@@ -424,6 +436,7 @@ class EstateCurrentTenantService extends BaseService {
               letting_status: LETTING_STATUS_STANDARD,
             },
             userId: user_id,
+            is_coord_changed: false,
           },
           false,
           trx
@@ -451,6 +464,7 @@ class EstateCurrentTenantService extends BaseService {
       )
       await trx.commit()
     } catch (e) {
+      reason = e.message
       await trx.rollback()
     } finally {
       let ret = {}
@@ -480,6 +494,7 @@ class EstateCurrentTenantService extends BaseService {
       }
       return {
         failureCount: 1,
+        reason,
       }
     }
   }
@@ -487,16 +502,36 @@ class EstateCurrentTenantService extends BaseService {
     let result = {
       email: {},
       phone: {},
+      reason: [],
     }
 
     await Promise.map(
       invites,
-      async ({ estate_id, address, coord, floor, floor_direction, email, phone, surname }) => {
+      async ({
+        estate_id,
+        country,
+        city,
+        street,
+        house_number,
+        zip,
+        address,
+        coord,
+        floor,
+        floor_direction,
+        email,
+        phone,
+        surname,
+      }) => {
         const singleResult = await EstateCurrentTenantService.singleInvitation({
           user_id,
           estate_id,
           address,
           coord,
+          country,
+          city,
+          street,
+          house_number,
+          zip,
           floor,
           floor_direction,
           email,
@@ -508,6 +543,7 @@ class EstateCurrentTenantService extends BaseService {
         }
         if (singleResult?.failureCount) {
           result.failureCount = (result?.failureCount || 0) + singleResult.failureCount
+          result.reason.push(singleResult.reason)
         }
 
         if (singleResult?.email) {
@@ -551,11 +587,13 @@ class EstateCurrentTenantService extends BaseService {
         link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
     )
     failureCount += (links.length || 0) - (validLinks.length || 0)
+    const data = await UserService.getTokenWithLocale([user_id])
+    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
 
     await Promise.all(
       validLinks.map(async (link) => {
         try {
-          const txt = l.get('sms.tenant.invitation', DEFAULT_LANG) + ` ${link.shortLink}`
+          const txt = l.get('sms.tenant.invitation', lang) + ` ${link.shortLink}`
           await SMSService.send({ to: link.phone_number, txt })
         } catch (e) {
           failureCount++

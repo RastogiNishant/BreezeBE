@@ -7,7 +7,7 @@ const {
   FILE_TYPE_PLAN,
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
-  FILE_TYPE_IMAGE,
+  FILE_TYPE_EXTERNAL,
 } = require('../constants')
 const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
@@ -15,6 +15,7 @@ const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
 } = require('../exceptions')
+const CreateRoom = require('./CreateRoom')
 
 class GalleryAssign extends Base {
   static schema = () =>
@@ -37,23 +38,25 @@ class GalleryAssign extends Base {
         .typeError(getExceptionMessage('room_id', NUMBER))
         .when('view_type', {
           is: GALLERY_INSIDE_VIEW_TYPE,
-          then: yup
-            .number()
-            .integer()
-            .required(getExceptionMessage('room_id', REQUIRED))
-            .typeError(getExceptionMessage('room_id', NUMBER)),
+          then: yup.number().integer().typeError(getExceptionMessage('room_id', NUMBER)),
         }),
-
+      room: yup
+        .object()
+        .shape({})
+        .when(['view_type', 'room_id'], {
+          is: (view_type, room_id) => view_type === GALLERY_INSIDE_VIEW_TYPE && !room_id,
+          then: yup.object().concat(CreateRoom.schema()).required(),
+        }),
       document_type: yup.string().when('view_type', {
         is: GALLERY_DOCUMENT_VIEW_TYPE,
         then: yup
           .string()
           .oneOf(
-            [FILE_TYPE_PLAN, FILE_TYPE_CUSTOM, FILE_TYPE_IMAGE],
+            [FILE_TYPE_PLAN, FILE_TYPE_CUSTOM, FILE_TYPE_EXTERNAL],
             getExceptionMessage(
               'document_type',
               OPTION,
-              `[${FILE_TYPE_PLAN},${FILE_TYPE_CUSTOM}, ${FILE_TYPE_IMAGE}]`
+              `[${FILE_TYPE_PLAN},${FILE_TYPE_CUSTOM}, ${FILE_TYPE_EXTERNAL}]`
             )
           )
           .required(getExceptionMessage('document_type', REQUIRED)),

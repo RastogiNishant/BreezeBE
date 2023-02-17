@@ -17,8 +17,8 @@ const {
   FILE_TYPE_PLAN,
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
-  FILE_TYPE_GALLERY,
-  FILE_TYPE_IMAGE,
+  FILE_TYPE_UNASSIGNED,
+  FILE_TYPE_EXTERNAL,
 } = require('../constants')
 
 class GalleryService extends BaseService {
@@ -36,7 +36,7 @@ class GalleryService extends BaseService {
           estate_id,
           url: p,
           file_name: file_names[index],
-          type: FILE_TYPE_GALLERY,
+          type: FILE_TYPE_UNASSIGNED,
         }
       })
 
@@ -50,7 +50,7 @@ class GalleryService extends BaseService {
       url,
       file_name,
       estate_id,
-      type: FILE_TYPE_GALLERY,
+      type: FILE_TYPE_UNASSIGNED,
       disk: 's3public',
     }
 
@@ -61,7 +61,7 @@ class GalleryService extends BaseService {
     return await File.query()
       .where('id', id)
       .where('status', STATUS_ACTIVE)
-      .where('type', FILE_TYPE_GALLERY)
+      .where('type', FILE_TYPE_UNASSIGNED)
       .where('user_id', user_id)
       .first()
   }
@@ -78,12 +78,14 @@ class GalleryService extends BaseService {
     } else {
       await File.query().whereIn('id', ids).delete().transacting(trx)
     }
-    Promise.map(galleries, (gallery) => FileBucket.remove(gallery.url))
+    try {
+      Promise.map(galleries.rows || [], (gallery) => FileBucket.remove(gallery.url))
+    } catch (e) {}
     return true
   }
 
   static async getAll({ estate_id, page = -1, limit = -1, ids = null }) {
-    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_GALLERY)
+    const query = File.query().where('estate_id', estate_id).where('type', FILE_TYPE_UNASSIGNED)
     let galleries, count
 
     if (ids) {
@@ -104,7 +106,7 @@ class GalleryService extends BaseService {
     }
   }
 
-  static async assign({ user_id, estate_id, data }) {
+  static async assign({ user, estate_id, data }) {
     const { galleries } = await this.getAll({ estate_id, ids: data.ids })
     let successGalleryIds = null
 
@@ -112,10 +114,19 @@ class GalleryService extends BaseService {
     try {
       switch (data.view_type) {
         case GALLERY_INSIDE_VIEW_TYPE:
+          if (data.room) {
+            const room = await require('./RoomService').createRoom(
+              { user, estate_id, roomData: data.room },
+              trx
+            )
+            data.room = room.toJSON()
+          }
+
           successGalleryIds = await require('./RoomService').addImageFromGallery(
             {
-              user_id,
+              user_id: user.id,
               room_id: data.room_id,
+              room: data.room,
               estate_id,
               galleries: galleries.rows || [],
             },
@@ -127,13 +138,13 @@ class GalleryService extends BaseService {
           switch (data.document_type) {
             case FILE_TYPE_PLAN:
             case FILE_TYPE_CUSTOM:
-            case FILE_TYPE_IMAGE:
+            case FILE_TYPE_EXTERNAL:
               await require('./EstateService').restoreFromGallery(
                 {
                   ids: data.ids,
                   estate_id,
                   type: data.document_type,
-                  user_id,
+                  user_id: user.id,
                 },
                 trx
               )
@@ -143,7 +154,7 @@ class GalleryService extends BaseService {
         case DOCUMENT_VIEW_ENERGY_TYPE:
           successGalleryIds = await require('./EstateService').updateEnergyProofFromGallery(
             {
-              user_id,
+              user_id: user.id,
               estate_id,
               galleries: galleries.rows || [],
             },

@@ -402,6 +402,16 @@ class UserService {
         user.source_estate_id = null
       }
       await user.save(trx)
+
+      if (user.role === ROLE_LANDLORD) {
+        await require('./OutsideLandlordService').updateTaskLandlord(
+          {
+            landlord_id: user.id,
+            email: user.email,
+          },
+          trx
+        )
+      }
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -863,6 +873,7 @@ class UserService {
       firstname,
       from_web,
       source_estate_id = null,
+      landlord_invite = false,
       data1,
       data2,
       ip,
@@ -872,7 +883,7 @@ class UserService {
     trx = null
   ) {
     // Manages the outside tenant invitation flow
-    if (!source_estate_id && data1 && data2) {
+    if (!source_estate_id && !landlord_invite && data1 && data2) {
       const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
         data1,
         data2,
@@ -913,6 +924,18 @@ class UserService {
         },
         trx
       )
+
+      if (landlord_invite && data1 && data2) {
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
+          {
+            new_email: email,
+            data1,
+            data2,
+          },
+          trx
+        )
+      }
+
       if (isEmpty(ip_based_info.country_code)) {
         const QueueService = require('./QueueService.js')
         QueueService.getIpBasedInfo(user.id, ip)
