@@ -3108,15 +3108,15 @@ class MatchService {
     return inviteQuery
   }
 
-  static async getMatchListQuery(user_id, params = {}) {
+  static getMatchListQuery(user_id, params = {}) {
     let matchQuery = require('./EstateService').getActiveEstateQuery()
-    matchQuery.where('user_id', user_id)
-    matchQuery = await new EstateFilters(params, matchQuery).init()
+    matchQuery = new EstateFilters(params, matchQuery).process()
     return matchQuery
   }
   static async getMatchList(user_id, params = {}) {
-    let matchQuery = await this.getMatchListQuery(user_id, params)
+    let matchQuery = this.getMatchListQuery(user_id, params)
     matchQuery
+      .where('user_id', user_id)
       .withCount('knocked')
       .withCount('invited')
       .withCount('visited')

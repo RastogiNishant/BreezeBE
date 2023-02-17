@@ -198,6 +198,23 @@ class EstateController {
     }
   }
 
+  async getEstatesByPM({ request, auth, response }) {
+    const { limit, page, ...params } = request.all()
+    const landlordIds = await EstatePermissionService.getLandlordIds(
+      auth.user.id,
+      PROPERTY_MANAGE_ALLOWED
+    )
+    const result = await EstateService.getEstatesByUserId({
+      ids: landlordIds,
+      limit,
+      page,
+      params,
+    })
+    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    delete result.rows
+    response.res(result)
+  }
+
   async searchEstates({ request, auth, response }) {
     const { query, coord } = request.all()
     if (!coord && !query) {
@@ -221,10 +238,9 @@ class EstateController {
     if (!isEmpty(request.post())) {
       params = request.post()
     }
-
     // Update expired estates status to unpublished
     let result = await EstateService.getEstatesByUserId({
-      user_id: auth.user.id,
+      ids: [auth.user.id],
       limit,
       page,
       params,
@@ -1025,7 +1041,7 @@ class EstateController {
   async export({ request, auth, response }) {
     const { lang } = request.params
     let result = await EstateService.getEstatesByUserId({
-      user_id: auth.user.id,
+      ids: [auth.user.id],
     })
     let rows = []
 
