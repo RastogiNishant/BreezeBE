@@ -248,24 +248,18 @@ class EstateController {
 
     result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
     result.data = (result.data || []).map((estate) => {
-      const outside_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_EXTERNAL)
-        ? true
-        : false
-      const inside_view_has_media = (estate?.rooms || []).find(
-        (room) => room.images && room.images.length
-      )
-        ? true
-        : false
+      const outside_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+      const inside_view_has_media =
+        (estate?.rooms || []).filter((room) => room.images && room.images.length).length || 0
       const document_view_has_media =
-        (estate.energy_proof && trim(estate.energy_proof) != '') ||
-        (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
-          ? true
-          : false
-      const unassigned_view_has_media = (estate.files || []).find(
-        (f) => f.type == FILE_TYPE_UNASSIGNED
-      )
-        ? true
-        : false
+        ((estate.files || []).filter(
+          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) != '')
+          ? 1
+          : 0
+      const unassigned_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
 
       return {
         ...estate,
@@ -328,24 +322,19 @@ class EstateController {
       throw new HttpException('Invalid estate', 404)
     }
     estate = estate.toJSON({ isOwner: true })
-    const outside_view_has_media = (estate.files || []).find((f) => f.type == FILE_TYPE_EXTERNAL)
-      ? true
-      : false
-    const inside_view_has_media = (estate?.rooms || []).find(
-      (room) => room.images && room.images.length
-    )
-      ? true
-      : false
+    const outside_view_has_media =
+      (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+    const inside_view_has_media =
+      (estate?.rooms || []).filter((room) => room.images && room.images.length).length || 0
     const document_view_has_media =
-      (estate.energy_proof && trim(estate.energy_proof) != '') ||
-      (estate.files || []).find((f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN)
-        ? true
-        : false
-    const unassigned_view_has_media = (estate.files || []).find(
+      ((estate.files || []).filter(
+        (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+      ) || 0) + (estate.energy_proof && trim(estate.energy_proof) != '')
+        ? 1
+        : 0
+    const unassigned_view_has_media = (estate.files || []).filter(
       (f) => f.type == FILE_TYPE_UNASSIGNED
-    )
-      ? true
-      : false
+    ).length
 
     estate = await EstateService.assignEstateAmenities(estate)
     estate = {
