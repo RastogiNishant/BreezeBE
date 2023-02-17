@@ -538,14 +538,13 @@ class EstateService {
 
   static async moveToGallery({ ids, estate_id, user_id }, trx = null) {
     await this.hasPermission({ id: estate_id, user_id })
-
     let query = File.query()
       .update({ type: FILE_TYPE_UNASSIGNED })
       .whereIn('id', ids)
       .where('estate_id', estate_id)
 
     if (trx) {
-      query.transacting(trx)
+      await query.transacting(trx)
     } else {
       await query
     }
