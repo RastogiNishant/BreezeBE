@@ -1,30 +1,12 @@
-const Drive = use('Drive')
-const Logger = use('Logger')
 const Room = use('App/Models/Room')
 const Image = use('App/Models/Image')
 const File = use('App/Classes/File')
+const Database = use('Database')
 const QueueService = use('App/Services/QueueService')
-const {
-  get,
-  has,
-  trim,
-  isEmpty,
-  reduce,
-  isString,
-  isArray,
-  isFunction,
-  omit,
-  pick,
-  assign,
-  pull,
-  groupBy,
-  countBy,
-  filter,
-} = require('lodash')
+const { reduce, isArray, omit, pick, assign, groupBy, filter } = require('lodash')
 const Event = use('Event')
 const {
   STATUS_DELETE,
-  STATUS_ACTIVE,
   ROLE_PROPERTY_MANAGER,
   PROPERTY_MANAGE_ALLOWED,
   ROOM_DEFAULT_ORDER,
@@ -65,7 +47,14 @@ const {
   FILE_LIMIT_LENGTH,
 } = require('../constants')
 const {
-  exceptions: { NO_ROOM_EXIST, NO_IMAGE_EXIST, IMAGE_COUNT_LIMIT },
+  exceptions: {
+    NO_ROOM_EXIST,
+    NO_IMAGE_EXIST,
+    IMAGE_COUNT_LIMIT,
+    INVALID_ROOM,
+    FAILED_TO_ADD_FILE,
+    CURRENT_IMAGE_COUNT,
+  },
 } = require('../exceptions')
 
 const schema = require('../Validators/CreateRoom').schema()
@@ -182,11 +171,80 @@ class RoomService {
     return await roomQuery.orderBy('rooms.order', 'asc').orderBy('rooms.id', 'asc').fetch()
   }
 
+  static async addRoomPhoto(request, { user, room_id }) {
+    const userIds = [user.id]
+    if (user.role === ROLE_PROPERTY_MANAGER) {
+      userIds = await require('./EstatePermissionService').getLandlordIds(
+        user.id,
+        PROPERTY_MANAGE_ALLOWED
+      )
+    }
+
+    const room = await this.getRoomByUser({ userIds, room_id })
+    if (!room) {
+      throw new HttpException(INVALID_ROOM, 404)
+    }
+
+    const count = File.filesCount(request, 'file')
+    const image_length = room.toJSON().images?.length || 0
+
+    if (room.toJSON().images && image_length + count > FILE_LIMIT_LENGTH) {
+      throw new HttpException(`${IMAGE_COUNT_LIMIT} ${CURRENT_IMAGE_COUNT}:${image_length}`, 400)
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      const imageMimes = [
+        File.IMAGE_JPEG,
+        File.IMAGE_PNG,
+        File.IMAGE_TIFF,
+        File.IMAGE_WEBP,
+        File.IMAGE_HEIC,
+        File.IMAGE_GIF,
+      ]
+      const files = await File.saveRequestFiles(request, [
+        { field: 'file', mime: imageMimes, isPublic: true },
+      ])
+
+      if (files && files.file) {
+        const paths = Array.isArray(files.file) ? files.file : [files.file]
+        const original_file_names = Array.isArray(files.original_file)
+          ? files.original_file
+          : [files.original_file]
+        const data = paths.map((path, index) => {
+          return {
+            disk: 's3public',
+            url: path,
+            file_name: original_file_names[index],
+            room_id: room.id,
+          }
+        })
+        const images = await this.addManyImages(data, trx)
+        await require('./EstateService').updateCover(
+          { room: room.toJSON(), addImage: images[0] },
+          trx
+        )
+        Event.fire('estate::update', room.estate_id)
+        await trx.commit()
+        return images
+      } else {
+        throw new HttpException(FAILED_TO_ADD_FILE, 500)
+      }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
   /**
    *
    */
   static async addImage({ url, file_name, room, disk }, trx = null) {
     return Image.createItem({ url, file_name, disk, room_id: room.id }, trx)
+  }
+
+  static async addManyImages(data, trx = null) {
+    return Image.createMany(data, trx)
   }
 
   /**
@@ -264,6 +322,27 @@ class RoomService {
     return rooms
   }
 
+  static async createRoom({ user, estate_id, roomData }, trx) {
+    await this.hasPermission(estate_id, user)
+
+    if (roomData.favorite) {
+      await Room.query()
+        .where('estate_id', estate_id)
+        .where('type', roomData.type)
+        .update({ favorite: false })
+        .transacting(trx)
+    }
+
+    const room = await Room.createItem(
+      {
+        ...roomData,
+        estate_id,
+      },
+      trx
+    )
+
+    return room
+  }
   static async createRoomsFromImport({ estate_id, rooms }, trx) {
     try {
       const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
@@ -434,19 +513,22 @@ class RoomService {
     await Estate.query().where('id', estate_id).whereIn('user_id', userIds).firstOrFail()
   }
 
-  static async addImageFromGallery({ user_id, room_id, estate_id, galleries }, trx) {
-    const room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
+  static async addImageFromGallery({ user_id, room_id, estate_id, galleries, room }, trx) {
     if (!room) {
-      throw new HttpException(NO_ROOM_EXIST, 400)
+      room = await this.getRoomByUser({ userIds: user_id, room_id, estate_id })
+      if (!room) {
+        throw new HttpException(NO_ROOM_EXIST, 400)
+      }
     }
 
-    if (room.images && room.toJSON().images.length >= FILE_LIMIT_LENGTH) {
+    if (
+      room.images &&
+      (room.toJSON().images?.length || 0) + (galleries?.length || 0) > FILE_LIMIT_LENGTH
+    ) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
 
     const imagesInfo = []
-    // const images =
-    //   galleries.filter((gallery) => File.SUPPORTED_IMAGE_FORMAT.includes(gallery.url)) || []
     const images =
       galleries.filter((gallery) =>
         File.SUPPORTED_IMAGE_FORMAT.some((format) => gallery.url.indexOf(format) >= 0)

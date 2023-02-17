@@ -13,7 +13,7 @@ class OutsideLandlordService {
     if (!task) {
       throw new HttpException('No task exists', 500)
     }
-    if (!task.email || !task.address) {
+    if (!task.email || !task.property_address) {
       return
     }
     if (!(await this.isExistLandlord(task))) {

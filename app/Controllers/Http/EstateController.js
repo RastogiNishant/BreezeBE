@@ -52,9 +52,13 @@ const {
   IMPORT_ENTITY_ESTATES,
   IMPORT_ACTIVITY_PENDING,
   FILE_LIMIT_LENGTH,
+  FILE_TYPE_UNASSIGNED,
+  FILE_TYPE_EXTERNAL,
+  FILE_TYPE_CUSTOM,
+  FILE_TYPE_PLAN,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim, omit } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -64,7 +68,7 @@ const TimeSlotService = require('../../Services/TimeSlotService')
 const QueueService = require('../../Services/QueueService')
 
 const INVITE_CODE_STRING_LENGTH = 8
-const GalleryService = require('../../Services/GalleryService')
+
 const {
   exceptions: {
     ESTATE_NOT_EXISTS,
@@ -72,6 +76,8 @@ const {
     WRONG_PARAMS,
     IMAGE_COUNT_LIMIT,
     FAILED_IMPORT_FILE_UPLOAD,
+    FAILED_TO_ADD_FILE,
+    CURRENT_IMAGE_COUNT,
   },
 } = require('../../../app/exceptions')
 
@@ -241,6 +247,28 @@ class EstateController {
     })
 
     result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = (result.data || []).map((estate) => {
+      const outside_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+      const inside_view_has_media =
+        (estate?.rooms || []).filter((room) => room.images && room.images.length).length || 0
+      const document_view_has_media =
+        ((estate.files || []).filter(
+          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) != '')
+          ? 1
+          : 0
+      const unassigned_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
+
+      return {
+        ...estate,
+        inside_view_has_media,
+        outside_view_has_media,
+        document_view_has_media,
+        unassigned_view_has_media,
+      }
+    })
     delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
@@ -290,12 +318,32 @@ class EstateController {
     const { id } = request.all()
     const user_id = auth.user instanceof Admin ? null : auth.user.id
     let estate = await EstateService.getEstateWithDetails({ id, user_id, role: auth.user.role })
-
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
     estate = estate.toJSON({ isOwner: true })
+    const outside_view_has_media =
+      (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+    const inside_view_has_media =
+      (estate?.rooms || []).filter((room) => room.images && room.images.length).length || 0
+    const document_view_has_media =
+      ((estate.files || []).filter(
+        (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+      ) || 0) + (estate.energy_proof && trim(estate.energy_proof) != '')
+        ? 1
+        : 0
+    const unassigned_view_has_media = (estate.files || []).filter(
+      (f) => f.type == FILE_TYPE_UNASSIGNED
+    ).length
+
     estate = await EstateService.assignEstateAmenities(estate)
+    estate = {
+      ...estate,
+      inside_view_has_media,
+      outside_view_has_media,
+      document_view_has_media,
+      unassigned_view_has_media,
+    }
     response.res(estate)
   }
 
@@ -576,9 +624,16 @@ class EstateController {
       .whereIn('user_id', userIds)
       .firstOrFail()
 
-    if (estate.toJSON().files && estate.toJSON().files.length >= FILE_LIMIT_LENGTH) {
-      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+    const count = FileBucket.filesCount(request, 'file')
+    const image_length = estate.toJSON().files?.length || 0
+    if (
+      type !== FILE_TYPE_UNASSIGNED &&
+      estate.toJSON().files &&
+      image_length + count > FILE_LIMIT_LENGTH
+    ) {
+      throw new HttpException(`${IMAGE_COUNT_LIMIT} ${CURRENT_IMAGE_COUNT}:${image_length}`, 400)
     }
+
     const imageMimes = [
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
@@ -596,16 +651,28 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true },
     ])
 
-    const fileObj = await EstateService.addFile({
-      disk: 's3public',
-      url: files.file,
-      file_name: files.original_file,
-      type,
-      estate,
-    })
-    Event.fire('estate::update', estate_id)
+    if (files && files.file) {
+      const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const original_file_names = Array.isArray(files.original_file)
+        ? files.original_file
+        : [files.original_file]
+      console.log('files here=', files)
+      const data = paths.map((path, index) => {
+        return {
+          disk: 's3public',
+          url: path,
+          file_name: original_file_names[index],
+          type,
+          estate_id: estate.id,
+          file_format: files.format[index],
+        }
+      })
 
-    response.res(fileObj)
+      const result = await EstateService.addManyFiles(data)
+      Event.fire('estate::update', estate_id)
+      return response.res(result)
+    }
+    throw new HttpException(FAILED_TO_ADD_FILE, 500)
   }
 
   /**

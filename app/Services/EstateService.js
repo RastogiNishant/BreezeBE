@@ -244,7 +244,11 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ request, data, userId }, fromImport = false, trx = null) {
+  static async createEstate(
+    { request, data, userId, is_coord_changed = true },
+    fromImport = false,
+    trx = null
+  ) {
     data = request ? request.all() : data
 
     const propertyId = data.property_id
@@ -297,6 +301,7 @@ class EstateService {
     const estate = await Estate.createItem(
       {
         ...createData,
+        is_coord_changed,
       },
       trx
     )
@@ -493,8 +498,12 @@ class EstateService {
   /**
    *
    */
-  static async addFile({ url, file_name, disk, estate, type }) {
-    return File.createItem({ url, disk, file_name, estate_id: estate.id, type })
+  static async addFile({ url, file_name, disk, estate, type, file_format }) {
+    return File.createItem({ url, disk, file_name, estate_id: estate.id, type, file_format })
+  }
+
+  static async addManyFiles(data) {
+    return await File.createMany(data)
   }
 
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
@@ -529,14 +538,13 @@ class EstateService {
 
   static async moveToGallery({ ids, estate_id, user_id }, trx = null) {
     await this.hasPermission({ id: estate_id, user_id })
-
     let query = File.query()
       .update({ type: FILE_TYPE_UNASSIGNED })
       .whereIn('id', ids)
       .where('estate_id', estate_id)
 
     if (trx) {
-      query.transacting(trx)
+      await query.transacting(trx)
     } else {
       await query
     }
@@ -546,7 +554,7 @@ class EstateService {
     await this.hasPermission({ id: estate_id, user_id })
 
     const files = await this.getFiles({ estate_id, type })
-    if (files && files.length >= FILE_LIMIT_LENGTH) {
+    if (files && (files?.length || 0) + ids.length > FILE_LIMIT_LENGTH) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
 
@@ -1046,14 +1054,22 @@ class EstateService {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant')
+        .with('current_tenant', function (c) {
+          c.with('user', function (u) {
+            u.select('id', 'avatar')
+          })
+        })
         .with('slots')
         .fetch()
     } else {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant')
+        .with('current_tenant', function (c) {
+          c.with('user', function (u) {
+            u.select('id', 'avatar')
+          })
+        })
         .with('slots')
         .paginate(page, limit)
     }
@@ -1740,8 +1756,9 @@ class EstateService {
       documents: { plan: [], energy_certificate: [], custom: [] },
       unassigned: [],
     }
+    //return files
     files.toJSON().map((file) => {
-      if (typeAssigned[file.type].includes(file.type)) {
+      if (typeAssigned[file.type]?.includes(file.type)) {
         ret[file.type] = [...ret[file.type], file]
       } else if (typeAssigned.documents.includes(file.type)) {
         ret.documents[file.type] = [...ret.documents[file.type], file]

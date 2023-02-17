@@ -417,10 +417,9 @@ class EstateCurrentTenantService extends BaseService {
     surname,
   }) {
     const trx = await Database.beginTransaction()
-    let inviteResult, currentTenant
+    let inviteResult, currentTenant, reason
     try {
       if (!estate_id) {
-        console.log('create new estate here')
         const { id } = await require('./EstateService').createEstate(
           {
             data: {
@@ -437,11 +436,11 @@ class EstateCurrentTenantService extends BaseService {
               letting_status: LETTING_STATUS_STANDARD,
             },
             userId: user_id,
+            is_coord_changed: false,
           },
           false,
           trx
         )
-        console.log('estate id here newly=', id)
         estate_id = id
       } else {
         if (await this.getCurrentTenantByEstateId({ estate_id, notDisconnected: true })) {
@@ -465,6 +464,7 @@ class EstateCurrentTenantService extends BaseService {
       )
       await trx.commit()
     } catch (e) {
+      reason = e.message
       await trx.rollback()
     } finally {
       let ret = {}
@@ -494,6 +494,7 @@ class EstateCurrentTenantService extends BaseService {
       }
       return {
         failureCount: 1,
+        reason,
       }
     }
   }
@@ -501,6 +502,7 @@ class EstateCurrentTenantService extends BaseService {
     let result = {
       email: {},
       phone: {},
+      reason: [],
     }
 
     await Promise.map(
@@ -541,6 +543,7 @@ class EstateCurrentTenantService extends BaseService {
         }
         if (singleResult?.failureCount) {
           result.failureCount = (result?.failureCount || 0) + singleResult.failureCount
+          result.reason.push(singleResult.reason)
         }
 
         if (singleResult?.email) {
