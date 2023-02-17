@@ -220,7 +220,6 @@ class RoomService {
           }
         })
         const images = await this.addManyImages(data, trx)
-        console.log('Room Images=', images)
         await require('./EstateService').updateCover(
           { room: room.toJSON(), addImage: images[0] },
           trx
