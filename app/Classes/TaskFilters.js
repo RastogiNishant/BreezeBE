@@ -1,6 +1,7 @@
-const { isEmpty, without } = require('lodash')
+const { isEmpty, trim, lowerCase } = require('lodash')
 const Filter = require('./Filter')
 const Database = use('Database')
+const moment = require('moment')
 
 const {
   URGENCY_LOW,
@@ -16,20 +17,26 @@ const {
   NOT_CONNECTED_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
   DATE_FORMAT,
-  FILTER_NAME_CONNECT,
   STATUS_ACTIVE,
   TENANT_INVITATION_EXPIRATION_DATE,
 } = require('../constants')
 
 class TaskFilters extends Filter {
-  constructor(params, query, user_id) {
-    super(params, query, user_id, FILTER_NAME_CONNECT)
-  }
+  globalSearchFields = [
+    '_ect.email',
+    'estates.property_id',
+    'estates.address',
+    '_ect.phone_number',
+    '_ect.surname',
+  ]
+  constructor(params, query) {
+    super(params, query)
 
-  async init() {
-    await super.init()
+    if (isEmpty(params)) {
+      return
+    }
 
-    const params = this.params
+    this.processGlobals()
 
     Filter.MappingInfo = {
       urgency: {
@@ -45,19 +52,40 @@ class TaskFilters extends Filter {
         unresolved: TASK_STATUS_UNRESOLVED,
       },
     }
+    Filter.TableInfo = {
+      property_id: 'estates',
+      address: 'estates',
+      net_rent: 'estates',
+      urgency: 'tasks',
+      status: 'tasks',
+      email: '_ect',
+      phone_number: '_ect',
+      surname: '_ect',
+      title: 'tasks',
+      description: 'tasks',
+    }
 
     Filter.paramToField = {
-      ...Filter.paramToField,
       active_task: 'count(tasks.id)',
       in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
       task_name: ['title', 'description'],
     }
-    this.matchFilters = without(this.matchFilters, 'active_task', 'in_progress_task', 'breeze_type')
-
-    this.matchFilter(this.matchFilters, params)
-
-    this.processGlobals()
+    this.matchFilter(
+      [
+        'property_id',
+        'address',
+        'net_rent',
+        'urgency',
+        'email',
+        'phone_number',
+        'status',
+        'contract_end',
+        'tenant',
+        'task_name',
+      ],
+      params
+    )
 
     if (
       params.breeze_type &&
@@ -122,10 +150,7 @@ class TaskFilters extends Filter {
   }
 
   afterQuery() {
-    const matchCountFilterFields = ['active_task', 'in_progress_task'].filter((column) =>
-      this.isExist(column)
-    )
-    this.matchCountFilter(matchCountFilterFields, this.params)
+    this.matchCountFilter(['active_task', 'in_progress_task'], this.params)
     return this.query
   }
 }
