@@ -1,6 +1,16 @@
 'use strict'
 const moment = require('moment')
-const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy } = require('lodash')
+const {
+  isEmpty,
+  filter,
+  omit,
+  flatten,
+  groupBy,
+  countBy,
+  maxBy,
+  orderBy,
+  isArray,
+} = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
@@ -295,6 +305,21 @@ class EstateService {
       createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
       createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
     }
+
+    ;[
+      'bath_options',
+      'energy_type',
+      'firing',
+      'ground',
+      'heating_type',
+      'marketing_type',
+      'parking_space_type',
+      'use_type',
+    ].map((field) => {
+      if (!isArray(createData[field])) {
+        createData[field] = [createData[field]]
+      }
+    })
 
     let estateHash
     const estate = await Estate.createItem(
