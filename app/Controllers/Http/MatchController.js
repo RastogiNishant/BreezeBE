@@ -796,11 +796,12 @@ class MatchController {
 
       const finalMatches = await Estate.query()
         .where({ user_id: user.id })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
         .whereHas('matches', (query) => {
           query.where('status', MATCH_STATUS_FINISH)
         })
         .count()
-
+      console.log('finalMatches here=', finalMatches)
       counts.finalMatches = finalMatches[0].count
 
       return response.res(counts)
