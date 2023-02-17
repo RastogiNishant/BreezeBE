@@ -901,6 +901,7 @@ class MatchController {
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+
     const matches = data
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(

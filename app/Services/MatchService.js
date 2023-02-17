@@ -1984,6 +1984,25 @@ class MatchService {
     return query.fetch()
   }
 
+  static getLandlordMatchesFilterSQL(
+    estate,
+    { knock, buddy, invite, visit, top, commit, final },
+    params
+  ) {
+    const query = Tenant.query()
+      .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
+      .where({ '_u.role': ROLE_USER })
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate.id])
+      })
+  }
+
+  static getCountLandlordMatchesWithFilterQuery(
+    estate,
+    { knock, buddy, invite, visit, top, commit, final },
+    params
+  ) {}
+
   /**
    * Get tenants matched to current estate
    */
@@ -1993,6 +2012,7 @@ class MatchService {
     params
   ) {
     const query = Tenant.query()
+      .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
       .select([
         'tenants.*',
         '_u.firstname as u_firstname',
@@ -2042,8 +2062,8 @@ class MatchService {
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate.id])
       })
+      .orderBy('tenants.id', 'ASC')
       .orderBy('_m.updated_at', 'DESC')
-
     if (knock) {
       query.where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (buddy) {
@@ -2057,6 +2077,7 @@ class MatchService {
         .where('_m.status', MATCH_STATUS_TOP)
         .clearOrder()
         .orderBy([
+          { column: 'tenants.id', order: 'ASC' },
           { column: '_m.order_lord', order: 'ASC' },
           { column: '_m.updated_at', order: 'DESC' },
         ])
@@ -2260,7 +2281,6 @@ class MatchService {
         })
       })
     }
-
     return query
   }
 
