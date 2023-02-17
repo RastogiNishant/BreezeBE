@@ -495,8 +495,8 @@ class EstateService {
   /**
    *
    */
-  static async addFile({ url, file_name, disk, estate, type }) {
-    return File.createItem({ url, disk, file_name, estate_id: estate.id, type })
+  static async addFile({ url, file_name, disk, estate, type, file_format }) {
+    return File.createItem({ url, disk, file_name, estate_id: estate.id, type, file_format })
   }
 
   static async addManyFiles(data) {
@@ -1758,8 +1758,9 @@ class EstateService {
       documents: { plan: [], energy_certificate: [], custom: [] },
       unassigned: [],
     }
+    //return files
     files.toJSON().map((file) => {
-      if (typeAssigned[file.type].includes(file.type)) {
+      if (typeAssigned[file.type]?.includes(file.type)) {
         ret[file.type] = [...ret[file.type], file]
       } else if (typeAssigned.documents.includes(file.type)) {
         ret.documents[file.type] = [...ret.documents[file.type], file]

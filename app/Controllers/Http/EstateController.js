@@ -648,6 +648,7 @@ class EstateController {
           file_name: original_file_names[index],
           type,
           estate_id: estate.id,
+          file_format: files.format[index],
         }
       })
 

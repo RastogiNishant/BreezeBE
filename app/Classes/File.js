@@ -136,7 +136,6 @@ class File {
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
-
     if (!isEmpty(allowedTypes)) {
       if (!allowedTypes.includes(mime)) {
         throw new AppException('Invalid file mime type')
@@ -208,7 +207,10 @@ class File {
         })
       }
 
-      return { filePathName: filePathName, thumbnailFilePathName: thumbnailFilePathName }
+      return {
+        filePathName: filePathName,
+        thumbnailFilePathName: thumbnailFilePathName,
+      }
     } catch (e) {
       throw new AppException(e, 400)
     }
@@ -279,7 +281,6 @@ class File {
         size: process.env.MAX_IMAGE_SIZE || '20M',
         extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
-
       if (!file) {
         return null
       }
@@ -298,8 +299,9 @@ class File {
       const filePathName = fileInfo.map((fi) => fi.filePathName)
       const fileName = fileInfo.map((fi) => fi.fileName)
       const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
+      const fileFormat = (file._files || [file]).map((fi) => fi.headers['content-type'])
 
-      return { field, filePathName, fileName, thumbnailFilePathName }
+      return { field, filePathName, fileName, thumbnailFilePathName, fileFormat }
     }
     const files = await Promise.map(fields, saveFile)
     return files.reduce(
@@ -313,6 +315,7 @@ class File {
                 v.thumbnailFilePathName.length > 1
                   ? v.thumbnailFilePathName
                   : v.thumbnailFilePathName[0],
+              ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0],
             }
           : n,
       {}
