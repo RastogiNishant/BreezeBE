@@ -605,7 +605,7 @@ class MailService {
   static async inviteLandlordFromTenant({ task, link, lang = DEFAULT_LANG }) {
     const templateId = LANDLORD_EMAIL_TEMPLATE
 
-    const shortMsg = `${task.address}, ${task.address_detail}: \n 
+    const shortMsg = `${task.property_address}, ${task.address_detail}: \n 
                       ${l.get(task.title, lang)}:${l.get(task.description, lang)} ... ${moment
       .utc(task.created_at)
       .format(DATE_FORMAT)}`
