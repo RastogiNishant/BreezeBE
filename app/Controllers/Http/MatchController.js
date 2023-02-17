@@ -892,6 +892,12 @@ class MatchController {
       'u_avatar',
     ]
 
+    let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { knock: true }),
+      { ...params }
+    )
+
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -901,8 +907,18 @@ class MatchController {
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-
+    data = {
+      ...data,
+      total: matchCount[0].count,
+      lastPage: Math.ceil(matchCount[0].count / data.perPage),
+    }
     const matches = data
+
+    let buddyCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { buddy: true }),
+      { ...params }
+    )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -912,8 +928,19 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: buddyCount[0].count,
+      lastPage: Math.ceil(buddyCount[0].count / data.perPage),
+    }
+
     const buddies = data
 
+    let inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { invite: true }),
+      { ...params }
+    )
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
@@ -921,7 +948,19 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: inviteCount[0].count,
+      lastPage: Math.ceil(inviteCount[0].count / data.perPage),
+    }
+
     const invites = data
+
+    let visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { visit: true }),
+      { ...params }
+    )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -930,7 +969,19 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: visitCount[0].count,
+      lastPage: Math.ceil(visitCount[0].count / data.perPage),
+    }
+
     const visits = data
+
+    let topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { top: true }),
+      { ...params }
+    )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -939,6 +990,12 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, fields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: topCount[0].count,
+      lastPage: Math.ceil(topCount[0].count / data.perPage),
+    }
+
     const top = data
 
     let isFinalMatch = false
@@ -955,6 +1012,12 @@ class MatchController {
 
     const filter = isFinalMatch ? { final: true } : { commit: true }
 
+    let finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = filter),
+      { ...params }
+    )
+
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
@@ -962,6 +1025,12 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: finalCount[0].count,
+      lastPage: Math.ceil(finalCount[0].count / data.perPage),
+    }
+
     const finalMatches = data
     return response.res({
       estate: estate.toJSON(),
