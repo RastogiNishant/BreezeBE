@@ -286,10 +286,10 @@ class EstateCurrentTenantService extends BaseService {
         )
       })
       if (email) {
-        query.where('email', email)
+        query.whereNot('email', email)
       }
       if (phone_number) {
-        query.where('phone_number', phone_number)
+        query.whereNot('phone_number', phone_number)
       }
     }
 
