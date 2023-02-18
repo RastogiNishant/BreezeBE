@@ -89,12 +89,16 @@ class TenantInvitation extends Base {
               null,
             ]),
           surname: yup.string().nullable(),
+          phone: phoneSchema.nullable(),
           email: yup
             .string()
             .email()
             .max(255, getExceptionMessage('email', MAXLENGTH, 255))
-            .nullable(),
-          phone: phoneSchema.nullable(),
+            .nullable()
+            .when('phone', {
+              is: (phone) => !phone,
+              then: yup.string().required(),
+            }),
         })
       ),
     })
