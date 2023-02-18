@@ -265,6 +265,8 @@ class EstateCurrentTenantService extends BaseService {
 
   static async getCurrentTenantByEstateId({
     estate_id,
+    email,
+    phone_number,
     notDisconnected = false,
     connected = false,
   }) {
@@ -283,6 +285,12 @@ class EstateCurrentTenantService extends BaseService {
               .format(DATE_FORMAT)}'`)
         )
       })
+      if (email) {
+        query.where('email', email)
+      }
+      if (phone_number) {
+        query.where('phone_number', phone_number)
+      }
     }
 
     if (connected) {
@@ -443,7 +451,14 @@ class EstateCurrentTenantService extends BaseService {
         )
         estate_id = id
       } else {
-        if (await this.getCurrentTenantByEstateId({ estate_id, notDisconnected: true })) {
+        if (
+          await this.getCurrentTenantByEstateId({
+            estate_id,
+            email,
+            phone_number: phone,
+            notDisconnected: true,
+          })
+        ) {
           throw new HttpException(TENANT_EXIST, 400)
         }
         await require('./EstateService').rented(estate_id, trx)
