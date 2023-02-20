@@ -111,7 +111,8 @@ class QueueService {
    *
    */
   static async performEvery23rdMinuteOfTheHourJob() {
-    return Promise.all([wrapException(QueueJobService.pullOhneMakler)])
+    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
   }
 
   static async sendEveryDayMidday() {
@@ -145,10 +146,6 @@ class QueueService {
    */
   static async sendEveryMonth12AM() {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
-  }
-
-  static async processEveryDay15H() {
-    return Promise.all([wrapException(QueueJobService.pullOhneMakler)])
   }
 
   /**

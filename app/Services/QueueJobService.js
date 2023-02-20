@@ -250,10 +250,6 @@ class QueueJobService {
     const ip_based_info = await getIpBasedInfo(ip)
     await User.query().where('id', userId).update({ ip_based_info })
   }
-
-  static async pullOhneMakler() {
-    console.log('pulling ohnemakler...')
-  }
 }
 
 module.exports = QueueJobService
