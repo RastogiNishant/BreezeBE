@@ -364,16 +364,36 @@ class EstateCurrentTenantService extends BaseService {
       .transacting(trx)
   }
 
-  static async hasPermission(id, user_id) {
-    const estateCurrentTeant = await this.get(id)
-    await require('./EstateService')
-      .getActiveEstateQuery()
-      .where('user_id', user_id)
-      .where('id', estateCurrentTeant.estate_id)
-      .where('letting_type', LETTING_TYPE_LET)
-      .firstOrFail()
+  static async deleteByEstate({ estate_ids, user_id }, trx) {
+    estate_ids = Array.isArray(estate_ids) ? estate_ids : [estate_ids]
+    await Promise.map(
+      estate_ids,
+      async (estate_id) => await this.hasPermission(null, user_id, estate_id)
+    )
 
-    return estateCurrentTeant
+    return await EstateCurrentTenant.query()
+      .whereIn('estate_id', estate_ids)
+      .update({ status: STATUS_DELETE })
+      .transacting(trx)
+  }
+
+  static async hasPermission(id, user_id, estate_id) {
+    try {
+      let estateCurrentTeant
+      if (!estate_id) {
+        estateCurrentTeant = await this.get(id)
+      }
+      await require('./EstateService')
+        .getActiveEstateQuery()
+        .where('user_id', user_id)
+        .where('id', estate_id || estateCurrentTeant.estate_id)
+        .where('letting_type', LETTING_TYPE_LET)
+        .firstOrFail()
+
+      return estateCurrentTeant
+    } catch (e) {
+      console.log('Has Permission error', e.message)
+    }
   }
 
   static async expire(id, user_id) {
