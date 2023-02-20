@@ -828,18 +828,19 @@ class MatchService {
         .where('end_at', '>', slotDate.format(DATE_FORMAT))
         .first()
 
-    const getAnotherVisit = async () =>
-      Database.table('visits')
-        .where({ estate_id: estateId })
-        .where({ date: slotDate.format(DATE_FORMAT) })
-        .first()
+    // const getAnotherVisit = async () =>
+    //   Database.table('visits')
+    //     .where({ estate_id: estateId })
+    //     .where({ date: slotDate.format(DATE_FORMAT) })
+    //     .first()
 
-    const { currentTimeslot, anotherVisit } = await props({
+    const { currentTimeslot } = await props({
       currentTimeslot: getTimeslot(),
-      anotherVisit: getAnotherVisit(),
+      // anotherVisit: getAnotherVisit(),
     })
 
-    if (!currentTimeslot || (anotherVisit && currentTimeslot.slot_length)) {
+    // if (!currentTimeslot || (anotherVisit && currentTimeslot.slot_length)) {
+    if (!currentTimeslot) {
       throw new AppException('Cant book this slot')
     }
 
