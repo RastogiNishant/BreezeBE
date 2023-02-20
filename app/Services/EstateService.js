@@ -564,7 +564,7 @@ class EstateService {
     try {
       const files = await File.createMany(data, trx)
 
-      await this.updatePercent({ estate_id: data[0].estate_id, files: [files[0].toJSON()] })
+      await this.updatePercent({ estate_id: data[0].estate_id, files: [files[0].toJSON()] }, trx)
       await trx.commit()
       return files
     } catch (e) {
@@ -612,8 +612,8 @@ class EstateService {
 
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
+      await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
       await trx.commit()
-      await this.updatePercent({ estate_id })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
@@ -1909,7 +1909,15 @@ class EstateService {
     return parseFloat(percent.toFixed(2))
   }
   static async updatePercent(
-    { estate, estate_id, slots = null, files = null, amenities = null },
+    {
+      estate,
+      estate_id,
+      slots = null,
+      files = null,
+      amenities = null,
+      deleted_slots_ids = null,
+      deleted_files_ids = null,
+    },
     trx
   ) {
     if (!estate && !estate_id) {
@@ -1937,6 +1945,18 @@ class EstateService {
 
     if (amenities) {
       percentData.amenities = (percentData.amenities || []).concat(amenities)
+    }
+
+    if (deleted_slots_ids) {
+      percentData.slots = (percentData.slots || []).filter(
+        (slot) => !deleted_slots_ids.includes(slot.id)
+      )
+    }
+
+    if (deleted_files_ids) {
+      percentData.files = (percentData.files || []).filter(
+        (file) => !deleted_files_ids.includes(file.id)
+      )
     }
 
     if (trx) {

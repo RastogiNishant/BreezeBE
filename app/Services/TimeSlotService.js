@@ -306,28 +306,32 @@ class TimeSlotService {
 
     // If slot's end date is passed, we only delete the slot
     // But if slot's end date is not passed, we delete the slot and all the visits
-    if (slot.end_at < new Date()) {
-      await slot.delete()
-      return true
-    } else {
-      const trx = await Database.beginTransaction()
-      try {
+    const trx = await Database.beginTransaction()
+    try {
+      if (slot.end_at < new Date()) {
+        await slot.delete(trx)
+      } else {
         const estateId = slot.estate_id
         const userIds = await require('./MatchService').handleDeletedTimeSlotVisits(slot, trx)
         await slot.delete(trx)
-        await trx.commit()
-        await require('./EstateService').updatePercent({ estate_id: estateId })
-        const notificationPromises = userIds.map((userId) =>
-          NoticeService.cancelVisit(estateId, userId)
-        )
-        await Promise.all(notificationPromises)
-        await trx.commit()
-        return true
-      } catch (e) {
-        await trx.rollback()
-        Logger.error(e)
-        throw new HttpException(e.message, 400)
+        let idx = 0
+        while (idx < userIds.length) {
+          await NoticeService.cancelVisit(estateId, userIds[idx])
+          idx++
+        }
       }
+      await require('./EstateService').updatePercent(
+        {
+          estate_id: slot.estate_id,
+          deleted_slots_ids: [slot_id],
+        },
+        trx
+      )
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(e)
+      throw new HttpException(e.message, 400)
     }
   }
 }
