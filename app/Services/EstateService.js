@@ -366,7 +366,9 @@ class EstateService {
           energy_proof: null,
           energy_proof_original_file: null,
           percent: this.calculatePercent({
-            ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+            ...estate.toJSON({
+              extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+            }),
             ...updateData,
             energy_proof: null,
           }),
@@ -379,7 +381,9 @@ class EstateService {
             energy_proof: files.energy_proof,
             energy_proof_original_file: files.original_energy_proof,
             percent: this.calculatePercent({
-              ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+              ...estate.toJSON({
+                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+              }),
               ...updateData,
               energy_proof: files.energy_proof,
             }),
@@ -388,7 +392,9 @@ class EstateService {
           updateData = {
             ...updateData,
             percent: this.calculatePercent({
-              ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+              ...estate.toJSON({
+                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+              }),
               ...updateData,
             }),
           }
@@ -1919,7 +1925,7 @@ class EstateService {
     }
 
     let percentData = {
-      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] }),
     }
 
     if (slots) {

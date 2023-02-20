@@ -27,12 +27,15 @@ class EstateSerializer extends BaseSerializer {
 
     // Get cover url
     if (isString(item.cover) && !item.cover.includes('http')) {
-      item.cover_thumb =
-        item.cover.split('/').length === 2
-          ? File.getPublicUrl(
-              `thumbnail/${item.cover.split('/')[0]}/thumb_${item.cover.split('/')[1]}`
-            )
-          : ''
+      if (!extraFields.includes('cover_thumb')) {
+        item.cover_thumb =
+          item.cover.split('/').length === 2
+            ? File.getPublicUrl(
+                `thumbnail/${item.cover.split('/')[0]}/thumb_${item.cover.split('/')[1]}`
+              )
+            : ''
+      }
+
       item.cover = File.getPublicUrl(item.cover)
     }
 

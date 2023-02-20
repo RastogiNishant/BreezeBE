@@ -10,9 +10,12 @@ class AdjustPercentageSchema extends Schema {
   async up() {
     const estates = (await Estate.query().fetch()).rows || []
 
-    await Promise.map(estates, async (estate) => {
-      await EstateService.updatePercent({ estate_id: estate.estate_id })
-    })
+    let i = 0
+
+    while (i < estates.length) {
+      await EstateService.updatePercent({ estate_id: estates[i].id })
+      i++
+    }
   }
 
   down() {}
