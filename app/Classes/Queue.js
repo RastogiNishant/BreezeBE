@@ -6,11 +6,11 @@ const defaultOptions = {
 
 const {
   SCHEDULED_EVERY_5M_JOB,
+  SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_MONTHLY_JOB,
-  SCHEDULED_15H_DAY_JOB,
 } = require('../constants')
 const COMMON_QUEUE = 'common'
 
@@ -42,6 +42,14 @@ class QueueEngine {
       .catch(Logger.error)
 
     this.commonQueue
+      .add(
+        SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB,
+        {},
+        { repeat: { cron: '23 * * * *' }, removeOnComplete: true }
+      )
+      .catch(Logger.error)
+
+    this.commonQueue
       .add(SCHEDULED_13H_DAY_JOB, {}, { repeat: { cron: '15 13 * * *' }, removeOnComplete: true })
       .catch(Logger.error)
 
@@ -59,10 +67,6 @@ class QueueEngine {
 
     this.commonQueue
       .add(SCHEDULED_9H_DAY_JOB, {}, { repeat: { cron: '0 9 * * *' }, removeOnComplete: true })
-      .catch(Logger.error)
-
-    this.commonQueue
-      .add(SCHEDULED_15H_DAY_JOB, {}, { repeat: { cron: '0 15 * * * *' }, removeOnComplete: true })
       .catch(Logger.error)
   }
 

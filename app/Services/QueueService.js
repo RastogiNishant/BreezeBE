@@ -19,11 +19,11 @@ const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const {
   SCHEDULED_EVERY_5M_JOB,
+  SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
-  SCHEDULED_15H_DAY_JOB,
 } = require('../constants')
 
 /**
@@ -110,6 +110,10 @@ class QueueService {
   /**
    *
    */
+  static async performEvery23rdMinuteOfTheHourJob() {
+    return Promise.all([wrapException(QueueJobService.pullOhneMakler)])
+  }
+
   static async sendEveryDayMidday() {
     return Promise.all([
       wrapException(NoticeService.sendLandlordNewProperty),
@@ -171,6 +175,8 @@ class QueueService {
           })
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
+        case SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB:
+          return QueueService.performEvery23rdMinuteOfTheHourJob()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:
@@ -179,8 +185,6 @@ class QueueService {
           return QueueService.sendEveryDay9AM()
         case SCHEDULED_MONTHLY_JOB:
           return QueueService.sendEveryMonth12AM()
-        case SCHEDULED_15H_DAY_JOB:
-          return QueueService.processEveryDay15H()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
