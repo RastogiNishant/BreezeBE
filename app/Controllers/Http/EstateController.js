@@ -235,6 +235,7 @@ class EstateController {
    */
   async getEstates({ request, auth, response }) {
     let { limit, page, ...params } = request.all()
+
     if (!isEmpty(request.post())) {
       params = request.post()
     }
@@ -677,13 +678,10 @@ class EstateController {
    */
   async removeFile({ request, auth, response }) {
     const { estate_id, id } = request.all()
-    const trx = await Database.beginTransaction()
     try {
-      await EstateService.removeFile({ ids: [id], estate_id, user_id: auth.user.id }, trx)
-      await trx.commit()
+      await EstateService.removeFile({ ids: [id], estate_id, user_id: auth.user.id })
       response.res(true)
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
     }
   }

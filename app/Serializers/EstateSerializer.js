@@ -16,7 +16,14 @@ class EstateSerializer extends BaseSerializer {
 
     item.coord = item.coord_raw
     item.coord_raw = undefined
-    item.verified_address = !isEmpty(item.coord)
+
+    if (!extraFields.includes('verified_address')) {
+      item.verified_address = !isEmpty(item.coord)
+    }
+
+    if (!extraFields.includes('construction_year') && isDate(item.construction_year)) {
+      item.construction_year = moment(item.construction_year).format('YYYY')
+    }
 
     // Get cover url
     if (isString(item.cover) && !item.cover.includes('http')) {
@@ -33,9 +40,6 @@ class EstateSerializer extends BaseSerializer {
       item.energy_proof = File.getPublicUrl(item.energy_proof)
     }
 
-    if (isDate(item.construction_year)) {
-      item.construction_year = moment(item.construction_year).format('YYYY')
-    }
     if (isDate(item.last_modernization)) {
       item.last_modernization = moment(item.last_modernization).format('YYYY-MM-DD')
     }

@@ -16,6 +16,7 @@ const {
     TIME_SLOT_CROSSING_EXISTING,
     TIME_SLOT_NOT_FOUND,
     SHOW_ALREADY_STARTED,
+    FAILED_CREATE_TIME_SLOT,
   },
 } = require('../exceptions')
 class TimeSlotService {
@@ -29,7 +30,27 @@ class TimeSlotService {
       throw new AppException(TIME_SLOT_CROSSING_EXISTING)
     }
 
-    return TimeSlot.createItem({ end_at, start_at, slot_length, estate_id: estate.id })
+    const trx = await Database.beginTransaction()
+    try {
+      const slot = await TimeSlot.createItem(
+        {
+          end_at,
+          start_at,
+          slot_length,
+          estate_id: estate.id,
+        },
+        trx
+      )
+      await require('./EstateService').updatePercent(
+        { estate_id: estate.id, slots: [slot.toJSON()] },
+        trx
+      )
+      await trx.commit()
+      return slot
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(FAILED_CREATE_TIME_SLOT, 500)
+    }
   }
 
   static async updateTimeSlot(user_id, data) {
@@ -294,9 +315,8 @@ class TimeSlotService {
         const estateId = slot.estate_id
         const userIds = await require('./MatchService').handleDeletedTimeSlotVisits(slot, trx)
         await slot.delete(trx)
-
         await trx.commit()
-
+        await require('./EstateService').updatePercent({ estate_id: estateId })
         const notificationPromises = userIds.map((userId) =>
           NoticeService.cancelVisit(estateId, userId)
         )

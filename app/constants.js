@@ -961,6 +961,40 @@ const constants = {
   DOC_RENT_ARREARS_LABEL: 'Rent arrears',
   DOC_CREDIT_SCORE_LABEL: 'Credit score',
   FILE_LIMIT_LENGTH: 5,
+
+  GENERAL_PERCENT: 37.5,
+  LEASE_CONTRACT_PERCENT: 12.5,
+  PROPERTY_DETAILS_PERCENT: 12.5,
+  TENANT_PREFERENCES_PERCENT: 12.5,
+  VISIT_SLOT_PERCENT: 12.5,
+  IMAGE_DOC_PERCENT: 12.5,
+  ESTATE_PERCENTAGE_VARIABLE: {
+    genenral: ['address', 'property_type', 'area', 'rooms_number', 'floor', 'floor_direction'],
+    lease_price: ['net_rent', 'deposit', 'parking_space', 'extra_costs', 'heating_costs'],
+    property_detail: [
+      'construction_year',
+      'house_type',
+      'building_status',
+      'apt_type',
+      'heating_type',
+      'energy_efficiency',
+      'firing_type',
+    ],
+    tenant_preference: [
+      'min_age',
+      'max_age',
+      'household_type',
+      'minors',
+      'pets_allowed',
+      'is_new_tenant_transfer',
+      'budget',
+      'credit_score',
+      'rent_arrears',
+      'income_sources',
+    ],
+    visit_slots: ['available_date', 'avail_duration'],
+    views: ['energy_proof'],
+  },
 }
 
 module.exports = constants

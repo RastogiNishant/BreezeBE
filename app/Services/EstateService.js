@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy } = require('lodash')
+const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy, sum } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
@@ -64,10 +64,18 @@ const {
   LETTING_STATUS_VACANCY,
   FILE_LIMIT_LENGTH,
   FILE_TYPE_UNASSIGNED,
+  GENERAL_PERCENT,
+  LEASE_CONTRACT_PERCENT,
+  PROPERTY_DETAILS_PERCENT,
+  ESTATE_PERCENTAGE_VARIABLE,
+  TENANT_PREFERENCES_PERCENT,
+  VISIT_SLOT_PERCENT,
+  IMAGE_DOC_PERCENT,
+  FILE_TYPE_EXTERNAL,
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT },
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
@@ -101,6 +109,18 @@ class EstateService {
 
   static async getById(id) {
     return await this.getActiveEstateQuery().where({ id }).first()
+  }
+
+  static async getByIdWithDetail(id) {
+    return await this.getActiveEstateQuery()
+      .where('id', id)
+      .with('slots')
+      .with('rooms', function (r) {
+        r.with('images')
+      })
+      .with('files')
+      .with('amenities')
+      .first()
   }
 
   static async getEstateWithDetails({ id, user_id, role }) {
@@ -303,6 +323,7 @@ class EstateService {
       {
         ...createData,
         is_coord_changed,
+        percent: this.calculatePercent(createData),
       },
       trx
     )
@@ -330,7 +351,7 @@ class EstateService {
     }
 
     let energy_proof = null
-    const estate = await this.getById(data.id)
+    const estate = await this.getByIdWithDetail(data.id)
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
@@ -340,21 +361,15 @@ class EstateService {
       if (data.delete_energy_proof) {
         energy_proof = estate?.energy_proof
 
-        if (energy_proof) {
-          await require('./GalleryService').addFromView(
-            {
-              url: energy_proof,
-              estate_id: data.id,
-              file_name: estate.energy_proof_original_file,
-            },
-            trx
-          )
-        }
-
         updateData = {
           ...updateData,
           energy_proof: null,
           energy_proof_original_file: null,
+          percent: this.calculatePercent({
+            ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+            ...updateData,
+            energy_proof: null,
+          }),
         }
       } else {
         const files = await this.saveEnergyProof(request)
@@ -363,6 +378,19 @@ class EstateService {
             ...updateData,
             energy_proof: files.energy_proof,
             energy_proof_original_file: files.original_energy_proof,
+            percent: this.calculatePercent({
+              ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+              ...updateData,
+              energy_proof: files.energy_proof,
+            }),
+          }
+        } else {
+          updateData = {
+            ...updateData,
+            percent: this.calculatePercent({
+              ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+              ...updateData,
+            }),
           }
         }
       }
@@ -377,7 +405,10 @@ class EstateService {
         QueueService.getEstateCoords(estate.id)
       }
       await trx.commit()
-      return estate
+      return {
+        ...estate.toJSON(),
+        updateData,
+      }
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
@@ -500,11 +531,41 @@ class EstateService {
    *
    */
   static async addFile({ url, file_name, disk, estate, type, file_format }) {
-    return File.createItem({ url, disk, file_name, estate_id: estate.id, type, file_format })
+    const trx = await Database.beginTransaction()
+    try {
+      const file = await File.createItem(
+        {
+          url,
+          disk,
+          file_name,
+          estate_id: estate.id,
+          type,
+          file_format,
+        },
+        trx
+      )
+      await this.updatePercent({ estate_id: estate.id, files: [file.toJSON()] }, trx)
+      await trx.commit()
+      return file
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    }
   }
 
   static async addManyFiles(data) {
-    return await File.createMany(data)
+    const trx = await Database.beginTransaction()
+    try {
+      const files = await File.createMany(data, trx)
+
+      await this.updatePercent({ estate_id: data[0].estate_id, files: [files[0].toJSON()] })
+      await trx.commit()
+      return files
+    } catch (e) {
+      await trx.rollback()
+      console.log('AddManyFiles', e.message)
+      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    }
   }
 
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
@@ -525,8 +586,9 @@ class EstateService {
   /**
    *
    */
-  static async removeFile({ ids, estate_id, user_id }, trx) {
+  static async removeFile({ ids, estate_id, user_id }) {
     let files
+    const trx = await Database.beginTransaction()
     try {
       ids = Array.isArray(ids) ? ids : [ids]
       files = (
@@ -544,14 +606,11 @@ class EstateService {
 
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
+      await trx.commit()
+      await this.updatePercent({ estate_id })
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
-    } finally {
-      if (files) {
-        files.map((file) => {
-          FileBucket.remove(file.url)
-        })
-      }
     }
   }
 
@@ -1784,6 +1843,110 @@ class EstateService {
       }
     })
     return ret
+  }
+
+  static calculatePercent(estate) {
+    let percent = 0
+    let general = ESTATE_PERCENTAGE_VARIABLE.genenral.concat([])
+    general.map((f) => {
+      percent += estate[f] ? GENERAL_PERCENT / general.length : 0
+    })
+
+    let lease_price = ESTATE_PERCENTAGE_VARIABLE.lease_price.concat([])
+    lease_price.map((f) => {
+      percent += estate[f] ? LEASE_CONTRACT_PERCENT / lease_price.length : 0
+    })
+
+    let property_detail = ESTATE_PERCENTAGE_VARIABLE.property_detail.concat([])
+    property_detail.map((f) => {
+      percent += estate[f] ? PROPERTY_DETAILS_PERCENT / (property_detail.length + 1) : 0
+    })
+    if (estate['amenities'] && estate['amenities'].length) {
+      percent += PROPERTY_DETAILS_PERCENT / (property_detail.length + 1)
+    }
+
+    let tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.concat([])
+    tenant_preference.map((f) => {
+      percent += TENANT_PREFERENCES_PERCENT / tenant_preference.length
+    })
+
+    let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.concat([])
+    visit_slots.map((f) => {
+      percent += VISIT_SLOT_PERCENT / (visit_slots.length + 1)
+    })
+
+    if (
+      estate.slots &&
+      estate.slots.length &&
+      estate.slots.find((slot) => slot.start_at >= moment.utc(new Date()).format(DATE_FORMAT))
+    ) {
+      percent += VISIT_SLOT_PERCENT / (visit_slots.length + 1)
+    }
+
+    let views = ESTATE_PERCENTAGE_VARIABLE.views.concat([])
+    views.map((f) => {
+      percent += IMAGE_DOC_PERCENT / (views.length + 3)
+    })
+
+    percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
+      ? IMAGE_DOC_PERCENT / (views.length + 3)
+      : 0
+
+    percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
+      ? IMAGE_DOC_PERCENT / (views.length + 3)
+      : 0
+
+    percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
+      ? IMAGE_DOC_PERCENT / (views.length + 3)
+      : 0
+
+    return parseFloat(percent.toFixed(2))
+  }
+  static async updatePercent(
+    { estate, estate_id, slots = null, files = null, amenities = null },
+    trx
+  ) {
+    if (!estate && !estate_id) {
+      return
+    }
+
+    if (!estate) {
+      estate = await this.getByIdWithDetail(estate_id)
+    }
+
+    if (!estate) {
+      return
+    }
+
+    let percentData = {
+      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year'] }),
+    }
+
+    if (slots) {
+      percentData.slots = (percentData.slots || []).concat(slots)
+    }
+    if (files) {
+      percentData.files = (percentData.files || []).concat(files)
+    }
+
+    if (amenities) {
+      percentData.amenities = (percentData.amenities || []).concat(amenities)
+    }
+
+    if (trx) {
+      await estate.updateItemWithTrx(
+        {
+          percent: this.calculatePercent(percentData),
+        },
+        trx
+      )
+    } else {
+      await estate.updateItem({
+        percent: this.calculatePercent(percentData),
+      })
+    }
+
+    return estate
   }
 }
 module.exports = EstateService
