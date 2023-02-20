@@ -147,9 +147,11 @@ class EstateImportReader {
             row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
           }
         })
-        row = await this.processRow(row, k)
-        if (row) {
-          this.data.push(row)
+        if (Object.keys(row) && Object.keys(row).length) {
+          row = await this.processRow(row, k)
+          if (row) {
+            this.data.push(row)
+          }
         }
       }
     }

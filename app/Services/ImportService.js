@@ -10,7 +10,7 @@ const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const Ws = use('Ws')
-
+const FileBucket = use('App/Classes/File')
 const schema = require('../Validators/CreateBuddy').schema()
 const {
   STATUS_DRAFT,
@@ -25,7 +25,6 @@ const {
   IMPORT_ACTIVITY_DONE,
   LETTING_TYPE_LET,
 } = require('../constants')
-
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
@@ -151,16 +150,18 @@ class ImportService {
     }
   }
   /**
-   *
+   * s3_bucket_file_name: s3 bucket relative URL
    */
-  static async process({ filePath, user_id, type, import_id }) {
+  static async process({ s3_bucket_file_name, filePath, user_id, type, import_id }) {
     let createErrors = []
     let result = []
     let errors = []
     let data = []
     let warnings = []
     try {
-      const reader = new EstateImportReader(filePath.tmpPath)
+      const url = await FileBucket.getProtectedUrl(s3_bucket_file_name)
+      const localPath = await FileBucket.saveFileTo({ url, ext: 'xlsx' })
+      const reader = new EstateImportReader(localPath)
       const excelData = await reader.process()
       errors = excelData.errors
       warnings = excelData.warnings
@@ -182,6 +183,7 @@ class ImportService {
     } catch (err) {
       errors = [...errors, err.message]
     } finally {
+      FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
       }
@@ -291,25 +293,23 @@ class ImportService {
       estate.fill(estate_data)
       await estate.save(trx)
 
-      if (data.email) {
-        if (data.letting_type === LETTING_TYPE_LET) {
-          await EstateCurrentTenantService.updateCurrentTenant(
-            {
-              data,
-              estate_id: estate.id,
-              user_id,
-            },
-            trx
-          )
-        } else {
-          await EstateCurrentTenantService.deleteByEstate(
-            {
-              estate_ids: [estate.id],
-              user_id,
-            },
-            trx
-          )
-        }
+      if (data.letting_type === LETTING_TYPE_LET) {
+        await EstateCurrentTenantService.updateCurrentTenant(
+          {
+            data,
+            estate_id: estate.id,
+            user_id,
+          },
+          trx
+        )
+      } else {
+        await EstateCurrentTenantService.deleteByEstate(
+          {
+            estate_ids: [estate.id],
+            user_id,
+          },
+          trx
+        )
       }
       //update Rooms
       let rooms = []
@@ -345,46 +345,44 @@ class ImportService {
     return await Import.query().where('id', id).update({ status: IMPORT_ACTIVITY_DONE })
   }
 
-  static async getLastImportActivities(
-    user_id,
-    type = IMPORT_TYPE_EXCEL,
-    entity = IMPORT_ENTITY_ESTATES
-  ) {
-    const importActivity = {}
-    let importExcelActivity = await Import.query()
-      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .select('filename')
-      .select('action')
-      .select('status')
-      .where({ user_id, type, entity, action: 'import' })
-      .orderBy('created_at', 'desc')
-      .first()
-
-    if (importExcelActivity) {
-      importExcelActivity = importExcelActivity.toJSON()
-      importExcelActivity.created_at = moment(importExcelActivity.created_at).utc().format()
-      importActivity.imported = importExcelActivity
+  static async getLastImportActivities(user_id) {
+    const importActivity = await Database.raw(
+      `SELECT 
+      type, filename, action, to_char(created_at, '${ISO_DATE_FORMAT}') as created_at, status
+    FROM imports
+    WHERE (type, action, created_at) in 
+    (
+      SELECT type, action, MAX(created_at)
+      FROM imports
+      where user_id=${user_id}
+      GROUP BY type, action
+    )`
+    )
+    let ret = {
+      excel: {
+        import: {},
+        export: {},
+      },
+      openimmo: {
+        import: {},
+        export: {},
+      },
     }
-
-    let exportExcelActivity = await Import.query()
-      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .select('filename')
-      .select('action')
-      .where({ user_id, type, entity, action: 'export' })
-      .orderBy('created_at', 'desc')
-      .first()
-    if (exportExcelActivity) {
-      exportExcelActivity = exportExcelActivity.toJSON()
-      exportExcelActivity.created_at = moment(exportExcelActivity.created_at).utc().format()
-      importActivity.exported = exportExcelActivity
+    if (importActivity) {
+      importActivity.rows.map((row) => {
+        ret[row.type][row.action] = row
+      })
     }
-    return importActivity
+    return ret
   }
 
   static async postLastActivity({ user_id, filename, action, type, entity }) {
     const trx = await Database.beginTransaction()
     try {
-      await Import.createItem({ user_id, filename, action, type, entity }, trx)
+      await Import.createItem(
+        { user_id, filename, action, type, entity, status: IMPORT_ACTIVITY_DONE },
+        trx
+      )
       await trx.commit()
       return true
     } catch (err) {

@@ -9,9 +9,11 @@ const Config = use('Config')
 const moment = require('moment')
 const ContentType = use('App/Classes/ContentType')
 const File = use('App/Classes/File')
+const FileModel = use('App/Models/File')
 const Image = use('App/Models/Image')
 const fsPromise = require('fs/promises')
 const axios = require('axios')
+const Database = use('Database')
 
 class ImageService {
   /**
@@ -38,6 +40,38 @@ class ImageService {
     return dest
   }
 
+  static async uploadOpenImmoImages(images, estateId) {
+    const trx = await Database.beginTransaction()
+    try {
+      for (let image of images) {
+        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+          const fileExists = await FileModel.query()
+            .where('estate_id', estateId)
+            .where('file_name', image.file_name)
+            .first()
+          if (!fileExists) {
+            const { filePathName } = await File.saveToDisk(image, [], true)
+            await FileModel.createItem(
+              {
+                url: filePathName,
+                type: image.type,
+                estate_id: estateId,
+                disk: 's3public',
+                file_name: image.file_name,
+                file_format: image.format,
+              },
+              trx
+            )
+          }
+        }
+      }
+      await trx.commit()
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+    }
+  }
+
   static async savePropertyBulkImages(images) {
     for (let image of images) {
       if (image && image.photos && image.photos.length) {
@@ -53,14 +87,13 @@ class ImageService {
       if (err) throw err // Fail if the file can't be read.
       try {
         const ext = ContentType.getExt(imagePath)
-        const filename = `${uuid.v4()}`
-        const filePathName = `${moment().format('YYYYMM')}/${filename}.${ext}`
-
-        await Drive.disk('s3public').put(filePathName, data, {
-          ACL: 'public-read',
-          ContentType: ContentType.getContentType(ext),
-        })
-
+        const image = {
+          tmpPath: imagePath,
+          header: {
+            'content-type': ContentType.getContentType(ext),
+          },
+        }
+        const { filePathName } = await File.saveToDisk(image, [], true)
         await Image.createItem({
           url: filePathName,
           room_id: roomId,
@@ -71,6 +104,7 @@ class ImageService {
       }
     })
   }
+
   static async getImagesByRoom(roomId, imageIds) {
     return await Image.query()
       .select('images.*')

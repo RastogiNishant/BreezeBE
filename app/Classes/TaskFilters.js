@@ -61,12 +61,15 @@ class TaskFilters extends Filter {
       email: '_ect',
       phone_number: '_ect',
       surname: '_ect',
+      title: 'tasks',
+      description: 'tasks',
     }
 
     Filter.paramToField = {
       active_task: 'count(tasks.id)',
       in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
+      task_name: ['title', 'description'],
     }
     this.matchFilter(
       [
@@ -79,6 +82,7 @@ class TaskFilters extends Filter {
         'status',
         'contract_end',
         'tenant',
+        'task_name',
       ],
       params
     )

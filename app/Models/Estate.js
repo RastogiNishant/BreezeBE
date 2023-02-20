@@ -175,8 +175,8 @@ class Estate extends Model {
    */
   static get options() {
     return {
-      bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
-      kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
+      //bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
+      //kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
       equipment: [
         EQUIPMENT_STACK,
         EQUIPMENT_AIR_CONDITIONED,
@@ -235,9 +235,12 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = generateAddress(instance)
-        instance.coord = null
-        instance.coord_raw = null
+        if (instance.dirty.is_coord_changed) {
+          instance.coord = null
+          instance.coord_raw = null
+        }
       }
+
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
@@ -269,6 +272,8 @@ class Estate extends Model {
         instance.additional_costs = 0
         instance.heating_costs = 0
       }
+
+      delete instance.is_coord_changed
     })
 
     this.addHook('afterCreate', async (instance) => {
@@ -417,6 +422,16 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
+  invited() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_INVITE })
+  }
+
+  visited() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
+    ])
+  }
   /**
    *
    */

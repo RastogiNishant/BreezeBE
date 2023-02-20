@@ -35,7 +35,7 @@ const {
   },
   exceptionKeys: { OPTION, STRING, SHOULD_BE_AFTER, POSITIVE_NUMBER },
   getExceptionMessage,
-} = require('../../app/excepions')
+} = require('../../app/exceptions')
 const { mockUser, mockSecondUser, clearMockUsers } = require('../mock/user.mock')
 
 const Suite = use('Test/Suite')('Time Slot Functional')

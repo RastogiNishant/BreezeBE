@@ -227,6 +227,7 @@ class TaskFilter extends Base {
             ])
         )
         .nullable(),
+      task_name: yup.string().min(2),
     })
 }
 

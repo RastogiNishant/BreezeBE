@@ -10,7 +10,7 @@ class InitTask extends Base {
     yup.object().shape({
       predefined_message_id: yup.number().positive(),
       predefined_message_choice_id: yup.number().positive(),
-      estate_id: yup.number().positive().required(),
+      estate_id: yup.number().positive(),
       task_id: yup.number().nullable(),
       answer: yup.string(),
       prev_predefined_message_id: yup.string(),
