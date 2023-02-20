@@ -22,7 +22,7 @@ class Task extends Model {
       'unread_role',
       'first_not_read_chat_id',
       'email',
-      'address',
+      'property_address',
       'address_detail',
       'landlord_identify_key',
     ]

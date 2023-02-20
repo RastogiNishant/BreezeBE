@@ -220,7 +220,6 @@ class RoomService {
           }
         })
         const images = await this.addManyImages(data, trx)
-        console.log('Room Images=', images)
         await require('./EstateService').updateCover(
           { room: room.toJSON(), addImage: images[0] },
           trx
@@ -252,14 +251,17 @@ class RoomService {
    *
    */
   static async removeImage(id, trx) {
+    let image
     try {
-      const image = await Image.findOrFail(id)
-
-      //await Drive.disk(image.disk).delete(image.url)
+      image = await Image.findOrFail(id)
       await image.delete(trx)
       return image
     } catch (e) {
       throw new HttpException(NO_IMAGE_EXIST, 400)
+    } finally {
+      if (image) {
+        File.remove(image.url)
+      }
     }
   }
 

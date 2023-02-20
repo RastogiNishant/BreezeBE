@@ -9,7 +9,7 @@ const File = require('../Classes/File')
  */
 class FileSerializer extends BaseSerializer {
   mergeData(item) {
-    const { id, url, disk, type, file_name, order } = item
+    const { id, url, disk, type, file_name, order, file_format } = item
     const thumb =
       url && url.split('/').length === 2
         ? File.getPublicUrl(`thumbnail/${url.split('/')[0]}/thumb_${url.split('/')[1]}`)
@@ -23,6 +23,7 @@ class FileSerializer extends BaseSerializer {
       file_name,
       relativeUrl: url,
       thumb,
+      file_format,
     }
   }
 }
