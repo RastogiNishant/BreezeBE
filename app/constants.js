@@ -417,6 +417,7 @@ const constants = {
     'number_floors',
   ],
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
+  SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB: 'scheduledEvery23MinuteOfTheHourJob'
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
