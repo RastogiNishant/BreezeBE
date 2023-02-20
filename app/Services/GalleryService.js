@@ -106,7 +106,7 @@ class GalleryService extends BaseService {
     }
   }
 
-  static async assign({ user_id, estate_id, data }) {
+  static async assign({ user, estate_id, data }) {
     const { galleries } = await this.getAll({ estate_id, ids: data.ids })
     let successGalleryIds = null
 
@@ -114,10 +114,19 @@ class GalleryService extends BaseService {
     try {
       switch (data.view_type) {
         case GALLERY_INSIDE_VIEW_TYPE:
+          if (data.room) {
+            const room = await require('./RoomService').createRoom(
+              { user, estate_id, roomData: data.room },
+              trx
+            )
+            data.room = room.toJSON()
+          }
+
           successGalleryIds = await require('./RoomService').addImageFromGallery(
             {
-              user_id,
+              user_id: user.id,
               room_id: data.room_id,
+              room: data.room,
               estate_id,
               galleries: galleries.rows || [],
             },
@@ -135,7 +144,7 @@ class GalleryService extends BaseService {
                   ids: data.ids,
                   estate_id,
                   type: data.document_type,
-                  user_id,
+                  user_id: user.id,
                 },
                 trx
               )
@@ -145,7 +154,7 @@ class GalleryService extends BaseService {
         case DOCUMENT_VIEW_ENERGY_TYPE:
           successGalleryIds = await require('./EstateService').updateEnergyProofFromGallery(
             {
-              user_id,
+              user_id: user.id,
               estate_id,
               galleries: galleries.rows || [],
             },
