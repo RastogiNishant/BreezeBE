@@ -1,3 +1,5 @@
+const { STATUS_ACTIVE } = require('../constants')
+
 class OhneMakler {
   map = {
     id: 'source_id',
@@ -8,18 +10,15 @@ class OhneMakler {
     postcode: 'zip',
     country: 'country',
     floor: 'floor',
-    levels: 'floor_number',
+    levels: 'floor_count',
     bathrooms: 'bathrooms',
     rooms: 'rooms',
     area_living: 'area',
     year: 'construction_year',
     pictures: 'images',
-    //table.string('energy_efficiency_class', 5)
-    //table.date('rent_start')
-    //table.date('visit_from')
-    //table.date('visit_to')
-    //table.timestamps()
-    //table.unique(['source', 'source_id'])
+    //rent_start
+    //visit_from
+    //visit_to
   }
 
   constructor(data) {
@@ -33,7 +32,9 @@ class OhneMakler {
     }
     newEstate.source = 'ohnemakler'
     newEstate.address = `${estate.street}, ${estate.postcode} ${estate.city}`
-    newEstate.images = estate.pictures
+    newEstate.images = JSON.stringify(estate.pictures)
+    newEstate.amenities = estate.facilities.split(', ')
+    newEstate.status = STATUS_ACTIVE
     return newEstate
   }
 

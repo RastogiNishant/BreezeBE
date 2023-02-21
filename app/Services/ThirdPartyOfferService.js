@@ -1,7 +1,9 @@
 const axios = require('axios')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
+const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
+const Promise = require('bluebird')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -26,11 +28,26 @@ class ThirdPartyOfferService {
       }
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(data))
-      console.log(checksum, ohneMaklerChecksum)
       if (checksum !== ohneMaklerChecksum) {
         //there must be some difference between the data... we can process
         const ohneMakler = new OhneMakler(data)
         const estates = ohneMakler.process()
+
+        await Promise.map(estates, async (estate) => {
+          const found = await ThirdPartyOffer.query()
+            .where('source', 'ohnemakler')
+            .where('source_id', estate.source_id)
+            .first()
+          if (!found) {
+            await ThirdPartyOffer.createItem(estate)
+          } else {
+            await ThirdPartyOffer.query()
+              .where('source', 'ohnemakler')
+              .where('source_id', estate.source_id)
+              .update(estate)
+          }
+        })
+
         return estates
         this.setOhneMaklerChecksum(checksum)
       }
