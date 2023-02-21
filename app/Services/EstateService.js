@@ -67,7 +67,6 @@ const {
   GENERAL_PERCENT,
   LEASE_CONTRACT_PERCENT,
   PROPERTY_DETAILS_PERCENT,
-  ESTATE_PERCENTAGE_VARIABLE,
   TENANT_PREFERENCES_PERCENT,
   VISIT_SLOT_PERCENT,
   IMAGE_DOC_PERCENT,
@@ -81,10 +80,196 @@ const {
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
-const ChatService = require('./ChatService')
-const { file } = require('googleapis/build/src/apis/file')
 const MAX_DIST = 10000
 
+const ESTATE_PERCENTAGE_VARIABLE = {
+  genenral: [
+    {
+      key: 'address',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'property_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rooms_number',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rooms_number',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'floor',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'floor_direction',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  lease_price: [
+    {
+      key: 'net_rent',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'deposit',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'parking_space',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'extra_costs',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+    },
+    {
+      key: 'heating_costs',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  property_detail: [
+    {
+      key: 'construction_year',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'house_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'building_status',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'apt_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'heating_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'energy_efficiency',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'firing_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  tenant_preference: [
+    {
+      key: 'min_age',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'max_age',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'household_type',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'minors',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'pets_allowed',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'is_new_tenant_transfer',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'budget',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'credit_score',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rent_arrears',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'income_sources',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  visit_slots: [
+    {
+      key: 'available_date',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'avail_duration',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'slot',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+  ],
+  views: [
+    {
+      key: 'inside_view',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'outside_view',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'floor_plan',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'energy_proof',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+}
 /**
  *
  */
@@ -1853,60 +2038,113 @@ class EstateService {
 
   static calculatePercent(estate) {
     let percent = 0
-    let general = ESTATE_PERCENTAGE_VARIABLE.genenral.concat([])
-    general.map((f) => {
-      percent += estate[f] ? GENERAL_PERCENT / general.length : 0
-    })
+    const is_let = estate.letting_type === LETTING_TYPE_LET ? true : false
+    const let_type = is_let ? LETTING_TYPE_LET : LETTING_TYPE_VOID
 
-    let lease_price = ESTATE_PERCENTAGE_VARIABLE.lease_price.concat([])
-    lease_price.map((f) => {
-      percent += estate[f] ? LEASE_CONTRACT_PERCENT / lease_price.length : 0
-    })
+    const GENERAL_PERCENT_VAL = is_let ? GENERAL_PERCENT.let : GENERAL_PERCENT.void
 
-    let property_detail = ESTATE_PERCENTAGE_VARIABLE.property_detail.concat([])
-    property_detail.map((f) => {
-      percent += estate[f] ? PROPERTY_DETAILS_PERCENT / (property_detail.length + 1) : 0
-    })
+    const LEASE_CONTRACT_PERCENT_VAL = is_let
+      ? LEASE_CONTRACT_PERCENT.let
+      : LEASE_CONTRACT_PERCENT.void
+
+    const PROPERTY_DETAILS_PERCENT_VAL = is_let
+      ? PROPERTY_DETAILS_PERCENT.let
+      : PROPERTY_DETAILS_PERCENT.void
+
+    const TENANT_PREFERENCES_PERCENT_VAL = is_let
+      ? TENANT_PREFERENCES_PERCENT.let
+      : TENANT_PREFERENCES_PERCENT.void
+
+    const VISIT_SLOT_PERCENT_VAL = is_let ? VISIT_SLOT_PERCENT.let : VISIT_SLOT_PERCENT.void
+
+    const IMAGE_DOC_PERCENT_VAL = is_let ? IMAGE_DOC_PERCENT.let : IMAGE_DOC_PERCENT.void
+
+    const general = ESTATE_PERCENTAGE_VARIABLE.genenral.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    general.length &&
+      general
+        .filter((g) => !g.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? GENERAL_PERCENT_VAL / general.length : 0
+        })
+    const lease_price = ESTATE_PERCENTAGE_VARIABLE.lease_price.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    lease_price.length &&
+      lease_price
+        .filter((l) => !l.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? LEASE_CONTRACT_PERCENT_VAL / lease_price.length : 0
+        })
+
+    const property_detail = ESTATE_PERCENTAGE_VARIABLE.property_detail.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    property_detail.length &&
+      property_detail
+        .filter((p) => !p.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? PROPERTY_DETAILS_PERCENT_VAL / property_detail.length : 0
+        })
+
     if (estate['amenities'] && estate['amenities'].length) {
-      percent += PROPERTY_DETAILS_PERCENT / (property_detail.length + 1)
+      percent += PROPERTY_DETAILS_PERCENT_VAL / property_detail.length
     }
 
-    let tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.concat([])
-    tenant_preference.map((f) => {
-      percent += TENANT_PREFERENCES_PERCENT / tenant_preference.length
-    })
+    const tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    tenant_preference.length &&
+      tenant_preference
+        .filter((t) => !t.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
+        })
 
-    let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.concat([])
-    visit_slots.map((f) => {
-      percent += VISIT_SLOT_PERCENT / (visit_slots.length + 1)
-    })
+    let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+
+    visit_slots.length &&
+      visit_slots
+        .filter((v) => !v.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0
+        })
 
     if (
+      visit_slots.length &&
+      !is_let &&
       estate.slots &&
       estate.slots.length &&
       estate.slots.find((slot) => slot.start_at >= moment.utc(new Date()).format(DATE_FORMAT))
     ) {
-      percent += VISIT_SLOT_PERCENT / (visit_slots.length + 1)
+      percent += VISIT_SLOT_PERCENT_VAL / visit_slots.length
+    }
+    let views = ESTATE_PERCENTAGE_VARIABLE.views.filter((g) => g.mandatory.includes(let_type))
+
+    views.length &&
+      views
+        .filter((v) => !v.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0
+        })
+
+    if (views.length) {
+      percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
     }
 
-    let views = ESTATE_PERCENTAGE_VARIABLE.views.concat([])
-    views.map((f) => {
-      percent += IMAGE_DOC_PERCENT / (views.length + 3)
-    })
-
-    percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
-      ? IMAGE_DOC_PERCENT / (views.length + 3)
-      : 0
-
-    percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
-      ? IMAGE_DOC_PERCENT / (views.length + 3)
-      : 0
-
-    percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
-      ? IMAGE_DOC_PERCENT / (views.length + 3)
-      : 0
-
-    return parseFloat(percent.toFixed(2))
+    console.log('views here=', percent)
+    return Math.ceil(percent)
   }
   static async updatePercent(
     {
