@@ -1335,3 +1335,10 @@ Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
   return response.res({ estate, prospect, matchScore })
 }).middleware(['valid:Id,EstateId'])
 */
+
+Route.get('/test-om', async ({ request, response }) => {
+  const ThirdPartyOfferService = require('../app/Services/ThirdPartyOfferService')
+  const estates = await ThirdPartyOfferService.pullOhneMakler()
+
+  return response.res(true)
+})
