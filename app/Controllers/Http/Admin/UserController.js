@@ -271,6 +271,7 @@ class UserController {
         'status',
         'activation_status',
         'ip_based_info',
+        Database.raw(`_e.max_percent_complete`),
         Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`),
         Database.raw(`to_char(last_login, '${ISO_DATE_FORMAT}') as last_login`)
       )
@@ -287,6 +288,13 @@ class UserController {
           q.whereNotNull('user_id')
         })
       })
+      .innerJoin(
+        Database.raw(
+          `(select user_id, max("percent") as max_percent_complete from estates group by user_id) as _e`
+        ),
+        '_e.user_id',
+        'users.id'
+      )
       .with('company', function (query) {
         query.with('contacts')
       })
