@@ -962,144 +962,29 @@ const constants = {
   DOC_CREDIT_SCORE_LABEL: 'Credit score',
   FILE_LIMIT_LENGTH: 5,
 
-  GENERAL_PERCENT: 37.5,
-  LEASE_CONTRACT_PERCENT: 12.5,
-  PROPERTY_DETAILS_PERCENT: 12.5,
-  TENANT_PREFERENCES_PERCENT: 12.5,
-  VISIT_SLOT_PERCENT: 12.5,
-  IMAGE_DOC_PERCENT: 12.5,
-  ESTATE_PERCENTAGE_VARIABLE: {
-    genenral: [
-      {
-        key: 'address',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'property_type',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'rooms_number',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'rooms_number',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'floor',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'floor_direction',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-    ],
-    lease_price: [
-      {
-        key: 'net_rent',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'deposit',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'parking_space',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'extra_costs',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'heating_costs',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-    ],
-    property_detail: [
-      {
-        key: 'construction_year',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'house_type',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'building_status',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'apt_type',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'heating_type',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'energy_efficiency',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'firing_type',
-        mandatory: [this.LETTING_TYPE_LET, this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-    ],
-    tenant_preference: [
-      {
-        key: 'min_age',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'max_age',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'household_type',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'minors',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'pets_allowed',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'is_new_tenant_transfer',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'budget',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'credit_score',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'rent_arrears',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'income_sources',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-    ],
-    visit_slots: [
-      {
-        key: 'available_date',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-      {
-        key: 'avail_duration',
-        mandatory: [this.LETTING_TYPE_VOID, this.LETTING_TYPE_NA],
-      },
-    ],
-    views: ['energy_proof'],
+  GENERAL_PERCENT: {
+    let: 49.9,
+    void: 37.5,
+  },
+  LEASE_CONTRACT_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+  PROPERTY_DETAILS_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+  TENANT_PREFERENCES_PERCENT: {
+    let: 0,
+    void: 12.5,
+  },
+  VISIT_SLOT_PERCENT: {
+    let: 0,
+    void: 12.5,
+  },
+  IMAGE_DOC_PERCENT: {
+    let: 16.7,
+    void: 12.5,
   },
 }
 
