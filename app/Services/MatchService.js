@@ -2154,34 +2154,41 @@ class MatchService {
         }
       )
 
-    if (params && !isNaN(params.budget_min) && !isNaN(params.budget_max)) {
-      query.where(function () {
-        this.orWhere(function () {
-          this.andWhere('tenants.budget_max', '>=', params.budget_min).andWhere(
-            'tenants.budget_max',
-            '<=',
-            params.budget_max
-          )
+    if (parseInt(params?.budget_min || 0) !== 0 && parseInt(params?.budget_max || 100) !== 100) {
+      if (params && !isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+        query.where(function () {
+          this.orWhere(function () {
+            this.andWhere('tenants.budget_max', '>=', params.budget_min).andWhere(
+              'tenants.budget_max',
+              '<=',
+              params.budget_max
+            )
+          })
+          this.orWhere(function () {
+            this.andWhere('tenants.budget_min', '>=', params.budget_min).andWhere(
+              'tenants.budget_min',
+              '<=',
+              params.budget_max
+            )
+          })
         })
-        this.orWhere(function () {
-          this.andWhere('tenants.budget_min', '>=', params.budget_min).andWhere(
-            'tenants.budget_min',
-            '<=',
-            params.budget_max
-          )
-        })
-      })
-    } else if (params && !isNaN(params.budget_min) && isNaN(params.budget_max)) {
-      query.where('tenants.budget_min', '>=', params.budget_min)
-    } else if (params && isNaN(params.budget_min) && !isNaN(params.budget_max)) {
-      query.where('tenants.budget_max', '<=', params.budget_max)
+      } else if (params && !isNaN(params.budget_min) && isNaN(params.budget_max)) {
+        query.where('tenants.budget_min', '>=', params.budget_min)
+      } else if (params && isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+        query.where('tenants.budget_max', '<=', params.budget_max)
+      }
     }
 
-    if (params && !isNaN(params.credit_score_min)) {
-      query.where('tenants.credit_score', '>=', params.credit_score_min)
-    }
-    if (params && params.credit_score_max) {
-      query.where('tenants.credit_score', '<=', params.credit_score_max)
+    if (
+      parseInt(params?.credit_score_min || 0) !== 0 &&
+      parseInt(params?.credit_score_max || 100) !== 100
+    ) {
+      if (params && params.credit_score_min) {
+        query.where('tenants.credit_score', '>=', params.credit_score_min)
+      }
+      if (params && params.credit_score_max) {
+        query.where('tenants.credit_score', '<=', params.credit_score_max)
+      }
     }
     if (params && params.phone_verified) {
       query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
