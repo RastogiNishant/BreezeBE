@@ -2147,7 +2147,6 @@ class EstateService {
         : 0
     }
 
-    console.log('views here=', percent)
     return Math.ceil(percent)
   }
   static async updatePercent(
