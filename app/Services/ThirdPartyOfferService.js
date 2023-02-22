@@ -50,8 +50,8 @@ class ThirdPartyOfferService {
             await found.updateItem(estate)
           }
         })
-        return estates
         this.setOhneMaklerChecksum(checksum)
+        return estates
       }
     } catch (err) {
       console.log(err)
@@ -64,6 +64,7 @@ class ThirdPartyOfferService {
   }
 
   static searchEstatesQuery(userId) {
+    /* estate coord intersects with polygon of tenant */
     return Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .select(`_l.like_count`)
