@@ -1126,8 +1126,25 @@ class MatchController {
   }
 
   async getThirdPartyOffers({ request, auth, response }) {
-    const result = await ThirdPartyOfferService.getEstates(auth.user.id)
-    return response.res(result)
+    let { page, limit } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.getEstates(auth.user.id, page, limit)
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message)
+    }
+  }
+
+  async postThirdPartyOfferAction({ request, auth, response }) {
+    let { action, id, comment } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.postAction(auth.user.id, id, action, comment)
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message)
+    }
   }
 }
 

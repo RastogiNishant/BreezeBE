@@ -11,6 +11,7 @@ class ThirdPartyOffer extends Model {
       'source',
       'source_id',
       'coord',
+      'coord_raw',
       'description',
       'url',
       'house_number',
@@ -38,7 +39,6 @@ class ThirdPartyOffer extends Model {
   static boot() {
     super.boot()
     this.addHook('beforeSave', async (instance) => {
-      console.log('beforeSave')
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)

@@ -37,7 +37,9 @@ class OhneMakler {
     newEstate.status = STATUS_ACTIVE
     if (estate.coordinates) {
       newEstate.coord = `${estate.coordinates.lat},${estate.coordinates.lon}`
+      newEstate.coord_raw = `${estate.coordinates.lat},${estate.coordinates.lon}`
     }
+    newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
     return newEstate
   }
 

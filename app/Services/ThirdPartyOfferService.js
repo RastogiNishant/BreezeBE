@@ -8,7 +8,8 @@ const Database = use('Database')
 const Promise = require('bluebird')
 const Tenant = use('App/Models/Tenant')
 const GeoService = use('App/Services/GeoService')
-const { MAX_SEARCH_ITEMS, STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE } = require('../constants')
+const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -57,8 +58,8 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async getEstates(userId) {
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).limit(MAX_SEARCH_ITEMS)
+  static async getEstates(userId, page = 1, limit = 10) {
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).paginate(page, limit)
     return estates
   }
 
@@ -71,6 +72,29 @@ class ThirdPartyOfferService {
       .where('_t.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+  }
+
+  static async postAction(userId, id, action, comment = '') {
+    const found = await ThirdPartyOfferInteraction.query()
+      .where('third_party_offer_id', id)
+      .where('user_id', userId)
+      .first()
+    let value
+    switch (action) {
+      case 'like':
+      case 'dislike':
+        value = { third_party_offer_id: id, user_id: userId, liked: action === 'like' }
+        break
+      case 'comment':
+        value = { third_party_offer_id: id, user_id: userId, comment }
+        break
+    }
+    if (!found) {
+      await ThirdPartyOfferInteraction.createItem(value)
+    } else {
+      await found.updateItem(value)
+    }
+    return true
   }
 }
 
