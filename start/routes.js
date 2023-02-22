@@ -889,6 +889,11 @@ Route.get('/api/v1/match/third-party-offers', 'MatchController.getThirdPartyOffe
   'valid:Pagination',
 ])
 
+Route.post(
+  '/api/v1/match/third-party-offers/action',
+  'MatchController.postThirdPartyOfferAction'
+).middleware(['auth:jwt', 'valid:ThirdPartyOffersAction'])
+
 Route.get(
   '/api/v1/match/tenant/check/commitedAlready',
   'MatchController.checkTenantMatchCommitedAlready'
