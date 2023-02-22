@@ -1,6 +1,6 @@
 'use strict'
 const moment = require('moment')
-const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy } = require('lodash')
+const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy, sum } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
@@ -64,19 +64,212 @@ const {
   LETTING_STATUS_VACANCY,
   FILE_LIMIT_LENGTH,
   FILE_TYPE_UNASSIGNED,
+  GENERAL_PERCENT,
+  LEASE_CONTRACT_PERCENT,
+  PROPERTY_DETAILS_PERCENT,
+  TENANT_PREFERENCES_PERCENT,
+  VISIT_SLOT_PERCENT,
+  IMAGE_DOC_PERCENT,
+  FILE_TYPE_EXTERNAL,
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT },
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
-const ChatService = require('./ChatService')
-const { file } = require('googleapis/build/src/apis/file')
 const MAX_DIST = 10000
 
+const ESTATE_PERCENTAGE_VARIABLE = {
+  genenral: [
+    {
+      key: 'address',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'property_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rooms_number',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rooms_number',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'floor',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'floor_direction',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  lease_price: [
+    {
+      key: 'net_rent',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'deposit',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'parking_space',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'extra_costs',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+    },
+    {
+      key: 'heating_costs',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  property_detail: [
+    {
+      key: 'construction_year',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'house_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'building_status',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'apt_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'heating_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'energy_efficiency',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'firing_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  tenant_preference: [
+    {
+      key: 'min_age',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'max_age',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'household_type',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'minors',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'pets_allowed',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'is_new_tenant_transfer',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'budget',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'credit_score',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rent_arrears',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'income_sources',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  visit_slots: [
+    {
+      key: 'available_date',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'avail_duration',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'slot',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+  ],
+  views: [
+    {
+      key: 'inside_view',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'outside_view',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'floor_plan',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'energy_proof',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+}
 /**
  *
  */
@@ -101,6 +294,18 @@ class EstateService {
 
   static async getById(id) {
     return await this.getActiveEstateQuery().where({ id }).first()
+  }
+
+  static async getByIdWithDetail(id) {
+    return await this.getActiveEstateQuery()
+      .where('id', id)
+      .with('slots')
+      .with('rooms', function (r) {
+        r.with('images')
+      })
+      .with('files')
+      .with('amenities')
+      .first()
   }
 
   static async getEstateWithDetails({ id, user_id, role }) {
@@ -303,6 +508,7 @@ class EstateService {
       {
         ...createData,
         is_coord_changed,
+        percent: this.calculatePercent(createData),
       },
       trx
     )
@@ -330,7 +536,7 @@ class EstateService {
     }
 
     let energy_proof = null
-    const estate = await this.getById(data.id)
+    const estate = await this.getByIdWithDetail(data.id)
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
@@ -340,21 +546,17 @@ class EstateService {
       if (data.delete_energy_proof) {
         energy_proof = estate?.energy_proof
 
-        if (energy_proof) {
-          await require('./GalleryService').addFromView(
-            {
-              url: energy_proof,
-              estate_id: data.id,
-              file_name: estate.energy_proof_original_file,
-            },
-            trx
-          )
-        }
-
         updateData = {
           ...updateData,
           energy_proof: null,
           energy_proof_original_file: null,
+          percent: this.calculatePercent({
+            ...estate.toJSON({
+              extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+            }),
+            ...updateData,
+            energy_proof: null,
+          }),
         }
       } else {
         const files = await this.saveEnergyProof(request)
@@ -363,6 +565,23 @@ class EstateService {
             ...updateData,
             energy_proof: files.energy_proof,
             energy_proof_original_file: files.original_energy_proof,
+            percent: this.calculatePercent({
+              ...estate.toJSON({
+                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+              }),
+              ...updateData,
+              energy_proof: files.energy_proof,
+            }),
+          }
+        } else {
+          updateData = {
+            ...updateData,
+            percent: this.calculatePercent({
+              ...estate.toJSON({
+                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+              }),
+              ...updateData,
+            }),
           }
         }
       }
@@ -377,7 +596,10 @@ class EstateService {
         QueueService.getEstateCoords(estate.id)
       }
       await trx.commit()
-      return estate
+      return {
+        ...estate.toJSON(),
+        updateData,
+      }
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
@@ -500,11 +722,41 @@ class EstateService {
    *
    */
   static async addFile({ url, file_name, disk, estate, type, file_format }) {
-    return File.createItem({ url, disk, file_name, estate_id: estate.id, type, file_format })
+    const trx = await Database.beginTransaction()
+    try {
+      const file = await File.createItem(
+        {
+          url,
+          disk,
+          file_name,
+          estate_id: estate.id,
+          type,
+          file_format,
+        },
+        trx
+      )
+      await this.updatePercent({ estate_id: estate.id, files: [file.toJSON()] }, trx)
+      await trx.commit()
+      return file
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    }
   }
 
   static async addManyFiles(data) {
-    return await File.createMany(data)
+    const trx = await Database.beginTransaction()
+    try {
+      const files = await File.createMany(data, trx)
+
+      await this.updatePercent({ estate_id: data[0].estate_id, files: [files[0].toJSON()] }, trx)
+      await trx.commit()
+      return files
+    } catch (e) {
+      await trx.rollback()
+      console.log('AddManyFiles', e.message)
+      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    }
   }
 
   static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
@@ -525,8 +777,9 @@ class EstateService {
   /**
    *
    */
-  static async removeFile({ ids, estate_id, user_id }, trx) {
+  static async removeFile({ ids, estate_id, user_id }) {
     let files
+    const trx = await Database.beginTransaction()
     try {
       ids = Array.isArray(ids) ? ids : [ids]
       files = (
@@ -544,14 +797,11 @@ class EstateService {
 
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
+      await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
+      await trx.commit()
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
-    } finally {
-      if (files) {
-        files.map((file) => {
-          FileBucket.remove(file.url)
-        })
-      }
     }
   }
 
@@ -1784,6 +2034,183 @@ class EstateService {
       }
     })
     return ret
+  }
+
+  static calculatePercent(estate) {
+    let percent = 0
+    const is_let = estate.letting_type === LETTING_TYPE_LET ? true : false
+    const let_type = is_let ? LETTING_TYPE_LET : LETTING_TYPE_VOID
+
+    const GENERAL_PERCENT_VAL = is_let ? GENERAL_PERCENT.let : GENERAL_PERCENT.void
+
+    const LEASE_CONTRACT_PERCENT_VAL = is_let
+      ? LEASE_CONTRACT_PERCENT.let
+      : LEASE_CONTRACT_PERCENT.void
+
+    const PROPERTY_DETAILS_PERCENT_VAL = is_let
+      ? PROPERTY_DETAILS_PERCENT.let
+      : PROPERTY_DETAILS_PERCENT.void
+
+    const TENANT_PREFERENCES_PERCENT_VAL = is_let
+      ? TENANT_PREFERENCES_PERCENT.let
+      : TENANT_PREFERENCES_PERCENT.void
+
+    const VISIT_SLOT_PERCENT_VAL = is_let ? VISIT_SLOT_PERCENT.let : VISIT_SLOT_PERCENT.void
+
+    const IMAGE_DOC_PERCENT_VAL = is_let ? IMAGE_DOC_PERCENT.let : IMAGE_DOC_PERCENT.void
+
+    const general = ESTATE_PERCENTAGE_VARIABLE.genenral.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    general.length &&
+      general
+        .filter((g) => !g.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? GENERAL_PERCENT_VAL / general.length : 0
+        })
+    const lease_price = ESTATE_PERCENTAGE_VARIABLE.lease_price.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    lease_price.length &&
+      lease_price
+        .filter((l) => !l.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? LEASE_CONTRACT_PERCENT_VAL / lease_price.length : 0
+        })
+
+    const property_detail = ESTATE_PERCENTAGE_VARIABLE.property_detail.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    property_detail.length &&
+      property_detail
+        .filter((p) => !p.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? PROPERTY_DETAILS_PERCENT_VAL / property_detail.length : 0
+        })
+
+    if (estate['amenities'] && estate['amenities'].length) {
+      percent += PROPERTY_DETAILS_PERCENT_VAL / property_detail.length
+    }
+
+    const tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    tenant_preference.length &&
+      tenant_preference
+        .filter((t) => !t.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
+        })
+
+    let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+
+    visit_slots.length &&
+      visit_slots
+        .filter((v) => !v.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0
+        })
+
+    if (
+      visit_slots.length &&
+      !is_let &&
+      estate.slots &&
+      estate.slots.length &&
+      estate.slots.find((slot) => slot.start_at >= moment.utc(new Date()).format(DATE_FORMAT))
+    ) {
+      percent += VISIT_SLOT_PERCENT_VAL / visit_slots.length
+    }
+    let views = ESTATE_PERCENTAGE_VARIABLE.views.filter((g) => g.mandatory.includes(let_type))
+
+    views.length &&
+      views
+        .filter((v) => !v.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0
+        })
+
+    if (views.length) {
+      percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+    }
+
+    console.log('views here=', percent)
+    return Math.ceil(percent)
+  }
+  static async updatePercent(
+    {
+      estate,
+      estate_id,
+      slots = null,
+      files = null,
+      amenities = null,
+      deleted_slots_ids = null,
+      deleted_files_ids = null,
+    },
+    trx
+  ) {
+    if (!estate && !estate_id) {
+      return
+    }
+
+    if (!estate) {
+      estate = await this.getByIdWithDetail(estate_id)
+    }
+
+    if (!estate) {
+      return
+    }
+
+    let percentData = {
+      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] }),
+    }
+
+    if (slots) {
+      percentData.slots = (percentData.slots || []).concat(slots)
+    }
+    if (files) {
+      percentData.files = (percentData.files || []).concat(files)
+    }
+
+    if (amenities) {
+      percentData.amenities = (percentData.amenities || []).concat(amenities)
+    }
+
+    if (deleted_slots_ids) {
+      percentData.slots = (percentData.slots || []).filter(
+        (slot) => !deleted_slots_ids.includes(slot.id)
+      )
+    }
+
+    if (deleted_files_ids) {
+      percentData.files = (percentData.files || []).filter(
+        (file) => !deleted_files_ids.includes(file.id)
+      )
+    }
+
+    if (trx) {
+      await estate.updateItemWithTrx(
+        {
+          percent: this.calculatePercent(percentData),
+        },
+        trx
+      )
+    } else {
+      await estate.updateItem({
+        percent: this.calculatePercent(percentData),
+      })
+    }
+
+    return estate
   }
 }
 module.exports = EstateService

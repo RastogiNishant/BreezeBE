@@ -160,6 +160,7 @@ class Estate extends Model {
       'transfer_budget',
       'rent_end_at',
       'income_sources',
+      'percent',
     ]
   }
 
@@ -227,6 +228,7 @@ class Estate extends Model {
     })
 
     this.addHook('beforeSave', async (instance) => {
+      delete instance.dirty
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord
@@ -282,10 +284,6 @@ class Estate extends Model {
   }
 
   static async updateBreezeId(id) {
-    await Database.table('estates')
-      .update({ hash: Estate.getHash(id) })
-      .where('id', id)
-
     let exists
     let randomString
     do {
@@ -295,7 +293,9 @@ class Estate extends Model {
         .select('id')
         .first()
     } while (exists)
-    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
+    await Database.table('estates')
+      .where('id', id)
+      .update({ six_char_code: randomString, hash: Estate.getHash(id) })
   }
 
   /**
@@ -317,6 +317,10 @@ class Estate extends Model {
    */
   rooms() {
     return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
+  }
+
+  amenities() {
+    return this.hasMany('App/Models/Amenity', 'estate_id', 'id').whereNot('status', STATUS_DELETE)
   }
 
   activeTasks() {

@@ -468,9 +468,9 @@ class NoticeService {
     await NoticeService.insertNotices([notice])
 
     if (userId) {
-      await NotificationsService.sendLandlordCancelVisit([notice])
+      NotificationsService.sendLandlordCancelVisit([notice])
     } else {
-      await NotificationsService.sendProspectCancelVisit([notice])
+      NotificationsService.sendProspectCancelVisit([notice])
     }
   }
 
