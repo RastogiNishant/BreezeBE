@@ -961,6 +961,31 @@ const constants = {
   DOC_RENT_ARREARS_LABEL: 'Rent arrears',
   DOC_CREDIT_SCORE_LABEL: 'Credit score',
   FILE_LIMIT_LENGTH: 5,
+
+  GENERAL_PERCENT: {
+    let: 49.9,
+    void: 37.5,
+  },
+  LEASE_CONTRACT_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+  PROPERTY_DETAILS_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+  TENANT_PREFERENCES_PERCENT: {
+    let: 0,
+    void: 12.5,
+  },
+  VISIT_SLOT_PERCENT: {
+    let: 0,
+    void: 12.5,
+  },
+  IMAGE_DOC_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
 }
 
 module.exports = constants

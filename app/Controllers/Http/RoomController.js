@@ -204,10 +204,6 @@ class RoomController {
     const trx = await Database.beginTransaction()
     try {
       const image = await RoomService.removeImage(id, trx)
-      await GalleryService.addFromView(
-        { estate_id: room.estate_id, url: image.url, file_name: image.file_name },
-        trx
-      )
       await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
       Event.fire('estate::update', room.estate_id)
 
