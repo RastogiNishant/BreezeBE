@@ -172,7 +172,7 @@ class EstateFilters extends Filter {
       this.query.whereIn('estates.letting_status', params.letting_status)
     }
     /* this should be changed to match_status */
-    if (params.filter) {
+    if (params.filter && params.filter.length) {
       this.query.whereHas('matches', (query) => {
         query.whereIn('status', params.filter)
       })

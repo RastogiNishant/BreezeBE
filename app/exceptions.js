@@ -74,6 +74,7 @@ const exceptions = {
   FAILED_TO_ADD_FILE: 'Failed to upload files',
   INVALID_ROOM: 'Invalid room',
   CURRENT_IMAGE_COUNT: 'Current count',
+  FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
 }
 
 const exceptionCodes = {
