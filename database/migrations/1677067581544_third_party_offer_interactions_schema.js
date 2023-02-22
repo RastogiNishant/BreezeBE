@@ -10,7 +10,7 @@ class ThirdPartyOfferInteractionsSchema extends Schema {
       table.integer('user_id').references('id').on('users').index()
       table.integer('third_party_offer_id').references('id').on('third_party_offers').index()
       table.boolean('liked').comment('true if liked, false if unliked, null if none')
-      table.string('comment')
+      table.string('comment', 1000)
       table.timestamps()
     })
   }
