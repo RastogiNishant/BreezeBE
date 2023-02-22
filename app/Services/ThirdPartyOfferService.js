@@ -66,9 +66,35 @@ class ThirdPartyOfferService {
   static searchEstatesQuery(userId) {
     return Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
+      .select(`_l.like_count`)
+      .select(`_d.dislike_count`)
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'third_party_offers' })
+      .leftJoin(
+        Database.raw(`(
+        select 
+          third_party_offer_id,
+          count(case when liked then 1 end) as like_count
+        from third_party_offer_interactions
+        group by
+          third_party_offer_id
+      ) _l`),
+        '_l.third_party_offer_id',
+        '_e.id'
+      )
+      .leftJoin(
+        Database.raw(`(
+        select 
+          third_party_offer_id,
+          count(case when liked=false then 1 end) as dislike_count
+        from third_party_offer_interactions
+        group by
+          third_party_offer_id
+      ) _d`),
+        '_d.third_party_offer_id',
+        '_e.id'
+      )
       .where('_t.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
