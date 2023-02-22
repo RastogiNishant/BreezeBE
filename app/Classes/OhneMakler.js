@@ -35,6 +35,9 @@ class OhneMakler {
     newEstate.images = JSON.stringify(estate.pictures)
     newEstate.amenities = estate.facilities.split(', ')
     newEstate.status = STATUS_ACTIVE
+    if (estate.coordinates) {
+      newEstate.coord = `${estate.coordinates.lat},${estate.coordinates.lon}`
+    }
     return newEstate
   }
 

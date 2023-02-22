@@ -50,6 +50,7 @@ const {
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
@@ -1122,6 +1123,11 @@ class MatchController {
       invite,
     })
     response.res(result)
+  }
+
+  async getThirdPartyOffers({ request, auth, response }) {
+    const result = await ThirdPartyOfferService.getEstates(auth.user.id)
+    return response.res(result)
   }
 }
 
