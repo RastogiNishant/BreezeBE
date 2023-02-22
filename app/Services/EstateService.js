@@ -1462,7 +1462,6 @@ class EstateService {
     }
 
     estates = estates.map((estate) => {
-      console.log('getEstatesByQuery=', estate)
       return {
         country: estate.properties.country,
         city: estate.properties.city,
