@@ -2154,8 +2154,8 @@ class MatchService {
         }
       )
 
-    if (parseInt(params?.budget_min || 0) !== 0 && parseInt(params?.budget_max || 100) !== 100) {
-      if (params && !isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+    if (parseInt(params?.budget_min || 0) !== 0 || parseInt(params?.budget_max || 100) !== 100) {
+      if (params && params.budget_min > 0 && params.budget_max > 0) {
         query.where(function () {
           this.orWhere(function () {
             this.andWhere('tenants.budget_max', '>=', params.budget_min).andWhere(
@@ -2172,18 +2172,18 @@ class MatchService {
             )
           })
         })
-      } else if (params && !isNaN(params.budget_min) && isNaN(params.budget_max)) {
+      } else if (params && params.budget_min > 0 && !params.budget_max) {
         query.where('tenants.budget_min', '>=', params.budget_min)
-      } else if (params && isNaN(params.budget_min) && !isNaN(params.budget_max)) {
+      } else if (params && !params.budget_min && params.budget_max > 0) {
         query.where('tenants.budget_max', '<=', params.budget_max)
       }
     }
 
     if (
-      parseInt(params?.credit_score_min || 0) !== 0 &&
+      parseInt(params?.credit_score_min || 0) !== 0 ||
       parseInt(params?.credit_score_max || 100) !== 100
     ) {
-      if (params && params.credit_score_min) {
+      if (params && params?.credit_score_min > 0) {
         query.where('tenants.credit_score', '>=', params.credit_score_min)
       }
       if (params && params.credit_score_max) {
