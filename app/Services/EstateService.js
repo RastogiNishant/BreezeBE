@@ -1462,7 +1462,12 @@ class EstateService {
     }
 
     estates = estates.map((estate) => {
+      console.log('getEstatesByQuery=', estate)
       return {
+        country: estate.properties.country,
+        city: estate.properties.city,
+        zip: estate.properties.postcode,
+        street: estate.properties.street,
         address: estate.properties.formatted,
         coord: { lat: estate.properties.lat, lon: estate.properties.lon },
         house_number: estate.properties.housenumber,
