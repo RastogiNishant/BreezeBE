@@ -145,6 +145,8 @@ class Estate extends Model {
       'hash',
       'options',
       'avail_duration',
+      'is_duration_later',
+      'min_invite_count',
       'vacant_date',
       'others',
       'minors',
