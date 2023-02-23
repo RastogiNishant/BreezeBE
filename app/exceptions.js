@@ -75,6 +75,7 @@ const exceptions = {
   INVALID_ROOM: 'Invalid room',
   CURRENT_IMAGE_COUNT: 'Current count',
   FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
+  FAILED_IMPORT_FILE_UPLOAD: 'import estate faied',
 }
 
 const exceptionCodes = {

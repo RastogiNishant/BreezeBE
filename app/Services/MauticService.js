@@ -137,7 +137,14 @@ class MauticService {
     }
     const user = await User.query().where('id', userId).first()
     try {
-      const body = JSON.stringify(await getUserData(user))
+      const userData = await getUserData(user)
+      // We have addresses with the country name = "Deutschland" in our database
+      // But Mautic doesn't accept it, it only accepts English country names
+      // TODO: Find a dynamic solution for every country name
+      if (userData?.country === 'Deutschland') {
+        userData.country = 'Germany'
+      }
+      const body = JSON.stringify(userData)
       const response = await fetch(`${MAUTIC_API_URL}/contacts/new`, {
         method: 'POST',
         body,
@@ -152,7 +159,42 @@ class MauticService {
       MauticService.addContactToSegment(user.role, user.mautic_id)
       await user.save()
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+    }
+  }
+
+  static async addContactToSegment(role, contactId) {
+    if (
+      (process.env.DEV && process.env.DEV.trim() == 'true') ||
+      !MAUTIC_API_URL ||
+      !MAUTIC_AUTH_TOKEN
+    ) {
+      return true
+    }
+    try {
+      if (
+        (role === ROLE_LANDLORD && !LANDLORD_WELCOME_SEGMENT_ID) ||
+        (role === ROLE_USER && !TENANT_WELCOME_SEGMENT_ID)
+      ) {
+        return true
+      }
+      const segmentId =
+        role === ROLE_LANDLORD ? LANDLORD_WELCOME_SEGMENT_ID : TENANT_WELCOME_SEGMENT_ID
+
+      await fetch(`${MAUTIC_API_URL}/segments/${segmentId}/contact/${contactId}/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: MAUTIC_AUTH_TOKEN,
+        },
+      })
+
+      //TODO: implement logging here (graylog)
+      // console.log(`${contactId} added to segment ${segmentId}`)
+    } catch (err) {
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic segment adding Failed : Contact Id = ' + contactId, err)
     }
   }
 
@@ -245,7 +287,8 @@ class MauticService {
         },
       })
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
     }
   }
 }
