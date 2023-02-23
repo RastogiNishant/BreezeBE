@@ -2202,16 +2202,14 @@ class EstateService {
     }
 
     if (trx) {
-      await estate.updateItemWithTrx(
-        {
-          percent: this.calculatePercent(percentData),
-        },
-        trx
-      )
+      await Estate.query()
+        .where('id', estate.id)
+        .update({ percent: this.calculatePercent(percentData) })
+        .transacting(trx)
     } else {
-      await estate.updateItem({
-        percent: this.calculatePercent(percentData),
-      })
+      await Estate.query()
+        .where('id', estate.id)
+        .update({ percent: this.calculatePercent(percentData) })
     }
 
     return estate
