@@ -448,7 +448,7 @@ class EstateAttributeTranslations {
         case extractValue(`apt_roof_floor.message`, escapeStr(i)): //'Root floor':
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {

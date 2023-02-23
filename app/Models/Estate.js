@@ -160,6 +160,7 @@ class Estate extends Model {
       'transfer_budget',
       'rent_end_at',
       'income_sources',
+      'percent',
     ]
   }
 
@@ -175,8 +176,8 @@ class Estate extends Model {
    */
   static get options() {
     return {
-      bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
-      kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
+      //bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
+      //kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
       equipment: [
         EQUIPMENT_STACK,
         EQUIPMENT_AIR_CONDITIONED,
@@ -227,6 +228,7 @@ class Estate extends Model {
     })
 
     this.addHook('beforeSave', async (instance) => {
+      delete instance.dirty
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord_raw = instance.dirty.coord
@@ -235,9 +237,12 @@ class Estate extends Model {
 
       if (!isEmpty(pick(instance.dirty, ['house_number', 'street', 'city', 'zip', 'country']))) {
         instance.address = generateAddress(instance)
-        instance.coord = null
-        instance.coord_raw = null
+        if (instance.dirty.is_coord_changed) {
+          instance.coord = null
+          instance.coord_raw = null
+        }
       }
+
       if (instance.dirty.plan && !isString(instance.dirty.plan)) {
         try {
           instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
@@ -269,6 +274,8 @@ class Estate extends Model {
         instance.additional_costs = 0
         instance.heating_costs = 0
       }
+
+      delete instance.is_coord_changed
     })
 
     this.addHook('afterCreate', async (instance) => {
@@ -277,10 +284,6 @@ class Estate extends Model {
   }
 
   static async updateBreezeId(id) {
-    await Database.table('estates')
-      .update({ hash: Estate.getHash(id) })
-      .where('id', id)
-
     let exists
     let randomString
     do {
@@ -290,7 +293,9 @@ class Estate extends Model {
         .select('id')
         .first()
     } while (exists)
-    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
+    await Database.table('estates')
+      .where('id', id)
+      .update({ six_char_code: randomString, hash: Estate.getHash(id) })
   }
 
   /**
@@ -312,6 +317,10 @@ class Estate extends Model {
    */
   rooms() {
     return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
+  }
+
+  amenities() {
+    return this.hasMany('App/Models/Amenity', 'estate_id', 'id').whereNot('status', STATUS_DELETE)
   }
 
   activeTasks() {
@@ -417,6 +426,16 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_NEW, buddy: true })
   }
 
+  invited() {
+    return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_INVITE })
+  }
+
+  visited() {
+    return this.hasMany('App/Models/Match').whereIn('status', [
+      MATCH_STATUS_VISIT,
+      MATCH_STATUS_SHARE,
+    ])
+  }
   /**
    *
    */

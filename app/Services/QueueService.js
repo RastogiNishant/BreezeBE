@@ -1,7 +1,6 @@
 const Queue = use('Queue')
 const Logger = use('Logger')
 const MemberService = use('App/Services/MemberService')
-const NoticeService = use('App/Services/NoticeService')
 const QueueJobService = use('App/Services/QueueJobService')
 const TenantService = use('App/Services/TenantService')
 const ImageService = use('App/Services/ImageService')
@@ -13,6 +12,7 @@ const GET_POINTS = 'getEstatePoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
+const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
@@ -47,6 +47,10 @@ class QueueService {
    */
   static getEstatePoint(estateId) {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
+  }
+
+  static uploadOpenImmoImages(images, estateId) {
+    Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
   }
 
   static getAnchorIsoline(tenantId) {
@@ -88,6 +92,7 @@ class QueueService {
    *
    */
   static async sendEvery5Min() {
+    const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(QueueJobService.handleExpiredEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
@@ -97,6 +102,7 @@ class QueueService {
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(NoticeService.expiredShowTime),
     ])
   }
 
@@ -142,6 +148,8 @@ class QueueService {
   static async processJob(job) {
     try {
       switch (job.name) {
+        case UPLOAD_OPENIMMO_IMAGES:
+          return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
         case GET_COORDINATES:

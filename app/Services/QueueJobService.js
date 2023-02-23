@@ -100,9 +100,8 @@ class QueueJobService {
         .where('status', MATCH_STATUS_NEW)
         .delete()
         .transacting(trx)
-
-      await NoticeService.landlordEstateExpired(estateIds)
       await trx.commit()
+      NoticeService.landlordEstateExpired(estateIds)
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
@@ -114,7 +113,11 @@ class QueueJobService {
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
-      .where('available_date', '<=', moment().format(DATE_FORMAT))
+      .where(
+        'available_date',
+        '<=',
+        moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
+      )
       .fetch()
   }
 

@@ -41,6 +41,14 @@ const {
   ROLE_USER,
   LOG_TYPE_GOT_INVITE,
   VISIT_MAX_ALLOWED_FOLLOWUPS,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+  LETTING_TYPE_LET,
+  STATUS_DRAFT,
+  LETTING_STATUS_STANDARD,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_VACANCY,
+  LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -788,11 +796,12 @@ class MatchController {
 
       const finalMatches = await Estate.query()
         .where({ user_id: user.id })
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
         .whereHas('matches', (query) => {
           query.where('status', MATCH_STATUS_FINISH)
         })
         .count()
-
+      console.log('finalMatches here=', finalMatches)
       counts.finalMatches = finalMatches[0].count
 
       return response.res(counts)
@@ -883,6 +892,12 @@ class MatchController {
       'u_avatar',
     ]
 
+    let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { knock: true }),
+      { ...params }
+    )
+
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -892,7 +907,18 @@ class MatchController {
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: matchCount[0].count,
+      lastPage: Math.ceil(matchCount[0].count / data.perPage),
+    }
     const matches = data
+
+    let buddyCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { buddy: true }),
+      { ...params }
+    )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -902,8 +928,19 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: buddyCount[0].count,
+      lastPage: Math.ceil(buddyCount[0].count / data.perPage),
+    }
+
     const buddies = data
 
+    let inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { invite: true }),
+      { ...params }
+    )
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
@@ -911,7 +948,19 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: inviteCount[0].count,
+      lastPage: Math.ceil(inviteCount[0].count / data.perPage),
+    }
+
     const invites = data
+
+    let visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { visit: true }),
+      { ...params }
+    )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -920,7 +969,19 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: visitCount[0].count,
+      lastPage: Math.ceil(visitCount[0].count / data.perPage),
+    }
+
     const visits = data
+
+    let topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = { top: true }),
+      { ...params }
+    )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -929,6 +990,12 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, fields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: topCount[0].count,
+      lastPage: Math.ceil(topCount[0].count / data.perPage),
+    }
+
     const top = data
 
     let isFinalMatch = false
@@ -945,6 +1012,12 @@ class MatchController {
 
     const filter = isFinalMatch ? { final: true } : { commit: true }
 
+    let finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+      estate,
+      (filters = filter),
+      { ...params }
+    )
+
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
@@ -952,6 +1025,12 @@ class MatchController {
 
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data = {
+      ...data,
+      total: finalCount[0].count,
+      lastPage: Math.ceil(finalCount[0].count / data.perPage),
+    }
+
     const finalMatches = data
     return response.res({
       estate: estate.toJSON(),
@@ -986,6 +1065,51 @@ class MatchController {
     await MatchService.inviteUserToCome(estate_id, user_id)
 
     response.res(true)
+  }
+
+  async getMatchStageList({ request, auth, response }) {
+    const { page, limit, ...params } = request.post()
+    const result = await MatchService.getMatchStageList({
+      user_id: auth.user.id,
+      params,
+      page: page || -1,
+      limit: limit || -1,
+    })
+  }
+
+  async getMatchList({ request, auth, response }) {
+    const { ...params } = request.all()
+    const inLetMatches = await MatchService.getMatchList(auth.user.id, params)
+    const inLetMatchCount = await MatchService.getCountMatchList(auth.user.id, {
+      letting_status: [
+        LETTING_STATUS_TERMINATED,
+        LETTING_STATUS_VACANCY,
+        LETTING_STATUS_NEW_RENOVATED,
+      ],
+      status: [STATUS_ACTIVE, STATUS_EXPIRE],
+    })
+    const finalMatchCount = await MatchService.getCountMatchList(auth.user.id, {
+      letting_type: [LETTING_TYPE_LET],
+      letting_status: [LETTING_STATUS_STANDARD],
+      status: [STATUS_DRAFT],
+    })
+    const prepareCount = await MatchService.getCountMatchList(auth.user.id, {
+      letting_status: [
+        LETTING_STATUS_TERMINATED,
+        LETTING_STATUS_VACANCY,
+        LETTING_STATUS_NEW_RENOVATED,
+      ],
+      status: [STATUS_DRAFT],
+    })
+
+    response.res({
+      matches: inLetMatches,
+      counts: {
+        match: inLetMatchCount[0].count,
+        final: finalMatchCount[0].count,
+        preparation: prepareCount[0].count,
+      },
+    })
   }
 
   async getInviteList({ request, auth, response }) {
