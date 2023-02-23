@@ -71,6 +71,7 @@ const {
   VISIT_SLOT_PERCENT,
   IMAGE_DOC_PERCENT,
   FILE_TYPE_EXTERNAL,
+  DEFAULT_LANG,
 } = require('../constants')
 
 const {
@@ -1451,16 +1452,18 @@ class EstateService {
 
   static async getEstatesByQuery({ user_id, query, coord }) {
     let estates
+    const data = await require('./UserService').getTokenWithLocale([user_id])
+    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
+
     if (coord) {
       const [lat, lon] = coord.split(',')
-      estates = await GeoAPI.getPlacesByCoord({ lat, lon })
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon }, lang)
     } else {
-      estates = await GeoAPI.getGeoByAddress(query)
+      estates = await GeoAPI.getGeoByAddress(query, lang)
     }
     if (!estates) {
       return null
     }
-
     estates = estates.map((estate) => {
       return {
         country: estate.properties.country,
@@ -1472,7 +1475,6 @@ class EstateService {
         house_number: estate.properties.housenumber,
       }
     })
-
     const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
     let existingEstates =
       (
@@ -1500,17 +1502,17 @@ class EstateService {
           .where('estates.user_id', user_id)
           .where(
             Database.raw(`
-              _ect.user_id IS NULL AND
-              ( _ect.code IS NULL OR
-              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
-                .utc(new Date())
-                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-                .format(DATE_FORMAT)}') )`)
+          _ect.user_id IS NULL AND
+          ( _ect.code IS NULL OR
+          (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+            .utc(new Date())
+            .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+            .format(DATE_FORMAT)}') )`)
           )
           .whereIn('coord_raw', coords)
           .fetch()
       ).toJSON() || []
-
+    console.log('existingEstates=', existingEstates)
     const existingCoords = existingEstates.map((estate) => estate.coord_raw)
     const notExistingEstates = estates.filter(
       (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
