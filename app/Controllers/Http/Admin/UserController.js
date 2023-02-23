@@ -248,7 +248,8 @@ class UserController {
   }
 
   async getLandlords({ request, response }) {
-    let { activation_status, status, estate_status, page, limit, query } = request.all()
+    let { activation_status, status, estate_status, page, limit, query, today, activated } =
+      request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -336,6 +337,9 @@ class UserController {
         d.orWhere('firstname', 'ilike', `${query}%`)
         d.orWhere('secondname', 'ilike', `${query}%`)
       })
+    }
+    if (today) {
+      landlordQuery.where(Database.raw(`created_at::date=CURRENT_DATE`))
     }
     const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
     //let's return all info... this is admin
