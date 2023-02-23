@@ -409,10 +409,12 @@ class EstateController {
     } else {
       throw new HttpException('Error found while uploading file.', 400)
     }
+
     const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
     const files = await FileBucket.saveRequestFiles(request, [
       { field: 'file', mime: imageMimes, isPublic: false },
     ])
+
     if (files?.file) {
       const importItem = await ImportService.addImportFile({
         user_id: auth.user.id,
