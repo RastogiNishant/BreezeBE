@@ -330,7 +330,6 @@ class UserController {
         query.with('contacts')
       })
       .with('deactivationSchedule')
-
     if (query) {
       landlordQuery.andWhere(function (d) {
         d.orWhere('email', 'ilike', `${query}%`)
