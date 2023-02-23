@@ -56,6 +56,8 @@ class AdminGetsLandlords extends Base {
         }
       }),
       query: yup.string(),
+      activated: yup.boolean(),
+      today: yup.boolean(),
     })
 }
 
