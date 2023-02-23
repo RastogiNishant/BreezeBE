@@ -170,6 +170,15 @@ const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
 
+extractValue = (key, value) => {
+  const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
+  const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
+  if (filterValues && filterValues.length) {
+    return filterValues[0]
+  }
+  return null
+}
+
 escapeStr = (v) => {
   return (v || '')
     .toString()
@@ -482,15 +491,6 @@ class EstateAttributeTranslations {
       }
       return i
     },
-  }
-
-  extractValue(key, value) {
-    const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
-    const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
-    if (filterValues && filterValues.length) {
-      return filterValues[0]
-    }
-    return null
   }
 
   constructor(lang = 'en') {
