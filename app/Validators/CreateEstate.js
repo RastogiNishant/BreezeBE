@@ -205,6 +205,10 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
 } = require('../constants')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
+} = require('../exceptions')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
   return this.test({
@@ -379,6 +383,12 @@ class CreateEstate extends Base {
         ),
       vacant_date: yup.date(),
       avail_duration: yup.number().integer().positive().max(5000),
+      is_duration_later: yup.boolean(),
+      min_invite_count: yup.number().when('is_duration_later', {
+        is: true,
+        then: yup.number().integer().positive().typeError(getExceptionMessage('min_invite_count', NUMBER)),
+      }),
+
       from_date: yup.date().nullable(),
       to_date: yup.date(),
       rent_end_at: yup
