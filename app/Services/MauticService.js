@@ -137,7 +137,14 @@ class MauticService {
     }
     const user = await User.query().where('id', userId).first()
     try {
-      const body = JSON.stringify(await getUserData(user))
+      const userData = await getUserData(user)
+      // We have addresses with the country name = "Deutschland" in our database
+      // But Mautic doesn't accept it, it only accepts English country names
+      // TODO: Find a dynamic solution for every country name
+      if (userData?.country === 'Deutschland') {
+        userData.country = 'Germany'
+      }
+      const body = JSON.stringify(userData)
       const response = await fetch(`${MAUTIC_API_URL}/contacts/new`, {
         method: 'POST',
         body,
@@ -245,7 +252,8 @@ class MauticService {
         },
       })
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
     }
   }
 }
