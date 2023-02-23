@@ -1,19 +1,20 @@
 const { STATUS_ACTIVE } = require('../constants')
+const { isEmpty } = require('lodash')
 
 class OhneMakler {
   map = {
     id: 'source_id',
     title: 'description',
     url: 'url',
-    street: 'street',
+    address: 'street',
     city: 'city',
     postcode: 'zip',
     country: 'country',
-    floor: 'floor',
-    levels: 'floor_count',
+    floor_number: 'floor',
+    //levels: 'floor_count',
     bathrooms: 'bathrooms',
     rooms: 'rooms',
-    area_living: 'area',
+    floor_area: 'area',
     year: 'construction_year',
     pictures: 'images',
     //rent_start
@@ -31,9 +32,11 @@ class OhneMakler {
       newEstate = { ...newEstate, [value]: estate[key] }
     }
     newEstate.source = 'ohnemakler'
-    newEstate.address = `${estate.street}, ${estate.postcode} ${estate.city}`
+    newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}`
     newEstate.images = JSON.stringify(estate.pictures)
-    newEstate.amenities = estate.facilities.split(', ')
+    if (!isEmpty(estate.ausstattung)) {
+      newEstate.amenities = estate.ausstattung.split(', ')
+    }
     newEstate.status = STATUS_ACTIVE
     if (estate.coordinates) {
       newEstate.coord = `${estate.coordinates.lat},${estate.coordinates.lon}`
@@ -44,11 +47,7 @@ class OhneMakler {
   }
 
   estateCanBeProcessed(estate) {
-    return (
-      estate.marketing === 'RENT' &&
-      estate.objektart === 'Wohnung' &&
-      estate.objekttyp === 'Mehrfamilienhaus'
-    )
+    return estate.type === 'for rent' && estate.objektart === 'Wohnung'
   }
 
   process(estates = null) {
@@ -57,8 +56,11 @@ class OhneMakler {
     }
     const processableEstates = estates.reduce((current, estate) => {
       if (this.estateCanBeProcessed(estate)) {
+        console.log('estate')
         estate = this.mapEstate(estate)
         return [...current, estate]
+      } else {
+        return current
       }
     }, [])
     return processableEstates
