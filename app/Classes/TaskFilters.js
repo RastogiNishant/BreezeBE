@@ -47,7 +47,7 @@ class TaskFilters extends Filter {
       },
       status: {
         new: TASK_STATUS_NEW,
-        inprogress: TASK_STATUS_INPROGRESS,
+        in_progress: TASK_STATUS_INPROGRESS,
         resolved: TASK_STATUS_RESOLVED,
         unresolved: TASK_STATUS_UNRESOLVED,
       },
