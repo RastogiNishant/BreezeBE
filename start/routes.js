@@ -1335,3 +1335,9 @@ Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
   return response.res({ estate, prospect, matchScore })
 }).middleware(['valid:Id,EstateId'])
 */
+
+Route.get('/test-send-email', async ({ response }) => {
+  const MailService = require('../app/Services/MailService')
+  await MailService.sendToSupportLandlordCompleted80Percent({ landlord: { name: 'Justin' } })
+  return response.res(true)
+})

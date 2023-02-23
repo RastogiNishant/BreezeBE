@@ -664,6 +664,34 @@ class MailService {
       }
     )
   }
+
+  static async sendToSupportLandlordCompleted80Percent({ landlord }) {
+    const msg = {
+      to: 'barudo@gmail.com',
+      from: FromEmail, // Use the email address or domain you verified above
+      subject: `Landlord completed 80% of Estate`,
+      text: `Landlord completed 80% of estate
+      Hurray`,
+      html: `<p> Landlord completed 80% of estate
+      Hurray</p>`,
+    }
+
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
+
+  static async sendToSupportLandlordConnectedOneEstate() {}
 }
 
 module.exports = MailService
