@@ -863,7 +863,6 @@ class EstateService {
           })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
-
       // no cover or cover is no longer favorite image
       if (favImages && favImages.length) {
         if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
@@ -878,7 +877,7 @@ class EstateService {
             images.find((i) => i.relativeUrl === estate.cover) === undefined
           ) {
             await this.setCover(estate.id, images[0].relativeUrl, trx)
-          } else if (!images && !images.length) {
+          } else if (!images || !images.length) {
             await this.removeCover(estate.id, estate.cover, trx)
           }
         } else {
