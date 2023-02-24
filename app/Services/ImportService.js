@@ -183,6 +183,8 @@ class ImportService {
     } catch (err) {
       errors = [...errors, err.message]
     } finally {
+      //correct wrong data during importing excel files
+      await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
