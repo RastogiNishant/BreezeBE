@@ -13,6 +13,7 @@ const FileModel = use('App/Models/File')
 const Image = use('App/Models/Image')
 const fsPromise = require('fs/promises')
 const axios = require('axios')
+const { isArray } = require('lodash')
 const Database = use('Database')
 
 class ImageService {
@@ -43,25 +44,27 @@ class ImageService {
   static async uploadOpenImmoImages(images, estateId) {
     const trx = await Database.beginTransaction()
     try {
-      for (let image of images) {
-        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
-          const fileExists = await FileModel.query()
-            .where('estate_id', estateId)
-            .where('file_name', image.file_name)
-            .first()
-          if (!fileExists) {
-            const { filePathName } = await File.saveToDisk(image, [], true)
-            await FileModel.createItem(
-              {
-                url: filePathName,
-                type: image.type,
-                estate_id: estateId,
-                disk: 's3public',
-                file_name: image.file_name,
-                file_format: image.format,
-              },
-              trx
-            )
+      if (images && isArray(images)) {
+        for (let image of images) {
+          if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+            const fileExists = await FileModel.query()
+              .where('estate_id', estateId)
+              .where('file_name', image.file_name)
+              .first()
+            if (!fileExists) {
+              const { filePathName } = await File.saveToDisk(image, [], true)
+              await FileModel.createItem(
+                {
+                  url: filePathName,
+                  type: image.type,
+                  estate_id: estateId,
+                  disk: 's3public',
+                  file_name: image.file_name,
+                  file_format: image.format,
+                },
+                trx
+              )
+            }
           }
         }
       }
@@ -71,7 +74,9 @@ class ImageService {
       console.log(err.message)
     } finally {
       for (let image of images) {
-        fs.unlinkSync(image.tmpPath)
+        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+          await fsPromise.unlink(image.tmpPath)
+        }
       }
     }
   }
