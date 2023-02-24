@@ -466,65 +466,69 @@ class EstateService {
       throw new HttpException('No user Id passed')
     }
 
-    let createData = {
-      ...omit(data, [
-        'room1_type',
-        'room2_type',
-        'room3_type',
-        'room4_type',
-        'room5_type',
-        'room6_type',
-        'txt_salutation',
-        'surname',
-        'contract_end',
-        'phone_number',
-        'email',
-        'salutation_int',
-        'rooms',
-      ]),
-      user_id: userId,
-      property_id: propertyId,
-      status: STATUS_DRAFT,
-    }
+    try {
+      let createData = {
+        ...omit(data, [
+          'room1_type',
+          'room2_type',
+          'room3_type',
+          'room4_type',
+          'room5_type',
+          'room6_type',
+          'txt_salutation',
+          'surname',
+          'contract_end',
+          'phone_number',
+          'email',
+          'salutation_int',
+          'rooms',
+        ]),
+        user_id: userId,
+        property_id: propertyId,
+        status: STATUS_DRAFT,
+      }
 
-    if (request) {
-      const files = await this.saveEnergyProof(request)
+      if (request) {
+        const files = await this.saveEnergyProof(request)
 
-      if (files && files.energy_proof) {
-        createData = {
-          ...createData,
-          energy_proof: files.energy_proof,
-          energy_proof_original_file: files.original_energy_proof,
+        if (files && files.energy_proof) {
+          createData = {
+            ...createData,
+            energy_proof: files.energy_proof,
+            energy_proof_original_file: files.original_energy_proof,
+          }
         }
       }
-    }
 
-    if (!fromImport) {
-      createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
-      createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
-    }
+      if (!fromImport) {
+        createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
+        createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
+      }
 
-    let estateHash
-    const estate = await Estate.createItem(
-      {
-        ...createData,
-        is_coord_changed,
-        percent: this.calculatePercent(createData),
-      },
-      trx
-    )
-    // we can't get hash when we use transaction because that record won't be created before commiting the transaction
-    if (!trx) {
-      estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
-    }
+      let estateHash
+      const estate = await Estate.createItem(
+        {
+          ...createData,
+          is_coord_changed,
+          percent: this.calculatePercent(createData),
+        },
+        trx
+      )
+      // we can't get hash when we use transaction because that record won't be created before commiting the transaction
+      if (!trx) {
+        estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+      }
 
-    // Run processing estate geo nearest
-    QueueService.getEstateCoords(estate.id)
-
-    const estateData = await estate.toJSON({ isOwner: true })
-    return {
-      hash: estateHash?.hash || null,
-      ...estateData,
+      // Run processing estate geo nearest
+      QueueService.getEstateCoords(estate.id)
+      const estateData = await estate.toJSON({ isOwner: true })
+      return {
+        hash: estateHash?.hash || null,
+        ...estateData,
+      }
+    } catch (e) {
+      console.log('Creating estate error =', e.message)
+      throw new HttpException(e.message, 500)
     }
   }
 
@@ -1511,7 +1515,6 @@ class EstateService {
           .whereIn('coord_raw', coords)
           .fetch()
       ).toJSON() || []
-    console.log('existingEstates=', existingEstates)
     const existingCoords = existingEstates.map((estate) => estate.coord_raw)
     const notExistingEstates = estates.filter(
       (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
