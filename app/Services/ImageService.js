@@ -71,7 +71,7 @@ class ImageService {
       console.log(err.message)
     } finally {
       for (let image of images) {
-        fs.unlink(image.tmpPath)
+        fs.unlinkSync(image.tmpPath)
       }
     }
   }
