@@ -829,6 +829,8 @@ class EstateService {
       .whereIn('id', ids)
       .where('estate_id', estate_id)
       .transacting(trx)
+
+    await this.updateCover({ estate_id, addImage: files[0] }, trx)
   }
 
   static async getFiles({ estate_id, ids, type, orderBy }) {
@@ -882,16 +884,23 @@ class EstateService {
         if (rooms) {
           images = this.extractImages(rooms, removeImages, addImage?.room_id ? addImage : undefined)
         }
-
+        console.log('Images here=', rooms[0])
         if (images && images.length) {
           await this.setCover(estate.id, images[0].relativeUrl, trx)
-          await RoomService.setFavorite(
-            { estate_id: estate.id, room_id: images[0].room_id, favorite: true },
-            trx
-          )
+          console.log('Estateserver room favorite !!!', {
+            estate_id: estate.id,
+            room_id: images[0].room_id,
+            favorite: true,
+          })
+
+          if (room) {
+            await RoomService.setFavorite(
+              { estate_id: estate.id, room_id: images[0].room_id, favorite: true },
+              trx
+            )
+          }
         } else {
           /* if no images in rooms*/
-          console.log('No Room image anymore!')
           let files =
             (await this.getFiles({
               estate_id: room?.estate_id || estate_id,

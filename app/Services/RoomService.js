@@ -154,6 +154,9 @@ class RoomService {
       .transacting(trx)
   }
 
+  static async getFavoriteRoom(estate_id) {
+    return await Room.query().where('estate_id', estate_id).where('favorite', true).first()
+  }
   /**
    *
    */
@@ -560,7 +563,11 @@ class RoomService {
     })
 
     if (imagesInfo) {
-      await Image.createMany(imagesInfo, trx)
+      const allocatedRoomImages = await Image.createMany(imagesInfo, trx)
+      await require('./EstateService').updateCover(
+        { estate_id, addImage: { ...allocatedRoomImages[0].toJSON(), room_id: undefined } },
+        trx
+      )
     }
 
     return images.map((image) => image.id)
