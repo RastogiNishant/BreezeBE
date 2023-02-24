@@ -18,9 +18,15 @@ const {
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
+  COMPLETE_80_PERCENT,
+  PUBLISH_ESTATE,
+  CONNECT_ESTATE,
+  COMPLETE_80_PERCENT_EMAIL_SUBJECT,
+  PUBLISH_ESTATE_EMAIL_SUBJECT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
+const MailService = use('App/Services/MailService')
 const ImageService = use('App/Services/ImageService')
 const MemberService = use('App/Services/MemberService')
 const User = use('App/Models/User')
@@ -249,6 +255,83 @@ class QueueJobService {
     const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
     const ip_based_info = await getIpBasedInfo(ip)
     await User.query().where('id', userId).update({ ip_based_info })
+  }
+
+  static async sendEmailToSupportForLandlordUpdate({ type, landlord, estateIds }) {
+    const estateQuery = Estate.query()
+      .select(Database.raw(`count(id) as affected`))
+      .whereNot('status', STATUS_DELETE)
+      .where('user_id', landlord.id)
+      .whereNotIn('id', estateIds)
+
+    let subject = ''
+    let htmlMessage = `
+<p>[SUBJECT]</p>
+<p>Landlord Info: <strong>[LANDLORD]</strong></p>
+<p>Estates: </p><ul>[ESTATES]</ul>
+`
+    let textMessage = `
+[SUBJECT]
+Landlord Info: [LANDLORD]
+Estates: [ESTATES]
+`
+    let otherEstates
+    let estates
+    let estateContent
+    switch (type) {
+      case COMPLETE_80_PERCENT:
+        otherEstates = await estateQuery.where('percent', '>=', 80).first()
+        if (+otherEstates.affected === 0) {
+          //this is the first one(s)... we need to notify support
+          subject = COMPLETE_80_PERCENT_EMAIL_SUBJECT
+          estates = await Estate.query().whereIn('id', estateIds).fetch()
+          estateContent = estates.toJSON().map((estate) => estate.address)
+          textMessage = textMessage
+            .replace('[SUBJECT]', subject)
+            .replace('[ESTATES]', `\n${estateContent.join('\n')}`)
+            .replace(
+              '[LANDLORD]',
+              `${landlord.firstname} ${landlord.secondname}(${landlord.email})`
+            )
+          htmlMessage = htmlMessage
+            .replace('[SUBJECT]', subject)
+            .replace('[ESTATES]', `<li>${estateContent.join('</li><li>')}</li>`)
+            .replace(
+              '[LANDLORD]',
+              `${landlord.firstname} ${landlord.secondname}(${landlord.email})`
+            )
+        }
+        break
+
+      case PUBLISH_ESTATE:
+        otherEstates = await estateQuery.whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).first()
+        if (+otherEstates.affected === 0) {
+          subject = PUBLISH_ESTATE_EMAIL_SUBJECT
+          estates = await Estate.query().whereIn('id', estateIds).fetch()
+          estateContent = estates.toJSON().map((estate) => estate.address)
+          textMessage = textMessage
+            .replace('[SUBJECT]', subject)
+            .replace('[ESTATES]', `\n${estateContent.join('\n')}`)
+            .replace(
+              '[LANDLORD]',
+              `${landlord.firstname} ${landlord.secondname}(${landlord.email})`
+            )
+          htmlMessage = htmlMessage
+            .replace('[SUBJECT]', subject)
+            .replace('[ESTATES]', `<li>${estateContent.join('</li><li>')}</li>`)
+            .replace(
+              '[LANDLORD]',
+              `${landlord.firstname} ${landlord.secondname}(${landlord.email})`
+            )
+        }
+        break
+      case CONNECT_ESTATE:
+        break
+    }
+    if (isEmpty(subject)) {
+      return
+    }
+    await MailService.sendEmailToSupport({ subject, textMessage, htmlMessage })
   }
 }
 
