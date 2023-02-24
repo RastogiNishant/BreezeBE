@@ -1337,7 +1337,11 @@ Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
 */
 
 Route.get('/test-send-email', async ({ response }) => {
-  const MailService = require('../app/Services/MailService')
-  await MailService.sendToSupportLandlordCompleted80Percent({ landlord: { name: 'Justin' } })
+  const QueueJobService = require('../app/Services/QueueJobService')
+  await QueueJobService.sendEmailToSupportForLandlordUpdate({
+    type: 'publish_estate',
+    landlord: { id: 387, firstname: 'Jillian', secondname: 'Marie', email: 'jillian@gmail.com' },
+    estateIds: [520, 521],
+  })
   return response.res(true)
 })

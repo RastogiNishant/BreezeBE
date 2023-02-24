@@ -23,6 +23,7 @@ const {
   CONNECT_ESTATE,
   COMPLETE_80_PERCENT_EMAIL_SUBJECT,
   PUBLISH_ESTATE_EMAIL_SUBJECT,
+  CONNECT_ESTATE_EMAIL_SUBJECT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -259,10 +260,10 @@ class QueueJobService {
 
   static async sendEmailToSupportForLandlordUpdate({ type, landlord, estateIds }) {
     const estateQuery = Estate.query()
-      .select(Database.raw(`count(id) as affected`))
-      .whereNot('status', STATUS_DELETE)
-      .where('user_id', landlord.id)
-      .whereNotIn('id', estateIds)
+      .select(Database.raw(`count(estates.id) as affected`))
+      .whereNot('estates.status', STATUS_DELETE)
+      .where('estates.user_id', landlord.id)
+      .whereNotIn('estates.id', estateIds)
 
     let subject = ''
     let htmlMessage = `
@@ -325,7 +326,31 @@ Estates: [ESTATES]
             )
         }
         break
+
       case CONNECT_ESTATE:
+        otherEstates = await estateQuery
+          .innerJoin('estate_current_tenants _ect', '_ect.estate_id', 'estates.id')
+          .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+          .first()
+        if (+otherEstates.affected === 0) {
+          subject = CONNECT_ESTATE_EMAIL_SUBJECT
+          estates = await Estate.query().whereIn('id', estateIds).fetch()
+          estateContent = estates.toJSON().map((estate) => estate.address)
+          textMessage = textMessage
+            .replace('[SUBJECT]', subject)
+            .replace('[ESTATES]', `\n${estateContent.join('\n')}`)
+            .replace(
+              '[LANDLORD]',
+              `${landlord.firstname} ${landlord.secondname}(${landlord.email})`
+            )
+          htmlMessage = htmlMessage
+            .replace('[SUBJECT]', subject)
+            .replace('[ESTATES]', `<li>${estateContent.join('</li><li>')}</li>`)
+            .replace(
+              '[LANDLORD]',
+              `${landlord.firstname} ${landlord.secondname}(${landlord.email})`
+            )
+        }
         break
     }
     if (isEmpty(subject)) {
