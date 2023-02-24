@@ -665,15 +665,13 @@ class MailService {
     )
   }
 
-  static async sendToSupportLandlordCompleted80Percent({ landlord }) {
+  static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
     const msg = {
-      to: 'barudo@gmail.com',
+      to: FromEmail,
       from: FromEmail, // Use the email address or domain you verified above
-      subject: `Landlord completed 80% of Estate`,
-      text: `Landlord completed 80% of estate
-      Hurray`,
-      html: `<p> Landlord completed 80% of estate
-      Hurray</p>`,
+      subject: subject,
+      text: textMessage,
+      html: htmlMessage,
     }
 
     return sgMail.send(msg).then(
