@@ -69,6 +69,10 @@ class ImageService {
     } catch (err) {
       await trx.rollback()
       console.log(err.message)
+    } finally {
+      for (let image of images) {
+        fs.unlink(image.tmpPath)
+      }
     }
   }
 
