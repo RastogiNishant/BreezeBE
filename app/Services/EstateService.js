@@ -823,14 +823,16 @@ class EstateService {
     if (files && (files?.length || 0) + ids.length > FILE_LIMIT_LENGTH) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
-
+    const file = await File.query().where('id', ids[0]).first()
     await File.query()
       .update({ type })
       .whereIn('id', ids)
       .where('estate_id', estate_id)
       .transacting(trx)
 
-    await this.updateCover({ estate_id, addImage: files[0] }, trx)
+    if (file) {
+      await this.updateCover({ estate_id, addImage: { ...file.toJSON(), type } }, trx)
+    }
   }
 
   static async getFiles({ estate_id, ids, type, orderBy }) {
@@ -884,14 +886,9 @@ class EstateService {
         if (rooms) {
           images = this.extractImages(rooms, removeImages, addImage?.room_id ? addImage : undefined)
         }
-        console.log('Images here=', rooms[0])
+
         if (images && images.length) {
           await this.setCover(estate.id, images[0].relativeUrl, trx)
-          console.log('Estateserver room favorite !!!', {
-            estate_id: estate.id,
-            room_id: images[0].room_id,
-            favorite: true,
-          })
 
           if (room) {
             await RoomService.setFavorite(
@@ -916,6 +913,7 @@ class EstateService {
           if (removeImageIds && removeImageIds.length) {
             files = files.filter((f) => !removeImageIds.includes(f.id))
           }
+
           if (files && files.length) {
             await this.setCover(estate.id, files[0]?.relativeUrl || files[0].url, trx)
           } else {
