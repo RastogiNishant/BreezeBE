@@ -73,9 +73,11 @@ class ImageService {
       await trx.rollback()
       console.log(err.message)
     } finally {
-      for (let image of images) {
-        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
-          await fsPromise.unlink(image.tmpPath)
+      if (images && isArray(images)) {
+        for (let image of images) {
+          if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+            await fsPromise.unlink(image.tmpPath)
+          }
         }
       }
     }
