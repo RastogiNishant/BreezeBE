@@ -255,6 +255,21 @@ class Estate extends Model {
         instance.stp_garage = 0
       }
 
+      ;[
+        'bath_options',
+        'energy_type',
+        'firing',
+        'ground',
+        'heating_type',
+        'marketing_type',
+        'parking_space_type',
+        'use_type',
+      ].map((field) => {
+        if (instance.dirty && instance.dirty[field] && !Array.isArray(instance.dirty[field])) {
+          instance[field] = [instance.dirty[field]]
+        }
+      })
+
       if (
         instance.dirty.extra_costs &&
         (instance.dirty.heating_costs || instance.dirty.additional_costs)

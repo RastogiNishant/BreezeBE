@@ -1,5 +1,6 @@
 const Promise = require('bluebird')
 const { get, isEmpty } = require('lodash')
+const { DEFAULT_LANG } = require('../constants')
 const Request = require('../Libs/Request')
 
 const ROUTING_DRIVE = 'drive'
@@ -144,11 +145,11 @@ class GeoPify {
   /**
    *
    */
-  getPlacesByCoord({ lat, lon }) {
+  getPlacesByCoord({ lat, lon }, lang = DEFAULT_LANG) {
     return this.request
       .send({
         url: '/v1/geocode/reverse',
-        data: { lat, lon, apiKey: this.settings.apiKey },
+        data: { lat, lon, apiKey: this.settings.apiKey, limit: 30, lang },
         method: 'GET',
       })
       .then((response) => {
@@ -162,11 +163,11 @@ class GeoPify {
   /**
    *
    */
-  getAddressSuggestions = (text) => {
+  getAddressSuggestions = (text, lang = DEFAULT_LANG) => {
     return this.request
       .send({
         url: '/v1/geocode/autocomplete',
-        data: { text, apiKey: this.settings.apiKey },
+        data: { text, apiKey: this.settings.apiKey, limit: 30, lang },
         method: 'GET',
       })
       .then((response) => {
@@ -197,7 +198,7 @@ class GeoPify {
     return this.request
       .send({
         url: '/v1/geocode/autocomplete',
-        data: { text: address, apiKey: this.settings.apiKey },
+        data: { text: address, apiKey: this.settings.apiKey, limit: 30, lang: 'de' },
         method: 'GET',
       })
       .then((response) => {

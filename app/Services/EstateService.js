@@ -71,6 +71,7 @@ const {
   VISIT_SLOT_PERCENT,
   IMAGE_DOC_PERCENT,
   FILE_TYPE_EXTERNAL,
+  DEFAULT_LANG,
 } = require('../constants')
 
 const {
@@ -465,65 +466,69 @@ class EstateService {
       throw new HttpException('No user Id passed')
     }
 
-    let createData = {
-      ...omit(data, [
-        'room1_type',
-        'room2_type',
-        'room3_type',
-        'room4_type',
-        'room5_type',
-        'room6_type',
-        'txt_salutation',
-        'surname',
-        'contract_end',
-        'phone_number',
-        'email',
-        'salutation_int',
-        'rooms',
-      ]),
-      user_id: userId,
-      property_id: propertyId,
-      status: STATUS_DRAFT,
-    }
+    try {
+      let createData = {
+        ...omit(data, [
+          'room1_type',
+          'room2_type',
+          'room3_type',
+          'room4_type',
+          'room5_type',
+          'room6_type',
+          'txt_salutation',
+          'surname',
+          'contract_end',
+          'phone_number',
+          'email',
+          'salutation_int',
+          'rooms',
+        ]),
+        user_id: userId,
+        property_id: propertyId,
+        status: STATUS_DRAFT,
+      }
 
-    if (request) {
-      const files = await this.saveEnergyProof(request)
+      if (request) {
+        const files = await this.saveEnergyProof(request)
 
-      if (files && files.energy_proof) {
-        createData = {
-          ...createData,
-          energy_proof: files.energy_proof,
-          energy_proof_original_file: files.original_energy_proof,
+        if (files && files.energy_proof) {
+          createData = {
+            ...createData,
+            energy_proof: files.energy_proof,
+            energy_proof_original_file: files.original_energy_proof,
+          }
         }
       }
-    }
 
-    if (!fromImport) {
-      createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
-      createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
-    }
+      if (!fromImport) {
+        createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
+        createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
+      }
 
-    let estateHash
-    const estate = await Estate.createItem(
-      {
-        ...createData,
-        is_coord_changed,
-        percent: this.calculatePercent(createData),
-      },
-      trx
-    )
-    // we can't get hash when we use transaction because that record won't be created before commiting the transaction
-    if (!trx) {
-      estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
-    }
+      let estateHash
+      const estate = await Estate.createItem(
+        {
+          ...createData,
+          is_coord_changed,
+          percent: this.calculatePercent(createData),
+        },
+        trx
+      )
+      // we can't get hash when we use transaction because that record won't be created before commiting the transaction
+      if (!trx) {
+        estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+      }
 
-    // Run processing estate geo nearest
-    QueueService.getEstateCoords(estate.id)
-
-    const estateData = await estate.toJSON({ isOwner: true })
-    return {
-      hash: estateHash?.hash || null,
-      ...estateData,
+      // Run processing estate geo nearest
+      QueueService.getEstateCoords(estate.id)
+      const estateData = await estate.toJSON({ isOwner: true })
+      return {
+        hash: estateHash?.hash || null,
+        ...estateData,
+      }
+    } catch (e) {
+      console.log('Creating estate error =', e.message)
+      throw new HttpException(e.message, 500)
     }
   }
 
@@ -862,7 +867,6 @@ class EstateService {
           })
 
       let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
-
       // no cover or cover is no longer favorite image
       if (favImages && favImages.length) {
         if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
@@ -877,7 +881,7 @@ class EstateService {
             images.find((i) => i.relativeUrl === estate.cover) === undefined
           ) {
             await this.setCover(estate.id, images[0].relativeUrl, trx)
-          } else if (!images && !images.length) {
+          } else if (!images || !images.length) {
             await this.removeCover(estate.id, estate.cover, trx)
           }
         } else {
@@ -1451,16 +1455,18 @@ class EstateService {
 
   static async getEstatesByQuery({ user_id, query, coord }) {
     let estates
+    const data = await require('./UserService').getTokenWithLocale([user_id])
+    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
+
     if (coord) {
       const [lat, lon] = coord.split(',')
-      estates = await GeoAPI.getPlacesByCoord({ lat, lon })
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon }, lang)
     } else {
-      estates = await GeoAPI.getGeoByAddress(query)
+      estates = await GeoAPI.getGeoByAddress(query, lang)
     }
     if (!estates) {
       return null
     }
-
     estates = estates.map((estate) => {
       return {
         country: estate.properties.country,
@@ -1472,7 +1478,6 @@ class EstateService {
         house_number: estate.properties.housenumber,
       }
     })
-
     const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
     let existingEstates =
       (
@@ -1500,17 +1505,16 @@ class EstateService {
           .where('estates.user_id', user_id)
           .where(
             Database.raw(`
-              _ect.user_id IS NULL AND
-              ( _ect.code IS NULL OR
-              (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
-                .utc(new Date())
-                .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
-                .format(DATE_FORMAT)}') )`)
+          _ect.user_id IS NULL AND
+          ( _ect.code IS NULL OR
+          (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+            .utc(new Date())
+            .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+            .format(DATE_FORMAT)}') )`)
           )
           .whereIn('coord_raw', coords)
           .fetch()
       ).toJSON() || []
-
     const existingCoords = existingEstates.map((estate) => estate.coord_raw)
     const notExistingEstates = estates.filter(
       (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
@@ -2201,19 +2205,37 @@ class EstateService {
     }
 
     if (trx) {
-      await estate.updateItemWithTrx(
-        {
-          percent: this.calculatePercent(percentData),
-        },
-        trx
-      )
+      await Estate.query()
+        .where('id', estate.id)
+        .update({ percent: this.calculatePercent(percentData) })
+        .transacting(trx)
     } else {
-      await estate.updateItem({
-        percent: this.calculatePercent(percentData),
-      })
+      await Estate.query()
+        .where('id', estate.id)
+        .update({ percent: this.calculatePercent(percentData) })
     }
 
     return estate
+  }
+
+  static async correctWrongEstates(user_id) {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .where('user_id', user_id)
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('hash')
+            this.orWhereNull('six_char_code')
+          })
+          .fetch()
+      ).toJSON() || []
+    let i = 0
+    while (i < estates.length) {
+      await Estate.updateBreezeId(estates[i].id)
+      i++
+    }
   }
 }
 module.exports = EstateService
