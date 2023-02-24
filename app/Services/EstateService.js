@@ -2214,5 +2214,25 @@ class EstateService {
 
     return estate
   }
+
+  static async correctWrongEstates(user_id) {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .where('user_id', user_id)
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('hash')
+            this.orWhereNull('six_char_code')
+          })
+          .fetch()
+      ).toJSON() || []
+    let i = 0
+    while (i < estates.length) {
+      await Estate.updateBreezeId(estates[i].id)
+      i++
+    }
+  }
 }
 module.exports = EstateService
