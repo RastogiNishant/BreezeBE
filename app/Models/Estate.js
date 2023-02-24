@@ -145,6 +145,8 @@ class Estate extends Model {
       'hash',
       'options',
       'avail_duration',
+      'is_duration_later',
+      'min_invite_count',
       'vacant_date',
       'others',
       'minors',
@@ -252,6 +254,21 @@ class Estate extends Model {
       if (instance.dirty?.parking_space === 0) {
         instance.stp_garage = 0
       }
+
+      ;[
+        'bath_options',
+        'energy_type',
+        'firing',
+        'ground',
+        'heating_type',
+        'marketing_type',
+        'parking_space_type',
+        'use_type',
+      ].map((field) => {
+        if (instance.dirty && instance.dirty[field] && !Array.isArray(instance.dirty[field])) {
+          instance[field] = [instance.dirty[field]]
+        }
+      })
 
       if (
         instance.dirty.extra_costs &&

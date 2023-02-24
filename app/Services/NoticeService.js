@@ -64,6 +64,7 @@ const {
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -103,6 +104,7 @@ const {
   STATUS_DELETE,
   STATUS_DRAFT,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -500,6 +502,28 @@ class NoticeService {
     await NotificationsService.sendTenantUpdateTimeSlot(notices)
   }
 
+  /*
+   * user_id is landlord id
+   */
+  static async sendFullInvitation({ user_id, estateId, count }) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    const notice = {
+      user_id,
+      type: NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+      data: {
+        estate_id: estate.id,
+        count,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    NotificationsService.sendFullInvitation([notice])
+  }
+
   /**
    * Get visits in {time}
    */
@@ -866,6 +890,9 @@ class NoticeService {
         return NotificationsService.sendChangeVisitTimeLandlord([notice])
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
+      case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
+        console.log('notice here=', notice)
+        return NotificationsService.sendFullInvitation([notice])
     }
   }
 
