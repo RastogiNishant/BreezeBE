@@ -44,27 +44,27 @@ class ImageService {
   static async uploadOpenImmoImages(images, estateId) {
     const trx = await Database.beginTransaction()
     try {
-      if (images && isArray(images)) {
-        for (let image of images) {
-          if (image.tmpPath && fs.existsSync(image.tmpPath)) {
-            const fileExists = await FileModel.query()
-              .where('estate_id', estateId)
-              .where('file_name', image.file_name)
-              .first()
-            if (!fileExists) {
-              const { filePathName } = await File.saveToDisk(image, [], true)
-              await FileModel.createItem(
-                {
-                  url: filePathName,
-                  type: image.type,
-                  estate_id: estateId,
-                  disk: 's3public',
-                  file_name: image.file_name,
-                  file_format: image.format,
-                },
-                trx
-              )
-            }
+      if (!images || !isArray(images)) return
+
+      for (let image of images) {
+        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+          const fileExists = await FileModel.query()
+            .where('estate_id', estateId)
+            .where('file_name', image.file_name)
+            .first()
+          if (!fileExists) {
+            const { filePathName } = await File.saveToDisk(image, [], true)
+            await FileModel.createItem(
+              {
+                url: filePathName,
+                type: image.type,
+                estate_id: estateId,
+                disk: 's3public',
+                file_name: image.file_name,
+                file_format: image.format,
+              },
+              trx
+            )
           }
         }
       }
@@ -73,11 +73,10 @@ class ImageService {
       await trx.rollback()
       console.log(err.message)
     } finally {
-      if (images && isArray(images)) {
-        for (let image of images) {
-          if (image.tmpPath && fs.existsSync(image.tmpPath)) {
-            await fsPromise.unlink(image.tmpPath)
-          }
+      if (!images || !isArray(images)) return
+      for (let image of images) {
+        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+          await fsPromise.unlink(image.tmpPath)
         }
       }
     }
