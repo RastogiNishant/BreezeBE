@@ -996,6 +996,17 @@ const constants = {
   COMPLETE_80_PERCENT_EMAIL_SUBJECT: 'Landlord Completed 80% of his/her first Estate(s)',
   PUBLISH_ESTATE_EMAIL_SUBJECT: 'Landlord Published his/her first Estate(s)',
   CONNECT_ESTATE_EMAIL_SUBJECT: 'Landlord Connected his/her first Estate(s)',
+
+  SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE: `
+<p>[SUBJECT]</p>
+<p>Landlord Info: <strong>[LANDLORD]</strong></p>
+<p>Estates: </p><ul>[ESTATES]</ul>
+`,
+  SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE: `
+[SUBJECT]
+Landlord Info: [LANDLORD]
+Estates: [ESTATES]
+`,
 }
 
 module.exports = constants
