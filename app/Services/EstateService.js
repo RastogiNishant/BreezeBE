@@ -1978,6 +1978,7 @@ class EstateService {
         let result
         const existingProperty = await Estate.query()
           .where({ property_id: property.property_id, user_id })
+          .whereNot({ status: STATUS_DELETE })
           .first()
         if (existingProperty) {
           existingProperty.merge(omit(property, ['images']))
