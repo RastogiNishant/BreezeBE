@@ -198,6 +198,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   GENDER_NEUTRAL,
   LETTING_STATUS_NEW_RENOVATED,
+  MAX_MINOR_COUNT,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -506,11 +507,7 @@ class ImportEstate extends Base {
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
       furnished: yup.boolean().nullable(),
-      kids_type: yup
-        .number()
-        .integer()
-        .oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5, null])
-        .nullable(),
+      kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()
         .integer()
