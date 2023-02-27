@@ -13,7 +13,6 @@ const FileModel = use('App/Models/File')
 const Image = use('App/Models/Image')
 const fsPromise = require('fs/promises')
 const axios = require('axios')
-const { isArray } = require('lodash')
 const Database = use('Database')
 
 class ImageService {
@@ -44,7 +43,7 @@ class ImageService {
   static async uploadOpenImmoImages(images, estateId) {
     const trx = await Database.beginTransaction()
     try {
-      if (!images || !isArray(images)) return
+      if (!images || !Array.isArray(images)) return
 
       for (let image of images) {
         if (image.tmpPath && fs.existsSync(image.tmpPath)) {
@@ -73,7 +72,7 @@ class ImageService {
       await trx.rollback()
       console.log(err.message)
     } finally {
-      if (!images || !isArray(images)) return
+      if (!images || !Array.isArray(images)) return
       for (let image of images) {
         if (image.tmpPath && fs.existsSync(image.tmpPath)) {
           await fsPromise.unlink(image.tmpPath)
