@@ -1391,6 +1391,12 @@ class EstateService {
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
+      .select(
+        Database.raw(
+          `count(*) filter(where status IN ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') ) as offline_count`
+        )
+      )
+      .select(Database.raw(`count(*) filter(where status='${STATUS_ACTIVE}') as online_count`))
   }
 
   static async getShortEstatesByQuery({ user_id, query, letting_type }) {
