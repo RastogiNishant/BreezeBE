@@ -749,16 +749,11 @@ class EstateService {
     }
   }
 
-  static async addManyFiles(data) {
-    const trx = await Database.beginTransaction()
+  static async addManyFiles(data, trx) {
     try {
       const files = await File.createMany(data, trx)
-
-      await this.updatePercent({ estate_id: data[0].estate_id, files: [files[0].toJSON()] }, trx)
-      await trx.commit()
       return files
     } catch (e) {
-      await trx.rollback()
       console.log('AddManyFiles', e.message)
       throw new HttpException(FAILED_TO_ADD_FILE, 500)
     }
@@ -803,6 +798,7 @@ class EstateService {
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
       await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
+      await this.updateCover({ estate_id, removeImages: files }, trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -831,62 +827,101 @@ class EstateService {
     if (files && (files?.length || 0) + ids.length > FILE_LIMIT_LENGTH) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
-
+    const file = await File.query().where('id', ids[0]).first()
     await File.query()
       .update({ type })
       .whereIn('id', ids)
       .where('estate_id', estate_id)
       .transacting(trx)
+
+    if (file) {
+      await this.updateCover({ estate_id, addImage: { ...file.toJSON(), type } }, trx)
+    }
   }
 
-  static async getFiles({ estate_id, ids, type }) {
+  static async getFiles({ estate_id, ids, type, orderBy }) {
     let query = File.query().where('estate_id', estate_id)
     if (ids) {
       query.whereIn('id', ids)
     }
     if (type) {
-      query.where('type', type)
+      type = Array.isArray(type) ? type : [type]
+      query.whereIn('type', type)
+    }
+    if (orderBy) {
+      orderBy.map((ob) => {
+        query.orderBy(ob.key, ob.order)
+      })
     }
 
     return (await query.fetch()).rows || []
   }
 
-  static async updateCover({ room, removeImage, addImage }, trx = null) {
+  static async updateCover({ estate_id, room, removeRoomId, removeImages, addImage }, trx = null) {
     try {
-      const estate = await this.getById(room.estate_id)
+      const estate = await this.getById(room?.estate_id || estate_id)
       if (!estate) {
         throw new HttpException('No permission to update cover', 400)
       }
 
-      const rooms = await RoomService.getRoomsByEstate(estate.id, true)
-
-      const favoriteRooms = room.favorite
-        ? [room]
-        : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
-
-      let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
+      const rooms = ((await RoomService.getRoomsByEstate(estate.id, true)) || [])
+        .toJSON()
+        .filter((r) => r.id !== removeRoomId?.id)
+      let favoriteRooms = []
+      if (room) {
+        favoriteRooms = room.favorite
+          ? [room]
+          : filter(rooms, function (r) {
+              return r.favorite
+            })
+      }
+      let favImages = this.extractImages(
+        favoriteRooms,
+        removeImages,
+        addImage?.room_id ? addImage : undefined
+      )
       // no cover or cover is no longer favorite image
       if (favImages && favImages.length) {
         if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
           await this.setCover(estate.id, favImages[0].relativeUrl, trx)
         }
       } else {
-        let images = this.extractImages(rooms.toJSON(), removeImage)
-        if (estate.cover) {
-          if (
-            images &&
-            images.length &&
-            images.find((i) => i.relativeUrl === estate.cover) === undefined
-          ) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
-          } else if (!images || !images.length) {
-            await this.removeCover(estate.id, estate.cover, trx)
+        let images
+        if (rooms) {
+          images = this.extractImages(rooms, removeImages, addImage?.room_id ? addImage : undefined)
+        }
+
+        if (images && images.length) {
+          await this.setCover(estate.id, images[0].relativeUrl, trx)
+
+          if (room) {
+            await RoomService.setFavorite(
+              { estate_id: estate.id, room_id: images[0].room_id, favorite: true },
+              trx
+            )
           }
         } else {
-          if (images && images.length) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          /* if no images in rooms*/
+          let files =
+            (await this.getFiles({
+              estate_id: room?.estate_id || estate_id,
+              type: [FILE_TYPE_PLAN, FILE_TYPE_EXTERNAL],
+              orderBy: [{ key: 'type', order: 'asc' }],
+            })) || []
+
+          if (addImage) {
+            files.push(addImage)
+          }
+
+          const removeImageIds = (removeImages || []).map((ri) => ri.id)
+          if (removeImageIds && removeImageIds.length) {
+            files = files.filter((f) => !removeImageIds.includes(f.id))
+          }
+
+          if (files && files.length) {
+            await this.setCover(estate.id, files[0]?.relativeUrl || files[0].url, trx)
+          } else {
+            await this.setCover(estate.id, null, trx)
           }
         }
       }
@@ -895,7 +930,7 @@ class EstateService {
     }
   }
 
-  static extractImages(rooms, removeImage = undefined, addImage = undefined) {
+  static extractImages(rooms, removeImages = undefined, addImage = undefined) {
     let images = []
 
     rooms.map((r) => {
@@ -909,8 +944,9 @@ class EstateService {
     })
 
     images = flatten(images)
-    if (removeImage) {
-      images = images.filter((i) => i.id !== removeImage.id)
+    if (removeImages && removeImages.length) {
+      const removeImageIds = removeImages.map((ri) => ri.id)
+      images = images.filter((i) => !removeImageIds.includes(i.id))
     }
 
     return images

@@ -659,6 +659,7 @@ class EstateController {
       const original_file_names = Array.isArray(files.original_file)
         ? files.original_file
         : [files.original_file]
+      const formats = Array.isArray(files.format) ? files.format : [files.format]
 
       const data = paths.map((path, index) => {
         return {
@@ -667,13 +668,26 @@ class EstateController {
           file_name: original_file_names[index],
           type,
           estate_id: estate.id,
-          file_format: files.format[index],
+          file_format: formats[index],
         }
       })
+      const trx = await Database.beginTransaction()
+      try {
+        const result = await EstateService.addManyFiles(data, trx)
 
-      const result = await EstateService.addManyFiles(data)
-      Event.fire('estate::update', estate_id)
-      return response.res(result)
+        await EstateService.updatePercent(
+          { estate_id: data[0].estate_id, files: [result[0].toJSON()] },
+          trx
+        )
+        await EstateService.updateCover({ estate_id: estate.id, addImage: result[0] }, trx)
+        await trx.commit()
+        Event.fire('estate::update', estate_id)
+        return response.res(result)
+      } catch (e) {
+        await trx.rollback()
+        console.log('Exception happened', e.message)
+        throw new HttpException(FAILED_TO_ADD_FILE, 500)
+      }
     }
     throw new HttpException(FAILED_TO_ADD_FILE, 500)
   }
