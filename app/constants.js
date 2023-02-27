@@ -34,7 +34,7 @@ const constants = {
   FILE_TYPE_UNASSIGNED: 'unassigned',
   FILE_TYPE_ENERGY_CERTIFICATE: 'energy_certificate',
 
-  MAX_MINOR_COUNT: 5,
+  MAX_MINOR_COUNT: 15,
 
   MAX_SEARCH_ITEMS: 10000,
 
