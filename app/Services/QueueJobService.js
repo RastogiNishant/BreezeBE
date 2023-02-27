@@ -18,14 +18,15 @@ const {
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
-  COMPLETE_80_PERCENT,
+  COMPLETE_CERTAIN_PERCENT,
   PUBLISH_ESTATE,
   CONNECT_ESTATE,
-  COMPLETE_80_PERCENT_EMAIL_SUBJECT,
+  COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT,
   PUBLISH_ESTATE_EMAIL_SUBJECT,
   CONNECT_ESTATE_EMAIL_SUBJECT,
   SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE,
   SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE,
+  ESTATE_COMPLETENESS_BREAKPOINT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -260,11 +261,11 @@ class QueueJobService {
     await User.query().where('id', userId).update({ ip_based_info })
   }
 
-  static async sendEmailToSupportForLandlordUpdate({ type, landlord, estateIds }) {
+  static async sendEmailToSupportForLandlordUpdate({ type, landlordId, estateIds }) {
     const estateQuery = Estate.query()
       .select(Database.raw(`count(estates.id) as affected`))
       .whereNot('estates.status', STATUS_DELETE)
-      .where('estates.user_id', landlord.id)
+      .where('estates.user_id', landlordId)
       .whereNotIn('estates.id', estateIds)
 
     let subject = ''
@@ -274,11 +275,13 @@ class QueueJobService {
     let estates
     let estateContent
     switch (type) {
-      case COMPLETE_80_PERCENT:
-        otherEstates = await estateQuery.where('percent', '>=', 80).first()
+      case COMPLETE_CERTAIN_PERCENT:
+        otherEstates = await estateQuery
+          .where('percent', '>=', ESTATE_COMPLETENESS_BREAKPOINT)
+          .first()
         if (+otherEstates.affected === 0) {
           //this is the first one(s)... we need to notify support
-          subject = COMPLETE_80_PERCENT_EMAIL_SUBJECT
+          subject = COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT
         }
         break
 
@@ -303,6 +306,7 @@ class QueueJobService {
     if (isEmpty(subject)) {
       return
     }
+    const landlord = await User.query().where('id', landlordId)
     estates = await Estate.query().whereIn('id', estateIds).fetch()
     estateContent = estates.toJSON().map((estate) => estate.address)
     textMessage = textMessage

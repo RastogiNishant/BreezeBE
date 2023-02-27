@@ -72,6 +72,8 @@ const {
   IMAGE_DOC_PERCENT,
   FILE_TYPE_EXTERNAL,
   DEFAULT_LANG,
+  COMPLETE_CERTAIN_PERCENT,
+  ESTATE_COMPLETENESS_BREAKPOINT,
 } = require('../constants')
 
 const {
@@ -514,6 +516,14 @@ class EstateService {
         },
         trx
       )
+      //test percent
+      if (+estate.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: userId,
+          estateIds: [estate.id],
+        })
+      }
       // we can't get hash when we use transaction because that record won't be created before commiting the transaction
       if (!trx) {
         estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()

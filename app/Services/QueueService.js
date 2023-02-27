@@ -58,10 +58,10 @@ class QueueService {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
   }
 
-  static sendEmailToSupportForLandlordUpdate({ type, landlord, estateIds }) {
+  static sendEmailToSupportForLandlordUpdate({ type, landlordId, estateIds }) {
     Queue.addJob(
       SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE,
-      { type, landlord, estateIds },
+      { type, landlordId, estateIds },
       { delay: 1 }
     )
   }
@@ -168,7 +168,7 @@ class QueueService {
         case SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE:
           return QueueJobService.sendEmailToSupportForLandlordUpdate({
             type: job.data.type,
-            landlord: job.data.landlord,
+            landlordId: job.data.landlordId,
             estateIds: job.data.estateIds,
           })
         case IMPORT_ESTATES_VIA_EXCEL:
