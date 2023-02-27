@@ -43,6 +43,8 @@ class ImageService {
   static async uploadOpenImmoImages(images, estateId) {
     const trx = await Database.beginTransaction()
     try {
+      if (!images || !Array.isArray(images)) return
+
       for (let image of images) {
         if (image.tmpPath && fs.existsSync(image.tmpPath)) {
           const fileExists = await FileModel.query()
@@ -69,6 +71,13 @@ class ImageService {
     } catch (err) {
       await trx.rollback()
       console.log(err.message)
+    } finally {
+      if (!images || !Array.isArray(images)) return
+      for (let image of images) {
+        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+          await fsPromise.unlink(image.tmpPath)
+        }
+      }
     }
   }
 
