@@ -307,7 +307,12 @@ class EstateController {
         }
       }
     }
-    result = { ...result, total_estate_count: totalEstateCounts.all_count }
+    result = {
+      ...result,
+      total_estate_count: totalEstateCounts.all_count,
+      offline_count: totalEstateCounts.offline_count,
+      online_count: totalEstateCounts.online_count,
+    }
     return response.res(result)
   }
 
