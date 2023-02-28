@@ -989,7 +989,7 @@ const constants = {
     void: 12.5,
   },
 
-  ESTATE_COMPLETENESS_BREAKPOINT: 0,
+  ESTATE_COMPLETENESS_BREAKPOINT: 80,
   COMPLETE_CERTAIN_PERCENT: 'complete_certain_percent',
   PUBLISH_ESTATE: 'publish_estate',
   CONNECT_ESTATE: 'connect_estate',
