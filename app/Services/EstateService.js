@@ -74,6 +74,7 @@ const {
   DEFAULT_LANG,
   COMPLETE_CERTAIN_PERCENT,
   ESTATE_COMPLETENESS_BREAKPOINT,
+  PUBLISH_ESTATE,
 } = require('../constants')
 
 const {
@@ -1333,6 +1334,12 @@ class EstateService {
           .transacting(trx),
       })
       await estate.publishEstate(trx)
+      //send email to support for landlord update...
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: PUBLISH_ESTATE,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
       logEvent(
         request,
         LOG_TYPE_PUBLISHED_PROPERTY,
