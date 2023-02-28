@@ -72,6 +72,9 @@ const {
   IMAGE_DOC_PERCENT,
   FILE_TYPE_EXTERNAL,
   DEFAULT_LANG,
+  COMPLETE_CERTAIN_PERCENT,
+  ESTATE_COMPLETENESS_BREAKPOINT,
+  PUBLISH_ESTATE,
 } = require('../constants')
 
 const {
@@ -514,6 +517,14 @@ class EstateService {
         },
         trx
       )
+      //test percent
+      if (+estate.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: userId,
+          estateIds: [estate.id],
+        })
+      }
       // we can't get hash when we use transaction because that record won't be created before commiting the transaction
       if (!trx) {
         estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
@@ -592,7 +603,13 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-
+      if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: user_id,
+          estateIds: [estate.id],
+        })
+      }
       if (data.delete_energy_proof && energy_proof) {
         FileBucket.remove(energy_proof)
       }
@@ -749,16 +766,11 @@ class EstateService {
     }
   }
 
-  static async addManyFiles(data) {
-    const trx = await Database.beginTransaction()
+  static async addManyFiles(data, trx) {
     try {
       const files = await File.createMany(data, trx)
-
-      await this.updatePercent({ estate_id: data[0].estate_id, files: [files[0].toJSON()] }, trx)
-      await trx.commit()
       return files
     } catch (e) {
-      await trx.rollback()
       console.log('AddManyFiles', e.message)
       throw new HttpException(FAILED_TO_ADD_FILE, 500)
     }
@@ -803,6 +815,7 @@ class EstateService {
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
       await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
+      await this.updateCover({ estate_id, removeImages: files }, trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -831,62 +844,101 @@ class EstateService {
     if (files && (files?.length || 0) + ids.length > FILE_LIMIT_LENGTH) {
       throw new HttpException(IMAGE_COUNT_LIMIT, 400)
     }
-
+    const file = await File.query().where('id', ids[0]).first()
     await File.query()
       .update({ type })
       .whereIn('id', ids)
       .where('estate_id', estate_id)
       .transacting(trx)
+
+    if (file) {
+      await this.updateCover({ estate_id, addImage: { ...file.toJSON(), type } }, trx)
+    }
   }
 
-  static async getFiles({ estate_id, ids, type }) {
+  static async getFiles({ estate_id, ids, type, orderBy }) {
     let query = File.query().where('estate_id', estate_id)
     if (ids) {
       query.whereIn('id', ids)
     }
     if (type) {
-      query.where('type', type)
+      type = Array.isArray(type) ? type : [type]
+      query.whereIn('type', type)
+    }
+    if (orderBy) {
+      orderBy.map((ob) => {
+        query.orderBy(ob.key, ob.order)
+      })
     }
 
     return (await query.fetch()).rows || []
   }
 
-  static async updateCover({ room, removeImage, addImage }, trx = null) {
+  static async updateCover({ estate_id, room, removeRoomId, removeImages, addImage }, trx = null) {
     try {
-      const estate = await this.getById(room.estate_id)
+      const estate = await this.getById(room?.estate_id || estate_id)
       if (!estate) {
         throw new HttpException('No permission to update cover', 400)
       }
 
-      const rooms = await RoomService.getRoomsByEstate(estate.id, true)
-
-      const favoriteRooms = room.favorite
-        ? [room]
-        : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
-
-      let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
+      const rooms = ((await RoomService.getRoomsByEstate(estate.id, true)) || [])
+        .toJSON()
+        .filter((r) => r.id !== removeRoomId?.id)
+      let favoriteRooms = []
+      if (room) {
+        favoriteRooms = room.favorite
+          ? [room]
+          : filter(rooms, function (r) {
+              return r.favorite
+            })
+      }
+      let favImages = this.extractImages(
+        favoriteRooms,
+        removeImages,
+        addImage?.room_id ? addImage : undefined
+      )
       // no cover or cover is no longer favorite image
       if (favImages && favImages.length) {
         if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
           await this.setCover(estate.id, favImages[0].relativeUrl, trx)
         }
       } else {
-        let images = this.extractImages(rooms.toJSON(), removeImage)
-        if (estate.cover) {
-          if (
-            images &&
-            images.length &&
-            images.find((i) => i.relativeUrl === estate.cover) === undefined
-          ) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
-          } else if (!images || !images.length) {
-            await this.removeCover(estate.id, estate.cover, trx)
+        let images
+        if (rooms) {
+          images = this.extractImages(rooms, removeImages, addImage?.room_id ? addImage : undefined)
+        }
+
+        if (images && images.length) {
+          await this.setCover(estate.id, images[0].relativeUrl, trx)
+
+          if (room) {
+            await RoomService.setFavorite(
+              { estate_id: estate.id, room_id: images[0].room_id, favorite: true },
+              trx
+            )
           }
         } else {
-          if (images && images.length) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          /* if no images in rooms*/
+          let files =
+            (await this.getFiles({
+              estate_id: room?.estate_id || estate_id,
+              type: [FILE_TYPE_PLAN, FILE_TYPE_EXTERNAL],
+              orderBy: [{ key: 'type', order: 'asc' }],
+            })) || []
+
+          if (addImage) {
+            files.push(addImage)
+          }
+
+          const removeImageIds = (removeImages || []).map((ri) => ri.id)
+          if (removeImageIds && removeImageIds.length) {
+            files = files.filter((f) => !removeImageIds.includes(f.id))
+          }
+
+          if (files && files.length) {
+            await this.setCover(estate.id, files[0]?.relativeUrl || files[0].url, trx)
+          } else {
+            await this.setCover(estate.id, null, trx)
           }
         }
       }
@@ -895,7 +947,7 @@ class EstateService {
     }
   }
 
-  static extractImages(rooms, removeImage = undefined, addImage = undefined) {
+  static extractImages(rooms, removeImages = undefined, addImage = undefined) {
     let images = []
 
     rooms.map((r) => {
@@ -909,8 +961,9 @@ class EstateService {
     })
 
     images = flatten(images)
-    if (removeImage) {
-      images = images.filter((i) => i.id !== removeImage.id)
+    if (removeImages && removeImages.length) {
+      const removeImageIds = removeImages.map((ri) => ri.id)
+      images = images.filter((i) => !removeImageIds.includes(i.id))
     }
 
     return images
@@ -1135,38 +1188,45 @@ class EstateService {
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
 
     const trashedEstates = await Estate.query()
-      .select('*')
-      .whereHas('matches', (estateQuery) => {
-        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      .select('estates.*')
+      .select('_m.updated_at')
+      .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+      .select('_m.status as match_status')
+      .select('_m.user_id as match_user_id')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
       })
-      .orWhereHas('matches', (estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
-          .andWhere('matches.share', false)
-          .andWhere('matches.user_id', userId)
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+      .whereIn('estates.id', estateIds)
+      // .where('_m.user_id', userId)
+      .where(function () {
+        this.orWhere((query) => {
+          query.whereHas('matches', (estateQuery) => {
+            estateQuery
+              .where('matches.status', MATCH_STATUS_FINISH)
+              .whereIn('estates.id', estateIds)
           })
-          .whereDoesntHave('slots', (query) => {
+        })
+        this.orWhere(function () {
+          this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+            .where('_m.user_id', userId)
+            .where('_m.share', false)
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_INVITE)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('slots', (query) => {
             query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
-          })
-          .whereDoesntHave('visit_relations', (query) => {
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_VISIT)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('visit_relations', (query) => {
             query
               .where('visits.user_id', userId)
               .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
+        })
       })
       .fetch()
     return trashedEstates
@@ -1281,6 +1341,12 @@ class EstateService {
           .transacting(trx),
       })
       await estate.publishEstate(trx)
+      //send email to support for landlord update...
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: PUBLISH_ESTATE,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
       logEvent(
         request,
         LOG_TYPE_PUBLISHED_PROPERTY,
@@ -1391,6 +1457,12 @@ class EstateService {
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
+      .select(
+        Database.raw(
+          `count(*) filter(where status IN ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') ) as offline_count`
+        )
+      )
+      .select(Database.raw(`count(*) filter(where status='${STATUS_ACTIVE}') as online_count`))
   }
 
   static async getShortEstatesByQuery({ user_id, query, letting_type }) {
@@ -1978,6 +2050,7 @@ class EstateService {
         let result
         const existingProperty = await Estate.query()
           .where({ property_id: property.property_id, user_id })
+          .whereNot({ status: STATUS_DELETE })
           .first()
         if (existingProperty) {
           existingProperty.merge(omit(property, ['images']))
@@ -2214,7 +2287,13 @@ class EstateService {
         .where('id', estate.id)
         .update({ percent: this.calculatePercent(percentData) })
     }
-
+    if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: COMPLETE_CERTAIN_PERCENT,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
+    }
     return estate
   }
 

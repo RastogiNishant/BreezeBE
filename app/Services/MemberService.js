@@ -48,6 +48,7 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   STATUS_DELETE,
+  DEFAULT_LANG,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -478,57 +479,55 @@ class MemberService {
     ).transacting(trx)
   }
 
-  static async sendInvitationCode(id, userId) {
-    const trx = await Database.beginTransaction()
+  static async sendInvitationCode({ member, id, userId }, trx) {
     try {
-      const member = await Member.findByOrFail({ id: id, user_id: userId })
-      const code = getHash(3)
-      if (member && member.email) {
-        await Member.query()
-          .where({ id: id })
-          .update(
-            {
-              code: code,
-              published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-            },
-            trx
-          )
-
-        const invitedUser = await User.query()
-          .where({ email: member.email, role: ROLE_USER })
-          .first()
-        if (invitedUser) {
-          invitedUser.is_household_invitation_onboarded = false
-          invitedUser.is_profile_onboarded = true
-          await invitedUser.save(trx)
-        }
-
-        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-        const { shortLink } = await firebaseDynamicLinks.createLink({
-          dynamicLinkInfo: {
-            domainUriPrefix: process.env.DOMAIN_PREFIX,
-            link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}`,
-            androidInfo: {
-              androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-            },
-            iosInfo: {
-              iosBundleId: process.env.IOS_BUNDLE_ID,
-              iosAppStoreId: process.env.IOS_APPSTORE_ID,
-            },
-          },
-        })
-
-        await MailService.sendcodeForMemberInvitation(member.email, shortLink)
-        trx.commit()
-        return true
-      } else {
-        if (member && !member.email) {
-          throw new HttpException("this member doesn't have email. please add email first", 400)
-        } else {
-          await trx.rollback()
-        }
+      if (!member) {
+        member = await Member.findByOrFail({ id: id, user_id: userId })
       }
-      return false
+
+      if (member && !member.email) {
+        throw new HttpException("this member doesn't have email. please add email first", 400)
+      }
+      const code = getHash(3)
+
+      await Member.query()
+        .where({ id: id })
+        .update(
+          {
+            code: code,
+            published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+          },
+          trx
+        )
+
+      const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
+      if (invitedUser) {
+        invitedUser.is_household_invitation_onboarded = false
+        invitedUser.is_profile_onboarded = true
+        await invitedUser.save(trx)
+      }
+
+      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+      const { shortLink } = await firebaseDynamicLinks.createLink({
+        dynamicLinkInfo: {
+          domainUriPrefix: process.env.DOMAIN_PREFIX,
+          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}`,
+          androidInfo: {
+            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          },
+          iosInfo: {
+            iosBundleId: process.env.IOS_BUNDLE_ID,
+            iosAppStoreId: process.env.IOS_APPSTORE_ID,
+          },
+        },
+      })
+
+      const data = await require('./UserService').getTokenWithLocale([userId])
+      const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
+      await MailService.sendcodeForMemberInvitation(member.email, shortLink, lang)
+      trx.commit()
+
+      return true
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)

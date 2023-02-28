@@ -1,7 +1,5 @@
 'use strict'
 
-const Mail = use('Mail')
-const Config = use('Config')
 const { trim, capitalize } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
@@ -19,28 +17,6 @@ const { ROLE_LANDLORD, ROLE_USER, DEFAULT_LANG, DAY_FORMAT, DATE_FORMAT } = requ
 const HttpException = require('../Exceptions/HttpException')
 
 class MailService {
-  static async sendResetPasswordMail(email, code) {
-    const msg = {
-      to: email,
-      from: FromEmail, // Use the email address or domain you verified above
-      subject: `Reset password`,
-      text: `Reset password confirm code ${code}`,
-      html: `<h3> Reset password confirm code <b>${code}</b></h3>`,
-    }
-
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
-  }
-
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
 
@@ -143,15 +119,48 @@ class MailService {
     )
   }
 
-  static async sendcodeForMemberInvitation(email, shortLink) {
+  static async sendcodeForMemberInvitation(email, shortLink, lang = DEFAULT_LANG) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const intro = l
+      .get('prospect.email_invite_hh_member.intro.message', lang)
+      .replace(/\n/g, '<br />')
+    const final = l
+      .get('prospect.email_invite_hh_member.final.message', lang)
+      .replace(/\n/g, '<br />')
+
     const msg = {
-      to: email,
-      from: FromEmail, // Use the email address or domain you verified above
-      subject: `You got the link for invitation for your household`,
-      text: `Here is the link is ${shortLink}`,
-      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
+      to: trim(email),
+      from: FromEmail,
+      templateId: templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.email_invite_hh_member.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        intro,
+        link: shortLink,
+        CTA: l.get('prospect.email_invite_hh_member.CTA.message', lang),
+        final,
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+        username: l.get('prospect.settings.user_details.txt_type_username', lang),
+        username_val: email,
+      },
     }
-    console.log('SendCodeForMember Email', email)
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -188,32 +197,6 @@ class MailService {
         }
       }
     )
-  }
-
-  static async sendInvitationToTenant(email, shortLink) {
-    const msg = {
-      to: email,
-      from: FromEmail, // Use the email address or domain you verified above
-      subject: `Invitation to add your properties to this estate`,
-      text: `Here is the link is ${shortLink}`,
-      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
-    }
-
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
-
-    // await Mail.send('mail/send-code', { code }, (message) => {
-    //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
-    // })
   }
 
   static async sendChangeEmailConfirmation(email, code, role) {
@@ -664,6 +647,32 @@ class MailService {
       }
     )
   }
+
+  static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
+    const msg = {
+      to: FromEmail,
+      from: FromEmail, // Use the email address or domain you verified above
+      subject: subject,
+      text: textMessage,
+      html: htmlMessage,
+    }
+
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
+
+  static async sendToSupportLandlordConnectedOneEstate() {}
 }
 
 module.exports = MailService

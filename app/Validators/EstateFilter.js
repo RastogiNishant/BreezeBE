@@ -157,7 +157,6 @@ class EstateFilter extends Base {
                 .oneOf([
                   ESTATE_VALID_ADDRESS_LABEL,
                   ESTATE_INVALID_ADDRESS_LABEL,
-                  ESTATE_ALL_ADDRESS_LABEL,
                 ])
             )
             .nullable(),

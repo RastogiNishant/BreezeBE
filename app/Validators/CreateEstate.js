@@ -118,7 +118,6 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  HEATING_TYPE_FLOOR_HEATING,
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -204,6 +203,7 @@ const {
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
+  MAX_MINOR_COUNT,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -386,7 +386,11 @@ class CreateEstate extends Base {
       is_duration_later: yup.boolean(),
       min_invite_count: yup.number().when('is_duration_later', {
         is: true,
-        then: yup.number().integer().positive().typeError(getExceptionMessage('min_invite_count', NUMBER)),
+        then: yup
+          .number()
+          .integer()
+          .positive()
+          .typeError(getExceptionMessage('min_invite_count', NUMBER)),
       }),
 
       from_date: yup.date().nullable(),
@@ -477,7 +481,6 @@ class CreateEstate extends Base {
               HEATING_TYPE_FLOOR,
               HEATING_TYPE_CENTRAL,
               HEATING_TYPE_REMOTE,
-              HEATING_TYPE_FLOOR_HEATING,
             ])
         ),
       equipment: yup
@@ -543,11 +546,7 @@ class CreateEstate extends Base {
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
       furnished: yup.boolean().nullable(),
-      kids_type: yup
-        .number()
-        .integer()
-        .oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5, null])
-        .nullable(),
+      kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()
         .integer()
