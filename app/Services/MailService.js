@@ -667,7 +667,7 @@ class MailService {
 
   static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
     const msg = {
-      to: 'barudo@gmail.com',
+      to: FromEmail,
       from: FromEmail, // Use the email address or domain you verified above
       subject: subject,
       text: textMessage,
