@@ -1188,38 +1188,45 @@ class EstateService {
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
 
     const trashedEstates = await Estate.query()
-      .select('*')
-      .whereHas('matches', (estateQuery) => {
-        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      .select('estates.*')
+      .select('_m.updated_at')
+      .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+      .select('_m.status as match_status')
+      .select('_m.user_id as match_user_id')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
       })
-      .orWhereHas('matches', (estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
-          .andWhere('matches.share', false)
-          .andWhere('matches.user_id', userId)
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+      .whereIn('estates.id', estateIds)
+      // .where('_m.user_id', userId)
+      .where(function () {
+        this.orWhere((query) => {
+          query.whereHas('matches', (estateQuery) => {
+            estateQuery
+              .where('matches.status', MATCH_STATUS_FINISH)
+              .whereIn('estates.id', estateIds)
           })
-          .whereDoesntHave('slots', (query) => {
+        })
+        this.orWhere(function () {
+          this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+            .where('_m.user_id', userId)
+            .where('_m.share', false)
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_INVITE)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('slots', (query) => {
             query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
-          })
-          .whereDoesntHave('visit_relations', (query) => {
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_VISIT)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('visit_relations', (query) => {
             query
               .where('visits.user_id', userId)
               .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
+        })
       })
       .fetch()
     return trashedEstates
