@@ -53,7 +53,6 @@ const {
   FIRING_COAL,
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
-  HEATING_TYPE_FLOOR_HEATING,
   HEATING_TYPE_OVEN,
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
@@ -623,7 +622,6 @@ test(`EstateImportReader.mapValue maps result to expected values for heating_typ
     HEATING_TYPE_FLOOR,
     HEATING_TYPE_CENTRAL,
     HEATING_TYPE_REMOTE,
-    HEATING_TYPE_FLOOR_HEATING,
   ]
   types.map((type, type_index) => {
     langs.map((lang) => {
