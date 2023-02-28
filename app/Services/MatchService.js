@@ -541,7 +541,9 @@ class MatchService {
     )
     tenants =
       (
-        await MatchService.getProspectForScoringQuery().whereIn('tenants.user_id', [315]).fetch()
+        await MatchService.getProspectForScoringQuery()
+          .whereIn('tenants.user_id', tenantUserIds)
+          .fetch()
       ).toJSON() || []
 
     // Calculate matches for tenants to current estate

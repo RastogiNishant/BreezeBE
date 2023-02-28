@@ -106,6 +106,37 @@ class GalleryService extends BaseService {
     }
   }
 
+  static async assignToRoom({ user_id, estate_id, data, galleries }, trx) {
+    const RoomService = require('./RoomService')
+    const favoriteRoom = await RoomService.getFavoriteRoom(estate_id)
+
+    if (data.room) {
+      const room = await RoomService.createRoom(
+        { user, estate_id, roomData: { ...data.room, favorite: !favoriteRoom } },
+        trx
+      )
+      data.room = room.toJSON()
+    } else {
+      if (!favoriteRoom) {
+        console.log('Set favorite room now!!!')
+        await RoomService.setFavorite({ estate_id, room_id: data.room_id, favorite: true }, trx)
+        console.log('Set favorite room now after!!!')
+      }
+    }
+    await this.removeFile({ estate_id, ids: data.ids }, trx)
+
+    return await RoomService.addImageFromGallery(
+      {
+        user_id,
+        room_id: data.room_id,
+        room: data.room,
+        estate_id,
+        galleries: galleries.rows || [],
+      },
+      trx
+    )
+  }
+
   static async assign({ user, estate_id, data }) {
     const { galleries } = await this.getAll({ estate_id, ids: data.ids })
     let successGalleryIds = null
@@ -114,25 +145,10 @@ class GalleryService extends BaseService {
     try {
       switch (data.view_type) {
         case GALLERY_INSIDE_VIEW_TYPE:
-          if (data.room) {
-            const room = await require('./RoomService').createRoom(
-              { user, estate_id, roomData: data.room },
-              trx
-            )
-            data.room = room.toJSON()
-          }
-
-          successGalleryIds = await require('./RoomService').addImageFromGallery(
-            {
-              user_id: user.id,
-              room_id: data.room_id,
-              room: data.room,
-              estate_id,
-              galleries: galleries.rows || [],
-            },
+          successGalleryIds = await this.assignToRoom(
+            { galleries, user_id: user.id, estate_id, data },
             trx
           )
-          await this.removeFile({ estate_id, ids: data.ids }, trx)
           break
         case GALLERY_DOCUMENT_VIEW_TYPE:
           switch (data.document_type) {

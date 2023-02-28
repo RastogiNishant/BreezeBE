@@ -24,6 +24,7 @@ const {
   WEBSOCKET_EVENT_IMPORT_EXCEL,
   IMPORT_ACTIVITY_DONE,
   LETTING_TYPE_LET,
+  STATUS_DELETE,
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -61,14 +62,18 @@ class ImportService {
         await ImportService.updateImportBySixCharCode({ six_char_code, data }, trx)
       } else {
         if (!data.address) {
-          throw new AppException('Invalid address')
+          return {
+            error: [`address is empty`],
+            line,
+            address: data.address,
+          }
         }
         const address = data.address.toLowerCase()
         const existingEstate = await require('./EstateService')
           .getQuery()
           .where('user_id', userId)
           .where('address', 'LIKE', `%${address}%`)
-          .where('status', STATUS_ACTIVE)
+          .whereNot('status', STATUS_DELETE)
           .first()
         let warning
         if (existingEstate) {
@@ -183,6 +188,8 @@ class ImportService {
     } catch (err) {
       errors = [...errors, err.message]
     } finally {
+      //correct wrong data during importing excel files
+      await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
