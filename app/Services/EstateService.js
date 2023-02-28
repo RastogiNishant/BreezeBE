@@ -602,7 +602,13 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-
+      if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: user_id,
+          estateIds: [estate.id],
+        })
+      }
       if (data.delete_energy_proof && energy_proof) {
         FileBucket.remove(energy_proof)
       }
@@ -2267,7 +2273,13 @@ class EstateService {
         .where('id', estate.id)
         .update({ percent: this.calculatePercent(percentData) })
     }
-
+    if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: COMPLETE_CERTAIN_PERCENT,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
+    }
     return estate
   }
 
