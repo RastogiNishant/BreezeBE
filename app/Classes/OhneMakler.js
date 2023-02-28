@@ -38,10 +38,9 @@ class OhneMakler {
       newEstate.amenities = estate.ausstattung.split(', ')
     }
     newEstate.status = STATUS_ACTIVE
-    if (estate.coordinates) {
-      newEstate.coord = `${estate.coordinates.lat},${estate.coordinates.lon}`
-      newEstate.coord_raw = `${estate.coordinates.lat},${estate.coordinates.lon}`
-    }
+    newEstate.coord = `${estate.latitude},${estate.longitude}`
+    newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
+
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
     return newEstate
   }
