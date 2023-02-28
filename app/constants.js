@@ -988,6 +988,26 @@ const constants = {
     let: 16.7,
     void: 12.5,
   },
+
+  ESTATE_COMPLETENESS_BREAKPOINT: 80,
+  COMPLETE_CERTAIN_PERCENT: 'complete_certain_percent',
+  PUBLISH_ESTATE: 'publish_estate',
+  CONNECT_ESTATE: 'connect_estate',
+
+  COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT: 'Landlord Completed 80% of his/her first Estate(s)',
+  PUBLISH_ESTATE_EMAIL_SUBJECT: 'Landlord Published his/her first Estate(s)',
+  CONNECT_ESTATE_EMAIL_SUBJECT: 'Landlord Connected his/her first Estate(s)',
+
+  SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE: `
+<p>[SUBJECT]</p>
+<p>Landlord Info: <strong>[LANDLORD]</strong></p>
+<p>Estates: </p><ul>[ESTATES]</ul>
+`,
+  SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE: `
+[SUBJECT]
+Landlord Info: [LANDLORD]
+Estates: [ESTATES]
+`,
 }
 
 module.exports = constants

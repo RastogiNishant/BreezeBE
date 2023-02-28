@@ -647,6 +647,32 @@ class MailService {
       }
     )
   }
+
+  static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
+    const msg = {
+      to: FromEmail,
+      from: FromEmail, // Use the email address or domain you verified above
+      subject: subject,
+      text: textMessage,
+      html: htmlMessage,
+    }
+
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
+
+  static async sendToSupportLandlordConnectedOneEstate() {}
 }
 
 module.exports = MailService

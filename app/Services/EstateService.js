@@ -72,6 +72,9 @@ const {
   IMAGE_DOC_PERCENT,
   FILE_TYPE_EXTERNAL,
   DEFAULT_LANG,
+  COMPLETE_CERTAIN_PERCENT,
+  ESTATE_COMPLETENESS_BREAKPOINT,
+  PUBLISH_ESTATE,
 } = require('../constants')
 
 const {
@@ -514,6 +517,14 @@ class EstateService {
         },
         trx
       )
+      //test percent
+      if (+estate.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: userId,
+          estateIds: [estate.id],
+        })
+      }
       // we can't get hash when we use transaction because that record won't be created before commiting the transaction
       if (!trx) {
         estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
@@ -592,7 +603,13 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-
+      if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: user_id,
+          estateIds: [estate.id],
+        })
+      }
       if (data.delete_energy_proof && energy_proof) {
         FileBucket.remove(energy_proof)
       }
@@ -1317,6 +1334,12 @@ class EstateService {
           .transacting(trx),
       })
       await estate.publishEstate(trx)
+      //send email to support for landlord update...
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: PUBLISH_ESTATE,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
       logEvent(
         request,
         LOG_TYPE_PUBLISHED_PROPERTY,
@@ -2257,7 +2280,13 @@ class EstateService {
         .where('id', estate.id)
         .update({ percent: this.calculatePercent(percentData) })
     }
-
+    if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: COMPLETE_CERTAIN_PERCENT,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
+    }
     return estate
   }
 
