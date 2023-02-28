@@ -90,7 +90,6 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  HEATING_TYPE_FLOOR_HEATING,
 
   EQUIPMENT_STANDARD_SIMPLE,
   EQUIPMENT_STANDARD_NORMAL,
@@ -164,6 +163,7 @@ const {
   GENDER_NEUTRAL,
   GENDER_ANY,
   LETTING_STATUS_NEW_RENOVATED,
+  MAX_MINOR_COUNT,
 } = require('../constants')
 
 const {
@@ -427,11 +427,7 @@ class EstateAttributeTranslations {
       family_with_kids: FAMILY_STATUS_WITH_CHILD,
       single: FAMILY_STATUS_SINGLE,
     },
-    kids_type: {
-      no_kids: KIDS_NO_KIDS,
-      to_5_year: KIDS_TO_5,
-      up_5_year: KIDS_UP_5,
-    },
+    kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
     rent_arrears: toBool,
     furnished: toBool,
@@ -730,7 +726,6 @@ class EstateAttributeTranslations {
           'property.attribute.HEATING_TYPE.Remote.message',
         ],
         values: [
-          HEATING_TYPE_FLOOR_HEATING,
           HEATING_TYPE_OVEN,
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,

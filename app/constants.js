@@ -34,7 +34,7 @@ const constants = {
   FILE_TYPE_UNASSIGNED: 'unassigned',
   FILE_TYPE_ENERGY_CERTIFICATE: 'energy_certificate',
 
-  MAX_MINOR_COUNT: 5,
+  MAX_MINOR_COUNT: 15,
 
   MAX_SEARCH_ITEMS: 10000,
 
@@ -240,7 +240,6 @@ const constants = {
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_CENTRAL: 3,
   HEATING_TYPE_REMOTE: 4,
-  HEATING_TYPE_FLOOR_HEATING: 5,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -988,6 +987,26 @@ const constants = {
     let: 16.7,
     void: 12.5,
   },
+
+  ESTATE_COMPLETENESS_BREAKPOINT: 80,
+  COMPLETE_CERTAIN_PERCENT: 'complete_certain_percent',
+  PUBLISH_ESTATE: 'publish_estate',
+  CONNECT_ESTATE: 'connect_estate',
+
+  COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT: 'Landlord Completed 80% of his/her first Estate(s)',
+  PUBLISH_ESTATE_EMAIL_SUBJECT: 'Landlord Published his/her first Estate(s)',
+  CONNECT_ESTATE_EMAIL_SUBJECT: 'Landlord Connected his/her first Estate(s)',
+
+  SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE: `
+<p>[SUBJECT]</p>
+<p>Landlord Info: <strong>[LANDLORD]</strong></p>
+<p>Estates: </p><ul>[ESTATES]</ul>
+`,
+  SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE: `
+[SUBJECT]
+Landlord Info: [LANDLORD]
+Estates: [ESTATES]
+`,
 }
 
 module.exports = constants

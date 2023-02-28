@@ -363,6 +363,7 @@ class OpenImmoReader {
         properties = this.processEnergyPass(properties)
         properties = await this.processImages(properties)
       }
+      await fsPromises.unlink(dfile)
       return properties
     } catch (err) {
       throw new Error(err.message)

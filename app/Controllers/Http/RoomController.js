@@ -130,7 +130,10 @@ class RoomController {
     const trx = await Database.beginTransaction()
     try {
       await RoomService.handleRemoveRoom(room, trx)
-      await EstateService.updateCover({ room: room.toJSON() }, trx)
+      await EstateService.updateCover(
+        { estate_id: room.estate_id, removeRoomId: room_id, removeImages: room.toJSON().images },
+        trx
+      )
       Event.fire('estate::update', room.estate_id)
       await trx.commit()
 
@@ -204,7 +207,7 @@ class RoomController {
     const trx = await Database.beginTransaction()
     try {
       const image = await RoomService.removeImage(id, trx)
-      await EstateService.updateCover({ room: room.toJSON(), removeImage: image }, trx)
+      await EstateService.updateCover({ room: room.toJSON(), removeImages: [image] }, trx)
       Event.fire('estate::update', room.estate_id)
 
       await trx.commit()

@@ -154,6 +154,9 @@ class RoomService {
       .transacting(trx)
   }
 
+  static async getFavoriteRoom(estate_id) {
+    return await Room.query().where('estate_id', estate_id).where('favorite', true).first()
+  }
   /**
    *
    */
@@ -346,6 +349,19 @@ class RoomService {
 
     return room
   }
+
+  static async setFavorite({ estate_id, room_id, favorite = false }, trx = null) {
+    if (trx) {
+      await Room.query()
+        .where('id', room_id)
+        .where('estate_id', estate_id)
+        .update({ favorite })
+        .transacting(trx)
+    } else {
+      await Room.query().where('id', room_id).where('estate_id').update({ favorite })
+    }
+  }
+
   static async createRoomsFromImport({ estate_id, rooms }, trx) {
     try {
       const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
@@ -547,7 +563,11 @@ class RoomService {
     })
 
     if (imagesInfo) {
-      await Image.createMany(imagesInfo, trx)
+      const allocatedRoomImages = await Image.createMany(imagesInfo, trx)
+      await require('./EstateService').updateCover(
+        { estate_id, addImage: { ...allocatedRoomImages[0].toJSON(), room_id: undefined } },
+        trx
+      )
     }
 
     return images.map((image) => image.id)
