@@ -1335,13 +1335,3 @@ Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
   return response.res({ estate, prospect, matchScore })
 }).middleware(['valid:Id,EstateId'])
 */
-
-Route.get('/test-send-email', async ({ response }) => {
-  const QueueJobService = require('../app/Services/QueueJobService')
-  await QueueJobService.sendEmailToSupportForLandlordUpdate({
-    type: 'connect_estate',
-    landlord: { id: 387, firstname: 'Jillian', secondname: 'Marie', email: 'jillian@gmail.com' },
-    estateIds: [520, 521],
-  })
-  return response.res(true)
-})
