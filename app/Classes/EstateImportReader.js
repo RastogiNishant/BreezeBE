@@ -182,6 +182,7 @@ class EstateImportReader {
       return value
     } catch (e) {
       console.log('mapValue error', `${e.message} occurred for ${columnName} ${value}`)
+      return null
     }
   }
 

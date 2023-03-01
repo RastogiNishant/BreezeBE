@@ -541,7 +541,9 @@ class MatchService {
     )
     tenants =
       (
-        await MatchService.getProspectForScoringQuery().whereIn('tenants.user_id', [315]).fetch()
+        await MatchService.getProspectForScoringQuery()
+          .whereIn('tenants.user_id', tenantUserIds)
+          .fetch()
       ).toJSON() || []
 
     // Calculate matches for tenants to current estate
@@ -722,7 +724,9 @@ class MatchService {
   /**
    * Invite knocked user
    */
-  static async inviteKnockedUser(estateId, userId) {
+  static async inviteKnockedUser(estate, userId) {
+    const estateId = estate.id
+
     const match = await Database.query()
       .table('matches')
       .where({ estate_id: estateId, user_id: userId, status: MATCH_STATUS_KNOCK })
@@ -737,7 +741,7 @@ class MatchService {
       estate_id: estateId,
     })
     await NoticeService.userInvite(estateId, userId)
-
+    await this.sendFullInvitationNotification({ estate })
     this.emitMatch({
       data: {
         estate_id: estateId,
@@ -748,6 +752,20 @@ class MatchService {
       role: ROLE_USER,
     })
     MatchService.inviteEmailToProspect({ estateId, userId })
+  }
+
+  static async sendFullInvitationNotification({ estate }) {
+    const estateId = estate.id
+    const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+    const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
+    const invitedCount = (await this.matchCount([MATCH_STATUS_INVITE], [estateId]))[0].count
+    if ((estate?.min_invite_count || 0) >= invitedCount && !timeSlotCount) {
+      await NoticeService.sendFullInvitation({
+        user_id: estate.user_id,
+        estateId: estate.id,
+        count: invitedCount,
+      })
+    }
   }
 
   static async inviteEmailToProspect({ estateId, userId }) {

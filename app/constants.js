@@ -34,7 +34,7 @@ const constants = {
   FILE_TYPE_UNASSIGNED: 'unassigned',
   FILE_TYPE_ENERGY_CERTIFICATE: 'energy_certificate',
 
-  MAX_MINOR_COUNT: 5,
+  MAX_MINOR_COUNT: 15,
 
   MAX_SEARCH_ITEMS: 10000,
 
@@ -240,7 +240,6 @@ const constants = {
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_CENTRAL: 3,
   HEATING_TYPE_REMOTE: 4,
-  HEATING_TYPE_FLOOR_HEATING: 5,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -475,6 +474,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
 
   NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -525,6 +525,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -986,6 +987,26 @@ const constants = {
     let: 16.7,
     void: 12.5,
   },
+
+  ESTATE_COMPLETENESS_BREAKPOINT: 80,
+  COMPLETE_CERTAIN_PERCENT: 'complete_certain_percent',
+  PUBLISH_ESTATE: 'publish_estate',
+  CONNECT_ESTATE: 'connect_estate',
+
+  COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT: 'Landlord Completed 80% of his/her first Estate(s)',
+  PUBLISH_ESTATE_EMAIL_SUBJECT: 'Landlord Published his/her first Estate(s)',
+  CONNECT_ESTATE_EMAIL_SUBJECT: 'Landlord Connected his/her first Estate(s)',
+
+  SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE: `
+<p>[SUBJECT]</p>
+<p>Landlord Info: <strong>[LANDLORD]</strong></p>
+<p>Estates: </p><ul>[ESTATES]</ul>
+`,
+  SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE: `
+[SUBJECT]
+Landlord Info: [LANDLORD]
+Estates: [ESTATES]
+`,
 }
 
 module.exports = constants
