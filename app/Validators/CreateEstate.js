@@ -477,10 +477,10 @@ class CreateEstate extends Base {
             .number()
             .oneOf([
               HEATING_TYPE_NO,
-              HEATING_TYPE_OVEN,
-              HEATING_TYPE_FLOOR,
               HEATING_TYPE_CENTRAL,
+              HEATING_TYPE_FLOOR,
               HEATING_TYPE_REMOTE,
+              HEATING_TYPE_OVEN,
             ])
         ),
       equipment: yup
