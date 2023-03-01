@@ -2010,7 +2010,6 @@ class MatchService {
   ) {
     const query = Tenant.query()
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
-      .where({ '_u.role': ROLE_USER })
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate.id])
       })
@@ -2324,8 +2323,7 @@ class MatchService {
     return query
   }
 
-  static getMatchesByFilter(matches, params = {}) {
-    matches = matches || []
+  static async getMatchesByFilter(estate, filter, params = {}) {
     if (!params.budget_min) {
       params.budget_min = 0
     }
@@ -2336,24 +2334,34 @@ class MatchService {
       params.credit_score_min = 0
     }
     if (!params.credit_score_max) {
-      params.credit_score_max = 1
+      params.credit_score_max = 100
     }
 
-    const phoneVerifiedCount =
-      countBy(matches, (match) => match.phone_verified && match.is_verified).true || 0
-    const idVeriedCount = countBy(matches, (match) => match.id_verified).true || 0
-    const budetLimitCount =
-      countBy(
-        matches,
-        (match) => match.budget_min >= params.budget_min && match.budget_max <= params.budget_max
-      ).true || 0
-    const creditScoreLimitCount =
-      countBy(
-        matches,
-        (match) =>
-          match.credit_score >= params.credit_score_min &&
-          match.credit_score <= params.credit_score_max
-      ).true || 0
+    const budetLimitCount = (
+      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
+        budget_min: params.budget_min,
+        budget_max: params.budget_max,
+      })
+    )[0].count
+
+    const phoneVerifiedCount = (
+      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
+        phone_verified: true,
+      })
+    )[0].count
+    const idVeriedCount = (
+      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
+        id_verified: true,
+      })
+    )[0].count
+
+    const creditScoreLimitCount = (
+      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
+        credit_score_min: params.credit_score_min,
+        credit_score_max: params.credit_score_max,
+      })
+    )[0].count
+
     const incomeTypes = [
       INCOME_TYPE_EMPLOYEE,
       INCOME_TYPE_WORKER,
@@ -2366,10 +2374,16 @@ class MatchService {
       INCOME_TYPE_TRAINEE,
     ]
 
-    const incomeCount = incomeTypes.map((it) => {
+    const incomeMatches = (
+      await this.getLandlordMatchesWithFilterQuery(estate, filter, {
+        income_type: incomeTypes,
+      }).fetch()
+    ).rows
+
+    const incomeCount = (incomeTypes || []).map((it) => {
       return {
         key: it,
-        count: countBy(matches, (match) => (match.profession || []).includes(it)).true || 0,
+        count: countBy(incomeMatches, (match) => (match.profession || []).includes(it)).true || 0,
       }
     })
 
