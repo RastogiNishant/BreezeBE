@@ -25,6 +25,8 @@ const {
   IMPORT_ACTIVITY_DONE,
   LETTING_TYPE_LET,
   STATUS_DELETE,
+  IMPORT_ACTION_IMPORT,
+  IMPORT_ACTION_EXPORT,
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -367,17 +369,23 @@ class ImportService {
     )
     let ret = {
       excel: {
-        import: {},
-        export: {},
+        imported: {},
+        exported: {},
       },
       openimmo: {
-        import: {},
-        export: {},
+        imported: {},
+        exported: {},
       },
     }
     if (importActivity) {
       importActivity.rows.map((row) => {
-        ret[row.type][row.action] = row
+        const key =
+          row.action === IMPORT_ACTION_IMPORT
+            ? 'imported'
+            : row.action === IMPORT_ACTION_EXPORT
+            ? 'exported'
+            : row.action
+        ret[row.type][key] = row
       })
     }
     return ret
