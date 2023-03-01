@@ -31,6 +31,7 @@ const {
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
   MATCH_STATUS_FINISH,
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES,
 } = require('../constants')
 
 class EstateFilter extends Base {
@@ -151,14 +152,7 @@ class EstateFilter extends Base {
           matchMode: yup.string().nullable(),
           value: yup
             .array()
-            .of(
-              yup
-                .string()
-                .oneOf([
-                  ESTATE_VALID_ADDRESS_LABEL,
-                  ESTATE_INVALID_ADDRESS_LABEL,
-                ])
-            )
+            .of(yup.string().oneOf([ESTATE_VALID_ADDRESS_LABEL, ESTATE_INVALID_ADDRESS_LABEL]))
             .nullable(),
         })
         .nullable(),
@@ -176,6 +170,16 @@ class EstateFilter extends Base {
           value: yup.array().of(yup.string()).nullable(),
         })
         .nullable(),
+      customUpdatedAt: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES).required(),
+            value: yup.date().typeError('please enter a valid date').nullable(),
+          })
+        ),
+      }),
+
       status: yup.lazy((value) => {
         if (isArray(value)) {
           return yup
