@@ -157,6 +157,10 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:AdminUpdatePublishStatus',
   ])
+  Route.get('/estates/:id/images', 'Admin/PropertyController.getAllPropertyImages').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */

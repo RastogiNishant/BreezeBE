@@ -115,53 +115,62 @@ class MemberController {
       ])
 
       const user_id = auth.user.id
-      if (data.email) {
-        const member = await Member.query().select('email').where('email', data.email).first()
 
-        if (member) {
-          throw new HttpException('Member already exists with this email', 400)
-        }
-
-        const existingUser = await User.query()
-          .where({ email: data.email, role: ROLE_USER })
-          .first()
-
-        if (existingUser && existingUser.owner_id) {
-          throw new HttpException('This user is a household already.', 400)
-        }
-
-        if (existingUser) {
-          data.owner_user_id = existingUser.id
-        }
-
-        const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
-        if (files.passport) {
-          const memberFile = new MemberFile()
-          memberFile.merge({
-            file: files.passport,
-            type: MEMBER_FILE_TYPE_PASSPORT,
-            status: STATUS_ACTIVE,
-            member_id: createdMember.id,
-          })
-          await memberFile.save(trx)
-        }
-
-        /**
-         * Created by YY
-         * if an adult A is going to let his profile visible to adult B who is created newly
-         *  */
-
-        if (data.visibility_to_other === VISIBLE_TO_SPECIFIC) {
-          Event.fire('memberPermission:create', createdMember.id, user_id)
-        }
-        await trx.commit()
-        Event.fire('tenant::update', user_id)
-        await MemberService.sendInvitationCode(createdMember.id, user_id)
-
-        response.res(createdMember)
-      } else {
+      if (!data.email) {
         throw new HttpException('You should specify email to add member', 400)
       }
+
+      const member = await Member.query().select('email').where('email', data.email).first()
+
+      if (member) {
+        throw new HttpException('Member already exists with this email', 400)
+      }
+
+      const existingUser = await User.query().where({ email: data.email, role: ROLE_USER }).first()
+
+      if (existingUser && existingUser.owner_id) {
+        throw new HttpException('This user is a household already.', 400)
+      }
+
+      if (existingUser) {
+        data.owner_user_id = existingUser.id
+      }
+
+      const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
+
+      if (files.passport) {
+        const memberFile = new MemberFile()
+        memberFile.merge({
+          file: files.passport,
+          type: MEMBER_FILE_TYPE_PASSPORT,
+          status: STATUS_ACTIVE,
+          member_id: createdMember.id,
+        })
+        await memberFile.save(trx)
+      }
+
+      /**
+       * Created by YY
+       * if an adult A is going to let his profile visible to adult B who is created newly
+       *  */
+
+      if (data.visibility_to_other === VISIBLE_TO_SPECIFIC) {
+        Event.fire('memberPermission:create', createdMember.id, user_id)
+      }
+
+      await MemberService.sendInvitationCode(
+        {
+          member: createdMember,
+          id: createdMember.id,
+          userId: user_id,
+        },
+        trx
+      )
+
+      await trx.commit()
+      Event.fire('tenant::update', user_id)
+
+      response.res(createdMember)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
@@ -474,14 +483,14 @@ class MemberController {
     const { id } = request.all()
 
     const userId = auth.user.id
+    const trx = await Database.beginTransaction()
     try {
-      const result = await MemberService.sendInvitationCode(id, userId)
-      return response.res(result)
+      const result = await MemberService.sendInvitationCode({ id, userId }, trx)
+      await trx.commit()
+      response.res(result)
     } catch (e) {
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
   }
 

@@ -899,6 +899,15 @@ class MatchController {
       { ...params }
     )
 
+    let knockedFactorCounts
+    if (matchCount) {
+      knockedFactorCounts = await MatchService.getMatchesByFilter(
+        estate,
+        { knock: true },
+        { ...params }
+      )
+    }
+
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -912,6 +921,7 @@ class MatchController {
       ...data,
       total: matchCount[0].count,
       lastPage: Math.ceil(matchCount[0].count / data.perPage),
+      ...knockedFactorCounts,
     }
     const matches = data
 
@@ -920,6 +930,15 @@ class MatchController {
       (filters = { buddy: true }),
       { ...params }
     )
+
+    let buddyFactorCounts = {}
+    if (buddyCount) {
+      buddyFactorCounts = await MatchService.getMatchesByFilter(
+        estate,
+        { buddy: true },
+        { ...params }
+      )
+    }
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -933,6 +952,7 @@ class MatchController {
       ...data,
       total: buddyCount[0].count,
       lastPage: Math.ceil(buddyCount[0].count / data.perPage),
+      ...buddyFactorCounts,
     }
 
     const buddies = data

@@ -17,6 +17,7 @@ const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
+const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const {
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB,
@@ -56,6 +57,14 @@ class QueueService {
 
   static getAnchorIsoline(tenantId) {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
+  }
+
+  static sendEmailToSupportForLandlordUpdate({ type, landlordId, estateIds }) {
+    Queue.addJob(
+      SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE,
+      { type, landlordId, estateIds },
+      { delay: 1 }
+    )
   }
 
   static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
@@ -162,6 +171,12 @@ class QueueService {
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE:
+          return QueueJobService.sendEmailToSupportForLandlordUpdate({
+            type: job.data.type,
+            landlordId: job.data.landlordId,
+            estateIds: job.data.estateIds,
+          })
         case IMPORT_ESTATES_VIA_EXCEL:
           return ImportService.process({
             s3_bucket_file_name: job.data.s3_bucket_file_name,

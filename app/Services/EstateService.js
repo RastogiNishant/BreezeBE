@@ -72,6 +72,9 @@ const {
   IMAGE_DOC_PERCENT,
   FILE_TYPE_EXTERNAL,
   DEFAULT_LANG,
+  COMPLETE_CERTAIN_PERCENT,
+  ESTATE_COMPLETENESS_BREAKPOINT,
+  PUBLISH_ESTATE,
 } = require('../constants')
 
 const {
@@ -514,6 +517,14 @@ class EstateService {
         },
         trx
       )
+      //test percent
+      if (+estate.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: userId,
+          estateIds: [estate.id],
+        })
+      }
       // we can't get hash when we use transaction because that record won't be created before commiting the transaction
       if (!trx) {
         estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
@@ -592,7 +603,13 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-
+      if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: user_id,
+          estateIds: [estate.id],
+        })
+      }
       if (data.delete_energy_proof && energy_proof) {
         FileBucket.remove(energy_proof)
       }
@@ -1171,38 +1188,45 @@ class EstateService {
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
 
     const trashedEstates = await Estate.query()
-      .select('*')
-      .whereHas('matches', (estateQuery) => {
-        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      .select('estates.*')
+      .select('_m.updated_at')
+      .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+      .select('_m.status as match_status')
+      .select('_m.user_id as match_user_id')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
       })
-      .orWhereHas('matches', (estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
-          .andWhere('matches.share', false)
-          .andWhere('matches.user_id', userId)
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+      .whereIn('estates.id', estateIds)
+      // .where('_m.user_id', userId)
+      .where(function () {
+        this.orWhere((query) => {
+          query.whereHas('matches', (estateQuery) => {
+            estateQuery
+              .where('matches.status', MATCH_STATUS_FINISH)
+              .whereIn('estates.id', estateIds)
           })
-          .whereDoesntHave('slots', (query) => {
+        })
+        this.orWhere(function () {
+          this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+            .where('_m.user_id', userId)
+            .where('_m.share', false)
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_INVITE)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('slots', (query) => {
             query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
-          })
-          .whereDoesntHave('visit_relations', (query) => {
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_VISIT)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('visit_relations', (query) => {
             query
               .where('visits.user_id', userId)
               .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
+        })
       })
       .fetch()
     return trashedEstates
@@ -1317,6 +1341,12 @@ class EstateService {
           .transacting(trx),
       })
       await estate.publishEstate(trx)
+      //send email to support for landlord update...
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: PUBLISH_ESTATE,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
       logEvent(
         request,
         LOG_TYPE_PUBLISHED_PROPERTY,
@@ -2257,7 +2287,13 @@ class EstateService {
         .where('id', estate.id)
         .update({ percent: this.calculatePercent(percentData) })
     }
-
+    if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: COMPLETE_CERTAIN_PERCENT,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
+    }
     return estate
   }
 
