@@ -51,7 +51,9 @@ class OptionService {
       options = (
         await Option.query().orderBy('type', 'asc').orderBy('order', 'asc').fetch()
       ).toJSON()
-      await DataStorage.setItem(GLOBAL_CACHE_KEY, { ...options }, GLOBAL_CACHE_OPTION)
+      await DataStorage.setItem(GLOBAL_CACHE_KEY, { options }, GLOBAL_CACHE_OPTION)
+    } else {
+      options = options.options
     }
     return options
   }
