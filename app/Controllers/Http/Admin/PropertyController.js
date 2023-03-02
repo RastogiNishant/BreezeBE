@@ -16,6 +16,8 @@ const Promise = require('bluebird')
 const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
+const File = use('App/Models/File')
+const Image = use('App/Models/Image')
 
 class PropertyController {
   async getProperties({ request, response }) {
@@ -102,6 +104,19 @@ class PropertyController {
     }
     await trx.rollback()
     throw new HttpException('Action not allowed.')
+  }
+
+  async getAllPropertyImages({ request, response }) {
+    const { id } = request.all()
+    const files = await File.query().where('estate_id', id).fetch()
+    const images = await Image.query()
+      .select('images.*', 'rooms.name')
+      .innerJoin('rooms', 'images.room_id', 'rooms.id')
+      .where('rooms.estate_id', id)
+      .where('rooms.status', STATUS_ACTIVE)
+      .fetch()
+    const docs = await Estate.query().select('energy_proof').where('id', id).first()
+    return response.res({ files, images, docs })
   }
 }
 

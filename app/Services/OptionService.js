@@ -1,6 +1,8 @@
 const Option = use('App/Models/Option')
 
 const { remember } = require('../Libs/Cache')
+const DataStorage = use('DataStorage')
+
 const {
   ROOM_TYPE_GUEST_ROOM,
   ROOM_TYPE_BATH,
@@ -35,6 +37,8 @@ const {
   ROOM_TYPE_PROPERTY_ENTRANCE,
   ROOM_TYPE_GARDEN,
   ROOM_TYPE_LOGGIA,
+  GLOBAL_CACHE_KEY,
+  GLOBAL_CACHE_OPTION,
 } = require('../constants')
 
 class OptionService {
@@ -42,7 +46,16 @@ class OptionService {
    *
    */
   static async getOptions() {
-    return remember('apt_options', async () => Option.query().fetch(), null, ['cache', 'options'])
+    let options = await DataStorage.getItem(GLOBAL_CACHE_KEY, GLOBAL_CACHE_OPTION)
+    if (!options) {
+      options = (
+        await Option.query().orderBy('type', 'asc').orderBy('order', 'asc').fetch()
+      ).toJSON()
+      await DataStorage.setItem(GLOBAL_CACHE_KEY, { options }, GLOBAL_CACHE_OPTION)
+    } else {
+      options = options.options
+    }
+    return options
   }
 
   static getRoomTypes() {

@@ -368,10 +368,10 @@ class EstateAttributeTranslations {
     },
     heating_type: {
       no_heating: HEATING_TYPE_NO,
-      oven: HEATING_TYPE_OVEN,
-      floor: HEATING_TYPE_FLOOR,
       central: HEATING_TYPE_CENTRAL,
+      floor: HEATING_TYPE_FLOOR,
       remote: HEATING_TYPE_REMOTE,
+      oven: HEATING_TYPE_OVEN,
     },
     equipment_standard: {
       simple: EQUIPMENT_STANDARD_SIMPLE,
@@ -719,18 +719,12 @@ class EstateAttributeTranslations {
       },
       heating_type: {
         keys: [
-          'property.attribute.HEATING_TYPE.Floor_heating.message',
-          'property.attribute.HEATING_TYPE.Oven.message',
-          'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Central.message',
+          'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Remote.message',
+          'property.attribute.HEATING_TYPE.Oven.message',
         ],
-        values: [
-          HEATING_TYPE_OVEN,
-          HEATING_TYPE_FLOOR,
-          HEATING_TYPE_CENTRAL,
-          HEATING_TYPE_REMOTE,
-        ],
+        values: [HEATING_TYPE_CENTRAL, HEATING_TYPE_FLOOR, HEATING_TYPE_REMOTE, HEATING_TYPE_OVEN],
       },
       equipment_standard: {
         keys: [
