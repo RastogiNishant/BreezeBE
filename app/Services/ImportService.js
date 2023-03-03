@@ -10,9 +10,7 @@ const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const Ws = use('Ws')
-
 const FileBucket = use('App/Classes/File')
-
 const schema = require('../Validators/CreateBuddy').schema()
 const {
   STATUS_DRAFT,
@@ -25,8 +23,11 @@ const {
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_IMPORT_EXCEL,
   IMPORT_ACTIVITY_DONE,
+  LETTING_TYPE_LET,
+  STATUS_DELETE,
+  IMPORT_ACTION_IMPORT,
+  IMPORT_ACTION_EXPORT,
 } = require('../constants')
-const RoomService = require('./RoomService')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
@@ -63,14 +64,18 @@ class ImportService {
         await ImportService.updateImportBySixCharCode({ six_char_code, data }, trx)
       } else {
         if (!data.address) {
-          throw new AppException('Invalid address')
+          return {
+            error: [`address is empty`],
+            line,
+            address: data.address,
+          }
         }
         const address = data.address.toLowerCase()
         const existingEstate = await require('./EstateService')
           .getQuery()
           .where('user_id', userId)
           .where('address', 'LIKE', `%${address}%`)
-          .where('status', STATUS_ACTIVE)
+          .whereNot('status', STATUS_DELETE)
           .first()
         let warning
         if (existingEstate) {
@@ -97,7 +102,7 @@ class ImportService {
         }
 
         //add current tenant
-        if (data.surname) {
+        if (data.letting_type === LETTING_TYPE_LET) {
           await EstateCurrentTenantService.addCurrentTenant(
             {
               data,
@@ -185,6 +190,8 @@ class ImportService {
     } catch (err) {
       errors = [...errors, err.message]
     } finally {
+      //correct wrong data during importing excel files
+      await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
@@ -284,6 +291,7 @@ class ImportService {
         'salutation_int',
       ])
       let estate = await Estate.query().where('six_char_code', six_char_code).first()
+      const user_id = estate.user_id
       if (!estate) {
         throw new HttpException('estate no exists')
       }
@@ -294,12 +302,20 @@ class ImportService {
       estate.fill(estate_data)
       await estate.save(trx)
 
-      if (data.email) {
+      if (data.letting_type === LETTING_TYPE_LET) {
         await EstateCurrentTenantService.updateCurrentTenant(
           {
             data,
             estate_id: estate.id,
-            user_id: estate.user_id,
+            user_id,
+          },
+          trx
+        )
+      } else {
+        await EstateCurrentTenantService.deleteByEstate(
+          {
+            estate_ids: [estate.id],
+            user_id,
           },
           trx
         )
@@ -315,7 +331,7 @@ class ImportService {
       if (rooms.length) {
         await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
       } else {
-        await RoomService.removeAllRoom(estate.id)
+        await require('./RoomService').removeAllRoom(estate.id, trx)
       }
 
       return estate
@@ -338,46 +354,50 @@ class ImportService {
     return await Import.query().where('id', id).update({ status: IMPORT_ACTIVITY_DONE })
   }
 
-  static async getLastImportActivities(
-    user_id,
-    type = IMPORT_TYPE_EXCEL,
-    entity = IMPORT_ENTITY_ESTATES
-  ) {
-    const importActivity = {}
-    let importExcelActivity = await Import.query()
-      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .select('filename')
-      .select('action')
-      .select('status')
-      .where({ user_id, type, entity, action: 'import' })
-      .orderBy('created_at', 'desc')
-      .first()
-
-    if (importExcelActivity) {
-      importExcelActivity = importExcelActivity.toJSON()
-      importExcelActivity.created_at = moment(importExcelActivity.created_at).utc().format()
-      importActivity.imported = importExcelActivity
+  static async getLastImportActivities(user_id) {
+    const importActivity = await Database.raw(
+      `SELECT 
+      type, filename, action, to_char(created_at, '${ISO_DATE_FORMAT}') as created_at, status
+    FROM imports
+    WHERE (type, action, created_at) in 
+    (
+      SELECT type, action, MAX(created_at)
+      FROM imports
+      where user_id=${user_id}
+      GROUP BY type, action
+    )`
+    )
+    let ret = {
+      excel: {
+        imported: {},
+        exported: {},
+      },
+      openimmo: {
+        imported: {},
+        exported: {},
+      },
     }
-
-    let exportExcelActivity = await Import.query()
-      .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
-      .select('filename')
-      .select('action')
-      .where({ user_id, type, entity, action: 'export' })
-      .orderBy('created_at', 'desc')
-      .first()
-    if (exportExcelActivity) {
-      exportExcelActivity = exportExcelActivity.toJSON()
-      exportExcelActivity.created_at = moment(exportExcelActivity.created_at).utc().format()
-      importActivity.exported = exportExcelActivity
+    if (importActivity) {
+      importActivity.rows.map((row) => {
+        const key =
+          row.action === IMPORT_ACTION_IMPORT
+            ? 'imported'
+            : row.action === IMPORT_ACTION_EXPORT
+            ? 'exported'
+            : row.action
+        ret[row.type][key] = row
+      })
     }
-    return importActivity
+    return ret
   }
 
   static async postLastActivity({ user_id, filename, action, type, entity }) {
     const trx = await Database.beginTransaction()
     try {
-      await Import.createItem({ user_id, filename, action, type, entity }, trx)
+      await Import.createItem(
+        { user_id, filename, action, type, entity, status: IMPORT_ACTIVITY_DONE },
+        trx
+      )
       await trx.commit()
       return true
     } catch (err) {

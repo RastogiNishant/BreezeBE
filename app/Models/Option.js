@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class Option extends Model {
   static get columns() {
-    return ['id', 'type', 'title']
+    return ['id', 'type', 'title', 'order']
   }
 
   /**

@@ -64,6 +64,7 @@ const {
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -100,6 +101,10 @@ const {
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
   ESTATE_NOTIFICATION_FIELDS,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+  STATUS_DELETE,
+  STATUS_DRAFT,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -465,9 +470,9 @@ class NoticeService {
     await NoticeService.insertNotices([notice])
 
     if (userId) {
-      await NotificationsService.sendLandlordCancelVisit([notice])
+      NotificationsService.sendLandlordCancelVisit([notice])
     } else {
-      await NotificationsService.sendProspectCancelVisit([notice])
+      NotificationsService.sendProspectCancelVisit([notice])
     }
   }
 
@@ -495,6 +500,28 @@ class NoticeService {
     })
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendTenantUpdateTimeSlot(notices)
+  }
+
+  /*
+   * user_id is landlord id
+   */
+  static async sendFullInvitation({ user_id, estateId, count }) {
+    const estate = await Database.table({ _e: 'estates' })
+      .select('address', 'id', 'cover', 'user_id')
+      .where('id', estateId)
+      .first()
+    const notice = {
+      user_id,
+      type: NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+      data: {
+        estate_id: estate.id,
+        count,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    NotificationsService.sendFullInvitation([notice])
   }
 
   /**
@@ -555,6 +582,42 @@ class NoticeService {
 
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendProspectFirstVisitConfirm(notices)
+  }
+
+  static async expiredShowTime() {
+    const knockMatches =
+      (
+        await Match.query().where('status', MATCH_STATUS_KNOCK).whereNull('notified_at').fetch()
+      ).toJSON() || []
+
+    const notices = []
+    const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
+
+    let i = 0
+    while (i < Object.keys(groupMatches).length) {
+      const estate_id = Object.keys(groupMatches)[i]
+      const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
+      if (!Object.keys(freeTimeSlots).length) {
+        const estate = await require('./EstateService').getActiveById(estate_id)
+        if (estate) {
+          notices.push({
+            user_id: estate.user_id,
+            type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+            data: { estate_id, estate_address: estate.address },
+            image: File.getPublicUrl(estate.cover),
+          })
+        }
+      }
+      i++
+    }
+
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendExpiredShowTime(notices)
+    }
+    await Match.query()
+      .where('status', MATCH_STATUS_KNOCK)
+      .update({ notified_at: moment.utc().format(DATE_FORMAT) })
   }
 
   /**
@@ -827,6 +890,9 @@ class NoticeService {
         return NotificationsService.sendChangeVisitTimeLandlord([notice])
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
+      case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
+        console.log('notice here=', notice)
+        return NotificationsService.sendFullInvitation([notice])
     }
   }
 

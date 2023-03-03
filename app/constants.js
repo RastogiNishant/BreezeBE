@@ -18,6 +18,7 @@ const constants = {
   ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED: 10300,
   ERROR_OUTSIDE_TENANT_INVITATION_INVALID: 10301,
   ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED: 10302,
+  ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID: 10303,
 
   LANG_EN: 'en',
   LANG_DE: 'de',
@@ -28,10 +29,19 @@ const constants = {
   FILE_TYPE_CUSTOM: 'custom',
   FILE_TYPE_DOC: 'doc',
   FILE_TYPE_IMAGE: 'image',
+  FILE_TYPE_EXTERNAL: 'external',
+  FILE_TYPE_GALLERY: 'gallery',
+  FILE_TYPE_UNASSIGNED: 'unassigned',
+  FILE_TYPE_ENERGY_CERTIFICATE: 'energy_certificate',
 
-  MAX_MINOR_COUNT: 5,
+  MAX_MINOR_COUNT: 15,
 
   MAX_SEARCH_ITEMS: 10000,
+
+  GALLERY_INSIDE_VIEW_TYPE: 'inside',
+  GALLERY_DOCUMENT_VIEW_TYPE: 'document',
+
+  DOCUMENT_VIEW_ENERGY_TYPE: 'energy',
 
   MEMBER_FILE_TYPE_RENT: 'rent_proof',
   MEMBER_FILE_TYPE_DEBT: 'debt_proof',
@@ -95,6 +105,9 @@ const constants = {
   USE_TYPE_PLANT: 5,
   USE_TYPE_OTHER: 6,
 
+  GLOBAL_CACHE_KEY: 'GLOBAL_OPTIONS',
+  GLOBAL_CACHE_OPTION: 'apt_options',
+
   OWNERSHIP_TYPE_FREEHOLDER: 1,
   OWNERSHIP_TYPE_DIRECT_PROPERTY: 2,
   OWNERSHIP_TYPE_LEASEHOLD: 3,
@@ -137,6 +150,7 @@ const constants = {
   BUILDING_STATUS_DEVELOPED: 13,
   BUILDING_STATUS_ABRISSOBJEKT: 14,
   BUILDING_STATUS_PROJECTED: 15,
+  BUILDING_STATUS_FULLY_REFURBISHED: 16,
 
   ROOM_TYPE_GUEST_ROOM: 1,
   ROOM_TYPE_BATH: 2,
@@ -173,6 +187,7 @@ const constants = {
   ROOM_TYPE_LOGGIA: 33,
 
   // apartment type
+  APARTMENT_TYPE_NO_INFORMATION: 0,
   APARTMENT_TYPE_FLAT: 1,
   APARTMENT_TYPE_GROUND: 2,
   APARTMENT_TYPE_ROOF: 3,
@@ -181,6 +196,12 @@ const constants = {
   APARTMENT_TYPE_SOCIAL: 6,
   APARTMENT_TYPE_SOUTERRAIN: 7,
   APARTMENT_TYPE_PENTHOUSE: 8,
+  APARTMENT_TYPE_TERRACES: 9,
+  APARTMENT_TYPE_ETAGE: 10,
+  APARTMENT_TYPE_HOLIDAY: 11,
+  APARTMENT_TYPE_GALLERY: 12,
+  APARTMENT_TYPE_RAW_ATTIC: 13,
+  APARTMENT_TYPE_ATTIC: 14,
 
   // Building type
   HOUSE_TYPE_MULTIFAMILY_HOUSE: 1,
@@ -218,11 +239,10 @@ const constants = {
   FIRING_LIQUID_GAS: 14,
 
   HEATING_TYPE_NO: 0,
-  HEATING_TYPE_OVEN: 1,
+  HEATING_TYPE_CENTRAL: 1,
   HEATING_TYPE_FLOOR: 2,
-  HEATING_TYPE_CENTRAL: 3,
-  HEATING_TYPE_REMOTE: 4,
-  HEATING_TYPE_FLOOR_HEATING: 5,
+  HEATING_TYPE_REMOTE: 3,
+  HEATING_TYPE_OVEN: 4,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -289,6 +309,9 @@ const constants = {
 
   SOURCE_TYPE_BUDDY: 1,
   SOURCE_TYPE_MATCHED: 2,
+
+  BUILDING_AGE_NEW: 1,
+  BUILDING_AGE_OLD: 2,
 
   ADULT_AGE_25: 1,
   ADULT_AGE_25_59: 2,
@@ -452,6 +475,10 @@ const constants = {
 
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED: 'notification_prospect_task_resolved',
   NOTICE_TYPE_PROSPECT_DEACTIVATED: 'notification_prospect_deactivated',
+
+  NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
+
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
   NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID: 4,
@@ -500,6 +527,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID: 52,
   NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID: 53,
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -551,6 +580,7 @@ const constants = {
     'net_rent',
     'area',
     'cover',
+    'country',
     'street',
     'city',
     'zip',
@@ -903,6 +933,7 @@ const constants = {
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
+  IMPORT_TYPE_OPENIMMO: 'openimmo',
   IMPORT_ENTITY_ESTATES: 'estates',
 
   IMPORT_ACTION_IMPORT: 'import',
@@ -912,6 +943,136 @@ const constants = {
 
   IMPORT_ACTIVITY_PENDING: 'pending',
   IMPORT_ACTIVITY_DONE: 'done',
+
+  LOW_MATCH_ICON: 'RED', // 40, 50, 60
+  MEDIUM_MATCH_ICON: 'YELLOW', // 70, 80
+  SUPER_MATCH_ICON: 'GREEN', // 90, 95, 100
+
+  MATCH_HOUSEHOLD_HAS_CHILD_LABEL: 'Has child',
+  MATCH_HOUSEHOLD_NO_CHILD_LABEL: 'No child',
+
+  INCOME_TYPE_EMPLOYEE_LABEL: 'Employee',
+  INCOME_TYPE_WORKER_LABEL: 'Worker',
+  INCOME_TYPE_UNEMPLOYED_LABEL: 'Unemployed',
+  INCOME_TYPE_CIVIL_SERVANT_LABEL: 'Civil servant',
+  INCOME_TYPE_FREELANCER_LABEL: 'Freelancer',
+  INCOME_TYPE_HOUSE_WORK_LABEL: 'Housekeeper',
+  INCOME_TYPE_PENSIONER_LABEL: 'Pensioner',
+  INCOME_TYPE_SELF_EMPLOYED_LABEL: 'Self-Employeed',
+  INCOME_TYPE_TRAINEE_LABEL: 'Trainee',
+
+  DOC_INCOME_PROOF_LABEL: 'Income proof',
+  DOC_RENT_ARREARS_LABEL: 'Rent arrears',
+  DOC_CREDIT_SCORE_LABEL: 'Credit score',
+  FILE_LIMIT_LENGTH: 5,
+
+  GENERAL_PERCENT: {
+    let: 49.9,
+    void: 37.5,
+  },
+  LEASE_CONTRACT_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+  PROPERTY_DETAILS_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+  TENANT_PREFERENCES_PERCENT: {
+    let: 0,
+    void: 12.5,
+  },
+  VISIT_SLOT_PERCENT: {
+    let: 0,
+    void: 12.5,
+  },
+  IMAGE_DOC_PERCENT: {
+    let: 16.7,
+    void: 12.5,
+  },
+
+  ESTATE_COMPLETENESS_BREAKPOINT: 80,
+  COMPLETE_CERTAIN_PERCENT: 'complete_certain_percent',
+  PUBLISH_ESTATE: 'publish_estate',
+  CONNECT_ESTATE: 'connect_estate',
+
+  COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT: 'Landlord Completed 80% of his/her first Estate(s)',
+  PUBLISH_ESTATE_EMAIL_SUBJECT: 'Landlord Published his/her first Estate(s)',
+  CONNECT_ESTATE_EMAIL_SUBJECT: 'Landlord Connected his/her first Estate(s)',
+
+  SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE: `
+<p>[SUBJECT]</p>
+<p>Landlord Info: <strong>[LANDLORD]</strong></p>
+<p>Estates: </p><ul>[ESTATES]</ul>
+`,
+  SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE: `
+[SUBJECT]
+Landlord Info: [LANDLORD]
+Estates: [ESTATES]
+`,
+
+  BUILDING_AMENITIES_ORDER: [
+    'Elevator',
+    'Cellar',
+    'Common room',
+    'Parking space',
+    'Bicycle storage room',
+    'Garage',
+    'Intercom system',
+    'Thermal insulation',
+    'Renewed facade',
+    'Exclusive lighting',
+    'High quality entrance hall',
+    'Mirror',
+    'Marble',
+    'House entrance door not lockable',
+  ],
+  APARTMENT_AMENITIES_ORDER: [
+    'Furnished',
+    'Balcony',
+    'Storage room',
+    'South facing',
+    'Roller shutters',
+    'Mainly underfloor heating',
+    'Tiles',
+    'Wainscoting',
+    'Loggia',
+    'Roof floor',
+    'Bright',
+    'Roof floor',
+    'Single glazing',
+    'Soundproof windows',
+    'High quality parquet',
+    'Exclusive/high quality/luxury',
+    'Panoramic view',
+    'Natural/artificial stone',
+    'Additional burglar alarm',
+    'Thermal insulation glazing',
+    'Fireplace',
+    'Stucco',
+    'Winter/roof garden',
+    'Low barrier cut',
+    'Stucco',
+    'Washing machine not placeable',
+    'Poor cut',
+  ],
+  VINCINITY_AMENITIES_ORDER: [
+    'Preferred city location',
+    'Car parking',
+    'Bicycle parking',
+    'Childrens playground',
+    'Rest Areas', //Park actually
+    'In Green',
+    'Quiet',
+    'Garden',
+    'Courtyard',
+    'Benches',
+    'Lighting',
+    'Sidewalk paving',
+    'Polluted by traffic noise',
+    'Odorous',
+    'Heavily neglected',
+  ],
 }
 
 module.exports = constants

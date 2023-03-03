@@ -90,7 +90,6 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  HEATING_TYPE_FLOOR_HEATING,
 
   EQUIPMENT_STANDARD_SIMPLE,
   EQUIPMENT_STANDARD_NORMAL,
@@ -164,11 +163,21 @@ const {
   GENDER_NEUTRAL,
   GENDER_ANY,
   LETTING_STATUS_NEW_RENOVATED,
+  MAX_MINOR_COUNT,
 } = require('../constants')
 
 const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
+
+extractValue = (key, value) => {
+  const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
+  const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
+  if (filterValues && filterValues.length) {
+    return filterValues[0]
+  }
+  return null
+}
 
 escapeStr = (v) => {
   return (v || '')
@@ -359,10 +368,10 @@ class EstateAttributeTranslations {
     },
     heating_type: {
       no_heating: HEATING_TYPE_NO,
-      oven: HEATING_TYPE_OVEN,
-      floor: HEATING_TYPE_FLOOR,
       central: HEATING_TYPE_CENTRAL,
+      floor: HEATING_TYPE_FLOOR,
       remote: HEATING_TYPE_REMOTE,
+      oven: HEATING_TYPE_OVEN,
     },
     equipment_standard: {
       simple: EQUIPMENT_STANDARD_SIMPLE,
@@ -418,11 +427,7 @@ class EstateAttributeTranslations {
       family_with_kids: FAMILY_STATUS_WITH_CHILD,
       single: FAMILY_STATUS_SINGLE,
     },
-    kids_type: {
-      no_kids: KIDS_NO_KIDS,
-      to_5_year: KIDS_TO_5,
-      up_5_year: KIDS_UP_5,
-    },
+    kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
     rent_arrears: toBool,
     furnished: toBool,
@@ -443,12 +448,12 @@ class EstateAttributeTranslations {
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
-        case escapeStr(l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', this.lang)): //'Ground floor':
+        case extractValue(`property.attribute.APARTMENT_TYPE.Ground_floor.message`, escapeStr(i)): //'Ground floor':
           return 0
-        case escapeStr(l.get('apt_roof_floor.message', this.lang)):
+        case extractValue(`apt_roof_floor.message`, escapeStr(i)): //'Root floor':
           return 21
         default:
-          return parseInt(i)
+          return parseInt(i) || null
       }
     },
     family_size_max: (i) => {
@@ -714,19 +719,12 @@ class EstateAttributeTranslations {
       },
       heating_type: {
         keys: [
-          'property.attribute.HEATING_TYPE.Floor_heating.message',
-          'property.attribute.HEATING_TYPE.Oven.message',
-          'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Central.message',
+          'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Remote.message',
+          'property.attribute.HEATING_TYPE.Oven.message',
         ],
-        values: [
-          HEATING_TYPE_FLOOR_HEATING,
-          HEATING_TYPE_OVEN,
-          HEATING_TYPE_FLOOR,
-          HEATING_TYPE_CENTRAL,
-          HEATING_TYPE_REMOTE,
-        ],
+        values: [HEATING_TYPE_CENTRAL, HEATING_TYPE_FLOOR, HEATING_TYPE_REMOTE, HEATING_TYPE_OVEN],
       },
       equipment_standard: {
         keys: [
