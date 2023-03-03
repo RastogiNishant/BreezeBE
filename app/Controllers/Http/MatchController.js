@@ -898,6 +898,15 @@ class MatchController {
       { ...params }
     )
 
+    let knockedFactorCounts
+    if (matchCount) {
+      knockedFactorCounts = await MatchService.getMatchesByFilter(
+        estate,
+        { knock: true },
+        { ...params }
+      )
+    }
+
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -911,6 +920,7 @@ class MatchController {
       ...data,
       total: matchCount[0].count,
       lastPage: Math.ceil(matchCount[0].count / data.perPage),
+      ...knockedFactorCounts,
     }
     const matches = data
 
@@ -919,6 +929,15 @@ class MatchController {
       (filters = { buddy: true }),
       { ...params }
     )
+
+    let buddyFactorCounts = {}
+    if (buddyCount) {
+      buddyFactorCounts = await MatchService.getMatchesByFilter(
+        estate,
+        { buddy: true },
+        { ...params }
+      )
+    }
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -932,14 +951,14 @@ class MatchController {
       ...data,
       total: buddyCount[0].count,
       lastPage: Math.ceil(buddyCount[0].count / data.perPage),
+      ...buddyFactorCounts,
     }
 
     const buddies = data
 
     let inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { invite: true }),
-      { ...params }
+      (filters = { invite: true })
     )
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -958,10 +977,8 @@ class MatchController {
 
     let visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { visit: true }),
-      { ...params }
+      (filters = { visit: true })
     )
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
@@ -979,8 +996,7 @@ class MatchController {
 
     let topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { top: true }),
-      { ...params }
+      (filters = { top: true })
     )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
@@ -1014,8 +1030,7 @@ class MatchController {
 
     let finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = filter),
-      { ...params }
+      (filters = filter)
     )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
