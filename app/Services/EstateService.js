@@ -1,13 +1,12 @@
 'use strict'
 const moment = require('moment')
-const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy } = require('lodash')
+const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy, sum } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
 const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
-const TenantService = use('App/Services/TenantService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
@@ -20,10 +19,13 @@ const Visit = use('App/Models/Visit')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
+const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
 const Amenity = use('App/Models/Amenity')
 const TaskFilters = require('../Classes/TaskFilters')
+const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
+const GeoAPI = use('GeoAPI')
 
 const {
   STATUS_DRAFT,
@@ -53,21 +55,225 @@ const {
   ROLE_LANDLORD,
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
+  IMPORT_TYPE_OPENIMMO,
+  IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_VALID_ADDRESS,
+  FILE_TYPE_PLAN,
   LETTING_STATUS_NEW_RENOVATED,
   LETTING_STATUS_STANDARD,
+  LETTING_STATUS_VACANCY,
+  FILE_LIMIT_LENGTH,
+  FILE_TYPE_UNASSIGNED,
+  GENERAL_PERCENT,
+  LEASE_CONTRACT_PERCENT,
+  PROPERTY_DETAILS_PERCENT,
+  TENANT_PREFERENCES_PERCENT,
+  VISIT_SLOT_PERCENT,
+  IMAGE_DOC_PERCENT,
+  FILE_TYPE_EXTERNAL,
+  DEFAULT_LANG,
+  COMPLETE_CERTAIN_PERCENT,
+  ESTATE_COMPLETENESS_BREAKPOINT,
+  PUBLISH_ESTATE,
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST },
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
-const ChatService = require('./ChatService')
 const MAX_DIST = 10000
 
+const ESTATE_PERCENTAGE_VARIABLE = {
+  genenral: [
+    {
+      key: 'address',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'property_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rooms_number',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rooms_number',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'floor',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'floor_direction',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  lease_price: [
+    {
+      key: 'net_rent',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'deposit',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'parking_space',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'extra_costs',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+    },
+    {
+      key: 'heating_costs',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  property_detail: [
+    {
+      key: 'construction_year',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'house_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'building_status',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'apt_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'heating_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'energy_efficiency',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'firing_type',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  tenant_preference: [
+    {
+      key: 'min_age',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'max_age',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'household_type',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'minors',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'pets_allowed',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'is_new_tenant_transfer',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'budget',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'credit_score',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'rent_arrears',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'income_sources',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+  visit_slots: [
+    {
+      key: 'available_date',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'avail_duration',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+    {
+      key: 'slot',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+  ],
+  views: [
+    {
+      key: 'inside_view',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'outside_view',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'floor_plan',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: true,
+    },
+    {
+      key: 'energy_proof',
+      mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+    },
+  ],
+}
 /**
  *
  */
@@ -87,11 +293,23 @@ class EstateService {
    *
    */
   static getActiveEstateQuery() {
-    return Estate.query().whereNot('status', STATUS_DELETE)
+    return Estate.query().whereNot('estates.status', STATUS_DELETE)
   }
 
   static async getById(id) {
     return await this.getActiveEstateQuery().where({ id }).first()
+  }
+
+  static async getByIdWithDetail(id) {
+    return await this.getActiveEstateQuery()
+      .where('id', id)
+      .with('slots')
+      .with('rooms', function (r) {
+        r.with('images')
+      })
+      .with('files')
+      .with('amenities')
+      .first()
   }
 
   static async getEstateWithDetails({ id, user_id, role }) {
@@ -236,7 +454,11 @@ class EstateService {
   /**
    *
    */
-  static async createEstate({ request, data, userId }, fromImport = false, trx = null) {
+  static async createEstate(
+    { request, data, userId, is_coord_changed = true },
+    fromImport = false,
+    trx = null
+  ) {
     data = request ? request.all() : data
 
     const propertyId = data.property_id
@@ -247,67 +469,81 @@ class EstateService {
       throw new HttpException('No user Id passed')
     }
 
-    let createData = {
-      ...omit(data, [
-        'room1_type',
-        'room2_type',
-        'room3_type',
-        'room4_type',
-        'room5_type',
-        'room6_type',
-        'txt_salutation',
-        'surname',
-        'contract_end',
-        'phone_number',
-        'email',
-        'salutation_int',
-        'rooms',
-      ]),
-      user_id: userId,
-      property_id: propertyId,
-      status: STATUS_DRAFT,
-    }
+    try {
+      let createData = {
+        ...omit(data, [
+          'room1_type',
+          'room2_type',
+          'room3_type',
+          'room4_type',
+          'room5_type',
+          'room6_type',
+          'txt_salutation',
+          'surname',
+          'contract_end',
+          'phone_number',
+          'email',
+          'salutation_int',
+          'rooms',
+        ]),
+        user_id: userId,
+        property_id: propertyId,
+        status: STATUS_DRAFT,
+      }
 
-    if (request) {
-      const files = await this.saveEnergyProof(request)
+      if (request) {
+        const files = await this.saveEnergyProof(request)
 
-      if (files && files.energy_proof) {
-        createData = {
-          ...createData,
-          energy_proof: files.energy_proof,
-          energy_proof_original_file: files.original_energy_proof,
+        if (files && files.energy_proof) {
+          createData = {
+            ...createData,
+            energy_proof: files.energy_proof,
+            energy_proof_original_file: files.original_energy_proof,
+          }
         }
       }
-    }
 
-    if (!fromImport) {
-      createData.letting_type = LETTING_TYPE_VOID
-      createData.letting_status = null
-    }
+      if (!fromImport) {
+        createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
+        createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
+      }
 
-    let estateHash
-    const estate = await Estate.createItem(
-      {
-        ...createData,
-      },
-      trx
-    )
-    // we can't get hash when we use transaction because that record won't be created before commiting the transaction
-    if (!trx) {
-      estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
-    }
+      let estateHash
+      const estate = await Estate.createItem(
+        {
+          ...createData,
+          is_coord_changed,
+          percent: this.calculatePercent(createData),
+        },
+        trx
+      )
+      //test percent
+      if (+estate.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: userId,
+          estateIds: [estate.id],
+        })
+      }
+      // we can't get hash when we use transaction because that record won't be created before commiting the transaction
+      if (!trx) {
+        estateHash = await Estate.query().select('hash').where('id', estate.id).firstOrFail()
+      }
 
-    // Run processing estate geo nearest
-    QueueService.getEstateCoords(estate.id)
-
-    const estateData = await estate.toJSON({ isOwner: true })
-    return {
-      hash: estateHash?.hash || null,
-      ...estateData,
+      // Run processing estate geo nearest
+      QueueService.getEstateCoords(estate.id)
+      const estateData = await estate.toJSON({ isOwner: true })
+      return {
+        hash: estateHash?.hash || null,
+        ...estateData,
+      }
+    } catch (e) {
+      console.log('Creating estate error =', e.message)
+      throw new HttpException(e.message, 500)
     }
   }
 
-  static async updateEstate(request) {
+  static async updateEstate(request, user_id) {
     const { ...data } = request.all()
 
     let updateData = {
@@ -316,34 +552,107 @@ class EstateService {
     }
 
     let energy_proof = null
-    const estate = await this.getById(data.id)
-    if (data.delete_energy_proof) {
-      energy_proof = estate?.energy_proof
+    const estate = await this.getByIdWithDetail(data.id)
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
 
-      updateData = {
-        ...updateData,
-        energy_proof: null,
-        energy_proof_original_file: null,
-      }
-    } else {
-      const files = await this.saveEnergyProof(request)
-      if (files && files.energy_proof) {
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.delete_energy_proof) {
+        energy_proof = estate?.energy_proof
+
         updateData = {
           ...updateData,
-          energy_proof: files.energy_proof,
-          energy_proof_original_file: files.original_energy_proof,
+          energy_proof: null,
+          energy_proof_original_file: null,
+          percent: this.calculatePercent({
+            ...estate.toJSON({
+              extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+            }),
+            ...updateData,
+            energy_proof: null,
+          }),
+        }
+      } else {
+        const files = await this.saveEnergyProof(request)
+        if (files && files.energy_proof) {
+          updateData = {
+            ...updateData,
+            energy_proof: files.energy_proof,
+            energy_proof_original_file: files.original_energy_proof,
+            percent: this.calculatePercent({
+              ...estate.toJSON({
+                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+              }),
+              ...updateData,
+              energy_proof: files.energy_proof,
+            }),
+          }
+        } else {
+          updateData = {
+            ...updateData,
+            percent: this.calculatePercent({
+              ...estate.toJSON({
+                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+              }),
+              ...updateData,
+            }),
+          }
         }
       }
+
+      await estate.updateItemWithTrx(updateData, trx)
+      if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: COMPLETE_CERTAIN_PERCENT,
+          landlordId: user_id,
+          estateIds: [estate.id],
+        })
+      }
+      if (data.delete_energy_proof && energy_proof) {
+        FileBucket.remove(energy_proof)
+      }
+      // Run processing estate geo nearest
+      if (data.address) {
+        QueueService.getEstateCoords(estate.id)
+      }
+      await trx.commit()
+      return {
+        ...estate.toJSON(),
+        updateData,
+      }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
+  static async updateEnergyProofFromGallery({ estate_id, user_id, galleries }, trx) {
+    if (!galleries || !galleries.length) {
+      return null
     }
 
-    await estate.updateItem(updateData)
-
-    if (data.delete_energy_proof && energy_proof) {
-      FileBucket.remove(energy_proof)
+    //need to backup this energy proof to gallery to be used later
+    const estate = await this.getById(estate_id)
+    if (estate && estate.energy_proof) {
+      await require('./GalleryService').addFromView(
+        {
+          user_id,
+          url: estate.energy_proof,
+          file_name: estate.energy_proof_original_file,
+        },
+        trx
+      )
     }
-    // Run processing estate geo nearest
-    QueueService.getEstateCoords(estate.id)
-    return estate
+
+    const estateData = {
+      user_id,
+      energy_proof: galleries[0].url,
+      energy_proof_original_file: galleries[0].file_name,
+    }
+    await Estate.query().where('id', estate_id).update(estateData).transacting(trx)
+    return galleries.map((gallery) => gallery.id)
   }
 
   /**
@@ -434,17 +743,63 @@ class EstateService {
   /**
    *
    */
-  static async addFile({ url, disk, estate, type }) {
-    return await File.createItem({ url, disk, estate_id: estate.id, type })
+  static async addFile({ url, file_name, disk, estate, type, file_format }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const file = await File.createItem(
+        {
+          url,
+          disk,
+          file_name,
+          estate_id: estate.id,
+          type,
+          file_format,
+        },
+        trx
+      )
+      await this.updatePercent({ estate_id: estate.id, files: [file.toJSON()] }, trx)
+      await trx.commit()
+      return file
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    }
+  }
+
+  static async addManyFiles(data, trx) {
+    try {
+      const files = await File.createMany(data, trx)
+      return files
+    } catch (e) {
+      console.log('AddManyFiles', e.message)
+      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    }
+  }
+
+  static async addFileFromGallery({ user_id, estate_id, galleries, type }, trx) {
+    await this.hasPermission({ id: estate_id, user_id })
+    const files = galleries.map((gallery) => {
+      return {
+        url: gallery.url,
+        file_name: gallery.file_name,
+        disk: 's3public',
+        estate_id,
+        type,
+      }
+    })
+    await File.createMany(files, trx)
+    return galleries.map((gallery) => gallery.id)
   }
 
   /**
    *
    */
-  static async removeFile({ id, estate_id, user_id }) {
-    const ids = Array.isArray(id) ? id : [id]
-    const files =
-      (
+  static async removeFile({ ids, estate_id, user_id }) {
+    let files
+    const trx = await Database.beginTransaction()
+    try {
+      ids = Array.isArray(ids) ? ids : [ids]
+      files = (
         await File.query()
           .select('files.*')
           .whereIn('files.id', ids)
@@ -452,68 +807,138 @@ class EstateService {
           .where('estates.id', estate_id)
           .where('estates.user_id', user_id)
           .fetch()
-      ).rows || []
+      ).rows
+      if (!files || !files.length) {
+        throw new HttpException(NO_FILE_EXIST, 404)
+      }
 
-    if (!files) {
-      throw new HttpException('Image not found', 404)
+      ids = files.map((file) => file.id)
+      await File.query().delete().whereIn('id', ids).transacting(trx)
+      await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
+      await this.updateCover({ estate_id, removeImages: files }, trx)
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
     }
-
-    if (files.length != ids.length) {
-      throw new HttpException("Some images don't exist")
-    }
-
-    await File.query().delete().whereIn('id', ids)
   }
 
-  static async getFiles({ estate_id, ids, type }) {
-    return (
-      (
-        await File.query()
-          .where('estate_id', estate_id)
-          .whereIn('id', ids)
-          .where('type', type)
-          .fetch()
-      ).rows || []
-    )
+  static async moveToGallery({ ids, estate_id, user_id }, trx = null) {
+    await this.hasPermission({ id: estate_id, user_id })
+    let query = File.query()
+      .update({ type: FILE_TYPE_UNASSIGNED })
+      .whereIn('id', ids)
+      .where('estate_id', estate_id)
+
+    if (trx) {
+      await query.transacting(trx)
+    } else {
+      await query
+    }
   }
 
-  static async updateCover({ room, removeImage, addImage }, trx = null) {
+  static async restoreFromGallery({ ids, estate_id, user_id, type }, trx) {
+    await this.hasPermission({ id: estate_id, user_id })
+
+    const files = await this.getFiles({ estate_id, type })
+    if (files && (files?.length || 0) + ids.length > FILE_LIMIT_LENGTH) {
+      throw new HttpException(IMAGE_COUNT_LIMIT, 400)
+    }
+    const file = await File.query().where('id', ids[0]).first()
+    await File.query()
+      .update({ type })
+      .whereIn('id', ids)
+      .where('estate_id', estate_id)
+      .transacting(trx)
+
+    if (file) {
+      await this.updateCover({ estate_id, addImage: { ...file.toJSON(), type } }, trx)
+    }
+  }
+
+  static async getFiles({ estate_id, ids, type, orderBy }) {
+    let query = File.query().where('estate_id', estate_id)
+    if (ids) {
+      query.whereIn('id', ids)
+    }
+    if (type) {
+      type = Array.isArray(type) ? type : [type]
+      query.whereIn('type', type)
+    }
+    if (orderBy) {
+      orderBy.map((ob) => {
+        query.orderBy(ob.key, ob.order)
+      })
+    }
+
+    return (await query.fetch()).rows || []
+  }
+
+  static async updateCover({ estate_id, room, removeRoomId, removeImages, addImage }, trx = null) {
     try {
-      const estate = await this.getById(room.estate_id)
+      const estate = await this.getById(room?.estate_id || estate_id)
       if (!estate) {
         throw new HttpException('No permission to update cover', 400)
       }
 
-      const rooms = await RoomService.getRoomsByEstate(estate.id, true)
-
-      const favoriteRooms = room.favorite
-        ? [room]
-        : filter(rooms.toJSON(), function (r) {
-            return r.favorite
-          })
-
-      let favImages = this.extractImages(favoriteRooms, removeImage, addImage)
-
+      const rooms = ((await RoomService.getRoomsByEstate(estate.id, true)) || [])
+        .toJSON()
+        .filter((r) => r.id !== removeRoomId?.id)
+      let favoriteRooms = []
+      if (room) {
+        favoriteRooms = room.favorite
+          ? [room]
+          : filter(rooms, function (r) {
+              return r.favorite
+            })
+      }
+      let favImages = this.extractImages(
+        favoriteRooms,
+        removeImages,
+        addImage?.room_id ? addImage : undefined
+      )
       // no cover or cover is no longer favorite image
       if (favImages && favImages.length) {
         if (!estate.cover || !favImages.find((i) => i.relativeUrl === estate.cover)) {
           await this.setCover(estate.id, favImages[0].relativeUrl, trx)
         }
       } else {
-        let images = this.extractImages(rooms.toJSON(), removeImage)
-        if (estate.cover) {
-          if (
-            images &&
-            images.length &&
-            images.find((i) => i.relativeUrl === estate.cover) === undefined
-          ) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
-          } else if (!images && !images.length) {
-            await this.removeCover(estate.id, estate.cover, trx)
+        let images
+        if (rooms) {
+          images = this.extractImages(rooms, removeImages, addImage?.room_id ? addImage : undefined)
+        }
+
+        if (images && images.length) {
+          await this.setCover(estate.id, images[0].relativeUrl, trx)
+
+          if (room) {
+            await RoomService.setFavorite(
+              { estate_id: estate.id, room_id: images[0].room_id, favorite: true },
+              trx
+            )
           }
         } else {
-          if (images && images.length) {
-            await this.setCover(estate.id, images[0].relativeUrl, trx)
+          /* if no images in rooms*/
+          let files =
+            (await this.getFiles({
+              estate_id: room?.estate_id || estate_id,
+              type: [FILE_TYPE_PLAN, FILE_TYPE_EXTERNAL],
+              orderBy: [{ key: 'type', order: 'asc' }],
+            })) || []
+
+          if (addImage) {
+            files.push(addImage)
+          }
+
+          const removeImageIds = (removeImages || []).map((ri) => ri.id)
+          if (removeImageIds && removeImageIds.length) {
+            files = files.filter((f) => !removeImageIds.includes(f.id))
+          }
+
+          if (files && files.length) {
+            await this.setCover(estate.id, files[0]?.relativeUrl || files[0].url, trx)
+          } else {
+            await this.setCover(estate.id, null, trx)
           }
         }
       }
@@ -522,7 +947,7 @@ class EstateService {
     }
   }
 
-  static extractImages(rooms, removeImage = undefined, addImage = undefined) {
+  static extractImages(rooms, removeImages = undefined, addImage = undefined) {
     let images = []
 
     rooms.map((r) => {
@@ -536,8 +961,9 @@ class EstateService {
     })
 
     images = flatten(images)
-    if (removeImage) {
-      images = images.filter((i) => i.id !== removeImage.id)
+    if (removeImages && removeImages.length) {
+      const removeImageIds = removeImages.map((ri) => ri.id)
+      images = images.filter((i) => !removeImageIds.includes(i.id))
     }
 
     return images
@@ -762,38 +1188,45 @@ class EstateService {
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
 
     const trashedEstates = await Estate.query()
-      .select('*')
-      .whereHas('matches', (estateQuery) => {
-        estateQuery.where('matches.status', MATCH_STATUS_FINISH).whereIn('estates.id', estateIds)
+      .select('estates.*')
+      .select('_m.updated_at')
+      .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+      .select('_m.status as match_status')
+      .select('_m.user_id as match_user_id')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', userId)
       })
-      .orWhereHas('matches', (estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereIn('matches.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
-          .andWhere('matches.share', false)
-          .andWhere('matches.user_id', userId)
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_INVITE).andWhere('matches.user_id', userId)
+      .whereIn('estates.id', estateIds)
+      // .where('_m.user_id', userId)
+      .where(function () {
+        this.orWhere((query) => {
+          query.whereHas('matches', (estateQuery) => {
+            estateQuery
+              .where('matches.status', MATCH_STATUS_FINISH)
+              .whereIn('estates.id', estateIds)
           })
-          .whereDoesntHave('slots', (query) => {
+        })
+        this.orWhere(function () {
+          this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+            .where('_m.user_id', userId)
+            .where('_m.share', false)
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_INVITE)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('slots', (query) => {
             query.where('time_slots.end_at', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
-      })
-      .orWhere((estateQuery) => {
-        estateQuery
-          .whereIn('estates.id', estateIds)
-          .whereHas('matches', (query) => {
-            query.where('matches.status', MATCH_STATUS_VISIT).andWhere('matches.user_id', userId)
-          })
-          .whereDoesntHave('visit_relations', (query) => {
+        })
+        this.orWhere(function () {
+          this.where('_m.status', MATCH_STATUS_VISIT)
+          this.where('_m.user_id', userId)
+          this.whereDoesntHave('visit_relations', (query) => {
             query
               .where('visits.user_id', userId)
               .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
           })
+        })
       })
       .fetch()
     return trashedEstates
@@ -869,7 +1302,7 @@ class EstateService {
     { exclude_from = 0, exclude_to = 0, exclude = [] },
     limit = 20
   ) {
-    const tenant = await TenantService.getTenantWithGeo(userId)
+    const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
@@ -908,6 +1341,12 @@ class EstateService {
           .transacting(trx),
       })
       await estate.publishEstate(trx)
+      //send email to support for landlord update...
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: PUBLISH_ESTATE,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
       logEvent(
         request,
         LOG_TYPE_PUBLISHED_PROPERTY,
@@ -954,12 +1393,23 @@ class EstateService {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant')
+        .with('current_tenant', function (c) {
+          c.with('user', function (u) {
+            u.select('id', 'avatar')
+          })
+        })
+        .with('slots')
         .fetch()
     } else {
       return await this.getEstates(ids, params)
         .whereIn('estates.user_id', ids)
         .whereNot('estates.status', STATUS_DELETE)
+        .with('current_tenant', function (c) {
+          c.with('user', function (u) {
+            u.select('id', 'avatar')
+          })
+        })
+        .with('slots')
         .paginate(page, limit)
     }
   }
@@ -1007,30 +1457,151 @@ class EstateService {
         Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_VOID}') as void_count`)
       )
       .select(Database.raw(`count(*) filter(where letting_type='${LETTING_TYPE_NA}') as na_count`))
+      .select(
+        Database.raw(
+          `count(*) filter(where status IN ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') ) as offline_count`
+        )
+      )
+      .select(Database.raw(`count(*) filter(where status='${STATUS_ACTIVE}') as online_count`))
   }
 
-  static async getEstatesByQuery({ user_id, query }) {
-    return await Estate.query()
-      .whereNot('status', STATUS_DELETE)
-      .where('user_id', user_id)
-      .andWhere(function () {
-        this.orWhere(function () {
-          this.where('letting_type', LETTING_TYPE_LET).whereNot(
-            'letting_status',
-            LETTING_STATUS_STANDARD
+  static async getShortEstatesByQuery({ user_id, query, letting_type }) {
+    let estateQuery = this.getActiveEstateQuery()
+      .select(
+        'estates.id',
+        'area',
+        'rooms_number',
+        'floor',
+        'number_floors',
+        'property_type',
+        'description',
+        'house_number',
+        'rent_per_sqm',
+        'address',
+        'city',
+        'country',
+        'street',
+        'zip',
+        'cover',
+        'net_rent',
+        'cold_rent',
+        'additional_costs',
+        'heating_costs',
+        'deposit',
+        'stp_garage',
+        'currency',
+        'building_status',
+        'property_id',
+        'floor_direction',
+        'six_char_code',
+        'avail_duration',
+        'available_date',
+        'from_date',
+        'to_date',
+        'rent_end_at',
+        'estates.status'
+      )
+      .where('estates.user_id', user_id)
+    if (query) {
+      estateQuery.andWhere(function () {
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('city', 'ilike', `%${query}%`)
+        this.orWhere('country', 'ilike', `%${query}%`)
+        this.orWhere('zip', 'ilike', `%${query}%`)
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('street', 'ilike', `%${query}%`)
+      })
+    }
+
+    if (letting_type.includes(LETTING_TYPE_LET)) {
+      estateQuery.where('estates.letting_type', LETTING_TYPE_LET)
+      estateQuery.innerJoin({ _ect: 'estate_current_tenants' }, function () {
+        this.on('_ect.estate_id', 'estates.id')
+          .on(Database.raw(`_ect.user_id IS NOT NULL`))
+          .on('_ect.status', STATUS_ACTIVE)
+      })
+    }
+
+    return await estateQuery.fetch()
+  }
+
+  static async getEstatesByQuery({ user_id, query, coord }) {
+    let estates
+    const data = await require('./UserService').getTokenWithLocale([user_id])
+    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
+
+    if (coord) {
+      const [lat, lon] = coord.split(',')
+      estates = await GeoAPI.getPlacesByCoord({ lat, lon }, lang)
+    } else {
+      estates = await GeoAPI.getGeoByAddress(query, lang)
+    }
+    if (!estates) {
+      return null
+    }
+    estates = estates.map((estate) => {
+      return {
+        country: estate.properties.country,
+        city: estate.properties.city,
+        zip: estate.properties.postcode,
+        street: estate.properties.street,
+        address: estate.properties.formatted,
+        coord: { lat: estate.properties.lat, lon: estate.properties.lon },
+        house_number: estate.properties.housenumber,
+      }
+    })
+    const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
+    let existingEstates =
+      (
+        await Estate.query()
+          .leftJoin({ _ect: 'estate_current_tenants' }, function () {
+            this.on('_ect.estate_id', 'estates.id').onNotIn('_ect.status', [
+              STATUS_DELETE,
+              STATUS_EXPIRE,
+            ])
+          })
+          .select(
+            'estates.id',
+            'estates.street',
+            'estates.address',
+            'estates.city',
+            'estates.country',
+            'estates.zip',
+            'estates.coord_raw',
+            'estates.floor',
+            'estates.house_number',
+            'estates.floor_direction'
           )
-        })
-        this.orWhere(function () {
-          this.whereNot('letting_type', LETTING_TYPE_LET)
-        })
-      })
-      .andWhere(function () {
-        this.orWhere('estates.street', 'ilike', `%${query}%`)
-        this.orWhere('estates.zip', 'ilike', `${query}%`)
-        this.orWhere('estates.city', 'ilike', `${query}%`)
-        this.orWhere('estates.address', 'ilike', `${query}%`)
-      })
-      .fetch()
+          .select(Database.raw(`true as is_exist`))
+          .whereNot('estates.status', STATUS_DELETE)
+          .where('estates.user_id', user_id)
+          .where(
+            Database.raw(`
+          _ect.user_id IS NULL AND
+          ( _ect.code IS NULL OR
+          (_ect.code IS NOT NULL AND _ect.invite_sent_at < '${moment
+            .utc(new Date())
+            .subtract(TENANT_INVITATION_EXPIRATION_DATE, 'days')
+            .format(DATE_FORMAT)}') )`)
+          )
+          .whereIn('coord_raw', coords)
+          .fetch()
+      ).toJSON() || []
+    const existingCoords = existingEstates.map((estate) => estate.coord_raw)
+    const notExistingEstates = estates.filter(
+      (estate) => !existingCoords.includes(`${estate.lat},${estate.lon}`)
+    )
+
+    const notGroupExistingEstates = groupBy(notExistingEstates, (estate) => estate.address)
+    existingEstates = groupBy(existingEstates, (estate) => {
+      return `${estate.street || ''} ${estate.house_number || ''}, ${estate.zip || ''} ${
+        estate.city || ''
+      }`
+    })
+    return {
+      ...existingEstates,
+      ...notGroupExistingEstates,
+    }
   }
 
   static async getFilteredCounts(userId, params) {
@@ -1360,7 +1931,11 @@ class EstateService {
     // Make estate status DRAFT to hide from tenants' matches list
     await Database.table('estates')
       .where({ id: estateId })
-      .update({ status: STATUS_DRAFT, letting_type: LETTING_TYPE_LET })
+      .update({
+        status: STATUS_DRAFT,
+        letting_type: LETTING_TYPE_LET,
+        letting_status: LETTING_STATUS_STANDARD,
+      })
       .transacting(trx)
   }
 
@@ -1443,6 +2018,64 @@ class EstateService {
     return true
   }
 
+  static async getEstateByAddress({ email, address }) {
+    if (!email || !address) {
+      return null
+    }
+
+    const estates =
+      (
+        await Estate.query()
+          .innerJoin({ _u: 'users' }, function () {
+            this.on('_u.user_id', 'estates.id').on('status', STATUS_ACTIVE).on('_u.email', email)
+          })
+          .whereNot('status', STATUS_DELETE)
+          .where('address', address)
+          .fetch()
+      ).rows || []
+
+    return estates
+  }
+
+  static async importOpenimmo(importFile, user_id) {
+    const filename = importFile.clientName
+    const reader = new OpenImmoReader(importFile.tmpPath, importFile.headers['content-type'])
+    const trx = await Database.beginTransaction()
+    try {
+      const result = await reader.process()
+      await Promise.map(result, async (property) => {
+        property.user_id = user_id
+        property.status = STATUS_DRAFT
+        let images = property.images
+        let result
+        const existingProperty = await Estate.query()
+          .where({ property_id: property.property_id, user_id })
+          .whereNot({ status: STATUS_DELETE })
+          .first()
+        if (existingProperty) {
+          existingProperty.merge(omit(property, ['images']))
+          result = await existingProperty.save(trx)
+          QueueService.uploadOpenImmoImages(images, existingProperty.id)
+        } else {
+          result = await Estate.createItem(omit(property, ['images']), trx)
+          QueueService.uploadOpenImmoImages(images, result.id)
+        }
+      })
+      await Import.createItem({
+        user_id,
+        filename,
+        type: IMPORT_TYPE_OPENIMMO,
+        entity: IMPORT_ENTITY_ESTATES,
+      })
+      await trx.commit()
+      return result
+    } catch (err) {
+      await trx.rollback()
+      console.log(err)
+      throw new HttpException(err.message)
+    }
+  }
+
   static async deletePermanent(user_id) {
     await Estate.query().where('user_id', user_id).delete()
   }
@@ -1457,6 +2090,230 @@ class EstateService {
         coord,
         address,
       })
+    }
+  }
+
+  static async getFilesByEstateId(estateId) {
+    const File = use('App/Models/File')
+    const files = await File.query().where('estate_id', estateId).fetch()
+    let typeAssigned = {
+      external: ['external'],
+      documents: ['plan', 'energy_certificate', 'custom', 'doc'],
+      unassigned: ['unassigned'],
+    }
+    let ret = {
+      external: [],
+      documents: { plan: [], energy_certificate: [], custom: [] },
+      unassigned: [],
+    }
+    //return files
+    files.toJSON().map((file) => {
+      if (typeAssigned[file.type]?.includes(file.type)) {
+        ret[file.type] = [...ret[file.type], file]
+      } else if (typeAssigned.documents.includes(file.type)) {
+        ret.documents[file.type] = [...ret.documents[file.type], file]
+      }
+    })
+    return ret
+  }
+
+  static calculatePercent(estate) {
+    let percent = 0
+    const is_let = estate.letting_type === LETTING_TYPE_LET ? true : false
+    const let_type = is_let ? LETTING_TYPE_LET : LETTING_TYPE_VOID
+
+    const GENERAL_PERCENT_VAL = is_let ? GENERAL_PERCENT.let : GENERAL_PERCENT.void
+
+    const LEASE_CONTRACT_PERCENT_VAL = is_let
+      ? LEASE_CONTRACT_PERCENT.let
+      : LEASE_CONTRACT_PERCENT.void
+
+    const PROPERTY_DETAILS_PERCENT_VAL = is_let
+      ? PROPERTY_DETAILS_PERCENT.let
+      : PROPERTY_DETAILS_PERCENT.void
+
+    const TENANT_PREFERENCES_PERCENT_VAL = is_let
+      ? TENANT_PREFERENCES_PERCENT.let
+      : TENANT_PREFERENCES_PERCENT.void
+
+    const VISIT_SLOT_PERCENT_VAL = is_let ? VISIT_SLOT_PERCENT.let : VISIT_SLOT_PERCENT.void
+
+    const IMAGE_DOC_PERCENT_VAL = is_let ? IMAGE_DOC_PERCENT.let : IMAGE_DOC_PERCENT.void
+
+    const general = ESTATE_PERCENTAGE_VARIABLE.genenral.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    general.length &&
+      general
+        .filter((g) => !g.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? GENERAL_PERCENT_VAL / general.length : 0
+        })
+    const lease_price = ESTATE_PERCENTAGE_VARIABLE.lease_price.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    lease_price.length &&
+      lease_price
+        .filter((l) => !l.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? LEASE_CONTRACT_PERCENT_VAL / lease_price.length : 0
+        })
+
+    const property_detail = ESTATE_PERCENTAGE_VARIABLE.property_detail.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    property_detail.length &&
+      property_detail
+        .filter((p) => !p.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? PROPERTY_DETAILS_PERCENT_VAL / property_detail.length : 0
+        })
+
+    if (estate['amenities'] && estate['amenities'].length) {
+      percent += PROPERTY_DETAILS_PERCENT_VAL / property_detail.length
+    }
+
+    const tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+    tenant_preference.length &&
+      tenant_preference
+        .filter((t) => !t.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
+        })
+
+    let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.filter((g) =>
+      g.mandatory.includes(let_type)
+    )
+
+    visit_slots.length &&
+      visit_slots
+        .filter((v) => !v.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0
+        })
+
+    if (
+      visit_slots.length &&
+      !is_let &&
+      estate.slots &&
+      estate.slots.length &&
+      estate.slots.find((slot) => slot.start_at >= moment.utc(new Date()).format(DATE_FORMAT))
+    ) {
+      percent += VISIT_SLOT_PERCENT_VAL / visit_slots.length
+    }
+    let views = ESTATE_PERCENTAGE_VARIABLE.views.filter((g) => g.mandatory.includes(let_type))
+
+    views.length &&
+      views
+        .filter((v) => !v.is_custom)
+        .map(({ key }) => {
+          percent += estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0
+        })
+
+    if (views.length) {
+      percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
+        ? IMAGE_DOC_PERCENT_VAL / views.length
+        : 0
+    }
+
+    return Math.ceil(percent)
+  }
+  static async updatePercent(
+    {
+      estate,
+      estate_id,
+      slots = null,
+      files = null,
+      amenities = null,
+      deleted_slots_ids = null,
+      deleted_files_ids = null,
+    },
+    trx
+  ) {
+    if (!estate && !estate_id) {
+      return
+    }
+
+    if (!estate) {
+      estate = await this.getByIdWithDetail(estate_id)
+    }
+
+    if (!estate) {
+      return
+    }
+
+    let percentData = {
+      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] }),
+    }
+
+    if (slots) {
+      percentData.slots = (percentData.slots || []).concat(slots)
+    }
+    if (files) {
+      percentData.files = (percentData.files || []).concat(files)
+    }
+
+    if (amenities) {
+      percentData.amenities = (percentData.amenities || []).concat(amenities)
+    }
+
+    if (deleted_slots_ids) {
+      percentData.slots = (percentData.slots || []).filter(
+        (slot) => !deleted_slots_ids.includes(slot.id)
+      )
+    }
+
+    if (deleted_files_ids) {
+      percentData.files = (percentData.files || []).filter(
+        (file) => !deleted_files_ids.includes(file.id)
+      )
+    }
+
+    if (trx) {
+      await Estate.query()
+        .where('id', estate.id)
+        .update({ percent: this.calculatePercent(percentData) })
+        .transacting(trx)
+    } else {
+      await Estate.query()
+        .where('id', estate.id)
+        .update({ percent: this.calculatePercent(percentData) })
+    }
+    if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
+      QueueService.sendEmailToSupportForLandlordUpdate({
+        type: COMPLETE_CERTAIN_PERCENT,
+        landlordId: estate.user_id,
+        estateIds: [estate.id],
+      })
+    }
+    return estate
+  }
+
+  static async correctWrongEstates(user_id) {
+    const estates =
+      (
+        await Estate.query()
+          .select('id')
+          .where('user_id', user_id)
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('hash')
+            this.orWhereNull('six_char_code')
+          })
+          .fetch()
+      ).toJSON() || []
+    let i = 0
+    while (i < estates.length) {
+      await Estate.updateBreezeId(estates[i].id)
+      i++
     }
   }
 }

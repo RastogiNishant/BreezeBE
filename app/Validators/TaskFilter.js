@@ -130,6 +130,18 @@ class TaskFilter extends Base {
           ),
         })
         .nullable(),
+      attachments_count: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_COUNT_MATCH_MODES).required(),
+              value: yup.number().min(0).nullable(),
+            })
+          ),
+        })
+        .nullable(),
       tenant: yup
         .object()
         .shape({
@@ -227,6 +239,7 @@ class TaskFilter extends Base {
             ])
         )
         .nullable(),
+      task_name: yup.string().min(2),
     })
 }
 

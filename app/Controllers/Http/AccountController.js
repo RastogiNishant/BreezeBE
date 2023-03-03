@@ -32,24 +32,30 @@ class AccountController {
    *
    */
   async signup({ request, response }) {
-    let { email, from_web, data1, data2, ip, ip_based_info, ...userData } = request.all()
-    ip = ip || request.ip()
+    const { email, from_web, data1, data2, landlord_invite, ip_based_info, ...userData } =
+      request.all()
+    const trx = await Database.beginTransaction()
     try {
-      const user = await UserService.signUp({
-        email,
-        from_web,
-        data1,
-        data2,
-        ip,
-        ip_based_info,
-        ...userData,
-      })
+      const user = await UserService.signUp(
+        {
+          email,
+          from_web,
+          data1,
+          data2,
+          landlord_invite,
+          ip_based_info,
+          ...userData,
+        },
+        trx
+      )
+      await trx.commit()
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
         email: user.email,
       })
       response.res(user)
     } catch (e) {
+      await trx.rollback()
       if (e.constraint === 'users_uid_unique') {
         throw new HttpException(USER_UNIQUE, 400)
       }
@@ -185,9 +191,7 @@ class AccountController {
    */
   async me({ auth, response, request }) {
     if (auth.current.user instanceof Admin) {
-      let admin = JSON.parse(JSON.stringify(auth.current.user))
-      admin.is_admin = true
-      return response.res(admin)
+      return response.res({ ...auth.current.user.toJSON(), is_admin: true })
     }
     const { pushToken } = request.all()
     const user = await UserService.me(auth.current.user, pushToken)

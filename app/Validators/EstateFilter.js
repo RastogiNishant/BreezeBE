@@ -20,13 +20,41 @@ const {
   ESTATE_VALID_ADDRESS_LABEL,
   ESTATE_INVALID_ADDRESS_LABEL,
   ESTATE_ALL_ADDRESS_LABEL,
+  LETTING_STATUS_STANDARD,
+  LETTING_STATUS_TERMINATED,
+  LETTING_STATUS_VACANCY,
+  LETTING_STATUS_NEW_RENOVATED,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_COMMIT,
+  MATCH_STATUS_TOP,
+  MATCH_STATUS_FINISH,
+  FILTER_CONSTRAINTS_DATE_MATCH_MODES,
 } = require('../constants')
 
 class EstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
       query: yup.string().min(2),
-      filter: yup.array().of(yup.number()).nullable(),
+      filter: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              MATCH_STATUS_KNOCK,
+              MATCH_STATUS_INVITE,
+              MATCH_STATUS_VISIT,
+              MATCH_STATUS_SHARE,
+              MATCH_STATUS_TOP,
+              MATCH_STATUS_COMMIT,
+              MATCH_STATUS_FINISH,
+            ])
+        )
+        .nullable(),
+      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
       address: yup
         .object()
         .shape({
@@ -124,15 +152,7 @@ class EstateFilter extends Base {
           matchMode: yup.string().nullable(),
           value: yup
             .array()
-            .of(
-              yup
-                .string()
-                .oneOf([
-                  ESTATE_VALID_ADDRESS_LABEL,
-                  ESTATE_INVALID_ADDRESS_LABEL,
-                  ESTATE_ALL_ADDRESS_LABEL,
-                ])
-            )
+            .of(yup.string().oneOf([ESTATE_VALID_ADDRESS_LABEL, ESTATE_INVALID_ADDRESS_LABEL]))
             .nullable(),
         })
         .nullable(),
@@ -150,6 +170,16 @@ class EstateFilter extends Base {
           value: yup.array().of(yup.string()).nullable(),
         })
         .nullable(),
+      customUpdatedAt: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES).required(),
+            value: yup.date().typeError('please enter a valid date').nullable(),
+          })
+        ),
+      }),
+
       status: yup.lazy((value) => {
         if (isArray(value)) {
           return yup
@@ -176,6 +206,20 @@ class EstateFilter extends Base {
       letting_type: yup
         .array()
         .of(yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]).nullable()),
+      letting_status: yup
+        .array()
+        .of(
+          yup
+            .number()
+            .oneOf([
+              LETTING_STATUS_STANDARD,
+              LETTING_STATUS_TERMINATED,
+              LETTING_STATUS_VACANCY,
+              LETTING_STATUS_NEW_RENOVATED,
+            ])
+            .nullable()
+        ),
+
       letting: yup.array().of(yup.string()),
       floor_direction: yup
         .object()

@@ -71,6 +71,7 @@ class EstateFilters extends Filter {
     'customRent',
     'customNumFloor',
     'rooms_number',
+    'customUpdatedAt',
   ]
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
@@ -85,6 +86,7 @@ class EstateFilters extends Filter {
       customFloor: 'floor',
       customNumFloor: 'number_floors',
       customRent: 'net_rent',
+      customUpdatedAt:'updated_at'
     }
 
     this.matchFilter(EstateFilters.possibleStringParams, params)
@@ -130,6 +132,9 @@ class EstateFilters extends Filter {
         this.orWhere('estates.street', 'ilike', `%${params.query}%`)
         this.orWhere('estates.property_id', 'ilike', `${params.query}%`)
         this.orWhere('estates.city', 'ilike', `${params.query}%`)
+        this.orWhere('estates.address', 'ilike', `${params.query}%`)
+        this.orWhere('estates.country', 'ilike', `${params.query}%`)
+        this.orWhere('estates.zip', 'ilike', `${params.query}%`)
       })
     }
     /* status */
@@ -164,8 +169,12 @@ class EstateFilters extends Filter {
     if (params.letting_type) {
       this.query.whereIn('estates.letting_type', params.letting_type)
     }
+    /* letting_status */
+    if (params.letting_status) {
+      this.query.whereIn('estates.letting_status', params.letting_status)
+    }
     /* this should be changed to match_status */
-    if (params.filter) {
+    if (params.filter && params.filter.length) {
       this.query.whereHas('matches', (query) => {
         query.whereIn('status', params.filter)
       })

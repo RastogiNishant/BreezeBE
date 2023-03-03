@@ -1,5 +1,15 @@
 'use strict'
-const { ROLE_LANDLORD } = require('../../constants')
+const {
+  ROLE_LANDLORD,
+  TASK_STATUS_NEW,
+  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_RESOLVED,
+  TASK_STATUS_UNRESOLVED,
+  URGENCY_LOW,
+  URGENCY_HIGH,
+  URGENCY_SUPER,
+  URGENCY_NORMAL,
+} = require('../../constants')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -48,6 +58,21 @@ class TaskController {
     response.res(await TaskService.delete({ id, estate_id, user: auth.user }))
   }
 
+  async getUnassignedTasks({ request, auth, response }) {
+    try {
+      const { page, limit } = request.all()
+      response.res(
+        await TaskService.getAllUnassignedTasks({
+          user_id: auth.user.id,
+          page,
+          limit,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
   async getAllTasks({ request, auth, response }) {
     try {
       const { estate_id, status, page, limit } = request.all()
@@ -69,6 +94,45 @@ class TaskController {
   async getTaskById({ request, auth, response }) {
     const { id } = request.all()
     response.res(await TaskService.getTaskById({ id, user: auth.user }))
+  }
+
+  async getTaskCountsByEstate({ request, auth, response }) {
+    const { id } = request.all()
+    const new_task_count = (
+      await TaskService.count({ estate_id: id, status: [TASK_STATUS_NEW] })
+    )[0].count
+    const progress_task_count = (
+      await TaskService.count({ estate_id: id, status: [TASK_STATUS_INPROGRESS] })
+    )[0].count
+    const task_resolved_count = (
+      await TaskService.count({ estate_id: id, status: [TASK_STATUS_RESOLVED] })
+    )[0].count
+    const task_unresolved_count = (
+      await TaskService.count({ estate_id: id, status: [TASK_STATUS_UNRESOLVED] })
+    )[0].count
+
+    const low_urgency_count = (await TaskService.count({ estate_id: id, status: [URGENCY_LOW] }))[0]
+      .count
+    const normal_urgency_count = (
+      await TaskService.count({ estate_id: id, status: [URGENCY_NORMAL] })
+    )[0].count
+    const high_urgency_count = (
+      await TaskService.count({ estate_id: id, status: [URGENCY_HIGH] })
+    )[0].count
+    const super_urgency_count = (
+      await TaskService.count({ estate_id: id, status: [URGENCY_SUPER] })
+    )[0].count
+
+    response.res({
+      new_task_count,
+      progress_task_count,
+      task_resolved_count,
+      task_unresolved_count,
+      low_urgency_count,
+      normal_urgency_count,
+      high_urgency_count,
+      super_urgency_count,
+    })
   }
 
   async getEstateTasks({ request, auth, response }) {

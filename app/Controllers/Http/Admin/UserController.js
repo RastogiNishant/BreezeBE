@@ -248,8 +248,8 @@ class UserController {
   }
 
   async getLandlords({ request, response }) {
-    let { activation_status, status, estate_status, page, limit, query } = request.all()
-    if (!activation_status || !Array.isArray(activation_status)) {
+    let { activation_status, status, estate_status, page, limit, query, today } = request.all()
+    if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
         USER_ACTIVATION_STATUS_ACTIVATED,
@@ -271,6 +271,12 @@ class UserController {
         'status',
         'activation_status',
         'ip_based_info',
+        Database.raw(
+          `case when _e.max_percent_complete is null then 0 else _e.max_percent_complete end`
+        ),
+        Database.raw(`case when _dc.document_count is null then 0 else _dc.document_count end`),
+        Database.raw(`_f.files_count`),
+        Database.raw(`_i.room_image_count`),
         Database.raw(`to_char(verified_date, '${ISO_DATE_FORMAT}') as verified_date`),
         Database.raw(`to_char(last_login, '${ISO_DATE_FORMAT}') as last_login`)
       )
@@ -281,13 +287,45 @@ class UserController {
         isArray(activation_status) ? activation_status : [activation_status]
       )
       .with('estates', function (e) {
-        e.select('id', 'user_id', 'status')
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
         e.withCount('current_tenant', function (q) {
           q.whereNotNull('user_id')
         })
       })
+      .leftJoin(
+        Database.raw(
+          `(select user_id, max("percent") as max_percent_complete from estates group by user_id) as _e`
+        ),
+        '_e.user_id',
+        'users.id'
+      )
+      .leftJoin(
+        Database.raw(
+          `(select user_id, count(id) as document_count from estates where energy_proof is not null group by user_id) as _dc`
+        ),
+        '_dc.user_id',
+        'users.id'
+      )
+      .leftJoin(
+        Database.raw(`(select users.id as user_id, count(files.id) as files_count from users 
+          left join estates on users.id=estates.user_id
+          left join files on files.estate_id = estates.id
+           group by users.id
+        ) as _f`),
+        '_f.user_id',
+        'users.id'
+      )
+      .leftJoin(
+        Database.raw(`(select users.id as user_id, count(images.id) as room_image_count from users
+          left join estates on users.id=estates.user_id
+          left join rooms on rooms.estate_id=estates.id
+          left join images on images.room_id =rooms.id
+          group by users.id
+        ) as _i`),
+        '_i.user_id',
+        'users.id'
+      )
       .with('company', function (query) {
         query.with('contacts')
       })
@@ -298,6 +336,9 @@ class UserController {
         d.orWhere('firstname', 'ilike', `${query}%`)
         d.orWhere('secondname', 'ilike', `${query}%`)
       })
+    }
+    if (today) {
+      landlordQuery.where(Database.raw(`created_at::date=CURRENT_DATE`))
     }
     const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
     //let's return all info... this is admin

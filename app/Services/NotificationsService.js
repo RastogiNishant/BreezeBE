@@ -111,6 +111,11 @@ const {
 
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED,
   NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
+
+  NOTICE_TYPE_EXPIRED_SHOW_TIME,
+  NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
 } = require('../constants')
 
 const mapping = [
@@ -166,7 +171,9 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
   [NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID, NOTICE_TYPE_PROSPECT_TASK_RESOLVED],
   [NOTICE_TYPE_PROSPECT_DEACTIVATED_ID, NOTICE_TYPE_PROSPECT_DEACTIVATED],
-  [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID],
+  [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED],
+  [NOTICE_TYPE_EXPIRED_SHOW_TIME_ID, NOTICE_TYPE_EXPIRED_SHOW_TIME],
+  [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
 ]
 
 class NotificationsService {
@@ -843,6 +850,16 @@ class NotificationsService {
     return NotificationsService.sendNotes([notice], title, body)
   }
 
+  static async sendFullInvitation(notices) {
+    const title = 'landlord.notification.event.min_reached'
+    const body = 'prospect.notification.next.new_match.message'
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ count: data?.count }])}`,
+      body
+    )
+  }
+
   static async notifyDeactivatedLandlords(notices) {
     const title = 'landlord.notification.event.profile_deactivated_now'
     const body = 'landlord.notification.event.profile_deactivated_now.next.message'
@@ -909,6 +926,12 @@ class NotificationsService {
   static async sendProspectDeactivated(notices) {
     const title = 'prospect.notification.event.profile_deactivated'
     const body = 'prospect.notification.next.profile_deactivated'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendExpiredShowTime(notices) {
+    const title = 'landlord.property.set_availability.txt_show_expired.message'
+    const body = 'landlord.property.set_availability.btn_new_show.message'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

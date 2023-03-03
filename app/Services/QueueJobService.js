@@ -18,9 +18,19 @@ const {
   MATCH_STATUS_NEW,
   USER_ACTIVATION_STATUS_DEACTIVATED,
   STATUS_DELETE,
+  COMPLETE_CERTAIN_PERCENT,
+  PUBLISH_ESTATE,
+  CONNECT_ESTATE,
+  COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT,
+  PUBLISH_ESTATE_EMAIL_SUBJECT,
+  CONNECT_ESTATE_EMAIL_SUBJECT,
+  SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE,
+  SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE,
+  ESTATE_COMPLETENESS_BREAKPOINT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
+const MailService = use('App/Services/MailService')
 const ImageService = use('App/Services/ImageService')
 const MemberService = use('App/Services/MemberService')
 const User = use('App/Models/User')
@@ -100,9 +110,8 @@ class QueueJobService {
         .where('status', MATCH_STATUS_NEW)
         .delete()
         .transacting(trx)
-
-      await NoticeService.landlordEstateExpired(estateIds)
       await trx.commit()
+      NoticeService.landlordEstateExpired(estateIds)
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
@@ -114,7 +123,11 @@ class QueueJobService {
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
-      .where('available_date', '<=', moment().format(DATE_FORMAT))
+      .where(
+        'available_date',
+        '<=',
+        moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
+      )
       .fetch()
   }
 
@@ -246,6 +259,65 @@ class QueueJobService {
     const { getIpBasedInfo } = require('../Libs/getIpBasedInfo')
     const ip_based_info = await getIpBasedInfo(ip)
     await User.query().where('id', userId).update({ ip_based_info })
+  }
+
+  static async sendEmailToSupportForLandlordUpdate({ type, landlordId, estateIds }) {
+    const estateQuery = Estate.query()
+      .select(Database.raw(`count(estates.id) as affected`))
+      .whereNot('estates.status', STATUS_DELETE)
+      .where('estates.user_id', landlordId)
+      .whereNotIn('estates.id', estateIds)
+
+    let subject = ''
+    let htmlMessage = SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE
+    let textMessage = SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE
+    let otherEstates
+    let estates
+    let estateContent
+    switch (type) {
+      case COMPLETE_CERTAIN_PERCENT:
+        otherEstates = await estateQuery
+          .where('percent', '>=', ESTATE_COMPLETENESS_BREAKPOINT)
+          .first()
+        if (+otherEstates.affected === 0) {
+          //this is the first one(s)... we need to notify support
+          subject = COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT
+        }
+        break
+
+      case PUBLISH_ESTATE:
+        otherEstates = await estateQuery.whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE]).first()
+        if (+otherEstates.affected === 0) {
+          subject = PUBLISH_ESTATE_EMAIL_SUBJECT
+        }
+        break
+
+      case CONNECT_ESTATE:
+        otherEstates = await estateQuery
+          .innerJoin('estate_current_tenants', 'estate_current_tenants.estate_id', 'estates.id')
+          .whereIn('estate_current_tenants.status', [STATUS_ACTIVE])
+          .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+          .first()
+        if (+otherEstates.affected === 0) {
+          subject = CONNECT_ESTATE_EMAIL_SUBJECT
+        }
+        break
+    }
+    if (isEmpty(subject)) {
+      return
+    }
+    const landlord = await User.query().where('id', landlordId)
+    estates = await Estate.query().whereIn('id', estateIds).fetch()
+    estateContent = estates.toJSON().map((estate) => estate.address)
+    textMessage = textMessage
+      .replace('[SUBJECT]', subject)
+      .replace('[ESTATES]', `\n${estateContent.join('\n')}`)
+      .replace('[LANDLORD]', `${landlord.firstname} ${landlord.secondname}(${landlord.email})`)
+    htmlMessage = htmlMessage
+      .replace('[SUBJECT]', subject)
+      .replace('[ESTATES]', `<li>${estateContent.join('</li><li>')}</li>`)
+      .replace('[LANDLORD]', `${landlord.firstname} ${landlord.secondname}(${landlord.email})`)
+    await MailService.sendEmailToSupport({ subject, textMessage, htmlMessage })
   }
 }
 
