@@ -303,7 +303,8 @@ class MemberController {
         await MemberPermissionService.deletePermission(member_id, trx)
       }
       if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
-        Event.fire('memberPermission:create', member_id, auth.user.id)
+        //Event.fire('memberPermission:create', member_id, auth.user.id)
+        await MemberPermissionService.createMemberPermission(member_id, auth.user.id, trx)
       }
       await trx.commit()
       response.res(true)
