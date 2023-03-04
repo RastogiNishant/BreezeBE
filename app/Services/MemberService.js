@@ -363,7 +363,7 @@ class MemberService {
    *
    */
   static async createMember(member, user_id, trx) {
-    return Member.createItem({ ...member, user_id }, trx)
+    return await Member.createItem({ ...member, user_id }, trx)
   }
 
   static async setMemberOwner(member_id, owner_id) {
@@ -525,11 +525,8 @@ class MemberService {
       const data = await require('./UserService').getTokenWithLocale([userId])
       const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
       await MailService.sendcodeForMemberInvitation(member.email, shortLink, lang)
-      trx.commit()
-
       return true
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
