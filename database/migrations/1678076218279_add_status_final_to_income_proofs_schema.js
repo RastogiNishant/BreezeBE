@@ -10,7 +10,6 @@ class AddStatusFinalToIncomeProofsSchema extends Schema {
     this.table('income_proofs', (table) => {
       // alter table
       table.integer('status').defaultTo(STATUS_ACTIVE)
-      table.boolean('is_final').defaultTo(false)
     })
   }
 
@@ -18,7 +17,6 @@ class AddStatusFinalToIncomeProofsSchema extends Schema {
     this.table('income_proofs', (table) => {
       // reverse alternations
       table.integer('status').defaultTo(STATUS_ACTIVE)
-      table.boolean('is_final').defaultTo(false)
     })
   }
 }

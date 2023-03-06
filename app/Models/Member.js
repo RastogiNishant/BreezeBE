@@ -69,6 +69,10 @@ class Member extends Model {
     return this.hasMany('App/Models/Income').where('status', STATUS_ACTIVE)
   }
 
+  final_incomes() {
+    return this.hasMany('App/Models/Income').where('is_final', true)    
+  }
+
   passports() {
     return this.hasMany('App/Models/MemberFile')
       .where('type', MEMBER_FILE_TYPE_PASSPORT)

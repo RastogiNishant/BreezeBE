@@ -1329,6 +1329,7 @@ class MatchService {
         .transacting(trx)
     }
 
+    await require('./MemberService').setFinalIncome(user.id, trx)
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
 
@@ -2104,10 +2105,11 @@ class MatchService {
                 left join
                   income_proofs
                 on
-                  income_proofs.income_id = incomes.id
+                  income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
+                where incomes.status = ${STATUS_ACTIVE}  
                 group by incomes.id) as _mip
               on
-                _mip.id=incomes.id
+                _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
               group by
                 incomes.id
               ) as _mi
@@ -2131,7 +2133,7 @@ class MatchService {
           left join
             incomes
           on
-            primaryMember.id=incomes.member_id
+            primaryMember.id=incomes.member_id and incomes.status = ${STATUS_ACTIVE}
           and
             primaryMember.email is null
           and
@@ -2841,10 +2843,10 @@ class MatchService {
               left join
                 income_proofs
               on
-                income_proofs.income_id = incomes.id
+                income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
               group by incomes.id) as _mip
             on
-              _mip.id=incomes.id
+              _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
             group by
               incomes.id
             ) as _mi
@@ -3151,10 +3153,10 @@ class MatchService {
               left join
                 income_proofs
               on
-                income_proofs.income_id = incomes.id
+                income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
               group by incomes.id) as _mip
             on
-              _mip.id=incomes.id
+              _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
             group by
               incomes.id
             ) as _mi
