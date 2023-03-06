@@ -33,6 +33,7 @@ class ThirdPartyOffer extends Model {
       'visit_to',
       'amenities',
       'status',
+      'expiration_date',
     ]
   }
 

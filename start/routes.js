@@ -1351,8 +1351,14 @@ Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
 */
 
 Route.get('/test-om', async ({ request, response }) => {
-  const ThirdPartyOfferService = require('../app/Services/ThirdPartyOfferService')
-  const estates = await ThirdPartyOfferService.pullOhneMakler()
-
-  return response.res(true)
+  //const ThirdPartyOfferService = require('../app/Services/ThirdPartyOfferService')
+  //const estates = await ThirdPartyOfferService.pullOhneMakler()
+  const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
+  const estates = await ThirdPartyOffer.query().select('amenities').fetch()
+  const { uniq } = require('lodash')
+  const amenities = estates.toJSON().reduce((amenities, estate) => {
+    amenities = [...amenities, ...(estate.amenities || [])]
+    return uniq(amenities)
+  }, [])
+  return response.res(amenities)
 })

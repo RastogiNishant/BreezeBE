@@ -17,7 +17,7 @@ class OhneMakler {
     floor_area: 'area',
     year: 'construction_year',
     pictures: 'images',
-    //rent_start
+    expiration_date: 'expiration_date',
     //visit_from
     //visit_to
   }
@@ -40,6 +40,8 @@ class OhneMakler {
     newEstate.status = STATUS_ACTIVE
     newEstate.coord = `${estate.latitude},${estate.longitude}`
     newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
+    if (estate.uebernahme_ab && estate.uebernahme_ab.match(/[0-9]{4}\/[0-9]{2}\/[0-9]{2}/))
+      estate.rent_start
 
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
     return newEstate
