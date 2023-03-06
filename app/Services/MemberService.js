@@ -366,11 +366,18 @@ class MemberService {
     return await Member.createItem({ ...member, user_id }, trx)
   }
 
-  static async setMemberOwner(member_id, owner_id) {
+  static async setMemberOwner({ member_id, owner_id }, trx = null) {
     if (member_id == null) {
       return
     }
-    await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
+    if (!trx) {
+      await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
+    } else {
+      await Member.query()
+        .update({ owner_user_id: owner_id })
+        .where({ id: member_id })
+        .transacting(trx)
+    }
   }
 
   static async getMember(id, user_id, owner_id) {
