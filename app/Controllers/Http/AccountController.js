@@ -65,7 +65,7 @@ class AccountController {
   }
 
   async housekeeperSignup({ request, response }) {
-    const { firstname, email, password, code, lang } = request.all()
+    const { firstname, email, password, code, lang, ip, ip_based_info } = request.all()
     try {
       const user = await UserService.housekeeperSignup({
         code,
@@ -73,6 +73,8 @@ class AccountController {
         password,
         firstname,
         lang,
+        ip,
+        ip_based_info,
       })
 
       response.res(user)
