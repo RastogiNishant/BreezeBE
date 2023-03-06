@@ -491,14 +491,12 @@ class MemberService {
       const code = getHash(3)
 
       await Member.query()
-        .where({ id: id })
-        .update(
-          {
-            code: code,
-            published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-          },
-          trx
-        )
+        .where({ id: member.id })
+        .update({
+          code: code,
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        })
+        .transacting(trx)
 
       const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
       if (invitedUser) {
