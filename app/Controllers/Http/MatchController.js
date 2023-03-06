@@ -449,13 +449,18 @@ class MatchController {
    */
   async moveUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
-    const success = await MatchService.toTop(estate_id, user_id)
-    if (!success) {
-      throw new HttpException('Cant move to top', 400)
+    try {
+      await this.getOwnEstate(estate_id, auth.user.id)
+      const success = await MatchService.toTop(estate_id, user_id)
+      if (!success) {
+        throw new HttpException('Cant move to top', 400)
+      }
+      NoticeService.landlordMovedProspectToTop(estate_id, user_id)
+      response.res(true)
+    } catch (e) {
+      console.log('moveUserToTop', e.message)
+      throw new HttpException(e.message, e.status || 400)
     }
-    NoticeService.landlordMovedProspectToTop(estate_id, user_id)
-    response.res(true)
   }
 
   async cancelTopByTenant({ request, auth, response }) {
@@ -528,10 +533,7 @@ class MatchController {
       response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 

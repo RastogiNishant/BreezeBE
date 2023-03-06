@@ -877,8 +877,8 @@ class MemberService {
     return incomeProofs
   }
 
-  static async setFinalIncome(user_id, trx = null) {
-    const members = await this.getMembers(user_id)
+  static async setFinalIncome({ user_id, is_final = true }, trx = null) {
+    const members = (await this.getMembers(user_id)).toJSON()
     const memberIds = (members || []).map((member) => member.id)
     if (!memberIds || !memberIds.length) {
       return
@@ -890,13 +890,13 @@ class MemberService {
     })
 
     if (trx) {
-      await Income.query()
-        .whereIn('member_id', memberIds)
-        .update({ is_final: true })
+      await Income.query().whereIn('member_id', memberIds).update({ is_final }).transacting(trx)
+      await IncomeProof.query()
+        .whereIn('income_id', incomeIds)
+        .update({ is_final })
         .transacting(trx)
-      await IncomeProof.query().whereIn('income_id', incomeIds).update({ is_final: true }).transacting(trx)
     } else {
-      await Income.query().whereIn('member_id', memberIds).update({ is_final: true })
+      await Income.query().whereIn('member_id', memberIds).update({ is_final })
     }
   }
 }
