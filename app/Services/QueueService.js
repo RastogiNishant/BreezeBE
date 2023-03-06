@@ -67,6 +67,8 @@ class QueueService {
     )
   }
 
+  static contactOhneMakler(userId, message) {}
+
   static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
     Queue.addJob(
       IMPORT_ESTATES_VIA_EXCEL,

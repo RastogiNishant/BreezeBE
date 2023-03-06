@@ -9,6 +9,7 @@ const Promise = require('bluebird')
 const Tenant = use('App/Models/Tenant')
 const GeoService = use('App/Services/GeoService')
 const { STATUS_ACTIVE } = require('../constants')
+const QueueService = require('./QueueService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 
 class ThirdPartyOfferService {
@@ -101,7 +102,7 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static async postAction(userId, id, action, comment = '') {
+  static async postAction(userId, id, action, comment = '', message = '') {
     const found = await ThirdPartyOfferInteraction.query()
       .where('third_party_offer_id', id)
       .where('user_id', userId)
@@ -114,6 +115,13 @@ class ThirdPartyOfferService {
         break
       case 'comment':
         value = { third_party_offer_id: id, user_id: userId, comment }
+        break
+      case 'knock':
+        value = { third_party_offer_id: id, user_id: userId, knocked: true }
+        break
+      case 'contact':
+        value = { third_party_offer_id: id, user_id: userId, inquiry: message }
+        QueueService.contactOhneMakler(userId, message)
         break
     }
     if (!found) {
