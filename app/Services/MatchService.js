@@ -2265,7 +2265,13 @@ class MatchService {
         '_u.code',
         '_v.landlord_followup_meta as followups',
       ])
-      .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
+      .select(
+        '_m.updated_at',
+        '_m.percent as percent',
+        '_m.share',
+        '_m.inviteIn',
+        '_m.final_match_date'
+      )
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
@@ -2317,7 +2323,8 @@ class MatchService {
       '_m.share as share',
       '_m.status as status',
       '_m.user_id',
-      '_mf.id_verified'
+      '_mf.id_verified',
+      '_m.final_match_date'
     )
 
     return query

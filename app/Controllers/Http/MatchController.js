@@ -890,6 +890,7 @@ class MatchController {
       'u_secondname',
       'u_birthday',
       'u_avatar',
+      'final_match_date',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
