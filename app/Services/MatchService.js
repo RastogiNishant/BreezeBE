@@ -1310,7 +1310,10 @@ class MatchService {
 
     if (existingMatch) {
       await Database.table('matches')
-        .update({ status: MATCH_STATUS_FINISH })
+        .update({
+          status: MATCH_STATUS_FINISH,
+          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+        })
         .where({
           user_id: user.id,
           estate_id: estate_id,
@@ -1323,7 +1326,6 @@ class MatchService {
           user_id: user.id,
           estate_id: estate_id,
           percent: 0,
-          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
           status: MATCH_STATUS_FINISH,
         })
         .transacting(trx)
