@@ -414,7 +414,7 @@ class MemberController {
         .whereIn('member_id', function () {
           this.select('id').from('members').where('user_id', user_id)
         })
-        .delete()
+        .update({ status: STATUS_DELETE })
         .transacting(trx)
 
       await trx.commit()
@@ -466,7 +466,7 @@ class MemberController {
     } else {
       throw new HttpException('Invalid income proof', 400)
     }
-    await IncomeProof.query().where('id', proof.id).delete()
+    await IncomeProof.query().where('id', proof.id).update({ status: STATUS_DELETE })
     Event.fire('tenant::update', user_id)
     response.res(true)
   }
