@@ -1157,9 +1157,15 @@ class MatchController {
   }
 
   async postThirdPartyOfferAction({ request, auth, response }) {
-    let { action, id, comment } = request.all()
+    let { action, id, comment, message } = request.all()
     try {
-      const result = await ThirdPartyOfferService.postAction(auth.user.id, id, action, comment)
+      const result = await ThirdPartyOfferService.postAction(
+        auth.user.id,
+        id,
+        action,
+        comment,
+        message
+      )
       return response.res(result)
     } catch (err) {
       console.log(err)
