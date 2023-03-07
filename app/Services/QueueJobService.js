@@ -120,7 +120,6 @@ class QueueJobService {
   }
 
   static async fetchExpiredEstates() {
-    console.log('fetchExpiredEstates')
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
