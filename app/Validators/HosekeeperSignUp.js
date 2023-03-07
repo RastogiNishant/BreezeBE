@@ -5,6 +5,10 @@ const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
 
 const { phoneSchema } = require('../Libs/schemas.js')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
+} = require('../exceptions')
 
 class HosekeeperSignUp extends Base {
   static schema = () =>
@@ -18,6 +22,20 @@ class HosekeeperSignUp extends Base {
       code: yup.string().min(3).required(),
       lang: yup.string().oneOf(['en', 'de']).default('en').required(),
       // phone: phoneSchema.required(),
+      ip: yup
+        .string()
+        .min(7, MINLENGTH)
+        .max(45, MAXLENGTH)
+        //just crude validation for now just numbers and : and .
+        .matches(/^[0-9a-f:.]+$/, getExceptionMessage('Ip Address', INVALID)),
+      ip_based_info: yup.object().shape({
+        country_code: yup.string(),
+        country_name: yup.string(),
+        city: yup.string().nullable(),
+        postal: yup.string().nullable(),
+        latitude: yup.string().nullable(),
+        longitude: yup.string().nullable(),
+      }),
     })
 }
 

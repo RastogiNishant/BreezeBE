@@ -1310,7 +1310,10 @@ class MatchService {
 
     if (existingMatch) {
       await Database.table('matches')
-        .update({ status: MATCH_STATUS_FINISH })
+        .update({
+          status: MATCH_STATUS_FINISH,
+          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+        })
         .where({
           user_id: user.id,
           estate_id: estate_id,
@@ -1323,7 +1326,6 @@ class MatchService {
           user_id: user.id,
           estate_id: estate_id,
           percent: 0,
-          final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
           status: MATCH_STATUS_FINISH,
         })
         .transacting(trx)
@@ -2265,7 +2267,13 @@ class MatchService {
         '_u.code',
         '_v.landlord_followup_meta as followups',
       ])
-      .select('_m.updated_at', '_m.percent as percent', '_m.share', '_m.inviteIn')
+      .select(
+        '_m.updated_at',
+        '_m.percent as percent',
+        '_m.share',
+        '_m.inviteIn',
+        '_m.final_match_date'
+      )
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
@@ -2317,7 +2325,8 @@ class MatchService {
       '_m.share as share',
       '_m.status as status',
       '_m.user_id',
-      '_mf.id_verified'
+      '_mf.id_verified',
+      '_m.final_match_date'
     )
 
     return query

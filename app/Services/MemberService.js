@@ -366,11 +366,18 @@ class MemberService {
     return await Member.createItem({ ...member, user_id }, trx)
   }
 
-  static async setMemberOwner(member_id, owner_id) {
+  static async setMemberOwner({ member_id, owner_id }, trx = null) {
     if (member_id == null) {
       return
     }
-    await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
+    if (!trx) {
+      await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
+    } else {
+      await Member.query()
+        .update({ owner_user_id: owner_id })
+        .where({ id: member_id })
+        .transacting(trx)
+    }
   }
 
   static async getMember(id, user_id, owner_id) {
@@ -491,14 +498,12 @@ class MemberService {
       const code = getHash(3)
 
       await Member.query()
-        .where({ id: id })
-        .update(
-          {
-            code: code,
-            published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-          },
-          trx
-        )
+        .where({ id: member.id })
+        .update({
+          code: code,
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        })
+        .transacting(trx)
 
       const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
       if (invitedUser) {

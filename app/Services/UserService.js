@@ -118,7 +118,7 @@ class UserService {
       try {
         // Create empty tenant and link to user
         const tenant = userData.signupData
-        await Tenant.createItem(
+        await Tenant.create(
           {
             user_id: user.id,
             coord: tenant?.address?.coord,
@@ -130,6 +130,7 @@ class UserService {
         )
       } catch (e) {
         console.log('createUser exception', e)
+        throw new HttpException(e.message, e.status || 400)
       }
     }
     return { user }
@@ -700,7 +701,7 @@ class UserService {
     return (await query.fetch()).rows
   }
 
-  static async housekeeperSignup({ code, email, password, firstname, lang }) {
+  static async housekeeperSignup({ code, email, password, firstname, ip, ip_based_info, lang }) {
     const member = await Member.query()
       .select('user_id', 'id')
       .where('email', email)
@@ -711,50 +712,42 @@ class UserService {
       throw new HttpException(MEMBER_NOT_EXIST, 400)
     }
 
-    const ownerId = member.id
-
     // Check user not exists
-    const availableUser = await User.query().where('email', email).first()
+    const availableUser = await User.query().where('email', email).where('role', ROLE_USER).first()
     if (availableUser) {
       throw new HttpException(USER_UNIQUE, 400)
     }
 
-    if (!(await User.query().where('id', ownerId).first())) {
-      throw new HttpException(HOUSEHOLD_NOT_EXIST, 400)
-    }
-
     const trx = await Database.beginTransaction()
     try {
-      const user = await User.createItem(
+      const { user } = await this.createUser(
         {
-          email,
           role: ROLE_USER,
           password,
-          owner_id: ownerId,
-          status: STATUS_EMAIL_VERIFY,
-          firstname,
+          owner_id: member.user_id,
           lang,
           is_household_invitation_onboarded: false,
           is_profile_onboarded: true,
+          email,
+          firstname,
+          status: STATUS_EMAIL_VERIFY,
+          ip,
+          ip_based_info,
         },
         trx
       )
 
-      await Tenant.create({ user_id: user.id }, trx)
-
+      await MemberService.setMemberOwner({ member_id: member.id, owner_id: user.id }, trx)
       await this.sendConfirmEmail(user)
       await trx.commit()
 
-      if (user) {
-        await MemberService.setMemberOwner(member_id, user.id)
-      }
       Event.fire('mautic:createContact', user.id)
 
       return user
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
-      return null
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
