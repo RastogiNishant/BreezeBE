@@ -282,7 +282,7 @@ class File {
         extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
       if (!file) {
-        return null
+        throw new HttpException('No image provided', 400)
       }
 
       if (file.hasErrors) {
