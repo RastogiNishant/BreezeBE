@@ -120,13 +120,15 @@ class QueueJobService {
   }
 
   static async fetchExpiredEstates() {
+    console.log('fetchExpiredEstates')
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
       .where(
         'available_date',
         '<=',
-        moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
+        // moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
+        moment.utc(new Date()).format(DATE_FORMAT)
       )
       .fetch()
   }
