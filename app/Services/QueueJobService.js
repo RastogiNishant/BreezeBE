@@ -124,7 +124,7 @@ class QueueJobService {
       .select('id')
       .where('status', STATUS_ACTIVE)
       .where(
-        'available_date',
+        'available_end_at',
         '<=',
         // moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
         moment.utc(new Date()).format(DATE_FORMAT)

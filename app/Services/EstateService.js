@@ -236,12 +236,12 @@ const ESTATE_PERCENTAGE_VARIABLE = {
   ],
   visit_slots: [
     {
-      key: 'available_date',
+      key: 'available_start_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
     {
-      key: 'avail_duration',
+      key: 'available_end_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
@@ -1340,7 +1340,10 @@ class EstateService {
           .delete()
           .transacting(trx),
       })
-      await estate.publishEstate(trx)
+
+      if (estate.available_start_at <= moment.utc(new Date()).format(DATE_FORMAT)) {
+        await estate.publishEstate(trx)
+      }
       //send email to support for landlord update...
       QueueService.sendEmailToSupportForLandlordUpdate({
         type: PUBLISH_ESTATE,
@@ -1494,8 +1497,8 @@ class EstateService {
         'property_id',
         'floor_direction',
         'six_char_code',
-        'avail_duration',
-        'available_date',
+        'available_start_at',
+        'available_end_at',
         'from_date',
         'to_date',
         'rent_end_at',

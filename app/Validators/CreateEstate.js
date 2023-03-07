@@ -207,7 +207,7 @@ const {
 } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
 } = require('../exceptions')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -382,7 +382,23 @@ class CreateEstate extends Base {
             ])
         ),
       vacant_date: yup.date(),
-      avail_duration: yup.number().integer().positive().max(5000),
+      available_start_at: yup.date().min(new Date()).nullable(),
+      available_end_at: yup
+        .date()
+        .min(new Date())
+        .when(['available_start_at'], (available_start_at, schema, { value }) => {
+          if (!available_start_at) return schema
+          return value && value <= available_start_at
+            ? schema
+                .date()
+                .typeError(
+                  getExceptionMessage('available_end_at', SHOULD_BE_AFTER, 'available_start_at')
+                )
+            : !value
+            ? schema.required(getExceptionMessage('available_end_at', REQUIRED))
+            : schema
+        })
+        .nullable(),
       is_duration_later: yup.boolean(),
       min_invite_count: yup.number().when('is_duration_later', {
         is: true,

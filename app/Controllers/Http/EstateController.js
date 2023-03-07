@@ -378,13 +378,12 @@ class EstateController {
    *
    */
   async extendEstate({ request, auth, response }) {
-    const { estate_id, avail_duration } = request.all()
-    const available_date = moment().add(avail_duration, 'hours').toDate()
+    const { estate_id, available_end_at } = request.all()
     const estate = await EstateService.getQuery()
       .where('id', estate_id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
-      .update({ available_date: available_date, status: STATUS_ACTIVE })
+      .update({ available_end_at: available_end_at, status: STATUS_ACTIVE })
     response.res(estate)
   }
 
@@ -476,14 +475,14 @@ class EstateController {
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
-    if (!estate.avail_duration) {
+    if (!estate.available_start_at || !estate.available_end_at) {
       throw new HttpException('Estates is not completely filled', 400)
     }
 
     if (action === 'publish') {
-      if (estate.status === STATUS_ACTIVE) {
-        throw new HttpException('Cant update status', 400)
-      }
+      // if (estate.status === STATUS_ACTIVE) {
+      //   throw new HttpException('Cant update status', 400)
+      // }
 
       if (
         [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
