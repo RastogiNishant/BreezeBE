@@ -498,7 +498,7 @@ class Estate extends Model {
     await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
-        available_date: moment().add(this.avail_duration, 'hours').toDate(),
+        available_date: moment.utc(new Date()).add(this.avail_duration, 'hours').toDate(),
       },
       trx,
       true
