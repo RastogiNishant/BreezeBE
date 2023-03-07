@@ -282,7 +282,7 @@ class File {
         extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
       })
       if (!file) {
-        return null
+        throw new HttpException('No image provided', 400)
       }
 
       if (file.hasErrors) {
@@ -303,23 +303,28 @@ class File {
 
       return { field, filePathName, fileName, thumbnailFilePathName, fileFormat }
     }
-    const files = await Promise.map(fields, saveFile)
-    return files.reduce(
-      (n, v) =>
-        v
-          ? {
-              ...n,
-              [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
-              [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
-              [`thumb_${v.field}`]:
-                v.thumbnailFilePathName.length > 1
-                  ? v.thumbnailFilePathName
-                  : v.thumbnailFilePathName[0],
-              ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0],
-            }
-          : n,
-      {}
-    )
+
+    try {
+      const files = await Promise.map(fields, saveFile)
+      return files.reduce(
+        (n, v) =>
+          v
+            ? {
+                ...n,
+                [v.field]: v.filePathName.length > 1 ? v.filePathName : v.filePathName[0],
+                [`original_${v.field}`]: v.fileName.length > 1 ? v.fileName : v.fileName[0],
+                [`thumb_${v.field}`]:
+                  v.thumbnailFilePathName.length > 1
+                    ? v.thumbnailFilePathName
+                    : v.thumbnailFilePathName[0],
+                ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0],
+              }
+            : n,
+        {}
+      )
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   /**

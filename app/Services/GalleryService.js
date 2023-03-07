@@ -106,7 +106,7 @@ class GalleryService extends BaseService {
     }
   }
 
-  static async assignToRoom({ user_id, estate_id, data, galleries }, trx) {
+  static async assignToRoom({ user, estate_id, data, galleries }, trx) {
     const RoomService = require('./RoomService')
     const favoriteRoom = await RoomService.getFavoriteRoom(estate_id)
 
@@ -127,7 +127,7 @@ class GalleryService extends BaseService {
 
     return await RoomService.addImageFromGallery(
       {
-        user_id,
+        user_id: user.id,
         room_id: data.room_id,
         room: data.room,
         estate_id,
@@ -145,10 +145,7 @@ class GalleryService extends BaseService {
     try {
       switch (data.view_type) {
         case GALLERY_INSIDE_VIEW_TYPE:
-          successGalleryIds = await this.assignToRoom(
-            { galleries, user_id: user.id, estate_id, data },
-            trx
-          )
+          successGalleryIds = await this.assignToRoom({ galleries, user, estate_id, data }, trx)
           break
         case GALLERY_DOCUMENT_VIEW_TYPE:
           switch (data.document_type) {
