@@ -6,10 +6,8 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
-const Tenant = use('App/Models/Tenant')
-const GeoService = use('App/Services/GeoService')
 const { STATUS_ACTIVE } = require('../constants')
-const QueueService = require('./QueueService')
+const QueueService = use('App/Services/QueueService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 
 class ThirdPartyOfferService {
@@ -121,7 +119,11 @@ class ThirdPartyOfferService {
         break
       case 'contact':
         value = { third_party_offer_id: id, user_id: userId, inquiry: message }
-        QueueService.contactOhneMakler(userId, message)
+        QueueService.contactOhneMakler({
+          third_party_offer_id: id,
+          userId,
+          message,
+        })
         break
     }
     if (!found) {

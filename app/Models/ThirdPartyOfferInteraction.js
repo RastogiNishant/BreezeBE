@@ -5,7 +5,17 @@ const Model = require('./BaseModel')
 
 class ThirdPartyOfferInteraction extends Model {
   static get columns() {
-    return ['id', 'user_id', 'third_party_offer_id', 'liked', 'comment', 'created_at', 'updated_at']
+    return [
+      'id',
+      'user_id',
+      'third_party_offer_id',
+      'liked',
+      'comment',
+      'knocked',
+      'inquiry',
+      'created_at',
+      'updated_at',
+    ]
   }
 }
 

@@ -13,6 +13,7 @@ const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
+const CONTACT_OHNE_MAKLER = 'contactOhneMakler'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
@@ -67,7 +68,9 @@ class QueueService {
     )
   }
 
-  static contactOhneMakler(userId, message) {}
+  static contactOhneMakler({ third_party_offer_id, userId, message }) {
+    Queue.addJob(CONTACT_OHNE_MAKLER, { third_party_offer_id, userId, message }, { delay: 1 })
+  }
 
   static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
     Queue.addJob(
@@ -173,6 +176,12 @@ class QueueService {
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case CONTACT_OHNE_MAKLER:
+          return QueueJobService.contactOhneMakler(
+            job.data.third_party_offer_id,
+            job.data.userId,
+            job.data.message
+          )
         case SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE:
           return QueueJobService.sendEmailToSupportForLandlordUpdate({
             type: job.data.type,
