@@ -66,8 +66,9 @@ class ThirdPartyOfferService {
     /* estate coord intersects with polygon of tenant */
     return Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
-      .select(`_l.like_count`)
-      .select(`_d.dislike_count`)
+      .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
+      .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
+      .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knock_count`))
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'third_party_offers' })
@@ -93,6 +94,18 @@ class ThirdPartyOfferService {
           third_party_offer_id
       ) _d`),
         '_d.third_party_offer_id',
+        '_e.id'
+      )
+      .leftJoin(
+        Database.raw(`(
+        select 
+          third_party_offer_id,
+          count(case when knocked=true then 1 end) as knock_count
+        from third_party_offer_interactions
+        group by
+          third_party_offer_id
+      ) _k`),
+        '_k.third_party_offer_id',
         '_e.id'
       )
       .where('_t.user_id', userId)
