@@ -358,9 +358,9 @@ class QueueJobService {
             surname: titleFromGender(prospect.sex), //weird...
             first: prospect.firstname,
             last: prospect.secondname,
-            street: '', //see address
-            plz: '', //see address
-            location: prospect.address,
+            street: estate.street, //see address
+            plz: estate.zip, //see address
+            location: estate.city,
             tel: prospect.phone,
             email: prospect.email,
             enquiry: message,

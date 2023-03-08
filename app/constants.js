@@ -1074,7 +1074,7 @@ Estates: [ESTATES]
     'Odorous',
     'Heavily neglected',
   ],
-  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze4me Inquiry',
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
 }
 
 module.exports = constants
