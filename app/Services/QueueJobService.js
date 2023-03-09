@@ -380,10 +380,8 @@ class QueueJobService {
       .fetch()
     await Promise.map(estates.toJSON(), async (estate) => {
       if (estate.coord_raw && estate.coord_raw.match(/,/)) {
-        console.log('herere')
         const [lat, lon] = estate.coord_raw.split(',')
         const point = await GeoService.getOrCreatePoint({ lat, lon })
-        console.log('point.id', point.id)
         await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
       }
     })

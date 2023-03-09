@@ -9,6 +9,7 @@ const { STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
+const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 
 class ThirdPartyOfferService {
@@ -61,9 +62,9 @@ class ThirdPartyOfferService {
   }
 
   static async getEstates(userId, page = 1, limit = 10) {
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId) //paginate(page, limit)
-    estates = await Promise.all(
-      estates.map(async (estate) => {
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).paginate(page, limit) //paginate(page, limit)
+    estates.data = await Promise.all(
+      estates.rows.map(async (estate) => {
         estate.isoline = await EstateService.getIsolines(estate)
         return estate
       })
@@ -73,13 +74,14 @@ class ThirdPartyOfferService {
 
   static searchEstatesQuery(userId) {
     /* estate coord intersects with polygon of tenant */
-    return Database.select(Database.raw(`TRUE as inside`))
+    return Tenant.query()
+      .select(Database.raw(`TRUE as inside`))
+      .select(Database.raw(`points.data as point_data`))
       .select('_e.*')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knock_count`))
-      .from({ _t: 'tenants' })
-      .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
+      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
       .crossJoin({ _e: 'third_party_offers' })
       .leftJoin(
         Database.raw(`(
@@ -117,7 +119,8 @@ class ThirdPartyOfferService {
         '_k.third_party_offer_id',
         '_e.id'
       )
-      .where('_t.user_id', userId)
+      .leftJoin('points', 'points.id', '_e.point_id')
+      .where('tenants.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
