@@ -389,13 +389,16 @@ class CreateEstate extends Base {
         .when(['available_start_at'], (available_start_at, schema, { value }) => {
           if (!available_start_at) return schema
           return value && value <= available_start_at
-            ? schema
+            ? yup
                 .date()
-                .typeError(
-                  getExceptionMessage('available_end_at', SHOULD_BE_AFTER, 'available_start_at')
+                .min(
+                  available_start_at,
+                  getExceptionMessage(
+                    'available_end_at',
+                    SHOULD_BE_AFTER,
+                    moment(available_start_at).format(DATE_FORMAT)
+                  )
                 )
-            : !value
-            ? schema.required(getExceptionMessage('available_end_at', REQUIRED))
             : schema
         })
         .nullable(),

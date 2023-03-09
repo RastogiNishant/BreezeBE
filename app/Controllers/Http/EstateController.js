@@ -56,6 +56,7 @@ const {
   FILE_TYPE_EXTERNAL,
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
+  LOG_TYPE_PUBLISHED_PROPERTY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -379,12 +380,9 @@ class EstateController {
    */
   async extendEstate({ request, auth, response }) {
     const { estate_id, available_end_at } = request.all()
-    const estate = await EstateService.getQuery()
-      .where('id', estate_id)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .update({ available_end_at: available_end_at, status: STATUS_ACTIVE })
-    response.res(estate)
+    response.res(
+      await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
+    )
   }
 
   /**
@@ -490,17 +488,24 @@ class EstateController {
       ) {
         // Validate is Landlord fulfilled contacts
         try {
-          await EstateService.publishEstate(estate, request)
+          await EstateService.publishEstate(estate)
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)
             throw new HttpException('User not activated', 409)
           }
-          throw e
+          throw new HttpException(e.message, e.status || 400)
         }
       } else {
         throw new HttpException('Invalid estate type', 400)
       }
+      logEvent(
+        request,
+        LOG_TYPE_PUBLISHED_PROPERTY,
+        estate.user_id,
+        { estate_id: estate.id },
+        false
+      )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT }, true)
     }

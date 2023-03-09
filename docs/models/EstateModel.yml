@@ -289,9 +289,12 @@ components:
             - 8
             - 9
           example: 1
-        avail_duration:
-          type: integer
-          example: 1000
+        avail_start_at:
+          type: string
+          example:  2023-03-10 00:00:00
+        avail_end_at:
+          type: string
+          example:  2023-03-10 00:00:00
         vacant_date: 
           type: string
           format: date

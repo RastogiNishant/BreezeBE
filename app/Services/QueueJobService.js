@@ -90,9 +90,22 @@ class QueueJobService {
     }
   }
 
+  static async handleToActivateEstates() {
+    const estates = (await QueueJobService.fetchToActivateEstates()).rows
+    if (!estates || !estates.length) {
+      return false
+    }
+
+    let i = 0
+    while (i < estates.length) {
+      await require('./EstateService').publishEstate(estates[i], true)
+      i++
+    }
+  }
+
   //Finds and handles the estates that available date is over
-  static async handleExpiredEstates() {
-    const estateIds = (await QueueJobService.fetchExpiredEstates()).rows.map((i) => i.id)
+  static async handleToExpireEstates() {
+    const estateIds = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => i.id)
     if (isEmpty(estateIds)) {
       return false
     }
@@ -119,16 +132,27 @@ class QueueJobService {
     }
   }
 
-  static async fetchExpiredEstates() {
+  static async fetchToActivateEstates() {
+    return Estate.query()
+      .select('*')
+      .where('status', STATUS_EXPIRE)
+      .whereNotNull('available_start_at')
+      .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
+      .where(function () {
+        this.orWhereNull('available_end_at')
+        this.orWhere('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+      })
+      .fetch()
+  }
+  static async fetchToExpireEstates() {
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
-      .where(
-        'available_end_at',
-        '<=',
-        // moment().utc().add(avail_duration, 'hours').format(DATE_FORMAT)
-        moment.utc(new Date()).format(DATE_FORMAT)
-      )
+      .where(function () {
+        this.orWhereNull('available_start_at')
+        this.orWhere('available_start_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+        this.orWhere('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
+      })
       .fetch()
   }
 
