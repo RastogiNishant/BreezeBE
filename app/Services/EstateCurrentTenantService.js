@@ -100,12 +100,6 @@ class EstateCurrentTenantService extends BaseService {
 
       await currentTenant.save(trx)
       //send email to support for connect
-      const estate = await Estate.query().select('id', 'user_id').where('id', estate_id).first()
-      require('./QueueService').sendEmailToSupportForLandlordUpdate({
-        type: CONNECT_ESTATE,
-        landlordId: estate.user_id,
-        estateIds: [estate_id],
-      })
 
       if (shouldCommitTrx) {
         await trx.commit()
@@ -519,12 +513,9 @@ class EstateCurrentTenantService extends BaseService {
       await trx.rollback()
     } finally {
       let ret = {}
-      console.log('Inviting currentTenant ====', currentTenant)
       if (currentTenant) {
         if (email) {
-          console.log('Inviting current tenant  start here')
           inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
-          console.log('Inviting current tenant here', inviteResult)
           ret = {
             successCount: inviteResult.successCount,
             failureCount: inviteResult.failureCount,
