@@ -1,6 +1,5 @@
 const axios = require('axios')
 const OhneMakler = require('../Classes/OhneMakler')
-const { get } = require('lodash')
 const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
@@ -8,6 +7,8 @@ const Database = use('Database')
 const Promise = require('bluebird')
 const { STATUS_ACTIVE } = require('../constants')
 const QueueService = use('App/Services/QueueService')
+const EstateService = use('App/Services/EstateService')
+const GeoService = use('App/Services/GeoService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 
 class ThirdPartyOfferService {
@@ -58,7 +59,13 @@ class ThirdPartyOfferService {
   }
 
   static async getEstates(userId, page = 1, limit = 10) {
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).paginate(page, limit)
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId) //paginate(page, limit)
+    estates = await Promise.all(
+      estates.map(async (estate) => {
+        estate.isoline = await EstateService.getIsolines(estate)
+        return estate
+      })
+    )
     return estates
   }
 

@@ -58,7 +58,6 @@ class OhneMakler {
     }
     const processableEstates = estates.reduce((current, estate) => {
       if (this.estateCanBeProcessed(estate)) {
-        console.log('estate')
         estate = this.mapEstate(estate)
         return [...current, estate]
       } else {

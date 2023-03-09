@@ -20,6 +20,7 @@ const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const {
+  SCHEDULED_EVERY_MINUTE_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB,
   SCHEDULED_13H_DAY_JOB,
@@ -101,6 +102,10 @@ class QueueService {
 
   static getIpBasedInfo(userId, ip) {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
+  }
+
+  static async doEveryMin() {
+    return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
   }
 
   /**
@@ -196,6 +201,8 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
+        case SCHEDULED_EVERY_MINUTE_JOB:
+          return QueueService.doEveryMin()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB:

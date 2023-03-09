@@ -358,8 +358,8 @@ class QueueJobService {
             surname: titleFromGender(prospect.sex), //weird...
             first: prospect.firstname,
             last: prospect.secondname,
-            street: estate.street, //see address
-            plz: estate.zip, //see address
+            street: estate.street,
+            plz: estate.zip,
             location: estate.city,
             tel: prospect.phone,
             email: prospect.email,
@@ -370,6 +370,23 @@ class QueueJobService {
     }
     const xmlmessage = toXML(obj)
     await MailService.sendEmailToOhneMakler(xmlmessage)
+  }
+
+  static async updateThirdPartyOfferPoints() {
+    const estates = await ThirdPartyOffer.query()
+      .select('id', 'coord_raw')
+      .whereNull('point_id')
+      .limit(4)
+      .fetch()
+    await Promise.map(estates.toJSON(), async (estate) => {
+      if (estate.coord_raw && estate.coord_raw.match(/,/)) {
+        console.log('herere')
+        const [lat, lon] = estate.coord_raw.split(',')
+        const point = await GeoService.getOrCreatePoint({ lat, lon })
+        console.log('point.id', point.id)
+        await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
+      }
+    })
   }
 }
 
