@@ -518,9 +518,9 @@ class UserService {
       throw new AppException(USER_NOT_EXIST)
     }
 
+    const isShare = user.finish || user.share
     //TODO: WARNING: SECURITY
-    // const isShare = user.finish || user.share
-    const isShare = true
+    // const isShare = true
 
     let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
@@ -534,6 +534,9 @@ class UserService {
       .with('members.extra_residency_proofs')
       .with('members.extra_score_proofs')
 
+    if (user.finish) {
+      tenantQuery.with('members.final_incomes').with('members.final_incomes.final_proofs')
+    }
     const tenant = await tenantQuery.first()
     if (!tenant) {
       return userData
