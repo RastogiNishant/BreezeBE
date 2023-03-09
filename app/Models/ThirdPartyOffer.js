@@ -34,6 +34,7 @@ class ThirdPartyOffer extends Model {
       'amenities',
       'status',
       'expiration_date',
+      'point_id',
     ]
   }
 
