@@ -5,7 +5,7 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
-const { STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
@@ -28,6 +28,8 @@ class ThirdPartyOfferService {
 
   static async pullOhneMakler() {
     try {
+      await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'
+        WHERE expiration_date < CURRENT_DATE`)
       const { data } = await axios.get(process.env.OHNE_MAKLER_API_URL, { timeout: 2000 })
       if (!data) {
         throw new Error('Error found on pulling ohne makler')
