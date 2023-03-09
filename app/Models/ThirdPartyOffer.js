@@ -47,6 +47,10 @@ class ThirdPartyOffer extends Model {
       }
     })
   }
+
+  point() {
+    return this.hasOne('App/Models/Point', 'point_id', 'id')
+  }
 }
 
 module.exports = ThirdPartyOffer
