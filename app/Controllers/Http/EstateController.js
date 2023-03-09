@@ -473,7 +473,11 @@ class EstateController {
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
-    if (!estate.available_start_at || !estate.available_end_at) {
+    if (
+      !estate.available_start_at ||
+      (!is_duration_later && !estate.available_end_at) ||
+      (is_duration_later && !estate.min_invite_count)
+    ) {
       throw new HttpException('Estates is not completely filled', 400)
     }
 

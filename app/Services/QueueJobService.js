@@ -27,6 +27,7 @@ const {
   SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE,
   SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE,
   ESTATE_COMPLETENESS_BREAKPOINT,
+  MAXIMUM_EXPIRE_PERIOD,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -152,6 +153,14 @@ class QueueJobService {
         this.orWhereNull('available_start_at')
         this.orWhere('available_start_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
         this.orWhere('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
+        this.orWhere(function () {
+          this.whereNull('available_end_at')
+          this.where(
+            Database.raw`DATE_PART('days', (now() - available_start_at))`,
+            '>=',
+            MAXIMUM_EXPIRE_PERIOD
+          )
+        })
       })
       .fetch()
   }

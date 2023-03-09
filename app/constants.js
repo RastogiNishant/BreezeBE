@@ -399,6 +399,8 @@ const constants = {
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
 
+  MAXIMUM_EXPIRE_PERIOD: 3 * 30, // 90 days
+
   AMENITIES_OPTIONS: [
     'elevator',
     'cellar',
