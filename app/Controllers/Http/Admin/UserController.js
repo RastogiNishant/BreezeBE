@@ -249,6 +249,7 @@ class UserController {
 
   async getLandlords({ request, response }) {
     let { activation_status, status, estate_status, page, limit, query, today } = request.all()
+    let { from_web } = request.get()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -287,6 +288,9 @@ class UserController {
         isArray(activation_status) ? activation_status : [activation_status]
       )
       .with('estates', function (e) {
+        if (from_web && +from_web === 1) {
+          e.select('id', 'user_id', 'status')
+        }
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
         e.withCount('current_tenant', function (q) {
