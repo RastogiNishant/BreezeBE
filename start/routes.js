@@ -888,7 +888,7 @@ Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middle
   'valid:MatchListTenant,Pagination',
 ])
 
-Route.get('/api/v1/match/third-party-offers', 'MatchController.getThirdPartyOffers').middleware([
+Route.get('/api/v1/tenant/third-party-offers', 'MatchController.getThirdPartyOffers').middleware([
   'auth:jwt',
   'valid:Pagination',
 ])
