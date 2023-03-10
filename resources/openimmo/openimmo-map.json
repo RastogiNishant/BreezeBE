@@ -20,7 +20,6 @@
   "energy_efficiency": "zustand_angaben.0.energiepass.0.energieverbrauchkennwert.0",
   "firing": "ausstattung.0.befeuerung.0.$",
   "floor": "geo.0.etage.0",
-  "from_date": "verwaltung_objekt.0.abdatum.0",
   "furnished": "ausstattung.0.moebliert.0.$.moeb",
   "gender": "verwaltung_objekt.0.geschlecht.0",
   "ground": "ausstattung.0.boden.0.$",

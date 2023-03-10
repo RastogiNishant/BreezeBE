@@ -299,10 +299,6 @@ components:
           type: string
           format: date
           example: '2022-04-25'
-        from_date:
-          type: string
-          format: date
-          example: '2022-04-25'
         to_date:
           type: string
           format: date

@@ -411,8 +411,6 @@ class CreateEstate extends Base {
           .positive()
           .typeError(getExceptionMessage('min_invite_count', NUMBER)),
       }),
-
-      from_date: yup.date().nullable(),
       to_date: yup.date(),
       rent_end_at: yup
         .date()
