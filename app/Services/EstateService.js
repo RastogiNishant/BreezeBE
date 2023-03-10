@@ -339,6 +339,16 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE)
           .with('images')
@@ -670,6 +680,15 @@ class EstateService {
       .withCount('invite')
       .withCount('final')
       .withCount('inviteBuddies')
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
       .with('current_tenant', function (q) {
         q.with('user')
       })
@@ -1169,6 +1188,15 @@ class EstateService {
         b.whereNot('status', STATUS_DELETE).with('images')
       })
       .with('files')
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
       .orderBy('_m.percent', 'DESC')
   }
 
@@ -1288,6 +1316,15 @@ class EstateService {
           b.whereNot('status', STATUS_DELETE).with('images')
         })
         .with('files')
+        .with('user', function (u) {
+          u.select('id', 'company_id')
+          u.with('company', function (c) {
+            c.select('id', 'avatar', 'name', 'visibility')
+            c.with('contacts', function (ct) {
+              ct.select('id', 'full_name', 'company_id')
+            })
+          })
+        })
         .select(Database.raw(`'0' AS match`))
         // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
         .orderBy('estates.id', 'DESC')
