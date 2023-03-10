@@ -82,9 +82,9 @@ class ImportService {
           //await EstateService.completeRemoveEstate(existingEstate.id)
           warning = `Probably duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
         }
-        data.avail_duration = 144
         data.status = STATUS_DRAFT
-        data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        data.available_start_at = moment().utc(new Date()).format(DATE_FORMAT)
+        data.available_end_at = moment().utc(new Date()).add(144, 'hours').format(DATE_FORMAT)
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }

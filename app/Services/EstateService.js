@@ -236,12 +236,12 @@ const ESTATE_PERCENTAGE_VARIABLE = {
   ],
   visit_slots: [
     {
-      key: 'available_date',
+      key: 'available_start_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
     {
-      key: 'avail_duration',
+      key: 'available_end_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
@@ -1319,16 +1319,20 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate, request) {
+  static async publishEstate(estate, is_queue = false) {
     //TODO: We must add transaction here
 
     const trx = await Database.beginTransaction()
     try {
       const user = await User.query().where('id', estate.user_id).first()
-      if (!user) return
+      if (!user) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
+
       await props({
         delMatches: Database.table('matches')
           .where({ estate_id: estate.id })
@@ -1340,28 +1344,46 @@ class EstateService {
           .delete()
           .transacting(trx),
       })
-      await estate.publishEstate(trx)
-      //send email to support for landlord update...
-      QueueService.sendEmailToSupportForLandlordUpdate({
-        type: PUBLISH_ESTATE,
-        landlordId: estate.user_id,
-        estateIds: [estate.id],
-      })
-      logEvent(
-        request,
-        LOG_TYPE_PUBLISHED_PROPERTY,
-        estate.user_id,
-        { estate_id: estate.id },
-        false
-      )
-      // Run match estate
-      Event.fire('match::estate', estate.id)
-      Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+
+      if (
+        estate.available_start_at &&
+        moment(estate.available_start_at).format(DATE_FORMAT) <=
+          moment.utc(new Date()).format(DATE_FORMAT) &&
+        (!estate.available_end_at ||
+          moment(estate.available_end_at).format(DATE_FORMAT) >=
+            moment.utc(new Date()).format(DATE_FORMAT))
+      ) {
+        await estate.publishEstate(trx)
+        // Run match estate
+        Event.fire('match::estate', estate.id)
+      } else {
+        estate.status = STATUS_EXPIRE
+        await estate.save(trx)
+      }
+
+      if (!is_queue) {
+        //send email to support for landlord update...
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: PUBLISH_ESTATE,
+          landlordId: estate.user_id,
+          estateIds: [estate.id],
+        })
+        Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+      }
+
       await trx.commit()
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
     }
+  }
+
+  static async extendEstate({ user_id, estate_id, available_end_at }) {
+    return await EstateService.getQuery()
+      .where('id', estate_id)
+      .where('user_id', user_id)
+      .whereIn('status', [STATUS_EXPIRE, STATUS_ACTIVE])
+      .update({ available_end_at, status: STATUS_ACTIVE })
   }
 
   static async handleOfflineEstate(estateId, trx) {
@@ -1494,8 +1516,8 @@ class EstateService {
         'property_id',
         'floor_direction',
         'six_char_code',
-        'avail_duration',
-        'available_date',
+        'available_start_at',
+        'available_end_at',
         'from_date',
         'to_date',
         'rent_end_at',
