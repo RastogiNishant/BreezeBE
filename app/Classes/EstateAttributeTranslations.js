@@ -196,7 +196,7 @@ toPercent = (i) => {
   if (isNaN(parseFloat(i))) {
     i = NULL
   } else {
-    i = parseFloat(i) * 100
+    i = parseInt(parseFloat(i) * 100)
   }
 
   return i

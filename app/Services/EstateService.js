@@ -2258,7 +2258,7 @@ class EstateService {
       deleted_slots_ids = null,
       deleted_files_ids = null,
     },
-    trx
+    trx = null
   ) {
     if (!estate && !estate_id) {
       return

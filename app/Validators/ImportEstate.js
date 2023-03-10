@@ -365,27 +365,6 @@ class ImportEstate extends Base {
           ENERGY_TYPE_MINERGIE_CERTIFIED,
         ]),
       vacant_date: yup.date(),
-      available_start_at: yup.date().min(new Date()).nullable(),
-      available_end_at: yup
-        .date()
-        .min(new Date())
-        .when(['available_start_at'], (available_start_at, schema, { value }) => {
-          console.log('available_start_at=', available_start_at)
-          if (!available_start_at) return schema
-          return value && value <= available_start_at
-            ? yup
-                .date()
-                .min(
-                  available_start_at,
-                  getExceptionMessage(
-                    'available_end_at',
-                    SHOULD_BE_AFTER,
-                    moment(available_start_at).format(DATE_FORMAT)
-                  )
-                )
-            : schema
-        })
-        .nullable(),
       from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
@@ -519,8 +498,8 @@ class ImportEstate extends Base {
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
       zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
-      budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().min(0).max(100),
+      budget: yup.string(),
+      credit_score: yup.string(),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
