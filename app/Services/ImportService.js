@@ -177,7 +177,10 @@ class ImportService {
       result = await Promise.map(
         data,
         async (i) => {
-          if (i) await ImportService.createSingleEstate(i, user_id)
+          if (i) {
+            return await ImportService.createSingleEstate(i, user_id)
+          }
+          return null
         },
         opt
       )
@@ -299,17 +302,14 @@ class ImportService {
       if (!estate_data.letting_type) {
         estate_data.letting_type = LETTING_TYPE_NA
       }
-      estate_data.percent = require('./EstateService').calculatePercent({
-        ...estate.toJSON({
-          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-        }),
-        ...estate_data,
-      })
-      estate_data.id = estate.id
 
-      estate.fill(estate_data)
-      await estate.save(trx)
-
+      await require('./EstateService').updateEstate(
+        {
+          data: { ...estate_data, id: estate.id },
+          user_id,
+        },
+        trx
+      )
       if (data.letting_type === LETTING_TYPE_LET) {
         await EstateCurrentTenantService.updateCurrentTenant(
           {

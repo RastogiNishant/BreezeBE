@@ -148,7 +148,7 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      const newEstate = await EstateService.updateEstate(request, auth.user.id)
+      const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
       response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -164,7 +164,7 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    const newEstate = await EstateService.updateEstate(request, auth.user.id)
+    const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
     response.res(newEstate)
   }
 

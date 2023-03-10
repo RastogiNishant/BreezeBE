@@ -445,11 +445,15 @@ class EstateService {
       FileBucket.IMAGE_PNG,
       FileBucket.IMAGE_PDF,
     ]
-    const files = await FileBucket.saveRequestFiles(request, [
-      { field: 'energy_proof', mime: imageMimes, isPublic: true },
-    ])
+    try {
+      const files = await FileBucket.saveRequestFiles(request, [
+        { field: 'energy_proof', mime: imageMimes, isPublic: true },
+      ])
 
-    return files
+      return files
+    } catch (e) {
+      return null
+    }
   }
   /**
    *
@@ -543,8 +547,8 @@ class EstateService {
     }
   }
 
-  static async updateEstate(request, user_id) {
-    const { ...data } = request.all()
+  static async updateEstate({ request, data, user_id }, trx = null) {
+    data = request ? request.all() : data
 
     let updateData = {
       ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
@@ -557,7 +561,9 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    const trx = await Database.beginTransaction()
+    let insideTrx = !trx ? true : false
+
+    trx = insideTrx ? await Database.beginTransaction() : trx
     try {
       if (data.delete_energy_proof) {
         energy_proof = estate?.energy_proof
@@ -617,13 +623,18 @@ class EstateService {
       if (data.address) {
         QueueService.getEstateCoords(estate.id)
       }
-      await trx.commit()
+      if (insideTrx) {
+        await trx.commit()
+      }
+
       return {
         ...estate.toJSON(),
         updateData,
       }
     } catch (e) {
-      await trx.rollback()
+      if (insideTrx) {
+        await trx.rollback()
+      }
       throw new HttpException(e.message, e.status || 400)
     }
   }
@@ -2076,10 +2087,17 @@ class EstateService {
           .first()
         if (existingProperty) {
           existingProperty.merge(omit(property, ['images']))
-          result = await existingProperty.save(trx)
+          result = await this.updateEstate(
+            { data: { ...omit(property, ['images']), id: existingProperty.id }, user_id },
+            trx
+          )
           QueueService.uploadOpenImmoImages(images, existingProperty.id)
         } else {
-          result = await Estate.createItem(omit(property, ['images']), trx)
+          result = await this.createEstate(
+            { data: omit(property, ['images']), userId: user_id },
+            false,
+            trx
+          )
           QueueService.uploadOpenImmoImages(images, result.id)
         }
       })
