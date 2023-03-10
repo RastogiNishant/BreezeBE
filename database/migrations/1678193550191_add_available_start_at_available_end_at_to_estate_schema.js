@@ -7,8 +7,12 @@ class AddAvailableStartAtAvailableEndAtToEstateSchema extends Schema {
   up() {
     this.table('estates', (table) => {
       // alter table
-      table.datetime('available_start_at', { useTz: false })
-      table.datetime('available_end_at', { useTz: false })
+      table
+        .datetime('available_start_at', { useTz: false })
+        .comment('the date time when the property will be online from')
+      table
+        .datetime('available_end_at', { useTz: false })
+        .comment('the date time when the property will be online by')
     })
   }
 
