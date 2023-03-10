@@ -76,7 +76,7 @@ class ThirdPartyOfferService {
     /* estate coord intersects with polygon of tenant */
     return Tenant.query()
       .select(Database.raw(`TRUE as inside`))
-      .select(Database.raw(`points.data as point_data`))
+      .select(Database.raw(`points.data as point`))
       .select('_e.*')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
