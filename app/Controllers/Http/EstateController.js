@@ -475,8 +475,8 @@ class EstateController {
     }
     if (
       !estate.available_start_at ||
-      (!is_duration_later && !estate.available_end_at) ||
-      (is_duration_later && !estate.min_invite_count)
+      (!estate.is_duration_later && !estate.available_end_at) ||
+      (estate.is_duration_later && !estate.min_invite_count)
     ) {
       throw new HttpException('Estates is not completely filled', 400)
     }
