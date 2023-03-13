@@ -6,7 +6,7 @@ const Database = use('Database')
 const Point = use('App/Models/Point')
 const AppException = use('App/Exceptions/AppException')
 
-const { isString, isArray, toNumber, range, get } = require('lodash')
+const { isString, isArray, toNumber, range, get, maxBy } = require('lodash')
 const {
   POINT_TYPE_POI,
   POINT_TYPE_ZONE,
