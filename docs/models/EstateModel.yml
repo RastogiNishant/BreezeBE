@@ -640,6 +640,7 @@ components:
             - BUILDING_STATUS_DEVELOPED: 13
             - BUILDING_STATUS_ABRISSOBJEKT: 14
             - BUILDING_STATUS_PROJECTED: 15
+            - BUILDING_STATUS_FULLY_REFURBISHED: 16
           enum:
             - 1
             - 2
