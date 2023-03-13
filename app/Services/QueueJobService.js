@@ -106,26 +106,43 @@ class QueueJobService {
 
   //Finds and handles the estates that available date is over
   static async handleToExpireEstates() {
-    const estateIds = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => i.id)
-    if (isEmpty(estateIds)) {
+    const estates = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => {
+      return {
+        id: i.id,
+        available_start_at: i.available_start_at,
+      }
+    })
+    if (isEmpty(estates)) {
       return false
     }
 
+    const estateIdsToExpire = estates.filter((estate) => estate.available_start_at)
+    const estateIdsToDraft = estates.filter((estate) => !estate.available_start_at)
+
     const trx = await Database.beginTransaction()
     try {
-      await Estate.query()
-        .update({ status: STATUS_EXPIRE })
-        .whereIn('id', estateIds)
-        .transacting(trx)
+      if (estateIdsToExpire && estateIdsToExpire.length) {
+        await Estate.query()
+          .update({ status: STATUS_EXPIRE })
+          .whereIn('id', estateIdsToExpire)
+          .transacting(trx)
 
-      // Delete new matches
-      await Match.query()
-        .whereIn('estate_id', estateIds)
-        .where('status', MATCH_STATUS_NEW)
-        .delete()
-        .transacting(trx)
-      await trx.commit()
-      NoticeService.landlordEstateExpired(estateIds)
+        // Delete new matches
+        await Match.query()
+          .whereIn('estate_id', estateIdsToExpire)
+          .where('status', MATCH_STATUS_NEW)
+          .delete()
+          .transacting(trx)
+        await trx.commit()
+        NoticeService.landlordEstateExpired(estateIdsToExpire)
+      }
+
+      if (estateIdsToDraft && estateIdsToDraft.length) {
+        await Estate.query()
+          .update({ status: STATUS_DRAFT })
+          .whereIn('id', estateIdsToDraft)
+          .transacting(trx)
+      }
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
@@ -140,9 +157,16 @@ class QueueJobService {
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
       .where(function () {
-        this.orWhereNull('available_end_at')
-        this.orWhere('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+        this.orWhere(function () {
+          this.whereNotNull('available_end_at')
+          this.where('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+        })
+        this.orWhere(function () {
+          this.whereNotNull('available_end_at')
+          this.where('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+        })
       })
+
       .fetch()
   }
   static async fetchToExpireEstates() {
@@ -152,7 +176,10 @@ class QueueJobService {
       .where(function () {
         this.orWhereNull('available_start_at')
         this.orWhere('available_start_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
-        this.orWhere('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
+        this.orWhere(function () {
+          this.whereNotNull('available_end_at')
+          this.where('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
+        })
         this.orWhere(function () {
           this.whereNull('available_end_at')
           this.where(
