@@ -383,7 +383,7 @@ class CreateEstate extends Base {
             ])
         ),
       vacant_date: yup.date(),
-      available_start_at: yup.date().min(new Date()).nullable(),
+      available_start_at: yup.date().nullable(),
       available_end_at: yup
         .date()
         .min(new Date())
