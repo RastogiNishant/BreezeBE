@@ -100,12 +100,6 @@ class EstateCurrentTenantService extends BaseService {
 
       await currentTenant.save(trx)
       //send email to support for connect
-      const estate = await Estate.query().select('id', 'user_id').where('id', estate_id).first()
-      QueueService.sendEmailToSupportForLandlordUpdate({
-        type: CONNECT_ESTATE,
-        landlordId: estate.user_id,
-        estateIds: [estate_id],
-      })
 
       if (shouldCommitTrx) {
         await trx.commit()
@@ -173,7 +167,7 @@ class EstateCurrentTenantService extends BaseService {
     await currentTenant.save(trx)
     //send email to support for connect
     const estate = await Estate.query().select('id', 'user_id').where('id', estate_id).first()
-    QueueService.sendEmailToSupportForLandlordUpdate({
+    require('./QueueService').sendEmailToSupportForLandlordUpdate({
       type: CONNECT_ESTATE,
       landlordId: estate.user_id,
       estateIds: [estate.id],
@@ -230,7 +224,6 @@ class EstateCurrentTenantService extends BaseService {
 
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
-
       const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant(
         {
           data,
@@ -498,6 +491,7 @@ class EstateCurrentTenantService extends BaseService {
         }
         await require('./EstateService').rented(estate_id, trx)
       }
+
       currentTenant = await this.updateCurrentTenant(
         {
           data: {
@@ -512,6 +506,7 @@ class EstateCurrentTenantService extends BaseService {
         },
         trx
       )
+
       await trx.commit()
     } catch (e) {
       reason = e.message

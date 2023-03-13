@@ -98,7 +98,8 @@ class Estate extends Model {
       'ownership_type',
       'marketing_type',
       'energy_type',
-      'available_date',
+      'available_start_at',
+      'available_end_at',
       'from_date',
       'to_date',
       'min_lease_duration',
@@ -144,7 +145,6 @@ class Estate extends Model {
       'max_age',
       'hash',
       'options',
-      'avail_duration',
       'is_duration_later',
       'min_invite_count',
       'vacant_date',
@@ -498,7 +498,6 @@ class Estate extends Model {
     await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
-        available_date: moment().add(this.avail_duration, 'hours').toDate(),
       },
       trx,
       true

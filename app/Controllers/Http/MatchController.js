@@ -450,13 +450,18 @@ class MatchController {
    */
   async moveUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
-    const success = await MatchService.toTop(estate_id, user_id)
-    if (!success) {
-      throw new HttpException('Cant move to top', 400)
+    try {
+      await this.getOwnEstate(estate_id, auth.user.id)
+      const success = await MatchService.toTop(estate_id, user_id)
+      if (!success) {
+        throw new HttpException('Cant move to top', 400)
+      }
+      NoticeService.landlordMovedProspectToTop(estate_id, user_id)
+      response.res(true)
+    } catch (e) {
+      console.log('moveUserToTop', e.message)
+      throw new HttpException(e.message, e.status || 400)
     }
-    NoticeService.landlordMovedProspectToTop(estate_id, user_id)
-    response.res(true)
   }
 
   async cancelTopByTenant({ request, auth, response }) {
@@ -529,10 +534,7 @@ class MatchController {
       response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -701,7 +703,7 @@ class MatchController {
         .where('user_id', user.id)
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .select('id')
-        .select('available_date')
+        .select('available_start_at', 'available_end_at')
         .fetch()
 
       const allEstatesJson = allEstates.toJSON()
@@ -781,8 +783,10 @@ class MatchController {
 
       const currentDay = moment().startOf('day')
 
-      counts.expired = allEstatesJson.filter((e) =>
-        moment(e.available_date).isBefore(currentDay)
+      counts.expired = allEstatesJson.filter(
+        (e) =>
+          moment(e.available_end_at).isBefore(currentDay) ||
+          moment(e.available_start_at).isAfter(currentDay)
       ).length
 
       const showed = await Estate.query()
@@ -891,6 +895,7 @@ class MatchController {
       'u_secondname',
       'u_birthday',
       'u_avatar',
+      'final_match_date',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -959,8 +964,7 @@ class MatchController {
 
     let inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { invite: true }),
-      { ...params }
+      (filters = { invite: true })
     )
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
@@ -979,10 +983,8 @@ class MatchController {
 
     let visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { visit: true }),
-      { ...params }
+      (filters = { visit: true })
     )
-
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
@@ -1000,8 +1002,7 @@ class MatchController {
 
     let topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = { top: true }),
-      { ...params }
+      (filters = { top: true })
     )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(
@@ -1035,8 +1036,7 @@ class MatchController {
 
     let finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
-      (filters = filter),
-      { ...params }
+      (filters = filter)
     )
 
     tenants = await MatchService.getLandlordMatchesWithFilterQuery(

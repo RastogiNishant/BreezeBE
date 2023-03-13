@@ -150,7 +150,7 @@ class OAuthController {
         email: user.email,
       })
       if (member_id) {
-        await MemberService.setMemberOwner(member_id, user.id)
+        await MemberService.setMemberOwner({ member_id, owner_id: user.id })
       }
 
       return response.res(token)
@@ -226,7 +226,7 @@ class OAuthController {
         }
 
         if (user && member_id) {
-          await MemberService.setMemberOwner(member_id, user.id)
+          await MemberService.setMemberOwner({ member_id, owner_id: user.id })
         }
       } catch (e) {
         throw new HttpException(e.message, 400)
