@@ -69,6 +69,31 @@ class PropertyController {
     return response.res(estates)
   }
 
+  async getSingle({ request, response }) {
+    const { id } = request.all()
+    const estate = await Estate.query()
+      .where('id', id)
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
+      .with('rooms', function (q) {
+        q.with('room_amenities').with('images')
+      })
+      .with('files')
+      .with('point')
+      .fetch()
+    return response.res(estate)
+  }
+
   async updatePublishStatus({ request, response }) {
     const { ids, action } = request.all()
     const trx = await Database.beginTransaction()
