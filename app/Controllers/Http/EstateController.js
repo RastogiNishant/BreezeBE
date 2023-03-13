@@ -772,6 +772,7 @@ class EstateController {
         { exclude_from, exclude_to, exclude },
         limit
       )
+
       estates = await Promise.all(
         estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
           estate.isoline = await EstateService.getIsolines(estate)
@@ -809,7 +810,7 @@ class EstateController {
     estate = estate.toJSON({
       isShort: true,
       role: auth.user.role,
-      extraFields: ['landlord_type'],
+      extraFields: ['landlord_type', 'hash'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
     response.res(estate)
