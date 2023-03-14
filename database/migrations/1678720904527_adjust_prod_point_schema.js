@@ -4,7 +4,6 @@
 const Schema = use('Schema')
 const Point = use('App/Models/Point')
 const GeoService = use('App/Services/GeoService')
-const GeoApify = require('../../app/Classes/GeoApify')
 
 class AdjustProdPointSchema extends Schema {
   async up() {
@@ -19,14 +18,14 @@ class AdjustProdPointSchema extends Schema {
           ]
         )
         .fetch()
-    ).toJSON()
-    console.log('AdjustProdPointSchema=', points[0])
+    ).rows
+
     let i = 0
     while (i < points.length) {
       const point = points[i]
-      const polygon = await GeoApify.createIsoline(
+      const polygon = await GeoService.createIsoline(
         { lat: point.lat, lon: point.lon },
-        point.distType,
+        point.dist_type,
         point.dist_min
       )
       const zone = GeoService.getPointsQuery(polygon)
