@@ -25,6 +25,9 @@ class TimeSlot extends Model {
     return ['id', 'estate_id']
   }
 
+  static get Serializer() {
+    return 'App/Serializers/TimeSlotSerializer'
+  }
   /**
    *
    */
