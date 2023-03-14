@@ -4,6 +4,7 @@
 const Schema = use('Schema')
 const Point = use('App/Models/Point')
 const GeoService = use('App/Services/GeoService')
+const GeoApify = require('../../app/Classes/GeoApify')
 
 class AdjustProdPointSchema extends Schema {
   async up() {
@@ -12,11 +13,10 @@ class AdjustProdPointSchema extends Schema {
 
         .whereIn(
           'id',
-          // [
-          //   3711, 651, 2618, 700, 2533, 942, 1169, 1821, 1824, 1652, 1897, 2024, 2039, 2076, 2920,
-          //   2614, 2699, 2774, 3146, 3792,
-          // ]
-          [3711]
+          [
+            3711, 651, 2618, 700, 2533, 942, 1169, 1821, 1824, 1652, 1897, 2024, 2039, 2076, 2920,
+            2614, 2699, 2774, 3146, 3792,
+          ]
         )
         .fetch()
     ).toJSON()
