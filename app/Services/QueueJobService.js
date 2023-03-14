@@ -28,6 +28,7 @@ const {
   SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE,
   ESTATE_COMPLETENESS_BREAKPOINT,
   MAXIMUM_EXPIRE_PERIOD,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -126,15 +127,6 @@ class QueueJobService {
           .update({ status: STATUS_EXPIRE })
           .whereIn('id', estateIdsToExpire)
           .transacting(trx)
-
-        // Delete new matches
-        await Match.query()
-          .whereIn('estate_id', estateIdsToExpire)
-          .where('status', MATCH_STATUS_NEW)
-          .delete()
-          .transacting(trx)
-        await trx.commit()
-        NoticeService.landlordEstateExpired(estateIdsToExpire)
       }
 
       if (estateIdsToDraft && estateIdsToDraft.length) {
@@ -142,6 +134,24 @@ class QueueJobService {
           .update({ status: STATUS_DRAFT })
           .whereIn('id', estateIdsToDraft)
           .transacting(trx)
+      }
+
+      if (
+        (estateIdsToExpire && estateIdsToExpire.length) ||
+        (estateIdsToDraft && estateIdsToDraft.length)
+      ) {
+        // Delete new matches
+        await Match.query()
+          .whereIn('estate_id', (estateIdsToExpire || []).concat(estateIdsToDraft || []))
+          .where('status', MATCH_STATUS_NEW)
+          .delete()
+          .transacting(trx)
+      }
+
+      await trx.commit()
+
+      if (estateIdsToExpire && estateIdsToExpire.length) {
+        NoticeService.landlordEstateExpired(estateIdsToExpire)
       }
     } catch (e) {
       await trx.rollback()
@@ -153,7 +163,8 @@ class QueueJobService {
   static async fetchToActivateEstates() {
     return Estate.query()
       .select('*')
-      .where('status', STATUS_EXPIRE)
+      .where('status', STATUS_DRAFT)
+      .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
       .where(function () {
@@ -162,8 +173,12 @@ class QueueJobService {
           this.where('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
         })
         this.orWhere(function () {
-          this.whereNotNull('available_end_at')
-          this.where('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+          this.whereNull('available_end_at')
+          this.where(
+            Database.raw`DATE_PART('days', (now() - available_start_at))`,
+            '<',
+            MAXIMUM_EXPIRE_PERIOD
+          )
         })
       })
 
