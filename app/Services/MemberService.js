@@ -390,7 +390,7 @@ class MemberService {
     return await Member.createItem({ ...member, user_id }, trx)
   }
 
-  static async setMemberOwner({ member_id, owner_id }, trx = null) {
+  static async setMemberOwner({ member_id, firstname, secondname, owner_id }, trx = null) {
     if (member_id == null) {
       return
     }
@@ -398,7 +398,7 @@ class MemberService {
       await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
     } else {
       await Member.query()
-        .update({ owner_user_id: owner_id })
+        .update({ owner_user_id: owner_id, firstname, secondname })
         .where({ id: member_id })
         .transacting(trx)
     }
@@ -524,17 +524,17 @@ class MemberService {
       await Member.query()
         .where({ id: member.id })
         .update({
-          code: code,
+          code,
           published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
         })
         .transacting(trx)
 
-      const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
-      if (invitedUser) {
-        invitedUser.is_household_invitation_onboarded = false
-        invitedUser.is_profile_onboarded = true
-        await invitedUser.save(trx)
-      }
+      // const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
+      // if (invitedUser) {
+      //   invitedUser.is_household_invitation_onboarded = false
+      //   invitedUser.is_profile_onboarded = true
+      //   await invitedUser.save(trx)
+      // }
 
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
       const { shortLink } = await firebaseDynamicLinks.createLink({
@@ -564,7 +564,7 @@ class MemberService {
     const trx = await Database.beginTransaction()
     try {
       const member = await Member.query()
-        .select(['id', 'user_id'])
+        .select('id', 'user_id')
         .where('email', user.email)
         .where('is_verified', false)
         .whereNotNull('code')
@@ -581,25 +581,37 @@ class MemberService {
 
       let invitedMemberId = member.id
 
+      // To check if this housekeeper who is going to be has been a household before, we need to remove all related logic
       const existingTenantMembersQuery = await Member.query().where('user_id', user.id).fetch()
       const existingTenantMembers = existingTenantMembersQuery.rows
       if (existingTenantMembers.length > 0) {
-        // Current owner member is won't be owner anymore because invited by another owner
+        /**
+         * 
+          - Current owner member won't be owner anymore because invited by another owner
+          - looking for household
+          - owner_user_id is who is the user of this member
+          - if owner_user_id is null, it means household or housekeeper who is created by household or another housekeeper himself
+         */
         const ownerMember = existingTenantMembers.find(
           ({ owner_user_id, email }) => !owner_user_id && !email
         )
+        /**
+         * Fill the household's information
+         */
         if (ownerMember) {
           invitedMemberId = ownerMember.id
           ownerMember.owner_user_id = user.id
           ownerMember.email = user.email
           updatePromises.push(ownerMember.save(trx))
         }
+
         // Update invited user's already existing members' user ids
         existingTenantMembers.map((existingMember) => {
           existingMember.user_id = invitorUserId
           updatePromises.push(existingMember.save(trx))
         })
         // Update invited user's already existing members' users' owners
+        // owner_id: who invited this housekeeper
         const existingMembersOwners = []
         existingTenantMembers.map(({ owner_user_id }) =>
           owner_user_id && owner_user_id !== user.id
@@ -659,7 +671,7 @@ class MemberService {
     const trx = await Database.beginTransaction()
     try {
       const member = await Member.query()
-        .select(['id', 'user_id'])
+        .select('id', 'user_id')
         .where('email', user.email)
         .where('is_verified', false)
         .whereNotNull('code')

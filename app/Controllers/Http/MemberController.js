@@ -129,11 +129,7 @@ class MemberController {
       const existingUser = await User.query().where({ email: data.email, role: ROLE_USER }).first()
 
       if (existingUser && existingUser.owner_id) {
-        throw new HttpException('This user is a household already.', 400)
-      }
-
-      if (existingUser) {
-        data.owner_user_id = existingUser.id
+        throw new HttpException('This user is a housekeeper already.', 400)
       }
 
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
@@ -266,7 +262,7 @@ class MemberController {
         })
         await UserService.removeUserOwnerId(owner_id, trx)
       } else {
-        await MemberService.getMemberQuery().where('id', member.id).delete(trx)
+        await MemberService.getMemberQuery().where('id', member.id).delete().transacting(trx)
       }
 
       await trx.commit()
