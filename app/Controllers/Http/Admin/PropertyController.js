@@ -90,7 +90,7 @@ class PropertyController {
       })
       .with('files')
       .with('point')
-      .fetch()
+      .first()
     return response.res(estate)
   }
 
