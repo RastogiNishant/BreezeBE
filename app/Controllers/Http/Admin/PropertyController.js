@@ -74,7 +74,7 @@ class PropertyController {
     const estate = await Estate.query()
       .where('id', id)
       .with('user', function (u) {
-        u.select('id', 'company_id')
+        u.select('id', 'company_id', 'firstname', 'secondname', 'email as landlordEmail')
         u.with('company', function (c) {
           c.select('id', 'avatar', 'name', 'visibility')
           c.with('contacts', function (ct) {
