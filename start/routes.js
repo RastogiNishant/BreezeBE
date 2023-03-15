@@ -164,7 +164,6 @@ Route.group(() => {
   Route.get('/estates/:id', 'Admin/PropertyController.getSingle').middleware([
     'auth:jwtAdministrator',
     'valid:Id',
-    'EstateFoundById',
   ])
 }).prefix('api/v1/administration')
 
