@@ -1084,6 +1084,8 @@ Estates: [ESTATES]
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
 
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
+  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
 }
 
 module.exports = constants
