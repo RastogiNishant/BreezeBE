@@ -32,7 +32,7 @@ class OhneMakler {
       newEstate = { ...newEstate, [value]: estate[key] }
     }
     newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
-    newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}`
+    newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}, ${estate.country}`
     newEstate.images = JSON.stringify(estate.pictures)
     if (!isEmpty(estate.ausstattung)) {
       newEstate.amenities = estate.ausstattung.split(', ')
