@@ -92,6 +92,9 @@ class PropertyController {
       .with('files')
       .with('point')
       .first()
+    if (!estate) {
+      throw new HttpException('Estate Not Found!', 404)
+    }
     return response.res(estate)
   }
 
