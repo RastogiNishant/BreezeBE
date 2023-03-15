@@ -1082,6 +1082,8 @@ Estates: [ESTATES]
     'Heavily neglected',
   ],
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
 }
 
 module.exports = constants

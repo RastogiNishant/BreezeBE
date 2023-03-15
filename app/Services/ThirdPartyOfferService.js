@@ -5,7 +5,11 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
-const { STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
+const {
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
+} = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
@@ -44,7 +48,7 @@ class ThirdPartyOfferService {
 
         await Promise.map(estates, async (estate) => {
           const found = await ThirdPartyOffer.query()
-            .where('source', 'ohnemakler')
+            .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
             .where('source_id', estate.source_id)
             .first()
           if (!found) {

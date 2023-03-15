@@ -1,4 +1,4 @@
-const { STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE, THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER } = require('../constants')
 const { isEmpty } = require('lodash')
 
 class OhneMakler {
@@ -31,7 +31,7 @@ class OhneMakler {
     for (const [key, value] of Object.entries(this.map)) {
       newEstate = { ...newEstate, [value]: estate[key] }
     }
-    newEstate.source = 'ohnemakler'
+    newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
     newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}`
     newEstate.images = JSON.stringify(estate.pictures)
     if (!isEmpty(estate.ausstattung)) {
