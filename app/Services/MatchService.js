@@ -1248,43 +1248,66 @@ class MatchService {
   }
 
   static async requestFinalConfirm(estateId, tenantId) {
-    const result = await Database.table('matches').update({ status: MATCH_STATUS_COMMIT }).where({
-      user_id: tenantId,
-      estate_id: estateId,
-      status: MATCH_STATUS_TOP,
-    })
+    const trx = await Database.beginTransaction()
+    try {
+      await Match.query()
+        .where({
+          user_id: tenantId,
+          estate_id: estateId,
+          status: MATCH_STATUS_TOP,
+        })
+        .update({ status: MATCH_STATUS_COMMIT })
+        .transacting(trx)
 
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: tenantId,
-        old_status: MATCH_STATUS_TOP,
-        status: MATCH_STATUS_COMMIT,
-      },
-      role: ROLE_USER,
-    })
+      await require('./MemberService').setFinalIncome({ user_id: tenantId, is_final: true }, trx)
+      await trx.commit()
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: tenantId,
+          old_status: MATCH_STATUS_TOP,
+          status: MATCH_STATUS_COMMIT,
+        },
+        role: ROLE_USER,
+      })
 
-    await NoticeService.prospectRequestConfirm(estateId, tenantId)
+      await NoticeService.prospectRequestConfirm(estateId, tenantId)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   static async tenantCancelCommit(estateId, userId) {
-    await Database.table('matches').update({ status: MATCH_STATUS_TOP }).where({
-      user_id: userId,
-      estate_id: estateId,
-      status: MATCH_STATUS_COMMIT,
-    })
+    const trx = await Database.beginTransaction()
+    try {
+      await Match.query()
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+          status: MATCH_STATUS_COMMIT,
+        })
+        .update({ status: MATCH_STATUS_TOP })
+        .transacting(trx)
 
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: userId,
-        old_status: MATCH_STATUS_COMMIT,
-        status: MATCH_STATUS_TOP,
-      },
-      role: ROLE_LANDLORD,
-    })
+      await require('./MemberService').setFinalIncome({ user_id: userId, is_final: false }, trx)
+      await trx.commit()
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_COMMIT,
+          status: MATCH_STATUS_TOP,
+        },
+        role: ROLE_LANDLORD,
+      })
 
-    NoticeService.prospectIsNotInterested(estateId)
+      NoticeService.prospectIsNotInterested(estateId)
+    } catch (e) {
+      await trx.rollback()
+      console.log('tenantCancelCommit', e.message)
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   static async handleFinalMatch(estate_id, user, fromInvitation, trx) {
@@ -1640,7 +1663,8 @@ class MatchService {
       'estates.street',
       'estates.city',
       'estates.zip',
-      'estates.available_date',
+      'estates.available_start_at',
+      'estates.available_end_at',
       'estates.status as estate_status',
       '_m.status as status',
       '_m.buddy',
@@ -2106,10 +2130,11 @@ class MatchService {
                 left join
                   income_proofs
                 on
-                  income_proofs.income_id = incomes.id
+                  income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
+                where incomes.status = ${STATUS_ACTIVE}  
                 group by incomes.id) as _mip
               on
-                _mip.id=incomes.id
+                _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
               group by
                 incomes.id
               ) as _mi
@@ -2133,7 +2158,7 @@ class MatchService {
           left join
             incomes
           on
-            primaryMember.id=incomes.member_id
+            primaryMember.id=incomes.member_id and incomes.status = ${STATUS_ACTIVE}
           and
             primaryMember.email is null
           and
@@ -2850,10 +2875,10 @@ class MatchService {
               left join
                 income_proofs
               on
-                income_proofs.income_id = incomes.id
+                income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
               group by incomes.id) as _mip
             on
-              _mip.id=incomes.id
+              _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
             group by
               incomes.id
             ) as _mi
@@ -3160,10 +3185,10 @@ class MatchService {
               left join
                 income_proofs
               on
-                income_proofs.income_id = incomes.id
+                income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
               group by incomes.id) as _mip
             on
-              _mip.id=incomes.id
+              _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
             group by
               incomes.id
             ) as _mi

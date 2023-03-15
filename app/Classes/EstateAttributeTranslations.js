@@ -62,6 +62,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
 
   FIRING_OEL,
   FIRING_GAS,
@@ -254,7 +255,7 @@ class EstateAttributeTranslations {
     non_smoker: reverseBool,
     rent_arrears: reverseBool,
     furnished: reverseBool,
-    available_date: reverseExtractDate,
+    vacant_date: reverseExtractDate,
     from_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
     contract_end: reverseExtractDate,
@@ -332,6 +333,7 @@ class EstateAttributeTranslations {
       developed: BUILDING_STATUS_DEVELOPED,
       abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
       projected: BUILDING_STATUS_PROJECTED,
+      refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
     },
     apartment_status: {
       first_time_occupied: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -349,6 +351,7 @@ class EstateAttributeTranslations {
       developed: BUILDING_STATUS_DEVELOPED,
       abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
       projected: BUILDING_STATUS_PROJECTED,
+      refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
     },
     firing: {
       oel: FIRING_OEL,
@@ -431,7 +434,7 @@ class EstateAttributeTranslations {
     non_smoker: toBool,
     rent_arrears: toBool,
     furnished: toBool,
-    available_date: extractDate,
+    vacant_date: extractDate,
     from_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
@@ -628,6 +631,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
+          'property.attribute.BUILDING_STATUS.fully_refurbished',
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -645,6 +649,7 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ],
       },
       apartment_status: {
@@ -681,6 +686,7 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED
         ],
       },
       firing: {

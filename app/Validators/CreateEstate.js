@@ -97,6 +97,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -207,7 +208,7 @@ const {
 } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
 } = require('../exceptions')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -382,7 +383,26 @@ class CreateEstate extends Base {
             ])
         ),
       vacant_date: yup.date(),
-      avail_duration: yup.number().integer().positive().max(5000),
+      available_start_at: yup.date().nullable(),
+      available_end_at: yup
+        .date()
+        .min(new Date())
+        .when(['available_start_at'], (available_start_at, schema, { value }) => {
+          if (!available_start_at) return schema
+          return value && value <= available_start_at
+            ? yup
+                .date()
+                .min(
+                  available_start_at,
+                  getExceptionMessage(
+                    'available_end_at',
+                    SHOULD_BE_AFTER,
+                    moment(available_start_at).format(DATE_FORMAT)
+                  )
+                )
+            : schema
+        })
+        .nullable(),
       is_duration_later: yup.boolean(),
       min_invite_count: yup.number().when('is_duration_later', {
         is: true,
@@ -445,6 +465,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
@@ -595,6 +616,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup

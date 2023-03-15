@@ -48,7 +48,7 @@ const exceptions = {
   IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'Column ${value} is not included on import',
   TOPIC_NOT_FOUND: 'Topic not found',
   ESTATE_NOT_EXISTS: 'Estate not exists',
-  SHOULD_BE_AFTER: 'Should be after',
+  SHOULD_BE_AFTER: 'Should be after ${value}',
   SETTINGS_ERROR: 'Internal Settings Error',
   INVALID: 'is invalid',
   MESSAGE_NOT_SAVED: 'Error happened to save message',

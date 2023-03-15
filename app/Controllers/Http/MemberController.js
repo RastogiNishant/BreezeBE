@@ -414,7 +414,7 @@ class MemberController {
         .whereIn('member_id', function () {
           this.select('id').from('members').where('user_id', user_id)
         })
-        .delete()
+        .update({ status: STATUS_DELETE })
         .transacting(trx)
 
       await trx.commit()
@@ -455,10 +455,13 @@ class MemberController {
     const user_id = auth.user.owner_id || auth.user.id
     let proofQuery = IncomeProof.query()
       .select('income_proofs.*')
-      .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+      .innerJoin({ _i: 'incomes' }, function () {
+        this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+      })
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .select('_i.member_id')
       .where('income_proofs.id', id)
+      .where('income_proofs.status', STATUS_ACTIVE)
 
     const proof = await proofQuery.first()
     if (proof) {
@@ -466,7 +469,7 @@ class MemberController {
     } else {
       throw new HttpException('Invalid income proof', 400)
     }
-    await IncomeProof.query().where('id', proof.id).delete()
+    await IncomeProof.query().where('id', proof.id).update({ status: STATUS_DELETE })
     Event.fire('tenant::update', user_id)
     response.res(true)
   }

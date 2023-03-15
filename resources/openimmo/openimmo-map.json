@@ -2,7 +2,7 @@
   "additional_costs": "preise.0.nebenkosten.0",
   "apt_type": "objektkategorie.0.objektart.0.wohnung.0.$.wohnungtyp",
   "area": "flaechen.0.wohnflaeche.0",
-  "available_date": "verwaltung_objekt.0.verfuegbar_ab.0",
+  "vacant_date": "verwaltung_objekt.0.verfuegbar_ab.0",
   "balconies_number": "flaechen.0.anzahl_balkone.0",
   "bath_options": "ausstattung.0.bad.0.$",
   "bathrooms_number": "flaechen.0.anzahl_badezimmer.0",

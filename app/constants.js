@@ -394,10 +394,15 @@ const constants = {
   LANDLORD_TABS_TOP: 'top',
   LANDLORD_TABS_COMMIT: 'commit',
 
+  NO_VISIBLE_BEFORE_TENANT: 0,
+  VISIBLE_BEFORE_TENANT: 1,
+
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
+
+  MAXIMUM_EXPIRE_PERIOD: 3 * 30, // 90 days
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -612,7 +617,8 @@ const constants = {
     'sex',
     'address',
     'user_id',
-    'available_date',
+    'available_start_at',
+    'available_end_at',
     'vacant_date',
     'others',
     'full_address',

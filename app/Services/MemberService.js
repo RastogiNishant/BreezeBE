@@ -125,6 +125,9 @@ class MemberService {
       .with('incomes', function (b) {
         b.with('proofs')
       })
+      .with('final_incomes', function (b) {
+        b.with('final_proofs')
+      })
       .with('passports')
       .with('extra_passports')
       .with('extra_residency_proofs')
@@ -150,6 +153,23 @@ class MemberService {
               income = {
                 ...income,
                 proofs: proofs,
+              }
+              return income
+            })
+          )
+
+          const final_incomes = await Promise.all(
+            member.final_incomes.map(async (income) => {
+              const proofs = await Promise.all(
+                income.final_proofs.map(async (proof) => {
+                  if (!proof.file) return proof
+                  proof.file = await FileBucket.getProtectedUrl(proof.file)
+                  return proof
+                })
+              )
+              income = {
+                ...income,
+                final_proofs: proofs,
               }
               return income
             })
@@ -194,6 +214,7 @@ class MemberService {
             rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
             debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
             incomes,
+            final_incomes,
             extra_passports,
             passports,
             extra_residency_proofs,
@@ -208,7 +229,10 @@ class MemberService {
 
   static async getMembersByHousehold(householdId) {
     return (
-      await Member.query().select('user_id', 'owner_user_id').where('user_id', householdId).fetch()
+      await Member.query()
+        .select('id', 'user_id', 'owner_user_id')
+        .where('user_id', householdId)
+        .fetch()
     ).rows
   }
 
@@ -479,7 +503,7 @@ class MemberService {
         UPDATE tenants SET income = (
           SELECT COALESCE(SUM(coalesce(income, 0)), 0)
             FROM members as _m
-              INNER JOIN incomes as _i ON _i.member_id = _m.id
+              INNER JOIN incomes as _i ON _i.member_id = _m.id and _i.status = ${STATUS_ACTIVE}
             WHERE user_id = ${userId}
         ) WHERE user_id in (${ids})
       `
@@ -696,7 +720,10 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
-      .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+      .where('income_proofs.status', STATUS_ACTIVE)
+      .innerJoin({ _i: 'incomes' }, function () {
+        this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+      })
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .select('_m.user_id')
       .fetch()
@@ -845,13 +872,39 @@ class MemberService {
         await IncomeProof.query()
           .select('_i.id', '_i.income_type')
           .where('income_proofs.expire_date', '>=', startOf)
-          .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+          .innerJoin({ _i: 'incomes' }, function () {
+            this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+          })
           .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
           .where('_m.user_id', user_id)
+          .where('income_proofs.status', STATUS_ACTIVE)
           .fetch()
       ).toJSON() || []
 
     return incomeProofs
+  }
+
+  static async setFinalIncome({ user_id, is_final = true }, trx = null) {
+    const members = (await this.getMembers(user_id)).toJSON()
+    const memberIds = (members || []).map((member) => member.id)
+    if (!memberIds || !memberIds.length) {
+      return
+    }
+
+    let incomeIds = []
+    members.map((member) => {
+      incomeIds.concat(member.incomes.map((income) => income.id))
+    })
+
+    if (trx) {
+      await Income.query().whereIn('member_id', memberIds).update({ is_final }).transacting(trx)
+      await IncomeProof.query()
+        .whereIn('income_id', incomeIds)
+        .update({ is_final })
+        .transacting(trx)
+    } else {
+      await Income.query().whereIn('member_id', memberIds).update({ is_final })
+    }
   }
 }
 
