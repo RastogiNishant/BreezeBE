@@ -73,6 +73,7 @@ class PropertyController {
     const { id } = request.all()
     const estate = await Estate.query()
       .where('id', id)
+      .whereNot('status', STATUS_DELETE)
       .with('user', function (u) {
         u.select('id', 'company_id', 'firstname', 'secondname', 'email as landlordEmail')
         u.with('company', function (c) {
