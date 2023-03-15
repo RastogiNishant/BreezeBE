@@ -23,6 +23,7 @@ class OhneMakler {
     year: 'construction_year',
     pictures: 'images',
     expiration_date: 'expiration_date',
+    price: 'price',
     //visit_from
     //visit_to
   }
