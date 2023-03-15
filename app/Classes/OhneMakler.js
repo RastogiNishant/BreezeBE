@@ -1,5 +1,7 @@
 const { STATUS_ACTIVE, THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER } = require('../constants')
 const { isEmpty } = require('lodash')
+const ESTATE_TYPE_VALUE_TO_QUALIFY = 'for rent'
+const ESTATE_OBJEKTART_TO_QUALIFY = 'Wohnung'
 
 class OhneMakler {
   map = {
@@ -49,7 +51,10 @@ class OhneMakler {
   }
 
   estateCanBeProcessed(estate) {
-    return estate.type === 'for rent' && estate.objektart === 'Wohnung'
+    return (
+      estate.type === ESTATE_TYPE_VALUE_TO_QUALIFY &&
+      estate.objektart === ESTATE_OBJEKTART_TO_QUALIFY
+    )
   }
 
   process(estates = null) {
