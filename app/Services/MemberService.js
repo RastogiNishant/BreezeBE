@@ -529,12 +529,10 @@ class MemberService {
         })
         .transacting(trx)
 
-      // const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
-      // if (invitedUser) {
-      //   invitedUser.is_household_invitation_onboarded = false
-      //   invitedUser.is_profile_onboarded = true
-      //   await invitedUser.save(trx)
-      // }
+      await User.query()
+        .where({ email: member.email, role: ROLE_USER })
+        .update({ is_household_invitation_onboarded: false, is_profile_onboarded: true })
+        .transacting(trx)
 
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
       const { shortLink } = await firebaseDynamicLinks.createLink({
@@ -581,7 +579,10 @@ class MemberService {
 
       let invitedMemberId = member.id
 
-      // To check if this housekeeper who is going to be has been a household before, we need to remove all related logic
+      /**
+       *  To check if this housekeeper who is going to be has been a household before, we need to remove all related logic
+       * this user is housekeeper for now
+       *  */
       const existingTenantMembersQuery = await Member.query().where('user_id', user.id).fetch()
       const existingTenantMembers = existingTenantMembersQuery.rows
       if (existingTenantMembers.length > 0) {
@@ -597,6 +598,7 @@ class MemberService {
         )
         /**
          * Fill the household's information
+         * This user was a main prospect previously, now he is going to be a housekeeper
          */
         if (ownerMember) {
           invitedMemberId = ownerMember.id
@@ -611,13 +613,18 @@ class MemberService {
           updatePromises.push(existingMember.save(trx))
         })
         // Update invited user's already existing members' users' owners
-        // owner_id: who invited this housekeeper
+        // owner_user_id: who is the owner of this member
         const existingMembersOwners = []
         existingTenantMembers.map(({ owner_user_id }) =>
           owner_user_id && owner_user_id !== user.id
             ? existingMembersOwners.push(owner_user_id)
             : null
         )
+
+        /**
+         * Only 1 main prospect can invite members
+         * so only main prospect havs owner_id = null, the other housekeepers will have owner_id as main prospect's id
+         */
         await User.query()
           .whereIn('id', existingMembersOwners)
           .update({ owner_id: member.user_id }, trx)
@@ -694,8 +701,14 @@ class MemberService {
         .first()
 
       if (userMainMember) {
-        updatePromises.push(Member.query().where('id', member.id).delete(trx))
+        /**
+         * if a prospect already has his main member profile, just delete memeber created by another main prospect who invites you
+         */
+        updatePromises.push(Member.query().where('id', member.id).delete().transacting(trx))
       } else {
+        /**
+         * if no main profile, please create your main member profile
+         */
         member.user_id = user.id
         member.email = null
         member.owner_user_id = null
