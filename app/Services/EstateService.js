@@ -1357,9 +1357,9 @@ class EstateService {
    *
    */
   static async publishEstate(estate, is_queue = false) {
-    //TODO: We must add transaction here
-
+    let status = estate.status
     const trx = await Database.beginTransaction()
+
     try {
       const user = await User.query().where('id', estate.user_id).first()
       if (!user) {
@@ -1391,6 +1391,7 @@ class EstateService {
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
         await estate.publishEstate(trx)
+        status = STATUS_ACTIVE
         // Run match estate
         Event.fire('match::estate', estate.id)
       }
@@ -1406,6 +1407,7 @@ class EstateService {
       }
 
       await trx.commit()
+      return status
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
