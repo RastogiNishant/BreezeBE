@@ -36,6 +36,7 @@ class ThirdPartyOffer extends Model {
       'expiration_date',
       'point_id',
       'price',
+      'contact',
     ]
   }
 
