@@ -140,6 +140,7 @@ class MemberController {
           member: createdMember,
           id: createdMember.id,
           userId: user_id,
+          isExisting_user: !!existingUser,
         },
         trx
       )
@@ -154,6 +155,14 @@ class MemberController {
       }
 
       await trx.commit()
+
+      if (existingUser) {
+        MemberService.emitMemberInvitation({
+          data: createdMember.toJSON(),
+          user_id: existingUser.id,
+        })
+      }
+
       Event.fire('tenant::update', user_id)
 
       response.res(createdMember)

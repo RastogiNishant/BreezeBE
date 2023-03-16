@@ -21,6 +21,7 @@ const FileBucket = use('App/Classes/File')
 const l = use('Localize')
 const Promise = require('bluebird')
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
+const Ws = use('Ws')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -49,6 +50,7 @@ const {
   INCOME_TYPE_TRAINEE,
   STATUS_DELETE,
   DEFAULT_LANG,
+  WEBSOCKET_EVENT_MEMBER_INVITATION,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException.js')
 
@@ -510,7 +512,7 @@ class MemberService {
     ).transacting(trx)
   }
 
-  static async sendInvitationCode({ member, id, userId }, trx) {
+  static async sendInvitationCode({ member, id, userId, isExisting_user = false }, trx) {
     try {
       if (!member) {
         member = await Member.findByOrFail({ id: id, user_id: userId })
@@ -538,7 +540,7 @@ class MemberService {
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}`,
+          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}&isExisting_user=${isExisting_user}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
@@ -555,6 +557,15 @@ class MemberService {
       return true
     } catch (e) {
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async emitMemberInvitation({ data, user_id }) {
+    const channel = `tenant:*`
+    const topicName = `tenant:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_MEMBER_INVITATION, data)
     }
   }
 
