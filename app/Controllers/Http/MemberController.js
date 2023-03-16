@@ -74,30 +74,6 @@ class MemberController {
       throw new HttpException(e.message, 400)
     }
   }
-  async initalizeTenantAdults({ request, response, auth }) {
-    const { selected_adults_count } = request.all()
-    const user_id = auth.user.id
-    const trx = await Database.beginTransaction()
-
-    try {
-      const isInitializedAlready = await TenantService.checkAdultsInitialized(user_id)
-
-      if (!isInitializedAlready) {
-        const member = await MemberService.createMember({ is_verified: true }, user_id, trx)
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count, trx)
-        await trx.commit()
-        Event.fire('tenant::update', user_id)
-        return response.res(member)
-      } else {
-        await trx.rollback()
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
-        response.res(null)
-      }
-    } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 400)
-    }
-  }
 
   /**
    *

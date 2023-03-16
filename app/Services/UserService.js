@@ -129,6 +129,12 @@ class UserService {
           },
           trx
         )
+
+        await MemberService.createMember(
+          { firstname: user.firstname, secondname: user.secondname, is_verified: true },
+          user.id,
+          trx
+        )
       } catch (e) {
         console.log('createUser exception', e)
         throw new HttpException(e.message, e.status || 400)

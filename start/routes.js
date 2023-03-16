@@ -695,9 +695,6 @@ Route.get('/api/v1/dashboard/count', 'DashboardController.getDashboardCount').mi
 ])
 // Tenant members
 Route.group(() => {
-  Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
-    'valid:InitializeAdults',
-  ])
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
