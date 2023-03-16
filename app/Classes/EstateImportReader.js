@@ -60,7 +60,6 @@ class EstateImportReader {
     'available_start_at',
     'available_end_at',
     'vacant_date',    
-    'from_date',
     'txt_salutation',
     'surname',
     'contract_end',

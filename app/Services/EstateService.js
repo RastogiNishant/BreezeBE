@@ -1552,7 +1552,6 @@ class EstateService {
         'six_char_code',
         'available_start_at',
         'available_end_at',
-        'from_date',
         'to_date',
         'rent_end_at',
         'estates.status'
