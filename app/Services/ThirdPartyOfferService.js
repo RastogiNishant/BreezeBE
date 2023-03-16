@@ -32,6 +32,10 @@ class ThirdPartyOfferService {
   }
 
   static async pullOhneMakler() {
+    if (!+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES) {
+      console.log('not pulling ohne makler...')
+      return
+    }
     try {
       await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'
         WHERE expiration_date < CURRENT_DATE`)
