@@ -163,7 +163,6 @@ class Estate extends Model {
       'rent_end_at',
       'income_sources',
       'percent',
-      'online_end_option',
     ]
   }
 
