@@ -47,7 +47,7 @@ class OhneMakler {
     newEstate.coord = `${estate.latitude},${estate.longitude}`
     newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
     if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
-      newEstate.rent_start = estate.uebernahme_ab
+      newEstate.vacant_from = estate.uebernahme_ab
     }
 
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse

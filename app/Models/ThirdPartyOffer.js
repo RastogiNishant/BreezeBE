@@ -28,13 +28,14 @@ class ThirdPartyOffer extends Model {
       'construction_year',
       'images',
       'energy_efficiency_class',
-      'rent_start',
+      'vacant_from',
       'visit_from',
       'visit_to',
       'amenities',
       'status',
       'expiration_date',
       'point_id',
+      'price',
     ]
   }
 
