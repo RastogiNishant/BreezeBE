@@ -456,7 +456,7 @@ class QueueJobService {
     const estates = await ThirdPartyOffer.query()
       .select('id', 'coord_raw')
       .whereNull('point_id')
-      .limit(4)
+      .limit(11)
       .fetch()
     await Promise.map(estates.toJSON(), async (estate) => {
       if (estate.coord_raw && estate.coord_raw.match(/,/)) {
