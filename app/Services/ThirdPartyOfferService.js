@@ -36,6 +36,8 @@ class ThirdPartyOfferService {
       console.log('not pulling ohne makler...')
       return
     }
+
+    let ohneMaklerData
     try {
       await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'
         WHERE expiration_date < CURRENT_DATE`)
@@ -43,29 +45,38 @@ class ThirdPartyOfferService {
       if (!data) {
         throw new Error('Error found on pulling ohne makler')
       }
+      ohneMaklerData = data
+    } catch (e) {
+      throw new Error('Failed to fetch data!!!!')
+    }
+    console.log('OKKKKKKKKKKKKKKKKKKKKKKKKKK')
+
+    try {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
-      const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(data))
+      const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum) {
         //there must be some difference between the data... so we can process
-        const ohneMakler = new OhneMakler(data)
+        const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
 
         let i = 0
         while (i < estates.length) {
           const estate = estates[i]
-          const found = await ThirdPartyOffer.query()
-            .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
-            .where('source_id', estate.source_id)
-            .first()
-          if (!found) {
-            await ThirdPartyOffer.createItem(estate)
-          } else {
-            await found.updateItem(estate)
-          }
-
+          try {
+            const found = await ThirdPartyOffer.query()
+              .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
+              .where('source_id', estate.source_id)
+              .first()
+            if (!found) {
+              await ThirdPartyOffer.createItem(estate)
+            } else {
+              await found.updateItem(estate)
+            }
+          } catch (e) {}
           i++
         }
-        this.setOhneMaklerChecksum(checksum)
+
+        await this.setOhneMaklerChecksum(checksum)
       }
     } catch (err) {
       console.log(err)
