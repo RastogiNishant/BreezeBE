@@ -108,7 +108,7 @@ class QueueJobService {
     if (!estates || !estates.length) {
       return false
     }
-
+    return
     let i = 0
     while (i < estates.length) {
       await require('./EstateService').publishEstate(estates[i], true)
@@ -128,8 +128,12 @@ class QueueJobService {
       return false
     }
 
-    const estateIdsToExpire = estates.filter((estate) => estate.available_start_at)
-    const estateIdsToDraft = estates.filter((estate) => !estate.available_start_at)
+    const estateIdsToExpire = estates
+      .filter((estate) => estate.available_start_at)
+      .map((estate) => estate.id)
+    const estateIdsToDraft = estates
+      .filter((estate) => !estate.available_start_at)
+      .map((estate) => estate.id)
 
     const trx = await Database.beginTransaction()
     try {

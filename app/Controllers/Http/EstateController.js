@@ -57,6 +57,7 @@ const {
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
   LOG_TYPE_PUBLISHED_PROPERTY,
+  ROLE_LANDLORD,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -79,6 +80,7 @@ const {
     FAILED_IMPORT_FILE_UPLOAD,
     FAILED_TO_ADD_FILE,
     CURRENT_IMAGE_COUNT,
+    FAILED_EXTEND_ESTATE,
   },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
@@ -381,9 +383,18 @@ class EstateController {
    */
   async extendEstate({ request, auth, response }) {
     const { estate_id, available_end_at } = request.all()
-    response.res(
+    try {
       await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
-    )
+      response.res(
+        await EstateService.getEstateWithDetails({
+          id: estate_id,
+          user_id: auth.user.id,
+          role: ROLE_LANDLORD,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
   }
 
   /**
