@@ -75,6 +75,7 @@ const exceptions = {
   INVALID_ROOM: 'Invalid room',
   CURRENT_IMAGE_COUNT: 'Current count',
   FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
+  ONLY_HOUSEHOLD_ADD_MEMBER: 'Please ask your household to add this roommate',
 }
 
 const exceptionCodes = {

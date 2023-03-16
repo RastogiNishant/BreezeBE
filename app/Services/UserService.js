@@ -316,6 +316,15 @@ class UserService {
     }
   }
 
+  static async isHouseHold(user_id) {
+    try {
+      const owner = await this.getHousehouseId(user_id)
+      return !owner.owner_id
+    } catch (e) {
+      return false
+    }
+  }
+
   static async updateDeviceToken(userId, device_token) {
     return await User.query().where('id', userId).update({ device_token: device_token })
   }

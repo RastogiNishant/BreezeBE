@@ -32,6 +32,10 @@ const {
   MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
   MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
 } = require('../../constants')
+
+const {
+  exceptions: { ONLY_HOUSEHOLD_ADD_MEMBER },
+} = require('../../exceptions')
 /**
  *
  */
@@ -83,6 +87,10 @@ class MemberController {
     try {
       const data = request.all()
 
+      if (!(await UserService.isHouseHold(auth.user.id))) {
+        throw new HttpException(ONLY_HOUSEHOLD_ADD_MEMBER, 400)
+      }
+
       const files = await File.saveRequestFiles(request, [
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
@@ -106,6 +114,12 @@ class MemberController {
 
       if (existingUser && existingUser.owner_id) {
         throw new HttpException('This user is a housekeeper already.', 400)
+      }
+
+      if (existingUser) {
+        existingUser.owner_id = user_id
+        existingUser.is_household_invitation_onboarded = false
+        existingUser.save(trx)
       }
 
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
