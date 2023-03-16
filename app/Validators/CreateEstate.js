@@ -205,9 +205,6 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   MAX_MINOR_COUNT,
-  ONLINE_END_OPTION_ONE_DAY,
-  ONLINE_END_OPTION_ONE_WEEK,
-  ONLINE_END_OPTION_THREE_MONTHS,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -415,13 +412,6 @@ class CreateEstate extends Base {
           .positive()
           .typeError(getExceptionMessage('min_invite_count', NUMBER)),
       }),
-      online_end_option: yup
-        .number()
-        .oneOf([
-          ONLINE_END_OPTION_ONE_DAY,
-          ONLINE_END_OPTION_ONE_WEEK,
-          ONLINE_END_OPTION_THREE_MONTHS,
-        ]),
       from_date: yup.date().nullable(),
       to_date: yup.date(),
       rent_end_at: yup

@@ -199,9 +199,6 @@ const {
   GENDER_NEUTRAL,
   LETTING_STATUS_NEW_RENOVATED,
   MAX_MINOR_COUNT,
-  ONLINE_END_OPTION_ONE_DAY,
-  ONLINE_END_OPTION_ONE_WEEK,
-  ONLINE_END_OPTION_THREE_MONTHS,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -390,13 +387,6 @@ class ImportEstate extends Base {
             : schema
         })
         .nullable(),
-      online_end_option: yup
-        .number()
-        .oneOf([
-          ONLINE_END_OPTION_ONE_DAY,
-          ONLINE_END_OPTION_ONE_WEEK,
-          ONLINE_END_OPTION_THREE_MONTHS,
-        ]),
       from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
