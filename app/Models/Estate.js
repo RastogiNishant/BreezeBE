@@ -100,7 +100,6 @@ class Estate extends Model {
       'energy_type',
       'available_start_at',
       'available_end_at',
-      'from_date',
       'to_date',
       'min_lease_duration',
       'max_lease_duration',

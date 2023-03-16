@@ -256,7 +256,6 @@ class EstateAttributeTranslations {
     rent_arrears: reverseBool,
     furnished: reverseBool,
     vacant_date: reverseExtractDate,
-    from_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
     contract_end: reverseExtractDate,
   }
@@ -435,7 +434,6 @@ class EstateAttributeTranslations {
     rent_arrears: toBool,
     furnished: toBool,
     vacant_date: extractDate,
-    from_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
     pets_allowed: {

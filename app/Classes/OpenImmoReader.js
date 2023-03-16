@@ -309,11 +309,6 @@ class OpenImmoReader {
       } else {
         unset(property, 'vacant_date')
       }
-      if (property.from_date) {
-        property.from_date = moment(new Date(property.from_date)).format('YYYY-MM-DD')
-      } else {
-        unset(property, 'from_date')
-      }
 
       property.construction_year = property.construction_year
         ? `${property.construction_year}-01-01`
