@@ -387,7 +387,6 @@ class ImportEstate extends Base {
             : schema
         })
         .nullable(),
-      from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),

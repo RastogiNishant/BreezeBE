@@ -1357,9 +1357,9 @@ class EstateService {
    *
    */
   static async publishEstate(estate, is_queue = false) {
-    //TODO: We must add transaction here
-
+    let status = estate.status
     const trx = await Database.beginTransaction()
+
     try {
       const user = await User.query().where('id', estate.user_id).first()
       if (!user) {
@@ -1391,11 +1391,9 @@ class EstateService {
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
         await estate.publishEstate(trx)
+        status = STATUS_ACTIVE
         // Run match estate
         Event.fire('match::estate', estate.id)
-      } else {
-        estate.status = STATUS_EXPIRE
-        await estate.save(trx)
       }
 
       if (!is_queue) {
@@ -1409,6 +1407,7 @@ class EstateService {
       }
 
       await trx.commit()
+      return status
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
@@ -1555,7 +1554,6 @@ class EstateService {
         'six_char_code',
         'available_start_at',
         'available_end_at',
-        'from_date',
         'to_date',
         'rent_end_at',
         'estates.status'

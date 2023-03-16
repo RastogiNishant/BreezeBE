@@ -470,6 +470,7 @@ class EstateController {
     const { id, action } = request.all()
 
     const estate = await Estate.findOrFail(id)
+    let status = estate.status
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
@@ -492,7 +493,7 @@ class EstateController {
       ) {
         // Validate is Landlord fulfilled contacts
         try {
-          await EstateService.publishEstate(estate)
+          status = await EstateService.publishEstate(estate)
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)
@@ -512,9 +513,12 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT }, true)
+      status = STATUS_DRAFT
     }
 
-    response.res(true)
+    response.res({
+      status,
+    })
   }
 
   async makeEstateOffline({ request, auth, response }) {
