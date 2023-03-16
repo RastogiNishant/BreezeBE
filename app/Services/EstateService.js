@@ -1393,9 +1393,6 @@ class EstateService {
         await estate.publishEstate(trx)
         // Run match estate
         Event.fire('match::estate', estate.id)
-      } else {
-        estate.status = STATUS_EXPIRE
-        await estate.save(trx)
       }
 
       if (!is_queue) {
