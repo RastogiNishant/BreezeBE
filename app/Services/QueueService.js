@@ -20,9 +20,9 @@ const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const {
-  SCHEDULED_EVERY_MINUTE_JOB,
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
-  SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB,
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
@@ -104,7 +104,7 @@ class QueueService {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
 
-  static async doEveryMin() {
+  static async doEvery10MinAtNight() {
     return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
   }
 
@@ -130,7 +130,7 @@ class QueueService {
   /**
    *
    */
-  static async performEvery23rdMinuteOfTheHourJob() {
+  static async performEvery3rdHour23rdMinuteJob() {
     const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
     return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
   }
@@ -202,12 +202,12 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
-        case SCHEDULED_EVERY_MINUTE_JOB:
-          return QueueService.doEveryMin()
+        case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
+          return QueueService.doEvery10MinAtNight()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
-        case SCHEDULED_EVERY_23M_OF_THE_HOUR_JOB:
-          return QueueService.performEvery23rdMinuteOfTheHourJob()
+        case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
+          return QueueService.performEvery3rdHour23rdMinuteJob()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:
