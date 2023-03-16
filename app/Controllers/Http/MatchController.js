@@ -50,6 +50,7 @@ const {
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
@@ -1142,6 +1143,34 @@ class MatchController {
       invite,
     })
     response.res(result)
+  }
+
+  async getThirdPartyOffers({ request, auth, response }) {
+    let { page, limit } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.getEstates(auth.user.id, page, limit)
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message)
+    }
+  }
+
+  async postThirdPartyOfferAction({ request, auth, response }) {
+    let { action, id, comment, message } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.postAction(
+        auth.user.id,
+        id,
+        action,
+        comment,
+        message
+      )
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message)
+    }
   }
 }
 

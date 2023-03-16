@@ -423,7 +423,9 @@ const constants = {
     'floor',
     'number_floors',
   ],
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
@@ -1079,6 +1081,11 @@ Estates: [ESTATES]
     'Odorous',
     'Heavily neglected',
   ],
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
+  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
 }
 
 module.exports = constants
