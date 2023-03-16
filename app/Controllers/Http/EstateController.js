@@ -79,6 +79,7 @@ const {
     FAILED_IMPORT_FILE_UPLOAD,
     FAILED_TO_ADD_FILE,
     CURRENT_IMAGE_COUNT,
+    FAILED_EXTEND_ESTATE,
   },
 } = require('../../../app/exceptions')
 
@@ -380,9 +381,12 @@ class EstateController {
    */
   async extendEstate({ request, auth, response }) {
     const { estate_id, available_end_at } = request.all()
-    response.res(
+    try {
       await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
-    )
+      response.res({ status: STATUS_ACTIVE })
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
   }
 
   /**
