@@ -289,7 +289,7 @@ class UserController {
       )
       .with('estates', function (e) {
         if (light && +light === 1) {
-          e.select('id', 'user_id', 'status')
+          e.select('id', 'user_id', 'status', 'address')
         }
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
