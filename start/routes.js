@@ -860,6 +860,10 @@ Route.group(() => {
   Route.get('/third-party-offers/:id', 'EstateController.getThirdPartyOfferEstate').middleware([
     'valid:Id',
   ])
+  Route.post('/third-party-offers/action', 'MatchController.postThirdPartyOfferAction').middleware([
+    'auth:jwt',
+    'valid:ThirdPartyOffersAction',
+  ])
 })
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
@@ -899,11 +903,6 @@ Route.get('/api/v1/tenant/third-party-offers', 'MatchController.getThirdPartyOff
   'auth:jwt',
   'valid:Pagination',
 ])
-
-Route.post(
-  '/api/v1/match/third-party-offers/action',
-  'MatchController.postThirdPartyOfferAction'
-).middleware(['auth:jwt', 'valid:ThirdPartyOffersAction'])
 
 Route.get(
   '/api/v1/match/tenant/check/commitedAlready',
