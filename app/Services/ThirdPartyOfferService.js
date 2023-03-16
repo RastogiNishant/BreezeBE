@@ -69,9 +69,9 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async getEstates(userId, page = 1, limit = 10) {
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).paginate(page, limit) //paginate(page, limit)
-    estates.data = await Promise.all(
+  static async getEstates(userId, limit = 10) {
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).limit(limit).fetch()
+    estates = await Promise.all(
       estates.rows.map(async (estate) => {
         estate.isoline = await EstateService.getIsolines(estate)
         return estate
@@ -80,15 +80,21 @@ class ThirdPartyOfferService {
     return estates
   }
 
-  static searchEstatesQuery(userId) {
+  static async getEstate(userId, third_party_offer_id) {
+    let estate = await ThirdPartyOfferService.searchEstatesQuery(
+      userId,
+      third_party_offer_id
+    ).first()
+    return estate
+  }
+
+  static searchEstatesQuery(userId, id = false) {
     /* estate coord intersects with polygon of tenant */
-    return Tenant.query()
-      .select(Database.raw(`TRUE as inside`))
-      .select(Database.raw(`points.data as point`))
-      .select('_e.*')
+    let query = Tenant.query()
+      .select('_e.price as net_rent', '_e.floor_count as number_floors', '_e.*')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
-      .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knock_count`))
+      .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
       .select(Database.raw(`_p.dist_min, _p.dist_type`))
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
       .crossJoin({ _e: 'third_party_offers' })
@@ -132,6 +138,11 @@ class ThirdPartyOfferService {
       .where('tenants.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+    if (id) {
+      query.select(Database.raw(`points.data as point`)).where('_e.id', id)
+    }
+
+    return query
   }
 
   static async postAction(userId, id, action, comment = '', message = '') {

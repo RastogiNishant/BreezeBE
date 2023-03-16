@@ -81,6 +81,7 @@ const {
     CURRENT_IMAGE_COUNT,
   },
 } = require('../../../app/exceptions')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -783,6 +784,12 @@ class EstateController {
           return estate
         })
       )
+      const thirdPartyOfferLimit = limit - estates.length
+      const thirdPartyOffers = await ThirdPartyOfferService.getEstates(
+        user.id,
+        thirdPartyOfferLimit
+      )
+      estates = [...estates, ...thirdPartyOffers]
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
@@ -817,6 +824,16 @@ class EstateController {
       extraFields: ['landlord_type', 'hash'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
+    response.res(estate)
+  }
+
+  async getThirdPartyOfferEstate({ request, auth, response }) {
+    const { id } = request.all()
+    let estate = await ThirdPartyOfferService.getEstate(auth.user.id, id)
+    if (!estate) {
+      throw new HttpException('Estate not found.', 404)
+    }
+    estate.isoline = await EstateService.getIsolines(estate)
     response.res(estate)
   }
 
