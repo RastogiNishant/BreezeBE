@@ -108,7 +108,7 @@ class QueueJobService {
     if (!estates || !estates.length) {
       return false
     }
-    return
+
     let i = 0
     while (i < estates.length) {
       await require('./EstateService').publishEstate(estates[i], true)
