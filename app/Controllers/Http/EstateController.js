@@ -57,6 +57,7 @@ const {
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
   LOG_TYPE_PUBLISHED_PROPERTY,
+  ROLE_LANDLORD,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -383,7 +384,13 @@ class EstateController {
     const { estate_id, available_end_at } = request.all()
     try {
       await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
-      response.res({ status: STATUS_ACTIVE })
+      response.res(
+        await EstateService.getEstateWithDetails({
+          id: estate_id,
+          user_id: auth.user.id,
+          role: ROLE_LANDLORD,
+        })
+      )
     } catch (e) {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }
