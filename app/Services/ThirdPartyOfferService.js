@@ -50,7 +50,9 @@ class ThirdPartyOfferService {
         const ohneMakler = new OhneMakler(data)
         const estates = ohneMakler.process()
 
-        await Promise.map(estates, async (estate) => {
+        let i = 0
+        while (i < estates.length) {
+          const estate = estates[i]
           const found = await ThirdPartyOffer.query()
             .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
             .where('source_id', estate.source_id)
@@ -60,9 +62,10 @@ class ThirdPartyOfferService {
           } else {
             await found.updateItem(estate)
           }
-        })
+
+          i++
+        }
         this.setOhneMaklerChecksum(checksum)
-        return estates
       }
     } catch (err) {
       console.log(err)
