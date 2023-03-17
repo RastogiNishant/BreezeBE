@@ -5,6 +5,7 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
+const { unset } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -98,6 +99,7 @@ class ThirdPartyOfferService {
           like_count: estate.like_count,
           dislike_count: estate.dislike_count,
         }
+        estate.rooms = null
         return estate
       })
     )
@@ -114,13 +116,19 @@ class ThirdPartyOfferService {
       like_count: estate.like_count,
       dislike_count: estate.dislike_count,
     }
+    estate.rooms = null
     return estate
   }
 
   static searchEstatesQuery(userId, id = false) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
-      .select('_e.price as net_rent', '_e.floor_count as number_floors', '_e.*')
+      .select(
+        '_e.price as net_rent',
+        '_e.floor_count as number_floors',
+        '_e.rooms as rooms_number',
+        '_e.*'
+      )
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
