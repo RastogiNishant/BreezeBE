@@ -15,7 +15,7 @@ const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
-
+const schema = require('../Validators/CreateThirdPartyOffer').schema()
 class ThirdPartyOfferService {
   static generateChecksum(data) {
     return crypto.createHash('md5').update(data, 'utf8').digest('hex')
@@ -66,6 +66,7 @@ class ThirdPartyOfferService {
         while (i < estates.length) {
           const estate = estates[i]
           try {
+            await schema.validate(estate)
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
               .where('source_id', estate.source_id)
@@ -75,7 +76,9 @@ class ThirdPartyOfferService {
             } else {
               await found.updateItem(estate)
             }
-          } catch (e) {}
+          } catch (e) {
+            console.log(e.message)
+          }
           i++
         }
 

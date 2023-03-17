@@ -1086,6 +1086,8 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
+
+  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
 }
 
 module.exports = constants
