@@ -42,8 +42,8 @@ class ThirdPartyOfferService {
 
     let ohneMaklerData
     try {
-      await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'
-        WHERE expiration_date < CURRENT_DATE`)
+      //mark all as expired...
+      await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'`)
       const { data } = await axios.get(process.env.OHNE_MAKLER_API_URL, { timeout: 2000 })
       if (!data) {
         throw new Error('Error found on pulling ohne makler')
@@ -52,7 +52,6 @@ class ThirdPartyOfferService {
     } catch (e) {
       throw new Error('Failed to fetch data!!!!')
     }
-    console.log('OKKKKKKKKKKKKKKKKKKKKKKKKKK')
 
     try {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
@@ -91,6 +90,11 @@ class ThirdPartyOfferService {
     estates = await Promise.all(
       estates.rows.map(async (estate) => {
         estate.isoline = await EstateService.getIsolines(estate)
+        estate['__meta__'] = {
+          knocked_count: estate.knocked_count,
+          like_count: estate.like_count,
+          dislike_count: estate.dislike_count,
+        }
         return estate
       })
     )
@@ -102,6 +106,11 @@ class ThirdPartyOfferService {
       userId,
       third_party_offer_id
     ).first()
+    estate['__meta__'] = {
+      knocked_count: estate.knocked_count,
+      like_count: estate.like_count,
+      dislike_count: estate.dislike_count,
+    }
     return estate
   }
 
