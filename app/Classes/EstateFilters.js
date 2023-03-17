@@ -25,6 +25,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   LETTING_STATUS_NEW_RENOVATED,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -86,7 +87,7 @@ class EstateFilters extends Filter {
       customFloor: 'floor',
       customNumFloor: 'number_floors',
       customRent: 'net_rent',
-      customUpdatedAt:'updated_at'
+      customUpdatedAt: 'updated_at',
     }
 
     this.matchFilter(EstateFilters.possibleStringParams, params)
@@ -143,10 +144,6 @@ class EstateFilters extends Filter {
       this.query.whereIn('estates.status', statuses)
     }
 
-    if (params.status) {
-      this.query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
-    }
-
     /* floor direction */
     if (params.floor_direction && params.floor_direction.value) {
       let floor_directions = EstateFilters.customFloorDirectionToValue(params.floor_direction.value)
@@ -178,6 +175,25 @@ class EstateFilters extends Filter {
       this.query.whereHas('matches', (query) => {
         query.whereIn('status', params.filter)
       })
+    }
+
+    if (params.is_expired_no_match_exclude) {
+      this.query.where(function () {
+        this.orWhere(function () {
+          this.where('estates.status', STATUS_EXPIRE)
+          this.whereHas('matches', (query) => {
+            query.whereNotIn('status', [MATCH_STATUS_NEW])
+          })
+        })
+        this.orWhere('estates.status', STATUS_ACTIVE)
+      })
+    } else {
+      if (params.status) {
+        this.query.whereIn(
+          'estates.status',
+          isArray(params.status) ? params.status : [params.status]
+        )
+      }
     }
   }
 

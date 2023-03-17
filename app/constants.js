@@ -394,6 +394,9 @@ const constants = {
   LANDLORD_TABS_TOP: 'top',
   LANDLORD_TABS_COMMIT: 'commit',
 
+  NO_VISIBLE_BEFORE_TENANT: 0,
+  VISIBLE_BEFORE_TENANT: 1,
+
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
   DAY_FORMAT: 'YYYY-MM-DD',
@@ -420,7 +423,9 @@ const constants = {
     'floor',
     'number_floors',
   ],
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
@@ -933,6 +938,7 @@ const constants = {
   //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
+  WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
@@ -1076,6 +1082,11 @@ Estates: [ESTATES]
     'Odorous',
     'Heavily neglected',
   ],
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
+  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
 }
 
 module.exports = constants

@@ -228,6 +228,7 @@ class EstateFilter extends Base {
           value: yup.array().of(yup.string()).nullable(),
         })
         .nullable(),
+      is_expired_no_match_exclude: yup.boolean(),
     })
 }
 

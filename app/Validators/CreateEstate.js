@@ -97,6 +97,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -382,7 +383,7 @@ class CreateEstate extends Base {
             ])
         ),
       vacant_date: yup.date(),
-      available_start_at: yup.date().min(new Date()).nullable(),
+      available_start_at: yup.date().nullable(),
       available_end_at: yup
         .date()
         .min(new Date())
@@ -411,8 +412,6 @@ class CreateEstate extends Base {
           .positive()
           .typeError(getExceptionMessage('min_invite_count', NUMBER)),
       }),
-
-      from_date: yup.date().nullable(),
       to_date: yup.date(),
       rent_end_at: yup
         .date()
@@ -464,6 +463,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
@@ -614,6 +614,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup
