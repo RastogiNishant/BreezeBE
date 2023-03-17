@@ -80,6 +80,7 @@ const exceptions = {
 
 const exceptionCodes = {
   IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
+  SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
 }
 
 const exceptionKeys = {
