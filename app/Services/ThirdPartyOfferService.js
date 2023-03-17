@@ -177,7 +177,7 @@ class ThirdPartyOfferService {
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
-      query.select(Database.raw(`points.data as point`)).where('_e.id', id)
+      query.where('_e.id', id)
     }
 
     return query
