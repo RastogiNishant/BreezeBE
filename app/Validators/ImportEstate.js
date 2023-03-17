@@ -101,6 +101,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -365,8 +366,6 @@ class ImportEstate extends Base {
           ENERGY_TYPE_MINERGIE_CERTIFIED,
         ]),
       vacant_date: yup.date(),
-      avail_duration: yup.number().integer().positive().max(5000),
-      from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
@@ -411,6 +410,7 @@ class ImportEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
@@ -499,8 +499,8 @@ class ImportEstate extends Base {
       status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
       zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
-      budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().min(0).max(100),
+      budget: yup.string(),
+      credit_score: yup.string(),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
@@ -550,6 +550,7 @@ class ImportEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup

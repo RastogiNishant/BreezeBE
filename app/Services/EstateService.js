@@ -236,12 +236,12 @@ const ESTATE_PERCENTAGE_VARIABLE = {
   ],
   visit_slots: [
     {
-      key: 'available_date',
+      key: 'available_start_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
     {
-      key: 'avail_duration',
+      key: 'available_end_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
@@ -339,6 +339,16 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE)
           .with('images')
@@ -445,11 +455,15 @@ class EstateService {
       FileBucket.IMAGE_PNG,
       FileBucket.IMAGE_PDF,
     ]
-    const files = await FileBucket.saveRequestFiles(request, [
-      { field: 'energy_proof', mime: imageMimes, isPublic: true },
-    ])
+    try {
+      const files = await FileBucket.saveRequestFiles(request, [
+        { field: 'energy_proof', mime: imageMimes, isPublic: true },
+      ])
 
-    return files
+      return files
+    } catch (e) {
+      return null
+    }
   }
   /**
    *
@@ -543,8 +557,8 @@ class EstateService {
     }
   }
 
-  static async updateEstate(request, user_id) {
-    const { ...data } = request.all()
+  static async updateEstate({ request, data, user_id }, trx = null) {
+    data = request ? request.all() : data
 
     let updateData = {
       ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
@@ -557,7 +571,9 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    const trx = await Database.beginTransaction()
+    let insideTrx = !trx ? true : false
+
+    trx = insideTrx ? await Database.beginTransaction() : trx
     try {
       if (data.delete_energy_proof) {
         energy_proof = estate?.energy_proof
@@ -617,13 +633,18 @@ class EstateService {
       if (data.address) {
         QueueService.getEstateCoords(estate.id)
       }
-      await trx.commit()
+      if (insideTrx) {
+        await trx.commit()
+      }
+
       return {
         ...estate.toJSON(),
         updateData,
       }
     } catch (e) {
-      await trx.rollback()
+      if (insideTrx) {
+        await trx.rollback()
+      }
       throw new HttpException(e.message, e.status || 400)
     }
   }
@@ -670,6 +691,15 @@ class EstateService {
       .withCount('invite')
       .withCount('final')
       .withCount('inviteBuddies')
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
       .with('current_tenant', function (q) {
         q.with('user')
       })
@@ -1169,6 +1199,15 @@ class EstateService {
         b.whereNot('status', STATUS_DELETE).with('images')
       })
       .with('files')
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
       .orderBy('_m.percent', 'DESC')
   }
 
@@ -1288,6 +1327,15 @@ class EstateService {
           b.whereNot('status', STATUS_DELETE).with('images')
         })
         .with('files')
+        .with('user', function (u) {
+          u.select('id', 'company_id')
+          u.with('company', function (c) {
+            c.select('id', 'avatar', 'name', 'visibility')
+            c.with('contacts', function (ct) {
+              ct.select('id', 'full_name', 'company_id')
+            })
+          })
+        })
         .select(Database.raw(`'0' AS match`))
         // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
         .orderBy('estates.id', 'DESC')
@@ -1319,16 +1367,20 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate, request) {
-    //TODO: We must add transaction here
-
+  static async publishEstate(estate, is_queue = false) {
+    let status = estate.status
     const trx = await Database.beginTransaction()
+
     try {
       const user = await User.query().where('id', estate.user_id).first()
-      if (!user) return
+      if (!user) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
+
       await props({
         delMatches: Database.table('matches')
           .where({ estate_id: estate.id })
@@ -1340,28 +1392,45 @@ class EstateService {
           .delete()
           .transacting(trx),
       })
-      await estate.publishEstate(trx)
-      //send email to support for landlord update...
-      QueueService.sendEmailToSupportForLandlordUpdate({
-        type: PUBLISH_ESTATE,
-        landlordId: estate.user_id,
-        estateIds: [estate.id],
-      })
-      logEvent(
-        request,
-        LOG_TYPE_PUBLISHED_PROPERTY,
-        estate.user_id,
-        { estate_id: estate.id },
-        false
-      )
-      // Run match estate
-      Event.fire('match::estate', estate.id)
-      Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+
+      if (
+        estate.available_start_at &&
+        moment(estate.available_start_at).format(DATE_FORMAT) <=
+          moment.utc(new Date()).format(DATE_FORMAT) &&
+        (!estate.available_end_at ||
+          moment(estate.available_end_at).format(DATE_FORMAT) >=
+            moment.utc(new Date()).format(DATE_FORMAT))
+      ) {
+        await estate.publishEstate(trx)
+        status = STATUS_ACTIVE
+        // Run match estate
+        Event.fire('match::estate', estate.id)
+      }
+
+      if (!is_queue) {
+        //send email to support for landlord update...
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: PUBLISH_ESTATE,
+          landlordId: estate.user_id,
+          estateIds: [estate.id],
+        })
+        Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+      }
+
       await trx.commit()
+      return status
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
     }
+  }
+
+  static async extendEstate({ user_id, estate_id, available_end_at }) {
+    return await EstateService.getQuery()
+      .where('id', estate_id)
+      .where('user_id', user_id)
+      .whereIn('status', [STATUS_EXPIRE, STATUS_ACTIVE])
+      .update({ available_end_at, status: STATUS_ACTIVE })
   }
 
   static async handleOfflineEstate(estateId, trx) {
@@ -1494,9 +1563,8 @@ class EstateService {
         'property_id',
         'floor_direction',
         'six_char_code',
-        'avail_duration',
-        'available_date',
-        'from_date',
+        'available_start_at',
+        'available_end_at',
         'to_date',
         'rent_end_at',
         'estates.status'
@@ -2054,10 +2122,17 @@ class EstateService {
           .first()
         if (existingProperty) {
           existingProperty.merge(omit(property, ['images']))
-          result = await existingProperty.save(trx)
+          result = await this.updateEstate(
+            { data: { ...omit(property, ['images']), id: existingProperty.id }, user_id },
+            trx
+          )
           QueueService.uploadOpenImmoImages(images, existingProperty.id)
         } else {
-          result = await Estate.createItem(omit(property, ['images']), trx)
+          result = await this.createEstate(
+            { data: omit(property, ['images']), userId: user_id },
+            false,
+            trx
+          )
           QueueService.uploadOpenImmoImages(images, result.id)
         }
       })
@@ -2236,7 +2311,7 @@ class EstateService {
       deleted_slots_ids = null,
       deleted_files_ids = null,
     },
-    trx
+    trx = null
   ) {
     if (!estate && !estate_id) {
       return

@@ -50,6 +50,7 @@ const {
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
@@ -449,13 +450,18 @@ class MatchController {
    */
   async moveUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
-    const success = await MatchService.toTop(estate_id, user_id)
-    if (!success) {
-      throw new HttpException('Cant move to top', 400)
+    try {
+      await this.getOwnEstate(estate_id, auth.user.id)
+      const success = await MatchService.toTop(estate_id, user_id)
+      if (!success) {
+        throw new HttpException('Cant move to top', 400)
+      }
+      NoticeService.landlordMovedProspectToTop(estate_id, user_id)
+      response.res(true)
+    } catch (e) {
+      console.log('moveUserToTop', e.message)
+      throw new HttpException(e.message, e.status || 400)
     }
-    NoticeService.landlordMovedProspectToTop(estate_id, user_id)
-    response.res(true)
   }
 
   async cancelTopByTenant({ request, auth, response }) {
@@ -528,10 +534,7 @@ class MatchController {
       response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -700,7 +703,7 @@ class MatchController {
         .where('user_id', user.id)
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .select('id')
-        .select('available_date')
+        .select('available_start_at', 'available_end_at')
         .fetch()
 
       const allEstatesJson = allEstates.toJSON()
@@ -780,8 +783,10 @@ class MatchController {
 
       const currentDay = moment().startOf('day')
 
-      counts.expired = allEstatesJson.filter((e) =>
-        moment(e.available_date).isBefore(currentDay)
+      counts.expired = allEstatesJson.filter(
+        (e) =>
+          moment(e.available_end_at).isBefore(currentDay) ||
+          moment(e.available_start_at).isAfter(currentDay)
       ).length
 
       const showed = await Estate.query()
@@ -1138,6 +1143,34 @@ class MatchController {
       invite,
     })
     response.res(result)
+  }
+
+  async getThirdPartyOffers({ request, auth, response }) {
+    let { page, limit } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.getEstates(auth.user.id, page, limit)
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message)
+    }
+  }
+
+  async postThirdPartyOfferAction({ request, auth, response }) {
+    let { action, id, comment, message } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.postAction(
+        auth.user.id,
+        id,
+        action,
+        comment,
+        message
+      )
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message)
+    }
   }
 }
 

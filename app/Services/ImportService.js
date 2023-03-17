@@ -82,9 +82,9 @@ class ImportService {
           //await EstateService.completeRemoveEstate(existingEstate.id)
           warning = `Probably duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
         }
-        data.avail_duration = 144
         data.status = STATUS_DRAFT
-        data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        data.available_start_at = moment().utc(new Date()).format(DATE_FORMAT)
+        data.available_end_at = moment().utc(new Date()).add(144, 'hours').format(DATE_FORMAT)
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }
@@ -177,7 +177,10 @@ class ImportService {
       result = await Promise.map(
         data,
         async (i) => {
-          if (i) await ImportService.createSingleEstate(i, user_id)
+          if (i) {
+            return await ImportService.createSingleEstate(i, user_id)
+          }
+          return null
         },
         opt
       )
@@ -291,6 +294,7 @@ class ImportService {
         'salutation_int',
       ])
       let estate = await Estate.query().where('six_char_code', six_char_code).first()
+
       const user_id = estate.user_id
       if (!estate) {
         throw new HttpException('estate no exists')
@@ -298,10 +302,14 @@ class ImportService {
       if (!estate_data.letting_type) {
         estate_data.letting_type = LETTING_TYPE_NA
       }
-      estate_data.id = estate.id
-      estate.fill(estate_data)
-      await estate.save(trx)
 
+      await require('./EstateService').updateEstate(
+        {
+          data: { ...estate_data, id: estate.id },
+          user_id,
+        },
+        trx
+      )
       if (data.letting_type === LETTING_TYPE_LET) {
         await EstateCurrentTenantService.updateCurrentTenant(
           {

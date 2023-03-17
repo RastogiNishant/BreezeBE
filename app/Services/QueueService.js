@@ -13,13 +13,16 @@ const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
+const CONTACT_OHNE_MAKLER = 'contactOhneMakler'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const {
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
@@ -66,6 +69,10 @@ class QueueService {
     )
   }
 
+  static contactOhneMakler({ third_party_offer_id, userId, message }) {
+    Queue.addJob(CONTACT_OHNE_MAKLER, { third_party_offer_id, userId, message }, { delay: 1 })
+  }
+
   static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
     Queue.addJob(
       IMPORT_ESTATES_VIA_EXCEL,
@@ -97,13 +104,18 @@ class QueueService {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
 
+  static async doEvery10MinAtNight() {
+    return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
+  }
+
   /**
    *
    */
   static async sendEvery5Min() {
     const NoticeService = require('./NoticeService')
     return Promise.all([
-      wrapException(QueueJobService.handleExpiredEstates),
+      wrapException(QueueJobService.handleToExpireEstates),
+      wrapException(QueueJobService.handleToActivateEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
       wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
@@ -118,6 +130,11 @@ class QueueService {
   /**
    *
    */
+  static async performEvery3rdHour23rdMinuteJob() {
+    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
+  }
+
   static async sendEveryDayMidday() {
     return Promise.all([
       wrapException(NoticeService.sendLandlordNewProperty),
@@ -165,6 +182,12 @@ class QueueService {
           return QueueJobService.updateEstateCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case CONTACT_OHNE_MAKLER:
+          return QueueJobService.contactOhneMakler(
+            job.data.third_party_offer_id,
+            job.data.userId,
+            job.data.message
+          )
         case SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE:
           return QueueJobService.sendEmailToSupportForLandlordUpdate({
             type: job.data.type,
@@ -179,8 +202,12 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
+        case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
+          return QueueService.doEvery10MinAtNight()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
+        case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
+          return QueueService.performEvery3rdHour23rdMinuteJob()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:

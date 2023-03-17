@@ -57,8 +57,7 @@ class EstateImportReader {
     'stp_garage',
     'deposit',
     'currency',
-    'available_date',
-    'from_date',
+    'vacant_date',
     'txt_salutation',
     'surname',
     'contract_end',
@@ -120,6 +119,7 @@ class EstateImportReader {
           },
         ]
       } else {
+        console.log('warnining===', current)
         this.warnings.push(getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current))
       }
       return columns
