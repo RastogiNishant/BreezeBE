@@ -127,6 +127,7 @@ class ThirdPartyOfferService {
         '_e.price as net_rent',
         '_e.floor_count as number_floors',
         '_e.rooms as rooms_number',
+        '_e.expiration_date as available_end_at',
         '_e.*'
       )
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
