@@ -935,7 +935,7 @@ class EstateController {
       response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
     } catch (e) {
       Logger.error(e)
-      throw new HttpException(e.message, e.status || 400)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 

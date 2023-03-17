@@ -302,7 +302,7 @@ class TimeSlotService {
 
     // The landlord can't remove the slot if it is already started
     if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException(SHOW_ALREADY_STARTED, SHOW_ALREADY_STARTED_ERROR_CODE)
+      throw new HttpException(SHOW_ALREADY_STARTED, 400, SHOW_ALREADY_STARTED_ERROR_CODE)
     }
 
     // If slot's end date is passed, we only delete the slot
@@ -332,7 +332,7 @@ class TimeSlotService {
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
-      throw new HttpException(e.message, e.status || 400)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 }
