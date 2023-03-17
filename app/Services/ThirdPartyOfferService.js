@@ -42,8 +42,6 @@ class ThirdPartyOfferService {
 
     let ohneMaklerData
     try {
-      //mark all as expired...
-      await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'`)
       const { data } = await axios.get(process.env.OHNE_MAKLER_API_URL, { timeout: 2000 })
       if (!data) {
         throw new Error('Error found on pulling ohne makler')
@@ -57,6 +55,11 @@ class ThirdPartyOfferService {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum) {
+        //mark all as expired...
+        //1. to expire all estates that are not anymore in the new data including also those
+        //that are past expiration date
+        //2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
+        await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'`)
         //there must be some difference between the data... so we can process
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
