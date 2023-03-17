@@ -69,8 +69,8 @@
 		"debug": "^4.1.1",
 		"dotenv": "^14.2.0",
 		"exceljs": "^4.3.0",
-		"extract-zip": "^2.0.1",
 		"express": "^4.18.2",
+		"extract-zip": "^2.0.1",
 		"file-type": "^16.3.0",
 		"firebase-admin": "^8.12.0",
 		"firebase-dynamic-links": "^1.1.0",
@@ -84,6 +84,7 @@
 		"imagemin-pngquant": "^9.0.2",
 		"in-app-purchase": "^1.11.4",
 		"ipaddr.js": "^2.0.1",
+		"jstoxml": "^3.2.6",
 		"knex-postgis": "^0.14.1",
 		"lodash": "^4.17.15",
 		"md5": "^2.3.0",
@@ -105,8 +106,8 @@
 		"swagger-jsdoc": "^6.2.7",
 		"url": "^0.11.0",
 		"uuid": "^3.4.0",
-		"xml2js": "^0.4.23",
 		"webp-converter": "^2.3.3",
+		"xml2js": "^0.4.23",
 		"yup": "^0.28.3"
 	},
 	"autoload": {

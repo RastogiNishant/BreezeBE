@@ -69,6 +69,35 @@ class PropertyController {
     return response.res(estates)
   }
 
+  async getSingle({ request, response }) {
+    const { id } = request.all()
+    const estate = await Estate.query()
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .with('user', function (u) {
+        u.select('id', 'company_id', 'firstname', 'secondname', 'email as landlordEmail')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+      .with('current_tenant', function (q) {
+        q.with('user')
+      })
+      .with('rooms', function (q) {
+        q.with('room_amenities').with('images')
+      })
+      .with('files')
+      .with('point')
+      .first()
+    if (!estate) {
+      throw new HttpException('Estate Not Found!', 404)
+    }
+    return response.res(estate)
+  }
+
   async updatePublishStatus({ request, response }) {
     const { ids, action } = request.all()
     const trx = await Database.beginTransaction()

@@ -76,10 +76,12 @@ const exceptions = {
   CURRENT_IMAGE_COUNT: 'Current count',
   FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
   ONLY_HOUSEHOLD_ADD_MEMBER: 'Please ask your household to add this roommate',
+  FAILED_EXTEND_ESTATE: 'Failed to extend dates',
 }
 
 const exceptionCodes = {
   IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
+  SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
 }
 
 const exceptionKeys = {

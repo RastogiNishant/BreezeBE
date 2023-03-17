@@ -1,11 +1,14 @@
 const moment = require('moment')
+const { toXML } = require('jstoxml')
 const Database = use('Database')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
+const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
+const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
 const {
   STATUS_ACTIVE,
@@ -27,7 +30,16 @@ const {
   SEND_TO_SUPPORT_HTML_MESSAGE_TEMPLATE,
   SEND_TO_SUPPORT_TEXT_MESSAGE_TEMPLATE,
   ESTATE_COMPLETENESS_BREAKPOINT,
+  GENDER_MALE,
+  GENDER_FEMALE,
+  SALUTATION_MS_LABEL,
+  GENDER_ANY,
+  SALUTATION_MR_LABEL,
+  SALUTATION_SIR_OR_MADAM_LABEL,
+  GENDER_NEUTRAL,
+  SALUTATION_NEUTRAL_LABEL,
   MAXIMUM_EXPIRE_PERIOD,
+  LETTING_TYPE_LET,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -106,26 +118,56 @@ class QueueJobService {
 
   //Finds and handles the estates that available date is over
   static async handleToExpireEstates() {
-    const estateIds = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => i.id)
-    if (isEmpty(estateIds)) {
+    const estates = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => {
+      return {
+        id: i.id,
+        available_start_at: i.available_start_at,
+      }
+    })
+    if (isEmpty(estates)) {
       return false
     }
 
+    const estateIdsToExpire = estates
+      .filter((estate) => estate.available_start_at)
+      .map((estate) => estate.id)
+    const estateIdsToDraft = estates
+      .filter((estate) => !estate.available_start_at)
+      .map((estate) => estate.id)
+
     const trx = await Database.beginTransaction()
     try {
-      await Estate.query()
-        .update({ status: STATUS_EXPIRE })
-        .whereIn('id', estateIds)
-        .transacting(trx)
+      if (estateIdsToExpire && estateIdsToExpire.length) {
+        await Estate.query()
+          .update({ status: STATUS_EXPIRE })
+          .whereIn('id', estateIdsToExpire)
+          .transacting(trx)
+      }
 
-      // Delete new matches
-      await Match.query()
-        .whereIn('estate_id', estateIds)
-        .where('status', MATCH_STATUS_NEW)
-        .delete()
-        .transacting(trx)
+      if (estateIdsToDraft && estateIdsToDraft.length) {
+        await Estate.query()
+          .update({ status: STATUS_DRAFT })
+          .whereIn('id', estateIdsToDraft)
+          .transacting(trx)
+      }
+
+      if (
+        (estateIdsToExpire && estateIdsToExpire.length) ||
+        (estateIdsToDraft && estateIdsToDraft.length)
+      ) {
+        // Delete new matches
+        await Match.query()
+          .whereIn('estate_id', (estateIdsToExpire || []).concat(estateIdsToDraft || []))
+          .where('status', MATCH_STATUS_NEW)
+          .delete()
+          .transacting(trx)
+      }
+
       await trx.commit()
-      NoticeService.landlordEstateExpired(estateIds)
+
+      if (estateIdsToExpire && estateIdsToExpire.length) {
+        NoticeService.landlordEstateExpired(estateIdsToExpire)
+      }
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
@@ -136,13 +178,25 @@ class QueueJobService {
   static async fetchToActivateEstates() {
     return Estate.query()
       .select('*')
-      .where('status', STATUS_EXPIRE)
+      .where('status', STATUS_DRAFT)
+      .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
       .where(function () {
-        this.orWhereNull('available_end_at')
-        this.orWhere('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+        this.orWhere(function () {
+          this.whereNotNull('available_end_at')
+          this.where('available_end_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
+        })
+        this.orWhere(function () {
+          this.whereNull('available_end_at')
+          this.where(
+            Database.raw`DATE_PART('days', (now() - available_start_at))`,
+            '<',
+            MAXIMUM_EXPIRE_PERIOD
+          )
+        })
       })
+
       .fetch()
   }
   static async fetchToExpireEstates() {
@@ -152,7 +206,10 @@ class QueueJobService {
       .where(function () {
         this.orWhereNull('available_start_at')
         this.orWhere('available_start_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
-        this.orWhere('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
+        this.orWhere(function () {
+          this.whereNotNull('available_end_at')
+          this.where('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
+        })
         this.orWhere(function () {
           this.whereNull('available_end_at')
           this.where(
@@ -352,6 +409,69 @@ class QueueJobService {
       .replace('[ESTATES]', `<li>${estateContent.join('</li><li>')}</li>`)
       .replace('[LANDLORD]', `${landlord.firstname} ${landlord.secondname}(${landlord.email})`)
     await MailService.sendEmailToSupport({ subject, textMessage, htmlMessage })
+  }
+
+  static async contactOhneMakler(thirdPartyOfferId, userId, message) {
+    const estate = await ThirdPartyOffer.query().where('id', thirdPartyOfferId).first()
+    const prospect = await User.query()
+      .join('tenants', 'tenants.user_id', 'users.id')
+      .where('users.id', userId)
+      .first()
+    const titleFromGender = (genderId) => {
+      switch (genderId) {
+        case GENDER_MALE:
+          return l.get(SALUTATION_MR_LABEL, 'en')
+        case GENDER_FEMALE:
+          return l.get(SALUTATION_MS_LABEL, 'en')
+        case GENDER_ANY:
+          return l.get(SALUTATION_SIR_OR_MADAM_LABEL, 'en')
+        case GENDER_NEUTRAL:
+          return l.get(SALUTATION_NEUTRAL_LABEL, 'en')
+      }
+      return null
+    }
+    const obj = {
+      openimmo_feedback: {
+        object: {
+          oobj_id: estate.source_id,
+          prospect: {
+            surname: titleFromGender(prospect.sex), //weird...
+            first: prospect.firstname,
+            last: prospect.secondname,
+            street: estate.street,
+            plz: estate.zip,
+            location: estate.city,
+            tel: prospect.phone,
+            email: prospect.email,
+            enquiry: message,
+          },
+        },
+      },
+    }
+    const xmlmessage = toXML(obj)
+    await MailService.sendEmailToOhneMakler(xmlmessage)
+  }
+
+  static async updateThirdPartyOfferPoints() {
+    if (
+      process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
+      !+process.env.PROCESS_OHNE_MAKLER_GET_POI
+    ) {
+      console.log('not updating third-party-offer points...')
+      return
+    }
+    const estates = await ThirdPartyOffer.query()
+      .select('id', 'coord_raw')
+      .whereNull('point_id')
+      .limit(11)
+      .fetch()
+    await Promise.map(estates.toJSON(), async (estate) => {
+      if (estate.coord_raw && estate.coord_raw.match(/,/)) {
+        const [lat, lon] = estate.coord_raw.split(',')
+        const point = await GeoService.getOrCreatePoint({ lat, lon })
+        await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
+      }
+    })
   }
 }
 

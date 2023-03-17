@@ -57,6 +57,7 @@ const {
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
   LOG_TYPE_PUBLISHED_PROPERTY,
+  ROLE_LANDLORD,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -79,8 +80,10 @@ const {
     FAILED_IMPORT_FILE_UPLOAD,
     FAILED_TO_ADD_FILE,
     CURRENT_IMAGE_COUNT,
+    FAILED_EXTEND_ESTATE,
   },
 } = require('../../../app/exceptions')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -380,9 +383,18 @@ class EstateController {
    */
   async extendEstate({ request, auth, response }) {
     const { estate_id, available_end_at } = request.all()
-    response.res(
+    try {
       await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
-    )
+      response.res(
+        await EstateService.getEstateWithDetails({
+          id: estate_id,
+          user_id: auth.user.id,
+          role: ROLE_LANDLORD,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
   }
 
   /**
@@ -470,6 +482,7 @@ class EstateController {
     const { id, action } = request.all()
 
     const estate = await Estate.findOrFail(id)
+    let status = estate.status
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
@@ -492,7 +505,7 @@ class EstateController {
       ) {
         // Validate is Landlord fulfilled contacts
         try {
-          await EstateService.publishEstate(estate)
+          status = await EstateService.publishEstate(estate)
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)
@@ -512,9 +525,12 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT }, true)
+      status = STATUS_DRAFT
     }
 
-    response.res(true)
+    response.res({
+      status,
+    })
   }
 
   async makeEstateOffline({ request, auth, response }) {
@@ -779,6 +795,12 @@ class EstateController {
           return estate
         })
       )
+      const thirdPartyOfferLimit = limit - estates.length
+      const thirdPartyOffers = await ThirdPartyOfferService.getEstates(
+        user.id,
+        thirdPartyOfferLimit
+      )
+      estates = [...estates, ...thirdPartyOffers]
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
@@ -813,6 +835,16 @@ class EstateController {
       extraFields: ['landlord_type', 'hash'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
+    response.res(estate)
+  }
+
+  async getThirdPartyOfferEstate({ request, auth, response }) {
+    const { id } = request.all()
+    let estate = await ThirdPartyOfferService.getEstate(auth.user.id, id)
+    if (!estate) {
+      throw new HttpException('Estate not found.', 404)
+    }
+    estate.isoline = await EstateService.getIsolines(estate)
     response.res(estate)
   }
 
@@ -903,7 +935,7 @@ class EstateController {
       response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
     } catch (e) {
       Logger.error(e)
-      throw new HttpException(e.message, 400)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 

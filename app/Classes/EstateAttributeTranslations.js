@@ -256,7 +256,6 @@ class EstateAttributeTranslations {
     rent_arrears: reverseBool,
     furnished: reverseBool,
     vacant_date: reverseExtractDate,
-    from_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
     contract_end: reverseExtractDate,
   }
@@ -435,7 +434,6 @@ class EstateAttributeTranslations {
     rent_arrears: toBool,
     furnished: toBool,
     vacant_date: extractDate,
-    from_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
     pets_allowed: {
@@ -669,6 +667,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
+          'property.attribute.BUILDING_STATUS.fully_refurbished',
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -686,7 +685,7 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
-          BUILDING_STATUS_FULLY_REFURBISHED
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ],
       },
       firing: {
@@ -975,6 +974,7 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
+        console.log('arttribute here', attribute)
         throw new HttpException(SETTINGS_ERROR, 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
