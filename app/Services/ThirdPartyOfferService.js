@@ -5,6 +5,7 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
+const { unset } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -42,8 +43,6 @@ class ThirdPartyOfferService {
 
     let ohneMaklerData
     try {
-      await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'
-        WHERE expiration_date < CURRENT_DATE`)
       const { data } = await axios.get(process.env.OHNE_MAKLER_API_URL, { timeout: 2000 })
       if (!data) {
         throw new Error('Error found on pulling ohne makler')
@@ -52,12 +51,16 @@ class ThirdPartyOfferService {
     } catch (e) {
       throw new Error('Failed to fetch data!!!!')
     }
-    console.log('OKKKKKKKKKKKKKKKKKKKKKKKKKK')
 
     try {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum) {
+        //mark all as expired...
+        //1. to expire all estates that are not anymore in the new data including also those
+        //that are past expiration date
+        //2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
+        await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'`)
         //there must be some difference between the data... so we can process
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
@@ -91,6 +94,12 @@ class ThirdPartyOfferService {
     estates = await Promise.all(
       estates.rows.map(async (estate) => {
         estate.isoline = await EstateService.getIsolines(estate)
+        estate['__meta__'] = {
+          knocked_count: estate.knocked_count,
+          like_count: estate.like_count,
+          dislike_count: estate.dislike_count,
+        }
+        estate.rooms = null
         return estate
       })
     )
@@ -102,13 +111,25 @@ class ThirdPartyOfferService {
       userId,
       third_party_offer_id
     ).first()
+    estate['__meta__'] = {
+      knocked_count: estate.knocked_count,
+      like_count: estate.like_count,
+      dislike_count: estate.dislike_count,
+    }
+    estate.rooms = null
     return estate
   }
 
   static searchEstatesQuery(userId, id = false) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
-      .select('_e.price as net_rent', '_e.floor_count as number_floors', '_e.*')
+      .select(
+        '_e.price as net_rent',
+        '_e.floor_count as number_floors',
+        '_e.rooms as rooms_number',
+        '_e.expiration_date as available_end_at',
+        '_e.*'
+      )
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
