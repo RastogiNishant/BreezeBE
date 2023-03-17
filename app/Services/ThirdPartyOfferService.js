@@ -130,10 +130,10 @@ class ThirdPartyOfferService {
         '_e.expiration_date as available_end_at',
         '_e.*'
       )
+      .with('point')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
-      .select(Database.raw(`_p.dist_min, _p.dist_type`))
       .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
       .crossJoin({ _e: 'third_party_offers' })
       .leftJoin(
