@@ -1253,3 +1253,9 @@ Route.list().forEach((r) => {
     }
   }
 })
+
+Route.get('/test', async ({ response }) => {
+  const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
+  await ThirdPartyOfferService.pullOhneMakler()
+  return response.res(true)
+})
