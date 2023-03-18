@@ -54,7 +54,7 @@ class ThirdPartyOfferService {
     }
 
     try {
-      const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
+      const ohneMaklerChecksum = ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum) {
         //mark all as expired...
@@ -70,7 +70,6 @@ class ThirdPartyOfferService {
         while (i < estates.length) {
           let estate = estates[i]
           try {
-            console.log('estate', estate)
             estate = await schema.validate(estate)
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
@@ -82,7 +81,7 @@ class ThirdPartyOfferService {
               await found.updateItem(estate)
             }
           } catch (e) {
-            console.log(e.message)
+            console.log(`validation: ${estate.source_id} ${e.message}`)
           }
           i++
         }
@@ -133,9 +132,9 @@ class ThirdPartyOfferService {
         '_e.floor_count as number_floors',
         '_e.rooms as rooms_number',
         '_e.expiration_date as available_end_at',
+        '_e.vacant_from as vacant_date',
         '_e.*'
       )
-      .with('point')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
@@ -177,12 +176,11 @@ class ThirdPartyOfferService {
         '_k.third_party_offer_id',
         '_e.id'
       )
-      .leftJoin('points', 'points.id', '_e.point_id')
       .where('tenants.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
-      query.where('_e.id', id)
+      query.with('point').where('_e.id', id)
     }
 
     return query
