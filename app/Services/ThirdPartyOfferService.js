@@ -54,7 +54,7 @@ class ThirdPartyOfferService {
     }
 
     try {
-      const ohneMaklerChecksum = ThirdPartyOfferService.getOhneMaklerChecksum()
+      const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum) {
         //mark all as expired...
