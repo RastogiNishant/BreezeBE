@@ -70,7 +70,6 @@ class ThirdPartyOfferService {
         while (i < estates.length) {
           let estate = estates[i]
           try {
-            estate = await schema.validate(estate)
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
               .where('source_id', estate.source_id)
