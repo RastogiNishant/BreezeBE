@@ -5,7 +5,6 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
-const { unset } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -13,10 +12,9 @@ const {
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
-const GeoService = use('App/Services/GeoService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
-const schema = require('../Validators/CreateThirdPartyOffer').schema()
+
 class ThirdPartyOfferService {
   static generateChecksum(data) {
     return crypto.createHash('md5').update(data, 'utf8').digest('hex')
