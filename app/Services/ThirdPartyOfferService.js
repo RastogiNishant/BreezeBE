@@ -176,8 +176,12 @@ class ThirdPartyOfferService {
         '_k.third_party_offer_id',
         '_e.id'
       )
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
+      })
       .where('tenants.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
+      .whereNull('tpoi.id')
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
       query.with('point').where('_e.id', id)
