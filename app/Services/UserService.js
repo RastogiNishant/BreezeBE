@@ -129,12 +129,18 @@ class UserService {
           },
           trx
         )
+
+        await MemberService.createMember(
+          { firstname: user.firstname, secondname: user.secondname, is_verified: true },
+          user.id,
+          trx
+        )
       } catch (e) {
         console.log('createUser exception', e)
         throw new HttpException(e.message, e.status || 400)
       }
     }
-    return { user }
+    return user
   }
 
   /**
@@ -169,7 +175,7 @@ class UserService {
       status: STATUS_ACTIVE,
     }
 
-    const { user } = await UserService.createUser(userData)
+    const user = await UserService.createUser(userData)
 
     if (request) {
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
@@ -307,6 +313,15 @@ class UserService {
       return owner
     } catch (e) {
       throw new HttpException(FAILED_GET_OWNER, 500)
+    }
+  }
+
+  static async isHouseHold(user_id) {
+    try {
+      const owner = await this.getHousehouseId(user_id)
+      return !owner.owner_id
+    } catch (e) {
+      return false
     }
   }
 
@@ -705,7 +720,16 @@ class UserService {
     return (await query.fetch()).rows
   }
 
-  static async housekeeperSignup({ code, email, password, firstname, ip, ip_based_info, lang }) {
+  static async housekeeperSignup({
+    code,
+    email,
+    password,
+    firstname,
+    secondname,
+    ip,
+    ip_based_info,
+    lang,
+  }) {
     const member = await Member.query()
       .select('user_id', 'id')
       .where('email', email)
@@ -716,33 +740,50 @@ class UserService {
       throw new HttpException(MEMBER_NOT_EXIST, 400)
     }
 
-    // Check user not exists
-    const availableUser = await User.query().where('email', email).where('role', ROLE_USER).first()
-    if (availableUser) {
-      throw new HttpException(USER_UNIQUE, 400)
-    }
-
     const trx = await Database.beginTransaction()
+    let user, isExistUser
     try {
-      const { user } = await this.createUser(
+      // Check user not exists
+      user = await User.query().where('email', email).where('role', ROLE_USER).first()
+      if (user) {
+        user.is_household_invitation_onboarded = false
+        user.is_profile_onboarded = true
+        isExistUser = true
+        await user.save(trx)
+      } else {
+        isExistUser = false
+        user = await this.createUser(
+          {
+            role: ROLE_USER,
+            password,
+            owner_id: member.user_id,
+            lang,
+            is_household_invitation_onboarded: false,
+            is_profile_onboarded: true,
+            email,
+            firstname,
+            secondname,
+            status: STATUS_EMAIL_VERIFY,
+            ip,
+            ip_based_info,
+          },
+          trx
+        )
+      }
+
+      await MemberService.setMemberOwner(
         {
-          role: ROLE_USER,
-          password,
-          owner_id: member.user_id,
-          lang,
-          is_household_invitation_onboarded: false,
-          is_profile_onboarded: true,
-          email,
-          firstname,
-          status: STATUS_EMAIL_VERIFY,
-          ip,
-          ip_based_info,
+          member_id: member.id,
+          firstname: user.firstname || firstname,
+          secondname: user.secondname || secondname,
+          owner_id: user.id,
         },
         trx
       )
+      if (!isExistUser) {
+        await this.sendConfirmEmail(user)
+      }
 
-      await MemberService.setMemberOwner({ member_id: member.id, owner_id: user.id }, trx)
-      await this.sendConfirmEmail(user)
       await trx.commit()
 
       Event.fire('mautic:createContact', user.id)
@@ -772,7 +813,15 @@ class UserService {
   }
 
   static async removeUserOwnerId(user_id, trx) {
-    return User.query().where('id', user_id).update({ owner_id: null }, trx)
+    if (trx) {
+      return User.query()
+        .where('id', user_id)
+        .update({ owner_id: null, is_household_invitation_onboarded: true })
+        .transacting(trx)
+    }
+    return User.query()
+      .where('id', user_id)
+      .update({ owner_id: null, is_household_invitation_onboarded: true })
   }
 
   static async confirmSMS(email, phone, code) {
@@ -908,7 +957,7 @@ class UserService {
     }
 
     try {
-      const { user } = await this.createUser(
+      const user = await this.createUser(
         {
           ...userData,
           email,

@@ -32,6 +32,10 @@ const {
   MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
   MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
 } = require('../../constants')
+
+const {
+  exceptions: { ONLY_HOUSEHOLD_ADD_MEMBER },
+} = require('../../exceptions')
 /**
  *
  */
@@ -74,30 +78,6 @@ class MemberController {
       throw new HttpException(e.message, 400)
     }
   }
-  async initalizeTenantAdults({ request, response, auth }) {
-    const { selected_adults_count } = request.all()
-    const user_id = auth.user.id
-    const trx = await Database.beginTransaction()
-
-    try {
-      const isInitializedAlready = await TenantService.checkAdultsInitialized(user_id)
-
-      if (!isInitializedAlready) {
-        const member = await MemberService.createMember({ is_verified: true }, user_id, trx)
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count, trx)
-        await trx.commit()
-        Event.fire('tenant::update', user_id)
-        return response.res(member)
-      } else {
-        await trx.rollback()
-        await TenantService.updateSelectedAdultsCount(auth.user, selected_adults_count)
-        response.res(null)
-      }
-    } catch (e) {
-      await trx.rollback()
-      throw new HttpException(e.message, 400)
-    }
-  }
 
   /**
    *
@@ -106,6 +86,10 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       const data = request.all()
+
+      if (!(await UserService.isHouseHold(auth.user.id))) {
+        throw new HttpException(ONLY_HOUSEHOLD_ADD_MEMBER, 400)
+      }
 
       const files = await File.saveRequestFiles(request, [
         { field: 'avatar', mime: imageMimes, isPublic: true },
@@ -129,11 +113,13 @@ class MemberController {
       const existingUser = await User.query().where({ email: data.email, role: ROLE_USER }).first()
 
       if (existingUser && existingUser.owner_id) {
-        throw new HttpException('This user is a household already.', 400)
+        throw new HttpException('This user is a housekeeper already.', 400)
       }
 
       if (existingUser) {
-        data.owner_user_id = existingUser.id
+        existingUser.owner_id = user_id
+        existingUser.is_household_invitation_onboarded = false
+        existingUser.save(trx)
       }
 
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
@@ -154,6 +140,7 @@ class MemberController {
           member: createdMember,
           id: createdMember.id,
           userId: user_id,
+          isExisting_user: !!existingUser,
         },
         trx
       )
@@ -168,6 +155,14 @@ class MemberController {
       }
 
       await trx.commit()
+
+      if (existingUser) {
+        MemberService.emitMemberInvitation({
+          data: createdMember.toJSON(),
+          user_id: existingUser.id,
+        })
+      }
+
       Event.fire('tenant::update', user_id)
 
       response.res(createdMember)
@@ -266,7 +261,7 @@ class MemberController {
         })
         await UserService.removeUserOwnerId(owner_id, trx)
       } else {
-        await MemberService.getMemberQuery().where('id', member.id).delete(trx)
+        await MemberService.getMemberQuery().where('id', member.id).delete().transacting(trx)
       }
 
       await trx.commit()
