@@ -34,8 +34,9 @@ class ThirdPartyOfferService {
 
   static async pullOhneMakler() {
     if (
-      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-      !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES
+      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
+      (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
+        !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
     ) {
       console.log('not pulling ohne makler...')
       return
@@ -67,9 +68,10 @@ class ThirdPartyOfferService {
 
         let i = 0
         while (i < estates.length) {
-          const estate = estates[i]
+          let estate = estates[i]
           try {
-            await schema.validate(estate)
+            console.log('estate', estate)
+            estate = await schema.validate(estate)
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
               .where('source_id', estate.source_id)
