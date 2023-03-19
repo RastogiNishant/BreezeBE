@@ -1,4 +1,5 @@
 const axios = require('axios')
+const moment = require('moment')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
@@ -188,6 +189,7 @@ class ThirdPartyOfferService {
       .where('third_party_offer_id', id)
       .where('user_id', userId)
       .first()
+    console.log('time', moment().utc().format())
     let value
     switch (action) {
       case 'like':
@@ -198,7 +200,17 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        value = { third_party_offer_id: id, user_id: userId, knocked: true }
+        value = {
+          third_party_offer_id: id,
+          user_id: userId,
+          knocked: true,
+          knocked_at: moment().utc().format(),
+        }
+        QueueService.contactOhneMakler({
+          third_party_offer_id: id,
+          userId,
+          message: '',
+        })
         break
       case 'contact':
         value = { third_party_offer_id: id, user_id: userId, inquiry: message }
