@@ -10,12 +10,14 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
+  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const GeoService = use('App/Services/GeoService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
+const MatchService = use('App/Services/MatchService')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -90,9 +92,16 @@ class ThirdPartyOfferService {
   }
 
   static async getEstates(userId, limit = 10) {
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .where({ 'tenants.user_id': userId })
+      .first()
     let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).limit(limit).fetch()
+    estates = estates.toJSON()
     estates = await Promise.all(
-      estates.rows.map(async (estate) => {
+      estates.map(async (estate) => {
+        estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+        const score = await MatchService.calculateMatchPercent(tenant, estate)
+        estate.percent = score
         estate.isoline = await EstateService.getIsolines(estate)
         estate['__meta__'] = {
           knocked_count: estate.knocked_count,
@@ -111,11 +120,18 @@ class ThirdPartyOfferService {
       userId,
       third_party_offer_id
     ).first()
+    estate = estate.toJSON()
     estate['__meta__'] = {
       knocked_count: estate.knocked_count,
       like_count: estate.like_count,
       dislike_count: estate.dislike_count,
     }
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .where({ 'tenants.user_id': userId })
+      .first()
+    estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+    const score = await MatchService.calculateMatchPercent(tenant, estate)
+    estate.percent = score
     estate.rooms = null
     return estate
   }

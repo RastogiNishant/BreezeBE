@@ -470,6 +470,7 @@ class MatchService {
 
     // Max radius
     const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
+    //FIXME: dist is not used in EstateService.searchEstatesQuery
     let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
