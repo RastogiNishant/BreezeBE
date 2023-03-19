@@ -216,6 +216,45 @@ class ThirdPartyOfferService {
     }
     return true
   }
+
+  static async getTenantEstatesWithFilter(userId, filter) {
+    const { like, dislike, knock } = filter
+    let query = ThirdPartyOffer.query()
+      .where('third_party_offers.status', STATUS_ACTIVE)
+      .select(
+        'third_party_offers.price as net_rent',
+        'third_party_offers.floor_count as number_floors',
+        'third_party_offers.rooms as rooms_number',
+        'third_party_offers.expiration_date as available_end_at',
+        'third_party_offers.vacant_from as vacant_date',
+        'third_party_offers.*',
+        'tpoi.knocked_at'
+      )
+    let field
+    let value
+    if (like) {
+      field = 'liked'
+      value = true
+    } else if (dislike) {
+      field = 'liked'
+      value = false
+    } else if (knock) {
+      field = 'knocked'
+      value = true
+    } else {
+      return false
+    }
+    query.innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
+      this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
+        .on(Database.raw(`"${field}" = ${value}`))
+        .on(Database.raw(`"user_id" = ${userId}`))
+    })
+    const ret = await query.fetch()
+    if (ret) {
+      return ret.toJSON()
+    }
+    return []
+  }
 }
 
 module.exports = ThirdPartyOfferService

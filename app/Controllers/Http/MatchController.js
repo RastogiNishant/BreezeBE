@@ -586,12 +586,18 @@ class MatchController {
       isDislikeFilter ? 9999 : limit
     )
 
+    let thirdPartyOffers =
+      await require('../../Services/ThirdPartyOfferService').getTenantEstatesWithFilter(
+        user.id,
+        filters
+      )
     const countResult =
       (await MatchService.getCountTenantMatchesWithFilterQuery(user.id, filters)).toJSON() || []
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
     estates.data = uniqBy(estates.data, 'id')
+    estates.data = [...estates.data, ...thirdPartyOffers]
     estates.total = countResult.length ? parseInt(countResult[0]?.count) : 0
     estates.lastPage = parseInt(estates.total / limit) + 1
     if (filters?.dislike) {
