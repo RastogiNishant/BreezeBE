@@ -1467,6 +1467,12 @@ class EstateService {
             u.select('id', 'avatar')
           })
         })
+        .withCount('visits')
+        .withCount('knocked')
+        .withCount('decided')
+        .withCount('invite')
+        .withCount('final')
+        .withCount('inviteBuddies')
         .with('slots')
         .fetch()
     } else {
@@ -1479,6 +1485,12 @@ class EstateService {
           })
         })
         .with('slots')
+        .withCount('visits')
+        .withCount('knocked')
+        .withCount('decided')
+        .withCount('invite')
+        .withCount('final')
+        .withCount('inviteBuddies')
         .paginate(page, limit)
     }
   }
