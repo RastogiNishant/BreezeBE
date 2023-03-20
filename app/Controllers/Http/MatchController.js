@@ -589,10 +589,10 @@ class MatchController {
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-    let estateData = uniqBy(estates.data, 'id')
+    let estateData = uniqBy(estates, 'id')
     const estateTotal = estates.length + thirdPartyOffers.length
-
     estateData = [...estateData, ...thirdPartyOffers]
+    estates = {}
     estates.total = estateTotal
 
     estates.lastPage = Math.ceil(estateTotal / limit)
