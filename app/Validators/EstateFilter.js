@@ -221,7 +221,7 @@ class EstateFilter extends Base {
         ),
 
       letting: yup.array().of(yup.string()),
-      floor_direction: yup
+      customFloorDirection: yup
         .object()
         .shape({
           matchMode: yup.string().nullable(),
