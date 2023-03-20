@@ -48,6 +48,8 @@ const {
   STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
+  MAXIMUM_EXPIRE_PERIOD,
+  DATE_FORMAT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -497,6 +499,9 @@ class Estate extends Model {
     await this.updateItemWithTrx(
       {
         status: STATUS_ACTIVE,
+        available_end_at:
+          this.available_end_at ||
+          moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
       },
       trx,
       true
