@@ -189,7 +189,6 @@ class ThirdPartyOfferService {
       .where('third_party_offer_id', id)
       .where('user_id', userId)
       .first()
-    console.log('time', moment().utc().format())
     let value
     switch (action) {
       case 'like':
