@@ -251,20 +251,11 @@ class MemberController {
 
       if (owner_id) {
         MemberPermissionService.deletePermissionByUser(owner_id, trx)
+        await UserService.removeUserOwnerId(owner_id, trx)
+        await MemberService.createMainMember(owner_id, trx)
       }
       await MemberPermissionService.deletePermission(member.id, trx)
-
-      if (owner_id) {
-        await member.updateItem({
-          user_id: owner_id,
-          owner_user_id: null,
-          email: null,
-          code: null,
-        })
-        await UserService.removeUserOwnerId(owner_id, trx)
-      } else {
-        await MemberService.getMemberQuery().where('id', member.id).delete().transacting(trx)
-      }
+      await MemberService.getMemberQuery().where('id', member.id).delete().transacting(trx)
 
       await trx.commit()
       Event.fire('tenant::update', user_id)

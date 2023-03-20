@@ -52,6 +52,10 @@ const {
   DEFAULT_LANG,
   WEBSOCKET_EVENT_MEMBER_INVITATION,
 } = require('../constants')
+
+const {
+  exceptions: { MEMBER_INVITATION_CANCELED },
+} = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException.js')
 
 class MemberService {
@@ -392,6 +396,27 @@ class MemberService {
     return await Member.createItem({ ...member, user_id }, trx)
   }
 
+  static async getHouseHold(user_id) {
+    return await Member.query()
+      .where('user_id', user_id)
+      .whereNull('owner_user_id')
+      .where('is_verified', true)
+      .first()
+  }
+  static async createMainMember(user_id, trx) {
+    const houseHold = await this.getHouseHold(user_id)
+    if (!houseHold) {
+      const user = await require('./UserService').getById(user_id)
+      if (user) {
+        await this.createMember(
+          { firstname: user.firstname, secondname: user.secondname, is_verified: true },
+          user.id,
+          trx
+        )
+      }
+    }
+  }
+
   static async setMemberOwner({ member_id, firstname, secondname, owner_id }, trx = null) {
     if (member_id == null) {
       return
@@ -577,7 +602,11 @@ class MemberService {
         .where('email', user.email)
         .where('is_verified', false)
         .whereNotNull('code')
-        .firstOrFail()
+        .first()
+
+      if (!member) {
+        throw new HttpException(MEMBER_INVITATION_CANCELED, 400)
+      }
 
       const updatePromises = []
 
@@ -693,7 +722,11 @@ class MemberService {
         .where('email', user.email)
         .where('is_verified', false)
         .whereNotNull('code')
-        .firstOrFail()
+        .first()
+
+      if (!member) {
+        throw new HttpException(MEMBER_INVITATION_CANCELED, 400)
+      }
 
       const updatePromises = []
       const invitorUserId = member.user_id
