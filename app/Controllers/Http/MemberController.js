@@ -120,6 +120,8 @@ class MemberController {
         existingUser.owner_id = user_id
         existingUser.is_household_invitation_onboarded = false
         existingUser.save(trx)
+
+        data.owner_user_id = existingUser.id
       }
 
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
