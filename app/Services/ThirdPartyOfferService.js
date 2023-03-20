@@ -270,7 +270,17 @@ class ThirdPartyOfferService {
     })
     const ret = await query.fetch()
     if (ret) {
-      return ret.toJSON()
+      const tenant = await MatchService.getProspectForScoringQuery()
+        .where({ 'tenants.user_id': userId })
+        .first()
+
+      let estates = ret.toJSON()
+      estates = estates.map(async (estate) => {
+        estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+        const score = await MatchService.calculateMatchPercent(tenant, estate)
+        estate.percent = score
+      })
+      return estates
     }
     return []
   }
