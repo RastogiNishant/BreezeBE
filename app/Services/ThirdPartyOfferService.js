@@ -1,4 +1,5 @@
 const axios = require('axios')
+const moment = require('moment')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
@@ -9,11 +10,15 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
+const {
+  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY },
+} = require('../exceptions')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -202,14 +207,24 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        value = { third_party_offer_id: id, user_id: userId, knocked: true }
-        break
-      case 'contact':
-        value = { third_party_offer_id: id, user_id: userId, inquiry: message }
+        const knockFound = await ThirdPartyOfferInteraction.query()
+          .where('third_party_offer_id', id)
+          .where('user_id', userId)
+          .where('knocked', true)
+          .first()
+        if (knockFound) {
+          throw new Error(ALREADY_KNOCKED_ON_THIRD_PARTY)
+        }
+        value = {
+          third_party_offer_id: id,
+          user_id: userId,
+          knocked: true,
+          knocked_at: moment().utc().format(),
+        }
         QueueService.contactOhneMakler({
           third_party_offer_id: id,
           userId,
-          message,
+          message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         })
         break
     }

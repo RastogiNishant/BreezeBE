@@ -15,6 +15,7 @@ class ThirdPartyOfferInteraction extends Model {
       'inquiry',
       'created_at',
       'updated_at',
+      'knocked_at',
     ]
   }
 }
