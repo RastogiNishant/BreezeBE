@@ -1085,7 +1085,7 @@ Estates: [ESTATES]
     'Heavily neglected',
   ],
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
-  SEND_EMAIL_TO_OHNEMAKLER_CONTENT: '',
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT: 'I am interested in this apartment.',
 
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
