@@ -1169,7 +1169,7 @@ class MatchController {
       return response.res(result)
     } catch (err) {
       console.log(err)
-      throw new HttpException(err.message)
+      throw new HttpException(err.message, 400)
     }
   }
 }
