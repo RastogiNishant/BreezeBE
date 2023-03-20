@@ -41,6 +41,7 @@ class Tenant extends Model {
       'transfer_budget_min',
       'transfer_budget_max',
       'residency_duration',
+      'selected_adults_count',
     ]
   }
 
@@ -99,6 +100,7 @@ class Tenant extends Model {
       'transfer_budget_min',
       'transfer_budget_max',
       'residency_duration',
+      'selected_adults_count',
     ]
   }
 
