@@ -778,14 +778,27 @@ class EstateController {
    *
    */
   async getTenantEstates({ request, auth, response }) {
-    const { exclude_from, exclude_to, exclude, limit = 20 } = request.all()
-
+    let { exclude_from, exclude_to, exclude, limit = 20 } = request.all()
+    let third_party_offer_exclude = []
+    let exclude_estates = []
+    if (exclude && exclude.length > 0) {
+      exclude.map((m) => {
+        if (typeof m === 'number') {
+          exclude_estates = [...exclude_estates, m]
+          return
+        }
+        const matches = m.match(/^[a-z]+\-([0-9]+)$/)
+        if (matches) {
+          third_party_offer_exclude = [...third_party_offer_exclude, matches[1]]
+        }
+      })
+    }
     const user = auth.user
     let estates
     try {
       estates = await EstateService.getTenantAllEstates(
         user.id,
-        { exclude_from, exclude_to, exclude },
+        { exclude_from, exclude_to, exclude: exclude_estates },
         limit
       )
 
@@ -798,7 +811,8 @@ class EstateController {
       const thirdPartyOfferLimit = limit - estates.length
       const thirdPartyOffers = await ThirdPartyOfferService.getEstates(
         user.id,
-        thirdPartyOfferLimit
+        thirdPartyOfferLimit,
+        third_party_offer_exclude
       )
       estates = [...estates, ...thirdPartyOffers]
     } catch (e) {
