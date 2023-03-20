@@ -449,7 +449,7 @@ class QueueJobService {
       },
     }
     const xmlmessage = toXML(obj)
-    await MailService.sendEmailToOhneMakler(xmlmessage)
+    await MailService.sendEmailToOhneMakler(prospect.email, xmlmessage)
   }
 
   static async updateThirdPartyOfferPoints() {
