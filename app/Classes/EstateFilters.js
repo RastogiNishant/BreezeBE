@@ -145,9 +145,11 @@ class EstateFilters extends Filter {
     }
 
     /* floor direction */
-    if (params.floor_direction && params.floor_direction.value) {
-      let floor_directions = EstateFilters.customFloorDirectionToValue(params.floor_direction.value)
-      this.query.whereIn('estates.floor_direction', floor_directions)
+    if (params.customFloorDirection && params.customFloorDirection.value) {
+      let customFloorDirection = EstateFilters.customFloorDirectionToValue(
+        params.customFloorDirection.value
+      )
+      this.query.whereIn('estates.floor_direction', customFloorDirection)
     }
 
     /* property_type */
