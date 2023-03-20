@@ -7,7 +7,6 @@ const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const FromEmail = process.env.FROM_EMAIL
-const OhneMaklerRecipientEmail = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
 const FROM_ONBOARD_EMAIL = process.env.FROM_ONBOARD_EMAIL
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL
 const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
@@ -679,10 +678,10 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(from, textMessage) {
+  static async sendEmailToOhneMakler(to, textMessage) {
     const msg = {
-      to: OhneMaklerRecipientEmail,
-      from, // Use the email address or domain you verified above
+      to,
+      from: FromEmail, // Use the email address or domain you verified above
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
     }
