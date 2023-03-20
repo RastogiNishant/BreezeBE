@@ -230,6 +230,7 @@ class ThirdPartyOfferService {
         'third_party_offers.*',
         'tpoi.knocked_at'
       )
+
     let field
     let value
     if (like) {
@@ -238,11 +239,13 @@ class ThirdPartyOfferService {
     } else if (dislike) {
       field = 'liked'
       value = false
+      query.orWhere('third_party_offers.status', STATUS_EXPIRE)
+      //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
       value = true
     } else {
-      return false
+      return []
     }
     query.innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
       this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
