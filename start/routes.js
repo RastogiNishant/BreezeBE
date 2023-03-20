@@ -161,6 +161,10 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+  Route.get('/estates/:id', 'Admin/PropertyController.getSingle').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -410,7 +414,7 @@ Route.group(() => {
   ])
 
   // Extend or deactivate Estate
-  Route.put('/extend', 'EstateController.extendEstate')
+  Route.put('/extend', 'EstateController.extendEstate').middleware(['valid:ExtendEstate,EstateId'])
   Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
