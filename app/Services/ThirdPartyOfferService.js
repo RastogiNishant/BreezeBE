@@ -279,6 +279,7 @@ class ThirdPartyOfferService {
           estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
           const score = await MatchService.calculateMatchPercent(tenant, estate)
           estate.percent = score
+          estate.rooms = null
           return estate
         })
       )
