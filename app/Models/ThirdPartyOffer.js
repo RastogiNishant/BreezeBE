@@ -53,6 +53,10 @@ class ThirdPartyOffer extends Model {
   point() {
     return this.hasOne('App/Models/Point', 'point_id', 'id')
   }
+
+  static get Serializer() {
+    return 'App/Serializers/ThirdPartyOfferSerializer'
+  }
 }
 
 module.exports = ThirdPartyOffer
