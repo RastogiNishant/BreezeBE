@@ -6,7 +6,6 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
-const { unset } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -14,7 +13,6 @@ const {
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
-const GeoService = use('App/Services/GeoService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 
@@ -35,8 +33,9 @@ class ThirdPartyOfferService {
 
   static async pullOhneMakler() {
     if (
-      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-      !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES
+      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
+      (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
+        !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
     ) {
       console.log('not pulling ohne makler...')
       return
@@ -68,7 +67,7 @@ class ThirdPartyOfferService {
 
         let i = 0
         while (i < estates.length) {
-          const estate = estates[i]
+          let estate = estates[i]
           try {
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
@@ -79,7 +78,9 @@ class ThirdPartyOfferService {
             } else {
               await found.updateItem(estate)
             }
-          } catch (e) {}
+          } catch (e) {
+            console.log(`validation: ${estate.source_id} ${e.message}`)
+          }
           i++
         }
 
@@ -129,9 +130,9 @@ class ThirdPartyOfferService {
         '_e.floor_count as number_floors',
         '_e.rooms as rooms_number',
         '_e.expiration_date as available_end_at',
+        '_e.vacant_from as vacant_date',
         '_e.*'
       )
-      .with('point')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
@@ -173,12 +174,15 @@ class ThirdPartyOfferService {
         '_k.third_party_offer_id',
         '_e.id'
       )
-      .leftJoin('points', 'points.id', '_e.point_id')
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
+      })
       .where('tenants.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
+      .whereNull('tpoi.id')
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
-      query.where('_e.id', id)
+      query.with('point').where('_e.id', id)
     }
 
     return query
