@@ -593,7 +593,6 @@ class MatchController {
     const estateTotal = estates.length + thirdPartyOffers.length
 
     estateData = [...estateData, ...thirdPartyOffers]
-    console.log(estateData)
     estates.total = estateTotal
 
     estates.lastPage = Math.ceil(estateTotal / limit)
