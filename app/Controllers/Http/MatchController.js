@@ -589,19 +589,17 @@ class MatchController {
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-    let estateData = uniqBy(estates.data, 'id')
-    const estateTotal = estates.length + thirdPartyOffers.length
-
+    let estateData = uniqBy(estates, 'id')
     estateData = [...estateData, ...thirdPartyOffers]
-    estates.total = estateTotal
-
-    estates.lastPage = Math.ceil(estateTotal / limit)
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
-
-    estates.perPage = limit
-    estates.page = page
-    estates.data = estateData.slice(startIndex, endIndex)
+    estates = {
+      total: estates.length + thirdPartyOffers.length,
+      lastPage: Math.ceil((estates.length + thirdPartyOffers.length) / limit),
+      page,
+      perPage: limit,
+      data: estateData.slice(startIndex, endIndex),
+    }
 
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)
