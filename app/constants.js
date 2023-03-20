@@ -1091,6 +1091,27 @@ Estates: [ESTATES]
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
 
+  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING: {
+    income_sources: [
+      'employee',
+      'worker',
+      'unemployed',
+      'civil_servant',
+      'freelancer',
+      'housewife_husband',
+      'pensioner',
+      'self',
+      'trainee',
+    ],
+    credit_score: 95,
+    budget: 30,
+    rent_arrears: false,
+    min_age: 25,
+    max_age: 65,
+    pets: 1,
+    family_size_min: 1,
+    family_size_max: 2,
+  },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
 }
 
