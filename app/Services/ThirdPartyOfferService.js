@@ -97,11 +97,13 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async getEstates(userId, limit = 10) {
+  static async getEstates(userId, limit = 10, excludes = []) {
     const tenant = await MatchService.getProspectForScoringQuery()
       .where({ 'tenants.user_id': userId })
       .first()
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).limit(limit).fetch()
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, excludes)
+      .limit(limit)
+      .fetch()
     estates = estates.toJSON()
     estates = await Promise.all(
       estates.map(async (estate) => {
@@ -142,7 +144,7 @@ class ThirdPartyOfferService {
     return estate
   }
 
-  static searchEstatesQuery(userId, id = false) {
+  static searchEstatesQuery(userId, id = false, excludes = []) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
       .select(
@@ -203,6 +205,9 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
       query.with('point').where('_e.id', id)
+    }
+    if (excludes.length > 0) {
+      query.whereNotIn('_e.id', excludes)
     }
 
     return query
