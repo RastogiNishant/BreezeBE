@@ -16,7 +16,7 @@ class OhneMakler {
     postcode: 'zip',
     country: 'country',
     floor_number: 'floor',
-    //levels: 'floor_count',
+    floor_count: 'floor_count',
     bathrooms: 'bathrooms',
     rooms: 'rooms',
     floor_area: 'area',
@@ -51,6 +51,14 @@ class OhneMakler {
       newEstate.vacant_from = estate.uebernahme_ab
     }
 
+    //as confirmed by andrey, K is Kellergeschoss (basement or underground)
+    if (newEstate.floor === 'K') {
+      newEstate.floor = -1
+    }
+    //11 here means greater than 5
+    if (newEstate.floor === '>') {
+      newEstate.floor = 11
+    }
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
     return newEstate
   }
