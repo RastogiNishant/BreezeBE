@@ -454,8 +454,9 @@ class QueueJobService {
 
   static async updateThirdPartyOfferPoints() {
     if (
-      process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
-      !+process.env.PROCESS_OHNE_MAKLER_GET_POI
+      process.env.PROCESS_OHNE_MAKLER_GET_POI === undefined ||
+      (process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
+        !+process.env.PROCESS_OHNE_MAKLER_GET_POI)
     ) {
       console.log('not updating third-party-offer points...')
       return
