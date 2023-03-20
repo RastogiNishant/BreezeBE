@@ -10,6 +10,7 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -223,7 +224,7 @@ class ThirdPartyOfferService {
         QueueService.contactOhneMakler({
           third_party_offer_id: id,
           userId,
-          message: '',
+          message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         })
         break
     }
