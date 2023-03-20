@@ -215,14 +215,6 @@ class ThirdPartyOfferService {
           message: '',
         })
         break
-      case 'contact':
-        value = { third_party_offer_id: id, user_id: userId, inquiry: message }
-        QueueService.contactOhneMakler({
-          third_party_offer_id: id,
-          userId,
-          message,
-        })
-        break
     }
     if (!found) {
       await ThirdPartyOfferInteraction.createItem(value)
