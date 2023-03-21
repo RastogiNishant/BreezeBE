@@ -679,9 +679,9 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(textMessage) {
+  static async sendEmailToOhneMakler(textMessage, recipient) {
     const msg = {
-      to: OhneMaklerRecipientEmail,
+      to: recipient,
       from: FromEmail, // Use the email address or domain you verified above
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,

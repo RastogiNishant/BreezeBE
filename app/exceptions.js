@@ -77,6 +77,8 @@ const exceptions = {
   FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
   ONLY_HOUSEHOLD_ADD_MEMBER: 'Please ask your household to add this roommate',
   FAILED_EXTEND_ESTATE: 'Failed to extend dates',
+  ALREADY_KNOCKED_ON_THIRD_PARTY: 'You already knocked on this estate',
+  MEMBER_INVITATION_CANCELED:'your invitation has been cancelled'
 }
 
 const exceptionCodes = {

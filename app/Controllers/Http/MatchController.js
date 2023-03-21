@@ -579,21 +579,28 @@ class MatchController {
       currentTab = activeFilters[0]
     }
 
-    const isDislikeFilter = filters.dislike
+    let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
 
-    let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).paginate(
-      isDislikeFilter ? 1 : page,
-      isDislikeFilter ? 9999 : limit
-    )
-
-    const countResult =
-      (await MatchService.getCountTenantMatchesWithFilterQuery(user.id, filters)).toJSON() || []
+    let thirdPartyOffers =
+      await require('../../Services/ThirdPartyOfferService').getTenantEstatesWithFilter(
+        user.id,
+        filters
+      )
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-    estates.data = uniqBy(estates.data, 'id')
-    estates.total = countResult.length ? parseInt(countResult[0]?.count) : 0
-    estates.lastPage = parseInt(estates.total / limit) + 1
+    let estateData = uniqBy(estates, 'id')
+    estateData = [...estateData, ...thirdPartyOffers]
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+    estates = {
+      total: estates.length + thirdPartyOffers.length,
+      lastPage: Math.ceil((estates.length + thirdPartyOffers.length) / limit),
+      page,
+      perPage: limit,
+      data: estateData.slice(startIndex, endIndex),
+    }
+
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)
       estates = {
@@ -1169,7 +1176,7 @@ class MatchController {
       return response.res(result)
     } catch (err) {
       console.log(err)
-      throw new HttpException(err.message)
+      throw new HttpException(err.message, 400)
     }
   }
 }

@@ -1,21 +1,26 @@
 const axios = require('axios')
+const moment = require('moment')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const Promise = require('bluebird')
-const { unset } = require('lodash')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
+  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
-const GeoService = use('App/Services/GeoService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
+const MatchService = use('App/Services/MatchService')
+const {
+  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY },
+} = require('../exceptions')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -34,8 +39,9 @@ class ThirdPartyOfferService {
 
   static async pullOhneMakler() {
     if (
-      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-      !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES
+      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
+      (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
+        !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
     ) {
       console.log('not pulling ohne makler...')
       return
@@ -67,7 +73,7 @@ class ThirdPartyOfferService {
 
         let i = 0
         while (i < estates.length) {
-          const estate = estates[i]
+          let estate = estates[i]
           try {
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
@@ -78,7 +84,9 @@ class ThirdPartyOfferService {
             } else {
               await found.updateItem(estate)
             }
-          } catch (e) {}
+          } catch (e) {
+            console.log(`validation: ${estate.source_id} ${e.message}`)
+          }
           i++
         }
 
@@ -89,10 +97,19 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async getEstates(userId, limit = 10) {
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId).limit(limit).fetch()
+  static async getEstates(userId, limit = 10, excludes = []) {
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .where({ 'tenants.user_id': userId })
+      .first()
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, excludes)
+      .limit(limit)
+      .fetch()
+    estates = estates.toJSON()
     estates = await Promise.all(
-      estates.rows.map(async (estate) => {
+      estates.map(async (estate) => {
+        estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+        const score = await MatchService.calculateMatchPercent(tenant, estate)
+        estate.percent = score
         estate.isoline = await EstateService.getIsolines(estate)
         estate['__meta__'] = {
           knocked_count: estate.knocked_count,
@@ -111,16 +128,23 @@ class ThirdPartyOfferService {
       userId,
       third_party_offer_id
     ).first()
+    estate = estate.toJSON()
     estate['__meta__'] = {
       knocked_count: estate.knocked_count,
       like_count: estate.like_count,
       dislike_count: estate.dislike_count,
     }
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .where({ 'tenants.user_id': userId })
+      .first()
+    estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+    const score = await MatchService.calculateMatchPercent(tenant, estate)
+    estate.percent = score
     estate.rooms = null
     return estate
   }
 
-  static searchEstatesQuery(userId, id = false) {
+  static searchEstatesQuery(userId, id = false, excludes = []) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
       .select(
@@ -128,9 +152,9 @@ class ThirdPartyOfferService {
         '_e.floor_count as number_floors',
         '_e.rooms as rooms_number',
         '_e.expiration_date as available_end_at',
+        '_e.vacant_from as vacant_date',
         '_e.*'
       )
-      .with('point')
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
@@ -172,12 +196,18 @@ class ThirdPartyOfferService {
         '_k.third_party_offer_id',
         '_e.id'
       )
-      .leftJoin('points', 'points.id', '_e.point_id')
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
+      })
       .where('tenants.user_id', userId)
       .where('_e.status', STATUS_ACTIVE)
+      .whereNull('tpoi.id')
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
-      query.where('_e.id', id)
+      query.with('point').where('_e.id', id)
+    }
+    if (excludes.length > 0) {
+      query.whereNotIn('_e.id', excludes)
     }
 
     return query
@@ -198,14 +228,24 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        value = { third_party_offer_id: id, user_id: userId, knocked: true }
-        break
-      case 'contact':
-        value = { third_party_offer_id: id, user_id: userId, inquiry: message }
+        const knockFound = await ThirdPartyOfferInteraction.query()
+          .where('third_party_offer_id', id)
+          .where('user_id', userId)
+          .where('knocked', true)
+          .first()
+        if (knockFound) {
+          throw new Error(ALREADY_KNOCKED_ON_THIRD_PARTY)
+        }
+        value = {
+          third_party_offer_id: id,
+          user_id: userId,
+          knocked: true,
+          knocked_at: moment().utc().format(),
+        }
         QueueService.contactOhneMakler({
           third_party_offer_id: id,
           userId,
-          message,
+          message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         })
         break
     }
@@ -215,6 +255,61 @@ class ThirdPartyOfferService {
       await found.updateItem(value)
     }
     return true
+  }
+
+  static async getTenantEstatesWithFilter(userId, filter) {
+    const { like, dislike, knock } = filter
+    let query = ThirdPartyOffer.query()
+      .where('third_party_offers.status', STATUS_ACTIVE)
+      .select(
+        'third_party_offers.price as net_rent',
+        'third_party_offers.floor_count as number_floors',
+        'third_party_offers.rooms as rooms_number',
+        'third_party_offers.expiration_date as available_end_at',
+        'third_party_offers.vacant_from as vacant_date',
+        'third_party_offers.*',
+        'tpoi.knocked_at'
+      )
+
+    let field
+    let value
+    if (like) {
+      field = 'liked'
+      value = true
+    } else if (dislike) {
+      field = 'liked'
+      value = false
+      query.orWhere('third_party_offers.status', STATUS_EXPIRE)
+      //if dislike, include both active and expired
+    } else if (knock) {
+      field = 'knocked'
+      value = true
+    } else {
+      return []
+    }
+    query.innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
+      this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
+        .on(Database.raw(`"${field}" = ${value}`))
+        .on(Database.raw(`"user_id" = ${userId}`))
+    })
+    const ret = await query.fetch()
+    if (ret) {
+      const tenant = await MatchService.getProspectForScoringQuery()
+        .where({ 'tenants.user_id': userId })
+        .first()
+      let estates = ret.toJSON()
+      estates = await Promise.all(
+        estates.map(async (estate) => {
+          estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+          const score = await MatchService.calculateMatchPercent(tenant, estate)
+          estate.percent = score
+          estate.rooms = null
+          return estate
+        })
+      )
+      return estates
+    }
+    return []
   }
 }
 

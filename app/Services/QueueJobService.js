@@ -449,13 +449,18 @@ class QueueJobService {
       },
     }
     const xmlmessage = toXML(obj)
-    await MailService.sendEmailToOhneMakler(xmlmessage)
+    let recipient = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
+    if (process.env.NODE_ENV === 'production') {
+      recipient = prospect.contact.email
+    }
+    await MailService.sendEmailToOhneMakler(xmlmessage, recipient)
   }
 
   static async updateThirdPartyOfferPoints() {
     if (
-      process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
-      !+process.env.PROCESS_OHNE_MAKLER_GET_POI
+      process.env.PROCESS_OHNE_MAKLER_GET_POI === undefined ||
+      (process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
+        !+process.env.PROCESS_OHNE_MAKLER_GET_POI)
     ) {
       console.log('not updating third-party-offer points...')
       return
