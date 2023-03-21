@@ -100,12 +100,6 @@ class EstateCurrentTenantService extends BaseService {
 
       await currentTenant.save(trx)
       //send email to support for connect
-      const estate = await Estate.query().select('id', 'user_id').where('id', estate_id).first()
-      require('./QueueService').sendEmailToSupportForLandlordUpdate({
-        type: CONNECT_ESTATE,
-        landlordId: estate.user_id,
-        estateIds: [estate_id],
-      })
 
       if (shouldCommitTrx) {
         await trx.commit()
