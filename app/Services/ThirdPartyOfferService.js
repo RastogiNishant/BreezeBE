@@ -324,6 +324,7 @@ class ThirdPartyOfferService {
           return estate
         })
       )
+      estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
       return estates
     }
     return []
