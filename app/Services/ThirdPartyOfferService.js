@@ -136,7 +136,8 @@ class ThirdPartyOfferService {
   static async getEstate(userId, third_party_offer_id) {
     let estate = await ThirdPartyOfferService.searchEstatesQuery(
       userId,
-      third_party_offer_id
+      third_party_offer_id,
+      {}
     ).first()
     estate = estate.toJSON()
     estate['__meta__'] = {
