@@ -10,8 +10,8 @@ const MAX_PG_INT = 2147483647
 class TenantEstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
-      exclude_from: yup.number().integer().min(0).max(MAX_PG_INT),
-      exclude_to: yup.number().integer().min(0).max(MAX_PG_INT),
+      exclude_from: yup.number().integer().min(0).max(MAX_PG_INT).nullable(),
+      exclude_to: yup.number().integer().min(0).max(MAX_PG_INT).nullable(),
       exclude: yup
         .array()
         .of(
