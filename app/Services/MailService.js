@@ -678,9 +678,13 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(to, textMessage) {
+  static async sendEmailToOhneMakler(textMessage, recipientOverride = null) {
+    let recipient = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
+    if (recipientOverride) {
+      recipient = recipientOverride
+    }
     const msg = {
-      to,
+      to: recipient,
       from: FromEmail, // Use the email address or domain you verified above
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
