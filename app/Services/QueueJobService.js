@@ -449,7 +449,11 @@ class QueueJobService {
       },
     }
     const xmlmessage = toXML(obj)
-    await MailService.sendEmailToOhneMakler(xmlmessage)
+    let recipient = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
+    if (process.env.NODE_ENV === 'production') {
+      recipient = prospect.contact.email
+    }
+    await MailService.sendEmailToOhneMakler(xmlmessage, recipient)
   }
 
   static async updateThirdPartyOfferPoints() {
