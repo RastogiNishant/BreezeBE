@@ -179,6 +179,7 @@ class QueueJobService {
     return Estate.query()
       .select('*')
       .where('status', STATUS_DRAFT)
+      .where('is_published', true)
       .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
