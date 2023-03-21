@@ -524,7 +524,7 @@ class EstateController {
         false
       )
     } else {
-      await estate.updateItem({ status: STATUS_DRAFT }, true)
+      await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
       status = STATUS_DRAFT
     }
 

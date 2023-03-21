@@ -813,7 +813,7 @@ class MatchController {
           query.where('status', MATCH_STATUS_FINISH)
         })
         .count()
-      console.log('finalMatches here=', finalMatches)
+
       counts.finalMatches = finalMatches[0].count
 
       return response.res(counts)
