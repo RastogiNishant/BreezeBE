@@ -97,11 +97,19 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async getEstates(userId, limit = 10, excludes = []) {
+  static async getEstates(
+    userId,
+    limit = 10,
+    { exclude = [], exclude_from = null, exclude_to = null }
+  ) {
     const tenant = await MatchService.getProspectForScoringQuery()
       .where({ 'tenants.user_id': userId })
       .first()
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, excludes)
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, {
+      exclude,
+      exclude_from,
+      exclude_to,
+    })
       .limit(limit)
       .fetch()
     estates = estates.toJSON()
@@ -144,7 +152,11 @@ class ThirdPartyOfferService {
     return estate
   }
 
-  static searchEstatesQuery(userId, id = false, excludes = []) {
+  static searchEstatesQuery(
+    userId,
+    id = false,
+    { exclude = [], exclude_from = null, exclude_to = null }
+  ) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
       .select(
@@ -206,8 +218,11 @@ class ThirdPartyOfferService {
     if (id) {
       query.with('point').where('_e.id', id)
     }
-    if (excludes.length > 0) {
-      query.whereNotIn('_e.id', excludes)
+    if (exclude.length > 0) {
+      query.whereNotIn('_e.id', exclude)
+    }
+    if (exclude_from && exclude_to) {
+      query.whereNotBetween('_e.id', [exclude_from, exclude_to])
     }
 
     return query
