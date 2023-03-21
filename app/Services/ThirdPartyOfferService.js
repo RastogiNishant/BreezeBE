@@ -1,5 +1,6 @@
 const axios = require('axios')
 const moment = require('moment')
+const { sortBy } = require('lodash')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
@@ -128,6 +129,7 @@ class ThirdPartyOfferService {
         return estate
       })
     )
+    estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
     return estates
   }
 
