@@ -110,7 +110,7 @@ class ThirdPartyOfferService {
       exclude_from,
       exclude_to,
     })
-      .limit(limit)
+      //.limit(limit)
       .fetch()
     estates = estates.toJSON()
     estates = await Promise.all(
@@ -128,6 +128,8 @@ class ThirdPartyOfferService {
         return estate
       })
     )
+    estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
+    estates.slice(0, limit)
     return estates
   }
 
@@ -322,6 +324,7 @@ class ThirdPartyOfferService {
           return estate
         })
       )
+      estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
       return estates
     }
     return []
