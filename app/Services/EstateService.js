@@ -1401,11 +1401,12 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
-        await estate.publishEstate(trx)
         status = STATUS_ACTIVE
         // Run match estate
         Event.fire('match::estate', estate.id)
       }
+
+      await estate.publishEstate(status, trx)
 
       if (!is_queue) {
         //send email to support for landlord update...
@@ -2015,6 +2016,7 @@ class EstateService {
         status: STATUS_DRAFT,
         letting_type: LETTING_TYPE_LET,
         letting_status: LETTING_STATUS_STANDARD,
+        is_published: false,
       })
       .transacting(trx)
   }

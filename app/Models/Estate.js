@@ -164,6 +164,7 @@ class Estate extends Model {
       'rent_end_at',
       'income_sources',
       'percent',
+      'is_published',
     ]
   }
 
@@ -495,10 +496,11 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate(trx) {
+  async publishEstate(status, trx) {
     await this.updateItemWithTrx(
       {
-        status: STATUS_ACTIVE,
+        status: status,
+        is_published: true,
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
