@@ -1,6 +1,5 @@
 const axios = require('axios')
 const moment = require('moment')
-const { sortBy } = require('lodash')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
