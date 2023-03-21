@@ -117,7 +117,7 @@ class ThirdPartyOfferService {
       estates.map(async (estate) => {
         estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
         const score = await MatchService.calculateMatchPercent(tenant, estate)
-        estate.percent = score
+        estate.match = score
         estate.isoline = await EstateService.getIsolines(estate)
         estate['__meta__'] = {
           knocked_count: estate.knocked_count,
@@ -317,7 +317,7 @@ class ThirdPartyOfferService {
         estates.map(async (estate) => {
           estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
           const score = await MatchService.calculateMatchPercent(tenant, estate)
-          estate.percent = score
+          estate.match = score
           estate.rooms = null
           return estate
         })
