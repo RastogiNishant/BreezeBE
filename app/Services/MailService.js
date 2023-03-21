@@ -679,11 +679,11 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(from, textMessage) {
+  static async sendEmailToOhneMakler(textMessage) {
     let recipient = process.env.OHNE_MAKLER_RECIPIENT_EMAIL || `support@breeze4me.de`
     const msg = {
       to: recipient,
-      from, // Use the email address or domain you verified above
+      from: FromEmail, // Use the email address or domain you verified above
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
     }
