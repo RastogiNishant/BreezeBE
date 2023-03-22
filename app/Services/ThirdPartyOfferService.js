@@ -129,7 +129,7 @@ class ThirdPartyOfferService {
       })
     )
     estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
-    estates.slice(0, limit)
+    estates = estates.slice(0, limit)
     return estates
   }
 
