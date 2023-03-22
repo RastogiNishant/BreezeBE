@@ -110,7 +110,7 @@ class ThirdPartyOfferService {
       exclude_from,
       exclude_to,
     })
-      .limit(limit)
+      //.limit(limit)
       .fetch()
     estates = estates.toJSON()
     estates = await Promise.all(
@@ -128,13 +128,16 @@ class ThirdPartyOfferService {
         return estate
       })
     )
+    estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
+    estates = estates.slice(0, limit)
     return estates
   }
 
   static async getEstate(userId, third_party_offer_id) {
     let estate = await ThirdPartyOfferService.searchEstatesQuery(
       userId,
-      third_party_offer_id
+      third_party_offer_id,
+      {}
     ).first()
     estate = estate.toJSON()
     estate['__meta__'] = {
@@ -302,11 +305,13 @@ class ThirdPartyOfferService {
     } else {
       return []
     }
-    query.innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
-      this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
-        .on(Database.raw(`"${field}" = ${value}`))
-        .on(Database.raw(`"user_id" = ${userId}`))
-    })
+    query
+      .innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
+        this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
+          .on(Database.raw(`"${field}" = ${value}`))
+          .on(Database.raw(`"user_id" = ${userId}`))
+      })
+      .orderBy('tpoi.updated_at', 'desc')
     const ret = await query.fetch()
     if (ret) {
       const tenant = await MatchService.getProspectForScoringQuery()
