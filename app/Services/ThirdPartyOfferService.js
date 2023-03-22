@@ -305,11 +305,13 @@ class ThirdPartyOfferService {
     } else {
       return []
     }
-    query.innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
-      this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
-        .on(Database.raw(`"${field}" = ${value}`))
-        .on(Database.raw(`"user_id" = ${userId}`))
-    })
+    query
+      .innerJoin(Database.raw(`third_party_offer_interactions as tpoi`), function () {
+        this.on('third_party_offers.id', 'tpoi.third_party_offer_id')
+          .on(Database.raw(`"${field}" = ${value}`))
+          .on(Database.raw(`"user_id" = ${userId}`))
+      })
+      .orderBy('tpoi.updated_at', 'desc')
     const ret = await query.fetch()
     if (ret) {
       const tenant = await MatchService.getProspectForScoringQuery()
@@ -325,7 +327,6 @@ class ThirdPartyOfferService {
           return estate
         })
       )
-      estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
       return estates
     }
     return []
