@@ -97,21 +97,11 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async getEstates(
-    userId,
-    limit = 10,
-    { exclude = [], exclude_from = null, exclude_to = null }
-  ) {
+  static async getEstates(userId, limit = 10, exclude) {
     const tenant = await MatchService.getProspectForScoringQuery()
       .where({ 'tenants.user_id': userId })
       .first()
-    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, {
-      exclude,
-      exclude_from,
-      exclude_to,
-    })
-      //.limit(limit)
-      .fetch()
+    let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, exclude).fetch()
     estates = estates.toJSON()
     estates = await Promise.all(
       estates.map(async (estate) => {
@@ -129,15 +119,14 @@ class ThirdPartyOfferService {
       })
     )
     estates.sort((a, b) => (+a.match > +b.match ? -1 : 1))
-    estates.slice(0, limit)
+    estates = estates.slice(0, limit)
     return estates
   }
 
   static async getEstate(userId, third_party_offer_id) {
     let estate = await ThirdPartyOfferService.searchEstatesQuery(
       userId,
-      third_party_offer_id,
-      {}
+      third_party_offer_id
     ).first()
     estate = estate.toJSON()
     estate['__meta__'] = {
@@ -155,11 +144,7 @@ class ThirdPartyOfferService {
     return estate
   }
 
-  static searchEstatesQuery(
-    userId,
-    id = false,
-    { exclude = [], exclude_from = null, exclude_to = null }
-  ) {
+  static searchEstatesQuery(userId, id = false, exclude = []) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
       .select(
@@ -224,10 +209,6 @@ class ThirdPartyOfferService {
     if (exclude.length > 0) {
       query.whereNotIn('_e.id', exclude)
     }
-    if (exclude_from && exclude_to) {
-      query.whereNotBetween('_e.id', [exclude_from, exclude_to])
-    }
-
     return query
   }
 
