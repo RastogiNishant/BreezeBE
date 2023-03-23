@@ -2401,5 +2401,14 @@ class EstateService {
       i++
     }
   }
+
+  static async getCities(user_id) {
+    await Estate.query()
+      .select('country', 'city')
+      .whereNot('status', STATUS_DELETE)
+      .where('user_id', user_id)
+      .groupBy('city', 'country')
+      .orderBy('country', 'city')
+  }
 }
 module.exports = EstateService

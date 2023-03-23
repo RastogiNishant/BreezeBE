@@ -531,6 +531,8 @@ Route.group(() => {
   ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
+
+  Route.get('/cities', 'EstateController.getCityList')
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
