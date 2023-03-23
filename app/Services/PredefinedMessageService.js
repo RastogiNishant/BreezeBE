@@ -175,6 +175,10 @@ class PredefinedMessageService {
       task,
     }
   }
+
+  static async getTopicList() {
+    return await PredefinedMessage.query().where('step', 1).with('choices').first()
+  }
 }
 
 module.exports = PredefinedMessageService

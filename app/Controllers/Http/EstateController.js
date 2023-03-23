@@ -1276,7 +1276,7 @@ class EstateController {
   }
 
   async getCityList({ request, auth, response }) {
-    response.res(await EstateService.getCities(auth.user.id))
+    response.res((await EstateService.getCities(auth.user.id)).toJSON({ isShort: true }))
   }
 }
 
