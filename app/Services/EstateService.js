@@ -1274,7 +1274,7 @@ class EstateService {
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
-  static getNotActiveMatchesQuery(tenant, userId, excludeMin = 0, excludeMax = 0) {
+  static getNotActiveMatchesQuery(tenant, userId, exclude = []) {
     let query = null
     if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
@@ -1315,8 +1315,8 @@ class EstateService {
         .where('user_id', userId)
     })
 
-    if (excludeMin && excludeMax) {
-      query.whereNotBetween('estates.id', [excludeMin, excludeMax])
+    if (exclude.length > 0) {
+      query.whereNotIn('estates.id', exclude)
     }
 
     return (
@@ -1345,11 +1345,7 @@ class EstateService {
   /**
    *
    */
-  static async getTenantAllEstates(
-    userId,
-    { exclude_from = 0, exclude_to = 0, exclude = [] },
-    limit = 20
-  ) {
+  static async getTenantAllEstates(userId, exclude = [], limit = 20) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
@@ -1358,7 +1354,7 @@ class EstateService {
     if (tenant.isActive()) {
       query = this.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
     } else {
-      query = this.getNotActiveMatchesQuery(tenant, userId, exclude_from, exclude_to)
+      query = this.getNotActiveMatchesQuery(tenant, userId, exclude)
     }
 
     return query.limit(limit).fetch()

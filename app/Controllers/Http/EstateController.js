@@ -775,8 +775,8 @@ class EstateController {
     }
   }
 
-  _processExcludes({ exclude, exclude_from, exclude_to }) {
-    let third_party_offer_exclude = []
+  _processExcludes(exclude) {
+    let exclude_third_party_offers = []
     let exclude_estates = []
     let matches
     if (exclude && exclude.length > 0) {
@@ -787,69 +787,26 @@ class EstateController {
         }
         matches = m.match(/^[a-z]+\-([0-9]+)$/)
         if (matches) {
-          third_party_offer_exclude = [...third_party_offer_exclude, matches[1]]
+          exclude_third_party_offers = [...exclude_third_party_offers, matches[1]]
         }
       })
-    }
-    let third_party_exclude_from = null
-    let estates_exclude_from = null
-    if (
-      exclude_from &&
-      typeof exclude_from === 'string' &&
-      exclude_from.match(/^[a-z]+\-([0-9]+)$/)
-    ) {
-      matches = exclude_from.match(/^[a-z]+\-([0-9]+)$/)
-      if (matches) {
-        third_party_exclude_from = matches[1]
-      }
-    } else if (exclude_from) {
-      estates_exclude_from = exclude_from
-    }
-    let third_party_exclude_to = null
-    let estates_exclude_to = null
-    if (exclude_to && typeof exclude_to === 'string' && exclude_to.match(/[a-z]+\-([0-9]+)$/)) {
-      matches = exclude_to.match(/[a-z]+\-([0-9]+)$/)
-      if (matches) {
-        third_party_exclude_to = matches[1]
-      }
-    } else if (exclude_to) {
-      estates_exclude_to = exclude_to
     }
 
     return {
       exclude_estates,
-      third_party_offer_exclude,
-      estates_exclude_from,
-      estates_exclude_to,
-      third_party_exclude_from,
-      third_party_exclude_to,
+      exclude_third_party_offers,
     }
   }
   /**
    *
    */
   async getTenantEstates({ request, auth, response }) {
-    let { exclude_from, exclude_to, exclude, limit = 20 } = request.all()
-    const {
-      exclude_estates,
-      third_party_offer_exclude,
-      estates_exclude_from,
-      estates_exclude_to,
-      third_party_exclude_from,
-      third_party_exclude_to,
-    } = this._processExcludes({ exclude_from, exclude_to, exclude })
+    let { exclude, limit = 20 } = request.all()
+    const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
     const user = auth.user
     let estates
     try {
-      estates = await EstateService.getTenantAllEstates(
-        user.id,
-        {
-          exclude_from: estates_exclude_from,
-          exclude_to: estates_exclude_to,
-          exclude: exclude_estates,
-        },
-        limit
-      )
+      estates = await EstateService.getTenantAllEstates(user.id, exclude_estates, limit)
 
       estates = await Promise.all(
         estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
@@ -861,11 +818,7 @@ class EstateController {
       const thirdPartyOffers = await ThirdPartyOfferService.getEstates(
         user.id,
         thirdPartyOfferLimit,
-        {
-          exclude: third_party_offer_exclude,
-          exclude_from: third_party_exclude_from,
-          exclude_to: third_party_exclude_to,
-        }
+        exclude_third_party_offers
       )
       estates = [...estates, ...thirdPartyOffers]
     } catch (e) {
