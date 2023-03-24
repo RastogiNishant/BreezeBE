@@ -1562,6 +1562,7 @@ class MatchService {
         .clearSelect()
         .select('estates.*')
         .select('_m.updated_at')
+        .select(Database.raw('"_l"."updated_at" as "action_at"'))
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
           this.on('_l.estate_id', 'estates.id').on('_l.user_id', userId)
@@ -1578,6 +1579,7 @@ class MatchService {
         .clearSelect()
         .select('estates.*')
         .select('_m.updated_at')
+        .select(Database.raw('_d.created_at as action_at'))
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
           this.on('_d.estate_id', 'estates.id').on('_d.user_id', userId)
@@ -1589,7 +1591,9 @@ class MatchService {
           this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
         })
     } else if (knock) {
-      query.where({ '_m.status': MATCH_STATUS_KNOCK })
+      query
+        .select(Database.raw('_m.knocked_at as action_at'))
+        .where({ '_m.status': MATCH_STATUS_KNOCK })
     } else if (invite) {
       query.where('_m.status', MATCH_STATUS_INVITE)
 

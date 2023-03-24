@@ -12,6 +12,7 @@ const {
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+  ISO_DATE_FORMAT,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -151,7 +152,9 @@ class ThirdPartyOfferService {
         '_e.price as net_rent',
         '_e.floor_count as number_floors',
         '_e.rooms as rooms_number',
-        '_e.expiration_date as available_end_at',
+        Database.raw(
+          `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
+        ),
         '_e.vacant_from as vacant_date',
         '_e.*'
       )
@@ -264,7 +267,9 @@ class ThirdPartyOfferService {
         'third_party_offers.price as net_rent',
         'third_party_offers.floor_count as number_floors',
         'third_party_offers.rooms as rooms_number',
-        'third_party_offers.expiration_date as available_end_at',
+        Database.raw(
+          `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
+        ),
         'third_party_offers.vacant_from as vacant_date',
         'third_party_offers.*',
         'tpoi.knocked_at'
@@ -275,14 +280,17 @@ class ThirdPartyOfferService {
     if (like) {
       field = 'liked'
       value = true
+      query.select(Database.raw(`tpoi.updated_at as action_at`))
     } else if (dislike) {
       field = 'liked'
       value = false
       query.orWhere('third_party_offers.status', STATUS_EXPIRE)
+      query.select(Database.raw(`tpoi.updated_at as action_at`))
       //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
       value = true
+      query.select(Database.raw(`tpoi.knocked_at as action_at`))
     } else {
       return []
     }
