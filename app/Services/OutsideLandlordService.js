@@ -69,7 +69,9 @@ class OutsideLandlordService {
     const { shortLink } = await firebaseDynamicLinks.createLink({
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
-        link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
+        link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}&ofl=${
+          process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share'
+        }`,
         androidInfo: {
           androidPackageName: process.env.ANDROID_PACKAGE_NAME,
         },

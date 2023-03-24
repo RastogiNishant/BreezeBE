@@ -121,7 +121,7 @@ class AccountController {
       if (!user) {
         throw new HttpException(USER_NOT_EXIST, 400)
       }
-      await UserService.confirmEmail(user, code)
+      await UserService.confirmEmail(user, code, from_web)
       Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
     } catch (e) {
       Logger.error(e)

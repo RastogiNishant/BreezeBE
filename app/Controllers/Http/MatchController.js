@@ -266,7 +266,11 @@ class MatchController {
           const { shortLink } = await firebaseDynamicLinks.createLink({
             dynamicLinkInfo: {
               domainUriPrefix: process.env.DOMAIN_PREFIX,
-              link: `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`,
+              link: `${
+                process.env.DEEP_LINK
+              }?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}&ofl=${
+                process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share'
+              }`,
               androidInfo: {
                 androidPackageName: process.env.ANDROID_PACKAGE_NAME,
               },
