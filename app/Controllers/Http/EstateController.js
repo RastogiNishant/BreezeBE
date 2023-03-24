@@ -1274,6 +1274,10 @@ class EstateController {
       throw new HttpException(err.message)
     }
   }
+
+  async getCityList({ request, auth, response }) {
+    response.res((await EstateService.getCities(auth.user.id)).toJSON({ isShort: true }))
+  }
 }
 
 module.exports = EstateController
