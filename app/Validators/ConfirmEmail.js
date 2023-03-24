@@ -16,7 +16,6 @@ class ConfirmEmail extends Base {
         .positive()
         .required(getExceptionMessage('user_id', REQUIRED)),
       from_web: yup.number().typeError(getExceptionMessage('from_web', NUMBER)),
-      code: yup.string().trim().required(getExceptionMessage('code', REQUIRED)),
     })
 }
 

@@ -101,9 +101,9 @@ class AccountController {
    *
    */
   async resendUserConfirm({ request, response }) {
-    const { user_id } = request.all()
+    const { user_id, from_web } = request.all()
     try {
-      const result = await UserService.resendUserConfirm(user_id)
+      const result = await UserService.resendUserConfirm(user_id, from_web)
       response.res(result)
     } catch (e) {
       throw new HttpException(e.message, e.status || e.code, e.code || 0)

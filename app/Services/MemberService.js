@@ -565,17 +565,17 @@ class MemberService {
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${
-            member.email
-          }&code=${code}&isExisting_user=${isExisting_user}&ofl=${
-            process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share'
-          }`,
+          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}&isExisting_user=${isExisting_user}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
           iosInfo: {
             iosBundleId: process.env.IOS_BUNDLE_ID,
             iosAppStoreId: process.env.IOS_APPSTORE_ID,
+          },
+          desktopInfo: {
+            desktopFallbackLink:
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
           },
         },
       })

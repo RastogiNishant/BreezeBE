@@ -271,7 +271,7 @@ Route.get('/api/v1/excel', 'CommonController.getExcelTemplate').middleware([
 ])
 
 Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
-  'valid:ConfirmEmail',
+  'valid:ConfirmEmail,Code',
 ])
 
 Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
@@ -281,7 +281,7 @@ Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
 ])
 
 Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm').middleware([
-  'valid:UserId',
+  'valid:ConfirmEmail',
 ])
 
 Route.group(() => {

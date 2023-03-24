@@ -776,15 +776,17 @@ class EstateCurrentTenantService extends BaseService {
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}&ofl=${
-            process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share'
-          }`,
+          link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
           iosInfo: {
             iosBundleId: process.env.IOS_BUNDLE_ID,
             iosAppStoreId: process.env.IOS_APPSTORE_ID,
+          },
+          desktopInfo: {
+            desktopFallbackLink:
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
           },
         },
       })
