@@ -472,10 +472,14 @@ class QueueJobService {
       .limit(11)
       .fetch()
     await Promise.map(estates.toJSON(), async (estate) => {
-      if (estate.coord_raw && estate.coord_raw.match(/,/)) {
-        const [lat, lon] = estate.coord_raw.split(',')
-        const point = await GeoService.getOrCreatePoint({ lat, lon })
-        await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
+      try {
+        if (estate.coord && estate.coord.match(/,/)) {
+          const [lat, lon] = estate.coord.split(',')
+          const point = await GeoService.getOrCreatePoint({ lat, lon })
+          await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
+        }
+      } catch (e) {
+        console.log('Fetching point error', e.message)
       }
     })
   }

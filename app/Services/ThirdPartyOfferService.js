@@ -92,7 +92,7 @@ class ThirdPartyOfferService {
           i++
         }
 
-        await this.setOhneMaklerChecksum(checksum)
+        await ThirdPartyOfferService.setOhneMaklerChecksum(checksum)
       }
     } catch (err) {
       console.log(err)
