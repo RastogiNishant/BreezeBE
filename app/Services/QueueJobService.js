@@ -450,11 +450,18 @@ class QueueJobService {
       },
     }
     const xmlmessage = toXML(obj)
-    let recipient = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
-    if (process.env.NODE_ENV === 'production') {
+    let recipient = ``
+    if (!process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL) {
+      //if production
       recipient = prospect.contact.email
+    } else {
+      recipient = process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL
     }
-    await MailService.sendEmailToOhneMakler(xmlmessage, recipient)
+    MailService.sendEmailToOhneMakler(xmlmessage, recipient)
+
+    if (process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL) {
+      MailService.sendEmailToOhneMakler(xmlmessage, process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL)
+    }
   }
 
   static async updateThirdPartyOfferPoints() {
