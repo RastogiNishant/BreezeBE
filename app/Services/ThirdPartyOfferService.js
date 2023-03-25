@@ -260,6 +260,27 @@ class ThirdPartyOfferService {
     return true
   }
 
+  static async getKnockedCount(userId) {
+    return await ThirdPartyOfferInteraction.query()
+      .where('user_id', userId)
+      .where('knocked', true)
+      .count()
+  }
+
+  static async getLikesCount(userId) {
+    return await ThirdPartyOfferInteraction.query()
+      .where('user_id', userId)
+      .where('liked', true)
+      .count()
+  }
+
+  static async getDisLikesCount(userId) {
+    return await ThirdPartyOfferInteraction.query()
+      .where('user_id', userId)
+      .where('liked', false)
+      .count()
+  }
+
   static async getTenantEstatesWithFilter(userId, filter) {
     const { like, dislike, knock } = filter
     let query = ThirdPartyOffer.query()
