@@ -388,7 +388,6 @@ class CreateEstate extends Base {
         .date()
         .when(['available_start_at'], (available_start_at, schema, { value }) => {
           if (!available_start_at) return schema
-          console.log('available_start_at=', available_start_at)
           return value && value <= available_start_at
             ? yup
                 .date()
