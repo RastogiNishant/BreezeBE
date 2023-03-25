@@ -384,7 +384,25 @@ class CreateEstate extends Base {
         ),
       vacant_date: yup.date(),
       available_start_at: yup.date().nullable(),
-      available_end_at: yup.date().nullable(),
+      available_end_at: yup
+        .date()
+        .min(new Date())
+        .when(['available_start_at'], (available_start_at, schema, { value }) => {
+          if (!available_start_at) return schema
+          return value && value <= available_start_at
+            ? yup
+                .date()
+                .min(
+                  available_start_at,
+                  getExceptionMessage(
+                    'available_end_at',
+                    SHOULD_BE_AFTER,
+                    moment(available_start_at).format(DATE_FORMAT)
+                  )
+                )
+            : schema
+        })
+        .nullable(),
       is_duration_later: yup.boolean(),
       min_invite_count: yup.number().when('is_duration_later', {
         is: true,

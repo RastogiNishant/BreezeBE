@@ -1397,13 +1397,9 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
-        //should estate.available_start_at be less than or equal to date today for this to publish?
         status = STATUS_ACTIVE
         // Run match estate
         Event.fire('match::estate', estate.id)
-      } else {
-        //shouldn't we be notifying landlords here that his estate is NOT published?
-        //throw new HttpException('Invalid values for available_start_at or available_end_at')
       }
 
       await estate.publishEstate(status, trx)
