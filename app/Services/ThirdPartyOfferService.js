@@ -13,6 +13,7 @@ const {
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
   ISO_DATE_FORMAT,
+  MATCH_STATUS_KNOCK,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -91,7 +92,7 @@ class ThirdPartyOfferService {
           i++
         }
 
-        await this.setOhneMaklerChecksum(checksum)
+        await ThirdPartyOfferService.setOhneMaklerChecksum(checksum)
       }
     } catch (err) {
       console.log(err)
@@ -290,7 +291,9 @@ class ThirdPartyOfferService {
     } else if (knock) {
       field = 'knocked'
       value = true
-      query.select(Database.raw(`tpoi.knocked_at as action_at`))
+      query
+        .select(Database.raw(`tpoi.knocked_at as action_at`))
+        .select(Database.raw(`${MATCH_STATUS_KNOCK} as status`))
     } else {
       return []
     }
