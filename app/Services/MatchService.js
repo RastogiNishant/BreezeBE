@@ -83,7 +83,6 @@ const {
 
 const { ESTATE_NOT_EXISTS } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
-
 const MATCH_PERCENT_PASS = 40
 
 /**
@@ -1765,6 +1764,10 @@ class MatchService {
       this.getTenantTopsCount(userId, estateIds),
       this.getTenantBuddiesCount(userId, estateIds),
       this.getTenantFinalMatchesCount(userId),
+
+      require('./ThirdPartyOfferService').getKnockedCount(userId),
+      require('./ThirdPartyOfferService').getLikesCount(userId),
+      require('./ThirdPartyOfferService').getDisLikesCount(userId),
     ])
     const [{ count: likesCount }] = datas[0]
     const [{ count: dislikesCount }] = datas[1]
@@ -1776,12 +1779,16 @@ class MatchService {
     const [{ count: topsCount }] = datas[7]
     const [{ count: buddiesCount }] = datas[8]
     const [{ count: finalMatchesCount }] = datas[9]
+
+    const [{ count: third_knocksCount }] = datas[10]
+    const [{ count: third_likesCount }] = datas[11]
+    const [{ count: third_dislikesCount }] = datas[12]
     return {
-      like: parseInt(likesCount),
-      dislike: parseInt(dislikesCount),
-      knock: parseInt(knocksCount),
+      like: parseInt(likesCount) + parseInt(third_likesCount) || 0,
+      dislike: parseInt(dislikesCount) + parseInt(third_dislikesCount) || 0,
+      knock: parseInt(knocksCount) + parseInt(third_knocksCount) || 0,
       share: parseInt(sharesCount),
-      visit: parseInt(parseInt(invitesCount) + parseInt(visitsCount)),
+      visit: parseInt(invitesCount) + parseInt(visitsCount),
       commit: parseInt(commitsCount),
       decide: parseInt(commitsCount) + parseInt(topsCount),
       buddy: parseInt(buddiesCount),
@@ -1869,6 +1876,7 @@ class MatchService {
       .where({ user_id: userId, status: MATCH_STATUS_KNOCK })
       .whereIn('estate_id', estateIds)
       .count('*')
+
     return data
   }
 
