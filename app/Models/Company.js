@@ -16,6 +16,7 @@ class Company extends Model {
       'status',
       'size',
       'type',
+      'visibility',
     ]
   }
 

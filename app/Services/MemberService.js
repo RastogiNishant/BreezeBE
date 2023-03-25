@@ -21,6 +21,7 @@ const FileBucket = use('App/Classes/File')
 const l = use('Localize')
 const Promise = require('bluebird')
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
+const Ws = use('Ws')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -49,7 +50,12 @@ const {
   INCOME_TYPE_TRAINEE,
   STATUS_DELETE,
   DEFAULT_LANG,
+  WEBSOCKET_EVENT_MEMBER_INVITATION,
 } = require('../constants')
+
+const {
+  exceptions: { MEMBER_INVITATION_CANCELED },
+} = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException.js')
 
 class MemberService {
@@ -125,6 +131,9 @@ class MemberService {
       .with('incomes', function (b) {
         b.with('proofs')
       })
+      .with('final_incomes', function (b) {
+        b.with('final_proofs')
+      })
       .with('passports')
       .with('extra_passports')
       .with('extra_residency_proofs')
@@ -150,6 +159,23 @@ class MemberService {
               income = {
                 ...income,
                 proofs: proofs,
+              }
+              return income
+            })
+          )
+
+          const final_incomes = await Promise.all(
+            member.final_incomes.map(async (income) => {
+              const proofs = await Promise.all(
+                income.final_proofs.map(async (proof) => {
+                  if (!proof.file) return proof
+                  proof.file = await FileBucket.getProtectedUrl(proof.file)
+                  return proof
+                })
+              )
+              income = {
+                ...income,
+                final_proofs: proofs,
               }
               return income
             })
@@ -194,6 +220,7 @@ class MemberService {
             rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
             debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
             incomes,
+            final_incomes,
             extra_passports,
             passports,
             extra_residency_proofs,
@@ -208,7 +235,10 @@ class MemberService {
 
   static async getMembersByHousehold(householdId) {
     return (
-      await Member.query().select('user_id', 'owner_user_id').where('user_id', householdId).fetch()
+      await Member.query()
+        .select('id', 'user_id', 'owner_user_id')
+        .where('user_id', householdId)
+        .fetch()
     ).rows
   }
 
@@ -366,7 +396,28 @@ class MemberService {
     return await Member.createItem({ ...member, user_id }, trx)
   }
 
-  static async setMemberOwner({ member_id, owner_id }, trx = null) {
+  static async getHouseHold(user_id) {
+    return await Member.query()
+      .where('user_id', user_id)
+      .whereNull('owner_user_id')
+      .where('is_verified', true)
+      .first()
+  }
+  static async createMainMember(user_id, trx) {
+    const houseHold = await this.getHouseHold(user_id)
+    if (!houseHold) {
+      const user = await require('./UserService').getById(user_id)
+      if (user) {
+        await this.createMember(
+          { firstname: user.firstname, secondname: user.secondname, is_verified: true },
+          user.id,
+          trx
+        )
+      }
+    }
+  }
+
+  static async setMemberOwner({ member_id, firstname, secondname, owner_id }, trx = null) {
     if (member_id == null) {
       return
     }
@@ -374,7 +425,7 @@ class MemberService {
       await Member.query().update({ owner_user_id: owner_id }).where({ id: member_id })
     } else {
       await Member.query()
-        .update({ owner_user_id: owner_id })
+        .update({ owner_user_id: owner_id, firstname, secondname })
         .where({ id: member_id })
         .transacting(trx)
     }
@@ -479,14 +530,14 @@ class MemberService {
         UPDATE tenants SET income = (
           SELECT COALESCE(SUM(coalesce(income, 0)), 0)
             FROM members as _m
-              INNER JOIN incomes as _i ON _i.member_id = _m.id
+              INNER JOIN incomes as _i ON _i.member_id = _m.id and _i.status = ${STATUS_ACTIVE}
             WHERE user_id = ${userId}
         ) WHERE user_id in (${ids})
       `
     ).transacting(trx)
   }
 
-  static async sendInvitationCode({ member, id, userId }, trx) {
+  static async sendInvitationCode({ member, id, userId, isExisting_user = false }, trx) {
     try {
       if (!member) {
         member = await Member.findByOrFail({ id: id, user_id: userId })
@@ -500,23 +551,21 @@ class MemberService {
       await Member.query()
         .where({ id: member.id })
         .update({
-          code: code,
+          code,
           published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
         })
         .transacting(trx)
 
-      const invitedUser = await User.query().where({ email: member.email, role: ROLE_USER }).first()
-      if (invitedUser) {
-        invitedUser.is_household_invitation_onboarded = false
-        invitedUser.is_profile_onboarded = true
-        await invitedUser.save(trx)
-      }
+      await User.query()
+        .where({ email: member.email, role: ROLE_USER })
+        .update({ is_household_invitation_onboarded: false, is_profile_onboarded: true })
+        .transacting(trx)
 
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
       const { shortLink } = await firebaseDynamicLinks.createLink({
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}`,
+          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}&isExisting_user=${isExisting_user}`,
           androidInfo: {
             androidPackageName: process.env.ANDROID_PACKAGE_NAME,
           },
@@ -536,15 +585,28 @@ class MemberService {
     }
   }
 
+  static async emitMemberInvitation({ data, user_id }) {
+    const channel = `tenant:*`
+    const topicName = `tenant:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_MEMBER_INVITATION, data)
+    }
+  }
+
   static async mergeTenantAccounts(user, visibility_to_other) {
     const trx = await Database.beginTransaction()
     try {
       const member = await Member.query()
-        .select(['id', 'user_id'])
+        .select('id', 'user_id')
         .where('email', user.email)
         .where('is_verified', false)
         .whereNotNull('code')
-        .firstOrFail()
+        .first()
+
+      if (!member) {
+        throw new HttpException(MEMBER_INVITATION_CANCELED, 400)
+      }
 
       const updatePromises = []
 
@@ -557,31 +619,52 @@ class MemberService {
 
       let invitedMemberId = member.id
 
+      /**
+       *  To check if this housekeeper who is going to be has been a household before, we need to remove all related logic
+       * this user is housekeeper for now
+       *  */
       const existingTenantMembersQuery = await Member.query().where('user_id', user.id).fetch()
       const existingTenantMembers = existingTenantMembersQuery.rows
       if (existingTenantMembers.length > 0) {
-        // Current owner member is won't be owner anymore because invited by another owner
+        /**
+         * 
+          - Current owner member won't be owner anymore because invited by another owner
+          - looking for household
+          - owner_user_id is who is the user of this member
+          - if owner_user_id is null, it means household or housekeeper who is created by household or another housekeeper himself
+         */
         const ownerMember = existingTenantMembers.find(
           ({ owner_user_id, email }) => !owner_user_id && !email
         )
+        /**
+         * Fill the household's information
+         * This user was a main prospect previously, now he is going to be a housekeeper
+         */
         if (ownerMember) {
           invitedMemberId = ownerMember.id
           ownerMember.owner_user_id = user.id
           ownerMember.email = user.email
           updatePromises.push(ownerMember.save(trx))
         }
+
         // Update invited user's already existing members' user ids
         existingTenantMembers.map((existingMember) => {
           existingMember.user_id = invitorUserId
           updatePromises.push(existingMember.save(trx))
         })
         // Update invited user's already existing members' users' owners
+        // owner_user_id: who is the owner of this member
         const existingMembersOwners = []
         existingTenantMembers.map(({ owner_user_id }) =>
           owner_user_id && owner_user_id !== user.id
             ? existingMembersOwners.push(owner_user_id)
             : null
         )
+
+        /**
+         * Only 1 main prospect can invite members
+         * so only main prospect havs owner_id = null, the other housekeepers will have owner_id as main prospect's id
+         */
         await User.query()
           .whereIn('id', existingMembersOwners)
           .update({ owner_id: member.user_id }, trx)
@@ -635,11 +718,15 @@ class MemberService {
     const trx = await Database.beginTransaction()
     try {
       const member = await Member.query()
-        .select(['id', 'user_id'])
+        .select('id', 'user_id')
         .where('email', user.email)
         .where('is_verified', false)
         .whereNotNull('code')
-        .firstOrFail()
+        .first()
+
+      if (!member) {
+        throw new HttpException(MEMBER_INVITATION_CANCELED, 400)
+      }
 
       const updatePromises = []
       const invitorUserId = member.user_id
@@ -658,8 +745,14 @@ class MemberService {
         .first()
 
       if (userMainMember) {
-        updatePromises.push(Member.query().where('id', member.id).delete(trx))
+        /**
+         * if a prospect already has his main member profile, just delete memeber created by another main prospect who invites you
+         */
+        updatePromises.push(Member.query().where('id', member.id).delete().transacting(trx))
       } else {
+        /**
+         * if no main profile, please create your main member profile
+         */
         member.user_id = user.id
         member.email = null
         member.owner_user_id = null
@@ -696,7 +789,10 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
-      .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+      .where('income_proofs.status', STATUS_ACTIVE)
+      .innerJoin({ _i: 'incomes' }, function () {
+        this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+      })
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .select('_m.user_id')
       .fetch()
@@ -845,13 +941,39 @@ class MemberService {
         await IncomeProof.query()
           .select('_i.id', '_i.income_type')
           .where('income_proofs.expire_date', '>=', startOf)
-          .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+          .innerJoin({ _i: 'incomes' }, function () {
+            this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+          })
           .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
           .where('_m.user_id', user_id)
+          .where('income_proofs.status', STATUS_ACTIVE)
           .fetch()
       ).toJSON() || []
 
     return incomeProofs
+  }
+
+  static async setFinalIncome({ user_id, is_final = true }, trx = null) {
+    const members = (await this.getMembers(user_id)).toJSON()
+    const memberIds = (members || []).map((member) => member.id)
+    if (!memberIds || !memberIds.length) {
+      return
+    }
+
+    let incomeIds = []
+    members.map((member) => {
+      incomeIds.concat(member.incomes.map((income) => income.id))
+    })
+
+    if (trx) {
+      await Income.query().whereIn('member_id', memberIds).update({ is_final }).transacting(trx)
+      await IncomeProof.query()
+        .whereIn('income_id', incomeIds)
+        .update({ is_final })
+        .transacting(trx)
+    } else {
+      await Income.query().whereIn('member_id', memberIds).update({ is_final })
+    }
   }
 }
 

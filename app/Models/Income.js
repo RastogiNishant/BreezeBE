@@ -1,5 +1,6 @@
 'use strict'
 
+const { STATUS_ACTIVE } = require('../constants')
 const Model = require('./BaseModel')
 
 class Income extends Model {
@@ -17,6 +18,8 @@ class Income extends Model {
       'company',
       'work_exp',
       'income_type',
+      'status',
+      'is_final',
     ]
   }
 
@@ -40,6 +43,10 @@ class Income extends Model {
   }
 
   proofs() {
+    return this.hasMany('App/Models/IncomeProof').where('status', STATUS_ACTIVE)
+  }
+
+  final_proofs() {
     return this.hasMany('App/Models/IncomeProof')
   }
 

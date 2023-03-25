@@ -161,6 +161,10 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+  Route.get('/estates/:id', 'Admin/PropertyController.getSingle').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -410,7 +414,7 @@ Route.group(() => {
   ])
 
   // Extend or deactivate Estate
-  Route.put('/extend', 'EstateController.extendEstate')
+  Route.put('/extend', 'EstateController.extendEstate').middleware(['valid:ExtendEstate,EstateId'])
   Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
@@ -695,9 +699,6 @@ Route.get('/api/v1/dashboard/count', 'DashboardController.getDashboardCount').mi
 ])
 // Tenant members
 Route.group(() => {
-  Route.post('/init', 'MemberController.initalizeTenantAdults').middleware([
-    'valid:InitializeAdults',
-  ])
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
@@ -853,6 +854,13 @@ Route.group(() => {
   Route.post('/:id/dislike', 'EstateController.dislikeEstate').middleware(['valid:Id'])
   Route.delete('/:id/dislike', 'EstateController.removeEstateDislike').middleware(['valid:Id'])
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
+  Route.get('/third-party-offers/:id', 'EstateController.getThirdPartyOfferEstate').middleware([
+    'valid:Id',
+  ])
+  Route.post('/third-party-offers/action', 'MatchController.postThirdPartyOfferAction').middleware([
+    'auth:jwt',
+    'valid:ThirdPartyOffersAction',
+  ])
 })
   .prefix('api/v1/tenant/estates')
   .middleware(['auth:jwt'])
@@ -886,6 +894,11 @@ Route.get('/map', 'MapController.getMap')
 Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middleware([
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
+])
+
+Route.get('/api/v1/tenant/third-party-offers', 'MatchController.getThirdPartyOffers').middleware([
+  'auth:jwt',
+  'valid:Pagination',
 ])
 
 Route.get(
@@ -1237,105 +1250,3 @@ Route.list().forEach((r) => {
     }
   }
 })
-/*
-const MatchService = use('App/Services/MatchService')
-const { omit } = require('lodash')
-Route.get('/test/estate/:id', async ({ request, response }) => {
-  let query = MatchService.getEstateForScoringQuery()
-  const { id } = request.all()
-  query.where('estates.id', id)
-  let estate = await query.first()
-  estate = omit(estate.toJSON(), [
-    'verified_address',
-    'bath_options',
-    'kitchen_options',
-    'equipment',
-  ])
-  return response.res(estate)
-}).middleware(['valid:Id'])
-
-Route.get('/test/prospect/:id/', async ({ request, response }) => {
-  const { id } = request.all()
-  let query = MatchService.getProspectForScoringQuery()
-  query.where('tenants.user_id', id)
-  let prospect = await query.first()
-  return response.res(prospect)
-}).middleware(['valid:Id'])
-
-// const Matchservice = use('App/Services/Matchservice1')
-// Route.get('/debug/test-match', async ({ request, response }) => {
-//   if (!process.env.DEV) {
-//     response.res(false)
-//   }
-//   let prospect = {
-//     income: 0,
-//     budget_max: 30,
-//     credit_score: 90,
-//     unpaid_rental: 1,
-//     non_smoker: true,
-//     members_age: [10, 65],
-//     members_count: 7,
-//     pets: 1,
-//     space_min: 100,
-//     space_max: 200,
-//     rooms_min: 2,
-//     rooms_max: 3,
-//     floor_min: 1,
-//     floor_max: 2,
-//     apt_type: [1, 2],
-//     house_type: [1, 2],
-//     rent_start: '2022-05-20',
-//     options: [1, 2, 3, 4, 5, 6, 7],
-//   }
-
-//   const estate = {
-//     budget: 30,
-//     credit_score: 90,
-//     net_rent: 300,
-//     area: 150,
-//     min_age: 10,
-//     max_age: 65,
-//     non_smoker: true,
-//     pets: 1,
-//     rooms_number: 2,
-//     number_floors: 2,
-//     house_type: 1,
-//     apt_type: 1,
-//     options: [1, 2, 3, 4, 5, 6, 7],
-//     vacant_date: '2022-05-20',
-//     family_size_max: 6,
-//   }
-
-//   let scores = []
-//   for (let k = 250; k <= 5000; k += 10) {
-//     //for (let k = 10; k <= 100; k += 5) {
-//     //prospect.credit_score = k
-//     //prospect.income = 300
-//     prospect.income = k
-//     scores.push({
-//       income: prospect.income,
-//       scores: Matchservice.calculateMatchPercent(prospect, estate),
-//     })
-//   }
-//   return response.res({ scores })
-// })
-
-//test matching given estate and
-Route.get('/test/match/:estate_id/:id', async ({ request, response }) => {
-  const { id, estate_id } = request.all()
-  let query = MatchService.getEstateForScoringQuery()
-  query.where('estates.id', estate_id)
-  let estate = await query.first()
-  estate = omit(estate.toJSON(), [
-    'verified_address',
-    'bath_options',
-    'kitchen_options',
-    'equipment',
-  ])
-  query = MatchService.getProspectForScoringQuery()
-  query.where('tenants.user_id', id)
-  let prospect = await query.first()
-  const matchScore = MatchService.calculateMatchPercent(prospect, estate)
-  return response.res({ estate, prospect, matchScore })
-}).middleware(['valid:Id,EstateId'])
-*/

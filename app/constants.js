@@ -394,10 +394,15 @@ const constants = {
   LANDLORD_TABS_TOP: 'top',
   LANDLORD_TABS_COMMIT: 'commit',
 
+  NO_VISIBLE_BEFORE_TENANT: 0,
+  VISIBLE_BEFORE_TENANT: 1,
+
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
+
+  MAXIMUM_EXPIRE_PERIOD: 3 * 30, // 90 days
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -418,7 +423,9 @@ const constants = {
     'floor',
     'number_floors',
   ],
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
@@ -612,7 +619,8 @@ const constants = {
     'sex',
     'address',
     'user_id',
-    'available_date',
+    'available_start_at',
+    'available_end_at',
     'vacant_date',
     'others',
     'full_address',
@@ -891,6 +899,8 @@ const constants = {
   EMAIL_REG_EXP:
     /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
   PHONE_REG_EXP: /^\+[1-9]{1,2}[0-9]{9,11}$/,
+  VALID_URL_REG_EXP:
+    /^((https?|ftp):\/\/)?(www.)?(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i,
 
   //Date period
   TASK_RESOLVE_HISTORY_PERIOD: 3,
@@ -930,6 +940,7 @@ const constants = {
   //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
+  WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
@@ -1073,6 +1084,35 @@ Estates: [ESTATES]
     'Odorous',
     'Heavily neglected',
   ],
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT: 'I am interested in this apartment.',
+
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
+  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
+
+  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING: {
+    income_sources: [
+      'employee',
+      'worker',
+      'unemployed',
+      'civil_servant',
+      'freelancer',
+      'housewife_husband',
+      'pensioner',
+      'self',
+      'trainee',
+    ],
+    credit_score: 95,
+    budget: 30,
+    rent_arrears: false,
+    min_age: 25,
+    max_age: 65,
+    pets: 1,
+    family_size_min: 1,
+    family_size_max: 2,
+  },
+  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
 }
 
 module.exports = constants

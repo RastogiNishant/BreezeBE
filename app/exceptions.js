@@ -48,7 +48,7 @@ const exceptions = {
   IMPORT_ESTATE_INVALID_VARIABLE_WARNING: 'Column ${value} is not included on import',
   TOPIC_NOT_FOUND: 'Topic not found',
   ESTATE_NOT_EXISTS: 'Estate not exists',
-  SHOULD_BE_AFTER: 'Should be after',
+  SHOULD_BE_AFTER: 'Should be after ${value}',
   SETTINGS_ERROR: 'Internal Settings Error',
   INVALID: 'is invalid',
   MESSAGE_NOT_SAVED: 'Error happened to save message',
@@ -75,10 +75,15 @@ const exceptions = {
   INVALID_ROOM: 'Invalid room',
   CURRENT_IMAGE_COUNT: 'Current count',
   FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
+  ONLY_HOUSEHOLD_ADD_MEMBER: 'Please ask your household to add this roommate',
+  FAILED_EXTEND_ESTATE: 'Failed to extend dates',
+  ALREADY_KNOCKED_ON_THIRD_PARTY: 'You already knocked on this estate',
+  MEMBER_INVITATION_CANCELED:'your invitation has been cancelled'
 }
 
 const exceptionCodes = {
   IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
+  SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
 }
 
 const exceptionKeys = {

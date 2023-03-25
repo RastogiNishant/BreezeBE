@@ -91,9 +91,12 @@ class TenantService {
     } else if (fileType === MEMBER_FILE_TYPE_INCOME) {
       const incomeProof = await IncomeProof.query()
         .select('income_proofs.*')
-        .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+        .innerJoin({ _i: 'incomes' }, function () {
+          this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+        })
         .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
         .where('income_proofs.id', fileId)
+        .where('income_proofs.status', STATUS_ACTIVE)
         .where('_m.id', memberId)
         .where('_m.user_id', userId)
         .first()
@@ -161,8 +164,12 @@ class TenantService {
 
     return Database.table({ _m: 'members' })
       .select(Database.raw(`COUNT(_ip.id) as income_proofs_count`))
-      .leftJoin({ _i: 'incomes' }, '_i.member_id', '_m.id')
-      .leftJoin({ _ip: 'income_proofs' }, '_ip.income_id', '_i.id')
+      .leftJoin({ _i: 'incomes' }, function () {
+        this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
+      })
+      .leftJoin({ _ip: 'income_proofs' }, function () {
+        this.on('_ip.income_id', '_i.id').on('_ip.status', STATUS_ACTIVE)
+      })
       .where('_m.user_id', userId)
       .whereNot('_m.child', true)
       .where('_ip.expire_date', '>=', startOf)
@@ -212,7 +219,9 @@ class TenantService {
         .leftJoin({ _m: 'members' }, function () {
           this.on('_m.user_id', '_t.user_id').onNotIn('_m.child', [true])
         })
-        .leftJoin({ _i: 'incomes' }, '_i.member_id', '_m.id')
+        .leftJoin({ _i: 'incomes' }, function () {
+          this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
+        })
         .where('_t.id', tenantId)
     }
     const data = await getRequiredTenantData(tenant.id)

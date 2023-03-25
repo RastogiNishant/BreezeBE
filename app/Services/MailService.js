@@ -7,13 +7,22 @@ const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const FromEmail = process.env.FROM_EMAIL
+const OhneMaklerRecipientEmail = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
 const FROM_ONBOARD_EMAIL = process.env.FROM_ONBOARD_EMAIL
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL
 const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
 const SITE_URL = process.env.SITE_URL
 const INVITE_APP_LINK = process.env.INVITE_APP_LINK || 'https://linktr.ee/breeze.app'
-const { ROLE_LANDLORD, ROLE_USER, DEFAULT_LANG, DAY_FORMAT, DATE_FORMAT } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  DEFAULT_LANG,
+  DAY_FORMAT,
+  DATE_FORMAT,
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
+  GERMAN_DATE_TIME_FORMAT,
+} = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
 class MailService {
@@ -655,6 +664,27 @@ class MailService {
       subject: subject,
       text: textMessage,
       html: htmlMessage,
+    }
+
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendEmailToOhneMakler(textMessage, recipient) {
+    const msg = {
+      to: recipient,
+      from: FromEmail, // Use the email address or domain you verified above
+      subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
+      text: textMessage,
     }
 
     return sgMail.send(msg).then(

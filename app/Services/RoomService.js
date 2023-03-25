@@ -135,7 +135,7 @@ class RoomService {
         const name = room.name.split(' ')[0]
         updateRooms.push({
           ...room,
-          name: index ? `${name} ${index}` : name,
+          name: `${name} ${index + 1}`,
         })
       })
     })
