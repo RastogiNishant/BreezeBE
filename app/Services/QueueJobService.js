@@ -450,11 +450,18 @@ class QueueJobService {
       },
     }
     const xmlmessage = toXML(obj)
-    let recipient = process.env.OHNE_MAKLER_RECIPIENT_EMAIL
-    if (process.env.NODE_ENV === 'production') {
+    let recipient = ``
+    if (!process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL) {
+      //if production
       recipient = prospect.contact.email
+    } else {
+      recipient = process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL
     }
-    await MailService.sendEmailToOhneMakler(xmlmessage, recipient)
+    MailService.sendEmailToOhneMakler(xmlmessage, recipient)
+
+    if (process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL) {
+      MailService.sendEmailToOhneMakler(xmlmessage, process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL)
+    }
   }
 
   static async updateThirdPartyOfferPoints() {
@@ -472,10 +479,14 @@ class QueueJobService {
       .limit(11)
       .fetch()
     await Promise.map(estates.toJSON(), async (estate) => {
-      if (estate.coord_raw && estate.coord_raw.match(/,/)) {
-        const [lat, lon] = estate.coord_raw.split(',')
-        const point = await GeoService.getOrCreatePoint({ lat, lon })
-        await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
+      try {
+        if (estate.coord && estate.coord.match(/,/)) {
+          const [lat, lon] = estate.coord.split(',')
+          const point = await GeoService.getOrCreatePoint({ lat, lon })
+          await ThirdPartyOffer.query().where('id', estate.id).update({ point_id: point.id })
+        }
+      } catch (e) {
+        console.log('Fetching point error', e.message)
       }
     })
   }

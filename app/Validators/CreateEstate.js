@@ -386,7 +386,6 @@ class CreateEstate extends Base {
       available_start_at: yup.date().nullable(),
       available_end_at: yup
         .date()
-        .min(new Date())
         .when(['available_start_at'], (available_start_at, schema, { value }) => {
           if (!available_start_at) return schema
           return value && value <= available_start_at

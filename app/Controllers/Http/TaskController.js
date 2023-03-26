@@ -13,6 +13,7 @@ const {
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
+const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 
 class TaskController {
   async createTask({ request, auth, response }) {
@@ -210,6 +211,12 @@ class TaskController {
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
+  }
+
+  async getTopicList({ request, auth, response }) {
+    const topicList = await PredefinedMessageService.getTopicList()
+    console.log('topicList=', topicList)
+    response.res(topicList ? topicList.toJSON().choices : [])
   }
 
   // async onEditMessage({ request, auth, response }) {

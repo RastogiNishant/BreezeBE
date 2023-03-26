@@ -374,6 +374,7 @@ Route.group(() => {
 
 // Estate management
 Route.group(() => {
+  Route.get('/cities', 'EstateController.getCityList')
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.get('/quick_search', 'EstateController.shortSearchEstates').middleware([
@@ -781,6 +782,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.get('/topic', 'TaskController.getTopicList')
   Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
     'valid:Pagination,Id,TaskFilter',
