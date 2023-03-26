@@ -967,10 +967,6 @@ class MemberService {
 
     if (trx) {
       await Income.query().whereIn('member_id', memberIds).update({ is_final }).transacting(trx)
-      await IncomeProof.query()
-        .whereIn('income_id', incomeIds)
-        .update({ is_final })
-        .transacting(trx)
     } else {
       await Income.query().whereIn('member_id', memberIds).update({ is_final })
     }
