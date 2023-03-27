@@ -37,6 +37,7 @@ class ThirdPartyOffer extends Model {
       'point_id',
       'price',
       'contact',
+      'full_address',
     ]
   }
 

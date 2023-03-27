@@ -585,11 +585,7 @@ class MatchController {
 
     let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
 
-    let thirdPartyOffers =
-      await require('../../Services/ThirdPartyOfferService').getTenantEstatesWithFilter(
-        user.id,
-        filters
-      )
+    let thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
