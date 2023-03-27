@@ -25,7 +25,7 @@ class OhneMakler {
     expiration_date: 'expiration_date',
     price: 'price',
     contact: 'contact',
-    address_public: 'address_public',
+    address_public: 'full_address',
     //visit_from
     //visit_to
   }
