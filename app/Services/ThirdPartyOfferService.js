@@ -21,7 +21,7 @@ const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const MatchService = use('App/Services/MatchService')
 const {
-  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY },
+  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
 
 class ThirdPartyOfferService {
@@ -231,13 +231,15 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        const knockFound = await ThirdPartyOfferInteraction.query()
+        const actionFound = await ThirdPartyOfferInteraction.query()
           .where('third_party_offer_id', id)
           .where('user_id', userId)
-          .where('knocked', true)
           .first()
-        if (knockFound) {
+        if (actionFound.knocked === true) {
           throw new Error(ALREADY_KNOCKED_ON_THIRD_PARTY)
+        }
+        if (actionFound.like === false) {
+          throw new Error(CANNOT_KNOCK_ON_DISLIKED_ESTATE)
         }
         value = {
           third_party_offer_id: id,
