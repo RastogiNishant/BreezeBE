@@ -66,7 +66,7 @@ class OhneMakler {
   estateCanBeProcessed(estate) {
     return (
       estate.type === OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY &&
-      estate.objektart === OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY
+      OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY.includes(estate.objektart)
     )
   }
 

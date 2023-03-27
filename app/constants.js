@@ -1089,7 +1089,12 @@ Estates: [ESTATES]
 
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
-  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: 'Wohnung',
+  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: [
+    'Wohnung',
+    'Haus',
+    'Möbliertes Wohnen / Wohnen auf Zeit',
+    'Zimmer',
+  ],
 
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING: {
     income_sources: [
