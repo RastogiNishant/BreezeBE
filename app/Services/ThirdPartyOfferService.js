@@ -286,6 +286,7 @@ class ThirdPartyOfferService {
     let query = ThirdPartyOffer.query()
       .where('third_party_offers.status', STATUS_ACTIVE)
       .select(
+        'third_party_offers.status as estate_status',
         'third_party_offers.price as net_rent',
         'third_party_offers.floor_count as number_floors',
         'third_party_offers.rooms as rooms_number',
