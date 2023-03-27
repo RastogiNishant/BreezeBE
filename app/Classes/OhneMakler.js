@@ -25,6 +25,7 @@ class OhneMakler {
     expiration_date: 'expiration_date',
     price: 'price',
     contact: 'contact',
+    address_public: 'full_address',
     //visit_from
     //visit_to
   }
@@ -66,7 +67,7 @@ class OhneMakler {
   estateCanBeProcessed(estate) {
     return (
       estate.type === OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY &&
-      estate.objektart === OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY
+      OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY.includes(estate.objektart)
     )
   }
 
