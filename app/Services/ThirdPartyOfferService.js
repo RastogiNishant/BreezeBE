@@ -303,12 +303,12 @@ class ThirdPartyOfferService {
     if (like) {
       field = 'liked'
       value = true
-      query.select(Database.raw(`tpoi.updated_at as action_at`))
+      query.select(Database.raw(`tpoi.updated_at as action_at`)).whereNot('knocked', true)
     } else if (dislike) {
       field = 'liked'
       value = false
       query.orWhere('third_party_offers.status', STATUS_EXPIRE)
-      query.select(Database.raw(`tpoi.updated_at as action_at`))
+      query.select(Database.raw(`tpoi.updated_at as action_at`)).whereNot('knocked', true)
       //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
