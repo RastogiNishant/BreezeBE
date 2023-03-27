@@ -573,6 +573,10 @@ class MemberService {
             iosBundleId: process.env.IOS_BUNDLE_ID,
             iosAppStoreId: process.env.IOS_APPSTORE_ID,
           },
+          desktopInfo: {
+            desktopFallbackLink:
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
+          },
         },
       })
 
@@ -967,10 +971,6 @@ class MemberService {
 
     if (trx) {
       await Income.query().whereIn('member_id', memberIds).update({ is_final }).transacting(trx)
-      await IncomeProof.query()
-        .whereIn('income_id', incomeIds)
-        .update({ is_final })
-        .transacting(trx)
     } else {
       await Income.query().whereIn('member_id', memberIds).update({ is_final })
     }

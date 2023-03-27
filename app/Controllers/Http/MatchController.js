@@ -274,6 +274,10 @@ class MatchController {
                 iosBundleId: process.env.IOS_BUNDLE_ID,
                 iosAppStoreId: process.env.IOS_APPSTORE_ID,
               },
+              desktopInfo: {
+                desktopFallbackLink:
+                  process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
+              },
             },
           })
 
