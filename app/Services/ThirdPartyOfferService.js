@@ -157,6 +157,7 @@ class ThirdPartyOfferService {
           `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
         ),
         '_e.vacant_from as vacant_date',
+        '_e.address_public as full_address',
         '_e.*'
       )
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
@@ -294,6 +295,7 @@ class ThirdPartyOfferService {
           `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
         ),
         'third_party_offers.vacant_from as vacant_date',
+        'third_party_offers.address_public as full_address',
         'third_party_offers.*',
         'tpoi.knocked_at'
       )
