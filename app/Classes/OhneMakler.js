@@ -3,6 +3,10 @@ const {
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY,
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_SHORT_TERM,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 
@@ -34,6 +38,20 @@ class OhneMakler {
     this.data = data
   }
 
+  parsePropertyType(propertyType) {
+    switch (propertyType) {
+      case 'Wohnung':
+        return PROPERTY_TYPE_APARTMENT
+      case 'Haus':
+        return PROPERTY_TYPE_HOUSE
+      case 'Möbliertes Wohnen / Wohnen auf Zeit':
+        return PROPERTY_TYPE_SHORT_TERM
+      case 'Zimmer':
+        return PROPERTY_TYPE_ROOM
+    }
+    return null
+  }
+
   mapEstate(estate) {
     let newEstate
     for (const [key, value] of Object.entries(this.map)) {
@@ -61,6 +79,7 @@ class OhneMakler {
       newEstate.floor = 11
     }
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
+    newEstate.property_type = this.parsePropertyType(estate.objektart)
     return newEstate
   }
 

@@ -38,6 +38,7 @@ class ThirdPartyOffer extends Model {
       'price',
       'contact',
       'full_address',
+      'property_type',
     ]
   }
 
