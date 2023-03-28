@@ -880,7 +880,9 @@ class MatchController {
     const estate = await EstateService.getQuery({
       id: estate_id,
       'estates.user_id': user.id,
-    }).first()
+    })
+      .with('slots')
+      .first()
     if (!estate) {
       throw new HttpException('Not found', 400)
     }
