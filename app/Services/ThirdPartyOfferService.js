@@ -273,6 +273,7 @@ class ThirdPartyOfferService {
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', true)
+      .whereNot('knocked', true)
       .count()
   }
 
@@ -280,6 +281,7 @@ class ThirdPartyOfferService {
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', false)
+      .whereNot('knocked', true)
       .count()
   }
 
