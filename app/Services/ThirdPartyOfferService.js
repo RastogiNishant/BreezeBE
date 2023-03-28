@@ -23,6 +23,7 @@ const MatchService = use('App/Services/MatchService')
 const {
   exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
+const HttpException = require('../Exceptions/HttpException')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -235,11 +236,11 @@ class ThirdPartyOfferService {
           .where('third_party_offer_id', id)
           .where('user_id', userId)
           .first()
-        if (actionFound.knocked === true) {
-          throw new Error(ALREADY_KNOCKED_ON_THIRD_PARTY)
+        if (actionFound.knocked) {
+          throw new HttpException(ALREADY_KNOCKED_ON_THIRD_PARTY, 400)
         }
         if (actionFound.like === false) {
-          throw new Error(CANNOT_KNOCK_ON_DISLIKED_ESTATE)
+          throw new HttpException(CANNOT_KNOCK_ON_DISLIKED_ESTATE, 400)
         }
         value = {
           third_party_offer_id: id,
