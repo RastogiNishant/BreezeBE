@@ -39,7 +39,7 @@ class ThirdPartyOfferService {
     })
   }
 
-  static async pullOhneMakler() {
+  static async pullOhneMakler(forced = false) {
     if (
       process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
       (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
@@ -63,7 +63,7 @@ class ThirdPartyOfferService {
     try {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
-      if (checksum !== ohneMaklerChecksum) {
+      if (checksum !== ohneMaklerChecksum || forced) {
         //mark all as expired...
         //1. to expire all estates that are not anymore in the new data including also those
         //that are past expiration date
