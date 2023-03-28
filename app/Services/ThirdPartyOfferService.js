@@ -245,6 +245,7 @@ class ThirdPartyOfferService {
           third_party_offer_id: id,
           user_id: userId,
           knocked: true,
+          liked: null,
           knocked_at: moment().utc().format(),
         }
         QueueService.contactOhneMakler({
@@ -252,6 +253,14 @@ class ThirdPartyOfferService {
           userId,
           message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         })
+        break
+      case 'cancel knock':
+        value = {
+          third_party_offer_id: id,
+          user_id: userId,
+          knocked: false,
+          liked: false,
+        }
         break
     }
     if (!found) {
@@ -273,7 +282,7 @@ class ThirdPartyOfferService {
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', true)
-      .whereNot('knocked', true)
+      .where(Database.raw(`knocked is not true`))
       .count()
   }
 
@@ -281,7 +290,7 @@ class ThirdPartyOfferService {
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', false)
-      .whereNot('knocked', true)
+      .where(Database.raw(`knocked is not true`))
       .count()
   }
 
@@ -307,12 +316,16 @@ class ThirdPartyOfferService {
     if (like) {
       field = 'liked'
       value = true
-      query.select(Database.raw(`tpoi.updated_at as action_at`)).whereNot('knocked', true)
+      query
+        .select(Database.raw(`tpoi.updated_at as action_at`))
+        .where(Database.raw(`knocked is not true`))
     } else if (dislike) {
       field = 'liked'
       value = false
       query.orWhere('third_party_offers.status', STATUS_EXPIRE)
-      query.select(Database.raw(`tpoi.updated_at as action_at`)).whereNot('knocked', true)
+      query
+        .select(Database.raw(`tpoi.updated_at as action_at`))
+        .where(Database.raw(`knocked is not true`))
       //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
