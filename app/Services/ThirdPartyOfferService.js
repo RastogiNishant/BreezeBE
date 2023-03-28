@@ -21,8 +21,9 @@ const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const MatchService = use('App/Services/MatchService')
 const {
-  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY },
+  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
+const HttpException = require('../Exceptions/HttpException')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -39,7 +40,7 @@ class ThirdPartyOfferService {
     })
   }
 
-  static async pullOhneMakler() {
+  static async pullOhneMakler(forced = false) {
     if (
       process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
       (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
@@ -63,7 +64,7 @@ class ThirdPartyOfferService {
     try {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
-      if (checksum !== ohneMaklerChecksum) {
+      if (checksum !== ohneMaklerChecksum || forced) {
         //mark all as expired...
         //1. to expire all estates that are not anymore in the new data including also those
         //that are past expiration date
@@ -231,18 +232,21 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        const knockFound = await ThirdPartyOfferInteraction.query()
+        const actionFound = await ThirdPartyOfferInteraction.query()
           .where('third_party_offer_id', id)
           .where('user_id', userId)
-          .where('knocked', true)
           .first()
-        if (knockFound) {
-          throw new Error(ALREADY_KNOCKED_ON_THIRD_PARTY)
+        if (actionFound.knocked) {
+          throw new HttpException(ALREADY_KNOCKED_ON_THIRD_PARTY, 400)
+        }
+        if (actionFound.like === false) {
+          throw new HttpException(CANNOT_KNOCK_ON_DISLIKED_ESTATE, 400)
         }
         value = {
           third_party_offer_id: id,
           user_id: userId,
           knocked: true,
+          liked: null,
           knocked_at: moment().utc().format(),
         }
         QueueService.contactOhneMakler({
@@ -250,6 +254,14 @@ class ThirdPartyOfferService {
           userId,
           message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         })
+        break
+      case 'cancel knock':
+        value = {
+          third_party_offer_id: id,
+          user_id: userId,
+          knocked: false,
+          liked: false,
+        }
         break
     }
     if (!found) {
@@ -271,6 +283,7 @@ class ThirdPartyOfferService {
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', true)
+      .where(Database.raw(`knocked is not true`))
       .count()
   }
 
@@ -278,6 +291,7 @@ class ThirdPartyOfferService {
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', false)
+      .where(Database.raw(`knocked is not true`))
       .count()
   }
 
@@ -303,12 +317,16 @@ class ThirdPartyOfferService {
     if (like) {
       field = 'liked'
       value = true
-      query.select(Database.raw(`tpoi.updated_at as action_at`)).whereNot('knocked', true)
+      query
+        .select(Database.raw(`tpoi.updated_at as action_at`))
+        .where(Database.raw(`knocked is not true`))
     } else if (dislike) {
       field = 'liked'
       value = false
       query.orWhere('third_party_offers.status', STATUS_EXPIRE)
-      query.select(Database.raw(`tpoi.updated_at as action_at`)).whereNot('knocked', true)
+      query
+        .select(Database.raw(`tpoi.updated_at as action_at`))
+        .where(Database.raw(`knocked is not true`))
       //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
