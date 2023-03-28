@@ -78,7 +78,8 @@ const exceptions = {
   ONLY_HOUSEHOLD_ADD_MEMBER: 'Please ask your household to add this roommate',
   FAILED_EXTEND_ESTATE: 'Failed to extend dates',
   ALREADY_KNOCKED_ON_THIRD_PARTY: 'You already knocked on this estate',
-  MEMBER_INVITATION_CANCELED:'your invitation has been cancelled'
+  CANNOT_KNOCK_ON_DISLIKED_ESTATE: 'You cannot knock on an estate you disliked',
+  MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
 }
 
 const exceptionCodes = {

@@ -13,7 +13,7 @@ class ThirdPartyOffersAction extends Base {
       id: yup.number().integer().required(getExceptionMessage('id', REQUIRED)),
       action: yup
         .string()
-        .oneOf(['like', 'dislike', 'comment', 'knock', 'contact'])
+        .oneOf(['like', 'dislike', 'comment', 'knock', 'contact', 'cancel knock'])
         .required(getExceptionMessage('action', REQUIRED)),
       comment: yup.string().when('action', {
         is: 'comment',
