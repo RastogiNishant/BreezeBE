@@ -555,7 +555,6 @@ class CreateEstate extends Base {
         ])
         .nullable(),
       energy_proof: yup.mixed(),
-      status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40),
       zip: yup.string().max(8),
       budget: yup.number().integer().min(0).max(100),
