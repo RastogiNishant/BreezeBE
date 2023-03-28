@@ -6,9 +6,7 @@ const {
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
-  PROPERTY_TYPE_SITE,
-  PROPERTY_TYPE_OFFICE,
-  PROPERTY_TYPE_TEMPORARY_LIVING,
+  PROPERTY_TYPE_SHORT_TERM,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 
@@ -47,7 +45,7 @@ class OhneMakler {
       case 'Haus':
         return PROPERTY_TYPE_HOUSE
       case 'Möbliertes Wohnen / Wohnen auf Zeit':
-        return PROPERTY_TYPE_TEMPORARY_LIVING
+        return PROPERTY_TYPE_SHORT_TERM
       case 'Zimmer':
         return PROPERTY_TYPE_ROOM
     }
