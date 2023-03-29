@@ -31,6 +31,20 @@ class ExtendEstate extends Base {
             : schema
         })
         .required(),
+      is_duration_later: yup.boolean(),
+      min_invite_count: yup
+        .number()
+        .integer()
+        .positive()
+        .when('is_duration_later', {
+          is: true,
+          then: yup
+            .number()
+            .integer()
+            .positive()
+            .required()
+            .typeError(getExceptionMessage('min_invite_count', NUMBER)),
+        }),
     })
 }
 
