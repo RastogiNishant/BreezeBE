@@ -540,7 +540,7 @@ class EstateController {
       const estate = await Estate.query().where('id', id).first()
       if (estate) {
         estate.status = STATUS_DRAFT
-        await EstateService.handleOfflineEstate(estate.id, trx)
+        await EstateService.handleOfflineEstate({ estate_id: estate.id }, trx)
         await estate.save(trx)
         await trx.commit()
         response.res(true)
