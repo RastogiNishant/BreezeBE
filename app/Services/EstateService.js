@@ -619,7 +619,7 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-      await this.handleOfflineEstate(estate.id, trx)
+      await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({
@@ -1432,28 +1432,30 @@ class EstateService {
       .update({ available_end_at, status: STATUS_ACTIVE })
   }
 
-  static async handleOfflineEstate(estateId, trx) {
+  static async handleOfflineEstate({ estate_id, is_notification = true }, trx) {
     const matches = await Estate.query()
       .select('estates.*')
-      .where('id', estateId)
+      .where('id', estate_id)
       .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', estateId)
+        this.on('_m.estate_id', estate_id)
       })
       .select('_m.user_id as prospect_id')
       .whereNotIn('_m.status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
       .fetch()
 
     await Match.query()
-      .where('estate_id', estateId)
+      .where('estate_id', estate_id)
       .whereNotIn('status', [MATCH_STATUS_FINISH])
       .delete()
       .transacting(trx)
 
-    await Visit.query().where('estate_id', estateId).delete().transacting(trx)
-    await Database.table('likes').where({ estate_id: estateId }).delete().transacting(trx)
-    await Database.table('dislikes').where({ estate_id: estateId }).delete().transacting(trx)
+    await Visit.query().where('estate_id', estate_id).delete().transacting(trx)
+    await Database.table('likes').where({ estate_id: estate_id }).delete().transacting(trx)
+    await Database.table('dislikes').where({ estate_id: estate_id }).delete().transacting(trx)
 
-    NoticeService.prospectPropertDeactivated(matches.rows)
+    if (is_notification) {
+      NoticeService.prospectPropertDeactivated(matches.rows)
+    }
   }
 
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
