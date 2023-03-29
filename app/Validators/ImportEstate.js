@@ -496,7 +496,6 @@ class ImportEstate extends Base {
           }),
         ])
         .nullable(),
-      status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
       zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
       budget: yup.string(),

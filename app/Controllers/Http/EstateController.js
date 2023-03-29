@@ -382,9 +382,9 @@ class EstateController {
    *
    */
   async extendEstate({ request, auth, response }) {
-    const { estate_id, available_end_at } = request.all()
+    const { estate_id, available_end_at, is_duration_later, min_invite_count } = request.all()
     try {
-      await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
+      await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at, is_duration_later, min_invite_count })
       response.res(
         await EstateService.getEstateWithDetails({
           id: estate_id,
@@ -540,7 +540,7 @@ class EstateController {
       const estate = await Estate.query().where('id', id).first()
       if (estate) {
         estate.status = STATUS_DRAFT
-        await EstateService.handleOfflineEstate(estate.id, trx)
+        await EstateService.handleOfflineEstate({ estate_id: estate.id }, trx)
         await estate.save(trx)
         await trx.commit()
         response.res(true)
