@@ -334,6 +334,12 @@ class EstateService {
       .withCount('notifications', function (n) {
         n.where('user_id', user_id)
       })
+      .withCount('visits')
+      .withCount('knocked')
+      .withCount('decided')
+      .withCount('invite')
+      .withCount('final')
+      .withCount('inviteBuddies')
       .with('point')
       .with('files')
       .with('current_tenant', function (q) {
@@ -1422,12 +1428,18 @@ class EstateService {
     }
   }
 
-  static async extendEstate({ user_id, estate_id, available_end_at }) {
+  static async extendEstate({
+    user_id,
+    estate_id,
+    available_end_at,
+    is_duration_later,
+    min_invite_count,
+  }) {
     return await EstateService.getQuery()
       .where('id', estate_id)
       .where('user_id', user_id)
       .whereIn('status', [STATUS_EXPIRE, STATUS_ACTIVE])
-      .update({ available_end_at, status: STATUS_ACTIVE })
+      .update({ available_end_at, is_duration_later, min_invite_count, status: STATUS_ACTIVE })
   }
 
   static async handleOfflineEstate(estateId, trx) {
