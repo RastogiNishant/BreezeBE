@@ -1,7 +1,7 @@
 'use_strict'
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
-const { get, has, isString, isFunction, unset } = require('lodash')
+const { get, has, isString, isFunction, unset, omit } = require('lodash')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
@@ -147,7 +147,11 @@ class EstateImportReader {
             row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
           }
         })
-        if (Object.keys(row) && Object.keys(row).length) {
+
+        if (
+          Object.keys(omit(row, ['six_char_code'])) &&
+          Object.keys(omit(row, ['six_char_code'])).length
+        ) {
           row = await this.processRow(row, k)
           if (row) {
             this.data.push(row)

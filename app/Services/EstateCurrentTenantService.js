@@ -308,7 +308,7 @@ class EstateCurrentTenantService extends BaseService {
     return await query.first()
   }
 
-  static async getAllInsideCurrentTenant(estate_ids) {
+  static async getByEstateIds(estate_ids) {
     return (
       await EstateCurrentTenant.query()
         .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
@@ -400,7 +400,7 @@ class EstateCurrentTenantService extends BaseService {
 
       return estateCurrentTeant
     } catch (e) {
-      console.log('Has Permission error', e.message)
+      throw new HttpException('No permision to tenant', 400)
     }
   }
 

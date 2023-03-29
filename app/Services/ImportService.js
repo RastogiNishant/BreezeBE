@@ -320,13 +320,16 @@ class ImportService {
           trx
         )
       } else {
-        await EstateCurrentTenantService.deleteByEstate(
-          {
-            estate_ids: [estate.id],
-            user_id,
-          },
-          trx
-        )
+        const estateCurrentTenants = await EstateCurrentTenantService.getByEstateIds([estate.id])
+        if (estateCurrentTenants && estateCurrentTenants.length) {
+          await EstateCurrentTenantService.deleteByEstate(
+            {
+              estate_ids: [estate.id],
+              user_id,
+            },
+            trx
+          )
+        }
       }
       //update Rooms
       let rooms = []
@@ -344,6 +347,7 @@ class ImportService {
 
       return estate
     } catch (e) {
+      console.log('update estate error happened=', e.message)
       throw new HttpException(e.message, e.status || 500)
     }
   }
