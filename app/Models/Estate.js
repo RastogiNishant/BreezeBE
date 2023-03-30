@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty, unset, isObject, isSet } = require('lodash')
+const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
 const hash = require('../Libs/hash')
 const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
@@ -260,8 +260,6 @@ class Estate extends Model {
         'parking_space_type',
         'use_type',
       ].map((field) => {
-        //if (instance.dirty && field in instance.dirty && !Array.isArray(instance.dirty[field])) {
-        //fix test failing when instance.dirty[field] has value = 0 (parking_space_type)
         if (
           instance.dirty &&
           instance.dirty[field] !== undefined &&

@@ -1154,12 +1154,9 @@ class EstateController {
           }
           row.breeze_id = row.six_char_code
           let rooms_parsed = {}
-          await row.rooms.map((room, j) => {
+          await row.rooms.map((room) => {
             if (room.import_sequence) {
               rooms_parsed[`room_${room.import_sequence}`] =
-                l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
-            } else {
-              rooms_parsed[`room_${j + 1}`] =
                 l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
             }
           })
@@ -1178,11 +1175,9 @@ class EstateController {
       await Promise.all(
         rows.map(async (row, index) => {
           let rooms_parsed = {}
-          await row.rooms.map((room, j) => {
+          await row.rooms.map((room) => {
             if (room.import_sequence) {
               rooms_parsed[`room_${room.import_sequence}`] = room.type
-            } else {
-              rooms_parsed[`room_${j + 1}`] = room.type
             }
           })
           rows[index].rooms_parsed = rooms_parsed

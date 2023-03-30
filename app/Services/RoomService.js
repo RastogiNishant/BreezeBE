@@ -380,7 +380,7 @@ class RoomService {
           newRoomsInfo.push({
             ...room,
             name: index ? `${room.name} ${index + 1}` : room.name,
-            import_sequence: room.import_sequence,
+            import_sequence: null,
             order: index + 1,
           })
         })
