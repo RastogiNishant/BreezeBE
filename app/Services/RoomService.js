@@ -148,10 +148,15 @@ class RoomService {
   }
 
   static async removeAllRoom(estate_id, trx) {
-    return await Room.query()
-      .where('estate_id', estate_id)
-      .update({ name: `deleted_${uuid.v4()}`, status: STATUS_DELETE })
-      .transacting(trx)
+    const rooms = (await this.getRoomsByEstate(estate_id)).toJSON()
+    if (rooms && rooms.length) {
+      await Promise.map(rooms, async (room) => {
+        await Room.query()
+          .where('id', room.id)
+          .update({ name: `deleted_${room.id}_${uuid.v4()}`, status: STATUS_DELETE })
+          .transacting(trx)
+      })
+    }
   }
 
   static async getFavoriteRoom(estate_id) {
