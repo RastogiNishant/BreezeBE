@@ -245,7 +245,7 @@ reverseExtractDate = (date) => {
     (match = date.match(/^([0-9]{4})\-([0-9]{2})\-([0-9]{2})/)) &&
     this.lang === 'de'
   ) {
-    return `${match[2]}.${match[1]}-${match[3]}`
+    return `${match[2]}.${match[1]}.${match[3]}`
   }
   return date
 }
@@ -908,7 +908,7 @@ class EstateAttributeTranslations {
         values: [true, false],
       },
       minors: {
-        keys: ['web.letting.property.import.No_matter.message', 'yes.message'],
+        keys: ['landlord.property.tenant_pref.habits.children.no.message', 'yes.message'],
         values: [false, true],
       },
       let_type: {

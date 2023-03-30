@@ -388,7 +388,7 @@ class File {
       return outputFileName
     } catch (e) {
       console.log('saveFunctionalTestImage Error', e.message)
-      return null
+      throw new HttpException('File upload failed. Please try again', 400)
     }
   }
 }

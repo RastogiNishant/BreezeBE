@@ -172,7 +172,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash', 'six_char_code']
+    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
   }
 
   /**
@@ -247,16 +247,9 @@ class Estate extends Model {
         }
       }
 
-      if (instance.dirty.plan && !isString(instance.dirty.plan)) {
-        try {
-          instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
-        } catch (e) {}
-      }
-
       if (instance.dirty?.parking_space === 0) {
         instance.stp_garage = 0
       }
-
       ;[
         'bath_options',
         'energy_type',
@@ -267,7 +260,12 @@ class Estate extends Model {
         'parking_space_type',
         'use_type',
       ].map((field) => {
-        if (instance.dirty && instance.dirty[field] && !Array.isArray(instance.dirty[field])) {
+        if (
+          instance.dirty &&
+          instance.dirty[field] !== undefined &&
+          instance.dirty[field] != null &&
+          !Array.isArray(instance.dirty[field])
+        ) {
           instance[field] = [instance.dirty[field]]
         }
       })

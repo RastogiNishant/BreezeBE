@@ -30,6 +30,9 @@ class OhneMakler {
     price: 'price',
     contact: 'contact',
     address_public: 'full_address',
+    nebenkosten_ohne_heizkosten: 'additional_costs',
+    heizkosten: 'heating_costs',
+    summe_nebenkosten: 'extra_costs',
     //visit_from
     //visit_to
   }
@@ -68,6 +71,8 @@ class OhneMakler {
     newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
     if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
       newEstate.vacant_from = estate.uebernahme_ab
+    } else {
+      newEstate.vacant_from_string = estate.uebernahme_ab
     }
 
     //as confirmed by andrey, K is Kellergeschoss (basement or underground)
@@ -80,6 +85,11 @@ class OhneMakler {
     }
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
     newEstate.property_type = this.parsePropertyType(estate.objektart)
+
+    if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
+      //extra costs is the sum of additional_costs and heating_costs
+      newEstate.extra_costs = +newEstate.additional_costs + +newEstate.heating_costs
+    }
     return newEstate
   }
 
