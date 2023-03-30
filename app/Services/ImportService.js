@@ -76,18 +76,7 @@ class ImportService {
             property_id: data.property_id,
           }
         }
-        const address = data.address.toLowerCase()
-        const existingEstate = await require('./EstateService')
-          .getQuery()
-          .where('user_id', userId)
-          .where('address', 'LIKE', `%${address}%`)
-          .whereNot('status', STATUS_DELETE)
-          .first()
-        let warning
-        if (existingEstate) {
-          //await EstateService.completeRemoveEstate(existingEstate.id)
-          warning = `Line: ${line}: Probably duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
-        }
+
         data.status = STATUS_DRAFT
         data.available_start_at = moment().utc(new Date()).format(DATE_FORMAT)
         data.available_end_at = moment().utc(new Date()).add(144, 'hours').format(DATE_FORMAT)
@@ -116,10 +105,6 @@ class ImportService {
             },
             trx
           )
-        }
-        if (warning) {
-          await trx.rollback()
-          return { warning, line, address: data.address, property_id: data.property_id }
         }
       }
       await trx.commit()
