@@ -470,7 +470,6 @@ class QueueJobService {
       (process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
         !+process.env.PROCESS_OHNE_MAKLER_GET_POI)
     ) {
-      console.log('not updating third-party-offer points...')
       return
     }
     const estates = await ThirdPartyOffer.query()

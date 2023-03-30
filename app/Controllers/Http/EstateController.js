@@ -58,6 +58,7 @@ const {
   FILE_TYPE_PLAN,
   LOG_TYPE_PUBLISHED_PROPERTY,
   ROLE_LANDLORD,
+  IMPORT_ACTION_IMPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -81,7 +82,9 @@ const {
     FAILED_TO_ADD_FILE,
     CURRENT_IMAGE_COUNT,
     FAILED_EXTEND_ESTATE,
+    UPLOAD_EXCEL_PROGRESS,
   },
+  exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
@@ -384,7 +387,13 @@ class EstateController {
   async extendEstate({ request, auth, response }) {
     const { estate_id, available_end_at, is_duration_later, min_invite_count } = request.all()
     try {
-      await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at, is_duration_later, min_invite_count })
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
       response.res(
         await EstateService.getEstateWithDetails({
           id: estate_id,
@@ -412,6 +421,12 @@ class EstateController {
 
   async importEstate({ request, auth, response }) {
     const importFilePathName = request.file('file')
+
+    if (
+      await ImportService.hasPreviousAction({ user_id: auth.user.id, action: IMPORT_ACTION_IMPORT })
+    ) {
+      throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
+    }
 
     if (importFilePathName && importFilePathName.tmpPath) {
       if (
