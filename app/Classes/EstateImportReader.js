@@ -79,33 +79,41 @@ class EstateImportReader {
   warnings = []
   data = []
 
-  constructor(filePath, overrides = {}) {
-    const data = xlsx.parse(filePath, { cellDates: true })
-    if (overrides?.sheetName) {
-      this.sheetName = overrides.sheetName
-    }
-    if (overrides?.rowForColumnKeys) {
-      this.rowForColumnKeys = overrides?.rowForColumnKeys
-    }
-    if (overrides?.dataStart) {
-      this.dataStart = overrides.dataStart
-    }
-    if (overrides?.validHeaderVars) {
-      this.validHeaderVars = overrides.validHeaderVars
-    }
-    const sheet = data.find((i) => i.name === this.sheetName)
-    this.sheet = sheet
-    //sheet where the estates to import are found...
-    if (!sheet || !sheet.data) {
-      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
-    }
-    this.reverseTranslator = new EstateAttributeTranslations()
-    this.dataMapping = this.reverseTranslator.getMap()
-    this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
-    if (!this.validateColumns(this.validColumns)) {
-      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
-    }
+  constructor() {
     return this
+  }
+
+  init(filePath, overrides = {}) {
+    try {
+      const data = xlsx.parse(filePath, { cellDates: true })
+      if (overrides?.sheetName) {
+        this.sheetName = overrides.sheetName
+      }
+      if (overrides?.rowForColumnKeys) {
+        this.rowForColumnKeys = overrides?.rowForColumnKeys
+      }
+      if (overrides?.dataStart) {
+        this.dataStart = overrides.dataStart
+      }
+      if (overrides?.validHeaderVars) {
+        this.validHeaderVars = overrides.validHeaderVars
+      }
+      const sheet = data.find((i) => i.name === this.sheetName)
+      this.sheet = sheet
+      //sheet where the estates to import are found...
+      if (!sheet || !sheet.data) {
+        throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      }
+      this.reverseTranslator = new EstateAttributeTranslations()
+      this.dataMapping = this.reverseTranslator.getMap()
+      this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
+      if (!this.validateColumns(this.validColumns)) {
+        throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      }
+    } catch (e) {
+      console.log('Excel parse error', e.message)
+      throw new HttpException('File upload failed. please try again', 400)
+    }
   }
 
   setValidColumns(columns) {
@@ -119,7 +127,6 @@ class EstateImportReader {
           },
         ]
       } else {
-        console.log('warnining===', current)
         this.warnings.push(getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current))
       }
       return columns
