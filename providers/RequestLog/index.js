@@ -146,7 +146,7 @@ class Logger {
     const headers = this.request.headers()
     const ip = get(headers, 'x-real-ip') || this.request.ip()
     onFinished(this.res, (error, res) => {
-      if (process.env.NODE_ENV !== TEST_ENVIRONMENT && process.env.NODE_ENV !== DEV_ENVIRONMENT) {
+      if (process.env.NODE_ENV === TEST_ENVIRONMENT || process.env.NODE_ENV === DEV_ENVIRONMENT) {
         return
       }
 
