@@ -40,6 +40,9 @@ class ThirdPartyOffer extends Model {
       'full_address',
       'property_type',
       'vacant_from_string',
+      'additional_costs',
+      'heating_costs',
+      'extra_costs',
     ]
   }
 
