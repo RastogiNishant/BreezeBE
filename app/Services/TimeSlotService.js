@@ -25,11 +25,11 @@ class TimeSlotService {
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
     // Checks is time slot crossing existing
-    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
+    // const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
 
-    if (existing) {
-      throw new AppException(TIME_SLOT_CROSSING_EXISTING)
-    }
+    // if (existing) {
+    //   throw new AppException(TIME_SLOT_CROSSING_EXISTING)
+    // }
 
     const trx = await Database.beginTransaction()
     try {
