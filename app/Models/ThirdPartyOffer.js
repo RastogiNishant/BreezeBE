@@ -43,6 +43,7 @@ class ThirdPartyOffer extends Model {
       'additional_costs',
       'heating_costs',
       'extra_costs',
+      'building_status',
     ]
   }
 
