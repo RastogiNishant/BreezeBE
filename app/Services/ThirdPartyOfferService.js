@@ -157,7 +157,12 @@ class ThirdPartyOfferService {
         Database.raw(
           `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
         ),
-        '_e.vacant_from as vacant_date',
+        Database.raw(`CASE 
+          WHEN _e.vacant_from IS NULL and (_e.vacant_from_string = 'sofort' OR _e.vacant_from_string = 'nach Absprache')
+          THEN 'today' 
+          ELSE _e.vacant_from
+          END
+          as vacant_date`),
         '_e.*'
       )
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
@@ -307,7 +312,12 @@ class ThirdPartyOfferService {
         Database.raw(
           `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
         ),
-        'third_party_offers.vacant_from as vacant_date',
+        Database.raw(`CASE 
+          WHEN _e.vacant_from IS NULL and (_e.vacant_from_string = 'sofort' OR _e.vacant_from_string = 'nach Absprache')
+          THEN 'today' 
+          ELSE _e.vacant_from
+          END
+          as vacant_date`),
         'third_party_offers.*',
         'tpoi.knocked_at'
       )
