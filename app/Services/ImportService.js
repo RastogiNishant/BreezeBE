@@ -23,6 +23,7 @@ const {
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_IMPORT_EXCEL,
   IMPORT_ACTIVITY_DONE,
+  IMPORT_ACTIVITY_PENDING,
   LETTING_TYPE_LET,
   STATUS_DELETE,
   IMPORT_ACTION_IMPORT,
@@ -192,6 +193,7 @@ class ImportService {
       })
     } catch (err) {
       errors = [...errors, err.message]
+      console.log('import excel error', err)
     } finally {
       //correct wrong data during importing excel files
       await require('./EstateService').correctWrongEstates(user_id)
@@ -364,6 +366,18 @@ class ImportService {
 
   static async completeImportFile(id) {
     return await Import.query().where('id', id).update({ status: IMPORT_ACTIVITY_DONE })
+  }
+
+  static async hasPreviousAction({ user_id, action }) {
+    const actionRow = await Import.query()
+      .where('user_id', user_id)
+      .where('action', action)
+      .orderBy('id', 'desc')
+      .first()
+    if (actionRow && actionRow.status === IMPORT_ACTIVITY_PENDING) {
+      return true
+    }
+    return false
   }
 
   static async getLastImportActivities(user_id) {
