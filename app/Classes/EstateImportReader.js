@@ -127,7 +127,6 @@ class EstateImportReader {
           },
         ]
       } else {
-        console.log('warnining===', current)
         this.warnings.push(getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current))
       }
       return columns

@@ -908,7 +908,7 @@ class EstateAttributeTranslations {
         values: [true, false],
       },
       minors: {
-        keys: ['web.letting.property.import.No_matter.message', 'yes.message'],
+        keys: ['no.message', 'yes.message'],
         values: [false, true],
       },
       let_type: {
