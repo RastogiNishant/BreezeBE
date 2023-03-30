@@ -39,6 +39,7 @@ class ThirdPartyOffer extends Model {
       'contact',
       'full_address',
       'property_type',
+      'vacant_from_string',
     ]
   }
 

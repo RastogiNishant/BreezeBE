@@ -68,6 +68,8 @@ class OhneMakler {
     newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
     if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
       newEstate.vacant_from = estate.uebernahme_ab
+    } else {
+      newEstate.vacant_from_string = estate.uebernahme_ab
     }
 
     //as confirmed by andrey, K is Kellergeschoss (basement or underground)
