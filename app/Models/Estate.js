@@ -268,7 +268,7 @@ class Estate extends Model {
         'use_type',
       ].map((field) => {
         if (instance.dirty && field in instance.dirty && !Array.isArray(instance.dirty[field])) {
-          //fix test failing when values = 0 (parking_space_type)
+          //fix test failing when instance.dirty[field] has value = 0 (parking_space_type)
           instance[field] = [instance.dirty[field]]
         }
       })
