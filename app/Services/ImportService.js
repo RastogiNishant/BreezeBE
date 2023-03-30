@@ -46,10 +46,12 @@ class ImportService {
    */
   static async createSingleEstate({ data, line, six_char_code }, userId) {
     let estate
+    line += 1
     const trx = await Database.beginTransaction()
     try {
       if (six_char_code) {
         //check if this is an edit...
+        console.log('Update estate', six_char_code)
         estate = await Estate.query()
           .where('six_char_code', six_char_code)
           .where('user_id', userId)
@@ -59,30 +61,22 @@ class ImportService {
           return {
             error: [`${six_char_code} is an invalid Breeze ID`],
             line,
+            property_id: data.property_id,
             address: data.address,
           }
         }
         await ImportService.updateImportBySixCharCode({ six_char_code, data }, trx)
       } else {
         if (!data.address) {
+          await trx.rollback()
           return {
             error: [`address is empty`],
             line,
             address: data.address,
+            property_id: data.property_id,
           }
         }
-        const address = data.address.toLowerCase()
-        const existingEstate = await require('./EstateService')
-          .getQuery()
-          .where('user_id', userId)
-          .where('address', 'LIKE', `%${address}%`)
-          .whereNot('status', STATUS_DELETE)
-          .first()
-        let warning
-        if (existingEstate) {
-          //await EstateService.completeRemoveEstate(existingEstate.id)
-          warning = `Probably duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
-        }
+
         data.status = STATUS_DRAFT
         data.available_start_at = moment().utc(new Date()).format(DATE_FORMAT)
         data.available_end_at = moment().utc(new Date()).add(144, 'hours').format(DATE_FORMAT)
@@ -112,10 +106,6 @@ class ImportService {
             trx
           )
         }
-        if (warning) {
-          await trx.rollback()
-          return { warning, line, address: data.address }
-        }
       }
       await trx.commit()
 
@@ -127,6 +117,7 @@ class ImportService {
 
       return estate
     } catch (e) {
+      console.log('createSingleEstate error', e.message)
       await trx.rollback()
       return { error: [e.message], line, address: data.address }
     }
@@ -167,9 +158,14 @@ class ImportService {
     let data = []
     let warnings = []
     try {
+      console.log('getting s3 bucket url!!!', s3_bucket_file_name)
       const url = await FileBucket.getProtectedUrl(s3_bucket_file_name)
+      console.log('storing excel file to s3 bucket!!!')
       const localPath = await FileBucket.saveFileTo({ url, ext: 'xlsx' })
-      const reader = new EstateImportReader(localPath)
+      console.log('saved file to path', localPath)
+      const reader = new EstateImportReader()
+      reader.init(localPath)
+      console.log('processing excel file!!!')
       const excelData = await reader.process()
       errors = excelData.errors
       warnings = excelData.warnings
@@ -196,6 +192,7 @@ class ImportService {
       console.log('import excel error', err)
     } finally {
       //correct wrong data during importing excel files
+      console.log('finallizing import excel')
       await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
