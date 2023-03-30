@@ -1156,7 +1156,8 @@ class EstateController {
           let rooms_parsed = {}
           await row.rooms.map((room) => {
             if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] = l.get(`${room.name}.message`, lang)
+              rooms_parsed[`room_${room.import_sequence}`] =
+                l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
             }
           })
           row.rooms_parsed = rooms_parsed
@@ -1170,6 +1171,7 @@ class EstateController {
       )
     } else {
       rows = result.toJSON()
+      console.log('rows', rows[0])
       await Promise.all(
         rows.map(async (row, index) => {
           let rooms_parsed = {}
