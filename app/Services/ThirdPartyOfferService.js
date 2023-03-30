@@ -313,9 +313,9 @@ class ThirdPartyOfferService {
           `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
         ),
         Database.raw(`CASE 
-          WHEN _e.vacant_from IS NULL and (_e.vacant_from_string = 'sofort' OR _e.vacant_from_string = 'nach Absprache')
+          WHEN third_party_offers.vacant_from IS NULL and (third_party_offers.vacant_from_string = 'sofort' OR third_party_offers.vacant_from_string = 'nach Absprache')
           THEN 'today' 
-          ELSE _e.vacant_from
+          ELSE third_party_offers.vacant_from
           END
           as vacant_date`),
         'third_party_offers.*',
