@@ -25,8 +25,6 @@ class TimeSlotService {
     start_at = moment.utc(start_at).format(DATE_FORMAT)
     end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
-    console.log('time slot here=', start_at)
-    console.log('time slot here=', estate.id)
 
     //Checks is time slot crossing existing
     const existing = await this.getCrossTimeslotQuery(
