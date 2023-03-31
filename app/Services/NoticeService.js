@@ -895,7 +895,6 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
-        console.log('notice here=', notice)
         return NotificationsService.sendFullInvitation([notice])
     }
   }
