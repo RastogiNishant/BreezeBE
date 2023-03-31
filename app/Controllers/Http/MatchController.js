@@ -591,8 +591,10 @@ class MatchController {
     estates = estates.toJSON(params)
     let estateData = uniqBy(estates, 'id')
     estateData = [...estateData, ...thirdPartyOffers]
-    if (filters.like || filters.dislike || filters.knock) {
+    if (filters.like || filters.dislike) {
       estateData = estateData.sort((a, b) => (a.action_at > b.action_at ? -1 : 1))
+    } else if (filters.knock) {
+      estateData = estateData.sort((a, b) => (a.action_at > b.action_at ? 1 : -1))
     }
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
