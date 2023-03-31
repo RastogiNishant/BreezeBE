@@ -22,6 +22,8 @@ const {
 } = require('../exceptions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length }, estate) {
+    start_at = moment.utc(start_at).format(DATE_FORMAT)
+    end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
     // Checks is time slot crossing existing
@@ -35,7 +37,6 @@ class TimeSlotService {
     try {
       const slot = await TimeSlot.createItem(
         {
-          end_at,
           start_at,
           slot_length,
           estate_id: estate.id,
