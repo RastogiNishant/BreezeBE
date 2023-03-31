@@ -79,6 +79,7 @@ const exceptions = {
   FAILED_EXTEND_ESTATE: 'Failed to extend dates',
   ALREADY_KNOCKED_ON_THIRD_PARTY: 'You already knocked on this estate',
   CANNOT_KNOCK_ON_DISLIKED_ESTATE: 'You cannot knock on an estate you disliked',
+  THIRD_PARTY_OFFER_NOT_FOUND: 'Third party offer not found',
   MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
   UPLOAD_EXCEL_PROGRESS: 'Previous excel is in progress',
 }
