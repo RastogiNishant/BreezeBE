@@ -241,10 +241,10 @@ class ThirdPartyOfferService {
           .where('third_party_offer_id', id)
           .where('user_id', userId)
           .first()
-        if (actionFound.knocked) {
+        if (actionFound?.knocked) {
           throw new HttpException(ALREADY_KNOCKED_ON_THIRD_PARTY, 400)
         }
-        if (actionFound.like === false) {
+        if (actionFound?.like === false) {
           throw new HttpException(CANNOT_KNOCK_ON_DISLIKED_ESTATE, 400)
         }
         value = {
