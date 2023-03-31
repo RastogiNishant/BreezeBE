@@ -650,39 +650,45 @@ class MatchService {
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
     }
-
-    const estates = await require('./EstateService').getEstatesByUserId({
-      limit: 1,
-      page: 1,
-      params: { id: estateId },
-    })
-
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: userId,
-        old_status: MATCH_STATUS_NEW,
-        status: MATCH_STATUS_KNOCK,
-        estate: estates.rows?.[0] ?? null,
-      },
-      role: ROLE_LANDLORD,
-    })
     return true
   }
 
-  static async emitMatch({ data, role }) {
-    const estate = await Estate.query()
-      .where('id', data.estate_id)
-      .whereNot('status', STATUS_DELETE)
-      .first()
+  static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {
+    if (data.estate_id) {
+      return
+    }
+
+    let estates
+    if (event === WEBSOCKET_EVENT_MATCH) {
+      estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: data?.estate_id },
+      })
+    } else {
+      estates = await this.getLandlordMatchesWithFilterQuery(
+        null,
+        {},
+        { estate_id: data.estateId, user_id: data.userId, matchStatus: data.status }
+      ).paginate(1, 1)
+    }
+
+    const estate = estates.rows?.[0]
 
     if (estate) {
+      if (role === ROLE_LANDLORD) {
+        data = {
+          ...data,
+          estate,
+        }
+      }
+
       const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
       const topicName =
         role === ROLE_LANDLORD ? `landlord:${estate.user_id}` : `tenant:${data.user_id}`
       const topic = Ws.getChannel(channel).topic(topicName)
       if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_MATCH, data)
+        topic.broadcast(event, data)
       }
     }
   }
@@ -703,10 +709,15 @@ class MatchService {
       await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
       await EstateService.addDislike(userId, estateId, trx)
 
-      const estates = await require('./EstateService').getEstatesByUserId({
-        limit: 1,
-        page: 1,
-        params: { id: estateId },
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_KNOCK,
+          status: NO_MATCH_STATUS,
+        },
+        role: ROLE_LANDLORD,
+        event: WEBSOCKET_EVENT_MATCH,
       })
 
       this.emitMatch({
@@ -715,7 +726,6 @@ class MatchService {
           user_id: userId,
           old_status: MATCH_STATUS_KNOCK,
           status: NO_MATCH_STATUS,
-          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
       })
@@ -805,11 +815,18 @@ class MatchService {
       estate_id: estateId,
     })
 
-    const estates = await require('./EstateService').getEstatesByUserId({
-      limit: 1,
-      page: 1,
-      params: { id: estateId },
-    })
+    if (role === ROLE_USER) {
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_INVITE,
+          status: MATCH_STATUS_KNOCK,
+        },
+        role: ROLE_LANDLORD,
+        event: WEBSOCKET_EVENT_MATCH,
+      })
+    }
 
     this.emitMatch({
       data: {
@@ -817,7 +834,6 @@ class MatchService {
         user_id: userId,
         old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_KNOCK,
-        estate: estates.rows?.[0] ?? null,
       },
       role: role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD,
     })
@@ -905,10 +921,15 @@ class MatchService {
       await NoticeService.landlordTimeslotsBooked(estateId, total, booked)
     }
 
-    const estates = await require('./EstateService').getEstatesByUserId({
-      limit: 1,
-      page: 1,
-      params: { id: estateId },
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_INVITE,
+        status: MATCH_STATUS_VISIT,
+      },
+      role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH,
     })
 
     this.emitMatch({
@@ -917,7 +938,6 @@ class MatchService {
         user_id: userId,
         old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_VISIT,
-        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
     })
@@ -972,10 +992,14 @@ class MatchService {
         await trx.commit()
       }
 
-      const estates = await require('./EstateService').getEstatesByUserId({
-        limit: 1,
-        page: 1,
-        params: { id: estateId },
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_VISIT,
+          status: MATCH_STATUS_INVITE,
+        },
+        role: ROLE_LANDLORD,
       })
 
       this.emitMatch({
@@ -984,9 +1008,9 @@ class MatchService {
           user_id: userId,
           old_status: MATCH_STATUS_VISIT,
           status: MATCH_STATUS_INVITE,
-          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
+        event: WEBSOCKET_EVENT_MATCH,
       })
 
       NoticeService.cancelVisit(estateId, null, userId)
@@ -1136,10 +1160,16 @@ class MatchService {
     })
 
     /**Need to confirm status */
-    const estates = await require('./EstateService').getEstatesByUserId({
-      limit: 1,
-      page: 1,
-      params: { id: estateId },
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: user_id,
+        old_status: match.status,
+        status: MATCH_STATUS_VISIT,
+        share: false,
+      },
+      role: ROLE_LANDLORD,
     })
 
     this.emitMatch({
@@ -1149,9 +1179,9 @@ class MatchService {
         old_status: match.status,
         status: MATCH_STATUS_VISIT,
         share: false,
-        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH,
     })
 
     NoticeService.prospectIsNotInterested(estateId)
@@ -1216,10 +1246,14 @@ class MatchService {
       }
     }
 
-    const estates = await require('./EstateService').getEstatesByUserId({
-      limit: 1,
-      page: 1,
-      params: { id: estateId },
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: MATCH_STATUS_TOP,
+        status: NO_MATCH_STATUS,
+      },
+      role: ROLE_LANDLORD,
     })
 
     this.emitMatch({
@@ -1228,9 +1262,9 @@ class MatchService {
         user_id: tenantId,
         old_status: MATCH_STATUS_TOP,
         status: NO_MATCH_STATUS,
-        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH,
     })
 
     await Promise.all([deleteMatch, deleteVisit, checkDislikeExist()])
@@ -1336,10 +1370,14 @@ class MatchService {
       await require('./MemberService').setFinalIncome({ user_id: userId, is_final: false }, trx)
       await trx.commit()
 
-      const estates = await require('./EstateService').getEstatesByUserId({
-        limit: 1,
-        page: 1,
-        params: { id: estateId },
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_COMMIT,
+          status: MATCH_STATUS_TOP,
+        },
+        role: ROLE_LANDLORD,
       })
 
       this.emitMatch({
@@ -1348,9 +1386,9 @@ class MatchService {
           user_id: userId,
           old_status: MATCH_STATUS_COMMIT,
           status: MATCH_STATUS_TOP,
-          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
+        event: WEBSOCKET_EVENT_MATCH,
       })
 
       NoticeService.prospectIsNotInterested(estateId)
@@ -1427,10 +1465,14 @@ class MatchService {
 
       await trx.commit()
 
-      const estates = await require('./EstateService').getEstatesByUserId({
-        limit: 1,
-        page: 1,
-        params: { id: estateId },
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: user.id,
+          old_status: MATCH_STATUS_COMMIT,
+          status: MATCH_STATUS_FINISH,
+        },
+        role: ROLE_LANDLORD,
       })
 
       this.emitMatch({
@@ -1439,9 +1481,9 @@ class MatchService {
           user_id: user.id,
           old_status: MATCH_STATUS_COMMIT,
           status: MATCH_STATUS_FINISH,
-          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
+        event: WEBSOCKET_EVENT_MATCH,
       })
 
       NoticeService.estateFinalConfirm(estateId, user.id)
@@ -1503,10 +1545,15 @@ class MatchService {
         status: MATCH_STATUS_NEW,
       })
 
-      const estates = await require('./EstateService').getEstatesByUserId({
-        limit: 1,
-        page: 1,
-        params: { id: estateId },
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: tenantId,
+          old_status: NO_MATCH_STATUS,
+          status: MATCH_STATUS_NEW,
+          buddy: true,
+        },
+        role: ROLE_LANDLORD,
       })
 
       this.emitMatch({
@@ -1518,7 +1565,7 @@ class MatchService {
           buddy: true,
         },
         role: ROLE_LANDLORD,
-        estate: estates.rows?.[0] ?? null,
+        event: WEBSOCKET_EVENT_MATCH,
       })
       return result
     }
@@ -1533,10 +1580,15 @@ class MatchService {
       estate_id: estateId,
     })
 
-    const estates = await require('./EstateService').getEstatesByUserId({
-      limit: 1,
-      page: 1,
-      params: { id: estateId },
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: tenantId,
+        old_status: NO_MATCH_STATUS,
+        status: MATCH_STATUS_NEW,
+        buddy: true,
+      },
+      role: ROLE_LANDLORD,
     })
 
     this.emitMatch({
@@ -1546,11 +1598,10 @@ class MatchService {
         old_status: NO_MATCH_STATUS,
         status: MATCH_STATUS_NEW,
         buddy: true,
-        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH,
     })
-
     return buddyMatch
   }
 
@@ -2122,7 +2173,7 @@ class MatchService {
     const query = Tenant.query()
       .innerJoin({ _u: 'users' }, 'tenants.user_id', '_u.id')
       .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate.id])
+        this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate?.id || params?.estate_id])
       })
       .orderBy('tenants.id', 'ASC')
       .orderBy('_m.updated_at', 'DESC')
@@ -2148,6 +2199,13 @@ class MatchService {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     } else if (final) {
       query.whereIn('_m.status', [MATCH_STATUS_FINISH])
+    }
+
+    if (params.user_id) {
+      query.where('_m.user_id', params.user_id)
+    }
+    if (params.matchStatus) {
+      query.where('_m.status', params.matchStatus)
     }
 
     query
