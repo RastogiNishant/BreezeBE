@@ -403,14 +403,19 @@ class CreateEstate extends Base {
         })
         .nullable(),
       is_duration_later: yup.boolean(),
-      min_invite_count: yup.number().when('is_duration_later', {
-        is: true,
-        then: yup
-          .number()
-          .integer()
-          .positive()
-          .typeError(getExceptionMessage('min_invite_count', NUMBER)),
-      }),
+      min_invite_count: yup
+        .number()
+        .integer()
+        .positive()
+        .when('is_duration_later', {
+          is: true,
+          then: yup
+            .number()
+            .integer()
+            .positive()
+            .required()
+            .typeError(getExceptionMessage('min_invite_count', NUMBER)),
+        }),
       to_date: yup.date(),
       rent_end_at: yup
         .date()
@@ -555,7 +560,6 @@ class CreateEstate extends Base {
         ])
         .nullable(),
       energy_proof: yup.mixed(),
-      status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40),
       zip: yup.string().max(8),
       budget: yup.number().integer().min(0).max(100),

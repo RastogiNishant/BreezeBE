@@ -119,7 +119,7 @@ class PropertyController {
       case 'unpublish':
         try {
           await Promise.map(ids, async (id) => {
-            await EstateService.handleOfflineEstate(id, trx)
+            await EstateService.handleOfflineEstate({ estate_id: id }, trx)
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)

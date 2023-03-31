@@ -148,10 +148,16 @@ class RoomService {
   }
 
   static async removeAllRoom(estate_id, trx) {
-    return await Room.query()
-      .where('estate_id', estate_id)
-      .update({ name: `deleted_${uuid.v4()}`, status: STATUS_DELETE })
-      .transacting(trx)
+    const rooms = (await this.getRoomsByEstate(estate_id)).toJSON()
+
+    if (rooms && rooms.length) {
+      await Promise.map(rooms, async (room) => {
+        await Room.query()
+          .where('id', room.id)
+          .update({ name: `deleted_${room.id}_${uuid.v4()}`, status: STATUS_DELETE })
+          .transacting(trx)
+      })
+    }
   }
 
   static async getFavoriteRoom(estate_id) {
@@ -375,7 +381,6 @@ class RoomService {
           newRoomsInfo.push({
             ...room,
             name: index ? `${room.name} ${index + 1}` : room.name,
-            import_sequence: null,
             order: index + 1,
           })
         })
@@ -450,6 +455,7 @@ class RoomService {
         const newRoomsByRoomTypes = roomTypes.map((type) =>
           filter(roomsInfo, (room) => room.type === type)
         )
+
         const differentRooms = newRoomsByRoomTypes.map((newRoomByType, index) => {
           if (newRoomByType.length > oldRoomsByRoomTypes[index].length) {
             const oldRoomLength = oldRoomsByRoomTypes[index].length
@@ -482,10 +488,7 @@ class RoomService {
             element.rooms.map((room, index) => {
               addRooms.push({
                 ...room,
-                name: element.nameIndex
-                  ? `${room.name} ${element.nameIndex + 1 + index}`
-                  : room.name,
-                import_sequence: null,
+                name: `${room.name} ${element.nameIndex + 1 + index}`,
                 order:
                   element.orderIndex === ROOM_DEFAULT_ORDER
                     ? ROOM_DEFAULT_ORDER
@@ -513,6 +516,7 @@ class RoomService {
         }
 
         if (addRooms && addRooms.length) {
+          console.log('Add Rooms here=', addRooms)
           await Room.createMany(addRooms, trx)
         }
       }

@@ -58,6 +58,7 @@ const {
   FILE_TYPE_PLAN,
   LOG_TYPE_PUBLISHED_PROPERTY,
   ROLE_LANDLORD,
+  IMPORT_ACTION_IMPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -81,7 +82,9 @@ const {
     FAILED_TO_ADD_FILE,
     CURRENT_IMAGE_COUNT,
     FAILED_EXTEND_ESTATE,
+    UPLOAD_EXCEL_PROGRESS,
   },
+  exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
@@ -382,9 +385,15 @@ class EstateController {
    *
    */
   async extendEstate({ request, auth, response }) {
-    const { estate_id, available_end_at } = request.all()
+    const { estate_id, available_end_at, is_duration_later, min_invite_count } = request.all()
     try {
-      await EstateService.extendEstate({ user_id: auth.user.id, estate_id, available_end_at })
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
       response.res(
         await EstateService.getEstateWithDetails({
           id: estate_id,
@@ -412,6 +421,12 @@ class EstateController {
 
   async importEstate({ request, auth, response }) {
     const importFilePathName = request.file('file')
+
+    if (
+      await ImportService.hasPreviousAction({ user_id: auth.user.id, action: IMPORT_ACTION_IMPORT })
+    ) {
+      throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
+    }
 
     if (importFilePathName && importFilePathName.tmpPath) {
       if (
@@ -540,7 +555,7 @@ class EstateController {
       const estate = await Estate.query().where('id', id).first()
       if (estate) {
         estate.status = STATUS_DRAFT
-        await EstateService.handleOfflineEstate(estate.id, trx)
+        await EstateService.handleOfflineEstate({ estate_id: estate.id }, trx)
         await estate.save(trx)
         await trx.commit()
         response.res(true)
@@ -1139,10 +1154,9 @@ class EstateController {
           }
           row.breeze_id = row.six_char_code
           let rooms_parsed = {}
-          await row.rooms.map((room) => {
-            if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] = l.get(`${room.name}.message`, lang)
-            }
+          await row.rooms.map((room, r_index) => {
+            rooms_parsed[`room_${r_index}`] =
+              l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
           })
           row.rooms_parsed = rooms_parsed
           row.deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
@@ -1158,10 +1172,8 @@ class EstateController {
       await Promise.all(
         rows.map(async (row, index) => {
           let rooms_parsed = {}
-          await row.rooms.map((room) => {
-            if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] = room.type
-            }
+          await row.rooms.map((room, r_index) => {
+            rooms_parsed[`room_${r_index}`] = room.type
           })
           rows[index].rooms_parsed = rooms_parsed
           rows[index].deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))

@@ -79,12 +79,15 @@ const exceptions = {
   FAILED_EXTEND_ESTATE: 'Failed to extend dates',
   ALREADY_KNOCKED_ON_THIRD_PARTY: 'You already knocked on this estate',
   CANNOT_KNOCK_ON_DISLIKED_ESTATE: 'You cannot knock on an estate you disliked',
+  THIRD_PARTY_OFFER_NOT_FOUND: 'Third party offer not found',
   MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
+  UPLOAD_EXCEL_PROGRESS: 'Previous excel is in progress',
 }
 
 const exceptionCodes = {
   IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
   SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
+  UPLOAD_EXCEL_PROGRESS_ERROR_CODE: 2000100,
 }
 
 const exceptionKeys = {
