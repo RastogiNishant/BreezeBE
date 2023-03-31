@@ -24,7 +24,6 @@ class CompanyController {
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])
-
     if (files.avatar) {
       data.avatar = files.avatar
     } else {
