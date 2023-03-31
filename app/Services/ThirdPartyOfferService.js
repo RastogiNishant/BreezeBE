@@ -217,12 +217,11 @@ class ThirdPartyOfferService {
         this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
       })
       .where('tenants.user_id', userId)
-      .whereNull('tpoi.id')
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
       query.with('point').where('_e.id', id)
     } else {
-      query.where('_e.status', STATUS_ACTIVE)
+      query.where('_e.status', STATUS_ACTIVE).whereNull('tpoi.id')
     }
     if (exclude.length > 0) {
       query.whereNotIn('_e.id', exclude)
