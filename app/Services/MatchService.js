@@ -79,6 +79,7 @@ const {
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
+  WEBSOCKET_EVENT_MATCH_STAGE,
 } = require('../constants')
 
 const { ESTATE_NOT_EXISTS } = require('../exceptions')
@@ -654,38 +655,50 @@ class MatchService {
   }
 
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {
-    if (data.estate_id) {
+    if (!data.estate_id) {
       return
     }
 
-    let estates
+    let estate
+    let landlordSenderId = null
+
     if (event === WEBSOCKET_EVENT_MATCH) {
-      estates = await require('./EstateService').getEstatesByUserId({
+      const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
         page: 1,
         params: { id: data?.estate_id },
       })
-    } else {
-      estates = await this.getLandlordMatchesWithFilterQuery(
-        null,
-        {},
-        { estate_id: data.estateId, user_id: data.userId, matchStatus: data.status }
-      ).paginate(1, 1)
-    }
 
-    const estate = estates.rows?.[0]
+      estate = estates.rows?.[0]
+      landlordSenderId = estate?.user_id
+    } else {
+      const estateInfo = await require('./EstateService')
+        .getActiveEstateQuery()
+        .select('id', 'user_id')
+        .where('id', data.estate_id)
+        .first()
+      landlordSenderId = estateInfo?.user_id
+
+      const estates = await this.getLandlordMatchesWithFilterQuery(
+        estateInfo,
+        {},
+        { user_id: data.user_id, matchStatus: data.status }
+      ).paginate(1, 1)
+
+      estate = estates.rows?.[0]
+    }
 
     if (estate) {
       if (role === ROLE_LANDLORD) {
         data = {
           ...data,
-          estate,
+          estate: estate.toJSON(),
         }
       }
 
       const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
       const topicName =
-        role === ROLE_LANDLORD ? `landlord:${estate.user_id}` : `tenant:${data.user_id}`
+        role === ROLE_LANDLORD ? `landlord:${landlordSenderId}` : `tenant:${data.user_id}`
       const topic = Ws.getChannel(channel).topic(topicName)
       if (topic) {
         topic.broadcast(event, data)
@@ -929,7 +942,7 @@ class MatchService {
         status: MATCH_STATUS_VISIT,
       },
       role: ROLE_LANDLORD,
-      event: WEBSOCKET_EVENT_MATCH,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
     })
 
     this.emitMatch({
@@ -1010,7 +1023,7 @@ class MatchService {
           status: MATCH_STATUS_INVITE,
         },
         role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
 
       NoticeService.cancelVisit(estateId, null, userId)
@@ -1181,7 +1194,7 @@ class MatchService {
         share: false,
       },
       role: ROLE_LANDLORD,
-      event: WEBSOCKET_EVENT_MATCH,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
     })
 
     NoticeService.prospectIsNotInterested(estateId)
@@ -1264,7 +1277,7 @@ class MatchService {
         status: NO_MATCH_STATUS,
       },
       role: ROLE_LANDLORD,
-      event: WEBSOCKET_EVENT_MATCH,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
     })
 
     await Promise.all([deleteMatch, deleteVisit, checkDislikeExist()])
@@ -1388,7 +1401,7 @@ class MatchService {
           status: MATCH_STATUS_TOP,
         },
         role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
 
       NoticeService.prospectIsNotInterested(estateId)
@@ -1483,7 +1496,7 @@ class MatchService {
           status: MATCH_STATUS_FINISH,
         },
         role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
 
       NoticeService.estateFinalConfirm(estateId, user.id)
@@ -1565,7 +1578,7 @@ class MatchService {
           buddy: true,
         },
         role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
       return result
     }
@@ -1600,7 +1613,7 @@ class MatchService {
         buddy: true,
       },
       role: ROLE_LANDLORD,
-      event: WEBSOCKET_EVENT_MATCH,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
     })
     return buddyMatch
   }
@@ -2315,7 +2328,10 @@ class MatchService {
         }
       )
       .leftJoin({ _bd: 'buddies' }, function () {
-        this.on('tenants.user_id', '_bd.tenant_id').on('_bd.user_id', estate.user_id)
+        this.on('tenants.user_id', '_bd.tenant_id')
+        if (estate) {
+          this.on('_bd.user_id', estate.user_id)
+        }
       })
       .leftJoin(
         Database.raw(`
