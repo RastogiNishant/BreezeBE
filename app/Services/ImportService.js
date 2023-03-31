@@ -341,7 +341,9 @@ class ImportService {
       if (rooms.length) {
         await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
       } else {
-        await require('./RoomService').removeAllRoom(estate.id, trx)
+        // we don't have to remove rooms because some rooms will have images for now, if user is going to delete rooms, he has to remove it via web frontend manually
+        //TODO: only has to remove rooms which don't have images & reindex room names according to room type
+        //await require('./RoomService').removeAllRoom(estate.id, trx)
       }
 
       return estate

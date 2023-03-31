@@ -690,8 +690,13 @@ class EstateService {
   static getEstates(user_ids, params = {}) {
     let query = Estate.query()
       .withCount('notifications', function (n) {
-        user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
-        n.whereIn('user_id', user_ids)
+        if (user_ids && user_ids.length) {
+          user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+          n.whereIn('user_id', user_ids)
+        }
+        if (params && params.id) {
+          n.where('estate_id', params.id)
+        }
       })
       .withCount('visits')
       .withCount('knocked')
@@ -1471,40 +1476,32 @@ class EstateService {
   }
 
   static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
+    let query = this.getEstates(ids, params)
+      .whereNot('estates.status', STATUS_DELETE)
+      .with('current_tenant', function (c) {
+        c.with('user', function (u) {
+          u.select('id', 'avatar')
+        })
+      })
+      .withCount('visits')
+      .withCount('knocked')
+      .withCount('decided')
+      .withCount('invite')
+      .withCount('final')
+      .withCount('inviteBuddies')
+      .with('slots')
+
+    if (ids && ids.length) {
+      query.whereIn('estates.user_id', ids)
+    }
+    if (params && params.id) {
+      query.where('estates.id', params.id)
+    }
+
     if (page === -1 || limit === -1) {
-      return await this.getEstates(ids, params)
-        .whereIn('estates.user_id', ids)
-        .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant', function (c) {
-          c.with('user', function (u) {
-            u.select('id', 'avatar')
-          })
-        })
-        .withCount('visits')
-        .withCount('knocked')
-        .withCount('decided')
-        .withCount('invite')
-        .withCount('final')
-        .withCount('inviteBuddies')
-        .with('slots')
-        .fetch()
+      return await query.fetch()
     } else {
-      return await this.getEstates(ids, params)
-        .whereIn('estates.user_id', ids)
-        .whereNot('estates.status', STATUS_DELETE)
-        .with('current_tenant', function (c) {
-          c.with('user', function (u) {
-            u.select('id', 'avatar')
-          })
-        })
-        .with('slots')
-        .withCount('visits')
-        .withCount('knocked')
-        .withCount('decided')
-        .withCount('invite')
-        .withCount('final')
-        .withCount('inviteBuddies')
-        .paginate(page, limit)
+      return await query.paginate(page, limit)
     }
   }
 

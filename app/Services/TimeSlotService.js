@@ -22,20 +22,21 @@ const {
 } = require('../exceptions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length }, estate) {
+    start_at = moment.utc(start_at).format(DATE_FORMAT)
+    end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
     // Checks is time slot crossing existing
-    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
+    // const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
 
-    if (existing) {
-      throw new AppException(TIME_SLOT_CROSSING_EXISTING)
-    }
+    // if (existing) {
+    //   throw new AppException(TIME_SLOT_CROSSING_EXISTING)
+    // }
 
     const trx = await Database.beginTransaction()
     try {
       const slot = await TimeSlot.createItem(
         {
-          end_at,
           start_at,
           slot_length,
           estate_id: estate.id,
