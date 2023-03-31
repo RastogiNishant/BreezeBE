@@ -971,12 +971,20 @@ class MatchService {
       if (isInsideTrx) {
         await trx.commit()
       }
+
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: estateId },
+      })
+
       this.emitMatch({
         data: {
           estate_id: estateId,
           user_id: userId,
           old_status: MATCH_STATUS_VISIT,
           status: MATCH_STATUS_INVITE,
+          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
       })
@@ -1128,6 +1136,12 @@ class MatchService {
     })
 
     /**Need to confirm status */
+    const estates = await require('./EstateService').getEstatesByUserId({
+      limit: 1,
+      page: 1,
+      params: { id: estateId },
+    })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
@@ -1135,6 +1149,7 @@ class MatchService {
         old_status: match.status,
         status: MATCH_STATUS_VISIT,
         share: false,
+        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
     })
@@ -1201,12 +1216,19 @@ class MatchService {
       }
     }
 
+    const estates = await require('./EstateService').getEstatesByUserId({
+      limit: 1,
+      page: 1,
+      params: { id: estateId },
+    })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
         user_id: tenantId,
         old_status: MATCH_STATUS_TOP,
         status: NO_MATCH_STATUS,
+        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
     })
@@ -1313,12 +1335,20 @@ class MatchService {
 
       await require('./MemberService').setFinalIncome({ user_id: userId, is_final: false }, trx)
       await trx.commit()
+
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: estateId },
+      })
+
       this.emitMatch({
         data: {
           estate_id: estateId,
           user_id: userId,
           old_status: MATCH_STATUS_COMMIT,
           status: MATCH_STATUS_TOP,
+          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
       })
@@ -1397,12 +1427,19 @@ class MatchService {
 
       await trx.commit()
 
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: estateId },
+      })
+
       this.emitMatch({
         data: {
           estate_id: estateId,
           user_id: user.id,
           old_status: MATCH_STATUS_COMMIT,
           status: MATCH_STATUS_FINISH,
+          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
       })
@@ -1466,6 +1503,12 @@ class MatchService {
         status: MATCH_STATUS_NEW,
       })
 
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: estateId },
+      })
+
       this.emitMatch({
         data: {
           estate_id: estateId,
@@ -1475,6 +1518,7 @@ class MatchService {
           buddy: true,
         },
         role: ROLE_LANDLORD,
+        estate: estates.rows?.[0] ?? null,
       })
       return result
     }
@@ -1489,6 +1533,12 @@ class MatchService {
       estate_id: estateId,
     })
 
+    const estates = await require('./EstateService').getEstatesByUserId({
+      limit: 1,
+      page: 1,
+      params: { id: estateId },
+    })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
@@ -1496,6 +1546,7 @@ class MatchService {
         old_status: NO_MATCH_STATUS,
         status: MATCH_STATUS_NEW,
         buddy: true,
+        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
     })
