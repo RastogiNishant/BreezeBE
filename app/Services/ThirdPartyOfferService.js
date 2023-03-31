@@ -21,7 +21,11 @@ const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const MatchService = use('App/Services/MatchService')
 const {
-  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
+  exceptions: {
+    ALREADY_KNOCKED_ON_THIRD_PARTY,
+    CANNOT_KNOCK_ON_DISLIKED_ESTATE,
+    THIRD_PARTY_OFFER_NOT_FOUND,
+  },
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -131,6 +135,9 @@ class ThirdPartyOfferService {
       userId,
       third_party_offer_id
     ).first()
+    if (!estate) {
+      throw new HttpException(THIRD_PARTY_OFFER_NOT_FOUND, 400)
+    }
     estate = estate.toJSON()
     estate['__meta__'] = {
       knocked_count: estate.knocked_count,
@@ -210,11 +217,12 @@ class ThirdPartyOfferService {
         this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
       })
       .where('tenants.user_id', userId)
-      .where('_e.status', STATUS_ACTIVE)
       .whereNull('tpoi.id')
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
       query.with('point').where('_e.id', id)
+    } else {
+      query.where('_e.status', STATUS_ACTIVE)
     }
     if (exclude.length > 0) {
       query.whereNotIn('_e.id', exclude)
@@ -302,25 +310,23 @@ class ThirdPartyOfferService {
 
   static async getTenantEstatesWithFilter(userId, filter) {
     const { like, dislike, knock } = filter
-    let query = ThirdPartyOffer.query()
-      .where('third_party_offers.status', STATUS_ACTIVE)
-      .select(
-        'third_party_offers.status as estate_status',
-        'third_party_offers.price as net_rent',
-        'third_party_offers.floor_count as number_floors',
-        'third_party_offers.rooms as rooms_number',
-        Database.raw(
-          `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
-        ),
-        Database.raw(`CASE 
+    let query = ThirdPartyOffer.query().select(
+      'third_party_offers.status as estate_status',
+      'third_party_offers.price as net_rent',
+      'third_party_offers.floor_count as number_floors',
+      'third_party_offers.rooms as rooms_number',
+      Database.raw(
+        `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
+      ),
+      Database.raw(`CASE 
           WHEN third_party_offers.vacant_from IS NULL and (third_party_offers.vacant_from_string = 'sofort' OR third_party_offers.vacant_from_string = 'nach Absprache')
           THEN 'today' 
           ELSE third_party_offers.vacant_from
           END
           as vacant_date`),
-        'third_party_offers.*',
-        'tpoi.knocked_at'
-      )
+      'third_party_offers.*',
+      'tpoi.knocked_at'
+    )
 
     let field
     let value
@@ -330,10 +336,10 @@ class ThirdPartyOfferService {
       query
         .select(Database.raw(`tpoi.updated_at as action_at`))
         .where(Database.raw(`knocked is not true`))
+        .where('third_party_offers.status', STATUS_ACTIVE)
     } else if (dislike) {
       field = 'liked'
       value = false
-      query.orWhere('third_party_offers.status', STATUS_EXPIRE)
       query
         .select(Database.raw(`tpoi.updated_at as action_at`))
         .where(Database.raw(`knocked is not true`))
@@ -343,6 +349,7 @@ class ThirdPartyOfferService {
       value = true
       query
         .select(Database.raw(`tpoi.knocked_at as action_at`))
+        .where('third_party_offers.status', STATUS_ACTIVE)
         .select(Database.raw(`${MATCH_STATUS_KNOCK} as status`))
     } else {
       return []
