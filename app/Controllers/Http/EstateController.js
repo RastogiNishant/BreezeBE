@@ -1154,11 +1154,9 @@ class EstateController {
           }
           row.breeze_id = row.six_char_code
           let rooms_parsed = {}
-          await row.rooms.map((room) => {
-            if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] =
-                l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
-            }
+          await row.rooms.map((room, r_index) => {
+            rooms_parsed[`room_${r_index}`] =
+              l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
           })
           row.rooms_parsed = rooms_parsed
           row.deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
@@ -1171,14 +1169,11 @@ class EstateController {
       )
     } else {
       rows = result.toJSON()
-      console.log('rows', rows[0])
       await Promise.all(
         rows.map(async (row, index) => {
           let rooms_parsed = {}
-          await row.rooms.map((room) => {
-            if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] = room.type
-            }
+          await row.rooms.map((room, r_index) => {
+            rooms_parsed[`room_${r_index}`] = room.type
           })
           rows[index].rooms_parsed = rooms_parsed
           rows[index].deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
