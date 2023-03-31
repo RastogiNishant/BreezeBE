@@ -3,6 +3,10 @@ const {
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY,
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY,
+  HOUSE_TYPE_SEMIDETACHED_HOUSE,
+  HOUSE_TYPE_DETACHED_HOUSE,
+  HOUSE_TYPE_STUDIO,
+  HOUSE_TYPE_GARDENHOUSE,
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
@@ -33,6 +37,8 @@ class OhneMakler {
     nebenkosten_ohne_heizkosten: 'additional_costs',
     heizkosten: 'heating_costs',
     summe_nebenkosten: 'extra_costs',
+    property_type: 'house_type',
+    objekttyp: 'apt_type',
     //visit_from
     //visit_to
   }
@@ -55,6 +61,31 @@ class OhneMakler {
     return null
   }
 
+  parseHouseType(houseType) {
+    switch (houseType) {
+      case 'Mehrfamilienhaus':
+        return
+      case 'Dachgeschosswohnung':
+        return
+      case 'Reihenhaus':
+        return
+      case 'Penthouse':
+        return
+      case 'Maisonette':
+        return HOUSE_TYPE_DUPLEX
+      case 'Etagenwohnung':
+        return
+      case 'Bauernhof':
+        return HOUSE_TYPE_GARDENHOUSE
+      case 'Studio':
+        return HOUSE_TYPE_STUDIO
+      case 'Einfamilienhaus':
+        return HOUSE_TYPE_DETACHED_HOUSE
+      case 'Doppelhaushälfte':
+        return HOUSE_TYPE_SEMIDETACHED_HOUSE
+    }
+    return null
+  }
   mapEstate(estate) {
     let newEstate
     for (const [key, value] of Object.entries(this.map)) {
