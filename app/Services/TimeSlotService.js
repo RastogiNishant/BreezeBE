@@ -26,18 +26,22 @@ class TimeSlotService {
     end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
-    // Checks is time slot crossing existing
-    // const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
+    //Checks is time slot crossing existing
+    const existing = await this.getCrossTimeslotQuery(
+      { end_at, start_at, estate_id: estate.id },
+      estate.user_id
+    ).first()
 
-    // if (existing) {
-    //   throw new AppException(TIME_SLOT_CROSSING_EXISTING)
-    // }
+    if (existing) {
+      throw new AppException(TIME_SLOT_CROSSING_EXISTING)
+    }
 
     const trx = await Database.beginTransaction()
     try {
       const slot = await TimeSlot.createItem(
         {
           start_at,
+          end_at,
           slot_length,
           estate_id: estate.id,
         },
@@ -127,7 +131,7 @@ class TimeSlotService {
 
     const estate = await Estate.find(slot.estate_id)
     const crossingSlot = await this.getCrossTimeslotQuery(
-      { end_at: slot.end_at, start_at: slot.start_at },
+      { end_at: slot.end_at, start_at: slot.start_at, estate_id: estate.id },
       estate.user_id
     )
       .whereNot('id', slot.id)
@@ -171,10 +175,10 @@ class TimeSlotService {
     return removeVisitRanges
   }
 
-  static getCrossTimeslotQuery({ end_at, start_at }, userId) {
+  static getCrossTimeslotQuery({ end_at, start_at, estate_id }, userId) {
     return TimeSlot.query()
       .whereIn('estate_id', function () {
-        this.select('id').from('estates').where('user_id', userId)
+        this.select('id').from('estates').where('user_id', userId).where('estate_id', estate_id)
       })
       .where(function () {
         this.orWhere(function () {
