@@ -128,12 +128,18 @@ class UserService {
           },
           trx
         )
+
+        await MemberService.createMember(
+          { firstname: user.firstname, secondname: user.secondname, is_verified: true },
+          user.id,
+          trx
+        )
       } catch (e) {
         console.log('createUser exception', e)
         throw new HttpException(e.message, e.status || 400)
       }
     }
-    return { user }
+    return user
   }
 
   /**
@@ -168,7 +174,7 @@ class UserService {
       status: STATUS_ACTIVE,
     }
 
-    const { user } = await UserService.createUser(userData)
+    const user = await UserService.createUser(userData)
 
     if (request) {
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
@@ -213,7 +219,8 @@ class UserService {
       const deepLink_URL = from_web
         ? `${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}&email=${email}`
         : `${process.env.DEEP_LINK}?type=newpassword&code=${code}`
-      const { shortLink } = await firebaseDynamicLinks.createLink({
+
+      let params = {
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
           link: deepLink_URL,
@@ -225,6 +232,19 @@ class UserService {
             iosAppStoreId: process.env.IOS_APPSTORE_ID,
           },
         },
+      }
+
+      if (user.role === ROLE_USER) {
+        params.dynamicLinkInfo = {
+          ...params.dynamicLinkInfo,
+          desktopInfo: {
+            desktopFallbackLink:
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
+          },
+        }
+      }
+      const { shortLink } = await firebaseDynamicLinks.createLink({
+        ...params,
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
       const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
@@ -309,6 +329,15 @@ class UserService {
     }
   }
 
+  static async isHouseHold(user_id) {
+    try {
+      const owner = await this.getHousehouseId(user_id)
+      return !owner.owner_id
+    } catch (e) {
+      return false
+    }
+  }
+
   static async updateDeviceToken(userId, device_token) {
     return await User.query().where('id', userId).update({ device_token: device_token })
   }
@@ -323,7 +352,7 @@ class UserService {
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
-
+      console.log('from web here=', from_web)
       const forgotLink = await UserService.getForgotShortLink(from_web)
 
       if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
@@ -348,6 +377,7 @@ class UserService {
     const deepLink_URL = from_web
       ? `${process.env.SITE_URL}/forgotPassword`
       : `${process.env.DEEP_LINK}?type=forgotPassword`
+      
     const { shortLink } = await firebaseDynamicLinks.createLink({
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
@@ -366,7 +396,7 @@ class UserService {
   /**
    *
    */
-  static async resendUserConfirm(userId) {
+  static async resendUserConfirm(userId, from_web = false) {
     const user = await User.query().where('id', userId).first()
     if (!user) {
       throw new HttpException(USER_NOT_EXIST, 400)
@@ -374,7 +404,7 @@ class UserService {
     if (user.status !== STATUS_EMAIL_VERIFY) {
       throw new HttpException(ACCOUNT_ALREADY_VERIFIED, 400)
     }
-    await UserService.sendConfirmEmail(user)
+    await UserService.sendConfirmEmail(user, from_web)
 
     return true
   }
@@ -425,7 +455,7 @@ class UserService {
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-    const { shortLink } = await firebaseDynamicLinks.createLink({
+    let params = {
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
         link: `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`,
@@ -437,7 +467,19 @@ class UserService {
           iosAppStoreId: process.env.IOS_APPSTORE_ID,
         },
       },
-    })
+    }
+
+    if (user.role === ROLE_USER) {
+      params.dynamicLinkInfo = {
+        ...params.dynamicLinkInfo,
+        desktopInfo: {
+          desktopFallbackLink:
+            process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
+        },
+      }
+    }
+
+    const { shortLink } = await firebaseDynamicLinks.createLink({ ...params })
     const forgotLink = await UserService.getForgotShortLink(from_web)
 
     MailService.sendWelcomeMail(user, {
@@ -517,9 +559,9 @@ class UserService {
       throw new AppException(USER_NOT_EXIST)
     }
 
+    const isShare = user.finish || user.share
     //TODO: WARNING: SECURITY
-    // const isShare = user.finish || user.share
-    const isShare = true
+    // const isShare = true
 
     let userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
@@ -533,6 +575,9 @@ class UserService {
       .with('members.extra_residency_proofs')
       .with('members.extra_score_proofs')
 
+    if (user.finish) {
+      tenantQuery.with('members.final_incomes').with('members.final_incomes.final_proofs')
+    }
     const tenant = await tenantQuery.first()
     if (!tenant) {
       return userData
@@ -701,7 +746,16 @@ class UserService {
     return (await query.fetch()).rows
   }
 
-  static async housekeeperSignup({ code, email, password, firstname, ip, ip_based_info, lang }) {
+  static async housekeeperSignup({
+    code,
+    email,
+    password,
+    firstname,
+    secondname,
+    ip,
+    ip_based_info,
+    lang,
+  }) {
     const member = await Member.query()
       .select('user_id', 'id')
       .where('email', email)
@@ -712,33 +766,50 @@ class UserService {
       throw new HttpException(MEMBER_NOT_EXIST, 400)
     }
 
-    // Check user not exists
-    const availableUser = await User.query().where('email', email).where('role', ROLE_USER).first()
-    if (availableUser) {
-      throw new HttpException(USER_UNIQUE, 400)
-    }
-
     const trx = await Database.beginTransaction()
+    let user, isExistUser
     try {
-      const { user } = await this.createUser(
+      // Check user not exists
+      user = await User.query().where('email', email).where('role', ROLE_USER).first()
+      if (user) {
+        user.is_household_invitation_onboarded = false
+        user.is_profile_onboarded = true
+        isExistUser = true
+        await user.save(trx)
+      } else {
+        isExistUser = false
+        user = await this.createUser(
+          {
+            role: ROLE_USER,
+            password,
+            owner_id: member.user_id,
+            lang,
+            is_household_invitation_onboarded: false,
+            is_profile_onboarded: true,
+            email,
+            firstname,
+            secondname,
+            status: STATUS_EMAIL_VERIFY,
+            ip,
+            ip_based_info,
+          },
+          trx
+        )
+      }
+
+      await MemberService.setMemberOwner(
         {
-          role: ROLE_USER,
-          password,
-          owner_id: member.user_id,
-          lang,
-          is_household_invitation_onboarded: false,
-          is_profile_onboarded: true,
-          email,
-          firstname,
-          status: STATUS_EMAIL_VERIFY,
-          ip,
-          ip_based_info,
+          member_id: member.id,
+          firstname: user.firstname || firstname,
+          secondname: user.secondname || secondname,
+          owner_id: user.id,
         },
         trx
       )
+      if (!isExistUser) {
+        await this.sendConfirmEmail(user)
+      }
 
-      await MemberService.setMemberOwner({ member_id: member.id, owner_id: user.id }, trx)
-      await this.sendConfirmEmail(user)
       await trx.commit()
 
       Event.fire('mautic:createContact', user.id)
@@ -768,7 +839,15 @@ class UserService {
   }
 
   static async removeUserOwnerId(user_id, trx) {
-    return User.query().where('id', user_id).update({ owner_id: null }, trx)
+    if (trx) {
+      return User.query()
+        .where('id', user_id)
+        .update({ owner_id: null, is_household_invitation_onboarded: true })
+        .transacting(trx)
+    }
+    return User.query()
+      .where('id', user_id)
+      .update({ owner_id: null, is_household_invitation_onboarded: true })
   }
 
   static async confirmSMS(email, phone, code) {
@@ -904,7 +983,7 @@ class UserService {
     }
 
     try {
-      const { user } = await this.createUser(
+      const user = await this.createUser(
         {
           ...userData,
           email,

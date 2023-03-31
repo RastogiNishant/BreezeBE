@@ -48,6 +48,8 @@ const {
   STATUS_DELETE,
   ROLE_LANDLORD,
   ROLE_USER,
+  MAXIMUM_EXPIRE_PERIOD,
+  DATE_FORMAT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -98,8 +100,8 @@ class Estate extends Model {
       'ownership_type',
       'marketing_type',
       'energy_type',
-      'available_date',
-      'from_date',
+      'available_start_at',
+      'available_end_at',
       'to_date',
       'min_lease_duration',
       'max_lease_duration',
@@ -144,7 +146,6 @@ class Estate extends Model {
       'max_age',
       'hash',
       'options',
-      'avail_duration',
       'is_duration_later',
       'min_invite_count',
       'vacant_date',
@@ -163,6 +164,7 @@ class Estate extends Model {
       'rent_end_at',
       'income_sources',
       'percent',
+      'is_published',
     ]
   }
 
@@ -170,7 +172,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'plan', 'point_id', 'hash', 'six_char_code']
+    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
   }
 
   /**
@@ -245,16 +247,9 @@ class Estate extends Model {
         }
       }
 
-      if (instance.dirty.plan && !isString(instance.dirty.plan)) {
-        try {
-          instance.plan = isArray(instance.dirty.plan) ? JSON.stringify(instance.dirty.plan) : null
-        } catch (e) {}
-      }
-
       if (instance.dirty?.parking_space === 0) {
         instance.stp_garage = 0
       }
-
       ;[
         'bath_options',
         'energy_type',
@@ -265,7 +260,12 @@ class Estate extends Model {
         'parking_space_type',
         'use_type',
       ].map((field) => {
-        if (instance.dirty && instance.dirty[field] && !Array.isArray(instance.dirty[field])) {
+        if (
+          instance.dirty &&
+          instance.dirty[field] !== undefined &&
+          instance.dirty[field] != null &&
+          !Array.isArray(instance.dirty[field])
+        ) {
           instance[field] = [instance.dirty[field]]
         }
       })
@@ -494,11 +494,14 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate(trx) {
+  async publishEstate(status, trx) {
     await this.updateItemWithTrx(
       {
-        status: STATUS_ACTIVE,
-        available_date: moment.utc(new Date()).add(this.avail_duration, 'hours').toDate(),
+        status: status,
+        is_published: true,
+        available_end_at:
+          this.available_end_at ||
+          moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
       },
       trx,
       true

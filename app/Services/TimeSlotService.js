@@ -18,13 +18,19 @@ const {
     SHOW_ALREADY_STARTED,
     FAILED_CREATE_TIME_SLOT,
   },
+  exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE },
 } = require('../exceptions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length }, estate) {
+    start_at = moment.utc(start_at).format(DATE_FORMAT)
+    end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
-    // Checks is time slot crossing existing
-    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
+    //Checks is time slot crossing existing
+    const existing = await this.getCrossTimeslotQuery(
+      { end_at, start_at, estate_id: estate.id },
+      estate.user_id
+    ).first()
 
     if (existing) {
       throw new AppException(TIME_SLOT_CROSSING_EXISTING)
@@ -34,8 +40,8 @@ class TimeSlotService {
     try {
       const slot = await TimeSlot.createItem(
         {
-          end_at,
           start_at,
+          end_at,
           slot_length,
           estate_id: estate.id,
         },
@@ -125,7 +131,7 @@ class TimeSlotService {
 
     const estate = await Estate.find(slot.estate_id)
     const crossingSlot = await this.getCrossTimeslotQuery(
-      { end_at: slot.end_at, start_at: slot.start_at },
+      { end_at: slot.end_at, start_at: slot.start_at, estate_id: estate.id },
       estate.user_id
     )
       .whereNot('id', slot.id)
@@ -169,10 +175,10 @@ class TimeSlotService {
     return removeVisitRanges
   }
 
-  static getCrossTimeslotQuery({ end_at, start_at }, userId) {
+  static getCrossTimeslotQuery({ end_at, start_at, estate_id }, userId) {
     return TimeSlot.query()
       .whereIn('estate_id', function () {
-        this.select('id').from('estates').where('user_id', userId)
+        this.select('id').from('estates').where('user_id', userId).where('estate_id', estate_id)
       })
       .where(function () {
         this.orWhere(function () {
@@ -301,7 +307,7 @@ class TimeSlotService {
 
     // The landlord can't remove the slot if it is already started
     if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException(SHOW_ALREADY_STARTED)
+      throw new HttpException(SHOW_ALREADY_STARTED, 400, SHOW_ALREADY_STARTED_ERROR_CODE)
     }
 
     // If slot's end date is passed, we only delete the slot
@@ -331,7 +337,7 @@ class TimeSlotService {
     } catch (e) {
       await trx.rollback()
       Logger.error(e)
-      throw new HttpException(e.message, 400)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 }

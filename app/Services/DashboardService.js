@@ -1,6 +1,12 @@
 'use strict'
 
-const { STATUS_DELETE, LETTING_TYPE_LET } = require('../constants')
+const {
+  STATUS_DELETE,
+  LETTING_TYPE_LET,
+  LETTING_TYPE_VOID,
+  LETTING_TYPE_NA,
+  STATUS_DRAFT,
+} = require('../constants')
 
 const Estate = use('App/Models/Estate')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
@@ -20,13 +26,11 @@ class DashboardService {
       .whereNot('status', STATUS_DELETE)
       .count()
 
-    const matchCount = await Match.query()
-      .innerJoin({ _e: 'estates' }, function () {
-        this.on('_e.id', 'matches.estate_id')
-          .on('_e.user_id', user_id)
-          .onNotIn('_e.status', STATUS_DELETE)
-      })
-      .count(Database.raw(`DISTINCT(_e.id)`))
+    const matchCount = await Estate.query()
+      .where('user_id', user_id)
+      .whereIn('letting_type', [LETTING_TYPE_VOID, LETTING_TYPE_NA])
+      .whereNot('status', STATUS_DELETE)
+      .count(Database.raw(`DISTINCT(estates.id)`))
 
     return {
       estate: estateCount[0].count,

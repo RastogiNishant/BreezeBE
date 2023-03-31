@@ -224,7 +224,6 @@ class EstateCurrentTenantService extends BaseService {
 
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
-
       const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant(
         {
           data,
@@ -309,7 +308,7 @@ class EstateCurrentTenantService extends BaseService {
     return await query.first()
   }
 
-  static async getAllInsideCurrentTenant(estate_ids) {
+  static async getByEstateIds(estate_ids) {
     return (
       await EstateCurrentTenant.query()
         .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
@@ -401,7 +400,7 @@ class EstateCurrentTenantService extends BaseService {
 
       return estateCurrentTeant
     } catch (e) {
-      console.log('Has Permission error', e.message)
+      throw new HttpException('No permision to tenant', 400)
     }
   }
 
@@ -492,6 +491,7 @@ class EstateCurrentTenantService extends BaseService {
         }
         await require('./EstateService').rented(estate_id, trx)
       }
+
       currentTenant = await this.updateCurrentTenant(
         {
           data: {
@@ -506,6 +506,7 @@ class EstateCurrentTenantService extends BaseService {
         },
         trx
       )
+
       await trx.commit()
     } catch (e) {
       reason = e.message
@@ -782,6 +783,10 @@ class EstateCurrentTenantService extends BaseService {
           iosInfo: {
             iosBundleId: process.env.IOS_BUNDLE_ID,
             iosAppStoreId: process.env.IOS_APPSTORE_ID,
+          },
+          desktopInfo: {
+            desktopFallbackLink:
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
           },
         },
       })

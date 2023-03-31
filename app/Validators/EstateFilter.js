@@ -221,13 +221,14 @@ class EstateFilter extends Base {
         ),
 
       letting: yup.array().of(yup.string()),
-      floor_direction: yup
+      customFloorDirection: yup
         .object()
         .shape({
           matchMode: yup.string().nullable(),
           value: yup.array().of(yup.string()).nullable(),
         })
         .nullable(),
+      is_expired_no_match_exclude: yup.boolean(),
     })
 }
 

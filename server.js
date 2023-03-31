@@ -16,9 +16,6 @@
 |     Also you can preload files by calling `preLoad('path/to/file')` method.
 |     Make sure to pass a relative path from the project root.
 */
-
-require('newrelic')
-
 const { Ignitor } = require('@adonisjs/ignitor')
 const https = require('https')
 const fs = require('fs')

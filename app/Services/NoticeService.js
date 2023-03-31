@@ -223,14 +223,18 @@ class NoticeService {
    * On estate deactivation, send to matched prospects
    */
   static async prospectPropertDeactivated(estates) {
-    const notices = estates.map(({ address, id, cover, prospect_id }) => ({
-      user_id: prospect_id,
-      type: NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
-      data: { estate_id: id, estate_address: address },
-      image: File.getPublicUrl(cover),
-    }))
-    await NoticeService.insertNotices(notices)
-    await NotificationsService.sendProspectPropertyDeactivated(notices)
+    try {
+      const notices = estates.map(({ address, id, cover, prospect_id }) => ({
+        user_id: prospect_id,
+        type: NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
+        data: { estate_id: id, estate_address: address },
+        image: File.getPublicUrl(cover),
+      }))
+      await NoticeService.insertNotices(notices)
+      await NotificationsService.sendProspectPropertyDeactivated(notices)
+    } catch (e) {
+      console.log('prospectProperDeactivated error', e.message)
+    }
   }
 
   /**
@@ -891,7 +895,6 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
-        console.log('notice here=', notice)
         return NotificationsService.sendFullInvitation([notice])
     }
   }

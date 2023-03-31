@@ -30,6 +30,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
   ESTATE_FLOOR_DIRECTION_NA,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
@@ -545,6 +546,7 @@ test(`EstateImportReader.mapValue maps result to expected values for building_st
     BUILDING_STATUS_DEVELOPED,
     BUILDING_STATUS_ABRISSOBJEKT,
     BUILDING_STATUS_PROJECTED,
+    BUILDING_STATUS_FULLY_REFURBISHED,
   ]
   types.map((type, type_index) => {
     langs.map((lang) => {
@@ -716,6 +718,7 @@ test(`EstateImportReader.mapValue maps result to expected values for Apartment S
     BUILDING_STATUS_DEVELOPED,
     BUILDING_STATUS_ABRISSOBJEKT,
     BUILDING_STATUS_PROJECTED,
+    BUILDING_STATUS_FULLY_REFURBISHED,
   ]
 
   types.map((type, type_index) => {
