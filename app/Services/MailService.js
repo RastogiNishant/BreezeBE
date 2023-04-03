@@ -678,12 +678,15 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(textMessage, recipient) {
-    const msg = {
+  static async sendEmailToOhneMakler(textMessage, recipient, sendToBCC = false) {
+    let msg = {
       to: recipient,
       from: FromEmail, // Use the email address or domain you verified above
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
+    }
+    if (sendToBCC) {
+      msg.bcc = [sendToBCC]
     }
 
     return sgMail.send(msg).then(
