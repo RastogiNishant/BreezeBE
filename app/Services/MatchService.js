@@ -1741,26 +1741,33 @@ class MatchService {
       // 2 conditions here
       // 1. There is a match with status VISIT and there is a not passed visit
       // 2. There is a match with status SHARE, match's share column is true (not cancelled), there is at least 1 visit
-      query.where((query) => {
-        query
-          .where((innerQuery) => {
-            innerQuery
-              .where('_m.status', MATCH_STATUS_VISIT)
-              .whereHas('visit_relations', (query) => {
-                query
-                  .where('visits.user_id', userId)
-                  .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
-              })
-          })
-          .orWhere((innerQuery) => {
-            innerQuery
-              .where('_m.status', MATCH_STATUS_SHARE)
-              .andWhere('_m.share', true)
-              .whereHas('visit_relations', (query) => {
-                query.where('visits.user_id', userId)
-              })
-          })
-      })
+      query
+        .where((query) => {
+          query
+            .where((innerQuery) => {
+              innerQuery
+                .where('_m.status', MATCH_STATUS_VISIT)
+                .whereHas('visit_relations', (query) => {
+                  query
+                    .where('visits.user_id', userId)
+                    .andWhere(
+                      'visits.start_date',
+                      '>=',
+                      moment().utc(new Date()).format(DATE_FORMAT)
+                    )
+                })
+            })
+            .orWhere((innerQuery) => {
+              innerQuery
+                .where('_m.status', MATCH_STATUS_SHARE)
+                .andWhere('_m.share', true)
+                .whereHas('visit_relations', (query) => {
+                  query.where('visits.user_id', userId)
+                })
+            })
+        })
+        .clearOrder()
+        .orderBy('_v.start_date', 'asc')
     } else if (share) {
       query
         .where({ '_m.share': true })
