@@ -457,11 +457,11 @@ class QueueJobService {
     } else {
       recipient = process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL
     }
-    MailService.sendEmailToOhneMakler(xmlmessage, recipient)
-
-    if (process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL) {
-      MailService.sendEmailToOhneMakler(xmlmessage, process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL)
-    }
+    MailService.sendEmailToOhneMakler(
+      xmlmessage,
+      recipient,
+      process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL || false
+    )
   }
 
   static async updateThirdPartyOfferPoints() {

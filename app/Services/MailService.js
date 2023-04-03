@@ -21,6 +21,7 @@ const {
   DATE_FORMAT,
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
+  SEND_EMAIL_TO_OHNEMAKLER_BCC,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -678,12 +679,16 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(textMessage, recipient) {
-    const msg = {
+  static async sendEmailToOhneMakler(textMessage, recipient, sendToBCC = false) {
+    console.log('sendToBCC', sendToBCC)
+    let msg = {
       to: recipient,
       from: FromEmail, // Use the email address or domain you verified above
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
+    }
+    if (sendToBCC) {
+      msg.bcc = [sendToBCC]
     }
 
     return sgMail.send(msg).then(
