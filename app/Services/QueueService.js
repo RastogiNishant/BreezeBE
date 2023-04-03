@@ -168,6 +168,25 @@ class QueueService {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
+  static async addJobFetchPOI() {
+    const job = await Queue.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
+    job?.remove()
+    await Queue.addJob(
+      SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+      {},
+      {
+        jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+        repeat: { cron: '*/2 * * * *' },
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    )
+  }
+
+  static async removeJobFetchPOI() {
+    const job = await Queue?.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
+    job?.remove()
+  }
   /**
    *
    */

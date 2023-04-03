@@ -99,8 +99,8 @@ class ThirdPartyOfferService {
 
         await ThirdPartyOfferService.setOhneMaklerChecksum(checksum)
       }
-    } catch (err) {
-      console.log(err)
+    } catch (e) {
+      console.log('pullOhneMakler error', e.message)
     }
   }
 
