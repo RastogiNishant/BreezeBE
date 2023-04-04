@@ -353,7 +353,6 @@ class UserService {
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
       const data = await UserService.getTokenWithLocale([user.id])
       const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
-      console.log('from web here=', from_web)
       const forgotLink = await UserService.getForgotShortLink(from_web)
 
       if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
