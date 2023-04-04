@@ -8,6 +8,7 @@ const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const User = use('App/Models/User')
 const Visit = use('App/Models/Visit')
+const Dislike = use('App/Models/Dislike')
 const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
 const UserService = use('App/Services/UserService')
@@ -626,31 +627,71 @@ class MatchService {
       throw new AppException('Not allowed')
     }
 
-    if (match) {
-      if (match.status === MATCH_STATUS_NEW) {
-        // Update match to knock
-        await Database.table('matches')
-          .update({
+    const trx = await Database.beginTransaction()
+    try {
+      if (match) {
+        if (match.status === MATCH_STATUS_NEW) {
+          // Update match to knock
+          await Match.query()
+            .update({
+              status: MATCH_STATUS_KNOCK,
+              knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+            })
+            .where({
+              user_id: userId,
+              estate_id: estateId,
+            })
+            .transacting(trx)
+        } else {
+          throw new AppException('Invalid match stage')
+        }
+      } else if (like || knock_anyway) {
+        console.log('percent here=', like)
+        //FIXME: why percent is 0? It can have value if there is a like
+        await Match.createItem(
+          {
             status: MATCH_STATUS_KNOCK,
-            knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
-          })
-          .where({
             user_id: userId,
             estate_id: estateId,
-          })
-      } else {
-        throw new AppException('Invalid match stage')
+            percent: 0,
+            knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+          },
+          trx
+        )
       }
-    } else if (like || knock_anyway) {
-      //FIXME: why percent is 0? It can have value if there is a like
-      await Database.into('matches').insert({
-        status: MATCH_STATUS_KNOCK,
-        user_id: userId,
-        estate_id: estateId,
-        percent: 0,
-        knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
-      })
+      await Dislike.query()
+        .where('user_id', userId)
+        .where('estate_id', estateId)
+        .delete()
+        .transacting(trx)
+
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_NEW,
+        status: MATCH_STATUS_KNOCK,
+      },
+      role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
+    })
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_NEW,
+        status: MATCH_STATUS_KNOCK,
+      },
+      role: ROLE_LANDLORD,
+    })
+
     return true
   }
 
@@ -688,21 +729,19 @@ class MatchService {
       estate = estates.rows?.[0]
     }
 
-    if (estate) {
-      if (role === ROLE_LANDLORD) {
-        data = {
-          ...data,
-          estate: estate.toJSON(),
-        }
+    if (role === ROLE_LANDLORD) {
+      data = {
+        ...data,
+        estate: estate?.toJSON() || null,
       }
+    }
 
-      const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
-      const topicName =
-        role === ROLE_LANDLORD ? `landlord:${landlordSenderId}` : `tenant:${data.user_id}`
-      const topic = Ws.getChannel(channel).topic(topicName)
-      if (topic) {
-        topic.broadcast(event, data)
-      }
+    const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
+    const topicName =
+      role === ROLE_LANDLORD ? `landlord:${landlordSenderId}` : `tenant:${data.user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(event, data)
     }
   }
 
@@ -721,7 +760,7 @@ class MatchService {
     try {
       await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
       await EstateService.addDislike(userId, estateId, trx)
-
+      await trx.commit()
       this.emitMatch({
         data: {
           estate_id: estateId,
@@ -742,7 +781,6 @@ class MatchService {
         },
         role: ROLE_LANDLORD,
       })
-      await trx.commit()
       return true
     } catch (e) {
       await trx.rollback()
