@@ -730,7 +730,7 @@ class MatchService {
           status: NO_MATCH_STATUS,
         },
         role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
 
       this.emitMatch({
@@ -837,7 +837,7 @@ class MatchService {
           status: MATCH_STATUS_KNOCK,
         },
         role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
     }
 
