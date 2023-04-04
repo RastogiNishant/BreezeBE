@@ -285,14 +285,28 @@ class ThirdPartyOfferService {
   }
 
   static async getKnockedCount(userId) {
+    //we count only those that have third_party_offers that are active
     return await ThirdPartyOfferInteraction.query()
+      .innerJoin('third_party_offers', function () {
+        this.on('third_party_offers.id', 'third_party_offer_interactions.third_party_offer_id').on(
+          'third_party_offers.status',
+          STATUS_ACTIVE
+        )
+      })
       .where('user_id', userId)
       .where('knocked', true)
       .count()
   }
 
   static async getLikesCount(userId) {
+    //we count only those that have third_party_offers that are active
     return await ThirdPartyOfferInteraction.query()
+      .innerJoin('third_party_offers', function () {
+        this.on('third_party_offers.id', 'third_party_offer_interactions.third_party_offer_id').on(
+          'third_party_offers.status',
+          STATUS_ACTIVE
+        )
+      })
       .where('user_id', userId)
       .where('liked', true)
       .where(Database.raw(`knocked is not true`))
@@ -300,6 +314,7 @@ class ThirdPartyOfferService {
   }
 
   static async getDisLikesCount(userId) {
+    //it doesn't matter if its active or not here
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', false)
