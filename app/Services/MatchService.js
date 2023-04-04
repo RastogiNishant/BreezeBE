@@ -2214,10 +2214,10 @@ class MatchService {
       query.whereIn('_m.status', [MATCH_STATUS_FINISH])
     }
 
-    if (params.user_id) {
+    if (params?.user_id) {
       query.where('_m.user_id', params.user_id)
     }
-    if (params.matchStatus) {
+    if (params?.matchStatus) {
       query.where('_m.status', params.matchStatus)
     }
 
