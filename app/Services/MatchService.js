@@ -113,6 +113,24 @@ class MatchService {
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
 
+    const vacant_date = estate.vacant_date
+    const rent_end_at = estate.rent_end_at
+
+    //short duration filter doesn't meet, match percent will be 0
+    if (prospect.residency_duration_min && prospect.residency_duration_max) {
+      if (!vacant_date || !rent_end_at) {
+        return 0
+      }
+
+      const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+      if (
+        rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
+        rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
+      ) {
+        return 0
+      }
+    }
+
     const incomes = await require('./MemberService').getIncomes(prospect.user_id)
     const income_types = incomes.map((ic) => ic.income_type)
     if (!estate.income_sources) {
