@@ -287,12 +287,6 @@ class ThirdPartyOfferService {
   static async getKnockedCount(userId) {
     //we count only those that have third_party_offers that are active
     return await ThirdPartyOfferInteraction.query()
-      .innerJoin('third_party_offers', function () {
-        this.on('third_party_offers.id', 'third_party_offer_interactions.third_party_offer_id').on(
-          'third_party_offers.status',
-          STATUS_ACTIVE
-        )
-      })
       .where('user_id', userId)
       .where('knocked', true)
       .count()
@@ -363,7 +357,6 @@ class ThirdPartyOfferService {
       value = true
       query
         .select(Database.raw(`tpoi.knocked_at as action_at`))
-        .where('third_party_offers.status', STATUS_ACTIVE)
         .select(Database.raw(`${MATCH_STATUS_KNOCK} as status`))
     } else {
       return []
