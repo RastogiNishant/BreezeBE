@@ -285,7 +285,6 @@ class ThirdPartyOfferService {
   }
 
   static async getKnockedCount(userId) {
-    //we count only those that have third_party_offers that are active
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('knocked', true)
