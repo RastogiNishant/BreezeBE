@@ -292,14 +292,7 @@ class ThirdPartyOfferService {
   }
 
   static async getLikesCount(userId) {
-    //we count only those that have third_party_offers that are active
     return await ThirdPartyOfferInteraction.query()
-      .innerJoin('third_party_offers', function () {
-        this.on('third_party_offers.id', 'third_party_offer_interactions.third_party_offer_id').on(
-          'third_party_offers.status',
-          STATUS_ACTIVE
-        )
-      })
       .where('user_id', userId)
       .where('liked', true)
       .where(Database.raw(`knocked is not true`))
@@ -343,14 +336,12 @@ class ThirdPartyOfferService {
       query
         .select(Database.raw(`tpoi.updated_at as action_at`))
         .where(Database.raw(`knocked is not true`))
-        .where('third_party_offers.status', STATUS_ACTIVE)
     } else if (dislike) {
       field = 'liked'
       value = false
       query
         .select(Database.raw(`tpoi.updated_at as action_at`))
         .where(Database.raw(`knocked is not true`))
-      //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
       value = true
