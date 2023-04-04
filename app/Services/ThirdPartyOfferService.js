@@ -300,7 +300,6 @@ class ThirdPartyOfferService {
   }
 
   static async getDisLikesCount(userId) {
-    //it doesn't matter if its active or not here
     return await ThirdPartyOfferInteraction.query()
       .where('user_id', userId)
       .where('liked', false)
