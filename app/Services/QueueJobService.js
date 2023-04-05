@@ -472,12 +472,17 @@ class QueueJobService {
     ) {
       return
     }
-    const estates = await ThirdPartyOffer.query()
-      .select('id', 'coord_raw')
-      .whereNull('point_id')
-      .limit(11)
-      .fetch()
-    await Promise.map(estates.toJSON(), async (estate) => {
+    const estates = (
+      await ThirdPartyOffer.query()
+        .select('id', 'coord_raw')
+        .whereNull('point_id')
+        .limit(10)
+        .fetch()
+    ).toJSON()
+
+    let i = 0
+    while (i < estates.length) {
+      const estate = estates[i]
       try {
         if (estate.coord && estate.coord.match(/,/)) {
           const [lat, lon] = estate.coord.split(',')
@@ -487,7 +492,8 @@ class QueueJobService {
       } catch (e) {
         console.log('Fetching point error', e.message)
       }
-    })
+      i++
+    }
   }
 }
 
