@@ -62,10 +62,10 @@ class OhneMakler {
     }
     newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
     newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}, ${estate.country}`
-    if(estate?.pictures && !Array.isArray(estate?.pictures)){
-      estate?.pictures = [estate?.pictures]
+    if (estate?.pictures && !Array.isArray(estate?.pictures)) {
+      estate.pictures = [estate?.pictures]
     }
-    newEstate.images = estate?.pictures?.length? JSON.stringify(estate.pictures) : null
+    newEstate.images = estate?.pictures?.length ? JSON.stringify(estate.pictures) : null
     if (!isEmpty(estate.ausstattung)) {
       newEstate.amenities = estate.ausstattung.split(', ')
     }
