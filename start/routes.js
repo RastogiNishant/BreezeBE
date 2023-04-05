@@ -165,6 +165,9 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+  Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
+    'auth:jwtAdministrator',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -752,12 +755,6 @@ Route.group(() => {
 })
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt,jwtHousekeeper'])
-
-Route.group(() => {
-  Route.post('/tenant', 'AppController.createTenantLink')
-})
-  .prefix('api/v1/app')
-  .middleware(['auth:jwtAdmin'])
 
 // Add income files
 Route.group(() => {

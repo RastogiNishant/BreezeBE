@@ -10,7 +10,6 @@ const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty, isNull, uniqBy } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
@@ -50,6 +49,7 @@ const {
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
+const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -259,28 +259,11 @@ class MatchController {
     try {
       const currentTenant = await MatchService.findCurrentTenant(estate_id, tenant_id)
       if (currentTenant) {
-        const result = await MatchService.invitedTenant(estate_id, tenant_id, invite_to)
-        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-
+        await MatchService.invitedTenant(estate_id, tenant_id, invite_to)
         if (invite_to === TENANT_EMAIL_INVITE) {
-          const { shortLink } = await firebaseDynamicLinks.createLink({
-            dynamicLinkInfo: {
-              domainUriPrefix: process.env.DOMAIN_PREFIX,
-              link: `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`,
-              androidInfo: {
-                androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-              },
-              iosInfo: {
-                iosBundleId: process.env.IOS_BUNDLE_ID,
-                iosAppStoreId: process.env.IOS_APPSTORE_ID,
-              },
-              desktopInfo: {
-                desktopFallbackLink:
-                  process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
-              },
-            },
-          })
-
+          const shortLink = await createDynamicLink(
+            `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`
+          )
           MailService.sendInvitationToTenant(currentTenant.email, shortLink)
         } else {
         }
