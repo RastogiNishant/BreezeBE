@@ -716,7 +716,7 @@ class MatchService {
       const estateInfo = await require('./EstateService')
         .getActiveEstateQuery()
         .select('id', 'user_id')
-        .where('id', data.estate_id)
+        .where('estates.id', data.estate_id)
         .first()
       landlordSenderId = estateInfo?.user_id
 
@@ -2082,7 +2082,7 @@ class MatchService {
     const data = await Estate.query()
       .where((estateQuery) => {
         estateQuery
-          .whereIn('id', estateIds)
+          .whereIn('estates.id', estateIds)
           .whereHas('matches', (query) => {
             query.where('matches.user_id', userId).where('matches.status', MATCH_STATUS_VISIT)
           })
@@ -2094,7 +2094,7 @@ class MatchService {
       })
       .orWhere((estateQuery) => {
         estateQuery
-          .whereIn('id', estateIds)
+          .whereIn('estates.id', estateIds)
           .whereHas('matches', (query) => {
             query
               .where('matches.status', MATCH_STATUS_SHARE)
