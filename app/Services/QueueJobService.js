@@ -451,17 +451,17 @@ class QueueJobService {
     }
     const xmlmessage = toXML(obj)
     let recipient = ``
-    if (!process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL) {
+    if (process.env.NODE_ENV === 'production' && !process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL) {
       //if production
       recipient = prospect.contact.email
     } else {
       recipient = process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL
     }
-    MailService.sendEmailToOhneMakler(xmlmessage, recipient)
-
-    if (process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL) {
-      MailService.sendEmailToOhneMakler(xmlmessage, process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL)
-    }
+    MailService.sendEmailToOhneMakler(
+      xmlmessage,
+      recipient,
+      process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL || false
+    )
   }
 
   static async updateThirdPartyOfferPoints() {

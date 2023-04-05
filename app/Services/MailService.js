@@ -7,6 +7,7 @@ const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
 const FromEmail = process.env.FROM_EMAIL
+const FromName = process.env.FROM_NAME || `Breeze Team`
 const FROM_ONBOARD_EMAIL = process.env.FROM_ONBOARD_EMAIL
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL
 const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
@@ -30,7 +31,10 @@ class MailService {
 
     const msg = {
       to: trim(user.email, ' '),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_confirmation.subject.message', lang),
@@ -56,7 +60,6 @@ class MailService {
           'email_signature.enviromental.responsibility.message',
           lang
         ),
-
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
         username_val: user.email,
         forgot_link: forgotLink,
@@ -85,7 +88,10 @@ class MailService {
 
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_reset.password.subject.message', lang),
@@ -139,7 +145,10 @@ class MailService {
 
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('prospect.email_invite_hh_member.subject.message', lang),
@@ -189,7 +198,12 @@ class MailService {
   static async sendInvitationToTenant(email, shortLink) {
     const msg = {
       to: email,
-      from: FromEmail, // Use the email address or domain you verified above
+      from: {
+        // Use the email address or domain you verified above
+        email: FromEmail,
+        name: FromName,
+      },
+
       subject: `Invitation to add your properties to this estate`,
       text: `Here is the link is ${shortLink}`,
       html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
@@ -212,7 +226,10 @@ class MailService {
 
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: 'Confirm your email',
@@ -244,7 +261,10 @@ class MailService {
 
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_verification.subject.message', lang),
@@ -307,7 +327,10 @@ class MailService {
 
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_account_activation.subject.message', lang),
@@ -388,7 +411,10 @@ class MailService {
     }*/
     const msg = {
       to: values.email,
-      from: FromEmail, // Use the email address or domain you verified above
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       subject: `You are invited to view this ${values.code}`,
       text: `Invited to view this Estate: ${values.code}`,
       html: `<h3> code: <b>${values.code}</b></h3>`,
@@ -441,7 +467,10 @@ class MailService {
       .replace(/\n/g, '<br />')
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('prospect.email_visit_invitation.subject.message', lang),
@@ -500,7 +529,10 @@ class MailService {
 
     const msg = {
       to: trim(email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('prospect.email_day_of_visit_reminder.subject.message', lang),
@@ -550,7 +582,10 @@ class MailService {
     const messages = links.map((link) => {
       return {
         to: trim(link.email),
-        from: FromEmail,
+        from: {
+          email: FromEmail,
+          name: FromName,
+        },
         templateId: templateId,
         dynamic_template_data: {
           subject: l.get('tenant.email_landlord_invitation.subject.message', lang),
@@ -611,7 +646,10 @@ class MailService {
       .replace(/\n/g, '<br />')
     const msg = {
       to: trim(task.email),
-      from: FromEmail,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_connect_invitation.subject.message', lang),
@@ -659,7 +697,10 @@ class MailService {
   static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
     const msg = {
       to: FromEmail,
-      from: FromEmail, // Use the email address or domain you verified above
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       subject: subject,
       text: textMessage,
       html: htmlMessage,
@@ -678,12 +719,18 @@ class MailService {
     )
   }
 
-  static async sendEmailToOhneMakler(textMessage, recipient) {
-    const msg = {
+  static async sendEmailToOhneMakler(textMessage, recipient, sendToBCC = false) {
+    let msg = {
       to: recipient,
-      from: FromEmail, // Use the email address or domain you verified above
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
       subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
+    }
+    if (sendToBCC) {
+      msg.bcc = [sendToBCC]
     }
 
     return sgMail.send(msg).then(

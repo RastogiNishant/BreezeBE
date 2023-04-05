@@ -335,20 +335,17 @@ class ThirdPartyOfferService {
       query
         .select(Database.raw(`tpoi.updated_at as action_at`))
         .where(Database.raw(`knocked is not true`))
-        .where('third_party_offers.status', STATUS_ACTIVE)
     } else if (dislike) {
       field = 'liked'
       value = false
       query
         .select(Database.raw(`tpoi.updated_at as action_at`))
         .where(Database.raw(`knocked is not true`))
-      //if dislike, include both active and expired
     } else if (knock) {
       field = 'knocked'
       value = true
       query
         .select(Database.raw(`tpoi.knocked_at as action_at`))
-        .where('third_party_offers.status', STATUS_ACTIVE)
         .select(Database.raw(`${MATCH_STATUS_KNOCK} as status`))
     } else {
       return []
