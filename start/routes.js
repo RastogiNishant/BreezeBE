@@ -753,6 +753,12 @@ Route.group(() => {
   .prefix('api/v1/tenant/members')
   .middleware(['auth:jwt,jwtHousekeeper'])
 
+Route.group(() => {
+  Route.post('/tenant', 'AppController.createTenantLink')
+})
+  .prefix('api/v1/app')
+  .middleware(['auth:jwtAdmin'])
+
 // Add income files
 Route.group(() => {
   Route.post('/:income_id/proof', 'MemberController.addMemberIncomeProof').middleware([
