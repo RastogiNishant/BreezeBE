@@ -51,6 +51,7 @@ const {
   STATUS_DELETE,
   DEFAULT_LANG,
   WEBSOCKET_EVENT_MEMBER_INVITATION,
+  VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 
 const {
@@ -789,7 +790,10 @@ class MemberService {
    *
    */
   static async handleOutdatedIncomeProofs() {
-    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment()
+      .utc()
+      .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
@@ -939,7 +943,10 @@ class MemberService {
   }
 
   static async getIncomes(user_id) {
-    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment()
+      .utc()
+      .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .format('YYYY-MM-DD')
     const incomeProofs =
       (
         await IncomeProof.query()

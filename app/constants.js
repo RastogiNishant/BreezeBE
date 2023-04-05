@@ -1121,6 +1121,7 @@ Estates: [ESTATES]
     family_size_max: 2,
   },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
+  VALID_INCOME_PROOFS_PERIOD: 5,
 }
 
 module.exports = constants
