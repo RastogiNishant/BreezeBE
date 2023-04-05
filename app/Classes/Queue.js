@@ -50,7 +50,7 @@ class QueueEngine {
       .add(
         SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
         {},
-        { repeat: { cron: '0 */1 * * *' }, removeOnComplete: true, removeOnFail: true }
+        { repeat: { cron: '23 */1 * * *' }, removeOnComplete: true, removeOnFail: true }
       )
       .catch(Logger.error)
 
