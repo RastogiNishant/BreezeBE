@@ -15,6 +15,12 @@ const {
 const { isEmpty } = require('lodash')
 
 class OhneMakler {
+  propertyType = {
+    Wohnung: PROPERTY_TYPE_APARTMENT,
+    Haus: PROPERTY_TYPE_HOUSE,
+    'Möbliertes Wohnen / Wohnen auf Zeit': PROPERTY_TYPE_SHORT_TERM,
+    Zimmer: PROPERTY_TYPE_ROOM,
+  }
   map = {
     id: 'source_id',
     title: 'description',
@@ -47,16 +53,18 @@ class OhneMakler {
     this.data = data
   }
 
+  parseItemType(key, type) {
+    if (typeof this[type] === 'undefined') {
+      return null
+    }
+    if (typeof this[type][key] === 'undefined') {
+      return null
+    }
+    return this[type][key]
+  }
   parsePropertyType(propertyType) {
-    switch (propertyType) {
-      case 'Wohnung':
-        return PROPERTY_TYPE_APARTMENT
-      case 'Haus':
-        return PROPERTY_TYPE_HOUSE
-      case 'Möbliertes Wohnen / Wohnen auf Zeit':
-        return PROPERTY_TYPE_SHORT_TERM
-      case 'Zimmer':
-        return PROPERTY_TYPE_ROOM
+    if (this.propertyTypes[propertyType]) {
+      return propertyTypes[propertyType]
     }
     return null
   }
@@ -115,7 +123,7 @@ class OhneMakler {
       newEstate.floor = 11
     }
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
-    newEstate.property_type = this.parsePropertyType(estate.objektart)
+    newEstate.property_type = this.parseItem(estate.objektart, 'propertyType')
 
     if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
       //extra costs is the sum of additional_costs and heating_costs
