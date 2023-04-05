@@ -620,10 +620,14 @@ class MatchService {
       match: getMatches(),
       like: getLikes(),
     })
+
+    if (!match && !like && !knock_anyway) {
+      throw new AppException('Not allowed')
+    }
+
     if (match) {
       if (match.status === MATCH_STATUS_NEW) {
         // Update match to knock
-
         await Database.table('matches')
           .update({
             status: MATCH_STATUS_KNOCK,
@@ -633,23 +637,11 @@ class MatchService {
             user_id: userId,
             estate_id: estateId,
           })
-        this.emitMatch({
-          data: {
-            estate_id: estateId,
-            user_id: userId,
-            old_status: MATCH_STATUS_NEW,
-            status: MATCH_STATUS_KNOCK,
-          },
-          role: ROLE_LANDLORD,
-        })
-        return true
+      } else {
+        throw new AppException('Invalid match stage')
       }
-
-      throw new AppException('Invalid match stage')
-    }
-
-    //FIXME: why percent is 0? It can have value if there is a like
-    if (like || knock_anyway) {
+    } else if (like || knock_anyway) {
+      //FIXME: why percent is 0? It can have value if there is a like
       await Database.into('matches').insert({
         status: MATCH_STATUS_KNOCK,
         user_id: userId,
@@ -657,19 +649,25 @@ class MatchService {
         percent: 0,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
-      this.emitMatch({
-        data: {
-          estate_id: estateId,
-          user_id: userId,
-          old_status: MATCH_STATUS_NEW,
-          status: MATCH_STATUS_KNOCK,
-        },
-        role: ROLE_LANDLORD,
-      })
-      return true
     }
 
-    throw new AppException('Not allowed')
+    const estates = await require('./EstateService').getEstatesByUserId({
+      limit: 1,
+      page: 1,
+      params: { id: estateId },
+    })
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_NEW,
+        status: MATCH_STATUS_KNOCK,
+        estate: estates.rows?.[0] ?? null,
+      },
+      role: ROLE_LANDLORD,
+    })
+    return true
   }
 
   static async emitMatch({ data, role }) {
@@ -704,12 +702,20 @@ class MatchService {
     try {
       await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
       await EstateService.addDislike(userId, estateId, trx)
+
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: estateId },
+      })
+
       this.emitMatch({
         data: {
           estate_id: estateId,
           user_id: userId,
           old_status: MATCH_STATUS_KNOCK,
           status: NO_MATCH_STATUS,
+          estate: estates.rows?.[0] ?? null,
         },
         role: ROLE_LANDLORD,
       })
@@ -798,12 +804,20 @@ class MatchService {
       user_id: userId,
       estate_id: estateId,
     })
+
+    const estates = await require('./EstateService').getEstatesByUserId({
+      limit: 1,
+      page: 1,
+      params: { id: estateId },
+    })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
         user_id: userId,
         old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_KNOCK,
+        estate: estates.rows?.[0] ?? null,
       },
       role: role === ROLE_LANDLORD ? ROLE_USER : ROLE_LANDLORD,
     })
@@ -891,12 +905,19 @@ class MatchService {
       await NoticeService.landlordTimeslotsBooked(estateId, total, booked)
     }
 
+    const estates = await require('./EstateService').getEstatesByUserId({
+      limit: 1,
+      page: 1,
+      params: { id: estateId },
+    })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
         user_id: userId,
         old_status: MATCH_STATUS_INVITE,
         status: MATCH_STATUS_VISIT,
+        estate: estates.rows?.[0] ?? null,
       },
       role: ROLE_LANDLORD,
     })
