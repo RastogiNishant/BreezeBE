@@ -6,7 +6,6 @@ const MailService = use('App/Services/MailService')
 const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
 const crypto = require('crypto')
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
 const yup = require('yup')
@@ -69,6 +68,7 @@ const l = use('Localize')
 const { trim } = require('lodash')
 const { phoneSchema } = require('../Libs/schemas')
 const BaseService = require('./BaseService')
+const { createDynamicLink } = require('../Libs/utils')
 
 class EstateCurrentTenantService extends BaseService {
   /**
@@ -771,25 +771,7 @@ class EstateCurrentTenantService extends BaseService {
         uri += `&user_id=${existingUser.id}`
       }
 
-      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-
-      const { shortLink } = await firebaseDynamicLinks.createLink({
-        dynamicLinkInfo: {
-          domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
-          androidInfo: {
-            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-          },
-          iosInfo: {
-            iosBundleId: process.env.IOS_BUNDLE_ID,
-            iosAppStoreId: process.env.IOS_APPSTORE_ID,
-          },
-          desktopInfo: {
-            desktopFallbackLink:
-              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
-          },
-        },
-      })
+      const shortLink = await createDynamicLink(`${process.env.DEEP_LINK}?type=outsideinvitation${uri}`)
       return {
         id: estateCurrentTenant.id,
         estate_id: estateCurrentTenant.estate_id,
