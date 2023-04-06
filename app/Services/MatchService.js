@@ -1767,7 +1767,7 @@ class MatchService {
             })
         })
         .clearOrder()
-        .orderBy('_v.start_date', 'asc')
+        .orderBy('_v.date', 'asc')
     } else if (share) {
       query
         .where({ '_m.share': true })
