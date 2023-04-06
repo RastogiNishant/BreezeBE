@@ -22,6 +22,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../../constants')
+const QueueService = require('../../Services/QueueService')
 const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
@@ -124,7 +125,11 @@ class TenantController {
         updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
       } else {
-        await MatchService.matchByUser({ userId: auth.user.id, has_notification_sent: false })
+        QueueService.getTenantMatchProperties({
+          userId: auth.user.id,
+          has_notification_sent: false,
+        })
+        //await MatchService.matchByUser({ userId: auth.user.id, has_notification_sent: false })
       }
       response.res(updatedTenant)
     } catch (e) {
