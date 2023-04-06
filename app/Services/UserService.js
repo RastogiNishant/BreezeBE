@@ -1148,6 +1148,7 @@ class UserService {
       })
       .with('letter_template')
       .with('tenantPaymentPlan')
+      .with('feedbacks')
       .first()
 
     if (!user) {
