@@ -65,7 +65,17 @@ class OhneMakler {
     if (estate?.pictures && !Array.isArray(estate?.pictures)) {
       estate.pictures = [estate?.pictures]
     }
-    newEstate.images = estate?.pictures?.length ? JSON.stringify(estate.pictures) : null
+    newEstate.images = estate?.pictures?.length
+      ? JSON.stringify(estate.pictures)
+      : JSON.stringify([
+          {
+            picture: {
+              picture_url:
+                'https://cdn4.vectorstock.com/i/1000x1000/21/23/isolated-avatar-man-and-house-design-vector-25982123.jpg',
+              picture_title: 'Außenansicht ',
+            },
+          },
+        ])
     if (!isEmpty(estate.ausstattung)) {
       newEstate.amenities = estate.ausstattung.split(', ')
     }
