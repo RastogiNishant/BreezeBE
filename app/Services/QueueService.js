@@ -18,6 +18,7 @@ const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
+const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
@@ -106,6 +107,10 @@ class QueueService {
 
   static async doEvery10MinAtNight() {
     return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
+  }
+
+  static getTenantMatchProperties({ userId, has_notification_sent = false }) {
+    Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
   }
 
   /**
@@ -243,6 +248,11 @@ class QueueService {
           return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
         case GET_IP_BASED_INFO:
           return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
+        case GET_TENANT_MATCH_PROPERTIES:
+          return require('./MatchService').matchByUser({
+            userId: job.data.userId,
+            has_notification_sent: job.data.has_notification_sent,
+          })
         default:
           console.log(`No job processor for: ${job.name}`)
       }
