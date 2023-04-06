@@ -1,6 +1,6 @@
 'use strict'
 
-const { STATUS_DELETE } = require('../../app/constants')
+const { STATUS_DELETE, ROLE_USER } = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
@@ -10,7 +10,7 @@ const Member = use('App/Models/Member')
 class AdjustMemberMainProfileProspectSchema extends Schema {
   async up() {
     const users = await Database.raw(
-      `select u.id, u.firstname, u.secondname, u.email, owner_id, u.status, u.created_at from users u left join members m on u.id = m.user_id where u."role" = 3 and u.owner_id is null and m.id is null and u.status != ${STATUS_DELETE}`
+      `select u.id, u.firstname, u.secondname, u.email, owner_id, u.status, u.created_at from users u left join members m on u.id = m.user_id where u.role = ${ROLE_USER} and u.owner_id is null and m.id is null and u.status != ${STATUS_DELETE}`
     )
     let i = 0
 
