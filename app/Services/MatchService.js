@@ -445,45 +445,57 @@ class MatchService {
    *
    */
   static async matchByUser({ userId, ignoreNullFields = false, has_notification_sent = true }) {
-    const tenant = await MatchService.getProspectForScoringQuery()
-      .select('_p.data as polygon')
-      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
-      .where({ 'tenants.user_id': userId })
-      .first()
-    const polygon = get(tenant, 'polygon.data.0.0')
-    if (!tenant || !polygon) {
-      if (ignoreNullFields) {
-        return
-      } else {
-        throw new AppException('Invalid tenant filters')
+    let count = 0
+    let success = true
+    let message = ''
+    try {
+      const tenant = await MatchService.getProspectForScoringQuery()
+        .select('_p.data as polygon')
+        .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+        .where({ 'tenants.user_id': userId })
+        .first()
+      const polygon = get(tenant, 'polygon.data.0.0')
+      if (!tenant || !polygon) {
+        if (ignoreNullFields) {
+          return
+        } else {
+          throw new AppException('Invalid tenant filters')
+        }
       }
+
+      let maxLat = -90,
+        maxLon = -180,
+        minLat = 90,
+        minLon = 180
+
+      polygon.forEach(([lon, lat]) => {
+        maxLat = Math.max(lat, maxLat)
+        maxLon = Math.max(lon, maxLon)
+        minLat = Math.min(lat, minLat)
+        minLon = Math.min(lon, minLon)
+      })
+      // Max radius
+      const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
+      const insideMatchCount = await this.createNewMatches({ tenant, dist, has_notification_sent })
+      const outsideMatchCount = await ThirdPartyMatchService.createNewMatches({
+        tenant,
+        dist,
+        has_notification_sent,
+      })
+      count = insideMatchCount + outsideMatchCount
+    } catch (e) {
+      success = false
+      message = e.message
+    } finally {
+      this.emitCreateMatchCompleted({
+        user_id: userId,
+        data: {
+          count,
+          success,
+          message,
+        },
+      })
     }
-
-    let maxLat = -90,
-      maxLon = -180,
-      minLat = 90,
-      minLon = 180
-
-    polygon.forEach(([lon, lat]) => {
-      maxLat = Math.max(lat, maxLat)
-      maxLon = Math.max(lon, maxLon)
-      minLat = Math.min(lat, minLat)
-      minLon = Math.min(lon, minLon)
-    })
-
-    // Max radius
-    const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-    const insideMatchCount = await this.createNewMatches({ tenant, dist, has_notification_sent })
-    const outsideMatchCount = await ThirdPartyMatchService.createNewMatches({
-      tenant,
-      dist,
-      has_notification_sent,
-    })
-
-    this.emitCreateMatchCompleted({
-      count: insideMatchCount + outsideMatchCount,
-      user_id: tenant.user_id,
-    })
   }
 
   static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
@@ -714,12 +726,13 @@ class MatchService {
     return true
   }
 
-  static async emitCreateMatchCompleted({ user_id, count }) {
+  static async emitCreateMatchCompleted({ user_id, data }) {
     const channel = `tenant:*`
     const topicName = `tenant:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
+
     if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, { count })
+      topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
     }
   }
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {

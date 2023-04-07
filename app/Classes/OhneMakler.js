@@ -7,8 +7,10 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SHORT_TERM,
+  DATE_FORMAT,
 } = require('../constants')
 const { isEmpty } = require('lodash')
+const moment = require('moment')
 
 class OhneMakler {
   map = {
@@ -33,6 +35,11 @@ class OhneMakler {
     nebenkosten_ohne_heizkosten: 'additional_costs',
     heizkosten: 'heating_costs',
     summe_nebenkosten: 'extra_costs',
+    price: 'net_rent',
+    floor_count: 'number_floors',
+    rooms: 'rooms_number',
+    vacant_from: 'vacant_date',
+    expiration_date: 'available_end_at',
     //visit_from
     //visit_to
   }
@@ -75,8 +82,9 @@ class OhneMakler {
     newEstate.coord = `${estate.latitude},${estate.longitude}`
     newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
     if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
-      newEstate.vacant_from = estate.uebernahme_ab
+      newEstate.vacant_date = estate.uebernahme_ab
     } else {
+      newEstate.vacant_date = moment.utc(new Date()).format(DATE_FORMAT)
       newEstate.vacant_from_string = estate.uebernahme_ab
     }
 
@@ -95,6 +103,10 @@ class OhneMakler {
       //extra costs is the sum of additional_costs and heating_costs
       newEstate.extra_costs = +newEstate.additional_costs + +newEstate.heating_costs
     }
+    newEstate.available_end_at = moment
+      .utc(estate.expiration_date)
+      .add(1, 'day')
+      .format(DATE_FORMAT)
     return newEstate
   }
 

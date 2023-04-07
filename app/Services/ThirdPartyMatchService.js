@@ -5,22 +5,25 @@ const {
   MATCH_PERCENT_PASS,
   MATCH_SCORE_GOOD_MATCH,
   MATCH_STATUS_NEW,
+  MAX_SEARCH_ITEMS,
 } = require('../constants')
 
 const { isEmpty } = require('lodash')
 const Database = use('Database')
+const ThirdPartyMatch = use('App/Models/ThirdPartyMatch')
 const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
 const NoticeService = use('App/Services/NoticeService')
 
 class ThirdPartyMatchService {
   static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
-    const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant, dist)
+    const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant, dist).limit(
+      MAX_SEARCH_ITEMS
+    )
     let passedEstates = []
     let idx = 0
-
     const MatchService = require('./MatchService')
     while (idx < estates.length) {
-      const estate = estates[idx]
+      let estate = estates[idx]
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
       const percent = await MatchService.calculateMatchPercent(tenant, estate)
       if (percent >= MATCH_PERCENT_PASS) {
@@ -36,14 +39,13 @@ class ThirdPartyMatchService {
       status: MATCH_STATUS_NEW,
     }))
 
-    await ThirdPartyMatch.query().where('user_id', tenant.user_id).delete()
+    await ThirdPartyMatch.query()
+      .where('user_id', tenant.user_id)
+      .where('status', MATCH_STATUS_NEW)
+      .delete()
 
     if (!isEmpty(matches)) {
-      const insertQuery = Database.query().into('third_party_matches').insert(matches).toString()
-      await Database.raw(
-        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
-      )
-
+      await ThirdPartyMatch.createMany(matches)
       if (has_notification_sent) {
         const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
         if (superMatches.length > 0) {

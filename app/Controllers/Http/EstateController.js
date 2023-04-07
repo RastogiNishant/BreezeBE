@@ -824,12 +824,15 @@ class EstateController {
     const user = auth.user
     let estates = []
     try {
-      const insideNewMatchesCount = await MatchService.getNewMatchCount(userId)
+      const insideNewMatchesCount = await MatchService.getNewMatchCount(user.id)
       let enoughOfInsideMatch = false
+      const offsetCount = insideNewMatchesCount % limit
+      const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
       if ((page - 1) * limit < insideNewMatchesCount) {
         estates = await EstateService.getTenantAllEstates(user.id, page, limit)
         estates = await Promise.all(
-          estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+          estates.rows.map(async (estate) => {
+            estate = estate.toJSON({ isShort: true, role: user.role })
             estate.isoline = await EstateService.getIsolines(estate)
             return estate
           })
@@ -840,11 +843,13 @@ class EstateController {
       }
 
       if (!enoughOfInsideMatch) {
-        const thirdPartyOfferLimit = limit - estates.length
+        let from = (page - insidePage) * limit - offsetCount
+        if (from < 0) from = 0
+        const to = (page - insidePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
         const thirdPartyOffers = await ThirdPartyOfferService.getActiveMatchesQuery(
           user.id,
-          page,
-          limit
+          from,
+          to
         )
         estates = [...estates, ...thirdPartyOffers]
       }
