@@ -60,6 +60,22 @@ class ThirdPartyOffer extends Model {
     return this.hasOne('App/Models/Point', 'point_id', 'id')
   }
 
+  likes() {
+    return this.hasMany('App/Models/ThirdPartyOfferInteraction')
+      .where('liked', true)
+      .whereNot('knocked', true)
+  }
+
+  dislikes() {
+    return this.hasMany('App/Models/ThirdPartyOfferInteraction')
+      .where('liked', false)
+      .whereNot('knocked', true)
+  }
+
+  knocks() {
+    return this.hasMany('App/Models/ThirdPartyOfferInteraction').where('knocked', true)
+  }
+
   static get Serializer() {
     return 'App/Serializers/ThirdPartyOfferSerializer'
   }

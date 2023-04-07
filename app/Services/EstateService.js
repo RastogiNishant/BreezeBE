@@ -1184,6 +1184,7 @@ class EstateService {
   /**
    * Get estates according to es
    */
+
   static getActiveMatchesQuery(userId) {
     return Estate.query()
       .select('estates.*')
@@ -1351,7 +1352,7 @@ class EstateService {
   /**
    *
    */
-  static async getTenantAllEstates(userId, page, limit = 20) {
+  static async getTenantAllEstates(userId, page = 1, limit = 20) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')

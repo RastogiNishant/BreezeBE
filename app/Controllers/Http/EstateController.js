@@ -817,25 +817,37 @@ class EstateController {
    */
   async getTenantEstates({ request, auth, response }) {
     let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
     //const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
     const user = auth.user
-    let estates
+    let estates = []
     try {
-      estates = await EstateService.getTenantAllEstates(user.id, page, limit)
+      const insideNewMatchesCount = await MatchService.getNewMatchCount(userId)
+      let enoughOfInsideMatch = false
+      if ((page - 1) * limit < insideNewMatchesCount) {
+        estates = await EstateService.getTenantAllEstates(user.id, page, limit)
+        estates = await Promise.all(
+          estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
+            estate.isoline = await EstateService.getIsolines(estate)
+            return estate
+          })
+        )
+        if (estates.length >= limit) {
+          enoughOfInsideMatch = true
+        }
+      }
 
-      estates = await Promise.all(
-        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
-          estate.isoline = await EstateService.getIsolines(estate)
-          return estate
-        })
-      )
-      const thirdPartyOfferLimit = limit - estates.length
-      const thirdPartyOffers = await ThirdPartyOfferService.getEstates(
-        user.id,
-        thirdPartyOfferLimit,
-        exclude_third_party_offers
-      )
-      estates = [...estates, ...thirdPartyOffers]
+      if (!enoughOfInsideMatch) {
+        const thirdPartyOfferLimit = limit - estates.length
+        const thirdPartyOffers = await ThirdPartyOfferService.getActiveMatchesQuery(
+          user.id,
+          page,
+          limit
+        )
+        estates = [...estates, ...thirdPartyOffers]
+      }
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)

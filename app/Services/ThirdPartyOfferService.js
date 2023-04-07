@@ -14,12 +14,12 @@ const {
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
   ISO_DATE_FORMAT,
   MATCH_STATUS_KNOCK,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
-const MatchService = use('App/Services/MatchService')
 const {
   exceptions: {
     ALREADY_KNOCKED_ON_THIRD_PARTY,
@@ -105,6 +105,7 @@ class ThirdPartyOfferService {
   }
 
   static async getEstates(userId, limit = 10, exclude) {
+    const MatchService = require('./MatchService')
     const tenant = await MatchService.getProspectForScoringQuery()
       .where({ 'tenants.user_id': userId })
       .first()
@@ -131,6 +132,7 @@ class ThirdPartyOfferService {
   }
 
   static async getEstate(userId, third_party_offer_id) {
+    const MatchService = require('./MatchService')
     let estate = await ThirdPartyOfferService.searchEstatesQuery(
       userId,
       third_party_offer_id
@@ -165,8 +167,39 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static getActiveMatchesQuery(userId) {
-    
+  static getActiveMatchesQuery(userId, page = 1, limit = 20) {
+    return ThirdPartyOffer.query()
+      .select('*')
+      .select(
+        'price as net_rent',
+        'floor_count as number_floors',
+        'rooms as rooms_number',
+        Database.raw(
+          `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
+        ),
+        Database.raw(`CASE 
+        WHEN vacant_from IS NULL and (vacant_from_string = 'sofort' OR vacant_from_string = 'nach Absprache')
+        THEN 'today' 
+        ELSE vacant_from
+        END
+        as vacant_date`)
+      )
+      .select(Database.raw(`_m.percent AS match`))
+      .withCount('likes')
+      .withCount('dislikes')
+      .withCount('knocks')
+      .innerJoin({ _m: 'third_party_matches' }, function () {
+        this.on('_m.estate_id', 'third_party_offers.id')
+          .onIn('_m.user_id', [userId])
+          .onIn('_m.status', MATCH_STATUS_NEW)
+      })
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
+      })
+      .where('_e.status', STATUS_ACTIVE)
+      .whereNull('tpoi.id')
+      .orderBy('_m.percent', 'DESC')
+      .paginate(page, limit)
   }
 
   static searchEstatesQuery(userId, id = false, exclude = []) {
@@ -320,6 +353,7 @@ class ThirdPartyOfferService {
   }
 
   static async getTenantEstatesWithFilter(userId, filter) {
+    const MatchService = require('./MatchService')
     const { like, dislike, knock } = filter
     let query = ThirdPartyOffer.query().select(
       'third_party_offers.status as estate_status',

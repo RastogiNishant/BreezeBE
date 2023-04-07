@@ -4,12 +4,12 @@ const {
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   MATCH_PERCENT_PASS,
   MATCH_SCORE_GOOD_MATCH,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 
 const { isEmpty } = require('lodash')
 const Database = use('Database')
 const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
-const MatchService = use('App/Services/MatchService')
 const NoticeService = use('App/Services/NoticeService')
 
 class ThirdPartyMatchService {
@@ -18,6 +18,7 @@ class ThirdPartyMatchService {
     let passedEstates = []
     let idx = 0
 
+    const MatchService = require('./MatchService')
     while (idx < estates.length) {
       const estate = estates[idx]
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
@@ -32,6 +33,7 @@ class ThirdPartyMatchService {
       user_id: tenant.user_id,
       estate_id: i.estate_id,
       percent: i.percent,
+      status: MATCH_STATUS_NEW,
     }))
 
     await ThirdPartyMatch.query().where('user_id', tenant.user_id).delete()

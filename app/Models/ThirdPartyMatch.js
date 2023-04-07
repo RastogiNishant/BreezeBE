@@ -6,7 +6,7 @@ const Database = use('Database')
 
 class ThirdPartyMatch extends Model {
   static get columns() {
-    return ['id', 'user_id', 'status', 'estate_id', 'created_at', 'updated_at']
+    return ['id', 'user_id', 'estate_id', 'percent', 'status', 'created_at', 'updated_at']
   }
 }
 

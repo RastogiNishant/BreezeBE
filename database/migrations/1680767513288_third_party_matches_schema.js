@@ -12,8 +12,9 @@ class ThirdPartyMatchesSchema extends Schema {
       table.integer('user_id').unsigned().references('id').inTable('users')
       table.integer('status').defaultTo(MATCH_STATUS_NEW)
       table.integer('estate_id').unsigned().references('id').inTable('third_party_offers')
-      table.timestamps()
+      table.decimal('percent', 5, 2).notNullable()
 
+      table.timestamps()
       table.index('user_id')
       table.index('estate_id')
     })

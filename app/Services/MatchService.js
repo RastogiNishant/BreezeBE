@@ -3471,6 +3471,34 @@ class MatchService {
   static async getCountMatchList(user_id, params = {}) {
     return await this.getMatchListQuery(user_id, params).count()
   }
+
+  /**
+   * Get count of inside new matches for a prospect
+   */
+  static async getNewMatchCount(userId) {
+    return (
+      (
+        await Estate.query()
+          .count('*')
+          .innerJoin({ _m: 'matches' }, function () {
+            this.on('_m.estate_id', 'estates.id')
+              .onIn('_m.user_id', [userId])
+              .onIn('_m.status', MATCH_STATUS_NEW)
+          })
+          .whereNot('_m.buddy', true)
+          .where('estates.status', STATUS_ACTIVE)
+          .whereNotIn('estates.id', function () {
+            // Remove already liked/disliked
+            this.select('estate_id')
+              .from('likes')
+              .where('user_id', userId)
+              .union(function () {
+                this.select('estate_id').from('dislikes').where('user_id', userId)
+              })
+          })
+      )?.[0]?.count || 0
+    )
+  }
 }
 
 module.exports = MatchService
