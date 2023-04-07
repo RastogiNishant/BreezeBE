@@ -154,6 +154,21 @@ class ThirdPartyOfferService {
     return estate
   }
 
+  static searchTenantEstatesQuery(tenant, radius) {
+    return Database.select(Database.raw(`FALSE as inside`))
+      .select('_e.*')
+      .from({ _t: 'tenants' })
+      .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
+      .crossJoin({ _e: 'third_party_offers' })
+      .where('_t.user_id', tenant.user_id)
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+  }
+
+  static getActiveMatchesQuery(userId) {
+    
+  }
+
   static searchEstatesQuery(userId, id = false, exclude = []) {
     /* estate coord intersects with polygon of tenant */
     let query = Tenant.query()
@@ -175,8 +190,6 @@ class ThirdPartyOfferService {
       .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
       .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
       .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
-      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
-      .crossJoin({ _e: 'third_party_offers' })
       .leftJoin(
         Database.raw(`(
         select 
@@ -217,7 +230,6 @@ class ThirdPartyOfferService {
         this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
       })
       .where('tenants.user_id', userId)
-      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
     if (id) {
       query.with('point').where('_e.id', id)
     } else {

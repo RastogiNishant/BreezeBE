@@ -816,12 +816,12 @@ class EstateController {
    *
    */
   async getTenantEstates({ request, auth, response }) {
-    let { exclude, limit = 20 } = request.all()
-    const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
+    let { page, limit = 20 } = request.all()
+    //const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
     const user = auth.user
     let estates
     try {
-      estates = await EstateService.getTenantAllEstates(user.id, exclude_estates, limit)
+      estates = await EstateService.getTenantAllEstates(user.id, page, limit)
 
       estates = await Promise.all(
         estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {

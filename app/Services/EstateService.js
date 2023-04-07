@@ -1184,12 +1184,10 @@ class EstateService {
   /**
    * Get estates according to es
    */
-  static getActiveMatchesQuery(userId, exclude = []) {
+  static getActiveMatchesQuery(userId) {
     return Estate.query()
       .select('estates.*')
-      .withCount('knocked', function (m) {
-        m.whereNotIn('estate_id', exclude)
-      })
+      .withCount('knocked')
       .select(Database.raw(`_m.percent AS match`))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
@@ -1198,7 +1196,6 @@ class EstateService {
       })
       .whereNot('_m.buddy', true)
       .where('estates.status', STATUS_ACTIVE)
-      .whereNotIn('estates.id', exclude)
       .whereNotIn('estates.id', function () {
         // Remove already liked/disliked
         this.select('estate_id')
@@ -1287,7 +1284,7 @@ class EstateService {
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
-  static getNotActiveMatchesQuery(tenant, userId, exclude = []) {
+  static getNotActiveMatchesQuery(tenant, userId) {
     let query = null
     if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
@@ -1328,10 +1325,6 @@ class EstateService {
         .where('user_id', userId)
     })
 
-    if (exclude.length > 0) {
-      query.whereNotIn('estates.id', exclude)
-    }
-
     return (
       query
         .select('estates.*')
@@ -1358,19 +1351,19 @@ class EstateService {
   /**
    *
    */
-  static async getTenantAllEstates(userId, exclude = [], limit = 20) {
+  static async getTenantAllEstates(userId, page, limit = 20) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
     if (tenant.isActive()) {
-      query = this.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
+      query = this.getActiveMatchesQuery(userId)
     } else {
-      query = this.getNotActiveMatchesQuery(tenant, userId, exclude)
+      query = this.getNotActiveMatchesQuery(tenant, userId)
     }
 
-    return query.limit(limit).fetch()
+    return query.paginate(page, limit)
   }
 
   /**

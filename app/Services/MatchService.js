@@ -81,11 +81,13 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   WEBSOCKET_EVENT_MATCH_STAGE,
+  MATCH_PERCENT_PASS,
+  WEBSOCKET_EVENT_MATCH_CREATED,
 } = require('../constants')
 
 const { ESTATE_NOT_EXISTS } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
-const MATCH_PERCENT_PASS = 40
+const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 
 /**
  * Check is item in data range
@@ -471,11 +473,26 @@ class MatchService {
 
     // Max radius
     const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
+    const insideMatchCount = await this.createNewMatches({ tenant, dist, has_notification_sent })
+    const outsideMatchCount = await ThirdPartyMatchService.createNewMatches({
+      tenant,
+      dist,
+      has_notification_sent,
+    })
+
+    this.emitCreateMatchCompleted({
+      count: insideMatchCount + outsideMatchCount,
+      user_id: tenant.user_id,
+    })
+  }
+
+  static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
     }, [])
+
     estates =
       (
         await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
@@ -493,7 +510,7 @@ class MatchService {
     }
 
     const matches = passedEstates.map((i) => ({
-      user_id: userId,
+      user_id: tenant.user_id,
       estate_id: i.estate_id,
       percent: i.percent,
     }))
@@ -501,7 +518,7 @@ class MatchService {
     // Delete old matches without any activity
     await Database.query()
       .from('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_NEW })
+      .where({ user_id: tenant.user_id, status: MATCH_STATUS_NEW })
       .whereNot({ buddy: true })
       .delete()
 
@@ -520,6 +537,8 @@ class MatchService {
         }
       }
     }
+
+    return matches?.length || 0
   }
 
   /**
@@ -695,6 +714,14 @@ class MatchService {
     return true
   }
 
+  static async emitCreateMatchCompleted({ user_id, count }) {
+    const channel = `tenant:*`
+    const topicName = `tenant:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, { count })
+    }
+  }
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {
     if (!data.estate_id) {
       return
