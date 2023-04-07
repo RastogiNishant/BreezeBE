@@ -17,6 +17,7 @@ const MailService = use('App/Services/MailService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
+const HttpException = use('App/Exceptions/HttpException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
 const Event = use('Event')
@@ -83,8 +84,10 @@ const {
   WEBSOCKET_EVENT_MATCH_STAGE,
 } = require('../constants')
 
-const { ESTATE_NOT_EXISTS } = require('../exceptions')
-const HttpException = require('../Exceptions/HttpException')
+const {
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE },
+  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE },
+} = require('../exceptions')
 const MATCH_PERCENT_PASS = 40
 
 /**
@@ -1154,10 +1157,16 @@ class MatchService {
    * Share tenant personal data to landlord
    */
   static async share({ landlord_id, estate_id, code }) {
-    const userTenant = await User.findByOrFail({
-      code,
-      role: ROLE_USER,
-    })
+    const userTenant = await User.query()
+      .where({
+        code,
+        role: ROLE_USER,
+      })
+      .first()
+
+    if (!userTenant) {
+      throw new HttpException(WRONG_PROSPECT_CODE, 400, WRONG_PROSPECT_CODE_ERROR_CODE)
+    }
 
     const match = await Database.table('matches')
       .where({
