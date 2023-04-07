@@ -430,9 +430,10 @@ class EstateCurrentTenantService extends BaseService {
         MailService.sendInvitationToOusideTenant(validLinks, lang)
       }
 
-      return { successCount, failureCount }
+      const totalInviteCount = await EstateCurrentTenantService.inviteOusideTenantCount(user_id)
+      return { successCount, failureCount, totalInviteCount }
     } catch (e) {
-      return { successCount: 0, failureCount: ids.length || 0 }
+      return { successCount: 0, failureCount: ids.length || 0, totalInviteCount: 0 }
     }
   }
 
@@ -647,8 +648,11 @@ class EstateCurrentTenantService extends BaseService {
     )
 
     const successCount = (ids.length || 0) - failureCount
-
-    return { successCount, failureCount }
+    return {
+      successCount,
+      failureCount,
+      totalInviteCount: await EstateCurrentTenantService.inviteOusideTenantCount(user_id),
+    }
   }
 
   static async getOutsideTenantsByEstateId({ id, estate_id }) {
@@ -771,7 +775,9 @@ class EstateCurrentTenantService extends BaseService {
         uri += `&user_id=${existingUser.id}`
       }
 
-      const shortLink = await createDynamicLink(`${process.env.DEEP_LINK}?type=outsideinvitation${uri}`)
+      const shortLink = await createDynamicLink(
+        `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+      )
       return {
         id: estateCurrentTenant.id,
         estate_id: estateCurrentTenant.estate_id,
@@ -1241,6 +1247,17 @@ class EstateCurrentTenantService extends BaseService {
         })
       }
     }
+  }
+
+  static async inviteOusideTenantCount(user_id) {
+    return parseInt(
+      (
+        await Estate.query()
+          .count('*')
+          .where('estates.user_id', user_id)
+          .innerJoin({ _ect: 'estate_current_tenants' }, '_ect.estate_id', 'estates.id')
+      )?.[0]?.count || 0
+    )
   }
 }
 
