@@ -15,6 +15,7 @@ const {
   ISO_DATE_FORMAT,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_NEW,
+  STATUS_DELETE,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -53,15 +54,17 @@ class ThirdPartyOfferService {
       console.log('not pulling ohne makler...')
       return
     }
-
+    console.log('pullOnheMaker start!!!!')
     let ohneMaklerData
     try {
-      const { data } = await axios.get(process.env.OHNE_MAKLER_API_URL, { timeout: 2000 })
+      const { data } = await axios.get(process.env.OHNE_MAKLER_API_URL, { timeout: 5000 })
       if (!data) {
+        console.log('Error found on pulling ohne makler')
         throw new Error('Error found on pulling ohne makler')
       }
       ohneMaklerData = data
     } catch (e) {
+      console.log('Failed to fetch data!!!!')
       throw new Error('Failed to fetch data!!!!')
     }
 
@@ -74,10 +77,12 @@ class ThirdPartyOfferService {
         //1. to expire all estates that are not anymore in the new data including also those
         //that are past expiration date
         //2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
-        await Database.raw(`UPDATE third_party_offers SET status='${STATUS_EXPIRE}'`)
         //there must be some difference between the data... so we can process
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
+
+        const deleteIds = estates.map((estate) => estate.source_id)
+        await ThirdPartyOfferService.deleteBySourceIds(deleteIds)
 
         let i = 0
         while (i < estates.length) {
@@ -103,6 +108,12 @@ class ThirdPartyOfferService {
     } catch (e) {
       console.log('pullOhneMakler error', e.message)
     }
+  }
+
+  static async deleteBySourceIds(sourceIds) {
+    await ThirdPartyOffer.query()
+      .whereNotIn('source_id', sourceIds)
+      .update({ status: STATUS_DELETE })
   }
 
   static async getEstates(userId, limit = 10, exclude) {
@@ -185,15 +196,12 @@ class ThirdPartyOfferService {
       .withCount('dislikes')
       .withCount('knocks')
       .innerJoin({ _m: 'third_party_matches' }, function () {
-        this.on('_m.estate_id', 'third_party_offers.id')
-          .onIn('_m.user_id', [userId])
-          .onIn('_m.status', MATCH_STATUS_NEW)
+        this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
       })
       .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
         this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
       })
       .where('third_party_offers.id', id)
-      .where('third_party_offers.status', STATUS_ACTIVE)
       .first()
   }
 
