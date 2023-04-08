@@ -6,7 +6,6 @@ const MailService = use('App/Services/MailService')
 const MemberService = use('App/Services/MemberService')
 const Database = use('Database')
 const crypto = require('crypto')
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const uuid = require('uuid')
 const moment = require('moment')
 const yup = require('yup')
@@ -69,6 +68,7 @@ const l = use('Localize')
 const { trim } = require('lodash')
 const { phoneSchema } = require('../Libs/schemas')
 const BaseService = require('./BaseService')
+const { createDynamicLink } = require('../Libs/utils')
 
 class EstateCurrentTenantService extends BaseService {
   /**
@@ -430,9 +430,10 @@ class EstateCurrentTenantService extends BaseService {
         MailService.sendInvitationToOusideTenant(validLinks, lang)
       }
 
-      return { successCount, failureCount }
+      const totalInviteCount = await EstateCurrentTenantService.inviteOusideTenantCount(user_id)
+      return { successCount, failureCount, totalInviteCount }
     } catch (e) {
-      return { successCount: 0, failureCount: ids.length || 0 }
+      return { successCount: 0, failureCount: ids.length || 0, totalInviteCount: 0 }
     }
   }
 
@@ -647,8 +648,11 @@ class EstateCurrentTenantService extends BaseService {
     )
 
     const successCount = (ids.length || 0) - failureCount
-
-    return { successCount, failureCount }
+    return {
+      successCount,
+      failureCount,
+      totalInviteCount: await EstateCurrentTenantService.inviteOusideTenantCount(user_id),
+    }
   }
 
   static async getOutsideTenantsByEstateId({ id, estate_id }) {
@@ -771,25 +775,9 @@ class EstateCurrentTenantService extends BaseService {
         uri += `&user_id=${existingUser.id}`
       }
 
-      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-
-      const { shortLink } = await firebaseDynamicLinks.createLink({
-        dynamicLinkInfo: {
-          domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
-          androidInfo: {
-            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-          },
-          iosInfo: {
-            iosBundleId: process.env.IOS_BUNDLE_ID,
-            iosAppStoreId: process.env.IOS_APPSTORE_ID,
-          },
-          desktopInfo: {
-            desktopFallbackLink:
-              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
-          },
-        },
-      })
+      const shortLink = await createDynamicLink(
+        `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+      )
       return {
         id: estateCurrentTenant.id,
         estate_id: estateCurrentTenant.estate_id,
@@ -1259,6 +1247,17 @@ class EstateCurrentTenantService extends BaseService {
         })
       }
     }
+  }
+
+  static async inviteOusideTenantCount(user_id) {
+    return parseInt(
+      (
+        await Estate.query()
+          .count('*')
+          .where('estates.user_id', user_id)
+          .innerJoin({ _ect: 'estate_current_tenants' }, '_ect.estate_id', 'estates.id')
+      )?.[0]?.count || 0
+    )
   }
 }
 

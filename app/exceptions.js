@@ -82,12 +82,14 @@ const exceptions = {
   THIRD_PARTY_OFFER_NOT_FOUND: 'Third party offer not found',
   MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
   UPLOAD_EXCEL_PROGRESS: 'Previous excel is in progress',
+  WRONG_PROSPECT_CODE: 'Wrong prospect code',
 }
 
 const exceptionCodes = {
   IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
   SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
   UPLOAD_EXCEL_PROGRESS_ERROR_CODE: 2000100,
+  WRONG_PROSPECT_CODE_ERROR_CODE: 3000100,
 }
 
 const exceptionKeys = {

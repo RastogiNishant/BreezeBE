@@ -16,6 +16,7 @@ const {
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
   TASK_STATUS_ARCHIVED,
+  PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
 } = require('../constants')
 
 const l = use('Localize')
@@ -169,7 +170,8 @@ class TaskService extends BaseService {
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
-        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE
+        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE ||
+        predefinedMessage.type === PREDEFINED_MSG_OPTION_SIGNLE_CHOICE
       ) {
         const resp = await PredefinedMessageService.handleMessageWithChoice(
           {
