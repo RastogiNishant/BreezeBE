@@ -86,7 +86,6 @@ const {
   WEBSOCKET_EVENT_MATCH_CREATED,
 } = require('../constants')
 
-const HttpException = require('../Exceptions/HttpException')
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
   exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE },
