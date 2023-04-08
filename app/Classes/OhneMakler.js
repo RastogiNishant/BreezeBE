@@ -21,6 +21,18 @@ class OhneMakler {
     'Möbliertes Wohnen / Wohnen auf Zeit': PROPERTY_TYPE_SHORT_TERM,
     Zimmer: PROPERTY_TYPE_ROOM,
   }
+  houseType = {
+    'Mehrfamilienhaus': 
+    'Dachgeschosswohnung': 
+    'Reihenhaus': 
+    'Penthouse': 
+    'Maisonette': 
+    'Etagenwohnung': 
+    'Bauernhof': HOUSE_TYPE_GARDENHOUSE,
+    'Studio': HOUSE_TYPE_STUDIO,
+    'Einfamilienhaus': HOUSE_TYPE_DETACHED_HOUSE,
+    'Doppelhaushälfte': HOUSE_TYPE_SEMIDETACHED_HOUSE1``
+  }
   map = {
     id: 'source_id',
     title: 'description',
@@ -53,7 +65,7 @@ class OhneMakler {
     this.data = data
   }
 
-  parseItemType(key, type) {
+  parseItemType({key, type}) {
     if (typeof this[type] === 'undefined') {
       return null
     }
@@ -62,13 +74,7 @@ class OhneMakler {
     }
     return this[type][key]
   }
-  parsePropertyType(propertyType) {
-    if (this.propertyTypes[propertyType]) {
-      return propertyTypes[propertyType]
-    }
-    return null
-  }
-
+  
   parseHouseType(houseType) {
     switch (houseType) {
       case 'Mehrfamilienhaus':
@@ -101,12 +107,7 @@ class OhneMakler {
     }
     newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
     newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}, ${estate.country}`
-
-    if (estate?.pictures && !Array.isArray(estate?.pictures)) {
-      estate.pictures = [estate?.pictures]
-    }
-    newEstate.images = estate?.pictures?.length ? JSON.stringify(estate.pictures) : null
-
+    newEstate.images = JSON.stringify(estate.pictures)
     if (!isEmpty(estate.ausstattung)) {
       newEstate.amenities = estate.ausstattung.split(', ')
     }
