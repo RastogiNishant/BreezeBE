@@ -51,7 +51,7 @@ class QueueEngine {
         SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
         {},
         {
-          repeat: { cron: '* */1 * * *' },
+          repeat: { cron: '23 */1 * * *' },
           removeOnComplete: true,
           removeOnFail: true,
           attempts: 3,
