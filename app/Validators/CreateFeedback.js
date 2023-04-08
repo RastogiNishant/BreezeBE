@@ -5,7 +5,7 @@ const Base = require('./Base')
 class CreateFeedback extends Base {
   static schema = () =>
     yup.object().shape({
-      decription: yup.string().min(1).max(1024),
+      description: yup.string().min(1).max(1024),
       point: yup.number().integer().min(0).max(5).required(),
       device: yup.string().max(255).required(),
     })
