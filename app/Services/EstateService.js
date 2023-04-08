@@ -1452,7 +1452,7 @@ class EstateService {
   static async handleOfflineEstate({ estate_id, is_notification = true }, trx) {
     const matches = await Estate.query()
       .select('estates.*')
-      .where('id', estate_id)
+      .where('estates.id', estate_id)
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', estate_id)
       })

@@ -17,6 +17,7 @@ const MailService = use('App/Services/MailService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
+const HttpException = use('App/Exceptions/HttpException')
 const Buddy = use('App/Models/Buddy')
 const { max, min } = require('lodash')
 const Event = use('Event')
@@ -83,8 +84,10 @@ const {
   WEBSOCKET_EVENT_MATCH_STAGE,
 } = require('../constants')
 
-const { ESTATE_NOT_EXISTS } = require('../exceptions')
-const HttpException = require('../Exceptions/HttpException')
+const {
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE },
+  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE },
+} = require('../exceptions')
 const MATCH_PERCENT_PASS = 40
 
 /**
@@ -716,7 +719,7 @@ class MatchService {
       const estateInfo = await require('./EstateService')
         .getActiveEstateQuery()
         .select('id', 'user_id')
-        .where('id', data.estate_id)
+        .where('estates.id', data.estate_id)
         .first()
       landlordSenderId = estateInfo?.user_id
 
@@ -1154,10 +1157,16 @@ class MatchService {
    * Share tenant personal data to landlord
    */
   static async share({ landlord_id, estate_id, code }) {
-    const userTenant = await User.findByOrFail({
-      code,
-      role: ROLE_USER,
-    })
+    const userTenant = await User.query()
+      .where({
+        code,
+        role: ROLE_USER,
+      })
+      .first()
+
+    if (!userTenant) {
+      throw new HttpException(WRONG_PROSPECT_CODE, 400, WRONG_PROSPECT_CODE_ERROR_CODE)
+    }
 
     const match = await Database.table('matches')
       .where({
@@ -1779,26 +1788,33 @@ class MatchService {
       // 2 conditions here
       // 1. There is a match with status VISIT and there is a not passed visit
       // 2. There is a match with status SHARE, match's share column is true (not cancelled), there is at least 1 visit
-      query.where((query) => {
-        query
-          .where((innerQuery) => {
-            innerQuery
-              .where('_m.status', MATCH_STATUS_VISIT)
-              .whereHas('visit_relations', (query) => {
-                query
-                  .where('visits.user_id', userId)
-                  .andWhere('visits.start_date', '>=', moment().utc(new Date()).format(DATE_FORMAT))
-              })
-          })
-          .orWhere((innerQuery) => {
-            innerQuery
-              .where('_m.status', MATCH_STATUS_SHARE)
-              .andWhere('_m.share', true)
-              .whereHas('visit_relations', (query) => {
-                query.where('visits.user_id', userId)
-              })
-          })
-      })
+      query
+        .where((query) => {
+          query
+            .where((innerQuery) => {
+              innerQuery
+                .where('_m.status', MATCH_STATUS_VISIT)
+                .whereHas('visit_relations', (query) => {
+                  query
+                    .where('visits.user_id', userId)
+                    .andWhere(
+                      'visits.start_date',
+                      '>=',
+                      moment().utc(new Date()).format(DATE_FORMAT)
+                    )
+                })
+            })
+            .orWhere((innerQuery) => {
+              innerQuery
+                .where('_m.status', MATCH_STATUS_SHARE)
+                .andWhere('_m.share', true)
+                .whereHas('visit_relations', (query) => {
+                  query.where('visits.user_id', userId)
+                })
+            })
+        })
+        .clearOrder()
+        .orderBy('_v.date', 'asc')
     } else if (share) {
       query
         .where({ '_m.share': true })
@@ -2082,7 +2098,7 @@ class MatchService {
     const data = await Estate.query()
       .where((estateQuery) => {
         estateQuery
-          .whereIn('id', estateIds)
+          .whereIn('estates.id', estateIds)
           .whereHas('matches', (query) => {
             query.where('matches.user_id', userId).where('matches.status', MATCH_STATUS_VISIT)
           })
@@ -2094,7 +2110,7 @@ class MatchService {
       })
       .orWhere((estateQuery) => {
         estateQuery
-          .whereIn('id', estateIds)
+          .whereIn('estates.id', estateIds)
           .whereHas('matches', (query) => {
             query
               .where('matches.status', MATCH_STATUS_SHARE)

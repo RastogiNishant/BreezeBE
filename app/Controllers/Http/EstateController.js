@@ -364,7 +364,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const estate = await EstateService.getQuery()
-      .where('id', id)
+      .where('estates.id', id)
       .whereIn('user_id', landlordIds)
       .whereNot('status', STATUS_DELETE)
       .with('point')

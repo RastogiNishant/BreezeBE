@@ -165,10 +165,12 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+  Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
+    'auth:jwtAdministrator',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
-
 Route.get(
   '/api/v1/estate-by-hash/:hash',
   'EstateViewInvitationController.getEstateByHash'
@@ -977,6 +979,14 @@ Route.group(() => {
 })
   .prefix('/api/v1/landlord')
   .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
+  Route.post('/', 'FeedbackController.create').middleware([
+    'auth:jwt,jwtLandlord',
+    'valid:CreateFeedback',
+  ])
+  Route.get('/', 'FeedbackController.getAll').middleware(['auth:jwtAdministrator'])
+}).prefix('/api/v1/feedback')
 
 // MATCH FLOW
 Route.group(() => {
