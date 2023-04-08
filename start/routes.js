@@ -851,7 +851,7 @@ Route.group(() => {
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
+  Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
   Route.post('/:id/like', 'EstateController.likeEstate').middleware(['valid:Id'])
   Route.delete('/:id/like', 'EstateController.unlikeEstate').middleware(['valid:Id'])
@@ -898,11 +898,6 @@ Route.get('/map', 'MapController.getMap')
 Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middleware([
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
-])
-
-Route.get('/api/v1/tenant/third-party-offers', 'MatchController.getThirdPartyOffers').middleware([
-  'auth:jwt',
-  'valid:Pagination',
 ])
 
 Route.get(

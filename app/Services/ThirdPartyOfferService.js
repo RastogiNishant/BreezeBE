@@ -14,12 +14,12 @@ const {
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
   ISO_DATE_FORMAT,
   MATCH_STATUS_KNOCK,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
-const MatchService = use('App/Services/MatchService')
 const {
   exceptions: {
     ALREADY_KNOCKED_ON_THIRD_PARTY,
@@ -69,6 +69,7 @@ class ThirdPartyOfferService {
       const ohneMaklerChecksum = await ThirdPartyOfferService.getOhneMaklerChecksum()
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum || forced) {
+        console.log('updating start !!!!')
         //mark all as expired...
         //1. to expire all estates that are not anymore in the new data including also those
         //that are past expiration date
@@ -96,7 +97,7 @@ class ThirdPartyOfferService {
           }
           i++
         }
-
+        console.log('End of updating!!!!')
         await ThirdPartyOfferService.setOhneMaklerChecksum(checksum)
       }
     } catch (e) {
@@ -105,6 +106,7 @@ class ThirdPartyOfferService {
   }
 
   static async getEstates(userId, limit = 10, exclude) {
+    const MatchService = require('./MatchService')
     const tenant = await MatchService.getProspectForScoringQuery()
       .where({ 'tenants.user_id': userId })
       .first()
@@ -130,103 +132,69 @@ class ThirdPartyOfferService {
     return estates
   }
 
-  static async getEstate(userId, third_party_offer_id) {
-    let estate = await ThirdPartyOfferService.searchEstatesQuery(
-      userId,
-      third_party_offer_id
-    ).first()
-    if (!estate) {
-      throw new HttpException(THIRD_PARTY_OFFER_NOT_FOUND, 400)
-    }
-    estate = estate.toJSON()
-    estate['__meta__'] = {
-      knocked_count: estate.knocked_count,
-      like_count: estate.like_count,
-      dislike_count: estate.dislike_count,
-    }
-    const tenant = await MatchService.getProspectForScoringQuery()
-      .where({ 'tenants.user_id': userId })
-      .first()
-    estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-    const score = await MatchService.calculateMatchPercent(tenant, estate)
-    estate.percent = score
-    estate.rooms = null
-    return estate
+  static searchTenantEstatesQuery(tenant, radius) {
+    return Database.select(Database.raw(`FALSE as inside`))
+      .select('_e.*')
+      .select(Database.raw(`NULL as rooms`))
+      .from({ _t: 'tenants' })
+      .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
+      .crossJoin({ _e: 'third_party_offers' })
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', tenant.user_id)
+      })
+      .where('_e.status', STATUS_ACTIVE)
+      .whereNull('tpoi.id')
+      .where('_t.user_id', tenant.user_id)
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static searchEstatesQuery(userId, id = false, exclude = []) {
+  static async getActiveMatchesQuery(userId, from = 0, limit = 20) {
+    return (
+      await ThirdPartyOffer.query()
+        .select('third_party_offers.*')
+        .select(Database.raw(`_m.percent AS match`))
+        .select(Database.raw(`NULL as rooms`))
+        .withCount('likes')
+        .withCount('dislikes')
+        .withCount('knocks')
+        .innerJoin({ _m: 'third_party_matches' }, function () {
+          this.on('_m.estate_id', 'third_party_offers.id')
+            .onIn('_m.user_id', [userId])
+            .onIn('_m.status', MATCH_STATUS_NEW)
+        })
+        .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+          this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
+        })
+        .where('third_party_offers.status', STATUS_ACTIVE)
+        .whereNull('tpoi.id')
+        .orderBy('_m.percent', 'DESC')
+        .offset(from)
+        .limit(limit)
+        .fetch()
+    ).toJSON()
+  }
+
+  static async getEstate(userId, id) {
     /* estate coord intersects with polygon of tenant */
-    let query = Tenant.query()
-      .select(
-        '_e.price as net_rent',
-        '_e.floor_count as number_floors',
-        '_e.rooms as rooms_number',
-        Database.raw(
-          `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
-        ),
-        Database.raw(`CASE 
-          WHEN _e.vacant_from IS NULL and (_e.vacant_from_string = 'sofort' OR _e.vacant_from_string = 'nach Absprache')
-          THEN 'today' 
-          ELSE _e.vacant_from
-          END
-          as vacant_date`),
-        '_e.*'
-      )
-      .select(Database.raw(`coalesce(_l.like_count, 0)::int as like_count`))
-      .select(Database.raw(`coalesce(_d.dislike_count, 0)::int as dislike_count`))
-      .select(Database.raw(`coalesce(_k.knock_count, 0)::int as knocked_count`))
-      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
-      .crossJoin({ _e: 'third_party_offers' })
-      .leftJoin(
-        Database.raw(`(
-        select 
-          third_party_offer_id,
-          count(case when liked then 1 end) as like_count
-        from third_party_offer_interactions
-        group by
-          third_party_offer_id
-      ) _l`),
-        '_l.third_party_offer_id',
-        '_e.id'
-      )
-      .leftJoin(
-        Database.raw(`(
-        select 
-          third_party_offer_id,
-          count(case when liked=false then 1 end) as dislike_count
-        from third_party_offer_interactions
-        group by
-          third_party_offer_id
-      ) _d`),
-        '_d.third_party_offer_id',
-        '_e.id'
-      )
-      .leftJoin(
-        Database.raw(`(
-        select 
-          third_party_offer_id,
-          count(case when knocked=true then 1 end) as knock_count
-        from third_party_offer_interactions
-        group by
-          third_party_offer_id
-      ) _k`),
-        '_k.third_party_offer_id',
-        '_e.id'
-      )
-      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
-        this.on('tpoi.third_party_offer_id', '_e.id').on('tpoi.user_id', userId)
+    return await ThirdPartyOffer.query()
+      .select('third_party_offers.*')
+      .select(Database.raw(`_m.percent AS match`))
+      .select(Database.raw(`NULL as rooms`))
+      .withCount('likes')
+      .withCount('dislikes')
+      .withCount('knocks')
+      .innerJoin({ _m: 'third_party_matches' }, function () {
+        this.on('_m.estate_id', 'third_party_offers.id')
+          .onIn('_m.user_id', [userId])
+          .onIn('_m.status', MATCH_STATUS_NEW)
       })
-      .where('tenants.user_id', userId)
-      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-    if (id) {
-      query.with('point').where('_e.id', id)
-    } else {
-      query.where('_e.status', STATUS_ACTIVE).whereNull('tpoi.id')
-    }
-    if (exclude.length > 0) {
-      query.whereNotIn('_e.id', exclude)
-    }
-    return query
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
+      })
+      .where('third_party_offers.id', id)
+      .where('third_party_offers.status', STATUS_ACTIVE)
+      .first()
   }
 
   static async postAction(userId, id, action, comment = '', message = '') {
@@ -308,24 +276,15 @@ class ThirdPartyOfferService {
   }
 
   static async getTenantEstatesWithFilter(userId, filter) {
+    const MatchService = require('./MatchService')
     const { like, dislike, knock } = filter
-    let query = ThirdPartyOffer.query().select(
-      'third_party_offers.status as estate_status',
-      'third_party_offers.price as net_rent',
-      'third_party_offers.floor_count as number_floors',
-      'third_party_offers.rooms as rooms_number',
-      Database.raw(
-        `to_char(expiration_date + time '23:59:59', '${ISO_DATE_FORMAT}') as available_end_at`
-      ),
-      Database.raw(`CASE 
-          WHEN third_party_offers.vacant_from IS NULL and (third_party_offers.vacant_from_string = 'sofort' OR third_party_offers.vacant_from_string = 'nach Absprache')
-          THEN 'today' 
-          ELSE third_party_offers.vacant_from
-          END
-          as vacant_date`),
-      'third_party_offers.*',
-      'tpoi.knocked_at'
-    )
+    let query = ThirdPartyOffer.query()
+      .select('third_party_offers.*')
+      .select(
+        'third_party_offers.status as estate_status',
+        'third_party_offers.*',
+        'tpoi.knocked_at'
+      )
 
     let field
     let value
