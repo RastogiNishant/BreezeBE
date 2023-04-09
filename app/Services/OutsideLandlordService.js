@@ -7,6 +7,8 @@ const HttpException = require('../Exceptions/HttpException')
 const { ROLE_LANDLORD, ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID } = require('../constants')
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
+const { createDynamicLink } = require('../Libs/utils')
+
 class OutsideLandlordService {
   static async handleTaskWithoutEstate(task, trx) {
     if (!task) {
