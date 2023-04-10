@@ -642,6 +642,7 @@ const constants = {
     'transfer_budget',
     'rent_end_at',
     'knocked_at',
+    'action_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
