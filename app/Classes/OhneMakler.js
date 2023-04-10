@@ -11,6 +11,15 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SHORT_TERM,
+  BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+  BUILDING_STATUS_NEW,
+  BUILDING_STATUS_MODERNIZED,
+  BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+  BUILDING_STATUS_BY_AGREEMENT,
+  BUILDING_STATUS_FULLY_RENOVATED,
+  BUILDING_STATUS_CLEANED,
+  BUILDING_STATUS_WELL_MAINTAINED,
+  BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 
@@ -100,6 +109,33 @@ class OhneMakler {
     }
     return null
   }
+
+  parseBuildingStatus(buildingStatus) {
+    switch (buildingStatus) {
+      case 'nach Vereinbarung':
+        return BUILDING_STATUS_BY_AGREEMENT
+      case 'renovierungsbedürftig':
+        return BUILDING_STATUS_IN_NEED_OF_RENOVATION
+      case 'Erstbezug nach Sanierung':
+        return BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION
+      case 'saniert':
+        return BUILDING_STATUS_CLEANED
+      case 'gepflegt':
+        return BUILDING_STATUS_WELL_MAINTAINED
+      case 'keine Angaben':
+        return null
+      case 'Erstbezug':
+        return BUILDING_STATUS_FIRST_TIME_OCCUPIED
+      case 'modernisiert':
+        return BUILDING_STATUS_MODERNIZED
+      case 'renoviert':
+        return BUILDING_STATUS_FULLY_RENOVATED
+      case 'Neuwertig':
+        return BUILDING_STATUS_NEW
+    }
+    return null
+  }
+
   mapEstate(estate) {
     let newEstate
     for (const [key, value] of Object.entries(this.map)) {
@@ -131,6 +167,8 @@ class OhneMakler {
     newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
     newEstate.property_type = this.parseItem(estate.objektart, 'propertyType')
 
+    //newEstate.property_type = this.parsePropertyType(estate.objektart)
+    newEstate.building_status = this.parseBuildingStatus(estate.condition)
     if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
       //extra costs is the sum of additional_costs and heating_costs
       newEstate.extra_costs = +newEstate.additional_costs + +newEstate.heating_costs

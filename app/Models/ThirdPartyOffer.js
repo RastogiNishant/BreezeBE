@@ -45,6 +45,7 @@ class ThirdPartyOffer extends Model {
       'extra_costs',
       'house_type',
       'apt_type',
+      'building_status',
     ]
   }
 
