@@ -105,7 +105,7 @@ class PredefinedMessageService {
     if (predefinedMessage.variable_to_update) {
       task[predefinedMessage.variable_to_update] =
         choice?.value ||
-        (prev_predefined_message_id && answer.split(':').length == 2
+        (prev_predefined_message_id && typeof answer === 'string' && answer.split(':').length === 2
           ? trim(answer.split(':')[1])
           : answer)
     }
@@ -116,7 +116,9 @@ class PredefinedMessageService {
         .where('id', prev_predefined_message_id)
         .firstOrFail()
       if (prevPredefinedMessage.variable_to_update) {
-        task[prevPredefinedMessage.variable_to_update] = choice?.value || trim(answer.split(':')[0])
+        task[prevPredefinedMessage.variable_to_update] =
+          choice?.value ||
+          (answer && typeof answer === 'string' ? trim(answer.split(':')[0]) : answer)
       }
     }
 
