@@ -194,6 +194,10 @@ class User extends Model {
   deactivationSchedule() {
     return this.hasOne('App/Models/UserDeactivationSchedule', 'id', 'user_id')
   }
+
+  feedbacks() {
+    return this.hasMany('App/Models/Feedback')
+  }
 }
 
 module.exports = User

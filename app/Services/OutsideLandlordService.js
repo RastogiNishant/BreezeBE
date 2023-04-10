@@ -3,11 +3,12 @@
 const moment = require('moment')
 const uuid = require('uuid')
 const crypto = require('crypto')
-const { FirebaseDynamicLinks } = require('firebase-dynamic-links')
 const HttpException = require('../Exceptions/HttpException')
 const { ROLE_LANDLORD, ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID } = require('../constants')
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
+const { createDynamicLink } = require('../Libs/utils')
+
 class OutsideLandlordService {
   static async handleTaskWithoutEstate(task, trx) {
     if (!task) {
@@ -64,21 +65,9 @@ class OutsideLandlordService {
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}&landlord_invite=true`
 
-    const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-
-    const { shortLink } = await firebaseDynamicLinks.createLink({
-      dynamicLinkInfo: {
-        domainUriPrefix: process.env.DOMAIN_PREFIX,
-        link: `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
-        androidInfo: {
-          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-        },
-        iosInfo: {
-          iosBundleId: process.env.IOS_BUNDLE_ID,
-          iosAppStoreId: process.env.IOS_APPSTORE_ID,
-        },
-      },
-    })
+    const shortLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+    )
     return {
       id: task.id,
       email: task.email,
