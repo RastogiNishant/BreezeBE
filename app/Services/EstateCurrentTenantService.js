@@ -616,7 +616,10 @@ class EstateCurrentTenantService extends BaseService {
       }
     )
 
-    return result
+    return {
+      ...result,
+      totalInviteCount: await this.inviteOusideTenantCount(user_id),
+    }
   }
 
   static async inviteTenantToAppBySMS({ ids, user_id }, trx = null) {

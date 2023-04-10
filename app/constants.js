@@ -942,6 +942,7 @@ const constants = {
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+  WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1130,6 +1131,7 @@ Estates: [ESTATES]
   },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
   VALID_INCOME_PROOFS_PERIOD: 5,
+  MATCH_PERCENT_PASS: 40,
 }
 
 module.exports = constants
