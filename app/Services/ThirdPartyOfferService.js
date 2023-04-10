@@ -19,14 +19,9 @@ const {
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
-const Tenant = use('App/Models/Tenant')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const {
-  exceptions: {
-    ALREADY_KNOCKED_ON_THIRD_PARTY,
-    CANNOT_KNOCK_ON_DISLIKED_ESTATE,
-    THIRD_PARTY_OFFER_NOT_FOUND,
-  },
+  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -160,25 +155,33 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static async getActiveMatchesQuery(userId, from = 0, limit = 20) {
+  static getActiveMatchesQuery(userId) {
+    return ThirdPartyOffer.query()
+      .innerJoin({ _m: 'third_party_matches' }, function () {
+        this.on('_m.estate_id', 'third_party_offers.id')
+          .onIn('_m.user_id', [userId])
+          .onIn('_m.status', MATCH_STATUS_NEW)
+      })
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
+      })
+      .where('third_party_offers.status', STATUS_ACTIVE)
+      .whereNull('tpoi.id')
+  }
+
+  static async getNewMatchCount(userId) {
+    return (await this.getActiveMatchesQuery(userId).count('*'))?.[0]?.count || 0
+  }
+
+  static async getMatches(userId, from = 0, limit = 20) {
     return (
-      await ThirdPartyOffer.query()
+      await this.getActiveMatchesQuery(userId)
         .select('third_party_offers.*')
         .select(Database.raw(`_m.percent AS match`))
         .select(Database.raw(`NULL as rooms`))
         .withCount('likes')
         .withCount('dislikes')
         .withCount('knocks')
-        .innerJoin({ _m: 'third_party_matches' }, function () {
-          this.on('_m.estate_id', 'third_party_offers.id')
-            .onIn('_m.user_id', [userId])
-            .onIn('_m.status', MATCH_STATUS_NEW)
-        })
-        .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
-          this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
-        })
-        .where('third_party_offers.status', STATUS_ACTIVE)
-        .whereNull('tpoi.id')
         .orderBy('_m.percent', 'DESC')
         .offset(from)
         .limit(limit)
