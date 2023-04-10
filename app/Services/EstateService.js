@@ -75,15 +75,16 @@ const {
   COMPLETE_CERTAIN_PERCENT,
   ESTATE_COMPLETENESS_BREAKPOINT,
   PUBLISH_ESTATE,
+  ROLE_USER,
 } = require('../constants')
 
 const {
   exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
 } = require('../../app/exceptions')
 
-const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+
 const MAX_DIST = 10000
 
 const ESTATE_PERCENTAGE_VARIABLE = {
@@ -2387,6 +2388,51 @@ class EstateService {
       })
     }
     return estate
+  }
+
+  static async getTenantEstates({ user_id, page, limit }) {
+    let estates = []
+    let totalCount = 0
+    const insideNewMatchesCount = await require('./MatchService').getNewMatchCount(user_id)
+    const outsideNewMatchesCount = await require('./ThirdPartyOfferService').getNewMatchCount(
+      user_id
+    )
+    totalCount = parseInt(insideNewMatchesCount) + parseInt(outsideNewMatchesCount)
+    let enoughOfInsideMatch = false
+    const offsetCount = insideNewMatchesCount % limit
+    const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
+    if ((page - 1) * limit < insideNewMatchesCount) {
+      estates = await EstateService.getTenantAllEstates(user_id, page, limit)
+      estates = await Promise.all(
+        estates.rows.map(async (estate) => {
+          estate = estate.toJSON({ isShort: true, role: ROLE_USER })
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
+      if (estates.length >= limit) {
+        enoughOfInsideMatch = true
+      }
+    }
+
+    if (!enoughOfInsideMatch) {
+      let from = (page - insidePage) * limit - offsetCount
+      if (from < 0) from = 0
+      const to = (page - insidePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
+      const thirdPartyOffers = await require('./ThirdPartyOfferService').getMatches(
+        user_id,
+        from,
+        to
+      )
+      estates = [...estates, ...thirdPartyOffers]
+    }
+
+    return {
+      estates,
+      page,
+      limit,
+      count: totalCount,
+    }
   }
 
   static async correctWrongEstates(user_id) {
