@@ -88,8 +88,8 @@ const {
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE },
-  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE },
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
+  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
 
 /**
@@ -847,6 +847,12 @@ class MatchService {
 
     if (!match) {
       throw new AppException('Invalid match stage')
+    }
+
+    const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+    const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
+    if (!timeSlotCount) {
+      throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
     }
 
     await Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
