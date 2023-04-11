@@ -103,10 +103,7 @@ class MatchController {
       return response.res(result)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -154,10 +151,7 @@ class MatchController {
       return response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e?.status || 400, e?.code || 0)
     }
   }
 
