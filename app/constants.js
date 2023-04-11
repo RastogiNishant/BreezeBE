@@ -946,6 +946,7 @@ const constants = {
   //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
+  WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
   WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
   MATCH_SCORE_GOOD_MATCH: 70,
 
@@ -1130,6 +1131,8 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
   THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
+  PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
+  PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
 }
 
 module.exports = constants

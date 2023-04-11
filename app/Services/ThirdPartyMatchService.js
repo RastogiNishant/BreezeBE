@@ -32,12 +32,13 @@ class ThirdPartyMatchService {
       idx++
     }
 
-    const matches = passedEstates.map((i) => ({
-      user_id: tenant.user_id,
-      estate_id: i.estate_id,
-      percent: i.percent,
-      status: MATCH_STATUS_NEW,
-    }))
+    const matches =
+      passedEstates.map((i) => ({
+        user_id: tenant.user_id,
+        estate_id: i.estate_id,
+        percent: i.percent,
+        status: MATCH_STATUS_NEW,
+      })) || []
 
     await ThirdPartyMatch.query()
       .where('user_id', tenant.user_id)
@@ -54,7 +55,7 @@ class ThirdPartyMatchService {
       }
     }
 
-    return matches?.length || 0
+    return matches
   }
 }
 
