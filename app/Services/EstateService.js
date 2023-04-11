@@ -2474,7 +2474,7 @@ class EstateService {
    */
   static async getPendingFinalMatchEstate(user_id) {
     const inviteOutsideLanlordTasks = await Task.query()
-      .select(Database.raw(`${MATCH_STATUS_FINISH_PENDING} as status`))
+      .select(Database.raw(`${MATCH_STATUS_FINISH} as status`))
       .select(Database.raw(`null as id`))
       .select('property_address as address')
       .select('address_detail as floor')
