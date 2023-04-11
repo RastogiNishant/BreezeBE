@@ -212,8 +212,6 @@ class OhneMakler {
     nebenkosten_ohne_heizkosten: 'additional_costs',
     heizkosten: 'heating_costs',
     summe_nebenkosten: 'extra_costs',
-    //property_type: 'house_type',
-    //objekttyp: 'apt_type',
     price: 'net_rent',
     floor_count: 'number_floors',
     rooms: 'rooms_number',
