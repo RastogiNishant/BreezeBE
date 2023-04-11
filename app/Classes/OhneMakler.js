@@ -236,9 +236,6 @@ class OhneMakler {
   }
 
   parseHouseAndApartmentTypes(estate, newEstate) {
-    if (estate.property_type === estate.objekttyp) {
-      estate.objekttyp = undefined
-    }
     //house_type
     if (
       this.houseType[estate.property_type] &&

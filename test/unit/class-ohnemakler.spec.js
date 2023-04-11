@@ -69,7 +69,6 @@ test('parseHouseAndApartmentTypes returns expected newEstate', async ({ assert }
     { property_type: PROPERTY_TYPE_APARTMENT },
   ]
   for (let i = 0; i < testEstates.length; i++) {
-    console.log(ohneMakler.parseHouseAndApartmentTypes(testEstates[i], {}), expectedEstates[i])
     assert.deepEqual(ohneMakler.parseHouseAndApartmentTypes(testEstates[i], {}), expectedEstates[i])
   }
 })
