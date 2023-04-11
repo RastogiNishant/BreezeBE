@@ -1126,6 +1126,10 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
   VALID_INCOME_PROOFS_PERIOD: 5,
   MATCH_PERCENT_PASS: 40,
+
+  THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
+  THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
+  THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
 }
 
 module.exports = constants

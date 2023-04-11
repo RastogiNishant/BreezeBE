@@ -31,6 +31,9 @@ const {
   HOUSE_TYPE_BUNGALOW,
   APARTMENT_TYPE_LOFT,
   BUILDING_STATUS_EXISTING,
+  THIRD_PARTY_OFFER_HOUSE_TYPE,
+  THIRD_PARTY_OFFER_APARTMENT_TYPE,
+  THIRD_PARTY_OFFER_PROPERTY_TYPE,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -239,17 +242,17 @@ class OhneMakler {
     //house_type
     if (
       this.houseType[estate.property_type] &&
-      this.houseType[estate.property_type].type === 'house_type'
+      this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_HOUSE_TYPE
     ) {
       newEstate['house_type'] = this.houseType[estate.property_type].value
     } else if (
       this.houseType[estate.property_type] &&
-      this.houseType[estate.property_type].type === 'apt_type'
+      this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_APARTMENT_TYPE
     ) {
       newEstate['apt_type'] = this.houseType[estate.property_type].value
     } else if (
       this.houseType[estate.property_type] &&
-      this.houseType[estate.property_type].type === 'property_type'
+      this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_PROPERTY_TYPE
     ) {
       if (!newEstate.property_type) {
         newEstate['property_type'] = this.houseType[estate.property_type].value
@@ -259,19 +262,19 @@ class OhneMakler {
     //apt_type
     if (
       this.apartmentType[estate.objekttyp] &&
-      this.apartmentType[estate.objekttyp].type === 'apt_type'
+      this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_APARTMENT_TYPE
     ) {
       newEstate['apt_type'] = this.apartmentType[estate.objekttyp].value
     } else if (
       this.apartmentType[estate.objekttyp] &&
-      this.apartmentType[estate.objekttyp].type === 'house_type'
+      this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_HOUSE_TYPE
     ) {
       if (!newEstate.house_type) {
         newEstate['house_type'] = this.apartmentType[estate.objekttyp].value
       }
     } else if (
       this.apartmentType[estate.objekttyp] &&
-      this.apartmentType[estate.objekttyp].type === 'property_type'
+      this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_PROPERTY_TYPE
     ) {
       if (!newEstate.property_type) {
         newEstate['property_type'] = this.apartmentType[estate.objekttyp].value
