@@ -5,7 +5,6 @@ const {
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY,
   HOUSE_TYPE_SEMIDETACHED_HOUSE,
   HOUSE_TYPE_DETACHED_HOUSE,
-  HOUSE_TYPE_STUDIO,
   HOUSE_TYPE_GARDENHOUSE,
   HOUSE_TYPE_COUNTRY,
   PROPERTY_TYPE_APARTMENT,
@@ -32,6 +31,7 @@ const {
   APARTMENT_TYPE_GROUND,
   HOUSE_TYPE_2FAMILY_HOUSE,
   HOUSE_TYPE_BUNGALOW,
+  APARTMENT_TYPE_LOFT,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -86,8 +86,8 @@ class OhneMakler {
       value: HOUSE_TYPE_GARDENHOUSE,
     },
     Studio: {
-      type: 'house_type',
-      value: HOUSE_TYPE_STUDIO,
+      type: 'apartment_type',
+      value: APARTMENT_TYPE_LOFT,
     },
     Einfamilienhaus: {
       type: 'house_type',
@@ -121,8 +121,8 @@ class OhneMakler {
       value: APARTMENT_TYPE_ATTIC,
     },
     'Loft, Studio, Atelier': {
-      type: 'house_type',
-      value: HOUSE_TYPE_STUDIO,
+      type: 'apartment_type',
+      value: APARTMENT_TYPE_LOFT,
     },
     Penthouse: {
       type: 'apt_type',
