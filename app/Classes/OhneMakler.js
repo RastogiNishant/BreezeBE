@@ -7,6 +7,7 @@ const {
   HOUSE_TYPE_DETACHED_HOUSE,
   HOUSE_TYPE_STUDIO,
   HOUSE_TYPE_GARDENHOUSE,
+  HOUSE_TYPE_COUNTRY,
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
@@ -22,6 +23,15 @@ const {
   BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION,
   DATE_FORMAT,
   STATUS_EXPIRE,
+  HOUSE_TYPE_HIGH_RISE,
+  APARTMENT_TYPE_ATTIC,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_MAISONETTE,
+  APARTMENT_TYPE_SOUTERRAIN,
+  APARTMENT_TYPE_GROUND,
+  HOUSE_TYPE_2FAMILY_HOUSE,
+  HOUSE_TYPE_BUNGALOW,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -33,18 +43,153 @@ class OhneMakler {
     'Möbliertes Wohnen / Wohnen auf Zeit': PROPERTY_TYPE_SHORT_TERM,
     Zimmer: PROPERTY_TYPE_ROOM,
   }
-  houseType = {
-    'Mehrfamilienhaus': 
-    'Dachgeschosswohnung': 
-    'Reihenhaus': 
-    'Penthouse': 
-    'Maisonette': 
-    'Etagenwohnung': 
-    'Bauernhof': HOUSE_TYPE_GARDENHOUSE,
-    'Studio': HOUSE_TYPE_STUDIO,
-    'Einfamilienhaus': HOUSE_TYPE_DETACHED_HOUSE,
-    'Doppelhaushälfte': HOUSE_TYPE_SEMIDETACHED_HOUSE1``
+  buildingStatus = {
+    'nach Vereinbarung': BUILDING_STATUS_BY_AGREEMENT,
+    renovierungsbedürftig: BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    'Erstbezug nach Sanierung': BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION,
+    saniert: BUILDING_STATUS_CLEANED,
+    gepflegt: BUILDING_STATUS_WELL_MAINTAINED,
+    'keine Angaben': null,
+    Erstbezug: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    modernisiert: BUILDING_STATUS_MODERNIZED,
+    renoviert: BUILDING_STATUS_FULLY_RENOVATED,
+    Neuwertig: BUILDING_STATUS_NEW,
   }
+
+  houseType = {
+    Mehrfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_HIGH_RISE,
+    },
+    Dachgeschosswohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_ATTIC,
+    },
+    Reihenhaus: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Penthouse: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_PENTHOUSE,
+    },
+    Maisonette: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_MAISONETTE,
+    },
+    Etagenwohnung: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+    Bauernhof: {
+      type: 'house_type',
+      value: HOUSE_TYPE_GARDENHOUSE,
+    },
+    Studio: {
+      type: 'house_type',
+      value: HOUSE_TYPE_STUDIO,
+    },
+    Einfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_DETACHED_HOUSE,
+    },
+    Doppelhaushälfte: {
+      type: 'house_type',
+      value: HOUSE_TYPE_SEMIDETACHED_HOUSE,
+    },
+  }
+
+  apartmentType = {
+    Stadthaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_COUNTRY,
+    },
+    Bauernhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_GARDENHOUSE,
+    },
+    Zweifamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_2FAMILY_HOUSE,
+    },
+    Appartement: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+    Dachgeschosswohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_ATTIC,
+    },
+    'Loft, Studio, Atelier': {
+      type: 'house_type',
+      value: HOUSE_TYPE_STUDIO,
+    },
+    Penthouse: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_PENTHOUSE,
+    },
+    Maisonette: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_MAISONETTE,
+    },
+    'Laube, Datsche, Gartenhaus': {
+      type: 'house_type',
+      value: HOUSE_TYPE_GARDENHOUSE,
+    },
+    Einfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_DETACHED_HOUSE,
+    },
+    Souterrainwohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_SOUTERRAIN,
+    },
+    Doppelhaushälfte: {
+      type: 'house_type',
+      value: HOUSE_TYPE_SEMIDETACHED_HOUSE,
+    },
+    Reihenendhaus: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Erdgeschosswohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_GROUND,
+    },
+    Mehrfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_HIGH_RISE,
+    },
+    Terrassenwohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Zimmer: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_ROOM,
+    },
+    Wohnung: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+    Reihenhaus: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Haus: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_HOUSE,
+    },
+    Bungalow: {
+      type: 'house_type',
+      value: HOUSE_TYPE_BUNGALOW,
+    },
+    Etagenwohnung: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+  }
+
   map = {
     id: 'source_id',
     title: 'description',
@@ -67,8 +212,8 @@ class OhneMakler {
     nebenkosten_ohne_heizkosten: 'additional_costs',
     heizkosten: 'heating_costs',
     summe_nebenkosten: 'extra_costs',
-    property_type: 'house_type',
-    objekttyp: 'apt_type',
+    //property_type: 'house_type',
+    //objekttyp: 'apt_type',
     price: 'net_rent',
     floor_count: 'number_floors',
     rooms: 'rooms_number',
@@ -82,7 +227,7 @@ class OhneMakler {
     this.data = data
   }
 
-  parseItemType({key, type}) {
+  parseItemType({ key, type }) {
     if (typeof this[type] === 'undefined') {
       return null
     }
@@ -91,57 +236,53 @@ class OhneMakler {
     }
     return this[type][key]
   }
-  
-  parseHouseType(houseType) {
-    switch (houseType) {
-      case 'Mehrfamilienhaus':
-        return
-      case 'Dachgeschosswohnung':
-        return
-      case 'Reihenhaus':
-        return
-      case 'Penthouse':
-        return
-      case 'Maisonette':
-        return HOUSE_TYPE_DUPLEX
-      case 'Etagenwohnung':
-        return
-      case 'Bauernhof':
-        return HOUSE_TYPE_GARDENHOUSE
-      case 'Studio':
-        return HOUSE_TYPE_STUDIO
-      case 'Einfamilienhaus':
-        return HOUSE_TYPE_DETACHED_HOUSE
-      case 'Doppelhaushälfte':
-        return HOUSE_TYPE_SEMIDETACHED_HOUSE
-    }
-    return null
-  }
 
-  parseBuildingStatus(buildingStatus) {
-    switch (buildingStatus) {
-      case 'nach Vereinbarung':
-        return BUILDING_STATUS_BY_AGREEMENT
-      case 'renovierungsbedürftig':
-        return BUILDING_STATUS_IN_NEED_OF_RENOVATION
-      case 'Erstbezug nach Sanierung':
-        return BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION
-      case 'saniert':
-        return BUILDING_STATUS_CLEANED
-      case 'gepflegt':
-        return BUILDING_STATUS_WELL_MAINTAINED
-      case 'keine Angaben':
-        return null
-      case 'Erstbezug':
-        return BUILDING_STATUS_FIRST_TIME_OCCUPIED
-      case 'modernisiert':
-        return BUILDING_STATUS_MODERNIZED
-      case 'renoviert':
-        return BUILDING_STATUS_FULLY_RENOVATED
-      case 'Neuwertig':
-        return BUILDING_STATUS_NEW
+  parseHouseAndApartmentTypes(estate, newEstate) {
+    if (estate.property_type === estate.objekttyp) {
+      estate.objekttyp = undefined
     }
-    return null
+    //house_type
+    if (
+      this.houseType[estate.property_type] &&
+      this.houseType[estate.property_type].type === 'house_type'
+    ) {
+      newEstate['house_type'] = this.houseType[estate.property_type].value
+    } else if (
+      this.houseType[estate.property_type] &&
+      this.houseType[estate.property_type].type === 'apt_type'
+    ) {
+      newEstate['apt_type'] = this.houseType[estate.property_type].value
+    } else if (
+      this.houseType[estate.property_type] &&
+      this.houseType[estate.property_type].type === 'property_type'
+    ) {
+      if (!newEstate.property_type) {
+        newEstate['property_type'] = this.houseType[estate.property_type].value
+      }
+    }
+
+    //apt_type
+    if (
+      this.apartmentType[estate.objekttyp] &&
+      this.apartmentType[estate.objekttyp].type === 'apt_type'
+    ) {
+      newEstate['apt_type'] = this.apartmentType[estate.objekttyp].value
+    } else if (
+      this.apartmentType[estate.objekttyp] &&
+      this.apartmentType[estate.objekttyp].type === 'house_type'
+    ) {
+      if (!newEstate.house_type) {
+        newEstate['house_type'] = this.apartmentType[estate.objekttyp].value
+      }
+    } else if (
+      this.apartmentType[estate.objekttyp] &&
+      this.apartmentType[estate.objekttyp].type === 'property_type'
+    ) {
+      if (!newEstate.property_type) {
+        newEstate['property_type'] = this.apartmentType[estate.objekttyp].value
+      }
+    }
+    return newEstate
   }
 
   mapEstate(estate) {
@@ -182,7 +323,12 @@ class OhneMakler {
         newEstate.floor = 11
       }
       newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
-      newEstate.property_type = this.parsePropertyType(estate.objektart)
+      newEstate.property_type = this.parseItemType({ type: estate.objektart, key: 'propertyType' })
+      newEstate.building_status = this.parseItemType({
+        type: estate.condition,
+        key: 'buildingStatus',
+      })
+      newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
       if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
         //extra costs is the sum of additional_costs and heating_costs
