@@ -5,6 +5,14 @@ const {
   APARTMENT_TYPE_ATTIC,
   HOUSE_TYPE_COUNTRY,
   PROPERTY_TYPE_APARTMENT,
+  BUILDING_STATUS_BY_AGREEMENT,
+  BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+  BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+  BUILDING_STATUS_CLEANED,
+  BUILDING_STATUS_EXISTING,
+  BUILDING_STATUS_MODERNIZED,
+  BUILDING_STATUS_PART_FULLY_RENOVATED,
+  BUILDING_STATUS_NEW,
 } = require('../../app/constants')
 
 const { test } = use('Test/Suite')('Class Ohnemakler')
@@ -70,5 +78,24 @@ test('parseHouseAndApartmentTypes returns expected newEstate', async ({ assert }
   ]
   for (let i = 0; i < testEstates.length; i++) {
     assert.deepEqual(ohneMakler.parseHouseAndApartmentTypes(testEstates[i], {}), expectedEstates[i])
+  }
+})
+
+test('parseBuildingStatus returns as expected', async ({ assert }) => {
+  const ohneMakler = new OhneMakler()
+  const buildingStatus = {
+    'nach Vereinbarung': BUILDING_STATUS_BY_AGREEMENT,
+    renovierungsbedürftig: BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    'Erstbezug nach Sanierung': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    saniert: BUILDING_STATUS_CLEANED,
+    gepflegt: BUILDING_STATUS_EXISTING,
+    'keine Angaben': null,
+    Erstbezug: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    modernisiert: BUILDING_STATUS_MODERNIZED,
+    renoviert: BUILDING_STATUS_PART_FULLY_RENOVATED,
+    Neuwertig: BUILDING_STATUS_NEW,
+  }
+  for (const key in buildingStatus) {
+    assert.equal(ohneMakler.parseItemType({ type: 'buildingStatus', key }), buildingStatus[key])
   }
 })

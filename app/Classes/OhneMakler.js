@@ -42,6 +42,7 @@ class OhneMakler {
     'Möbliertes Wohnen / Wohnen auf Zeit': PROPERTY_TYPE_SHORT_TERM,
     Zimmer: PROPERTY_TYPE_ROOM,
   }
+
   buildingStatus = {
     'nach Vereinbarung': BUILDING_STATUS_BY_AGREEMENT,
     renovierungsbedürftig: BUILDING_STATUS_IN_NEED_OF_RENOVATION,
@@ -317,10 +318,10 @@ class OhneMakler {
         newEstate.floor = 11
       }
       newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
-      newEstate.property_type = this.parseItemType({ type: estate.objektart, key: 'propertyType' })
+      newEstate.property_type = this.parseItemType({ type: 'propertyType', key: estate.objektart })
       newEstate.building_status = this.parseItemType({
-        type: estate.condition,
-        key: 'buildingStatus',
+        key: estate.condition,
+        type: 'buildingStatus',
       })
       newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
