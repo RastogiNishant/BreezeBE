@@ -3,17 +3,196 @@ const {
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY,
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY,
+  HOUSE_TYPE_SEMIDETACHED_HOUSE,
+  HOUSE_TYPE_DETACHED_HOUSE,
+  HOUSE_TYPE_GARDENHOUSE,
+  HOUSE_TYPE_COUNTRY,
   PROPERTY_TYPE_APARTMENT,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_SHORT_TERM,
+  BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+  BUILDING_STATUS_NEW,
+  BUILDING_STATUS_MODERNIZED,
+  BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+  BUILDING_STATUS_BY_AGREEMENT,
+  BUILDING_STATUS_PART_FULLY_RENOVATED,
+  BUILDING_STATUS_CLEANED,
   DATE_FORMAT,
   STATUS_EXPIRE,
+  HOUSE_TYPE_HIGH_RISE,
+  APARTMENT_TYPE_ATTIC,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_MAISONETTE,
+  APARTMENT_TYPE_SOUTERRAIN,
+  APARTMENT_TYPE_GROUND,
+  HOUSE_TYPE_2FAMILY_HOUSE,
+  HOUSE_TYPE_BUNGALOW,
+  APARTMENT_TYPE_LOFT,
+  BUILDING_STATUS_EXISTING,
+  THIRD_PARTY_OFFER_HOUSE_TYPE,
+  THIRD_PARTY_OFFER_APARTMENT_TYPE,
+  THIRD_PARTY_OFFER_PROPERTY_TYPE,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
 
 class OhneMakler {
+  propertyType = {
+    Wohnung: PROPERTY_TYPE_APARTMENT,
+    Haus: PROPERTY_TYPE_HOUSE,
+    'Möbliertes Wohnen / Wohnen auf Zeit': PROPERTY_TYPE_SHORT_TERM,
+    Zimmer: PROPERTY_TYPE_ROOM,
+  }
+
+  buildingStatus = {
+    'nach Vereinbarung': BUILDING_STATUS_BY_AGREEMENT,
+    renovierungsbedürftig: BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    'Erstbezug nach Sanierung': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    saniert: BUILDING_STATUS_CLEANED,
+    gepflegt: BUILDING_STATUS_EXISTING,
+    'keine Angaben': null,
+    Erstbezug: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    modernisiert: BUILDING_STATUS_MODERNIZED,
+    renoviert: BUILDING_STATUS_PART_FULLY_RENOVATED,
+    Neuwertig: BUILDING_STATUS_NEW,
+  }
+
+  houseType = {
+    Mehrfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_HIGH_RISE,
+    },
+    Dachgeschosswohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_ATTIC,
+    },
+    Reihenhaus: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Penthouse: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_PENTHOUSE,
+    },
+    Maisonette: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_MAISONETTE,
+    },
+    Etagenwohnung: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+    Bauernhof: {
+      type: 'house_type',
+      value: HOUSE_TYPE_GARDENHOUSE,
+    },
+    Studio: {
+      type: 'apartment_type',
+      value: APARTMENT_TYPE_LOFT,
+    },
+    Einfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_DETACHED_HOUSE,
+    },
+    Doppelhaushälfte: {
+      type: 'house_type',
+      value: HOUSE_TYPE_SEMIDETACHED_HOUSE,
+    },
+  }
+
+  apartmentType = {
+    Stadthaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_COUNTRY,
+    },
+    Bauernhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_GARDENHOUSE,
+    },
+    Zweifamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_2FAMILY_HOUSE,
+    },
+    Appartement: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+    Dachgeschosswohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_ATTIC,
+    },
+    'Loft, Studio, Atelier': {
+      type: 'apartment_type',
+      value: APARTMENT_TYPE_LOFT,
+    },
+    Penthouse: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_PENTHOUSE,
+    },
+    Maisonette: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_MAISONETTE,
+    },
+    'Laube, Datsche, Gartenhaus': {
+      type: 'house_type',
+      value: HOUSE_TYPE_GARDENHOUSE,
+    },
+    Einfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_DETACHED_HOUSE,
+    },
+    Souterrainwohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_SOUTERRAIN,
+    },
+    Doppelhaushälfte: {
+      type: 'house_type',
+      value: HOUSE_TYPE_SEMIDETACHED_HOUSE,
+    },
+    Reihenendhaus: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Erdgeschosswohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_GROUND,
+    },
+    Mehrfamilienhaus: {
+      type: 'house_type',
+      value: HOUSE_TYPE_HIGH_RISE,
+    },
+    Terrassenwohnung: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Zimmer: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_ROOM,
+    },
+    Wohnung: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+    Reihenhaus: {
+      type: 'apt_type',
+      value: APARTMENT_TYPE_TERRACES,
+    },
+    Haus: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_HOUSE,
+    },
+    Bungalow: {
+      type: 'house_type',
+      value: HOUSE_TYPE_BUNGALOW,
+    },
+    Etagenwohnung: {
+      type: 'property_type',
+      value: PROPERTY_TYPE_APARTMENT,
+    },
+  }
+
   map = {
     id: 'source_id',
     title: 'description',
@@ -49,18 +228,59 @@ class OhneMakler {
     this.data = data
   }
 
-  parsePropertyType(propertyType) {
-    switch (propertyType) {
-      case 'Wohnung':
-        return PROPERTY_TYPE_APARTMENT
-      case 'Haus':
-        return PROPERTY_TYPE_HOUSE
-      case 'Möbliertes Wohnen / Wohnen auf Zeit':
-        return PROPERTY_TYPE_SHORT_TERM
-      case 'Zimmer':
-        return PROPERTY_TYPE_ROOM
+  parseItemType({ key, type }) {
+    if (typeof this[type] === 'undefined') {
+      return null
     }
-    return null
+    if (typeof this[type][key] === 'undefined') {
+      return null
+    }
+    return this[type][key]
+  }
+
+  parseHouseAndApartmentTypes(estate, newEstate) {
+    //house_type
+    if (
+      this.houseType[estate.property_type] &&
+      this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_HOUSE_TYPE
+    ) {
+      newEstate['house_type'] = this.houseType[estate.property_type].value
+    } else if (
+      this.houseType[estate.property_type] &&
+      this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_APARTMENT_TYPE
+    ) {
+      newEstate['apt_type'] = this.houseType[estate.property_type].value
+    } else if (
+      this.houseType[estate.property_type] &&
+      this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_PROPERTY_TYPE
+    ) {
+      if (!newEstate.property_type) {
+        newEstate['property_type'] = this.houseType[estate.property_type].value
+      }
+    }
+
+    //apt_type
+    if (
+      this.apartmentType[estate.objekttyp] &&
+      this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_APARTMENT_TYPE
+    ) {
+      newEstate['apt_type'] = this.apartmentType[estate.objekttyp].value
+    } else if (
+      this.apartmentType[estate.objekttyp] &&
+      this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_HOUSE_TYPE
+    ) {
+      if (!newEstate.house_type) {
+        newEstate['house_type'] = this.apartmentType[estate.objekttyp].value
+      }
+    } else if (
+      this.apartmentType[estate.objekttyp] &&
+      this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_PROPERTY_TYPE
+    ) {
+      if (!newEstate.property_type) {
+        newEstate['property_type'] = this.apartmentType[estate.objekttyp].value
+      }
+    }
+    return newEstate
   }
 
   mapEstate(estate) {
@@ -101,7 +321,12 @@ class OhneMakler {
         newEstate.floor = 11
       }
       newEstate.energy_efficiency_class = estate?.energieausweis?.energieeffizienzklasse
-      newEstate.property_type = this.parsePropertyType(estate.objektart)
+      newEstate.property_type = this.parseItemType({ type: 'propertyType', key: estate.objektart })
+      newEstate.building_status = this.parseItemType({
+        key: estate.condition,
+        type: 'buildingStatus',
+      })
+      newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
       if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
         //extra costs is the sum of additional_costs and heating_costs
