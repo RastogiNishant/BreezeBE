@@ -18,8 +18,6 @@ const {
   BUILDING_STATUS_BY_AGREEMENT,
   BUILDING_STATUS_PART_FULLY_RENOVATED,
   BUILDING_STATUS_CLEANED,
-  BUILDING_STATUS_WELL_MAINTAINED,
-  BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION,
   DATE_FORMAT,
   STATUS_EXPIRE,
   HOUSE_TYPE_HIGH_RISE,
@@ -32,6 +30,7 @@ const {
   HOUSE_TYPE_2FAMILY_HOUSE,
   HOUSE_TYPE_BUNGALOW,
   APARTMENT_TYPE_LOFT,
+  BUILDING_STATUS_EXISTING,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -46,9 +45,9 @@ class OhneMakler {
   buildingStatus = {
     'nach Vereinbarung': BUILDING_STATUS_BY_AGREEMENT,
     renovierungsbedürftig: BUILDING_STATUS_IN_NEED_OF_RENOVATION,
-    'Erstbezug nach Sanierung': BUILDING_STATUS_FIRST_TENANT_AFTER_RENOVATION,
+    'Erstbezug nach Sanierung': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
     saniert: BUILDING_STATUS_CLEANED,
-    gepflegt: BUILDING_STATUS_WELL_MAINTAINED,
+    gepflegt: BUILDING_STATUS_EXISTING,
     'keine Angaben': null,
     Erstbezug: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
     modernisiert: BUILDING_STATUS_MODERNIZED,
