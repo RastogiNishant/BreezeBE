@@ -16,6 +16,7 @@ const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
+const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
@@ -76,6 +77,7 @@ const {
   ESTATE_COMPLETENESS_BREAKPOINT,
   PUBLISH_ESTATE,
   ROLE_USER,
+  MATCH_STATUS_FINISH_PENDING,
 } = require('../constants')
 
 const {
@@ -2464,6 +2466,28 @@ class EstateService {
       .groupBy('city', 'country')
       .orderBy('country', 'city')
       .fetch()
+  }
+
+  /**
+   *
+   * @param {*} user_id : prospect Id
+   */
+  static async getPendingFinalMatchEstate(user_id) {
+    const inviteOutsideLanlordTasks = await Task.query()
+      .select(Database.raw(`${MATCH_STATUS_FINISH_PENDING} as status`))
+      .select(Database.raw(`null as id`))
+      .select('property_address as address')
+      .select('address_detail as floor')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .whereNotNull('email')
+      .where('tenant_id', user_id)
+      .whereNull('estate_id')
+      .first()
+
+    if (inviteOutsideLanlordTasks) {
+      return [inviteOutsideLanlordTasks.toJSON()]
+    }
+    return []
   }
 }
 module.exports = EstateService

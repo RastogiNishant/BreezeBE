@@ -338,8 +338,22 @@ class TaskService extends BaseService {
     return task
   }
 
-  static async getAllUnassignedTasks({ user_id, page = -1, limit = -1 }) {
-    const query = Task.query().where('landlord_id', user_id)
+  static async getAllUnassignedTasks({
+    user_id,
+    role = ROLE_LANDLORD,
+    email,
+    page = -1,
+    limit = -1,
+  }) {
+    let query = Task.query()
+      .whereNull('estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+
+    if (role === ROLE_LANDLORD) {
+      query.where('email', email)
+    } else {
+      query.where('tenant_id', user_id)
+    }
 
     let tasks, count
     if (page === -1 || limit === -1) {
