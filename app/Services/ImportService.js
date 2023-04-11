@@ -324,6 +324,12 @@ class ImportService {
         estate_data.letting_type = LETTING_TYPE_NA
       }
 
+      //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
+      //so addrss can only be updated only the cases above
+      if (estate.address) {
+        const activeTenants = await EstateCurrentTenantService.getActiveByEstateIds(estate.id)
+      }
+
       await require('./EstateService').updateEstate(
         {
           data: { ...estate_data, id: estate.id },
@@ -341,7 +347,9 @@ class ImportService {
           trx
         )
       } else {
-        const estateCurrentTenants = await EstateCurrentTenantService.getByEstateIds([estate.id])
+        const estateCurrentTenants = await EstateCurrentTenantService.getActiveByEstateIds([
+          estate.id,
+        ])
         if (estateCurrentTenants && estateCurrentTenants.length) {
           await EstateCurrentTenantService.deleteByEstate(
             {

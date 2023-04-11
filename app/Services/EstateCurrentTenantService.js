@@ -308,7 +308,7 @@ class EstateCurrentTenantService extends BaseService {
     return await query.first()
   }
 
-  static async getByEstateIds(estate_ids) {
+  static async getActiveByEstateIds(estate_ids) {
     return (
       await EstateCurrentTenant.query()
         .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
