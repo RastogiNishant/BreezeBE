@@ -792,6 +792,9 @@ Route.group(() => {
     'valid:Pagination,TaskFilter',
   ])
   Route.get('/estate/:id/counts', 'TaskController.getTaskCountsByEstate').middleware(['valid:Id'])
+  Route.post('/:id/cancel', 'TaskController.getLandlordTasks').middleware([
+    'valid:Pagination,TaskFilter',
+  ])  
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
