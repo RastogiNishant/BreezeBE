@@ -638,6 +638,12 @@ class UserService {
     )
   }
 
+  static async getUserLang(userIds) {
+    const data = await this.getTokenWithLocale(userIds)
+    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
+    return lang
+  }
+
   /**
    *
    */
@@ -648,7 +654,7 @@ class UserService {
     userIds = uniq(userIds)
     const data = await Database.table('users')
       .select('device_token', Database.raw(`COALESCE(lang, ?) AS lang`, DEFAULT_LANG), 'id')
-      .whereIn('id', userIds)
+      .whereIn('id', Array.isArray(userIds) ? userIds : [userIds])
       .whereNot('device_token', '')
       .whereNot('device_token', null)
       .where('notice', true)

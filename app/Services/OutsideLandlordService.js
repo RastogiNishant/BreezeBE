@@ -8,10 +8,15 @@ const {
   ROLE_LANDLORD,
   ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID,
   DEFAULT_LANG,
+  CHAT_TYPE_MESSAGE,
+  CHAT_EDIT_STATUS_UNEDITED,
 } = require('../constants')
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
 const { createDynamicLink } = require('../Libs/utils')
+const Chat = require('App/Models/Chat')
+const TaskService = require('./TaskService')
+const l = use('Localize')
 
 class OutsideLandlordService {
   static async handleTaskWithoutEstate(task, trx) {
@@ -129,6 +134,31 @@ class OutsideLandlordService {
 
   static async updateTaskLandlord({ landlord_id, email }, trx) {
     await Task.query().where('email', email).update({ landlord_id }).transacting(trx)
+  }
+
+  static async cancelInvitation({ landlord_id, task_id }, trx) {
+    const task = await TaskService.get(task_id)
+
+    await Task.query()
+      .where('email', email)
+      .update({ email: null, landlord_identify_key: null })
+      .transacting(trx)
+
+    let lang = DEFAULT_LANG
+    if (task.tenant_id) {
+      lang = await require('./UserService').getUserLang([task.tenant_id])
+    }
+    await Chat.createItem(
+      {
+        sender_id: landlord_id,
+        receiver_id: task.tenant_id,
+        task_id,
+        type: CHAT_TYPE_MESSAGE,
+        text: l.get('prospect.notification.event.declined_invitation', lang),
+        edit_status: CHAT_EDIT_STATUS_UNEDITED,
+      },
+      trx
+    )
   }
 }
 
