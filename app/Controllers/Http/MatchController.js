@@ -103,10 +103,7 @@ class MatchController {
       return response.res(result)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -154,10 +151,7 @@ class MatchController {
       return response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e?.status || 400, e?.code || 0)
     }
   }
 
@@ -567,18 +561,32 @@ class MatchController {
     }
 
     let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
-
-    let thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+    let thirdPartyOffers = []
+    if (filters && (filters.knock || filters.like || filters.dislike)) {
+      thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+    }
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-    let estateData = uniqBy(estates, 'id')
-    estateData = [...estateData, ...thirdPartyOffers]
-    if (filters.like || filters.dislike || filters.knock) {
-      estateData = estateData.sort((a, b) => (a.action_at > b.action_at ? -1 : 1))
+    estates = [...estates, ...thirdPartyOffers]
+
+    /**
+     * if a tenant invites outside landlord and create a task, need to add pending final match until a landlord accepts invitation
+     * this final pending has to be removed if a landlord assigns that task to a specific property
+     */
+    if (filters && filters.final) {
+      estates = [...estates, ...(await EstateService.getPendingFinalMatchEstate(user.id))]
     }
+
+    let estateData = uniqBy(estates, 'id')
+
+    if (filters.like || filters.dislike || filters.knock) {
+      estateData = estateData.sort((a, b) => (a?.action_at > b?.action_at ? -1 : 1))
+    }
+
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
+
     estates = {
       total: estates.length + thirdPartyOffers.length,
       lastPage: Math.ceil((estates.length + thirdPartyOffers.length) / limit),

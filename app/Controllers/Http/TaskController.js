@@ -65,6 +65,8 @@ class TaskController {
       response.res(
         await TaskService.getAllUnassignedTasks({
           user_id: auth.user.id,
+          role: auth.user.role,
+          email: auth.user.email,
           page,
           limit,
         })

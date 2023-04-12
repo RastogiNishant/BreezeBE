@@ -88,8 +88,8 @@ const {
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE },
-  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE },
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
+  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
 
 /**
@@ -479,21 +479,23 @@ class MatchService {
       })
       // Max radius
       const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-      const insideMatchCount = await this.createNewMatches({ tenant, dist, has_notification_sent })
-      const outsideMatchCount = await ThirdPartyMatchService.createNewMatches({
+      const insideMatches = await this.createNewMatches({ tenant, dist, has_notification_sent })
+      const outsideMatches = await ThirdPartyMatchService.createNewMatches({
         tenant,
         dist,
         has_notification_sent,
       })
-      count = insideMatchCount + outsideMatchCount
+      count = insideMatches?.length + outsideMatches?.length
     } catch (e) {
       success = false
       message = e.message
     } finally {
+      const matches = await EstateService.getTenantEstates({ user_id: userId, page: 1, limit: 20 })
       this.emitCreateMatchCompleted({
         user_id: userId,
         data: {
           count,
+          matches,
           success,
           message,
         },
@@ -524,11 +526,12 @@ class MatchService {
       idx++
     }
 
-    const matches = passedEstates.map((i) => ({
-      user_id: tenant.user_id,
-      estate_id: i.estate_id,
-      percent: i.percent,
-    }))
+    const matches =
+      passedEstates.map((i) => ({
+        user_id: tenant.user_id,
+        estate_id: i.estate_id,
+        percent: i.percent,
+      })) || []
 
     // Delete old matches without any activity
     await Database.query()
@@ -553,7 +556,7 @@ class MatchService {
       }
     }
 
-    return matches?.length || 0
+    return matches
   }
 
   /**
@@ -844,6 +847,12 @@ class MatchService {
 
     if (!match) {
       throw new AppException('Invalid match stage')
+    }
+
+    const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+    const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
+    if (!timeSlotCount) {
+      throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
     }
 
     await Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
