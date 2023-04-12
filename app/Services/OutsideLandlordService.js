@@ -14,7 +14,7 @@ const {
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
 const { createDynamicLink } = require('../Libs/utils')
-const Chat = require('App/Models/Chat')
+const Chat = use('App/Models/Chat')
 const TaskService = require('./TaskService')
 const l = use('Localize')
 
