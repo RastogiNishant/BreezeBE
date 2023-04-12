@@ -570,15 +570,17 @@ class MatchController {
     estates = estates.toJSON(params)
     estates = [...estates, ...thirdPartyOffers]
 
+    let estateData = uniqBy(estates, 'id')
+
     /**
      * if a tenant invites outside landlord and create a task, need to add pending final match until a landlord accepts invitation
      * this final pending has to be removed if a landlord assigns that task to a specific property
      */
     if (filters && filters.final) {
-      estates = [...estates, ...(await EstateService.getPendingFinalMatchEstate(user.id))]
+      const pendingEstates = await EstateService.getPendingFinalMatchEstate(user.id)
+      estates = [...estates, ...pendingEstates]
+      estateData = [...estateData, ...pendingEstates]
     }
-
-    let estateData = uniqBy(estates, 'id')
 
     if (filters.like || filters.dislike || filters.knock) {
       estateData = estateData.sort((a, b) => (a?.action_at > b?.action_at ? -1 : 1))

@@ -2483,10 +2483,10 @@ class EstateService {
       .whereNotNull('email')
       .where('tenant_id', user_id)
       .whereNull('estate_id')
-      .first()
+      .fetch()
 
     if (inviteOutsideLanlordTasks) {
-      return [inviteOutsideLanlordTasks.toJSON()]
+      return inviteOutsideLanlordTasks.toJSON()
     }
     return []
   }
