@@ -110,7 +110,7 @@ const generateAddress = ({ street, house_number, zip, city, country }) => {
     .toLowerCase()
 }
 
-const createDynamicLink = async (link) => {
+const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WEB_LINK) => {
   const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
   const { shortLink } = await firebaseDynamicLinks.createLink({
@@ -125,8 +125,7 @@ const createDynamicLink = async (link) => {
         iosAppStoreId: process.env.IOS_APPSTORE_ID,
       },
       desktopInfo: {
-        desktopFallbackLink:
-          process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/invalid-platform',
+        desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
       },
     },
   })
