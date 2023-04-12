@@ -65,7 +65,8 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    let { token, device_token, role, code, landlord_invite, data1, data2, ip, ip_based_info } =
+      request.all()
     ip = ip || request.ip()
     let ticket
     try {
@@ -119,6 +120,9 @@ class OAuthController {
           device_token,
           role,
           owner_id,
+          landlord_invite,
+          data1,
+          data2,
           is_household_invitation_onboarded,
           is_profile_onboarded,
           ip,
@@ -165,7 +169,8 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    let { token, device_token, role, code, landlord_invite, data1, data2, ip, ip_based_info } =
+      request.all()
     ip = ip || request.ip()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
@@ -218,6 +223,9 @@ class OAuthController {
             is_profile_onboarded,
             ip,
             ip_based_info,
+            landlord_invite,
+            data1,
+            data2,
           },
           SIGN_IN_METHOD_APPLE
         )

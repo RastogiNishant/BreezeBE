@@ -112,8 +112,23 @@ class UserService {
         isExist = false
       }
     }
+    // Manages the outside tenant invitation flow
+    let source_estate_id
+    if (
+      !userData?.source_estate_id &&
+      !userData?.landlord_invite &&
+      userData?.data1 &&
+      userData?.data2
+    ) {
+      const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
+        data1: userData.data1,
+        data2: userData.data2,
+        email: userData.email,
+      })
+      source_estate_id = estate_id
+    }
 
-    const user = await User.createItem(userData, trx)
+    const user = await User.createItem(omit(userData, ['data1, data2, landlord_invite']), trx)
 
     if (user.role === ROLE_USER) {
       try {
@@ -140,6 +155,19 @@ class UserService {
         throw new HttpException(e.message, e.status || 400)
       }
     }
+
+    //outside landlord invitation
+    if (userData?.landlord_invite && userData?.data1 && userData?.data2) {
+      await require('./OutsideLandlordService').updateOutsideLandlordInfo(
+        {
+          new_email: email,
+          data1,
+          data2,
+        },
+        trx
+      )
+    }
+
     return user
   }
 
@@ -240,7 +268,7 @@ class UserService {
           ...params.dynamicLinkInfo,
           desktopInfo: {
             desktopFallbackLink:
-              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/invalid-platform',
           },
         }
       }
@@ -377,7 +405,7 @@ class UserService {
     const deepLink_URL = from_web
       ? `${process.env.SITE_URL}/forgotPassword`
       : `${process.env.DEEP_LINK}?type=forgotPassword`
-      
+
     const { shortLink } = await firebaseDynamicLinks.createLink({
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
@@ -432,16 +460,6 @@ class UserService {
         user.source_estate_id = null
       }
       await user.save(trx)
-
-      if (user.role === ROLE_LANDLORD) {
-        await require('./OutsideLandlordService').updateTaskLandlord(
-          {
-            landlord_id: user.id,
-            email: user.email,
-          },
-          trx
-        )
-      }
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -723,7 +741,7 @@ class UserService {
 
   static async getByEmailWithRole(emails, role) {
     return await User.query()
-      .select(['id', 'email'])
+      .select(['id', 'email', 'lang'])
       .whereIn('email', emails)
       .where({ role: role })
       .fetch()
@@ -953,16 +971,6 @@ class UserService {
     },
     trx = null
   ) {
-    // Manages the outside tenant invitation flow
-    if (!source_estate_id && !landlord_invite && data1 && data2) {
-      const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
-        data1,
-        data2,
-        email,
-      })
-      source_estate_id = estate_id
-    }
-
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {
@@ -995,17 +1003,6 @@ class UserService {
         },
         trx
       )
-
-      if (landlord_invite && data1 && data2) {
-        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
-          {
-            new_email: email,
-            data1,
-            data2,
-          },
-          trx
-        )
-      }
 
       if (isEmpty(ip_based_info.country_code)) {
         const QueueService = require('./QueueService.js')

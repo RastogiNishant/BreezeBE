@@ -4,7 +4,11 @@ const moment = require('moment')
 const uuid = require('uuid')
 const crypto = require('crypto')
 const HttpException = require('../Exceptions/HttpException')
-const { ROLE_LANDLORD, ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID,
+  DEFAULT_LANG,
+} = require('../constants')
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
 const { createDynamicLink } = require('../Libs/utils')
@@ -17,17 +21,17 @@ class OutsideLandlordService {
     if (!task.email || !task.property_address) {
       return
     }
-    if (!(await this.isExistLandlord(task))) {
-      await this.inviteLandlordFromTenant(task, trx)
-    }
+    await this.inviteLandlordFromTenant(task, trx)
   }
 
   static async inviteLandlordFromTenant(task, trx) {
-    const { code, shortLink } = await this.createDynamicLink(task)
+    const { code, shortLink, lang } = await this.createDynamicLink(task)
     await Task.query().where('id', task.id).update({ landlord_identify_key: code }).transacting(trx)
+
     await MailService.inviteLandlordFromTenant({
       task: task.toJSON(),
       link: shortLink,
+      lang,
     })
     return true
   }
@@ -39,7 +43,7 @@ class OutsideLandlordService {
     return landlords && landlords.length
   }
 
-  static async createDynamicLink(task, trx) {
+  static async createDynamicLink(task) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -65,14 +69,26 @@ class OutsideLandlordService {
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}&landlord_invite=true`
 
+    const landlords = (
+      await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)
+    ).rows
+
+    if (landlords && landlords.length) {
+      uri += `&is_exist=${isExist}`
+    }
+    const lang =
+      landlords && landlords.length && landlords[0].lang ? landlords[0].lang : DEFAULT_LANG
+
     const shortLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+      `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
+      `${process.env.SITE_URL}/outside_invitation?type=outsideinvitation${uri}`
     )
     return {
       id: task.id,
       email: task.email,
       shortLink,
       code,
+      lang,
     }
   }
 
@@ -101,13 +117,14 @@ class OutsideLandlordService {
     }
   }
 
-  static async updateOutsideLandlordInfo({ new_email, data1, data2 }) {
+  static async updateOutsideLandlordInfo({ new_email, data1, data2 }, trx) {
     const { id, code, email } = await this.decryptDynamicLink({ data1, data2 })
     await Task.query()
       .where('id', id)
       .where('email', email)
       .where('landlord_identify_key', code)
       .update({ email: new_email })
+      .transacting(trx)
   }
 
   static async updateTaskLandlord({ landlord_id, email }, trx) {

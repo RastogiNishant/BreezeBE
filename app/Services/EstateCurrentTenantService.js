@@ -833,6 +833,10 @@ class EstateCurrentTenantService extends BaseService {
 
   static async handleInvitationLink({ data1, data2, email, user }) {
     const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    if (!estate_id) {
+      return { estate_id: null, estateCurrentTenant: null }
+    }
+
     const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
       estate_id,
       ...rest,
