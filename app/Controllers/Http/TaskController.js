@@ -225,7 +225,23 @@ class TaskController {
   async cancelTenantInvitation({ request, auth, response }) {
     const { id } = request.all()
     response.res(
-      await OutsideLandlordService.cancelInvitation({ landlord_id: auth.user.id, task_id: id })
+      await OutsideLandlordService.cancelInvitation({
+        landlord_id: auth.user.id,
+        email: auth.user.email,
+        task_id: id,
+      })
+    )
+  }
+
+  async acceptTenantInvitation({ request, auth, response }) {
+    const { id, estate_id } = request.all()
+    response.res(
+      await OutsideLandlordService.acceptTenantInvitation({
+        user_id: auth.user.id,
+        task_id: id,
+        email: auth.user.email,
+        estate_id,
+      })
     )
   }
 

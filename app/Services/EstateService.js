@@ -1,9 +1,19 @@
 'use strict'
 const moment = require('moment')
-const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy, sum } = require('lodash')
+const {
+  isEmpty,
+  filter,
+  omit,
+  flatten,
+  groupBy,
+  countBy,
+  maxBy,
+  orderBy,
+  sum,
+  trim,
+} = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
-const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
@@ -2489,6 +2499,24 @@ class EstateService {
       return inviteOutsideLanlordTasks.toJSON()
     }
     return []
+  }
+
+  static async searchNotConnectedAddressByPropertyId({ user_id, property_id }) {
+    if (!property_id || trim(property_id) === '') {
+      return []
+    }
+    console.log('property_id', property_id)
+    return (
+      await this.getActiveEstateQuery()
+        .select('estates.*')
+        .innerJoin({ _ect: 'estate_current_tenants' }, function () {
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw(` _ect.user_id is NULL`))
+        })
+        .where('estates.letting_type', LETTING_TYPE_LET)
+        .where('estates.user_id', user_id)
+        .where('estates.property_id', 'ilike', `%${property_id}%`)
+        .fetch()
+    ).toJSON()
   }
 }
 module.exports = EstateService

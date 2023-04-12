@@ -453,8 +453,7 @@ class UserService {
       if (user.role === ROLE_USER && user.source_estate_id) {
         //If user we look for his email on estate_current_tenant and make corresponding corrections
         await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
-          user,
-          user.source_estate_id,
+          { user, estate_id: user.source_estate_id },
           trx
         )
         user.source_estate_id = null
