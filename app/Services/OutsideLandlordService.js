@@ -136,7 +136,7 @@ class OutsideLandlordService {
     await Task.query().where('email', email).update({ landlord_id }).transacting(trx)
   }
 
-  static async cancelInvitation({ landlord_id, task_id, lang = DEFAULT_LANG }, trx) {
+  static async cancelInvitation({ landlord_id, task_id }, trx) {
     const task = await TaskService.get(task_id)
 
     await Task.query()
@@ -144,6 +144,10 @@ class OutsideLandlordService {
       .update({ email: null, landlord_identify_key: null })
       .transacting(trx)
 
+    let lang = DEFAULT_LANG
+    if (task.tenant_id) {
+      lang = await require('./UserService').getUserLang([task.tenant_id])
+    }
     await Chat.createItem(
       {
         sender_id: landlord_id,
