@@ -1276,6 +1276,16 @@ class EstateController {
   async getCityList({ request, auth, response }) {
     response.res((await EstateService.getCities(auth.user.id)).toJSON({ isShort: true }))
   }
+
+  async searchByPropertyId({ request, auth, response }) {
+    const { property_id } = request.all()
+    response.res(
+      await EstateService.searchNotConnectedAddressByPropertyId({
+        user_id: auth.user.id,
+        property_id,
+      })
+    )
+  }
 }
 
 module.exports = EstateController

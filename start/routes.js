@@ -534,6 +534,10 @@ Route.group(() => {
   ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
+
+  Route.get('/search/property_id', 'EstateController.searchByPropertyId').middleware([
+    'valid:PropertyId',
+  ])
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
@@ -792,6 +796,10 @@ Route.group(() => {
     'valid:Pagination,TaskFilter',
   ])
   Route.get('/estate/:id/counts', 'TaskController.getTaskCountsByEstate').middleware(['valid:Id'])
+  Route.post('/cancel/:id', 'TaskController.cancelTenantInvitation').middleware(['valid:Id'])
+  Route.post('/accept/:id', 'TaskController.acceptTenantInvitation').middleware([
+    'valid:Id,EstateId',
+  ])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
