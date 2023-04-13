@@ -497,8 +497,6 @@ class TaskService extends BaseService {
   }
 
   static async hasPermission({ task, estate_id, user_id, role }) {
-    estate_id = estate_id || task.estate_id
-
     if (role === ROLE_LANDLORD && !estate_id) {
       throw new HttpException('No Estate provided', 500)
     }
@@ -542,7 +540,7 @@ class TaskService extends BaseService {
   static async addImages(request, user) {
     const { id } = request.all()
     let task = await this.get(id)
-    await this.hasPermission({ task, user_id: user.id, role: user.role })
+    await this.hasPermission({ task, estate_id: task.estate_id, user_id: user.id, role: user.role })
     const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
@@ -571,7 +569,7 @@ class TaskService extends BaseService {
     uri = uri.split(',')
 
     const task = await this.get(id)
-    await this.hasPermission({ task, user_id: user.id, role: user.role })
+    await this.hasPermission({ task, estate_id: task.estate_id, user_id: user.id, role: user.role })
 
     const trx = await Database.beginTransaction()
     try {
