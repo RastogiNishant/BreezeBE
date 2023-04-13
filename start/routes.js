@@ -1257,3 +1257,22 @@ Route.list().forEach((r) => {
     }
   }
 })
+
+Route.get('/test', async ({ request, response }) => {
+  const EstateSync = use('App/Classes/EstateSync')
+  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+
+  const EstateService = use('App/Services/EstateService')
+
+  let estate = await EstateService.getByIdWithDetail(342)
+  estate = estate.toJSON()
+  if (!Number(estate.usable_area)) {
+    estate.usable_area = estate.area
+  }
+  //console.log(estate)
+  const newEstate = estateSync.composeEstate(estate)
+  const attachments = estateSync.composeAttachments(estate)
+  //const resp = await estateSync.postEstate({ fields: newEstate })
+  console.log(attachments)
+  return response.res(attachments)
+})
