@@ -80,6 +80,7 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   WEBSOCKET_EVENT_MATCH_STAGE,
+  PROPERTY_TYPE_SHORT_TERM,
 } = require('../constants')
 
 const { ESTATE_NOT_EXISTS } = require('../exceptions')
@@ -118,8 +119,8 @@ class MatchService {
 
     //short duration filter doesn't meet, match percent will be 0
     if (prospect.residency_duration_min && prospect.residency_duration_max) {
+      // if it's inside property
       if (!estate.source_id) {
-        // if it's inside property
         if (!vacant_date || !rent_end_at) {
           return 0
         }
@@ -132,6 +133,9 @@ class MatchService {
           return 0
         }
       } else {
+        if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
+          return 0
+        }
       }
     }
 
