@@ -1145,6 +1145,7 @@ Estates: [ESTATES]
     { level: 'G', value: 250 },
     { level: 'H', value: 250 },
   ],
+  ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
 }
 
 module.exports = constants
