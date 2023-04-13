@@ -3090,6 +3090,8 @@ class MatchService {
       .select(
         'tenants.id',
         'tenants.user_id',
+        'tenants.residency_duration_min',
+        'tenants.residency_duration_max',
         Database.raw(`_me.total_income as income`), //sum of all member's income
         '_m.credit_score', //average
         'rent_arrears', //if at least one has true, then true
