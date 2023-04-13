@@ -1,9 +1,19 @@
 'use strict'
 const moment = require('moment')
-const { isEmpty, filter, omit, flatten, groupBy, countBy, maxBy, orderBy, sum } = require('lodash')
+const {
+  isEmpty,
+  filter,
+  omit,
+  flatten,
+  groupBy,
+  countBy,
+  maxBy,
+  orderBy,
+  sum,
+  trim,
+} = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
-const Drive = use('Drive')
 const Event = use('Event')
 const Logger = use('Logger')
 const GeoService = use('App/Services/GeoService')
@@ -16,6 +26,7 @@ const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
+const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
@@ -75,15 +86,17 @@ const {
   COMPLETE_CERTAIN_PERCENT,
   ESTATE_COMPLETENESS_BREAKPOINT,
   PUBLISH_ESTATE,
+  ROLE_USER,
+  MATCH_STATUS_FINISH_PENDING,
 } = require('../constants')
 
 const {
   exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
 } = require('../../app/exceptions')
 
-const { logEvent } = require('./TrackingService')
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+
 const MAX_DIST = 10000
 
 const ESTATE_PERCENTAGE_VARIABLE = {
@@ -1184,12 +1197,11 @@ class EstateService {
   /**
    * Get estates according to es
    */
-  static getActiveMatchesQuery(userId, exclude = []) {
+
+  static getActiveMatchesQuery(userId) {
     return Estate.query()
       .select('estates.*')
-      .withCount('knocked', function (m) {
-        m.whereNotIn('estate_id', exclude)
-      })
+      .withCount('knocked')
       .select(Database.raw(`_m.percent AS match`))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
@@ -1198,7 +1210,6 @@ class EstateService {
       })
       .whereNot('_m.buddy', true)
       .where('estates.status', STATUS_ACTIVE)
-      .whereNotIn('estates.id', exclude)
       .whereNotIn('estates.id', function () {
         // Remove already liked/disliked
         this.select('estate_id')
@@ -1287,7 +1298,7 @@ class EstateService {
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
-  static getNotActiveMatchesQuery(tenant, userId, exclude = []) {
+  static getNotActiveMatchesQuery(tenant, userId) {
     let query = null
     if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
@@ -1328,10 +1339,6 @@ class EstateService {
         .where('user_id', userId)
     })
 
-    if (exclude.length > 0) {
-      query.whereNotIn('estates.id', exclude)
-    }
-
     return (
       query
         .select('estates.*')
@@ -1358,19 +1365,19 @@ class EstateService {
   /**
    *
    */
-  static async getTenantAllEstates(userId, exclude = [], limit = 20) {
+  static async getTenantAllEstates(userId, page = 1, limit = 20) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
     if (tenant.isActive()) {
-      query = this.getActiveMatchesQuery(userId, isEmpty(exclude) ? undefined : exclude)
+      query = this.getActiveMatchesQuery(userId)
     } else {
-      query = this.getNotActiveMatchesQuery(tenant, userId, exclude)
+      query = this.getNotActiveMatchesQuery(tenant, userId)
     }
 
-    return query.limit(limit).fetch()
+    return query.paginate(page, limit)
   }
 
   /**
@@ -1452,7 +1459,7 @@ class EstateService {
   static async handleOfflineEstate({ estate_id, is_notification = true }, trx) {
     const matches = await Estate.query()
       .select('estates.*')
-      .where('id', estate_id)
+      .where('estates.id', estate_id)
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', estate_id)
       })
@@ -2395,6 +2402,51 @@ class EstateService {
     return estate
   }
 
+  static async getTenantEstates({ user_id, page, limit }) {
+    let estates = []
+    let totalCount = 0
+    const insideNewMatchesCount = await require('./MatchService').getNewMatchCount(user_id)
+    const outsideNewMatchesCount = await require('./ThirdPartyOfferService').getNewMatchCount(
+      user_id
+    )
+    totalCount = parseInt(insideNewMatchesCount) + parseInt(outsideNewMatchesCount)
+    let enoughOfInsideMatch = false
+    const offsetCount = insideNewMatchesCount % limit
+    const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
+    if ((page - 1) * limit < insideNewMatchesCount) {
+      estates = await EstateService.getTenantAllEstates(user_id, page, limit)
+      estates = await Promise.all(
+        estates.rows.map(async (estate) => {
+          estate = estate.toJSON({ isShort: true, role: ROLE_USER })
+          estate.isoline = await EstateService.getIsolines(estate)
+          return estate
+        })
+      )
+      if (estates.length >= limit) {
+        enoughOfInsideMatch = true
+      }
+    }
+
+    if (!enoughOfInsideMatch) {
+      let from = (page - insidePage) * limit - offsetCount
+      if (from < 0) from = 0
+      const to = (page - insidePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
+      const thirdPartyOffers = await require('./ThirdPartyOfferService').getMatches(
+        user_id,
+        from,
+        to
+      )
+      estates = [...estates, ...thirdPartyOffers]
+    }
+
+    return {
+      estates,
+      page,
+      limit,
+      count: totalCount,
+    }
+  }
+
   static async correctWrongEstates(user_id) {
     const estates =
       (
@@ -2424,6 +2476,47 @@ class EstateService {
       .groupBy('city', 'country')
       .orderBy('country', 'city')
       .fetch()
+  }
+
+  /**
+   *
+   * @param {*} user_id : prospect Id
+   */
+  static async getPendingFinalMatchEstate(user_id) {
+    const inviteOutsideLanlordTasks = await Task.query()
+      .select(Database.raw(`${MATCH_STATUS_FINISH} as status`))
+      .select(Database.raw(`id as task_id`))
+      .select(Database.raw(`null as id`))
+      .select('property_address as address')
+      .select('address_detail as floor')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .whereNotNull('email')
+      .where('tenant_id', user_id)
+      .whereNull('estate_id')
+      .fetch()
+
+    if (inviteOutsideLanlordTasks) {
+      return inviteOutsideLanlordTasks.toJSON()
+    }
+    return []
+  }
+
+  static async searchNotConnectedAddressByPropertyId({ user_id, property_id }) {
+    if (!property_id || trim(property_id) === '') {
+      return []
+    }
+    console.log('property_id', property_id)
+    return (
+      await this.getActiveEstateQuery()
+        .select('estates.*')
+        .innerJoin({ _ect: 'estate_current_tenants' }, function () {
+          this.on('_ect.estate_id', 'estates.id').on(Database.raw(` _ect.user_id is NULL`))
+        })
+        .where('estates.letting_type', LETTING_TYPE_LET)
+        .where('estates.user_id', user_id)
+        .where('estates.property_id', 'ilike', `%${property_id}%`)
+        .fetch()
+    ).toJSON()
   }
 }
 module.exports = EstateService

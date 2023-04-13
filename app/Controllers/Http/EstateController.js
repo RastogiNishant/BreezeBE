@@ -364,7 +364,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const estate = await EstateService.getQuery()
-      .where('id', id)
+      .where('estates.id', id)
       .whereIn('user_id', landlordIds)
       .whereNot('status', STATUS_DELETE)
       .with('point')
@@ -816,34 +816,20 @@ class EstateController {
    *
    */
   async getTenantEstates({ request, auth, response }) {
-    let { exclude, limit = 20 } = request.all()
-    const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
+    //const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
     const user = auth.user
-    let estates
     try {
-      estates = await EstateService.getTenantAllEstates(user.id, exclude_estates, limit)
-
-      estates = await Promise.all(
-        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
-          estate.isoline = await EstateService.getIsolines(estate)
-          return estate
-        })
-      )
-      const thirdPartyOfferLimit = limit - estates.length
-      const thirdPartyOffers = await ThirdPartyOfferService.getEstates(
-        user.id,
-        thirdPartyOfferLimit,
-        exclude_third_party_offers
-      )
-      estates = [...estates, ...thirdPartyOffers]
+      response.res(await EstateService.getTenantEstates({ user_id: user.id, page, limit }))
     } catch (e) {
       if (e.name === 'AppException') {
         throw new HttpException(e.message, 406)
       }
       throw e
     }
-
-    response.res(estates)
   }
 
   /**
@@ -1289,6 +1275,16 @@ class EstateController {
 
   async getCityList({ request, auth, response }) {
     response.res((await EstateService.getCities(auth.user.id)).toJSON({ isShort: true }))
+  }
+
+  async searchByPropertyId({ request, auth, response }) {
+    const { property_id } = request.all()
+    response.res(
+      await EstateService.searchNotConnectedAddressByPropertyId({
+        user_id: auth.user.id,
+        property_id,
+      })
+    )
   }
 }
 

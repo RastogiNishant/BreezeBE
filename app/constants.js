@@ -642,6 +642,7 @@ const constants = {
     'transfer_budget',
     'rent_end_at',
     'knocked_at',
+    'action_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -727,6 +728,7 @@ const constants = {
   PREDEFINED_MSG_OPEN_ENDED: 3,
   PREDEFINED_NOT_A_QUESTION: 4,
   PREDEFINED_LAST: 5,
+  PREDEFINED_MSG_OPTION_SIGNLE_CHOICE: 7,
 
   URGENCY_LOW: 1,
   URGENCY_NORMAL: 2,
@@ -934,6 +936,7 @@ const constants = {
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+  WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -943,6 +946,7 @@ const constants = {
   //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
+  WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
   WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
   MATCH_SCORE_GOOD_MATCH: 70,
 
@@ -1121,6 +1125,14 @@ Estates: [ESTATES]
     family_size_max: 2,
   },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
+  VALID_INCOME_PROOFS_PERIOD: 5,
+  MATCH_PERCENT_PASS: 40,
+
+  THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
+  THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
+  THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
+  PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
+  PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
 }
 
 module.exports = constants
