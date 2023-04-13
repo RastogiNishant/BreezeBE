@@ -1133,6 +1133,18 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
   PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
+
+  ENERGY_CLASS_USING_EFFICIENCY: [
+    { level: 'A+', value: 30 },
+    { level: 'A', value: 50 },
+    { level: 'B', value: 75 },
+    { level: 'C', value: 100 },
+    { level: 'D', value: 130 },
+    { level: 'E', value: 160 },
+    { level: 'F', value: 200 },
+    { level: 'G', value: 250 },
+    { level: 'H', value: 250 },
+  ],
 }
 
 module.exports = constants
