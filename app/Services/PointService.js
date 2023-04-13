@@ -8,7 +8,8 @@ const {
 } = require('../exceptions')
 
 class PointService {
-  static async getPointId({ lat, lon, dist_type = TRANSPORT_TYPE_CAR, dist_min = 60 }) {
+  static async getPointId({ coord, dist_type = TRANSPORT_TYPE_CAR, dist_min = 60 }) {
+    const [lat, lon] = coord.split(',')
     if (!lat || !lon) {
       throw new HttpException(LAT_LON_NOT_PROVIDED, 500)
     }

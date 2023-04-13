@@ -138,12 +138,22 @@ class ThirdPartyOfferService {
     return estates
   }
 
-  static searchTenantEstatesByPoint(point_id) {
-    return Database.select(Database.raw(`FALSE as inside`))
-      .select('_e.*')
+  static async searchTenantEstatesByPoint(point_id) {
+    return await Database.select(Database.raw(`FALSE as inside`))
+      .select(
+        '_e.id',
+        '_e.source_id',
+        '_e.source',
+        '_e.coord_raw as coord',
+        '_e.house_number',
+        '_e.street',
+        '_e.city',
+        '_e.country',
+        '_e.address'
+      )
       .from({ _e: 'third_party_offers' })
       .innerJoin({ _p: 'points' }, function () {
-        this.id = point_id
+        this.on('_p.id', point_id)
       })
       .where('_e.status', STATUS_ACTIVE)
       .where('_e.status', STATUS_ACTIVE)
