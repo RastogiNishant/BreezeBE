@@ -590,8 +590,8 @@ class MatchController {
     const endIndex = startIndex + limit
 
     estates = {
-      total: estates.length + thirdPartyOffers.length,
-      lastPage: Math.ceil((estates.length + thirdPartyOffers.length) / limit),
+      total: estateData.length,
+      lastPage: Math.ceil(estateData.length / limit),
       page,
       perPage: limit,
       data: estateData.slice(startIndex, endIndex),
