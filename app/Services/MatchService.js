@@ -82,6 +82,7 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   WEBSOCKET_EVENT_MATCH_STAGE,
+  PROPERTY_TYPE_SHORT_TERM,
   MATCH_PERCENT_PASS,
   WEBSOCKET_EVENT_MATCH_CREATED,
 } = require('../constants')
@@ -118,6 +119,31 @@ class MatchService {
     // landlordBudgetWeight = 1
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
+
+    const vacant_date = estate.vacant_date
+    const rent_end_at = estate.rent_end_at
+
+    //short duration filter doesn't meet, match percent will be 0
+    if (prospect.residency_duration_min && prospect.residency_duration_max) {
+      // if it's inside property
+      if (!estate.source_id) {
+        if (!vacant_date || !rent_end_at) {
+          return 0
+        }
+
+        const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+        if (
+          rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
+          rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
+        ) {
+          return 0
+        }
+      } else {
+        if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
+          return 0
+        }
+      }
+    }
 
     const incomes = await require('./MemberService').getIncomes(prospect.user_id)
     const income_types = incomes.map((ic) => ic.income_type)
