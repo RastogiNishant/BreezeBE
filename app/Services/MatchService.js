@@ -118,16 +118,20 @@ class MatchService {
 
     //short duration filter doesn't meet, match percent will be 0
     if (prospect.residency_duration_min && prospect.residency_duration_max) {
-      if (!vacant_date || !rent_end_at) {
-        return 0
-      }
+      if (!estate.source_id) {
+        // if it's inside property
+        if (!vacant_date || !rent_end_at) {
+          return 0
+        }
 
-      const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
-      if (
-        rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
-        rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
-      ) {
-        return 0
+        const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+        if (
+          rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
+          rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
+        ) {
+          return 0
+        }
+      } else {
       }
     }
 
