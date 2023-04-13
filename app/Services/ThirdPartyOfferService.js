@@ -138,6 +138,18 @@ class ThirdPartyOfferService {
     return estates
   }
 
+  static searchTenantEstatesByPoint(point_id) {
+    return Database.select(Database.raw(`FALSE as inside`))
+      .select('_e.*')
+      .from({ _e: 'third_party_offers' })
+      .innerJoin({ _p: 'points' }, function () {
+        this.id = point_id
+      })
+      .where('_e.status', STATUS_ACTIVE)
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+  }
+
   static searchTenantEstatesQuery(tenant, radius) {
     return Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')

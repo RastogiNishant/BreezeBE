@@ -175,6 +175,21 @@ class Estate extends Model {
     return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
   }
 
+  static shortColumns() {
+    return [
+      'id',
+      'user_id',
+      'house_type',
+      'description',
+      'coord',
+      'street',
+      'city',
+      'address',
+      'house_number',
+      'country',
+    ]
+  }
+
   /**
    *
    */
