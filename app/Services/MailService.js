@@ -3,6 +3,7 @@
 const { trim, capitalize } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
+const { generateAddress } = use('App/Libs/utils')
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
@@ -631,10 +632,15 @@ class MailService {
   static async inviteLandlordFromTenant({ task, link, lang = DEFAULT_LANG }) {
     const templateId = LANDLORD_EMAIL_TEMPLATE
 
-    const shortMsg = `${task.property_address}, ${task.address_detail}: \n 
-                      ${l.get(task.title, lang)}:${l.get(task.description, lang)} ... ${moment
-      .utc(task.created_at)
-      .format(DATE_FORMAT)}`
+    const address = generateAddress({
+      street: task?.property_address?.street,
+      house_number: task?.property_address?.house_number,
+      zip: task?.property_address?.postcode,
+      city: task?.property_address?.city,
+      country: task?.property_address?.country,
+    })
+    const shortMsg = `${task.address_detail}, ${address}: \n 
+                      ${l.get(task.title, lang)}:${l.get(task.description, lang) || ``} `
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)

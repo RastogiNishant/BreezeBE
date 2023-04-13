@@ -219,6 +219,7 @@ class EstateCurrentTenantService extends BaseService {
 
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
+      .where('user_id', user_id)
       .where('status', STATUS_ACTIVE)
       .first()
 
@@ -805,7 +806,7 @@ class EstateCurrentTenantService extends BaseService {
     const trx = await Database.beginTransaction()
     try {
       if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, estate_id, trx)
+        await EstateCurrentTenantService.updateOutsideTenantInfo({ user, estate_id }, trx)
       } else {
         const userData = {
           role: ROLE_USER,
@@ -833,6 +834,10 @@ class EstateCurrentTenantService extends BaseService {
 
   static async handleInvitationLink({ data1, data2, email, user }) {
     const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    if (!estate_id) {
+      return { estate_id: null, estateCurrentTenant: null }
+    }
+
     const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
       estate_id,
       ...rest,
@@ -969,7 +974,7 @@ class EstateCurrentTenantService extends BaseService {
     await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
-  static async updateOutsideTenantInfo(user, estate_id = null, trx = null) {
+  static async updateOutsideTenantInfo({ user, estate_id = null }, trx = null) {
     if (!user || !estate_id) {
       throw new HttpException('User or estate id is not provided', 400)
     }

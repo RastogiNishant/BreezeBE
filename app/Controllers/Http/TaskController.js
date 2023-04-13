@@ -10,6 +10,7 @@ const {
   URGENCY_SUPER,
   URGENCY_NORMAL,
 } = require('../../constants')
+const OutsideLandlordService = require('../../Services/OutsideLandlordService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -219,6 +220,29 @@ class TaskController {
     const topicList = await PredefinedMessageService.getTopicList()
     console.log('topicList=', topicList)
     response.res(topicList ? topicList.toJSON().choices : [])
+  }
+
+  async cancelTenantInvitation({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(
+      await OutsideLandlordService.cancelInvitation({
+        landlord_id: auth.user.id,
+        email: auth.user.email,
+        task_id: id,
+      })
+    )
+  }
+
+  async acceptTenantInvitation({ request, auth, response }) {
+    const { id, estate_id } = request.all()
+    response.res(
+      await OutsideLandlordService.acceptTenantInvitation({
+        user_id: auth.user.id,
+        task_id: id,
+        email: auth.user.email,
+        estate_id,
+      })
+    )
   }
 
   // async onEditMessage({ request, auth, response }) {

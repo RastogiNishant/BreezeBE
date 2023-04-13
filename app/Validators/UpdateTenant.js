@@ -33,6 +33,10 @@ const {
   //Minor
   MAX_MINOR_COUNT,
 } = require('../constants')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
+} = require('../exceptions')
 
 class UpdateTenant extends Base {
   static schema = () =>
@@ -105,8 +109,28 @@ class UpdateTenant extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       rent_start: yup.date(),
       transfer_budget_min: yup.number().integer().positive().min(0).max(2500).nullable(),
-      transfer_budget_max: yup.number().integer().positive().min(0).max(500_000).nullable(),
-      residency_duration: yup.number().integer().nullable().min(0).max(36).nullable(),
+      transfer_budget_max: yup.number().integer().positive().min(0).max(500000).nullable(),
+      residency_duration_min: yup.number().integer().nullable().min(0).nullable(),
+      residency_duration_max: yup
+        .number()
+        .integer()
+        .when(['residency_duration_min'], (residency_duration_min, schema, { value }) => {
+          if (!residency_duration_min) return schema
+          return value && value <= residency_duration_min
+            ? yup
+                .number()
+                .integer()
+                .min(
+                  available_start_at,
+                  getExceptionMessage(
+                    'residency_duration_max',
+                    SHOULD_BE_AFTER,
+                    residency_duration_min
+                  )
+                )
+            : schema
+        })
+        .nullable(),
       selected_adults_count: yup.number().integer(),
     })
 }
