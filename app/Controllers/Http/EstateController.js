@@ -1286,6 +1286,10 @@ class EstateController {
       })
     )
   }
+
+  async searchPreOnboard({ request, auth, response }) {
+    
+  }
 }
 
 module.exports = EstateController
