@@ -85,10 +85,10 @@ class OutsideLandlordService {
     ).rows
 
     if (landlords && landlords.length) {
-      uri += `&is_exist=${isExist}`
+      uri += `&user_id=${landlords[0].id}`
     }
-    const lang =
-      landlords && landlords.length && landlords[0].lang ? landlords[0].lang : DEFAULT_LANG
+    const lang = landlords?.[0]?.lang || DEFAULT_LANG
+    uri += `&lang=${lang}`
 
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
