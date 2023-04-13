@@ -1,5 +1,6 @@
 'use_strict'
 const axios = require('axios')
+const moment = require('moment')
 const {
   BUILDING_STATUS_FIRST_TIME_OCCUPIED,
   BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
@@ -17,21 +18,67 @@ const {
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
   BUILDING_STATUS_FULLY_REFURBISHED,
+  FIRING_OEL,
+  FIRING_GAS,
+  FIRING_ELECTRIC,
+  FIRING_SOLAR,
+  FIRING_GROUND_HEAT,
+  FIRING_REMOTE,
+  FIRING_WATER_ELECTRIC,
+  FIRING_PELLET,
+  FIRING_COAL,
+  FIRING_WOOD,
+  FIRING_LIQUID_GAS,
   HEATING_TYPE_NO,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_REMOTE,
   HEATING_TYPE_OVEN,
+  APARTMENT_TYPE_ATTIC,
+  APARTMENT_TYPE_MAISONETTE,
+  APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_LOFT,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_SOUTERRAIN,
+  APARTMENT_TYPE_GROUND,
 } = require('../constants')
-const { invert, isFunction } = require('lodash')
+const { invert, isFunction, isEmpty } = require('lodash')
+const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
 
 class EstateSync {
-  heatingType = {
+  static apartmentType = {
+    //aparmentType must be one of apartment, attic, maisonette, penthouse, loft, terrace, lowerGroundFloor, groundFloor, upperGroundFloor, floor, other
+    attic: APARTMENT_TYPE_ATTIC,
+    maisonette: APARTMENT_TYPE_MAISONETTE,
+    penthouse: APARTMENT_TYPE_PENTHOUSE,
+    loft: APARTMENT_TYPE_LOFT,
+    terrace: APARTMENT_TYPE_TERRACES,
+    lowerGroundFloor: APARTMENT_TYPE_SOUTERRAIN,
+    groundFloor: APARTMENT_TYPE_GROUND,
+  }
+
+  static energyType = {
+    //energySource must be one of oil, gas, electric, solar, geothermal, district, water, pellet, coal, wood, liquidGas
+    oil: FIRING_OEL,
+    gas: FIRING_GAS,
+    electric: FIRING_ELECTRIC,
+    solar: FIRING_SOLAR,
+    geothermal: FIRING_GROUND_HEAT,
+    district: FIRING_REMOTE,
+    water: FIRING_WATER_ELECTRIC,
+    pellet: FIRING_PELLET,
+    coal: FIRING_COAL,
+    wood: FIRING_WOOD,
+    liquidGas: FIRING_LIQUID_GAS,
+  }
+
+  static heatingType = {
     //heatingType must be one of stove, floor, central, district, underfloor, heatPump.
     central: HEATING_TYPE_CENTRAL,
     floor: HEATING_TYPE_FLOOR,
     stove: HEATING_TYPE_OVEN,
   }
+
   condition = {
     'first time occupied': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
     'needs renovation': BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
@@ -71,10 +118,10 @@ class EstateSync {
 
   map = {
     extra_costs: 'additionalCosts',
-    //additionalCostsIncludeHeatingCosts: true,
+    additionalCostsIncludeHeatingCosts: this.composeAdditionalCosts,
     address: this.composeAddress,
-    //apartmentType: 'penthouse',
-    //availableFrom: 'immediately, latest in March',
+    apartmentType: this.composeApartmentType,
+    availableFrom: this.composeAvailableFrom,
     net_rent: 'baseRent',
     //commission: '5,95% incl. 19% VAT',
     //commissionDescription: 'My first commission description for a property.',
@@ -108,16 +155,7 @@ class EstateSync {
     parkingSpaceType: this.composeParkingSpaceType,
     pets_allowed: 'petsAllowed',
     //requiresWBS: false,
-    /*
-    residentialEnergyCertificate: {
-      energyClass: 'A+',
-      energyConsumption: 0.01,
-      energyNeed: 0.01,
-      energySource: 'solar',
-      prior2014: false,
-      type: 'consumption',
-      warmWaterIncluded: true,
-    },*/
+    residentialEnergyCertificate: this.composeEnergyClass,
     title: this.composeTitle,
     //'totalRent',
     area: 'usableArea',
@@ -132,9 +170,32 @@ class EstateSync {
     })
   }
 
+  composeApartmentType({ apt_type }) {
+    if (apt_type) {
+      const apartmentType = invert(EstateSync.apartmentType)
+      if (apartmentType[apt_type]) {
+        return apartmentType[apt_type]
+      }
+      return 'other'
+    }
+  }
+
+  composeAdditionalCosts({ extra_costs }) {
+    if (Number(extra_costs)) {
+      return true
+    }
+  }
+
+  composeAvailableFrom({ vacant_date }) {
+    if (vacant_date) {
+      return moment(vacant_date).utc().format()
+    }
+    return 'immediately'
+  }
+
   composeHeatingType({ heating_type }) {
     const heatingType = invert(EstateSync.heatingType)
-    if (heatingType[heating_type]) {
+    if (heating_type.length > 0 && heatingType[heating_type[0]]) {
       return heatingType[heating_type]
     }
   }
@@ -165,6 +226,22 @@ class EstateSync {
 
   composeTitle(estate) {
     return 'Beautiful Estate'
+  }
+
+  composeEnergyClass(estate) {
+    let energyClass = {}
+    if (estate.energy_efficiency) {
+      energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate.energy_efficiency)
+    }
+    const energyType = invert(EstateSync.energyType)
+    if (estate.firing.length > 0 && energyType[estate.firing[0]]) {
+      energyClass['energySource'] = energyType[estate.firing[0]]
+    }
+    if (!isEmpty(energyClass)) {
+      energyClass['type'] = 'consumption'
+      energyClass['energyConsumption'] = 0.01
+      return energyClass
+    }
   }
 
   composeEstate(estate) {
