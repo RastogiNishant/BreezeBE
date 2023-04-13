@@ -41,9 +41,11 @@ const {
   APARTMENT_TYPE_TERRACES,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_GROUND,
+  ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE,
 } = require('../constants')
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
+const ContentType = use('App/Classes/ContentType')
 
 class EstateSync {
   static apartmentType = {
@@ -55,6 +57,25 @@ class EstateSync {
     terrace: APARTMENT_TYPE_TERRACES,
     lowerGroundFloor: APARTMENT_TYPE_SOUTERRAIN,
     groundFloor: APARTMENT_TYPE_GROUND,
+  }
+
+  static condition = {
+    'first time occupied': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    'needs renovation': BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+    new: BUILDING_STATUS_NEW,
+    existing: BUILDING_STATUS_EXISTING,
+    'fully renovated': BUILDING_STATUS_PART_FULLY_RENOVATED,
+    'partly refurbished': BUILDING_STATUS_PARTLY_REFURISHED,
+    'in need of renovation': BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    'ready to be built': BUILDING_STATUS_READY_TO_BE_BUILT,
+    'by agreement': BUILDING_STATUS_BY_AGREEMENT,
+    modernized: BUILDING_STATUS_MODERNIZED,
+    cleaned: BUILDING_STATUS_CLEANED,
+    'rough building': BUILDING_STATUS_ROUGH_BUILDING,
+    developed: BUILDING_STATUS_DEVELOPED,
+    abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
+    projected: BUILDING_STATUS_PROJECTED,
+    refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
   }
 
   static energyType = {
@@ -77,25 +98,6 @@ class EstateSync {
     central: HEATING_TYPE_CENTRAL,
     floor: HEATING_TYPE_FLOOR,
     stove: HEATING_TYPE_OVEN,
-  }
-
-  condition = {
-    'first time occupied': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
-    'needs renovation': BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
-    new: BUILDING_STATUS_NEW,
-    existing: BUILDING_STATUS_EXISTING,
-    'fully renovated': BUILDING_STATUS_PART_FULLY_RENOVATED,
-    'partly refurbished': BUILDING_STATUS_PARTLY_REFURISHED,
-    'in need of renovation': BUILDING_STATUS_IN_NEED_OF_RENOVATION,
-    'ready to be built': BUILDING_STATUS_READY_TO_BE_BUILT,
-    'by agreement': BUILDING_STATUS_BY_AGREEMENT,
-    modernized: BUILDING_STATUS_MODERNIZED,
-    cleaned: BUILDING_STATUS_CLEANED,
-    'rough building': BUILDING_STATUS_ROUGH_BUILDING,
-    developed: BUILDING_STATUS_DEVELOPED,
-    abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
-    projected: BUILDING_STATUS_PROJECTED,
-    refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
   }
 
   makeNumeric = [
@@ -201,7 +203,7 @@ class EstateSync {
   }
 
   composeCondition({ building_status }) {
-    const condition = invert(this.condition)
+    const condition = invert(EstateSync.condition)
     return condition[building_status] ?? ''
   }
 
@@ -211,6 +213,43 @@ class EstateSync {
     }
     const num = deposit / net_rent
     return `${num}x base rent`
+  }
+
+  composeAttachments({ cover, rooms }) {
+    let attachments = []
+    let extension
+    let fileType
+    if (cover) {
+      extension = cover.split('.').pop()
+      fileType = ContentType.getContentType(extension)
+      if (fileType.match(/^image/)) {
+        //this type: image/jpeg is accepted by EstateSync and presented as img...
+        attachments = [...attachments, { url: cover, type: 'image/jpeg', title: 'Cover Image' }]
+      } else if (fileType === 'application/pdf') {
+        //EstateSync only accepts image/jpeg and application/pdf
+        attachments = [
+          ...attachments,
+          { url: cover, type: 'application/pdf', title: 'Cover Image' },
+        ]
+      }
+    }
+    if (rooms.length > 0) {
+      for (let i = 0; i < rooms.length; i++) {
+        if (rooms[i].images.length > 0) {
+          for (let k = 0; k < rooms[i].images.length; k++) {
+            extension = rooms[i].images[k].url.split('.').pop()
+            fileType = ContentType.getContentType(extension)
+            if (fileType.match(/^image/)) {
+              //EstateSync only accepts image/jpeg and application/pdf
+              attachments = [...attachments, { url: rooms[i].images[k].url, type: 'image/jpeg' }]
+            } else if (fileType === 'application/pdf') {
+              attachments = [...attachments, { url: rooms[i].images[k].url, type: fileType }]
+            }
+          }
+        }
+      }
+    }
+    return attachments
   }
 
   composeAddress(estate) {
