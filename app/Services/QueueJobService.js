@@ -64,6 +64,21 @@ class QueueJobService {
     return estate.save()
   }
 
+  static async updatePOI() {
+    const points = (
+      await Point.query()
+        .where('type', POINT_TYPE_POI)
+        .where(Database.raw(`points."data"->'data' is null `))
+        .limit(3)
+    ).toJSON()
+
+    let i = 0
+    while (i < points.length) {
+      await GeoService.getOrCreatePoint({ lat: points[i].lat, lon: points[i].lon })
+      i++
+    }
+  }
+
   static async updateEstateCoord(estateId) {
     const estate = await Estate.find(estateId)
 
