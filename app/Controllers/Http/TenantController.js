@@ -129,7 +129,6 @@ class TenantController {
           userId: auth.user.id,
           has_notification_sent: false,
         })
-        //await MatchService.matchByUser({ userId: auth.user.id, has_notification_sent: false })
       }
       response.res(updatedTenant)
     } catch (e) {
