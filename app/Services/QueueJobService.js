@@ -10,6 +10,8 @@ const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
 const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
+const Point = use('App/Models/Point')
+
 const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
@@ -40,6 +42,7 @@ const {
   SALUTATION_NEUTRAL_LABEL,
   MAXIMUM_EXPIRE_PERIOD,
   LETTING_TYPE_LET,
+  POINT_TYPE_POI,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -65,17 +68,21 @@ class QueueJobService {
   }
 
   static async updatePOI() {
-    const points = (
-      await Point.query()
-        .where('type', POINT_TYPE_POI)
-        .where(Database.raw(`points."data"->'data' is null `))
-        .limit(3)
-    ).toJSON()
-
-    let i = 0
-    while (i < points.length) {
-      await GeoService.getOrCreatePoint({ lat: points[i].lat, lon: points[i].lon })
-      i++
+    try {
+      const points = (
+        await Point.query()
+          .where('type', POINT_TYPE_POI)
+          .where(Database.raw(`points."data"->'data' is null `))
+          .limit(3)
+          .fetch()
+      ).toJSON()
+      let i = 0
+      while (i < points.length) {
+        await GeoService.getOrCreatePoint({ lat: points[i].lat, lon: points[i].lon })
+        i++
+      }
+    } catch (e) {
+      console.log('updatePoi error', e.message)
     }
   }
 
