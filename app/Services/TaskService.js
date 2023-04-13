@@ -37,8 +37,6 @@ const Task = use('App/Models/Task')
 const Chat = use('App/Models/Chat')
 const PredefinedMessage = use('App/Models/PredefinedMessage')
 
-const File = use('App/Classes/File')
-
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const PredefinedMessageService = use('App/Services/PredefinedMessageService')
@@ -48,6 +46,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
 const BaseService = require('./BaseService')
+
 class TaskService extends BaseService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
@@ -497,40 +496,53 @@ class TaskService extends BaseService {
       .with('users')
   }
 
-  static async hasPermission({ estate_id, user_id, role }) {
+  static async hasPermission({ task, estate_id, user_id, role }) {
+    estate_id = estate_id || task.estate_id
+
+    if (role === ROLE_LANDLORD && !estate_id) {
+      throw new HttpException('No Estate provided', 500)
+    }
+
     //to check if the user has permission
     if (role === ROLE_LANDLORD) {
       await EstateService.hasPermission({ id: estate_id, user_id })
     }
 
-    const finalMatch = await MatchService.getFinalMatch(estate_id)
-    if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 400)
-    }
-
     // to check if the user is the tenant for that property.
-    if (role === ROLE_USER && finalMatch.user_id !== user_id) {
+    if (role === ROLE_USER && task.tenant_id !== user_id) {
       throw new HttpException('No permission for task', 400)
-    }
-
-    if (!finalMatch.user_id) {
-      throw new HttpException('Database issue', 500)
     }
 
     if (
       role === ROLE_USER &&
-      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+      estate_id &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({
+        estate_id,
+        user_id,
+      }))
     ) {
       throw new HttpException('You are not a breeze member yet', 400)
     }
 
-    return finalMatch.user_id
+    if (estate_id) {
+      const finalMatch = await MatchService.getFinalMatch(estate_id)
+      if (!finalMatch) {
+        throw new HttpException('No final match yet for property', 400)
+      }
+      return finalMatch.user_id
+    }
+
+    if (role === ROLE_USER) {
+      return user_id
+    }
+
+    return null
   }
 
   static async addImages(request, user) {
     const { id } = request.all()
     let task = await this.get(id)
-    await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
+    await this.hasPermission({ task, user_id: user.id, role: user.role })
     const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
@@ -559,7 +571,7 @@ class TaskService extends BaseService {
     uri = uri.split(',')
 
     const task = await this.get(id)
-    await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
+    await this.hasPermission({ task, user_id: user.id, role: user.role })
 
     const trx = await Database.beginTransaction()
     try {
