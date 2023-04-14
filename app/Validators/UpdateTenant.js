@@ -110,6 +110,7 @@ class UpdateTenant extends Base {
       rent_start: yup.date(),
       transfer_budget_min: yup.number().integer().positive().min(0).max(2500).nullable(),
       transfer_budget_max: yup.number().integer().positive().min(0).max(500000).nullable(),
+      is_short_term_rent: yup.boolean(),
       residency_duration_min: yup.number().integer().nullable().min(0).nullable(),
       residency_duration_max: yup
         .number()
