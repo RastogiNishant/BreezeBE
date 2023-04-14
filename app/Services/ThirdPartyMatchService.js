@@ -33,17 +33,14 @@ class ThirdPartyMatchService {
       }
       idx++
     }
-    let matchedEstateIds = []
     const matches =
-      passedEstates.map((i) => {
-        matchedEstateIds = [...matchedEstateIds, i.estate_id]
-        return {
-          user_id: tenant.user_id,
-          estate_id: i.estate_id,
-          percent: i.percent,
-          status: MATCH_STATUS_NEW,
-        }
-      }) || []
+      passedEstates.map((i) => ({
+        user_id: tenant.user_id,
+        estate_id: i.estate_id,
+        percent: i.percent,
+        status: MATCH_STATUS_NEW,
+      })) || []
+
     if (!isEmpty(matches)) {
       //await ThirdPartyMatch.createMany(matches)
       await Promise.map(matches, async (match) => {
