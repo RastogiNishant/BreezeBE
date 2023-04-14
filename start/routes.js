@@ -542,6 +542,10 @@ Route.group(() => {
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
 
+Route.get('/api/v1/estates/search/onboard', 'EstateController.searchPreOnboard').middleware([
+  'valid:UpdateTenant',
+])
+
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
   'EstateCurrentTenantController.retrieveLinkByCode'

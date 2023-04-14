@@ -16,6 +16,7 @@ const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
+const PointService = use('App/Services/PointService')
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
@@ -1285,6 +1286,21 @@ class EstateController {
         property_id,
       })
     )
+  }
+
+  async searchPreOnboard({ request, response }) {
+    const data = request.all()
+    try {
+      const point = await PointService.getPointId({ ...data })
+      if (!point) {
+        throw new HttpException('No point info', 400)
+      }
+      const insideEstates = await EstateService.searchEstateByPoint(point.id)
+      const outsideEstates = await ThirdPartyOfferService.searchTenantEstatesByPoint(point.id)
+      response.res([...insideEstates, ...outsideEstates])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 }
 

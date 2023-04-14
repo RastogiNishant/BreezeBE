@@ -138,6 +138,28 @@ class ThirdPartyOfferService {
     return estates
   }
 
+  static async searchTenantEstatesByPoint(point_id) {
+    return await Database.select(Database.raw(`FALSE as inside`))
+      .select(
+        '_e.id',
+        '_e.source_id',
+        '_e.source',
+        '_e.coord_raw as coord',
+        '_e.house_number',
+        '_e.street',
+        '_e.city',
+        '_e.country',
+        '_e.address'
+      )
+      .from({ _e: 'third_party_offers' })
+      .innerJoin({ _p: 'points' }, function () {
+        this.on('_p.id', point_id)
+      })
+      .where('_e.status', STATUS_ACTIVE)
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+  }
+
   static searchTenantEstatesQuery(tenant, radius) {
     return Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')

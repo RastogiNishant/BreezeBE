@@ -129,6 +129,7 @@ class QueueService {
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.expiredShowTime),
+      wrapException(QueueJobService.updatePOI),
     ])
   }
 

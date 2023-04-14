@@ -1150,6 +1150,25 @@ class EstateService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
+  static async searchEstateByPoint(point_id) {
+    return await Database.select(Database.raw(`TRUE as inside`))
+      .select(
+        '_e.id',
+        '_e.coord_raw as coord',
+        '_e.street',
+        '_e.city',
+        '_e.address',
+        '_e.house_number',
+        '_e.country'
+      )
+      .from({ _e: 'estates' })
+      .innerJoin({ _p: 'points' }, function () {
+        this.on('_p.id', point_id)
+      })
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+  }
+
   /**
    *
    */
