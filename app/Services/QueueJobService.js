@@ -73,12 +73,13 @@ class QueueJobService {
         await Point.query()
           .where('type', POINT_TYPE_POI)
           .where(Database.raw(`points."data"->'data' is null `))
-          .limit(3)
+          .limit(10)
           .fetch()
-      ).toJSON()
+      ).rows
+
       let i = 0
       while (i < points.length) {
-        await GeoService.getOrCreatePoint({ lat: points[i].lat, lon: points[i].lon })
+        await GeoService.fillPoi(points[i])
         i++
       }
     } catch (e) {

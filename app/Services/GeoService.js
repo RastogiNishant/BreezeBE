@@ -38,6 +38,14 @@ class GeoService {
     return point
   }
 
+  static async getPOI({ lat, lon }) {
+    try {
+      return await GeoAPI.getBatchedPlaces({ lat, lon })
+    } catch (e) {
+      console.log('getPOI error', e.message)
+      return null
+    }
+  }
   /**
    * Get Isoline data from GeoAPI service
    */
@@ -91,6 +99,17 @@ class GeoService {
     }
   }
 
+  static async fillPoi(point) {
+    const lat = Point.round(point.lat)
+    const lon = Point.round(point.lon)
+
+    if (!point.data?.data) {
+      const data = await this.getPOI({ lat, lon })
+      point.data = data ? { data } : {}
+      await point.save()
+    }
+  }
+
   /**
    *
    */
@@ -103,6 +122,11 @@ class GeoService {
       .where('type', POINT_TYPE_POI)
       .first()
     if (point) {
+      if (!point.data?.data) {
+        const data = await this.getPOI({ lat, lon })
+        point.data = data ? { data } : {}
+        await point.save()
+      }
       return point
     }
 
