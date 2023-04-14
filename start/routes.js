@@ -1281,7 +1281,16 @@ Route.get('/test', async ({ request, response }) => {
   if (!Number(estate.usable_area)) {
     estate.usable_area = estate.area
   }
-  //const resp = await estateSync.postEstate({ estate })
-  const resp = estateSync.composeEstate(estate)
+  const resp = await estateSync.postEstate({ estate })
+  //const resp = estateSync.composeEstate(estate)
+  return response.res(resp)
+})
+
+Route.post('/test', async ({ request, response }) => {
+  const EstateSync = use('App/Classes/EstateSync')
+  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+  const { propertyId, targetId } = request.all()
+
+  const resp = await estateSync.publishEstate({ propertyId, targetId })
   return response.res(resp)
 })

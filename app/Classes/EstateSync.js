@@ -387,6 +387,16 @@ class EstateSync {
     }
   }
 
+  async publishEstate({ propertyId, targetId }) {
+    try {
+      const ret = await axios.post(`${this.baseUrl}/listings`, { propertyId, targetId })
+      return ret.data
+    } catch (err) {
+      console.log(err)
+      if (err.response.data) return err.response.data
+    }
+  }
+
   deleteEstate() {}
 }
 
