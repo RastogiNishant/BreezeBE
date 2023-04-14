@@ -44,26 +44,8 @@ class ThirdPartyMatchService {
         status: MATCH_STATUS_NEW,
       })) || []
 
-    if (!isEmpty(matches)) {
-      //await ThirdPartyMatch.createMany(matches)
-      await Promise.map(matches, async (match) => {
-        const found = await ThirdPartyMatch.query()
-          .where('user_id', tenant.user_id)
-          .where('estate_id', match.estate_id)
-          .first()
-        if (found) {
-          await found.updateItem(match)
-        } else {
-          await ThirdPartyMatch.createItem(match)
-        }
-      })
-      if (has_notification_sent) {
-        const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-        if (superMatches.length > 0) {
-          await NoticeService.prospectSuperMatch(superMatches)
-        }
-      }
-    }
+    this.deleteExpiredMatches()
+    await this.updateMatches(matches, has_notification_sent)
 
     return matches
   }
@@ -82,7 +64,6 @@ class ThirdPartyMatchService {
       .where(Database.raw(`tpoi.id IS NULL`))
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
       .limit(MAX_SEARCH_ITEMS)
-
     const MatchService = require('./MatchService')
     const tenantUserIds = tenants.map((tenant) => tenant.user_id)
 
@@ -95,6 +76,7 @@ class ThirdPartyMatchService {
     // Calculate matches for tenants to current estate
     let passedEstates = []
     let idx = 0
+
     while (idx < tenants.length) {
       const tenant = tenants[idx]
 
@@ -114,37 +96,44 @@ class ThirdPartyMatchService {
         status: MATCH_STATUS_NEW,
       })) || []
 
-    if (!isEmpty(matches)) {
-      let i = 0
-      while (i < matches.length) {
-        const match = matches[i]
-        const thirdPartyMatch = await this.getNewMatch({
-          user_id: match.user_id,
-          estate_id: match.estate_id,
-        })
+    await this.updateMatches(matches, has_notification_sent)
+  }
 
-        if (thirdPartyMatch) {
-          thirdPartyMatch.updateItem(match)
-        } else {
-          await ThirdPartyMatch.createItem(match)
-        }
-        i++
+  static async updateMatches(matches, has_notification_sent = false) {
+    if (!matches || !matches.length) {
+      return
+    }
+
+    let i = 0
+    while (i < matches.length) {
+      this.upsertSingleMatch(matches[i])
+      i++
+    }
+
+    if (has_notification_sent) {
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+
+      //TODO:
+      /*
+       * this will send many notifications to users which are not good
+       * Approach: need to save start time in match table before calling matchByEstates while calculating new matches
+       * And then need to pull out new matches greater than start_time and if there are new matches, need to send notification in group by user_id
+       */
+      if (superMatches.length > 0) {
+        await NoticeService.prospectSuperMatch(superMatches)
       }
+    }
+  }
+  static async upsertSingleMatch(match) {
+    const thirdPartyMatch = await this.getNewMatch({
+      user_id: match.user_id,
+      estate_id: match.estate_id,
+    })
 
-      if (has_notification_sent) {
-        const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-
-        //TODO:
-        /*
-         * this will send many notifications to users which are not good
-         * Approach: need to save start time in match table before calling matchByEstates while calculating new matches
-         * And then need to pull out new matches greater than start_time and if there are new matches, need to send notification in group by user_id
-         */
-
-        if (superMatches.length > 0) {
-          await NoticeService.prospectSuperMatch(superMatches)
-        }
-      }
+    if (thirdPartyMatch) {
+      thirdPartyMatch.updateItem(match)
+    } else {
+      await ThirdPartyMatch.createItem(match)
     }
   }
 

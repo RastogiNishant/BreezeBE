@@ -176,7 +176,7 @@ class ThirdPartyOfferService {
       .where('_e.status', STATUS_ACTIVE)
       .whereNull('tpoi.id')
       .where('_t.user_id', tenant.user_id)
-      .where('_e.status', STATUS_ACTIVE)
+      .where('_t.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
