@@ -44,13 +44,12 @@ class ThirdPartyMatchService {
           status: MATCH_STATUS_NEW,
         }
       }) || []
-
     if (!isEmpty(matches)) {
       //await ThirdPartyMatch.createMany(matches)
       await Promise.map(matches, async (match) => {
         const found = await ThirdPartyMatch.query()
           .where('user_id', tenant.user_id)
-          .where('estate_id', matches.estate_id)
+          .where('estate_id', match.estate_id)
           .first()
         if (found) {
           await found.updateItem(match)
