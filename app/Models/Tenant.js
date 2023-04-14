@@ -102,6 +102,7 @@ class Tenant extends Model {
       'coord',
       'transfer_budget_min',
       'transfer_budget_max',
+      'is_short_term_rent',
       'residency_duration_min',
       'residency_duration_max',
       'selected_adults_count',
