@@ -41,13 +41,15 @@ class ThirdPartyOfferService {
   }
 
   static async pullOhneMakler(forced = false) {
-    if (
-      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
-      (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-        !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
-    ) {
-      console.log('not pulling ohne makler...')
-      return
+    if (!forced) {
+      if (
+        process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
+        (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
+          !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
+      ) {
+        console.log('not pulling ohne makler...')
+        return
+      }
     }
     console.log('pullOnheMaker start!!!!')
     let ohneMaklerData
@@ -76,8 +78,8 @@ class ThirdPartyOfferService {
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
 
-        const deleteIds = estates.map((estate) => estate.source_id)
-        await ThirdPartyOfferService.deleteBySourceIds(deleteIds)
+        const retainIds = estates.map((estate) => estate.source_id)
+        await ThirdPartyOfferService.expireWhenNotOnSourceIds(retainIds)
 
         let i = 0
         while (i < estates.length) {
@@ -105,10 +107,10 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async deleteBySourceIds(sourceIds) {
+  static async expireWhenNotOnSourceIds(sourceIds) {
     await ThirdPartyOffer.query()
       .whereNotIn('source_id', sourceIds)
-      .update({ status: STATUS_DELETE })
+      .update({ status: STATUS_EXPIRE })
   }
 
   static async getEstates(userId, limit = 10, exclude) {
@@ -199,6 +201,7 @@ class ThirdPartyOfferService {
     return (
       await this.getActiveMatchesQuery(userId)
         .select('third_party_offers.*')
+        .select('thrid_party_offers.status as estate_status')
         .select(Database.raw(`_m.percent AS match`))
         .select(Database.raw(`NULL as rooms`))
         .withCount('likes')
@@ -215,6 +218,7 @@ class ThirdPartyOfferService {
     /* estate coord intersects with polygon of tenant */
     return await ThirdPartyOffer.query()
       .select('third_party_offers.*')
+      .select('third_party_offers.status as estate_status')
       .select(Database.raw(`_m.percent AS match`))
       .select(Database.raw(`NULL as rooms`))
       .withCount('likes')
@@ -222,9 +226,6 @@ class ThirdPartyOfferService {
       .withCount('knocks')
       .innerJoin({ _m: 'third_party_matches' }, function () {
         this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
-      })
-      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
-        this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
       })
       .where('third_party_offers.id', id)
       .first()
