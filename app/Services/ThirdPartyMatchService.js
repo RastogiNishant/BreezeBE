@@ -14,6 +14,7 @@ const ThirdPartyMatch = use('App/Models/ThirdPartyMatch')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
 const NoticeService = use('App/Services/NoticeService')
+const Promise = require('bluebird')
 
 class ThirdPartyMatchService {
   static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
@@ -44,19 +45,19 @@ class ThirdPartyMatchService {
         }
       }) || []
 
-    await ThirdPartyMatch.query()
-      .where('user_id', tenant.user_id)
-      .where('status', MATCH_STATUS_NEW)
-      .delete()
-
-    //delete third_party_offer_interactions not anymore in the match table
-    await ThirdPartyOfferInteraction.query()
-      .where('user_id', tenant.user_id)
-      .whereNotIn('third_party_offer_id', matchedEstateIds)
-      .delete()
-
     if (!isEmpty(matches)) {
-      await ThirdPartyMatch.createMany(matches)
+      //await ThirdPartyMatch.createMany(matches)
+      await Promise.map(matches, async (match) => {
+        const found = await ThirdPartyMatch.query()
+          .where('user_id', tenant.user_id)
+          .where('estate_id', matches.estate_id)
+          .first()
+        if (found) {
+          await found.updateItem(match)
+        } else {
+          await ThirdPartyMatch.createItem(match)
+        }
+      })
       if (has_notification_sent) {
         const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
         if (superMatches.length > 0) {
