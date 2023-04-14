@@ -20,6 +20,7 @@ const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
+const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -111,6 +112,23 @@ class QueueService {
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
     Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
+  }
+
+  static createThirdPartyMatchesByEstate() {
+    Queue.addJob(
+      QUEUE_CREATE_THIRD_PARTY_MATCHES,
+      {},
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        delay: 1,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      }
+    )
   }
 
   /**
@@ -254,6 +272,8 @@ class QueueService {
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
           })
+        case QUEUE_CREATE_THIRD_PARTY_MATCHES:
+          return require('./ThirdPartyMatchService').matchByEstates()
         default:
           console.log(`No job processor for: ${job.name}`)
       }
