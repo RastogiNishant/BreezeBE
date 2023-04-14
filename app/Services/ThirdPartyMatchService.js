@@ -11,6 +11,7 @@ const {
 const { isEmpty } = require('lodash')
 const Database = use('Database')
 const ThirdPartyMatch = use('App/Models/ThirdPartyMatch')
+const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
 const NoticeService = use('App/Services/NoticeService')
 
@@ -31,18 +32,27 @@ class ThirdPartyMatchService {
       }
       idx++
     }
-
+    let matchedEstateIds = []
     const matches =
-      passedEstates.map((i) => ({
-        user_id: tenant.user_id,
-        estate_id: i.estate_id,
-        percent: i.percent,
-        status: MATCH_STATUS_NEW,
-      })) || []
+      passedEstates.map((i) => {
+        matchedEstateIds = [...matchedEstateIds, i.estate_id]
+        return {
+          user_id: tenant.user_id,
+          estate_id: i.estate_id,
+          percent: i.percent,
+          status: MATCH_STATUS_NEW,
+        }
+      }) || []
 
     await ThirdPartyMatch.query()
       .where('user_id', tenant.user_id)
       .where('status', MATCH_STATUS_NEW)
+      .delete()
+
+    //delete third_party_offer_interactions not anymore in the match table
+    await ThirdPartyOfferInteraction.query()
+      .where('user_id', tenant.user_id)
+      .whereNotIn('third_party_offer_id', matchedEstateIds)
       .delete()
 
     if (!isEmpty(matches)) {
