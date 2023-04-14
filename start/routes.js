@@ -1281,7 +1281,7 @@ Route.get('/test', async ({ request, response }) => {
   if (!Number(estate.usable_area)) {
     estate.usable_area = estate.area
   }
-  const resp = await estateSync.postEstate({ estate })
+  const resp = await estateSync.postEstate({ estate, contactId: 'D54sojsn1y0vqr1OveGL' })
   //const resp = estateSync.composeEstate(estate)
   return response.res(resp)
 })
