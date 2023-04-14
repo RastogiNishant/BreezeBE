@@ -201,7 +201,7 @@ class ThirdPartyOfferService {
     return (
       await this.getActiveMatchesQuery(userId)
         .select('third_party_offers.*')
-        .select('thrid_party_offers.status as estate_status')
+        .select('third_party_offers.status as estate_status')
         .select(Database.raw(`_m.percent AS match`))
         .select(Database.raw(`NULL as rooms`))
         .withCount('likes')
@@ -227,6 +227,8 @@ class ThirdPartyOfferService {
       .innerJoin({ _m: 'third_party_matches' }, function () {
         this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
       })
+      //remove the check on intersecting with polygon because user may have changed
+      //his location and he won't be intersected here...
       .where('third_party_offers.id', id)
       .first()
   }
