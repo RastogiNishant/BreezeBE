@@ -1145,7 +1145,22 @@ Estates: [ESTATES]
     { level: 'G', value: 250 },
     { level: 'H', value: 250 },
   ],
+
   ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
+  ESTATE_SYNC_TITLE_TEMPLATES: {
+    germany: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    deutschland: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    others: {
+      key: 'rooms_number Rooms area m² apartmentType in city',
+      lang: 'en',
+    },
+  },
 }
 
 module.exports = constants

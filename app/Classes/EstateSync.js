@@ -1,6 +1,7 @@
 'use_strict'
 const axios = require('axios')
 const moment = require('moment')
+const l = use('Localize')
 const {
   BUILDING_STATUS_FIRST_TIME_OCCUPIED,
   BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
@@ -29,25 +30,44 @@ const {
   FIRING_COAL,
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
-  HEATING_TYPE_NO,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_FLOOR,
-  HEATING_TYPE_REMOTE,
   HEATING_TYPE_OVEN,
   APARTMENT_TYPE_ATTIC,
+  APARTMENT_TYPE_FLAT,
   APARTMENT_TYPE_MAISONETTE,
   APARTMENT_TYPE_PENTHOUSE,
   APARTMENT_TYPE_LOFT,
   APARTMENT_TYPE_TERRACES,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_GROUND,
-  ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE,
+  APARTMENT_TYPE_SOCIAL,
+  APARTMENT_TYPE_ROOF,
+  PARKING_SPACE_TYPE_GARAGE,
+  PARKING_SPACE_TYPE_UNDERGROUND,
+  PARKING_SPACE_TYPE_CARPORT,
+  PARKING_SPACE_TYPE_OUTDOOR,
+  PARKING_SPACE_TYPE_CAR_PARK,
+  PARKING_SPACE_TYPE_DUPLEX,
+  ESTATE_SYNC_TITLE_TEMPLATES,
 } = require('../constants')
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
 const ContentType = use('App/Classes/ContentType')
 
+const APARTMENT_TYPE_KEYS = {
+  [APARTMENT_TYPE_FLAT]: 'landlord.property.details.building_apartment.type.flat',
+  [APARTMENT_TYPE_GROUND]: 'landlord.property.details.building_apartment.type.ground',
+  [APARTMENT_TYPE_ROOF]: 'landlord.property.details.building_apartment.type.roof',
+  [APARTMENT_TYPE_MAISONETTE]: 'landlord.property.details.building_apartment.type.maisonette',
+  [APARTMENT_TYPE_LOFT]: 'landlord.property.details.building_apartment.type.loft',
+  [APARTMENT_TYPE_SOCIAL]: 'landlord.property.details.building_apartment.type.social',
+  [APARTMENT_TYPE_SOUTERRAIN]: 'landlord.property.details.building_apartment.type.souterrain',
+  [APARTMENT_TYPE_PENTHOUSE]: 'landlord.property.details.building_apartment.type.penthouse',
+}
+
 class EstateSync {
+  baseUrl = `https://api.estatesync.com`
   static apartmentType = {
     //aparmentType must be one of apartment, attic, maisonette, penthouse, loft, terrace, lowerGroundFloor, groundFloor, upperGroundFloor, floor, other
     attic: APARTMENT_TYPE_ATTIC,
@@ -116,7 +136,16 @@ class EstateSync {
 
   makeBoolean = ['petsAllowed']
 
-  mustHaveValue = ['constructionYear']
+  mustHaveValue = ['constructionYear', 'lastRefurbished']
+
+  static parkingSpaceType = {
+    garage: PARKING_SPACE_TYPE_GARAGE,
+    undergroundGarage: PARKING_SPACE_TYPE_UNDERGROUND,
+    carport: PARKING_SPACE_TYPE_CARPORT,
+    outdoor: PARKING_SPACE_TYPE_OUTDOOR,
+    carPark: PARKING_SPACE_TYPE_CAR_PARK,
+    duplex: PARKING_SPACE_TYPE_DUPLEX,
+  }
 
   map = {
     extra_costs: 'additionalCosts',
@@ -144,7 +173,7 @@ class EstateSync {
     //interiorQuality: 'standard',
     //isAccessible: true,
     //isSuitableAsSharedFlat: false,
-    //lastRefurbished: 2016,
+    lastRefurbished: this.composeLastRefurbish,
     usable_area: 'livingArea',
     //locationDescription: 'My first location description for a property.',
     //miscellaneousDescription: 'My first misc description for a property.',
@@ -165,11 +194,7 @@ class EstateSync {
 
   constructor(apiKey = '') {
     this.apiKey = apiKey
-    this.axios = axios.create({
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-      },
-    })
+    axios.defaults.headers.common['Authorization'] = `Bearer ${apiKey}`
   }
 
   composeApartmentType({ apt_type }) {
@@ -213,6 +238,14 @@ class EstateSync {
     }
     const num = deposit / net_rent
     return `${num}x base rent`
+  }
+
+  composeLastRefurbish({ last_modernization }) {
+    let lastRefurbish = ''
+    if (last_modernization) {
+      lastRefurbish = +moment(last_modernization).format('Y')
+    }
+    return lastRefurbish
   }
 
   composeAttachments({ cover, rooms }) {
@@ -263,8 +296,27 @@ class EstateSync {
     return address
   }
 
-  composeTitle(estate) {
-    return 'Beautiful Estate'
+  composeTitle({ rooms_number, area, apt_type, city, country }) {
+    let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES['others']
+    if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
+      estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]
+    }
+    const apartmentType = l.get(
+      `${APARTMENT_TYPE_KEYS[apt_type]}.message`,
+      estateSyncTitleTemplate.lang
+    )
+    var mapObj = {
+      rooms_number: rooms_number,
+      area: area,
+      apartmentType: apartmentType,
+      city: city,
+    }
+
+    var re = new RegExp(Object.keys(mapObj).join('|'), 'gi')
+    const title = estateSyncTitleTemplate.key.replace(re, function (matched) {
+      return mapObj[matched]
+    })
+    return title
   }
 
   composeEnergyClass(estate) {
@@ -278,6 +330,7 @@ class EstateSync {
     }
     if (!isEmpty(energyClass)) {
       energyClass['type'] = 'consumption'
+      //we don't have it so lets set to minimum because this is required.
       energyClass['energyConsumption'] = 0.01
       return energyClass
     }
@@ -302,33 +355,35 @@ class EstateSync {
         delete newEstate[this.mustHaveValue[i]]
       }
     }
-    //newEstate.address = this.composeAddress(estate)
-    //newEstate.heatingType = this.composeHeatingType(estate)
     return newEstate
   }
 
-  composeParkingSpaceType(estate) {
-    return 'garage'
+  composeParkingSpaceType({ parking_space_type }) {
+    const parkingSpaceType = invert(EstateSync.parkingSpaceType)
+    if (parking_space_type.length > 0 && parkingSpaceType[parking_space_type[0]]) {
+      return parkingSpaceType[parking_space_type[0]]
+    }
   }
 
-  async postEstate({
-    type = 'apartmentRent',
-    fields,
-    attachments = [],
-    contactId = '',
-    externalId = '',
-  }) {
+  async postEstate({ type = 'apartmentRent', estate, contactId = '' }) {
     try {
-      const ret = await this.axios.post('https://api.estatesync.com/properties', {
+      const fields = this.composeEstate(estate)
+      const attachments = this.composeAttachments(estate)
+      const externalId = `${process.env.NODE_ENV}-${estate.id}`
+      const body = {
         type,
         fields,
         attachments,
         externalId,
-      })
-      return ret
+      }
+      if (contactId) {
+        body.contactId = contactId
+      }
+      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
+      return ret.data
     } catch (err) {
       console.log(err)
-      return err.message
+      if (err.response.data) return err.response.data
     }
   }
 
