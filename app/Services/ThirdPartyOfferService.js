@@ -227,6 +227,9 @@ class ThirdPartyOfferService {
       .innerJoin({ _m: 'third_party_matches' }, function () {
         this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
       })
+      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+        this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
+      })
       //remove the check on intersecting with polygon because user may have changed
       //his location and he won't be intersected here...
       .where('third_party_offers.id', id)
