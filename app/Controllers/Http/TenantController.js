@@ -104,7 +104,7 @@ class TenantController {
         throw new HttpException('Transfer budget min has to be smaller than max', 400)
       }
 
-      if (data.is_short_term_rent) {
+      if (!data.is_short_term_rent) {
         data.residency_duration_min = null
         data.residency_duration_max = null
       }
