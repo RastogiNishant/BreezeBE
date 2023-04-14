@@ -99,6 +99,7 @@ class ThirdPartyOfferService {
         }
         console.log('End of updating!!!!')
         await ThirdPartyOfferService.setOhneMaklerChecksum(checksum)
+        require('./QueueService').createThirdPartyMatchesByEstate()
       }
     } catch (e) {
       console.log('pullOhneMakler error', e.message)
@@ -245,14 +246,10 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        const actionFound = await ThirdPartyOfferInteraction.query()
-          .where('third_party_offer_id', id)
-          .where('user_id', userId)
-          .first()
-        if (actionFound?.knocked) {
+        if (found?.knocked) {
           throw new HttpException(ALREADY_KNOCKED_ON_THIRD_PARTY, 400)
         }
-        if (actionFound?.like === false) {
+        if (found?.like === false) {
           throw new HttpException(CANNOT_KNOCK_ON_DISLIKED_ESTATE, 400)
         }
         value = {
