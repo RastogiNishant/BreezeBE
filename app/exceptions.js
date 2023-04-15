@@ -84,6 +84,7 @@ const exceptions = {
   UPLOAD_EXCEL_PROGRESS: 'Previous excel is in progress',
   WRONG_PROSPECT_CODE: 'Wrong prospect code',
   NOT_FOUND_OUTSIDE_INVITAION: 'Invitation No found',
+  LAT_LON_NOT_PROVIDED: 'Coord info not provided',
 }
 
 const exceptionCodes = {

@@ -38,7 +38,6 @@ class OutsideLandlordService {
   static async inviteLandlordFromTenant(task, trx) {
     const { code, shortLink, lang } = await this.createDynamicLink(task)
     await Task.query().where('id', task.id).update({ landlord_identify_key: code }).transacting(trx)
-
     await MailService.inviteLandlordFromTenant({
       task: task.toJSON(),
       link: shortLink,
@@ -79,7 +78,7 @@ class OutsideLandlordService {
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}&landlord_invite=true` +
-      `&email=${email}`
+      `&email=${task.email}`
 
     const landlords = (
       await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)

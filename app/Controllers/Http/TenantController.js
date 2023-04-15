@@ -104,6 +104,11 @@ class TenantController {
         throw new HttpException('Transfer budget min has to be smaller than max', 400)
       }
 
+      if (!data.is_short_term_rent) {
+        data.residency_duration_min = null
+        data.residency_duration_max = null
+      }
+
       await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
 
@@ -129,7 +134,6 @@ class TenantController {
           userId: auth.user.id,
           has_notification_sent: false,
         })
-        //await MatchService.matchByUser({ userId: auth.user.id, has_notification_sent: false })
       }
       response.res(updatedTenant)
     } catch (e) {

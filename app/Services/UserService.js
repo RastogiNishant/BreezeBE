@@ -745,6 +745,8 @@ class UserService {
   }
 
   static async getByEmailWithRole(emails, role) {
+    emails = Array.isArray(emails) ? emails : [emails]
+    emails = emails.map((email) => email.toLocaleLowerCase())
     return await User.query()
       .select(['id', 'email', 'lang'])
       .whereIn('email', emails)

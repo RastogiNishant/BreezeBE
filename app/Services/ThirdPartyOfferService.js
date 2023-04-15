@@ -41,13 +41,15 @@ class ThirdPartyOfferService {
   }
 
   static async pullOhneMakler(forced = false) {
-    if (
-      process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
-      (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-        !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
-    ) {
-      console.log('not pulling ohne makler...')
-      return
+    if (!forced) {
+      if (
+        process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
+        (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
+          !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
+      ) {
+        console.log('not pulling ohne makler...')
+        return
+      }
     }
     console.log('pullOnheMaker start!!!!')
     let ohneMaklerData
@@ -76,8 +78,8 @@ class ThirdPartyOfferService {
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
 
-        const deleteIds = estates.map((estate) => estate.source_id)
-        await ThirdPartyOfferService.deleteBySourceIds(deleteIds)
+        const retainIds = estates.map((estate) => estate.source_id)
+        await ThirdPartyOfferService.expireWhenNotOnSourceIds(retainIds)
 
         let i = 0
         while (i < estates.length) {
@@ -99,16 +101,17 @@ class ThirdPartyOfferService {
         }
         console.log('End of updating!!!!')
         await ThirdPartyOfferService.setOhneMaklerChecksum(checksum)
+        require('./QueueService').createThirdPartyMatchesByEstate()
       }
     } catch (e) {
       console.log('pullOhneMakler error', e.message)
     }
   }
 
-  static async deleteBySourceIds(sourceIds) {
+  static async expireWhenNotOnSourceIds(sourceIds) {
     await ThirdPartyOffer.query()
       .whereNotIn('source_id', sourceIds)
-      .update({ status: STATUS_DELETE })
+      .update({ status: STATUS_EXPIRE })
   }
 
   static async getEstates(userId, limit = 10, exclude) {
@@ -138,6 +141,28 @@ class ThirdPartyOfferService {
     return estates
   }
 
+  static async searchTenantEstatesByPoint(point_id) {
+    return await Database.select(Database.raw(`FALSE as inside`))
+      .select(
+        '_e.id',
+        '_e.source_id',
+        '_e.source',
+        '_e.coord_raw as coord',
+        '_e.house_number',
+        '_e.street',
+        '_e.city',
+        '_e.country',
+        '_e.address'
+      )
+      .from({ _e: 'third_party_offers' })
+      .innerJoin({ _p: 'points' }, function () {
+        this.on('_p.id', point_id)
+      })
+      .where('_e.status', STATUS_ACTIVE)
+      .where('_e.status', STATUS_ACTIVE)
+      .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+  }
+
   static searchTenantEstatesQuery(tenant, radius) {
     return Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
@@ -151,7 +176,7 @@ class ThirdPartyOfferService {
       .where('_e.status', STATUS_ACTIVE)
       .whereNull('tpoi.id')
       .where('_t.user_id', tenant.user_id)
-      .where('_e.status', STATUS_ACTIVE)
+      .where('_t.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
@@ -177,6 +202,7 @@ class ThirdPartyOfferService {
     return (
       await this.getActiveMatchesQuery(userId)
         .select('third_party_offers.*')
+        .select('third_party_offers.status as estate_status')
         .select(Database.raw(`_m.percent AS match`))
         .select(Database.raw(`NULL as rooms`))
         .withCount('likes')
@@ -193,6 +219,7 @@ class ThirdPartyOfferService {
     /* estate coord intersects with polygon of tenant */
     return await ThirdPartyOffer.query()
       .select('third_party_offers.*')
+      .select('third_party_offers.status as estate_status')
       .select(Database.raw(`_m.percent AS match`))
       .select(Database.raw(`NULL as rooms`))
       .withCount('likes')
@@ -204,6 +231,8 @@ class ThirdPartyOfferService {
       .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
         this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
       })
+      //remove the check on intersecting with polygon because user may have changed
+      //his location and he won't be intersected here...
       .where('third_party_offers.id', id)
       .first()
   }
@@ -223,14 +252,10 @@ class ThirdPartyOfferService {
         value = { third_party_offer_id: id, user_id: userId, comment }
         break
       case 'knock':
-        const actionFound = await ThirdPartyOfferInteraction.query()
-          .where('third_party_offer_id', id)
-          .where('user_id', userId)
-          .first()
-        if (actionFound?.knocked) {
+        if (found?.knocked) {
           throw new HttpException(ALREADY_KNOCKED_ON_THIRD_PARTY, 400)
         }
-        if (actionFound?.like === false) {
+        if (found?.like === false) {
           throw new HttpException(CANNOT_KNOCK_ON_DISLIKED_ESTATE, 400)
         }
         value = {
