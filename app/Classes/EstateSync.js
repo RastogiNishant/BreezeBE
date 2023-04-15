@@ -397,7 +397,43 @@ class EstateSync {
     }
   }
 
-  deleteEstate() {}
+  async get(type = 'properties', id = '') {
+    const possibleTypes = [
+      'account',
+      'properties',
+      'targets',
+      'listings',
+      'contacts',
+      'requests',
+      'webhooks',
+    ]
+    if (possibleTypes.indexOf(type) < 0) {
+      return false
+    }
+    try {
+      const ret = await axios.get(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
+      return ret?.data
+    } catch (err) {
+      console.log(err)
+      if (err.response.data) return err.response.data
+    }
+  }
+
+  async delete(id, type = 'properties') {
+    const possibleTypes = ['properties', 'targets', 'listings', 'contacts', 'requests', 'webhooks']
+    if (possibleTypes.indexOf(type) < 0) {
+      return false
+    }
+    try {
+      const ret = await axios.delete(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
+      console.log(ret)
+      if (ret.status === 200) return true
+      return false
+    } catch (err) {
+      console.log(err)
+      if (err.response.data) return err.response.data
+    }
+  }
 }
 
 module.exports = EstateSync

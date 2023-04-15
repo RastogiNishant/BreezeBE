@@ -1294,3 +1294,23 @@ Route.post('/test', async ({ request, response }) => {
   const resp = await estateSync.publishEstate({ propertyId, targetId })
   return response.res(resp)
 })
+
+Route.get('/test/:type', async ({ request, response }) => {
+  const type = request.params.type
+  const { id } = request.get()
+  const EstateSync = use('App/Classes/EstateSync')
+  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+
+  const resp = await estateSync.get(type, id)
+  return response.res(resp)
+})
+
+Route.delete('/test/:type', async ({ request, response }) => {
+  const type = request.params.type
+  const { id } = request.get()
+  const EstateSync = use('App/Classes/EstateSync')
+  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+
+  const resp = await estateSync.delete(id, type)
+  return response.res(resp)
+})
