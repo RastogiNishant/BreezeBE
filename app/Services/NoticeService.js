@@ -715,7 +715,12 @@ class NoticeService {
       await P.map(Object.keys(groupMatches), async (key) => {
         const estate_ids = groupMatches[key].map((m) => m.estate_id)
         const knockCount = await require('./MatchService').getMatchNewCount(key, estate_ids)
-        if (knockCount?.[0]?.count) {
+        if (
+          knockCount &&
+          knockCount.length &&
+          knockCount[0].count &&
+          parseInt(knockCount?.[0]?.count)
+        ) {
           notices.push({
             user_id: key,
             type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
