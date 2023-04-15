@@ -220,12 +220,12 @@ class ThirdPartyOfferService {
     return await ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select('third_party_offers.status as estate_status')
-      .select(Database.raw(`_m.percent AS match`))
+      .select(Database.raw(`COALESCE(_m.percent, 0) as match`))
       .select(Database.raw(`NULL as rooms`))
       .withCount('likes')
       .withCount('dislikes')
       .withCount('knocks')
-      .innerJoin({ _m: 'third_party_matches' }, function () {
+      .leftJoin({ _m: 'third_party_matches' }, function () {
         this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
       })
       .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
@@ -314,6 +314,7 @@ class ThirdPartyOfferService {
   static async getTenantEstatesWithFilter(userId, filter) {
     const MatchService = require('./MatchService')
     const { like, dislike, knock } = filter
+    console.log('getTenantEstatesWithFilter=', knock)
     let query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select(
