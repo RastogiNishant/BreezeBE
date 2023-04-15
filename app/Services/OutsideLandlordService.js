@@ -154,7 +154,7 @@ class OutsideLandlordService {
         )
       }
       await Task.query()
-        .where('email', email)
+        .where('id', task_id)
         .update({ email: null, landlord_identify_key: null })
         .transacting(trx)
 
