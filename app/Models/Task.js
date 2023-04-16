@@ -44,7 +44,8 @@ class Task extends Model {
       'id',
       'avatar',
       'firstname',
-      'secondname'
+      'secondname',
+      'sex'
     )
   }
 }
