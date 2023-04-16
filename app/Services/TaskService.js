@@ -22,6 +22,7 @@ const {
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
 const moment = require('moment')
+const { generateAddress } = use('App/Libs/utils')
 
 const { isArray } = require('lodash')
 const {
@@ -32,6 +33,9 @@ const {
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { NO_TASK_FOUND },
+} = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
 const Chat = use('App/Models/Chat')
@@ -163,7 +167,7 @@ class TaskService extends BaseService {
         /*
          * need to determine to send email to a user who will be a landlord later after signing up
          * Here figma design goes
-         *
+         * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
          */
         await require('./OutsideLandlordService').handleTaskWithoutEstate(task, trx)
       } else if (
@@ -214,8 +218,18 @@ class TaskService extends BaseService {
       task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
 
+      if (predefinedMessage.type === PREDEFINED_LAST) {
+        /*
+         * need to determine to send email to a user who will be a landlord later after signing up
+         * Here figma design goes
+         * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
+         */
+        await require('./OutsideLandlordService').noticeInvitationToLandlord(task.id)
+      }
+
       messages = await ChatService.getItemsWithAbsoluteUrl(messages)
       await trx.commit()
+
       return { task, messages }
     } catch (error) {
       await trx.rollback()
@@ -335,6 +349,36 @@ class TaskService extends BaseService {
 
     task = await this.getWithAbsoluteUrl(task)
     return task
+  }
+
+  static async getUnassignedTask(id) {
+    let task = await Task.query().where('id', id).with('user').first()
+    if (!task) {
+      throw new HttpException(NO_TASK_FOUND, 400)
+    }
+
+    task = task.toJSON()
+
+    const address = generateAddress({
+      city: task.property_address?.city,
+      street: task.property_address?.street,
+      house_number: task.property_address?.housenumber,
+      zip: task.property_address?.postcode,
+      country: task.property_address?.country,
+    })
+
+    return {
+      activeTasks: [task],
+      address,
+      current_tenant: {
+        user: task.user,
+      },
+      taskSummary: {
+        activeTaskCount: 1,
+        taskCount: 1,
+        mostUrgency: task.urgency,
+      },
+    }
   }
 
   static async getAllUnassignedTasks({
