@@ -639,12 +639,14 @@ class MailService {
       city: task?.property_address?.city,
       country: task?.property_address?.country,
     })
-    const shortMsg = `${task.address_detail}, ${address}: \n 
-                      ${l.get(task.title, lang)}:${l.get(task.description, lang) || ``} `
+    const shortMsg = `<b>${task.address_detail || ``}, ${address}</b>: \n 
+                      <b>${l.get(task.title, lang)}</b>:<br/>${
+      l.get(task.description, lang) || ``
+    } `
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)
-      .replace('{{email}}', task.email)
+      .replace('{{email}}', `<b>${task.email}</b>`)
       .replace('{{short_message}}', shortMsg)
       .replace(/\n/g, '<br />')
     const final = l

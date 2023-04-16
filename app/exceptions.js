@@ -85,6 +85,7 @@ const exceptions = {
   WRONG_PROSPECT_CODE: 'Wrong prospect code',
   NOT_FOUND_OUTSIDE_INVITAION: 'Invitation No found',
   LAT_LON_NOT_PROVIDED: 'Coord info not provided',
+  NO_TASK_FOUND: 'Task not found',
 }
 
 const exceptionCodes = {
