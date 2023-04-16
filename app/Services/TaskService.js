@@ -373,6 +373,7 @@ class TaskService extends BaseService {
       address,
       mosturgency: task.urgency,
       current_tenant: {
+        salutation_int: task?.user?.sex,
         user: task.user,
       },
       taskSummary: {
