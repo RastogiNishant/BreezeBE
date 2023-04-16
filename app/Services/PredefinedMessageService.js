@@ -15,6 +15,7 @@ const PredefinedMessageChoice = use('App/Models/PredefinedMessageChoice')
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
 const l = use('Localize')
 const HttpException = require('../Exceptions/HttpException')
+const { generateAddress } = use('App/Libs/utils')
 
 class PredefinedMessageService {
   static async get(id) {
@@ -80,6 +81,19 @@ class PredefinedMessageService {
 
     if (predefinedMessage.variable_to_update === 'urgency') {
       answerForChat = `{{{urgency-${choice.value}}}}${l.get(choice.text, lang)}`
+    }
+    if (predefinedMessage.variable_to_update === 'property_address') {
+      if (typeof answer === 'object') {
+        answerForChat = generateAddress({
+          city: answer?.city,
+          street: answer?.street,
+          house_number: answer?.housenumber,
+          zip: answer?.postcode,
+          country: answer?.country,
+        })
+      } else {
+        answerForChat = answer || ''
+      }
     }
 
     const tenantMessage = await Chat.createItem(
