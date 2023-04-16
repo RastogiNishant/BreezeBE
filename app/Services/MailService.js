@@ -639,7 +639,7 @@ class MailService {
       city: task?.property_address?.city,
       country: task?.property_address?.country,
     })
-    const shortMsg = `<b>${task.address_detail}, ${address}</b>: \n 
+    const shortMsg = `<b>${task.address_detail || ``}, ${address}</b>: \n 
                       <b>${l.get(task.title, lang)}</b>:<br/>${
       l.get(task.description, lang) || ``
     } `
