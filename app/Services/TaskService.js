@@ -379,6 +379,7 @@ class TaskService extends BaseService {
         activeTaskCount: 1,
         taskCount: 1,
         mostUrgency: task.urgency,
+        mostUrgencyCount: 1,
       },
     }
   }
