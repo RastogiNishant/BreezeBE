@@ -371,6 +371,7 @@ class TaskService extends BaseService {
     return {
       activeTasks: [task],
       address,
+      mosturgency: task.urgency,
       current_tenant: {
         user: task.user,
       },
