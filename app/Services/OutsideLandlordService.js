@@ -10,6 +10,7 @@ const {
   DEFAULT_LANG,
   CHAT_TYPE_MESSAGE,
   CHAT_EDIT_STATUS_UNEDITED,
+  WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT,
 } = require('../constants')
 const {
   exceptions: { NOT_FOUND_OUTSIDE_INVITAION },
@@ -23,6 +24,7 @@ const TaskService = require('./TaskService')
 const UserService = require('./UserService')
 const l = use('Localize')
 const Database = use('Database')
+const Ws = use('Ws')
 
 class OutsideLandlordService {
   static async handleTaskWithoutEstate(task, trx) {
@@ -32,18 +34,38 @@ class OutsideLandlordService {
     if (!task.email || !task.property_address) {
       return
     }
-    await this.inviteLandlordFromTenant(task, trx)
+
+    const code = uuid.v4()
+    await Task.query().where('id', task.id).update({ landlord_identify_key: code }).transacting(trx)
   }
 
-  static async inviteLandlordFromTenant(task, trx) {
-    const { code, shortLink, lang } = await this.createDynamicLink(task)
-    await Task.query().where('id', task.id).update({ landlord_identify_key: code }).transacting(trx)
-    await MailService.inviteLandlordFromTenant({
-      task: task.toJSON(),
-      link: shortLink,
-      lang,
-    })
-    return true
+  static async noticeInvitationToLandlord(task_id) {
+    try {
+      const task = await require('./TaskService').getUnassignedTask(task_id)
+      if (
+        !task ||
+        !task.activeTasks ||
+        !task.activeTasks.length ||
+        !task?.activeTasks?.[0]?.email ||
+        !task?.activeTasks?.[0]?.property_address
+      ) {
+        return
+      }
+      const { shortLink, lang, user_id } = await this.createDynamicLink(task.activeTasks[0])
+
+      //send websocket if invited landlord is an existing user
+      if (user_id) {
+        this.emitLandlordInvitationFromTenant({ user_id, data: { ...task } })
+      }
+
+      MailService.inviteLandlordFromTenant({
+        task: task.activeTasks[0],
+        link: shortLink,
+        lang,
+      })
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   static async isExistLandlord(task) {
@@ -63,11 +85,10 @@ class OutsideLandlordService {
     const cipher = crypto.createCipheriv('aes-256-ctr', key, iv)
 
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
-    const code = uuid.v4()
 
     const txtSrc = JSON.stringify({
       id: task.id,
-      code: code,
+      code: task.code,
       email: task.email,
       expired_time: time,
     })
@@ -87,6 +108,7 @@ class OutsideLandlordService {
     if (landlords && landlords.length) {
       uri += `&user_id=${landlords[0].id}`
     }
+
     const lang = landlords?.[0]?.lang || DEFAULT_LANG
     uri += `&lang=${lang}`
 
@@ -98,8 +120,8 @@ class OutsideLandlordService {
       id: task.id,
       email: task.email,
       shortLink,
-      code,
       lang,
+      user_id: landlords?.[0]?.id,
     }
   }
 
@@ -233,6 +255,16 @@ class OutsideLandlordService {
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  static async emitLandlordInvitationFromTenant({ user_id, data }) {
+    const channel = `landlord:*`
+    const topicName = `landlord:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT, data)
     }
   }
 }
