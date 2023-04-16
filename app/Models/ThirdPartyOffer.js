@@ -47,6 +47,7 @@ class ThirdPartyOffer extends Model {
       'house_type',
       'apt_type',
       'building_status',
+      'available_end_at',
     ]
   }
 
