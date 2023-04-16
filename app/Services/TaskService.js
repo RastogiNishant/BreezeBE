@@ -356,9 +356,10 @@ class TaskService extends BaseService {
     if (!task) {
       throw new HttpException(NO_TASK_FOUND, 400)
     }
+    return TaskService.convert(task.toJSON())
+  }
 
-    task = task.toJSON()
-
+  static convert(task) {
     const address = generateAddress({
       city: task.property_address?.city,
       street: task.property_address?.street,
@@ -389,6 +390,7 @@ class TaskService extends BaseService {
     limit = -1,
   }) {
     let query = Task.query()
+      .with('user')
       .whereNull('estate_id')
       .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
 
@@ -401,10 +403,13 @@ class TaskService extends BaseService {
     let tasks, count
     if (page === -1 || limit === -1) {
       tasks = await query.fetch()
-      count = tasks.rows.length
+      tasks = tasks.toJSON().map((task) => TaskService.convert(task))
+      count = tasks.length
     } else {
       tasks = await query.paginate(page, limit)
-      count = tasks.pages.total
+      tasks = tasks.toJSON()
+      tasks.data = (tasks.data || []).map((task) => TaskService.convert(task))
+      count = tasks.total
     }
 
     return {

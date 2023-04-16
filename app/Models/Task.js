@@ -40,7 +40,12 @@ class Task extends Model {
   }
 
   user() {
-    return this.belongsTo('App/Models/User', 'tenant_id', 'id')
+    return this.belongsTo('App/Models/User', 'tenant_id', 'id').select(
+      'id',
+      'avatar',
+      'firstname',
+      'secondname'
+    )
   }
 }
 
