@@ -2521,10 +2521,10 @@ class EstateService {
   }
 
   static async searchNotConnectedAddressByPropertyId({ user_id, property_id }) {
-    if (!property_id || trim(property_id) === '') {
-      return []
+    if (!property_id) {
+      property_id = ''
     }
-    console.log('property_id', property_id)
+    property_id = trim(property_id)
     return (
       await this.getActiveEstateQuery()
         .select('estates.*')
