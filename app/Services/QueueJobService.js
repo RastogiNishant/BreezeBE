@@ -126,6 +126,11 @@ class QueueJobService {
     }
   }
 
+  static async sendLikedNotificationBeforeExpired() {
+    const estates = await require('./EstateService').getLikedButNotKnocked()
+    await require('./NoticeService').likedButNotKnockedToProspect(estates)
+  }
+
   static async handleToActivateEstates() {
     const estates = (await QueueJobService.fetchToActivateEstates()).rows
     if (!estates || !estates.length) {
