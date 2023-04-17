@@ -116,6 +116,9 @@ const {
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
 } = require('../constants')
 
 const mapping = [
@@ -174,6 +177,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED],
   [NOTICE_TYPE_EXPIRED_SHOW_TIME_ID, NOTICE_TYPE_EXPIRED_SHOW_TIME],
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
+  [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
 ]
 
 class NotificationsService {
@@ -938,6 +942,12 @@ class NotificationsService {
   static async sendExpiredShowTime(notices) {
     const title = 'landlord.property.set_availability.txt_show_expired.message'
     const body = 'landlord.property.set_availability.btn_new_show.message'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyLikedButNotKnockedToProspect(notices) {
+    const title = 'prospect.notification.event.knock_reminder'
+    const body = 'prospect.notification.next.knock_reminder'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

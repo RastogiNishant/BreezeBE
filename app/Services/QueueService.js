@@ -182,6 +182,7 @@ class QueueService {
     return Promise.all([
       wrapException(NoticeService.prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
+      wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
     ])
   }
 
