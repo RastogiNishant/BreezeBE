@@ -369,6 +369,7 @@ class TaskService extends BaseService {
     })
 
     return {
+      taskId: task.id,
       activeTasks: [task],
       address,
       mosturgency: task.urgency,
