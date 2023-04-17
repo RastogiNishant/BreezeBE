@@ -903,6 +903,8 @@ class NoticeService {
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
         return NotificationsService.sendFullInvitation([notice])
+      case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
+        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])  
     }
   }
 
