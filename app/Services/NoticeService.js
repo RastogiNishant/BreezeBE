@@ -65,6 +65,7 @@ const {
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -105,6 +106,7 @@ const {
   STATUS_DRAFT,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -901,6 +903,8 @@ class NoticeService {
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
         return NotificationsService.sendFullInvitation([notice])
+      case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
+        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])  
     }
   }
 
@@ -1269,6 +1273,25 @@ class NoticeService {
     })
     await NoticeService.insertNotices(notices)
     await NotificationsService.notifyTenantTaskResolved(notices)
+  }
+
+  static async likedButNotKnockedToProspect(estates = []) {
+    const notices = estates.map(({ estate_id, user_id, address, cover }) => {
+      return {
+        user_id,
+        type: NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+        data: {
+          estate_id,
+          estate_address: address,
+        },
+        image: File.getPublicUrl(cover),
+      }
+    })
+
+    if (notices?.length) {
+      await NoticeService.insertNotices(notices)
+      await NotificationsService.notifyLikedButNotKnockedToProspect(notices)
+    }
   }
 }
 

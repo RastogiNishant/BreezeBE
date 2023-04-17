@@ -340,7 +340,12 @@ class TaskService extends BaseService {
     }
 
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
+      if (task.estate_id) {
+        await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
+      }
+      if (task.email && task.email.toLowerCase() !== user.email.toLowerCase()) {
+        throw new HttpException(NO_TASK_FOUND, 400)
+      }
     }
 
     if (user.role === ROLE_USER && task.tenant_id !== user.id) {
@@ -369,6 +374,7 @@ class TaskService extends BaseService {
     })
 
     return {
+      id: task.id,
       activeTasks: [task],
       address,
       mosturgency: task.urgency,

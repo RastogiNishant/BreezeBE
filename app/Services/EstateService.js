@@ -88,6 +88,7 @@ const {
   PUBLISH_ESTATE,
   ROLE_USER,
   MATCH_STATUS_FINISH_PENDING,
+  DAY_FORMAT,
 } = require('../constants')
 
 const {
@@ -2534,6 +2535,31 @@ class EstateService {
         .where('estates.letting_type', LETTING_TYPE_LET)
         .where('estates.user_id', user_id)
         .where('estates.property_id', 'ilike', `%${property_id}%`)
+        .fetch()
+    ).toJSON()
+  }
+
+  static async getLikedButNotKnocked() {
+    let oneDayBeforeExpiredDate = moment.utc(new Date(), DAY_FORMAT, true).format(DAY_FORMAT)
+    oneDayBeforeExpiredDate = moment
+      .utc(oneDayBeforeExpiredDate + ` 23:59:59`)
+      .add(1, 'days')
+      .format(DATE_FORMAT)
+
+    return (
+      await Estate.query()
+        .select('_l.estate_id', '_l.user_id', 'estates.address', 'estates.cover')
+        .where('estates.status', STATUS_ACTIVE)
+        .where('available_end_at', '<', oneDayBeforeExpiredDate)
+        .innerJoin({ _l: 'likes' }, function () {
+          this.on('_l.estate_id', 'estates.id')
+        })
+        .leftJoin({ _m: 'matches' }, function () {
+          this.on('_m.estate_id', 'estates.id')
+        })
+        .where(function () {
+          this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+        })
         .fetch()
     ).toJSON()
   }
