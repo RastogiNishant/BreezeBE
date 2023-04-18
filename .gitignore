@@ -23,3 +23,4 @@ package-lock.json
 .DS_Store
 
 .platform
+.history
