@@ -1379,8 +1379,8 @@ class UserService {
     })
   }
 
-  static async socialLoginAccountActive(id) {
-    await User.query().where('id', id).update({ status: STATUS_ACTIVE })
+  static async socialLoginAccountActive(id, data) {
+    await User.query().where('id', id).update(data)
   }
 }
 
