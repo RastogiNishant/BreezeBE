@@ -57,6 +57,7 @@ const {
   exceptions: { MEMBER_INVITATION_CANCELED },
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException.js')
+const { createDynamicLink } = require('../Libs/utils')
 
 class MemberService {
   /**
