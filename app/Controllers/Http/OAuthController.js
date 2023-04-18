@@ -137,10 +137,11 @@ class OAuthController {
 
     if (user) {
       if (user.status === STATUS_EMAIL_VERIFY) {
-        await UserService.socialLoginAccountActive(
-          user.id,
-          (data = { device_token, status: STATUS_ACTIVE, google_id: googleId })
-        )
+        await UserService.socialLoginAccountActive(user.id, {
+          device_token,
+          status: STATUS_ACTIVE,
+          google_id: googleId,
+        })
       }
 
       if (isEmpty(ip_based_info.country_code)) {
@@ -260,10 +261,7 @@ class OAuthController {
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
       if (user.status === STATUS_EMAIL_VERIFY) {
-        await UserService.socialLoginAccountActive(
-          user.id,
-          (data = { device_token, status: STATUS_ACTIVE })
-        )
+        await UserService.socialLoginAccountActive(user.id, { device_token, status: STATUS_ACTIVE })
       }
       const token = await authenticator.generate(user)
       if (data1 && data2) {
