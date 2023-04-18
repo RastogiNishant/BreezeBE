@@ -284,6 +284,7 @@ class EstateAttributeTranslations {
       penthouse: APARTMENT_TYPE_PENTHOUSE,
       terrassen: APARTMENT_TYPE_TERRACES,
       attika: APARTMENT_TYPE_ATTIC,
+      //TODO: need to add more type here but later
     },
     // Building type
     house_type: {
