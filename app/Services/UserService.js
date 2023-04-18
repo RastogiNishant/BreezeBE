@@ -1375,6 +1375,10 @@ class UserService {
       }
     })
   }
+
+  static async socialLoginAccountActive(id) {
+    await User.query().where('id', id).update({ status: STATUS_ACTIVE })
+  }
 }
 
 module.exports = UserService
