@@ -283,7 +283,7 @@ class EstateAttributeTranslations {
       souterrain: APARTMENT_TYPE_SOUTERRAIN,
       penthouse: APARTMENT_TYPE_PENTHOUSE,
       terrassen: APARTMENT_TYPE_TERRACES,
-      Attika: APARTMENT_TYPE_ATTIC,
+      attika: APARTMENT_TYPE_ATTIC,
     },
     // Building type
     house_type: {
