@@ -165,10 +165,12 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+  Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
+    'auth:jwtAdministrator',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
-
 Route.get(
   '/api/v1/estate-by-hash/:hash',
   'EstateViewInvitationController.getEstateByHash'
@@ -532,9 +534,15 @@ Route.group(() => {
   ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
+
+  Route.get('/search/property_id', 'EstateController.searchByPropertyId')
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.get('/api/v1/estates/search/onboard', 'EstateController.searchPreOnboard').middleware([
+  'valid:UpdateTenant',
+])
 
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
@@ -783,7 +791,6 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/topic', 'TaskController.getTopicList')
-  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
     'valid:Pagination,Id,TaskFilter',
   ])
@@ -791,6 +798,11 @@ Route.group(() => {
     'valid:Pagination,TaskFilter',
   ])
   Route.get('/estate/:id/counts', 'TaskController.getTaskCountsByEstate').middleware(['valid:Id'])
+  Route.post('/cancel/:id', 'TaskController.cancelTenantInvitation').middleware(['valid:Id'])
+  Route.post('/accept/:id', 'TaskController.acceptTenantInvitation').middleware([
+    'valid:Id,EstateId',
+  ])
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -798,7 +810,6 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/unread_messages', 'ChatController.getUnreadMessages')
   Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
-  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
   Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
@@ -806,6 +817,7 @@ Route.group(() => {
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
+  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
   //Route.post('/edit', 'TaskController.onEditMessage')
@@ -849,7 +861,7 @@ Route.group(() => {
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.group(() => {
-  Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:TenantEstateFilter'])
+  Route.get('/', 'EstateController.getTenantEstates').middleware(['valid:Pagination'])
   Route.post('/invite', 'EstateController.acceptEstateInvite').middleware(['valid:Code'])
   Route.post('/:id/like', 'EstateController.likeEstate').middleware(['valid:Id'])
   Route.delete('/:id/like', 'EstateController.unlikeEstate').middleware(['valid:Id'])
@@ -896,11 +908,6 @@ Route.get('/map', 'MapController.getMap')
 Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middleware([
   'auth:jwt',
   'valid:MatchListTenant,Pagination',
-])
-
-Route.get('/api/v1/tenant/third-party-offers', 'MatchController.getThirdPartyOffers').middleware([
-  'auth:jwt',
-  'valid:Pagination',
 ])
 
 Route.get(
@@ -977,6 +984,14 @@ Route.group(() => {
 })
   .prefix('/api/v1/landlord')
   .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
+  Route.post('/', 'FeedbackController.create').middleware([
+    'auth:jwt,jwtLandlord',
+    'valid:CreateFeedback',
+  ])
+  Route.get('/', 'FeedbackController.getAll').middleware(['auth:jwtAdministrator'])
+}).prefix('/api/v1/feedback')
 
 // MATCH FLOW
 Route.group(() => {

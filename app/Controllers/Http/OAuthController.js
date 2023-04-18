@@ -23,6 +23,7 @@ const {
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_GOOGLE,
   SIGN_IN_METHOD_APPLE,
+  STATUS_EMAIL_VERIFY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const {
@@ -65,7 +66,8 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    let { token, device_token, role, code, landlord_invite, data1, data2, ip, ip_based_info } =
+      request.all()
     ip = ip || request.ip()
     let ticket
     try {
@@ -119,6 +121,9 @@ class OAuthController {
           device_token,
           role,
           owner_id,
+          landlord_invite,
+          data1,
+          data2,
           is_household_invitation_onboarded,
           is_profile_onboarded,
           ip,
@@ -130,6 +135,10 @@ class OAuthController {
     }
 
     if (user) {
+      if (user.status === STATUS_EMAIL_VERIFY) {
+        await UserService.socialLoginAccountActive(user.id)
+      }
+
       if (isEmpty(ip_based_info.country_code)) {
         const QueueService = require('../../Services/QueueService')
         QueueService.getIpBasedInfo(user.id, ip)
@@ -165,7 +174,8 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    let { token, device_token, role, code, data1, data2, ip, ip_based_info } = request.all()
+    let { token, device_token, role, code, landlord_invite, data1, data2, ip, ip_based_info } =
+      request.all()
     ip = ip || request.ip()
     const options = { audience: Config.get('services.apple.client_id') }
     let email
@@ -218,6 +228,9 @@ class OAuthController {
             is_profile_onboarded,
             ip,
             ip_based_info,
+            landlord_invite,
+            data1,
+            data2,
           },
           SIGN_IN_METHOD_APPLE
         )
@@ -242,6 +255,9 @@ class OAuthController {
 
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
+      if (user.status === STATUS_EMAIL_VERIFY) {
+        await UserService.socialLoginAccountActive(user.id)
+      }
       const token = await authenticator.generate(user)
       if (data1 && data2) {
         await EstateCurrentTenantService.acceptOutsideTenant({

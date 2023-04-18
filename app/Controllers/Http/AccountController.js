@@ -60,7 +60,7 @@ class AccountController {
         throw new HttpException(USER_UNIQUE, 400)
       }
 
-      throw e
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 

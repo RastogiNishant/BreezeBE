@@ -175,7 +175,7 @@ class CompanyService {
       .select('companies.*')
       .innerJoin({ _m: 'matches' }, function () {
         this.onIn('_m.estate_id', function () {
-          this.select('id').from('estates').where('user_id', userId)
+          this.select('estates.id').from('estates').where('user_id', userId)
         })
           .onIn('_m.user_id', [tenantUserId])
           .onIn('_m.status', [MATCH_STATUS_FINISH])

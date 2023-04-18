@@ -16,11 +16,13 @@ const {
   DATE_FORMAT,
   TASK_RESOLVE_HISTORY_PERIOD,
   TASK_STATUS_ARCHIVED,
+  PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
 } = require('../constants')
 
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
 const moment = require('moment')
+const { generateAddress } = use('App/Libs/utils')
 
 const { isArray } = require('lodash')
 const {
@@ -31,12 +33,13 @@ const {
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { NO_TASK_FOUND },
+} = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
 const Chat = use('App/Models/Chat')
 const PredefinedMessage = use('App/Models/PredefinedMessage')
-
-const File = use('App/Classes/File')
 
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
@@ -47,6 +50,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
 const BaseService = require('./BaseService')
+
 class TaskService extends BaseService {
   static async create(request, user, trx) {
     const { ...data } = request.all()
@@ -163,13 +167,14 @@ class TaskService extends BaseService {
         /*
          * need to determine to send email to a user who will be a landlord later after signing up
          * Here figma design goes
-         *
+         * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
          */
         await require('./OutsideLandlordService').handleTaskWithoutEstate(task, trx)
       } else if (
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE ||
         predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_MULTIPLE_CHOICE ||
-        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE
+        predefinedMessage.type === PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE ||
+        predefinedMessage.type === PREDEFINED_MSG_OPTION_SIGNLE_CHOICE
       ) {
         const resp = await PredefinedMessageService.handleMessageWithChoice(
           {
@@ -213,8 +218,18 @@ class TaskService extends BaseService {
       task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
 
+      if (predefinedMessage.type === PREDEFINED_LAST) {
+        /*
+         * need to determine to send email to a user who will be a landlord later after signing up
+         * Here figma design goes
+         * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
+         */
+        await require('./OutsideLandlordService').noticeInvitationToLandlord(task.id)
+      }
+
       messages = await ChatService.getItemsWithAbsoluteUrl(messages)
       await trx.commit()
+
       return { task, messages }
     } catch (error) {
       await trx.rollback()
@@ -325,7 +340,12 @@ class TaskService extends BaseService {
     }
 
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
+      if (task.estate_id) {
+        await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
+      }
+      if (task.email && task.email.toLowerCase() !== user.email.toLowerCase()) {
+        throw new HttpException(NO_TASK_FOUND, 400)
+      }
     }
 
     if (user.role === ROLE_USER && task.tenant_id !== user.id) {
@@ -336,16 +356,69 @@ class TaskService extends BaseService {
     return task
   }
 
-  static async getAllUnassignedTasks({ user_id, page = -1, limit = -1 }) {
-    const query = Task.query().where('landlord_id', user_id)
+  static async getUnassignedTask(id) {
+    let task = await Task.query().where('id', id).with('user').first()
+    if (!task) {
+      throw new HttpException(NO_TASK_FOUND, 400)
+    }
+    return TaskService.convert(task.toJSON())
+  }
+
+  static convert(task) {
+    const address = generateAddress({
+      city: task.property_address?.city,
+      street: task.property_address?.street,
+      house_number: task.property_address?.housenumber,
+      zip: task.property_address?.postcode,
+      country: task.property_address?.country,
+    })
+
+    return {
+      id: task.id,
+      activeTasks: [task],
+      address,
+      mosturgency: task.urgency,
+      current_tenant: {
+        salutation_int: task?.user?.sex,
+        user: task.user,
+      },
+      taskSummary: {
+        activeTaskCount: 1,
+        taskCount: 1,
+        mostUrgency: task.urgency,
+        mostUrgencyCount: 1,
+      },
+    }
+  }
+
+  static async getAllUnassignedTasks({
+    user_id,
+    role = ROLE_LANDLORD,
+    email,
+    page = -1,
+    limit = -1,
+  }) {
+    let query = Task.query()
+      .with('user')
+      .whereNull('estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+
+    if (role === ROLE_LANDLORD) {
+      query.where('email', email)
+    } else {
+      query.where('tenant_id', user_id)
+    }
 
     let tasks, count
     if (page === -1 || limit === -1) {
       tasks = await query.fetch()
-      count = tasks.rows.length
+      tasks = tasks.toJSON().map((task) => TaskService.convert(task))
+      count = tasks.length
     } else {
       tasks = await query.paginate(page, limit)
-      count = tasks.pages.total
+      tasks = tasks.toJSON()
+      tasks.data = (tasks.data || []).map((task) => TaskService.convert(task))
+      count = tasks.total
     }
 
     return {
@@ -481,40 +554,51 @@ class TaskService extends BaseService {
       .with('users')
   }
 
-  static async hasPermission({ estate_id, user_id, role }) {
+  static async hasPermission({ task, estate_id, user_id, role }) {
+    if (role === ROLE_LANDLORD && !estate_id) {
+      throw new HttpException('No Estate provided', 500)
+    }
+
     //to check if the user has permission
     if (role === ROLE_LANDLORD) {
       await EstateService.hasPermission({ id: estate_id, user_id })
     }
 
-    const finalMatch = await MatchService.getFinalMatch(estate_id)
-    if (!finalMatch) {
-      throw new HttpException('No final match yet for property', 400)
-    }
-
     // to check if the user is the tenant for that property.
-    if (role === ROLE_USER && finalMatch.user_id !== user_id) {
+    if (role === ROLE_USER && task.tenant_id !== user_id) {
       throw new HttpException('No permission for task', 400)
-    }
-
-    if (!finalMatch.user_id) {
-      throw new HttpException('Database issue', 500)
     }
 
     if (
       role === ROLE_USER &&
-      !(await require('./EstateCurrentTenantService').getInsideTenant({ estate_id, user_id }))
+      estate_id &&
+      !(await require('./EstateCurrentTenantService').getInsideTenant({
+        estate_id,
+        user_id,
+      }))
     ) {
       throw new HttpException('You are not a breeze member yet', 400)
     }
 
-    return finalMatch.user_id
+    if (estate_id) {
+      const finalMatch = await MatchService.getFinalMatch(estate_id)
+      if (!finalMatch) {
+        throw new HttpException('No final match yet for property', 400)
+      }
+      return finalMatch.user_id
+    }
+
+    if (role === ROLE_USER) {
+      return user_id
+    }
+
+    return null
   }
 
   static async addImages(request, user) {
     const { id } = request.all()
     let task = await this.get(id)
-    await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
+    await this.hasPermission({ task, estate_id: task.estate_id, user_id: user.id, role: user.role })
     const files = await this.saveFiles(request)
     if (files && files.file) {
       const path = !isArray(files.file) ? [files.file] : files.file
@@ -543,7 +627,7 @@ class TaskService extends BaseService {
     uri = uri.split(',')
 
     const task = await this.get(id)
-    await this.hasPermission({ estate_id: task.estate_id, user_id: user.id, role: user.role })
+    await this.hasPermission({ task, estate_id: task.estate_id, user_id: user.id, role: user.role })
 
     const trx = await Database.beginTransaction()
     try {
