@@ -8,6 +8,7 @@ const { isString } = require('lodash')
 class ThirdPartyOffer extends Model {
   static get columns() {
     return [
+      'id',
       'source',
       'source_id',
       'coord',
@@ -21,21 +22,21 @@ class ThirdPartyOffer extends Model {
       'country',
       'address',
       'floor',
-      'floor_count',
+      'number_floors',
       'bathrooms',
-      'rooms',
+      'rooms_number',
       'area',
       'construction_year',
       'images',
       'energy_efficiency_class',
-      'vacant_from',
+      'vacant_date',
       'visit_from',
       'visit_to',
       'amenities',
       'status',
       'expiration_date',
       'point_id',
-      'price',
+      'net_rent',
       'contact',
       'full_address',
       'property_type',
@@ -43,6 +44,10 @@ class ThirdPartyOffer extends Model {
       'additional_costs',
       'heating_costs',
       'extra_costs',
+      'house_type',
+      'apt_type',
+      'building_status',
+      'available_end_at',
     ]
   }
 
@@ -58,6 +63,22 @@ class ThirdPartyOffer extends Model {
 
   point() {
     return this.hasOne('App/Models/Point', 'point_id', 'id')
+  }
+
+  likes() {
+    return this.hasMany('App/Models/ThirdPartyOfferInteraction')
+      .where('liked', true)
+      .whereNot('knocked', true)
+  }
+
+  dislikes() {
+    return this.hasMany('App/Models/ThirdPartyOfferInteraction')
+      .where('liked', false)
+      .whereNot('knocked', true)
+  }
+
+  knocks() {
+    return this.hasMany('App/Models/ThirdPartyOfferInteraction').where('knocked', true)
   }
 
   static get Serializer() {

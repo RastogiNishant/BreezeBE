@@ -15,7 +15,7 @@ class TenantSerializer extends BaseSerializer {
     item.coord_raw = undefined
 
     let isShown = isShort
-    if( item.share || item.status === MATCH_STATUS_FINISH ){
+    if (item.share || item.status === MATCH_STATUS_FINISH) {
       isShown = false
     }
     isShown && this.filterFields(item, extraFields)

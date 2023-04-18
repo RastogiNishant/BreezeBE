@@ -10,7 +10,6 @@ const { getHash } = require('../Libs/utils.js')
 const { pick } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const random = require('random')
 const DataStorage = use('DataStorage')
 const SMSService = use('App/Services/SMSService')
@@ -51,6 +50,7 @@ const {
   STATUS_DELETE,
   DEFAULT_LANG,
   WEBSOCKET_EVENT_MEMBER_INVITATION,
+  VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 
 const {
@@ -561,24 +561,9 @@ class MemberService {
         .update({ is_household_invitation_onboarded: false, is_profile_onboarded: true })
         .transacting(trx)
 
-      const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-      const { shortLink } = await firebaseDynamicLinks.createLink({
-        dynamicLinkInfo: {
-          domainUriPrefix: process.env.DOMAIN_PREFIX,
-          link: `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}&isExisting_user=${isExisting_user}`,
-          androidInfo: {
-            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-          },
-          iosInfo: {
-            iosBundleId: process.env.IOS_BUNDLE_ID,
-            iosAppStoreId: process.env.IOS_APPSTORE_ID,
-          },
-          desktopInfo: {
-            desktopFallbackLink:
-              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
-          },
-        },
-      })
+      const shortLink = await createDynamicLink(
+        `${process.env.DEEP_LINK}?type=memberinvitation&email=${member.email}&code=${code}&isExisting_user=${isExisting_user}`
+      )
 
       const data = await require('./UserService').getTokenWithLocale([userId])
       const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
@@ -789,7 +774,10 @@ class MemberService {
    *
    */
   static async handleOutdatedIncomeProofs() {
-    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment()
+      .utc()
+      .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
@@ -939,7 +927,10 @@ class MemberService {
   }
 
   static async getIncomes(user_id) {
-    const startOf = moment().utc().subtract(4, 'months').format('YYYY-MM-DD')
+    const startOf = moment()
+      .utc()
+      .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .format('YYYY-MM-DD')
     const incomeProofs =
       (
         await IncomeProof.query()

@@ -18,7 +18,9 @@ const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
+const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
+const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -108,6 +110,27 @@ class QueueService {
     return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
   }
 
+  static getTenantMatchProperties({ userId, has_notification_sent = false }) {
+    Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
+  }
+
+  static createThirdPartyMatchesByEstate() {
+    Queue.addJob(
+      QUEUE_CREATE_THIRD_PARTY_MATCHES,
+      {},
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        delay: 1,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      }
+    )
+  }
+
   /**
    *
    */
@@ -124,6 +147,7 @@ class QueueService {
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.expiredShowTime),
+      wrapException(QueueJobService.updatePOI),
     ])
   }
 
@@ -158,6 +182,7 @@ class QueueService {
     return Promise.all([
       wrapException(NoticeService.prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
+      wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
     ])
   }
 
@@ -168,6 +193,25 @@ class QueueService {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
+  static async addJobFetchPOI() {
+    const job = await Queue.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
+    job?.remove()
+    await Queue.addJob(
+      SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+      {},
+      {
+        jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+        repeat: { cron: '*/2 * * * *' },
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    )
+  }
+
+  static async removeJobFetchPOI() {
+    const job = await Queue?.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
+    job?.remove()
+  }
   /**
    *
    */
@@ -224,6 +268,13 @@ class QueueService {
           return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
         case GET_IP_BASED_INFO:
           return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
+        case GET_TENANT_MATCH_PROPERTIES:
+          return require('./MatchService').matchByUser({
+            userId: job.data.userId,
+            has_notification_sent: job.data.has_notification_sent,
+          })
+        case QUEUE_CREATE_THIRD_PARTY_MATCHES:
+          return require('./ThirdPartyMatchService').matchByEstates()
         default:
           console.log(`No job processor for: ${job.name}`)
       }

@@ -1,4 +1,6 @@
 const url = require('url')
+const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
+
 const { isString, get, isEmpty, capitalize, includes, trim } = require('lodash')
 const {
   ROLE_USER,
@@ -108,6 +110,28 @@ const generateAddress = ({ street, house_number, zip, city, country }) => {
     .toLowerCase()
 }
 
+const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WEB_LINK) => {
+  const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+  const { shortLink } = await firebaseDynamicLinks.createLink({
+    dynamicLinkInfo: {
+      domainUriPrefix: process.env.DOMAIN_PREFIX,
+      link,
+      androidInfo: {
+        androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+      },
+      iosInfo: {
+        iosBundleId: process.env.IOS_BUNDLE_ID,
+        iosAppStoreId: process.env.IOS_APPSTORE_ID,
+      },
+      desktopInfo: {
+        desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
+      },
+    },
+  })
+  return shortLink
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -119,4 +143,5 @@ module.exports = {
   rc: localeTemplateToValue,
   isHoliday,
   generateAddress,
+  createDynamicLink,
 }

@@ -28,6 +28,9 @@ const {
   STATUS_DELETE,
   IMPORT_ACTION_IMPORT,
   IMPORT_ACTION_EXPORT,
+  WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS,
+  PREPARING_TO_UPLOAD,
+  PROPERTY_HANDLE_FINISHED,
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -119,7 +122,7 @@ class ImportService {
     } catch (e) {
       console.log('createSingleEstate error', e.message)
       await trx.rollback()
-      return { error: [e.message], line, address: data.address }
+      return { error: [e.message], line, address: data.address, estate: null }
     }
   }
 
@@ -158,6 +161,13 @@ class ImportService {
     let data = []
     let warnings = []
     try {
+      this.emitImported({
+        data: {
+          message: PREPARING_TO_UPLOAD,
+        },
+        user_id,
+      })
+
       console.log('getting s3 bucket url!!!', s3_bucket_file_name)
       const url = await FileBucket.getProtectedUrl(s3_bucket_file_name)
       console.log('storing excel file to s3 bucket!!!')
@@ -173,9 +183,19 @@ class ImportService {
       const opt = { concurrency: 1 }
       result = await Promise.map(
         data,
-        async (i) => {
+        async (i, index) => {
           if (i) {
-            return await ImportService.createSingleEstate(i, user_id)
+            const estateResult = await ImportService.createSingleEstate(i, user_id)
+            ImportService.emitImported({
+              data: {
+                message: PROPERTY_HANDLE_FINISHED,
+                count: index,
+                total: data.length,
+                result: estateResult,
+              },
+              user_id,
+            })
+            return estateResult
           }
           return null
         },
@@ -193,11 +213,12 @@ class ImportService {
     } finally {
       //correct wrong data during importing excel files
       console.log('finallizing import excel')
-      await require('./EstateService').correctWrongEstates(user_id)
-      FileBucket.remove(s3_bucket_file_name, false)
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
       }
+
+      await require('./EstateService').correctWrongEstates(user_id)
+      FileBucket.remove(s3_bucket_file_name, false)
       this.emitImported({
         user_id,
         data: {
@@ -209,6 +230,7 @@ class ImportService {
           success: result.length - createErrors.length,
           warnings: [...warnings],
         },
+        event: WEBSOCKET_EVENT_IMPORT_EXCEL,
       })
     }
   }
@@ -222,13 +244,13 @@ class ImportService {
    * @returns
    */
 
-  static async emitImported({ data, user_id }) {
+  static async emitImported({ data, user_id, event = WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS }) {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
 
     if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_IMPORT_EXCEL, data)
+      topic.broadcast(event, data)
     }
   }
 

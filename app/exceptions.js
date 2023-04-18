@@ -82,12 +82,19 @@ const exceptions = {
   THIRD_PARTY_OFFER_NOT_FOUND: 'Third party offer not found',
   MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
   UPLOAD_EXCEL_PROGRESS: 'Previous excel is in progress',
+  WRONG_PROSPECT_CODE: 'Wrong prospect code',
+  NOT_FOUND_OUTSIDE_INVITAION: 'Invitation No found',
+  LAT_LON_NOT_PROVIDED: 'Coord info not provided',
+  NO_TASK_FOUND: 'Task not found',
 }
 
 const exceptionCodes = {
   IMAGE_ABSOLUTE_URL_ERROR_CODE: 405,
   SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
   UPLOAD_EXCEL_PROGRESS_ERROR_CODE: 2000100,
+  WRONG_PROSPECT_CODE_ERROR_CODE: 3000100,
+  NO_TIME_SLOT_ERROR_CODE: 4000100,
+  NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
 }
 
 const exceptionKeys = {
