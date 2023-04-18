@@ -26,7 +26,6 @@ const l = use('Localize')
 const MemberService = use('App/Services/MemberService')
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Drive = use('Drive')
 const Hash = use('Hash')
 const Config = use('Config')
@@ -1174,7 +1173,6 @@ class UserService {
       }
       //set last login
       await User.query().where('id', user.id).update({ last_login: moment().utc().format() })
-
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
     }
 
@@ -1275,7 +1273,6 @@ class UserService {
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
       } else {
-        console.log('update Profile else here')
         await trx.rollback()
       }
 
