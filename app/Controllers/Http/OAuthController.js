@@ -23,6 +23,7 @@ const {
   LOG_TYPE_SIGN_IN,
   SIGN_IN_METHOD_GOOGLE,
   SIGN_IN_METHOD_APPLE,
+  STATUS_EMAIL_VERIFY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const {
@@ -134,6 +135,10 @@ class OAuthController {
     }
 
     if (user) {
+      if (user.status === STATUS_EMAIL_VERIFY) {
+        await UserService.socialLoginAccountActive(user.id)
+      }
+
       if (isEmpty(ip_based_info.country_code)) {
         const QueueService = require('../../Services/QueueService')
         QueueService.getIpBasedInfo(user.id, ip)
@@ -250,6 +255,9 @@ class OAuthController {
 
     if (user) {
       const authenticator = getAuthByRole(auth, user.role)
+      if (user.status === STATUS_EMAIL_VERIFY) {
+        await UserService.socialLoginAccountActive(user.id)
+      }
       const token = await authenticator.generate(user)
       if (data1 && data2) {
         await EstateCurrentTenantService.acceptOutsideTenant({
