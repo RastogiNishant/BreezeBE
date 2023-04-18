@@ -18,6 +18,12 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
 
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
@@ -276,6 +282,8 @@ class EstateAttributeTranslations {
       social: APARTMENT_TYPE_SOCIAL,
       souterrain: APARTMENT_TYPE_SOUTERRAIN,
       penthouse: APARTMENT_TYPE_PENTHOUSE,
+      terrassen: APARTMENT_TYPE_TERRACES,
+      Attika: APARTMENT_TYPE_ATTIC,
     },
     // Building type
     house_type: {
@@ -519,6 +527,8 @@ class EstateAttributeTranslations {
           'property.attribute.APARTMENT_TYPE.Social.message',
           'property.attribute.APARTMENT_TYPE.Souterrain.message',
           'property.attribute.APARTMENT_TYPE.Penthouse.message',
+          'property.attribute.APARTMENT_TYPE.Terrassen.message',
+          'property.attribute.APARTMENT_TYPE.Attika.message',
         ],
         values: [
           APARTMENT_TYPE_FLAT,
@@ -529,6 +539,8 @@ class EstateAttributeTranslations {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
+          APARTMENT_TYPE_TERRACES,
+          APARTMENT_TYPE_ATTIC,
         ],
       },
       house_type: {
