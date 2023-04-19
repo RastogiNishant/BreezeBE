@@ -2539,7 +2539,7 @@ class EstateService {
     ).toJSON()
   }
 
-  static async getLikedButNotKnocked() {
+  static async getLikedButNotKnockedExpiringEstates() {
     let oneDayBeforeExpiredDate = moment.utc(new Date(), DAY_FORMAT, true).format(DAY_FORMAT)
     oneDayBeforeExpiredDate = moment
       .utc(oneDayBeforeExpiredDate + ` 23:59:59`)

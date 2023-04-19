@@ -127,7 +127,7 @@ class QueueJobService {
   }
 
   static async sendLikedNotificationBeforeExpired() {
-    const estates = await require('./EstateService').getLikedButNotKnocked()
+    const estates = await require('./EstateService').getLikedButNotKnockedExpiringEstates()
     await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
