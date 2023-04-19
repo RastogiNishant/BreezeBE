@@ -488,7 +488,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.event.liked_but_not_knocked', lang)
+        l.get('prospect.notification.next.liked_but_not_knocked', lang)
       )
     })
   }
