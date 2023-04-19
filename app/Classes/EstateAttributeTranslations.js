@@ -171,6 +171,8 @@ const {
   GENDER_ANY,
   LETTING_STATUS_NEW_RENOVATED,
   MAX_MINOR_COUNT,
+  PETS_SMALL,
+  PETS_NO,
 } = require('../constants')
 
 const {
@@ -448,8 +450,6 @@ class EstateAttributeTranslations {
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2,
-      PETS_ANY: null,
-      PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
     budget: toPercent,
@@ -918,7 +918,7 @@ class EstateAttributeTranslations {
       },
       pets_allowed: {
         keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
-        values: [true, false],
+        values: [PETS_SMALL, PETS_NO],
       },
       minors: {
         keys: ['landlord.property.tenant_pref.habits.children.no.message', 'yes.message'],

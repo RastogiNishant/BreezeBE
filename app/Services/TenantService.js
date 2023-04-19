@@ -21,7 +21,6 @@ const {
   MEMBER_FILE_TYPE_INCOME,
   MEMBER_FILE_TYPE_PASSPORT,
 
-  PETS_BIG,
   PETS_SMALL,
   PETS_NO,
 
@@ -237,7 +236,7 @@ class TenantService {
 
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
-      pets: yup.number().oneOf([PETS_BIG, PETS_SMALL, PETS_NO]).required(),
+      pets: yup.number().oneOf([PETS_SMALL, PETS_NO]).required(),
       credit_score: yup.number().when(['credit_score_submit_later'], {
         is: (credit_score_submit_later) => {
           return credit_score_submit_later
