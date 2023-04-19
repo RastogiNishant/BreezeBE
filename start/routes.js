@@ -165,9 +165,6 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
-  Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
-    'auth:jwtAdministrator',
-  ])
 
   Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
     'auth:jwtAdministrator',
