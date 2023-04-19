@@ -1797,7 +1797,7 @@ class EstateService {
     }
   }
 
-  static async getEstatesWithTask(user, params, page, limit = -1) {
+  static async getEstatesWithTask({ user_id, params, page, limit = -1 }) {
     let query = Estate.query()
       .with('current_tenant', function (b) {
         b.with('user', function (u) {
@@ -1808,6 +1808,7 @@ class EstateService {
       .select(
         'estates.id',
         'estates.coord',
+        'estates.user_id',
         'estates.street',
         'estates.area',
         'estates.house_number',
@@ -1841,7 +1842,10 @@ class EstateService {
       ])
     })
 
-    query.where('estates.user_id', user.id)
+    if (user_id) {
+      query.where('estates.user_id', user_id)
+    }
+
     query.whereNot('estates.status', STATUS_DELETE)
     query.where('estates.letting_type', LETTING_TYPE_LET)
     if (params.estate_id) {
