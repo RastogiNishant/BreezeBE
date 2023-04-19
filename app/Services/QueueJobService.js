@@ -523,6 +523,10 @@ class QueueJobService {
       i++
     }
   }
+
+  static async notifyProspectWhoLikedButNotKnocked(estateId, userId) {
+    console.log('notifyProspectWhoLikedButNotKnocked', estateId, userId)
+  }
 }
 
 module.exports = QueueJobService

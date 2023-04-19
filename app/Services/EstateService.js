@@ -1085,6 +1085,9 @@ class EstateService {
 
     try {
       await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
+      //const delay = LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER * 1000 * 60 * 60
+      const delay = 1000
+      await QueueService.notifyProspectWhoLikedButNotKnocked(estateId, userId, delay)
       await this.removeDislike(userId, estateId)
     } catch (e) {
       Logger.error(e)

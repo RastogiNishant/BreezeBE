@@ -1138,6 +1138,8 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
   PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
+
+  LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 }
 
 module.exports = constants
