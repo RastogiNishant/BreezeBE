@@ -937,7 +937,7 @@ class MemberService {
         await IncomeProof.query()
           .select('_i.id', '_i.income_type')
           .where('income_proofs.expire_date', '>=', startOf)
-          .leftJoin({ _i: 'incomes' }, function () {
+          .innerJoin({ _i: 'incomes' }, function () {
             this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
           })
           .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
