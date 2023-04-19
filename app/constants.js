@@ -940,6 +940,7 @@ const constants = {
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
+  WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 

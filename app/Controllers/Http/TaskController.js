@@ -179,12 +179,12 @@ class TaskController {
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
     try {
-      const estates = await EstateService.getEstatesWithTask(
-        auth.user,
+      const estates = await EstateService.getEstatesWithTask({
+        user_id: auth.user.id,
         params,
-        params?.filter_by_unread_message ? -1 : params.page || -1,
-        params?.filter_by_unread_message ? -1 : params.limit || -1
-      )
+        page: params?.filter_by_unread_message ? -1 : params.page || -1,
+        limit: params?.filter_by_unread_message ? -1 : params.limit || -1,
+      })
 
       const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
 
