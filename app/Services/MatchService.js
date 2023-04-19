@@ -146,11 +146,11 @@ class MatchService {
     }
 
     const incomes = await require('./MemberService').getIncomes(prospect.user_id)
-    const income_types = incomes.map((ic) => ic.income_type)
-    if (!estate.income_sources) {
+    if (!incomes?.length) {
       return 0
     }
 
+    const income_types = incomes.map((ic) => ic.income_type)
     const isExistIncomeSource = estate.income_sources.some((ic) => income_types.includes(ic))
     if (!isExistIncomeSource) {
       return 0
