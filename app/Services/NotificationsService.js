@@ -477,6 +477,18 @@ class NotificationsService {
     })
   }
 
+  static async prospectLikedButNotKnocked(notices) {
+    const title = 'prospect.notification.event.liked_but_not_knocked'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.event.liked_but_not_knocked', lang)
+      )
+    })
+  }
+
   /**
    *
    */
