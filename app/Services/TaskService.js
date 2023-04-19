@@ -17,8 +17,9 @@ const {
   TASK_RESOLVE_HISTORY_PERIOD,
   TASK_STATUS_ARCHIVED,
   PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
+  WEBSOCKET_EVENT_TASK_CREATED,
 } = require('../constants')
-
+const Ws = use('Ws')
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
 const moment = require('moment')
@@ -218,17 +219,22 @@ class TaskService extends BaseService {
       task.attachments = task.attachments ? JSON.stringify(task.attachments) : null
       await task.save(trx)
 
+      messages = await ChatService.getItemsWithAbsoluteUrl(messages)
+      await trx.commit()
+
       if (predefinedMessage.type === PREDEFINED_LAST) {
         /*
          * need to determine to send email to a user who will be a landlord later after signing up
          * Here figma design goes
          * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
          */
-        await require('./OutsideLandlordService').noticeInvitationToLandlord(task.id)
+        //unassigned task
+        if (!task.estate_id) {
+          await require('./OutsideLandlordService').noticeInvitationToLandlord(task.id)
+        } else {
+          //assigned task
+        }
       }
-
-      messages = await ChatService.getItemsWithAbsoluteUrl(messages)
-      await trx.commit()
 
       return { task, messages }
     } catch (error) {
@@ -705,6 +711,22 @@ class TaskService extends BaseService {
           })
           .transacting(trx)
       }
+    }
+  }
+
+  static async sendTaskCreated({ id, estate_id }) {
+    if (estate_id) {
+      await require('./EstateService').getEstatesWithTask({ params: { estate_id } })
+    }
+  }
+
+  static async emitTaskCreated({ user_id, role, data }) {
+    const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
+    const topicName = role === ROLE_LANDLORD ? `landlord:${user_id}` : `tenant:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_TASK_CREATED, data)
     }
   }
 }
