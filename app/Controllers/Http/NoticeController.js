@@ -86,7 +86,7 @@ class NoticeController {
       NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT,
       NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
       NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
-      NOTICE_TYPE_PROSPECT_LIKE_EXPIRING
+      NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
     ]
     await Promise.map(notification_types, async (type) => {
       await NoticeService.sendTestNotification(userId, type, estate_id, data)
