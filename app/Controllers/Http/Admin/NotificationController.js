@@ -19,7 +19,6 @@ class NotificationController {
         },
         image: File.getPublicUrl(estate.cover),
       }
-      console.log(notice)
       await NotificationsService.prospectLikedButNotKnocked([notice])
     })
     return response.res(true)
