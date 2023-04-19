@@ -165,6 +165,10 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+
+  Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
+    'auth:jwtAdministrator',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
