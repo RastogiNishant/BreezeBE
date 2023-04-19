@@ -530,6 +530,13 @@ class MatchService {
   }
 
   static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
+    // Delete old matches without any activity
+    await Database.query()
+      .from('matches')
+      .where({ user_id: tenant.user_id, status: MATCH_STATUS_NEW })
+      .whereNot({ buddy: true })
+      .delete()
+
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
     const estateIds = estates.reduce((estateIds, estate) => {
@@ -546,9 +553,7 @@ class MatchService {
 
     while (idx < estates.length) {
       const percent = await MatchService.calculateMatchPercent(tenant, estates[idx])
-      if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ estate_id: estates[idx].id, percent })
-      }
+      passedEstates.push({ estate_id: estates[idx].id, percent })
       idx++
     }
 
@@ -558,13 +563,6 @@ class MatchService {
         estate_id: i.estate_id,
         percent: i.percent,
       })) || []
-
-    // Delete old matches without any activity
-    await Database.query()
-      .from('matches')
-      .where({ user_id: tenant.user_id, status: MATCH_STATUS_NEW })
-      .whereNot({ buddy: true })
-      .delete()
 
     // Create new matches
 
@@ -576,7 +574,7 @@ class MatchService {
 
       if (has_notification_sent) {
         const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-        if (superMatches.length > 0) {
+        if (superMatches?.length) {
           await NoticeService.prospectSuperMatch(superMatches)
         }
       }
@@ -616,9 +614,7 @@ class MatchService {
     let idx = 0
     while (idx < tenants.length) {
       const percent = await MatchService.calculateMatchPercent(tenants[idx], estate)
-      if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ user_id: tenants[idx].user_id, percent })
-      }
+      passedEstates.push({ user_id: tenants[idx].user_id, percent })
       idx++
     }
 
@@ -640,7 +636,7 @@ class MatchService {
         `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
       )
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-      if (superMatches.length > 0) {
+      if (superMatches?.length) {
         await NoticeService.prospectSuperMatch(superMatches, estateId)
       }
     }

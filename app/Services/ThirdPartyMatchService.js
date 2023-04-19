@@ -21,6 +21,7 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 
 class ThirdPartyMatchService {
   static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
+    this.deleteOldMatches()
     const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant, dist).limit(
       MAX_SEARCH_ITEMS
     )
@@ -31,9 +32,7 @@ class ThirdPartyMatchService {
       let estate = estates[idx]
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
       const percent = await MatchService.calculateMatchPercent(tenant, estate)
-      if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ estate_id: estate.id, percent })
-      }
+      passedEstates.push({ estate_id: estate.id, percent })
       idx++
     }
     const matches =
@@ -44,7 +43,6 @@ class ThirdPartyMatchService {
         status: MATCH_STATUS_NEW,
       })) || []
 
-    this.deleteExpiredMatches()
     await this.updateMatches(matches, has_notification_sent)
 
     return matches
@@ -82,9 +80,7 @@ class ThirdPartyMatchService {
 
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
       const percent = await MatchService.calculateMatchPercent(tenant, estate)
-      if (percent >= MATCH_PERCENT_PASS) {
-        passedEstates.push({ user_id: tenant.user_id, estate_id: estate.id, percent })
-      }
+      passedEstates.push({ user_id: tenant.user_id, estate_id: estate.id, percent })
       idx++
     }
 
@@ -143,6 +139,28 @@ class ThirdPartyMatchService {
       .where('estate_id', estate_id)
       .where('status', MATCH_STATUS_NEW)
       .first()
+  }
+
+  static async deleteOldMatches() {
+    const expiredMatches = (
+      await ThirdPartyOffer.query()
+        .select('_m.id')
+        .innerJoin({ _m: 'third_party_matches' }, function () {
+          this.on('third_party_offers.id', '_m.estate_id')
+        })
+        .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+          this.on('tpoi.third_party_offer_id', 'third_party_offers.id')
+        })
+        .where(Database.raw(`tpoi.id IS NULL`))
+        .fetch()
+    ).toJSON()
+
+    const expiredMatchIds = expiredMatches.map((match) => match.id)
+    if (!expiredMatchIds?.length) {
+      return
+    }
+
+    await ThirdPartyMatch.query().whereIn('id', expiredMatchIds).delete()
   }
 
   static async deleteExpiredMatches() {
