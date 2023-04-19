@@ -1808,6 +1808,7 @@ class EstateService {
       .select(
         'estates.id',
         'estates.coord',
+        'estates.user_id',
         'estates.street',
         'estates.area',
         'estates.house_number',

@@ -233,6 +233,7 @@ class TaskService extends BaseService {
           await require('./OutsideLandlordService').noticeInvitationToLandlord(task.id)
         } else {
           //assigned task
+          await this.sendTaskCreated({ estate_id: task.estate_id })
         }
       }
 
@@ -714,10 +715,17 @@ class TaskService extends BaseService {
     }
   }
 
-  static async sendTaskCreated({ id, estate_id }) {
-    if (estate_id) {
-      await require('./EstateService').getEstatesWithTask({ params: { estate_id } })
+  static async sendTaskCreated({ estate_id }) {
+    if (!estate_id) {
+      return
     }
+
+    const estates = await require('./EstateService').getEstatesWithTask({ params: { estate_id } })
+
+    if (!estates?.length) {
+      return
+    }
+    this.emitTaskCreated({ user_id: estates[0].user_id, role: ROLE_LANDLORD, data: estates[0] })
   }
 
   static async emitTaskCreated({ user_id, role, data }) {
