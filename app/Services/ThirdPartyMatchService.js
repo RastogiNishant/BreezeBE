@@ -142,20 +142,23 @@ class ThirdPartyMatchService {
   }
 
   static async deleteOldMatches() {
-    const expiredMatches = (
+    const oldMatches = (
       await ThirdPartyOffer.query()
         .select('_m.id')
         .innerJoin({ _m: 'third_party_matches' }, function () {
           this.on('third_party_offers.id', '_m.estate_id')
         })
         .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
-          this.on('tpoi.third_party_offer_id', 'third_party_offers.id')
+          this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on(
+            'tpoi.user_id',
+            '_m.user_id'
+          )
         })
         .where(Database.raw(`tpoi.id IS NULL`))
         .fetch()
     ).toJSON()
 
-    const expiredMatchIds = expiredMatches.map((match) => match.id)
+    const expiredMatchIds = oldMatches.map((match) => match.id)
     if (!expiredMatchIds?.length) {
       return
     }
@@ -172,7 +175,10 @@ class ThirdPartyMatchService {
           this.on('third_party_offers.id', '_m.estate_id')
         })
         .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
-          this.on('tpoi.third_party_offer_id', 'third_party_offers.id')
+          this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on(
+            'tpoi.user_id',
+            '_m.user_id'
+          )
         })
         .where('third_party_offers.status', STATUS_EXPIRE)
         .where(Database.raw(`tpoi.id IS NULL`))
