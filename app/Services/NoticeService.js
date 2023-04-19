@@ -107,6 +107,7 @@ const {
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
 } = require('../constants')
 
 class NoticeService {
@@ -904,7 +905,9 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
         return NotificationsService.sendFullInvitation([notice])
       case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
-        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])  
+        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
+      case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
+        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
     }
   }
 
@@ -1276,6 +1279,25 @@ class NoticeService {
   }
 
   static async likedButNotKnockedToProspect(estates = []) {
+    const notices = estates.map(({ estate_id, user_id, address, cover }) => {
+      return {
+        user_id,
+        type: NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+        data: {
+          estate_id,
+          estate_address: address,
+        },
+        image: File.getPublicUrl(cover),
+      }
+    })
+
+    if (notices?.length) {
+      await NoticeService.insertNotices(notices)
+      await NotificationsService.notifyLikedButNotKnockedToProspect(notices)
+    }
+  }
+
+  static async likedButNotKnockedToProspectSingle(estate, user_id) {
     const notices = estates.map(({ estate_id, user_id, address, cover }) => {
       return {
         user_id,
