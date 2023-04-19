@@ -5,7 +5,7 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_UNASSIGNED } = require('../constants')
+const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO } = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -321,10 +321,10 @@ class OpenImmoReader {
           : null
       }
 
-      if (property.pets === 'true') {
-        property.pets = null
-      } else if (property.pets === 'false') {
-        property.pets = 1
+      if (property.pets_allowed === 'true') {
+        property.pets_allowed = PETS_SMALL
+      } else if (property.pets_allowed === 'false') {
+        property.pets_allowed = PETS_NO
       }
     })
     return properties

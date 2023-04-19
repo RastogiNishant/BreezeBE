@@ -311,12 +311,8 @@ class MatchService {
       scoreL += householdSizeScore
     }
     // Pets
-    log({ prospectPets: prospect.pets, estatePets: estate.pets })
-    if (prospect.pets === PETS_NO || estate.pets === PETS_ANY) {
-      scoreL += petsWeight
-      log({ petsWeight })
-      petsScore = petsWeight
-    } else if (prospect.pets === PETS_SMALL && estate.pets === PETS_SMALL) {
+    log({ prospectPets: prospect.pets, estatePets: estate.pets_allowed })
+    if (prospect.pets === estate.pets_allowed) {
       scoreL += petsWeight
       log({ petsWeight })
       petsScore = petsWeight
@@ -3058,7 +3054,7 @@ class MatchService {
         'max_age',
         'family_size_min',
         'family_size_max',
-        'pets',
+        'pets_allowed',
         'net_rent',
         'rooms_number',
         'number_floors',

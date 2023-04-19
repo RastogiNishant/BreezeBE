@@ -29,7 +29,6 @@ const {
   APARTMENT_TYPE_RAW_ATTIC,
   APARTMENT_TYPE_ATTIC,
 
-
   // House type
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
@@ -256,7 +255,7 @@ class CreateEstate extends Base {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
-          APARTMENT_TYPE_TERRACES,          
+          APARTMENT_TYPE_TERRACES,
           APARTMENT_TYPE_ETAGE,
           APARTMENT_TYPE_HOLIDAY,
           APARTMENT_TYPE_GALLERY,
@@ -440,7 +439,7 @@ class CreateEstate extends Base {
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
+      pets_allowed: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
       gender: yup
         .number()
         .integer()

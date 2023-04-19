@@ -1123,7 +1123,7 @@ Estates: [ESTATES]
     rent_arrears: false,
     min_age: 25,
     max_age: 65,
-    pets: 1,
+    pets_allowed: 2, // PETS_SMALL
     family_size_min: 1,
     family_size_max: 2,
   },

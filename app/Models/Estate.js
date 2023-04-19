@@ -106,7 +106,6 @@ class Estate extends Model {
       'min_lease_duration',
       'max_lease_duration',
       'non_smoker',
-      'pets',
       'gender',
       'monumental_protection',
       'parking_space',
