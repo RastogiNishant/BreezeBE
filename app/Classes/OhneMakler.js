@@ -39,6 +39,14 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_MISC,
   HEATING_TYPE_UNDERFLOOR,
+  FIRING_WOOD,
+  FIRING_AIRWP,
+  FIRING_PELLET,
+  FIRING_REMOTE,
+  FIRING_OEL,
+  FIRING_ELECTRIC,
+  FIRING_GROUND_HEAT,
+  FIRING_GAS,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -73,7 +81,14 @@ class OhneMakler {
   }
 
   firing = {
-    //map firing here
+    Holz: FIRING_WOOD,
+    'Luft-/Wasserwärme': FIRING_AIRWP,
+    Holzpellets: FIRING_PELLET,
+    Fernwärme: FIRING_REMOTE,
+    Öl: FIRING_OEL,
+    Strom: FIRING_ELECTRIC,
+    Erdwärme: FIRING_GROUND_HEAT,
+    Gas: FIRING_GAS,
   }
 
   houseType = {
@@ -239,6 +254,7 @@ class OhneMakler {
     expiration_date: 'available_end_at',
     duration_rent_min: 'duration_rent_min',
     duration_rent_max: 'duration_rent_max',
+    energietraeger: 'energietraeger',
     //visit_from
     //visit_to
   }
@@ -346,7 +362,7 @@ class OhneMakler {
         type: 'buildingStatus',
       })
       newEstate.heating_type = this.parseItemType({ type: 'heatingType', key: estate.heizung })
-      //newEstate.firing = this.parseItemType({ type: 'firing', key: estate.energietraeger })
+      newEstate.firing = this.parseItemType({ type: 'firing', key: estate.energietraeger })
       newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
       if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
