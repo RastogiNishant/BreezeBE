@@ -85,9 +85,9 @@ class OhneMakler {
     'Luft-/Wasserwärme': FIRING_AIRWP,
     Holzpellets: FIRING_PELLET,
     Fernwärme: FIRING_REMOTE,
-    'Öl': FIRING_OEL,
+    Öl: FIRING_OEL,
     Strom: FIRING_ELECTRIC,
-    'Erdwärme': FIRING_GROUND_HEAT,
+    Erdwärme: FIRING_GROUND_HEAT,
     Gas: FIRING_GAS,
   }
 
@@ -251,6 +251,7 @@ class OhneMakler {
     floor_count: 'number_floors',
     rooms: 'rooms_number',
     vacant_from: 'vacant_date',
+    vacant_till: 'rent_end_at',
     expiration_date: 'available_end_at',
     duration_rent_min: 'duration_rent_min',
     duration_rent_max: 'duration_rent_max',
@@ -335,18 +336,19 @@ class OhneMakler {
       if (!isEmpty(estate.ausstattung)) {
         newEstate.amenities = estate.ausstattung.split(', ')
       }
-      newEstate.status = STATUS_ACTIVE
+
       newEstate.coord = `${estate.latitude},${estate.longitude}`
       newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
       if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
-        newEstate.vacant_date = moment
-          .utc(estate.uebernahme_ab, 'YYYY/MM/DD', true)
-          .format(DATE_FORMAT)
+        newEstate.vacant_date = moment(estate.uebernahme_ab, 'YYYY/MM/DD', true).format(DATE_FORMAT)
       } else {
         newEstate.vacant_date = moment.utc(new Date()).format(DATE_FORMAT)
         newEstate.vacant_from_string = estate.uebernahme_ab
       }
 
+      newEstate.rent_end_at = estate?.vacant_till
+        ? moment(estate.vacant_till, 'YYYY/MM/DD', true).format(DATE_FORMAT)
+        : null
       //as confirmed by andrey, K is Kellergeschoss (basement or underground)
       if (newEstate.floor === 'K') {
         newEstate.floor = -1
