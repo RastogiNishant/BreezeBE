@@ -72,6 +72,10 @@ class OhneMakler {
     Etagenheizung: HEATING_TYPE_FLOOR,
   }
 
+  firing = {
+    //map firing here
+  }
+
   houseType = {
     Mehrfamilienhaus: {
       type: 'house_type',
@@ -342,6 +346,7 @@ class OhneMakler {
         type: 'buildingStatus',
       })
       newEstate.heating_type = this.parseItemType({ type: 'heatingType', key: estate.heizung })
+      //newEstate.firing = this.parseItemType({ type: 'firing', key: estate.energietraeger })
       newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
       if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {

@@ -51,6 +51,7 @@ class ThirdPartyOffer extends Model {
       'heating_type',
       'duration_rent_min',
       'duration_rent_max',
+      'firing',
     ]
   }
 
@@ -62,7 +63,7 @@ class ThirdPartyOffer extends Model {
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
       }
 
-      ;['heating_type'].map((field) => {
+      ;['heating_type', 'firing'].map((field) => {
         if (
           instance.dirty &&
           instance.dirty[field] !== undefined &&
