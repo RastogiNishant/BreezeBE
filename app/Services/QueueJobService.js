@@ -97,12 +97,19 @@ class QueueJobService {
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
-      await estate.updateItem({ coord: coord })
+      await estate.updateItem({ coord })
       await QueueJobService.updateEstatePoint(estateId)
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
         coord,
+        address: estate.address,
+      })
+    } else {
+      require('./EstateService').emitValidAddress({
+        user_id: estate.user_id,
+        id: estate.id,
+        coord: null,
         address: estate.address,
       })
     }
@@ -120,10 +127,9 @@ class QueueJobService {
       ).rows || []
 
     let i = 0
-    while (i < estates.length) {
-      await QueueJobService.updateEstateCoord(estates[i].id)
-      i++
-    }
+    Promise.map(estates, (estate) => {
+      QueueJobService.updateEstateCoord(estate.id)
+    })
   }
 
   static async sendLikedNotificationBeforeExpired() {
