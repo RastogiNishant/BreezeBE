@@ -234,9 +234,7 @@ class OhneMakler {
     vacant_from: 'vacant_date',
     expiration_date: 'available_end_at',
     duration_rent_min: 'duration_rent_min',
-    duration_rent_max: 'rent_duration_max',
-    heizung: 'heizung',
-    energietraeger: 'energietraeger',
+    duration_rent_max: 'duration_rent_max',
     //visit_from
     //visit_to
   }
