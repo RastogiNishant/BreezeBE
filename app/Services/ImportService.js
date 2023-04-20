@@ -334,14 +334,7 @@ class ImportService {
         (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) ||
         estate.status === STATUS_ACTIVE
       ) {
-        estate_data = omit(estate_data, [
-          'city',
-          'country',
-          'zip',
-          'street',
-          'house_number',
-          'extra_address',
-        ])
+        estate_data = omit(estate_data, ['city', 'country', 'zip', 'street', 'house_number'])
         estate_data.is_coord_changed = false
       } else {
         estate_data.is_coord_changed = true
