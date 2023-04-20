@@ -48,6 +48,10 @@ class ThirdPartyOffer extends Model {
       'apt_type',
       'building_status',
       'available_end_at',
+      'heating_type',
+      'duration_rent_min',
+      'duration_rent_max',
+      'firing',
     ]
   }
 
@@ -58,6 +62,17 @@ class ThirdPartyOffer extends Model {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
       }
+
+      ;['heating_type', 'firing'].map((field) => {
+        if (
+          instance.dirty &&
+          instance.dirty[field] !== undefined &&
+          instance.dirty[field] != null &&
+          !Array.isArray(instance.dirty[field])
+        ) {
+          instance[field] = [instance.dirty[field]]
+        }
+      })
     })
   }
 
