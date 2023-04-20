@@ -37,6 +37,8 @@ const {
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_OVEN,
   HEATING_TYPE_FLOOR,
+  HEATING_TYPE_MISC,
+  HEATING_TYPE_UNDERFLOOR,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -65,8 +67,8 @@ class OhneMakler {
   heatingType = {
     Zentralheizung: HEATING_TYPE_CENTRAL,
     Ofenheizung: HEATING_TYPE_OVEN,
-    Sonstiges: null,
-    Fußbodenheizung: HEATING_TYPE_FLOOR,
+    Sonstiges: HEATING_TYPE_MISC,
+    Fußbodenheizung: HEATING_TYPE_UNDERFLOOR,
     Etagenheizung: HEATING_TYPE_FLOOR,
   }
 
@@ -231,7 +233,7 @@ class OhneMakler {
     rooms: 'rooms_number',
     vacant_from: 'vacant_date',
     expiration_date: 'available_end_at',
-    duration_rent_min: 'rent_duration_min',
+    duration_rent_min: 'duration_rent_min',
     duration_rent_max: 'rent_duration_max',
     heizung: 'heizung',
     energietraeger: 'energietraeger',
