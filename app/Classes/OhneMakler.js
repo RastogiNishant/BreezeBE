@@ -85,9 +85,9 @@ class OhneMakler {
     'Luft-/Wasserwärme': FIRING_AIRWP,
     Holzpellets: FIRING_PELLET,
     Fernwärme: FIRING_REMOTE,
-    Öl: FIRING_OEL,
+    'Öl': FIRING_OEL,
     Strom: FIRING_ELECTRIC,
-    Erdwärme: FIRING_GROUND_HEAT,
+    'Erdwärme': FIRING_GROUND_HEAT,
     Gas: FIRING_GAS,
   }
 
@@ -254,7 +254,7 @@ class OhneMakler {
     expiration_date: 'available_end_at',
     duration_rent_min: 'duration_rent_min',
     duration_rent_max: 'duration_rent_max',
-    energietraeger: 'energietraeger',
+    energietraeger: 'firing',
     //visit_from
     //visit_to
   }
