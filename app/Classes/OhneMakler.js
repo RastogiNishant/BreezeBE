@@ -220,6 +220,10 @@ class OhneMakler {
     rooms: 'rooms_number',
     vacant_from: 'vacant_date',
     expiration_date: 'available_end_at',
+    duration_rent_min: 'rent_duration_min',
+    duration_rent_max: 'rent_duration_max',
+    heizung: 'heizung',
+    energietraeger: 'energietraeger',
     //visit_from
     //visit_to
   }

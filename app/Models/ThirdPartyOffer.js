@@ -48,6 +48,10 @@ class ThirdPartyOffer extends Model {
       'apt_type',
       'building_status',
       'available_end_at',
+      'rent_duration_min',
+      'rent_duration_max',
+      'heizung',
+      'energietraeger',
     ]
   }
 
