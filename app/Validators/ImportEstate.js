@@ -129,6 +129,9 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
+
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -453,6 +456,8 @@ class ImportEstate extends Base {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
+          HEATING_TYPE_UNDERFLOOR,
+          HEATING_TYPE_MISC,
         ]),
       equipment: yup
         .array()
