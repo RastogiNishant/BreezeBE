@@ -65,6 +65,9 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
+
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
   HOUSE_TYPE_SERIES,
@@ -631,6 +634,8 @@ test(`EstateImportReader.mapValue maps result to expected values for heating_typ
     HEATING_TYPE_FLOOR,
     HEATING_TYPE_CENTRAL,
     HEATING_TYPE_REMOTE,
+    HEATING_TYPE_UNDERFLOOR,
+    HEATING_TYPE_MISC,
   ]
   types.map((type, type_index) => {
     langs.map((lang) => {
