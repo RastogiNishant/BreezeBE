@@ -34,6 +34,9 @@ const {
   THIRD_PARTY_OFFER_HOUSE_TYPE,
   THIRD_PARTY_OFFER_APARTMENT_TYPE,
   THIRD_PARTY_OFFER_PROPERTY_TYPE,
+  HEATING_TYPE_CENTRAL,
+  HEATING_TYPE_OVEN,
+  HEATING_TYPE_FLOOR,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -57,6 +60,14 @@ class OhneMakler {
     modernisiert: BUILDING_STATUS_MODERNIZED,
     renoviert: BUILDING_STATUS_PART_FULLY_RENOVATED,
     Neuwertig: BUILDING_STATUS_NEW,
+  }
+
+  heatingType = {
+    Zentralheizung: HEATING_TYPE_CENTRAL,
+    Ofenheizung: HEATING_TYPE_OVEN,
+    Sonstiges: null,
+    Fußbodenheizung: HEATING_TYPE_FLOOR,
+    Etagenheizung: HEATING_TYPE_FLOOR,
   }
 
   houseType = {
@@ -330,6 +341,7 @@ class OhneMakler {
         key: estate.condition,
         type: 'buildingStatus',
       })
+      newEstate.heating_type = this.parseItemType({ type: 'heatingType', key: estate.heizung })
       newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
       if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
