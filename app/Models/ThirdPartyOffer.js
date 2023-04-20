@@ -30,6 +30,7 @@ class ThirdPartyOffer extends Model {
       'images',
       'energy_efficiency_class',
       'vacant_date',
+      'rent_end_at',
       'visit_from',
       'visit_to',
       'amenities',
@@ -98,6 +99,40 @@ class ThirdPartyOffer extends Model {
 
   static get Serializer() {
     return 'App/Serializers/ThirdPartyOfferSerializer'
+  }
+
+  static isShortTermMeet({
+    prospect_duration_min,
+    prospect_duration_max,
+    estate_duration_min,
+    estate_duration_max,
+  }) {
+    if (!prospect_duration_min || !prospect_duration_max) {
+      return true
+    }
+
+    estate_duration_min = estate_duration_min * 31
+    estate_duration_max = estate_duration_max * 31
+
+    if (!estate_duration_max && !estate_duration_min) {
+      return false
+    }
+    if (
+      estate_duration_min &&
+      prospect_duration_min <= estate_duration_min &&
+      prospect_duration_max >= estate_duration_min
+    ) {
+      return true
+    }
+    if (
+      estate_duration_max &&
+      prospect_duration_min <= estate_duration_max &&
+      prospect_duration_max >= estate_duration_max
+    ) {
+      return true
+    }
+
+    return false
   }
 }
 

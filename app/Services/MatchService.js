@@ -92,6 +92,7 @@ const {
   exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
+const ThirdPartyOffer = require('../Models/ThirdPartyOffer')
 
 /**
  * Check is item in data range
@@ -120,26 +121,29 @@ class MatchService {
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
 
-    const vacant_date = estate.vacant_date
-    const rent_end_at = estate.rent_end_at
-
     //short duration filter doesn't meet, match percent will be 0
     if (prospect.residency_duration_min && prospect.residency_duration_max) {
       // if it's inside property
       if (!estate.source_id) {
-        if (!vacant_date || !rent_end_at) {
-          return 0
-        }
-
-        const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
         if (
-          rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
-          rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
+          !Estate.isShortTermMeet({
+            prospect_duration_min: prospect.residency_duration_min,
+            prospect_duration_max: prospect.residency_duration_max,
+            vacant_date: estate.vacant_date,
+            rent_end_at: estate.rent_end_at,
+          })
         ) {
           return 0
         }
       } else {
-        if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
+        if (
+          !ThirdPartyOffer.isShortTermMeet({
+            prospect_duration_min: prospect.residency_duration_min,
+            prospect_duration_max: prospect.residency_duration_max,
+            estate_duration_min: estate.duration_rent_min,
+            estate_duration_max: estate.estate_duration_max,
+          })
+        ) {
           return 0
         }
       }
