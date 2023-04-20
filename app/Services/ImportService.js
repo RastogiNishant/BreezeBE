@@ -335,7 +335,6 @@ class ImportService {
         estate.status === STATUS_ACTIVE
       ) {
         estate_data = omit(estate_data, [
-          'address',
           'city',
           'country',
           'zip',
@@ -343,6 +342,9 @@ class ImportService {
           'house_number',
           'extra_address',
         ])
+        estate_data.is_coord_changed = false
+      } else {
+        estate_data.is_coord_changed = true
       }
 
       await require('./EstateService').updateEstate(
