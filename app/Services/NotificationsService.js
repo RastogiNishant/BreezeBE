@@ -119,6 +119,9 @@ const {
 
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
 } = require('../constants')
 
 const mapping = [
@@ -178,6 +181,7 @@ const mapping = [
   [NOTICE_TYPE_EXPIRED_SHOW_TIME_ID, NOTICE_TYPE_EXPIRED_SHOW_TIME],
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
   [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
+  [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
 ]
 
 class NotificationsService {
@@ -484,7 +488,7 @@ class NotificationsService {
       return (
         capitalize(data.estate_address) +
         ' \n' +
-        l.get('prospect.notification.event.liked_but_not_knocked', lang)
+        l.get('prospect.notification.next.liked_but_not_knocked', lang)
       )
     })
   }
