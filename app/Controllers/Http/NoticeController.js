@@ -33,6 +33,7 @@ const {
   NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
 } = require('../../constants')
 
 class NoticeController {
@@ -87,6 +88,7 @@ class NoticeController {
       NOTICE_TYPE_LANDLORD_UPDATE_SLOT,
       NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
       NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
+      NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
     ]
     await Promise.map(notification_types, async (type) => {
       await NoticeService.sendTestNotification(userId, type, estate_id, data)

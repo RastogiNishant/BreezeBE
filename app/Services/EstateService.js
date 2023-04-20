@@ -89,6 +89,7 @@ const {
   ROLE_USER,
   MATCH_STATUS_FINISH_PENDING,
   DAY_FORMAT,
+  LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
 } = require('../constants')
 
 const {
@@ -1085,6 +1086,8 @@ class EstateService {
 
     try {
       await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
+      const delay = LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER * 1000 * 60 * 60 //ms
+      await QueueService.notifyProspectWhoLikedButNotKnocked(estateId, userId, delay)
       await this.removeDislike(userId, estateId)
     } catch (e) {
       Logger.error(e)
@@ -2543,7 +2546,7 @@ class EstateService {
     ).toJSON()
   }
 
-  static async getLikedButNotKnocked() {
+  static async getLikedButNotKnockedExpiringEstates() {
     let oneDayBeforeExpiredDate = moment.utc(new Date(), DAY_FORMAT, true).format(DAY_FORMAT)
     oneDayBeforeExpiredDate = moment
       .utc(oneDayBeforeExpiredDate + ` 23:59:59`)

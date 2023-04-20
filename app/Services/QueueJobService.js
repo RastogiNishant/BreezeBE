@@ -127,7 +127,7 @@ class QueueJobService {
   }
 
   static async sendLikedNotificationBeforeExpired() {
-    const estates = await require('./EstateService').getLikedButNotKnocked()
+    const estates = await require('./EstateService').getLikedButNotKnockedExpiringEstates()
     await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
@@ -521,6 +521,23 @@ class QueueJobService {
         console.log('Fetching point error', e.message)
       }
       i++
+    }
+  }
+
+  static async notifyProspectWhoLikedButNotKnocked(estateId, userId) {
+    const estate = await Estate.query()
+      .where({ id: estateId })
+      .where('status', STATUS_ACTIVE)
+      .first()
+    const stillLiked = await Database.select('*')
+      .from('likes')
+      .where('user_id', userId)
+      .where('estate_id', estateId)
+    if (estate && stillLiked.length > 0) {
+      //validate estate is active
+      //if still liked
+      NoticeService.notifyProspectWhoLikedButNotKnocked(estate, userId)
+      console.log('notifyProspectWhoLikedBUtNotKnocked', estate.id, userId)
     }
   }
 }
