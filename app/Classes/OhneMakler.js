@@ -291,6 +291,31 @@ class OhneMakler {
       }
       newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
       newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}, ${estate.country}`
+      if (estate?.pictures && !Array.isArray(estate?.pictures)) {
+        estate.pictures = [estate?.pictures]
+      }
+      newEstate.images = estate?.pictures?.length
+        ? JSON.stringify(estate.pictures)
+        : JSON.stringify([
+            {
+              picture: {
+                picture_url:
+                  'https://cdn4.vectorstock.com/i/1000x1000/21/23/isolated-avatar-man-and-house-design-vector-25982123.jpg',
+                picture_title: 'Außenansicht ',
+              },
+            },
+          ])
+      if (!isEmpty(estate.ausstattung)) {
+        newEstate.amenities = estate.ausstattung.split(', ')
+      }
+      newEstate.status = STATUS_ACTIVE
+      newEstate.coord = `${estate.latitude},${estate.longitude}`
+      newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
+      if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
+        newEstate.vacant_from = estate.uebernahme_ab
+      } else {
+        newEstate.vacant_from_string = estate.uebernahme_ab
+      }
 
       if (estate?.pictures && !Array.isArray(estate?.pictures)) {
         estate.pictures = [estate?.pictures]
