@@ -15,6 +15,7 @@ const PredefinedMessageChoice = use('App/Models/PredefinedMessageChoice')
 const PredefinedMessageAnswer = use('App/Models/PredefinedMessageAnswer')
 const l = use('Localize')
 const HttpException = require('../Exceptions/HttpException')
+const { generateAddress } = use('App/Libs/utils')
 
 class PredefinedMessageService {
   static async get(id) {
@@ -81,6 +82,19 @@ class PredefinedMessageService {
     if (predefinedMessage.variable_to_update === 'urgency') {
       answerForChat = `{{{urgency-${choice.value}}}}${l.get(choice.text, lang)}`
     }
+    if (predefinedMessage.variable_to_update === 'property_address') {
+      if (typeof answer === 'object') {
+        answerForChat = generateAddress({
+          city: answer?.city,
+          street: answer?.street,
+          house_number: answer?.housenumber,
+          zip: answer?.postcode,
+          country: answer?.country,
+        })
+      } else {
+        answerForChat = answer || ''
+      }
+    }
 
     const tenantMessage = await Chat.createItem(
       {
@@ -105,7 +119,7 @@ class PredefinedMessageService {
     if (predefinedMessage.variable_to_update) {
       task[predefinedMessage.variable_to_update] =
         choice?.value ||
-        (prev_predefined_message_id && answer.split(':').length == 2
+        (prev_predefined_message_id && typeof answer === 'string' && answer.split(':').length === 2
           ? trim(answer.split(':')[1])
           : answer)
     }
@@ -116,7 +130,9 @@ class PredefinedMessageService {
         .where('id', prev_predefined_message_id)
         .firstOrFail()
       if (prevPredefinedMessage.variable_to_update) {
-        task[prevPredefinedMessage.variable_to_update] = choice?.value || trim(answer.split(':')[0])
+        task[prevPredefinedMessage.variable_to_update] =
+          choice?.value ||
+          (answer && typeof answer === 'string' ? trim(answer.split(':')[0]) : answer)
       }
     }
 

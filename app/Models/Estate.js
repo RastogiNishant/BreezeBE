@@ -106,7 +106,6 @@ class Estate extends Model {
       'min_lease_duration',
       'max_lease_duration',
       'non_smoker',
-      'pets',
       'gender',
       'monumental_protection',
       'parking_space',
@@ -173,6 +172,21 @@ class Estate extends Model {
    */
   static get readonly() {
     return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
+  }
+
+  static shortColumns() {
+    return [
+      'id',
+      'user_id',
+      'house_type',
+      'description',
+      'coord',
+      'street',
+      'city',
+      'address',
+      'house_number',
+      'country',
+    ]
   }
 
   /**

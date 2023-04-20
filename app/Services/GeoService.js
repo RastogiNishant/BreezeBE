@@ -28,11 +28,11 @@ class GeoService {
     let data
     try {
       data = await GeoAPI.getBatchedPlaces({ lat, lon })
+      point.data = { data }
     } catch (e) {
       Logger.error(e)
-      throw e
+      point.data = {}
     }
-    point.data = { data }
     await point.save()
 
     return point
@@ -109,7 +109,6 @@ class GeoService {
       await point.save()
     }
   }
-
   /**
    *
    */

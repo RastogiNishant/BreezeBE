@@ -126,6 +126,11 @@ class QueueJobService {
     }
   }
 
+  static async sendLikedNotificationBeforeExpired() {
+    const estates = await require('./EstateService').getLikedButNotKnockedExpiringEstates()
+    await require('./NoticeService').likedButNotKnockedToProspect(estates)
+  }
+
   static async handleToActivateEstates() {
     const estates = (await QueueJobService.fetchToActivateEstates()).rows
     if (!estates || !estates.length) {
@@ -495,12 +500,17 @@ class QueueJobService {
     ) {
       return
     }
-    const estates = await ThirdPartyOffer.query()
-      .select('id', 'coord_raw')
-      .whereNull('point_id')
-      .limit(11)
-      .fetch()
-    await Promise.map(estates.toJSON(), async (estate) => {
+    const estates = (
+      await ThirdPartyOffer.query()
+        .select('id', 'coord_raw')
+        .whereNull('point_id')
+        .limit(10)
+        .fetch()
+    ).toJSON()
+
+    let i = 0
+    while (i < estates.length) {
+      const estate = estates[i]
       try {
         if (estate.coord && estate.coord.match(/,/)) {
           const [lat, lon] = estate.coord.split(',')
@@ -510,7 +520,25 @@ class QueueJobService {
       } catch (e) {
         console.log('Fetching point error', e.message)
       }
-    })
+      i++
+    }
+  }
+
+  static async notifyProspectWhoLikedButNotKnocked(estateId, userId) {
+    const estate = await Estate.query()
+      .where({ id: estateId })
+      .where('status', STATUS_ACTIVE)
+      .first()
+    const stillLiked = await Database.select('*')
+      .from('likes')
+      .where('user_id', userId)
+      .where('estate_id', estateId)
+    if (estate && stillLiked.length > 0) {
+      //validate estate is active
+      //if still liked
+      NoticeService.notifyProspectWhoLikedButNotKnocked(estate, userId)
+      console.log('notifyProspectWhoLikedBUtNotKnocked', estate.id, userId)
+    }
   }
 }
 

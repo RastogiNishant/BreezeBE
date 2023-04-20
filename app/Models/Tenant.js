@@ -40,8 +40,10 @@ class Tenant extends Model {
       'members_count',
       'transfer_budget_min',
       'transfer_budget_max',
-      'residency_duration',
+      'residency_duration_min',
+      'residency_duration_max',
       'selected_adults_count',
+      'is_short_term_rent',
     ]
   }
 
@@ -73,7 +75,8 @@ class Tenant extends Model {
       'submitted_proofs',
       'transfer_budget_min',
       'transfer_budget_max',
-      'residency_duration',
+      'residency_duration_min',
+      'residency_duration_max',
     ]
   }
 
@@ -99,7 +102,9 @@ class Tenant extends Model {
       'coord',
       'transfer_budget_min',
       'transfer_budget_max',
-      'residency_duration',
+      'is_short_term_rent',
+      'residency_duration_min',
+      'residency_duration_max',
       'selected_adults_count',
     ]
   }

@@ -18,6 +18,12 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
 
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
@@ -165,6 +171,10 @@ const {
   GENDER_ANY,
   LETTING_STATUS_NEW_RENOVATED,
   MAX_MINOR_COUNT,
+  PETS_SMALL,
+  PETS_NO,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
 } = require('../constants')
 
 const {
@@ -276,6 +286,9 @@ class EstateAttributeTranslations {
       social: APARTMENT_TYPE_SOCIAL,
       souterrain: APARTMENT_TYPE_SOUTERRAIN,
       penthouse: APARTMENT_TYPE_PENTHOUSE,
+      terrassen: APARTMENT_TYPE_TERRACES,
+      attika: APARTMENT_TYPE_ATTIC,
+      //TODO: need to add more type here but later
     },
     // Building type
     house_type: {
@@ -374,6 +387,8 @@ class EstateAttributeTranslations {
       floor: HEATING_TYPE_FLOOR,
       remote: HEATING_TYPE_REMOTE,
       oven: HEATING_TYPE_OVEN,
+      underfloor: HEATING_TYPE_UNDERFLOOR,
+      misc: HEATING_TYPE_MISC,
     },
     equipment_standard: {
       simple: EQUIPMENT_STANDARD_SIMPLE,
@@ -439,8 +454,6 @@ class EstateAttributeTranslations {
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2,
-      PETS_ANY: null,
-      PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
     budget: toPercent,
@@ -519,6 +532,8 @@ class EstateAttributeTranslations {
           'property.attribute.APARTMENT_TYPE.Social.message',
           'property.attribute.APARTMENT_TYPE.Souterrain.message',
           'property.attribute.APARTMENT_TYPE.Penthouse.message',
+          'property.attribute.APARTMENT_TYPE.Terrassen.message',
+          'property.attribute.APARTMENT_TYPE.Attika.message',
         ],
         values: [
           APARTMENT_TYPE_FLAT,
@@ -529,6 +544,8 @@ class EstateAttributeTranslations {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
+          APARTMENT_TYPE_TERRACES,
+          APARTMENT_TYPE_ATTIC,
         ],
       },
       house_type: {
@@ -728,8 +745,17 @@ class EstateAttributeTranslations {
           'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Remote.message',
           'property.attribute.HEATING_TYPE.Oven.message',
+          'property.attribute.HEATING_TYPE.Underfloor_heating.message',
+          'property.attribute.HEATING_TYPE.Other.message',
         ],
-        values: [HEATING_TYPE_CENTRAL, HEATING_TYPE_FLOOR, HEATING_TYPE_REMOTE, HEATING_TYPE_OVEN],
+        values: [
+          HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_FLOOR,
+          HEATING_TYPE_REMOTE,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_UNDERFLOOR,
+          HEATING_TYPE_MISC,
+        ],
       },
       equipment_standard: {
         keys: [
@@ -905,7 +931,7 @@ class EstateAttributeTranslations {
       },
       pets_allowed: {
         keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
-        values: [true, false],
+        values: [PETS_SMALL, PETS_NO],
       },
       minors: {
         keys: ['landlord.property.tenant_pref.habits.children.no.message', 'yes.message'],
