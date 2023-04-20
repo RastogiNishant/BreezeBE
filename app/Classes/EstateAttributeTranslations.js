@@ -173,6 +173,8 @@ const {
   MAX_MINOR_COUNT,
   PETS_SMALL,
   PETS_NO,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
 } = require('../constants')
 
 const {
@@ -385,6 +387,8 @@ class EstateAttributeTranslations {
       floor: HEATING_TYPE_FLOOR,
       remote: HEATING_TYPE_REMOTE,
       oven: HEATING_TYPE_OVEN,
+      underfloor: HEATING_TYPE_UNDERFLOOR,
+      misc: HEATING_TYPE_MISC,
     },
     equipment_standard: {
       simple: EQUIPMENT_STANDARD_SIMPLE,
@@ -741,8 +745,17 @@ class EstateAttributeTranslations {
           'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Remote.message',
           'property.attribute.HEATING_TYPE.Oven.message',
+          'property.attribute.HEATING_TYPE.Underfloor_heating.message',
+          'property.attribute.HEATING_TYPE.Other.message',
         ],
-        values: [HEATING_TYPE_CENTRAL, HEATING_TYPE_FLOOR, HEATING_TYPE_REMOTE, HEATING_TYPE_OVEN],
+        values: [
+          HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_FLOOR,
+          HEATING_TYPE_REMOTE,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_UNDERFLOOR,
+          HEATING_TYPE_MISC,
+        ],
       },
       equipment_standard: {
         keys: [

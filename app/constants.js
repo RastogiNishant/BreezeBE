@@ -245,6 +245,8 @@ const constants = {
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_REMOTE: 3,
   HEATING_TYPE_OVEN: 4,
+  HEATING_TYPE_UNDERFLOOR: 5,
+  HEATING_TYPE_MISC: 6,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -488,6 +490,7 @@ const constants = {
   NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING: 'notification_prospect_like_expiring',
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK: 'notification_prospect_liked_but_not_knock',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -540,6 +543,7 @@ const constants = {
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -1137,6 +1141,8 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
   PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
+
+  LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 }
 
 module.exports = constants
