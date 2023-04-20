@@ -324,10 +324,25 @@ class ImportService {
         estate_data.letting_type = LETTING_TYPE_NA
       }
 
+      const estateCurrentTenants = await EstateCurrentTenantService.getActiveByEstateIds([
+        estate.id,
+      ])
+
       //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
-      //so addrss can only be updated only the cases above
-      if (estate.address) {
-        const activeTenants = await EstateCurrentTenantService.getActiveByEstateIds(estate.id)
+      //so addrss can only be updated only in the cases above
+      if (
+        (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) ||
+        estate.status === STATUS_ACTIVE
+      ) {
+        estate_data = omit(estate_data, [
+          'address',
+          'city',
+          'country',
+          'zip',
+          'street',
+          'house_number',
+          'extra_address',
+        ])
       }
 
       await require('./EstateService').updateEstate(
@@ -347,9 +362,7 @@ class ImportService {
           trx
         )
       } else {
-        const estateCurrentTenants = await EstateCurrentTenantService.getActiveByEstateIds([
-          estate.id,
-        ])
+        //TODO: Do we really need to delete current estate if letting type changed from importing excel????
         if (estateCurrentTenants && estateCurrentTenants.length) {
           await EstateCurrentTenantService.deleteByEstate(
             {
