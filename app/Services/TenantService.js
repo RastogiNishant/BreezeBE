@@ -137,7 +137,7 @@ class TenantService {
     tenant.dist_type = tenant.dist_type || TRANSPORT_TYPE_CAR
     tenant.dist_min = tenant.dist_min || 60
 
-    if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
+    if (lat === undefined && lat === null && lon === undefined && lon === null) {
       // Invalid coordinates, nothing to parse
       return false
     }
