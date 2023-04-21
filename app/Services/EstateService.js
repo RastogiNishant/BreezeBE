@@ -1143,13 +1143,20 @@ class EstateService {
   /**
    *
    */
-  static searchEstatesQuery(tenant, radius) {
+  static searchEstatesQuery(tenant) {
     return Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'estates' })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
+      })
       .where('_t.user_id', tenant.user_id)
+      .where(function () {
+        this.orWhereNull('_m.id')
+        this.orWhereNull('_m.status', MATCH_STATUS_NEW)
+      })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
@@ -2213,7 +2220,7 @@ class EstateService {
   }
 
   static emitValidAddress({ id, user_id, coord, address }) {
-    const channel = role === `landlord:*`
+    const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
     if (topic) {
