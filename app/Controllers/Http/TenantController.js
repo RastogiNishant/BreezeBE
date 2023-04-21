@@ -122,7 +122,7 @@ class TenantController {
       const updatedTenant = await Tenant.find(tenant.id)
 
       // Add tenant anchor zone processing
-      if (lat && lon && tenant.dist_type && tenant.dist_min) {
+      if (lat !== undefined && lat !== null && lon !== undefined && lat !== null) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
 
