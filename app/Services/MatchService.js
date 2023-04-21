@@ -92,7 +92,6 @@ const {
   exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
-const ThirdPartyOffer = require('../Models/ThirdPartyOffer')
 
 /**
  * Check is item in data range
@@ -121,29 +120,26 @@ class MatchService {
     // creditScoreWeight = 1
     // rentArrearsWeight = 1
 
+    const vacant_date = estate.vacant_date
+    const rent_end_at = estate.rent_end_at
+
     //short duration filter doesn't meet, match percent will be 0
     if (prospect.residency_duration_min && prospect.residency_duration_max) {
       // if it's inside property
       if (!estate.source_id) {
+        if (!vacant_date || !rent_end_at) {
+          return 0
+        }
+
+        const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
         if (
-          !Estate.isShortTermMeet({
-            prospect_duration_min: prospect.residency_duration_min,
-            prospect_duration_max: prospect.residency_duration_max,
-            vacant_date: estate.vacant_date,
-            rent_end_at: estate.rent_end_at,
-          })
+          rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
+          rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
         ) {
           return 0
         }
       } else {
-        if (
-          !ThirdPartyOffer.isShortTermMeet({
-            prospect_duration_min: prospect.residency_duration_min,
-            prospect_duration_max: prospect.residency_duration_max,
-            estate_duration_min: estate.duration_rent_min,
-            estate_duration_max: estate.estate_duration_max,
-          })
-        ) {
+        if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
           return 0
         }
       }
@@ -504,11 +500,9 @@ class MatchService {
         minLon = Math.min(lon, minLon)
       })
       // Max radius
-      const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-      const insideMatches = await this.createNewMatches({ tenant, dist, has_notification_sent })
+      const insideMatches = await this.createNewMatches({ tenant, has_notification_sent })
       const outsideMatches = await ThirdPartyMatchService.createNewMatches({
         tenant,
-        dist,
         has_notification_sent,
       })
       count = insideMatches?.length + outsideMatches?.length
@@ -529,7 +523,7 @@ class MatchService {
     }
   }
 
-  static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
+  static async createNewMatches({ tenant, has_notification_sent = true }) {
     // Delete old matches without any activity
     await Database.query()
       .from('matches')
@@ -538,7 +532,7 @@ class MatchService {
       .delete()
 
     //FIXME: dist is not used in EstateService.searchEstatesQuery
-    let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
+    let estates = await EstateService.searchEstatesQuery(tenant).limit(MAX_SEARCH_ITEMS)
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
     }, [])
