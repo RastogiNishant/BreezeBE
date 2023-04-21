@@ -122,19 +122,20 @@ class TenantController {
       const updatedTenant = await Tenant.find(tenant.id)
 
       // Add tenant anchor zone processing
-      if (lat && lon && tenant.dist_type && tenant.dist_min) {
+      if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
 
       if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
-      } else {
-        QueueService.getTenantMatchProperties({
-          userId: auth.user.id,
-          has_notification_sent: false,
-        })
       }
+
+      QueueService.getTenantMatchProperties({
+        userId: auth.user.id,
+        has_notification_sent: false,
+      })
+
       response.res(updatedTenant)
     } catch (e) {
       await trx.rollback()
