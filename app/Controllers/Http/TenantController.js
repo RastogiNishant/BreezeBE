@@ -122,7 +122,7 @@ class TenantController {
       const updatedTenant = await Tenant.find(tenant.id)
 
       // Add tenant anchor zone processing
-      if (lat && lon && tenant.dist_type && tenant.dist_min) {
+      if (lat !== undefined && lat !== null && lon !== undefined && lat !== null) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
 
@@ -135,8 +135,6 @@ class TenantController {
         userId: auth.user.id,
         has_notification_sent: false,
       })
-
-      response.res(updatedTenant)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
