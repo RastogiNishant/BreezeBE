@@ -517,7 +517,7 @@ class MatchService {
       message = e.message
     } finally {
       const matches = await EstateService.getTenantEstates({ user_id: userId, page: 1, limit: 20 })
-      this.emitCreateMatchCompleted({
+      await this.emitCreateMatchCompleted({
         user_id: userId,
         data: {
           count,
