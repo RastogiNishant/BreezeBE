@@ -100,8 +100,6 @@ class Tenant extends Model {
       'rent_start',
       'address',
       'coord',
-      'pets',
-      'pets_allowed',
       'transfer_budget_min',
       'transfer_budget_max',
       'is_short_term_rent',
