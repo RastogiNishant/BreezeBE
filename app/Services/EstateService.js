@@ -1149,7 +1149,14 @@ class EstateService {
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'estates' })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
+      })
       .where('_t.user_id', tenant.user_id)
+      .where(function () {
+        this.orWhereNull('_m.id')
+        this.orWhereNull('_m.status', MATCH_STATUS_NEW)
+      })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
