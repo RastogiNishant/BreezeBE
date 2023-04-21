@@ -135,6 +135,7 @@ class TenantController {
         userId: auth.user.id,
         has_notification_sent: false,
       })
+      response.res(updatedTenant)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
