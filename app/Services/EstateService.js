@@ -1143,7 +1143,7 @@ class EstateService {
   /**
    *
    */
-  static searchEstatesQuery(tenant, radius) {
+  static searchEstatesQuery(tenant) {
     return Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .from({ _t: 'tenants' })

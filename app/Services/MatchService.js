@@ -500,11 +500,9 @@ class MatchService {
         minLon = Math.min(lon, minLon)
       })
       // Max radius
-      const dist = GeoService.getPointsDistance(maxLat, maxLon, minLat, minLon) / 2
-      const insideMatches = await this.createNewMatches({ tenant, dist, has_notification_sent })
+      const insideMatches = await this.createNewMatches({ tenant, has_notification_sent })
       const outsideMatches = await ThirdPartyMatchService.createNewMatches({
         tenant,
-        dist,
         has_notification_sent,
       })
       count = insideMatches?.length + outsideMatches?.length
