@@ -163,7 +163,7 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static searchTenantEstatesQuery(tenant, radius) {
+  static searchTenantEstatesQuery(tenant) {
     return Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
       .select(Database.raw(`NULL as rooms`))

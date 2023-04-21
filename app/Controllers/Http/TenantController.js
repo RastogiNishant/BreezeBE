@@ -129,12 +129,13 @@ class TenantController {
       if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
-      } else {
-        QueueService.getTenantMatchProperties({
-          userId: auth.user.id,
-          has_notification_sent: false,
-        })
       }
+
+      QueueService.getTenantMatchProperties({
+        userId: auth.user.id,
+        has_notification_sent: false,
+      })
+
       response.res(updatedTenant)
     } catch (e) {
       await trx.rollback()
