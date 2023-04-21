@@ -20,9 +20,9 @@ const Promise = require('bluebird')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 
 class ThirdPartyMatchService {
-  static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
+  static async createNewMatches({ tenant, has_notification_sent = true }) {
     this.deleteOldMatches()
-    const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant, dist).limit(
+    const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant).limit(
       MAX_SEARCH_ITEMS
     )
     let passedEstates = []
