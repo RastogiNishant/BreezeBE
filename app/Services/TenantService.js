@@ -14,6 +14,11 @@ const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
 const MemberService = use('App/Services/MemberService')
+const HttpException = require('../Exceptions/HttpException')
+
+const {
+  exceptions: { USER_NOT_FOUND },
+} = require('../exceptions')
 
 const {
   MEMBER_FILE_TYPE_RENT,

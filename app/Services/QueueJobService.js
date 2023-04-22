@@ -73,7 +73,7 @@ class QueueJobService {
         await Point.query()
           .where('type', POINT_TYPE_POI)
           .where(Database.raw(`points."data"->'data' is null `))
-          .limit(3)
+          .limit(10)
           .fetch()
       ).rows
 
