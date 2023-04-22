@@ -30,6 +30,7 @@ class ThirdPartyOffer extends Model {
       'images',
       'energy_efficiency_class',
       'vacant_date',
+      'rent_end_at',
       'visit_from',
       'visit_to',
       'amenities',
@@ -48,6 +49,10 @@ class ThirdPartyOffer extends Model {
       'apt_type',
       'building_status',
       'available_end_at',
+      'heating_type',
+      'duration_rent_min',
+      'duration_rent_max',
+      'firing',
     ]
   }
 
@@ -58,6 +63,17 @@ class ThirdPartyOffer extends Model {
         const [lat, lon] = instance.dirty.coord.split(',')
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
       }
+
+      ;['heating_type', 'firing'].map((field) => {
+        if (
+          instance.dirty &&
+          instance.dirty[field] !== undefined &&
+          instance.dirty[field] != null &&
+          !Array.isArray(instance.dirty[field])
+        ) {
+          instance[field] = [instance.dirty[field]]
+        }
+      })
     })
   }
 
@@ -83,6 +99,40 @@ class ThirdPartyOffer extends Model {
 
   static get Serializer() {
     return 'App/Serializers/ThirdPartyOfferSerializer'
+  }
+
+  static isShortTermMeet({
+    prospect_duration_min,
+    prospect_duration_max,
+    estate_duration_min,
+    estate_duration_max,
+  }) {
+    if (!prospect_duration_min || !prospect_duration_max) {
+      return true
+    }
+
+    estate_duration_min = estate_duration_min * 31
+    estate_duration_max = estate_duration_max * 31
+
+    if (!estate_duration_max && !estate_duration_min) {
+      return false
+    }
+    if (
+      estate_duration_min &&
+      prospect_duration_min <= estate_duration_min &&
+      prospect_duration_max >= estate_duration_min
+    ) {
+      return true
+    }
+    if (
+      estate_duration_max &&
+      prospect_duration_min <= estate_duration_max &&
+      prospect_duration_max >= estate_duration_max
+    ) {
+      return true
+    }
+
+    return false
   }
 }
 

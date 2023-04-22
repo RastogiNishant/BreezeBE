@@ -64,7 +64,6 @@ const {
   MINIMUM_SHOW_PERIOD,
   MEMBER_FILE_TYPE_PASSPORT,
   TIMESLOT_STATUS_CONFIRM,
-  MAX_SEARCH_ITEMS,
   DEFAULT_LANG,
   TIMESLOT_STATUS_REJECT,
   STATUS_DELETE,
@@ -500,13 +499,24 @@ class MatchService {
         minLon = Math.min(lon, minLon)
       })
       // Max radius
-      const insideMatches = await this.createNewMatches({ tenant, has_notification_sent })
-      const outsideMatches = await ThirdPartyMatchService.createNewMatches({
-        tenant,
-        has_notification_sent,
-      })
-      count = insideMatches?.length + outsideMatches?.length
+      const trx = await Database.beginTransaction()
+      try {
+        const insideMatches = await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        const outsideMatches = await ThirdPartyMatchService.createNewMatches(
+          {
+            tenant,
+            has_notification_sent,
+          },
+          trx
+        )
+        await trx.commit()
+        count = insideMatches?.length + outsideMatches?.length
+      } catch (e) {
+        console.log('matchByUser error', e.message)
+        await trx.rollback()
+      }
     } catch (e) {
+      console.log('matchByUser Exception=', e.message)
       success = false
       message = e.message
     } finally {
@@ -523,16 +533,9 @@ class MatchService {
     }
   }
 
-  static async createNewMatches({ tenant, dist, has_notification_sent = true }) {
-    // Delete old matches without any activity
-    await Database.query()
-      .from('matches')
-      .where({ user_id: tenant.user_id, status: MATCH_STATUS_NEW })
-      .whereNot({ buddy: true })
-      .delete()
-
+  static async createNewMatches({ tenant, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
-    let estates = await EstateService.searchEstatesQuery(tenant, dist).limit(MAX_SEARCH_ITEMS)
+    let estates = await EstateService.searchEstatesQuery(tenant)
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
     }, [])
@@ -559,12 +562,35 @@ class MatchService {
       })) || []
 
     // Create new matches
+    // Delete old matches without any activity
+    const oldMatches = (
+      await Match.query()
+        .where({ user_id: tenant.user_id, status: MATCH_STATUS_NEW })
+        .whereNot({ buddy: true })
+        .fetch()
+    ).toJSON()
+
+    const deleteMatchesIds = oldMatches
+      .filter((om) => !matches.find((m) => m.estate_id === om.estate_id))
+      .map((m) => m.id)
+
+    if (deleteMatchesIds?.length) {
+      await Match.query().whereIn('id', deleteMatchesIds).delete().transacting(trx)
+    }
 
     if (!isEmpty(matches)) {
-      const insertQuery = Database.query().into('matches').insert(matches).toString()
-      await Database.raw(
-        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
-      )
+      let i = 0
+      while (i < matches.length) {
+        const match = matches[i]
+        if (
+          oldMatches.find((o) => o.user_id === match.user_id && o.estate_id === match.estate_id)
+        ) {
+          await Match.updateItemWithTrx(match, trx)
+        } else {
+          await Match.createItem(match, trx)
+        }
+        i++
+      }
 
       if (has_notification_sent) {
         const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
@@ -591,7 +617,7 @@ class MatchService {
       .where('_e.id', estateId)
       .where('_t.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
-      .limit(MAX_SEARCH_ITEMS)
+
     const tenantUserIds = tenants.reduce(
       (tenantUserIds, tenant) => [...tenantUserIds, tenant.user_id],
       []
