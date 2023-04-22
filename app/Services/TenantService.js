@@ -62,11 +62,7 @@ const {
   TRANSPORT_TYPE_CAR,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
-const HttpException = require('../Exceptions/HttpException')
 
-const {
-  exceptions: { USER_NOT_FOUND },
-} = require('../exceptions')
 class TenantService {
   /**
    *
