@@ -158,9 +158,9 @@ class UserService {
     if (userData?.landlord_invite && userData?.data1 && userData?.data2) {
       await require('./OutsideLandlordService').updateOutsideLandlordInfo(
         {
-          new_email: email,
-          data1,
-          data2,
+          new_email: userData.email,
+          data1: userData.data1,
+          data2: userData.data2,
         },
         trx
       )
