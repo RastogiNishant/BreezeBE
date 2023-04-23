@@ -39,7 +39,7 @@ class OutsideLandlordService {
     await Task.query().where('id', task.id).update({ landlord_identify_key: code }).transacting(trx)
   }
 
-  static async noticeInvitationToLandlord(task_id) {
+  static async noticeInvitationToLandlord({ user, task_id }) {
     try {
       const task = await require('./TaskService').getUnassignedTask(task_id)
       if (
@@ -59,6 +59,7 @@ class OutsideLandlordService {
       }
 
       MailService.inviteLandlordFromTenant({
+        prospect_email: user.email,
         task: task.activeTasks[0],
         link: shortLink,
         lang,
