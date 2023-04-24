@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
+const { isString, pick, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
@@ -106,7 +106,6 @@ class Estate extends Model {
       'min_lease_duration',
       'max_lease_duration',
       'non_smoker',
-      'pets',
       'gender',
       'monumental_protection',
       'parking_space',
@@ -551,6 +550,26 @@ class Estate extends Model {
    */
   getAptParams() {
     return `${this.rooms_number}r ${this.area}㎡ ${this.floor}/${this.number_floors}`
+  }
+
+  static isShortTermMeet({
+    prospect_duration_min,
+    prospect_duration_max,
+    vacant_date,
+    rent_end_at,
+  }) {
+    if (!vacant_date || !rent_end_at) {
+      return false
+    }
+
+    const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+    if (
+      rent_duration < prospect_duration_min * 24 * 60 * 60 * 1000 ||
+      rent_duration > prospect_duration_max * 24 * 60 * 60 * 1000
+    ) {
+      return false
+    }
+    return true
   }
 }
 

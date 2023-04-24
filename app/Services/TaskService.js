@@ -17,11 +17,13 @@ const {
   TASK_RESOLVE_HISTORY_PERIOD,
   TASK_STATUS_ARCHIVED,
   PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
+  WEBSOCKET_EVENT_TASK_CREATED,
 } = require('../constants')
-
+const Ws = use('Ws')
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
 const moment = require('moment')
+const { generateAddress } = use('App/Libs/utils')
 
 const { isArray } = require('lodash')
 const {
@@ -32,6 +34,9 @@ const {
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { NO_TASK_FOUND },
+} = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
 const Chat = use('App/Models/Chat')
@@ -163,7 +168,7 @@ class TaskService extends BaseService {
         /*
          * need to determine to send email to a user who will be a landlord later after signing up
          * Here figma design goes
-         *
+         * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
          */
         await require('./OutsideLandlordService').handleTaskWithoutEstate(task, trx)
       } else if (
@@ -216,6 +221,25 @@ class TaskService extends BaseService {
 
       messages = await ChatService.getItemsWithAbsoluteUrl(messages)
       await trx.commit()
+
+      if (predefinedMessage.type === PREDEFINED_LAST) {
+        /*
+         * need to determine to send email to a user who will be a landlord later after signing up
+         * Here figma design goes
+         * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
+         */
+        //unassigned task
+        if (!task.estate_id) {
+          await require('./OutsideLandlordService').noticeInvitationToLandlord({
+            user,
+            task_id: task.id,
+          })
+        } else {
+          //assigned task
+          await this.sendTaskCreated({ estate_id: task.estate_id })
+        }
+      }
+
       return { task, messages }
     } catch (error) {
       await trx.rollback()
@@ -326,7 +350,12 @@ class TaskService extends BaseService {
     }
 
     if (user.role === ROLE_LANDLORD) {
-      await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
+      if (task.estate_id) {
+        await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
+      }
+      if (task.email && task.email.toLowerCase() !== user.email.toLowerCase()) {
+        throw new HttpException(NO_TASK_FOUND, 400)
+      }
     }
 
     if (user.role === ROLE_USER && task.tenant_id !== user.id) {
@@ -337,6 +366,41 @@ class TaskService extends BaseService {
     return task
   }
 
+  static async getUnassignedTask(id) {
+    let task = await Task.query().where('id', id).with('user').first()
+    if (!task) {
+      throw new HttpException(NO_TASK_FOUND, 400)
+    }
+    return TaskService.convert(task.toJSON())
+  }
+
+  static convert(task) {
+    const address = generateAddress({
+      city: task.property_address?.city,
+      street: task.property_address?.street,
+      house_number: task.property_address?.housenumber,
+      zip: task.property_address?.postcode,
+      country: task.property_address?.country,
+    })
+
+    return {
+      id: task.id,
+      activeTasks: [task],
+      address,
+      mosturgency: task.urgency,
+      current_tenant: {
+        salutation_int: task?.user?.sex,
+        user: task.user,
+      },
+      taskSummary: {
+        activeTaskCount: 1,
+        taskCount: 1,
+        mostUrgency: task.urgency,
+        mostUrgencyCount: 1,
+      },
+    }
+  }
+
   static async getAllUnassignedTasks({
     user_id,
     role = ROLE_LANDLORD,
@@ -345,6 +409,7 @@ class TaskService extends BaseService {
     limit = -1,
   }) {
     let query = Task.query()
+      .with('user')
       .whereNull('estate_id')
       .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
 
@@ -357,10 +422,13 @@ class TaskService extends BaseService {
     let tasks, count
     if (page === -1 || limit === -1) {
       tasks = await query.fetch()
-      count = tasks.rows.length
+      tasks = tasks.toJSON().map((task) => TaskService.convert(task))
+      count = tasks.length
     } else {
       tasks = await query.paginate(page, limit)
-      count = tasks.pages.total
+      tasks = tasks.toJSON()
+      tasks.data = (tasks.data || []).map((task) => TaskService.convert(task))
+      count = tasks.total
     }
 
     return {
@@ -647,6 +715,29 @@ class TaskService extends BaseService {
           })
           .transacting(trx)
       }
+    }
+  }
+
+  static async sendTaskCreated({ estate_id }) {
+    if (!estate_id) {
+      return
+    }
+
+    const estates = await require('./EstateService').getEstatesWithTask({ params: { estate_id } })
+
+    if (!estates?.length) {
+      return
+    }
+    this.emitTaskCreated({ user_id: estates[0].user_id, role: ROLE_LANDLORD, data: estates[0] })
+  }
+
+  static async emitTaskCreated({ user_id, role, data }) {
+    const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
+    const topicName = role === ROLE_LANDLORD ? `landlord:${user_id}` : `tenant:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_TASK_CREATED, data)
     }
   }
 }

@@ -84,6 +84,7 @@ const {
     CURRENT_IMAGE_COUNT,
     FAILED_EXTEND_ESTATE,
     UPLOAD_EXCEL_PROGRESS,
+    LAT_LON_NOT_PROVIDED,
   },
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
@@ -824,12 +825,13 @@ class EstateController {
     //const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
     const user = auth.user
     try {
+      const tenant = await TenantService.getTenantQuery().where({ user_id: user.id }).first()
+      if (!tenant || !tenant.coord) {
+        throw new HttpException(LAT_LON_NOT_PROVIDED, 400)
+      }
       response.res(await EstateService.getTenantEstates({ user_id: user.id, page, limit }))
     } catch (e) {
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 406)
-      }
-      throw e
+      throw new HttpException(e.message, 406)
     }
   }
 

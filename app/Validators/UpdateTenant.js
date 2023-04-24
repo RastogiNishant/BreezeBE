@@ -19,6 +19,13 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
+
   // Building type
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
@@ -42,7 +49,7 @@ class UpdateTenant extends Base {
   static schema = () =>
     yup.object().shape({
       private_use: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PETS_ANY, PETS_BIG]).nullable(),
+      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PETS_ANY]).nullable(),
       pets_species: yup.string().max(255).nullable(),
       non_smoker: yup.boolean(),
       parking_space: yup.number().min(0),
@@ -82,6 +89,12 @@ class UpdateTenant extends Base {
               APARTMENT_TYPE_SOCIAL,
               APARTMENT_TYPE_SOUTERRAIN,
               APARTMENT_TYPE_PENTHOUSE,
+              APARTMENT_TYPE_TERRACES,
+              APARTMENT_TYPE_ETAGE,
+              APARTMENT_TYPE_HOLIDAY,
+              APARTMENT_TYPE_GALLERY,
+              APARTMENT_TYPE_RAW_ATTIC,
+              APARTMENT_TYPE_ATTIC,
             ])
         ),
       house_type: yup

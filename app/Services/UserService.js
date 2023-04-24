@@ -113,7 +113,6 @@ class UserService {
       }
     }
     // Manages the outside tenant invitation flow
-    let source_estate_id
     if (
       !userData?.source_estate_id &&
       !userData?.landlord_invite &&
@@ -125,7 +124,7 @@ class UserService {
         data2: userData.data2,
         email: userData.email,
       })
-      source_estate_id = estate_id
+      userData.source_estate_id = estate_id
     }
 
     const user = await User.createItem(omit(userData, ['data1, data2, landlord_invite']), trx)
@@ -160,9 +159,9 @@ class UserService {
     if (userData?.landlord_invite && userData?.data1 && userData?.data2) {
       await require('./OutsideLandlordService').updateOutsideLandlordInfo(
         {
-          new_email: email,
-          data1,
-          data2,
+          new_email: userData.email,
+          data1: userData.data1,
+          data2: userData.data2,
         },
         trx
       )
@@ -1004,6 +1003,9 @@ class UserService {
           email,
           firstname,
           status: STATUS_EMAIL_VERIFY,
+          data1,
+          data2,
+          landlord_invite,
           source_estate_id,
           ip,
           ip_based_info,
@@ -1377,6 +1379,10 @@ class UserService {
         topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { activated })
       }
     })
+  }
+
+  static async socialLoginAccountActive(id, data) {
+    await User.query().where('id', id).update(data)
   }
 }
 

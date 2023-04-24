@@ -245,6 +245,8 @@ const constants = {
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_REMOTE: 3,
   HEATING_TYPE_OVEN: 4,
+  HEATING_TYPE_UNDERFLOOR: 5,
+  HEATING_TYPE_MISC: 6,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -487,6 +489,8 @@ const constants = {
 
   NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING: 'notification_prospect_like_expiring',
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK: 'notification_prospect_liked_but_not_knock',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -538,6 +542,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -937,6 +943,8 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
+  WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
+  WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1120,7 +1128,7 @@ Estates: [ESTATES]
     rent_arrears: false,
     min_age: 25,
     max_age: 65,
-    pets: 1,
+    pets_allowed: 2, // PETS_SMALL
     family_size_min: 1,
     family_size_max: 2,
   },
@@ -1162,6 +1170,7 @@ Estates: [ESTATES]
       lang: 'en',
     },
   },
+  LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 }
 
 module.exports = constants

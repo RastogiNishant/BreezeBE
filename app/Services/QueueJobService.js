@@ -75,10 +75,11 @@ class QueueJobService {
           .where(Database.raw(`points."data"->'data' is null `))
           .limit(3)
           .fetch()
-      ).toJSON()
+      ).rows
+
       let i = 0
       while (i < points.length) {
-        await GeoService.getOrCreatePoint({ lat: points[i].lat, lon: points[i].lon })
+        await GeoService.fillPoi(points[i])
         i++
       }
     } catch (e) {
@@ -96,12 +97,19 @@ class QueueJobService {
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
-      await estate.updateItem({ coord: coord })
+      await estate.updateItem({ coord })
       await QueueJobService.updateEstatePoint(estateId)
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
         coord,
+        address: estate.address,
+      })
+    } else {
+      require('./EstateService').emitValidAddress({
+        user_id: estate.user_id,
+        id: estate.id,
+        coord: null,
         address: estate.address,
       })
     }
@@ -119,10 +127,14 @@ class QueueJobService {
       ).rows || []
 
     let i = 0
-    while (i < estates.length) {
-      await QueueJobService.updateEstateCoord(estates[i].id)
-      i++
-    }
+    Promise.map(estates, (estate) => {
+      QueueJobService.updateEstateCoord(estate.id)
+    })
+  }
+
+  static async sendLikedNotificationBeforeExpired() {
+    const estates = await require('./EstateService').getLikedButNotKnockedExpiringEstates()
+    await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
   static async handleToActivateEstates() {
@@ -515,6 +527,23 @@ class QueueJobService {
         console.log('Fetching point error', e.message)
       }
       i++
+    }
+  }
+
+  static async notifyProspectWhoLikedButNotKnocked(estateId, userId) {
+    const estate = await Estate.query()
+      .where({ id: estateId })
+      .where('status', STATUS_ACTIVE)
+      .first()
+    const stillLiked = await Database.select('*')
+      .from('likes')
+      .where('user_id', userId)
+      .where('estate_id', estateId)
+    if (estate && stillLiked.length > 0) {
+      //validate estate is active
+      //if still liked
+      NoticeService.notifyProspectWhoLikedButNotKnocked(estate, userId)
+      console.log('notifyProspectWhoLikedBUtNotKnocked', estate.id, userId)
     }
   }
 }

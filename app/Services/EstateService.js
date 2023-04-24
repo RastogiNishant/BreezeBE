@@ -88,6 +88,8 @@ const {
   PUBLISH_ESTATE,
   ROLE_USER,
   MATCH_STATUS_FINISH_PENDING,
+  DAY_FORMAT,
+  LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
 } = require('../constants')
 
 const {
@@ -1084,6 +1086,8 @@ class EstateService {
 
     try {
       await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
+      const delay = LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER * 1000 * 60 * 60 //ms
+      await QueueService.notifyProspectWhoLikedButNotKnocked(estateId, userId, delay)
       await this.removeDislike(userId, estateId)
     } catch (e) {
       Logger.error(e)
@@ -1139,13 +1143,20 @@ class EstateService {
   /**
    *
    */
-  static searchEstatesQuery(tenant, radius) {
+  static searchEstatesQuery(tenant) {
     return Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'estates' })
+      .leftJoin({ _m: 'matches' }, function () {
+        this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
+      })
       .where('_t.user_id', tenant.user_id)
+      .where(function () {
+        this.orWhereNull('_m.id')
+        this.orWhereNull('_m.status', MATCH_STATUS_NEW)
+      })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
@@ -1796,7 +1807,7 @@ class EstateService {
     }
   }
 
-  static async getEstatesWithTask(user, params, page, limit = -1) {
+  static async getEstatesWithTask({ user_id, params, page, limit = -1 }) {
     let query = Estate.query()
       .with('current_tenant', function (b) {
         b.with('user', function (u) {
@@ -1807,6 +1818,7 @@ class EstateService {
       .select(
         'estates.id',
         'estates.coord',
+        'estates.user_id',
         'estates.street',
         'estates.area',
         'estates.house_number',
@@ -1840,7 +1852,10 @@ class EstateService {
       ])
     })
 
-    query.where('estates.user_id', user.id)
+    if (user_id) {
+      query.where('estates.user_id', user_id)
+    }
+
     query.whereNot('estates.status', STATUS_DELETE)
     query.where('estates.letting_type', LETTING_TYPE_LET)
     if (params.estate_id) {
@@ -2205,7 +2220,7 @@ class EstateService {
   }
 
   static emitValidAddress({ id, user_id, coord, address }) {
-    const channel = role === `landlord:*`
+    const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
     if (topic) {
@@ -2521,10 +2536,10 @@ class EstateService {
   }
 
   static async searchNotConnectedAddressByPropertyId({ user_id, property_id }) {
-    if (!property_id || trim(property_id) === '') {
-      return []
+    if (!property_id) {
+      property_id = ''
     }
-    console.log('property_id', property_id)
+    property_id = trim(property_id)
     return (
       await this.getActiveEstateQuery()
         .select('estates.*')
@@ -2534,6 +2549,31 @@ class EstateService {
         .where('estates.letting_type', LETTING_TYPE_LET)
         .where('estates.user_id', user_id)
         .where('estates.property_id', 'ilike', `%${property_id}%`)
+        .fetch()
+    ).toJSON()
+  }
+
+  static async getLikedButNotKnockedExpiringEstates() {
+    let oneDayBeforeExpiredDate = moment.utc(new Date(), DAY_FORMAT, true).format(DAY_FORMAT)
+    oneDayBeforeExpiredDate = moment
+      .utc(oneDayBeforeExpiredDate + ` 23:59:59`)
+      .add(1, 'days')
+      .format(DATE_FORMAT)
+
+    return (
+      await Estate.query()
+        .select('_l.estate_id', '_l.user_id', 'estates.address', 'estates.cover')
+        .where('estates.status', STATUS_ACTIVE)
+        .where('available_end_at', '<', oneDayBeforeExpiredDate)
+        .innerJoin({ _l: 'likes' }, function () {
+          this.on('_l.estate_id', 'estates.id')
+        })
+        .leftJoin({ _m: 'matches' }, function () {
+          this.on('_m.estate_id', 'estates.id')
+        })
+        .where(function () {
+          this.orWhere('_m.status', MATCH_STATUS_NEW).orWhereNull('_m.status')
+        })
         .fetch()
     ).toJSON()
   }

@@ -629,7 +629,7 @@ class MailService {
     )
   }
 
-  static async inviteLandlordFromTenant({ task, link, lang = DEFAULT_LANG }) {
+  static async inviteLandlordFromTenant({ prospect_email, task, link, lang = DEFAULT_LANG }) {
     const templateId = LANDLORD_EMAIL_TEMPLATE
 
     const address = generateAddress({
@@ -639,12 +639,14 @@ class MailService {
       city: task?.property_address?.city,
       country: task?.property_address?.country,
     })
-    const shortMsg = `${task.address_detail}, ${address}: \n 
-                      ${l.get(task.title, lang)}:${l.get(task.description, lang) || ``} `
+    const shortMsg = `<b>${task.address_detail || ``}, ${address}</b>: \n 
+                      <b>${l.get(task.title, lang)}</b>:<br/>${
+      l.get(task.description, lang) || ``
+    } `
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)
-      .replace('{{email}}', task.email)
+      .replace('{{email}}', `<b>${prospect_email}</b>`)
       .replace('{{short_message}}', shortMsg)
       .replace(/\n/g, '<br />')
     const final = l

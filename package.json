@@ -59,7 +59,6 @@
 		"apple-signin-auth": "^1.7.5",
 		"aws-sdk": "^2.1288.0",
 		"axios": "^1.2.2",
-		"barudo-adonis-swagger": "git+https://github.com/barudo/adonis-swagger.git",
 		"bent": "^7.3.12",
 		"bluebird": "^3.7.2",
 		"body-parser-xml": "^2.0.3",

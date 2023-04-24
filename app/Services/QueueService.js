@@ -20,6 +20,8 @@ const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
+const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
+const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -101,6 +103,10 @@ class QueueService {
     Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
   }
 
+  static notifyProspectWhoLikedButNotKnocked(estateId, userId, delay) {
+    Queue.addJob(NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED, { estateId, userId }, { delay })
+  }
+
   static getIpBasedInfo(userId, ip) {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
@@ -111,6 +117,23 @@ class QueueService {
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
     Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
+  }
+
+  static createThirdPartyMatchesByEstate() {
+    Queue.addJob(
+      QUEUE_CREATE_THIRD_PARTY_MATCHES,
+      {},
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        delay: 1,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      }
+    )
   }
 
   /**
@@ -164,6 +187,7 @@ class QueueService {
     return Promise.all([
       wrapException(NoticeService.prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
+      wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
     ])
   }
 
@@ -254,6 +278,13 @@ class QueueService {
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
           })
+        case QUEUE_CREATE_THIRD_PARTY_MATCHES:
+          return require('./ThirdPartyMatchService').matchByEstates()
+        case NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED:
+          return QueueJobService.notifyProspectWhoLikedButNotKnocked(
+            job.data.estateId,
+            job.data.userId
+          )
         default:
           console.log(`No job processor for: ${job.name}`)
       }

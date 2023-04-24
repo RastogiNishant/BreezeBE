@@ -26,6 +26,12 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
 
   // House type
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
@@ -123,6 +129,9 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
+
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -240,6 +249,12 @@ class ImportEstate extends Base {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
+          APARTMENT_TYPE_TERRACES,
+          APARTMENT_TYPE_ETAGE,
+          APARTMENT_TYPE_HOLIDAY,
+          APARTMENT_TYPE_GALLERY,
+          APARTMENT_TYPE_RAW_ATTIC,
+          APARTMENT_TYPE_ATTIC,
         ]),
       house_type: yup
         .number()
@@ -370,7 +385,7 @@ class ImportEstate extends Base {
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
+      pets_allowed: yup.number().integer().oneOf([PETS_NO, PETS_SMALL]).nullable(),
       gender: yup
         .number()
         .integer()
@@ -441,6 +456,8 @@ class ImportEstate extends Base {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
+          HEATING_TYPE_UNDERFLOOR,
+          HEATING_TYPE_MISC,
         ]),
       equipment: yup
         .array()
