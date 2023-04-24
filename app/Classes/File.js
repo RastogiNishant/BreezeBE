@@ -5,6 +5,8 @@ const uuid = require('uuid')
 const moment = require('moment')
 const Promise = require('bluebird')
 const { nth, isEmpty, isString, trim } = require('lodash')
+const AWS = require('aws-sdk')
+const Env = use('Env')
 
 const Logger = use('Logger')
 const Drive = use('Drive')
@@ -390,6 +392,25 @@ class File {
       console.log('saveFunctionalTestImage Error', e.message)
       throw new HttpException('File upload failed. Please try again', 400)
     }
+  }
+
+  static async getGewobagUploadedContent() {
+    AWS.config.update({
+      accessKeyId: Env.get('S3_KEY'),
+      secretAccessKey: Env.get('S3_SECRET'),
+      region: Env.get('S3_REGION'),
+    })
+    var s3 = new AWS.S3()
+
+    var params = {
+      Bucket: 'breeze-ftp-files',
+      Delimiter: '/',
+      //Prefix: 's/5469b2f5b4292d22522e84e0/ms.files/',
+    }
+    s3.listObjects(params, function (err, data) {
+      if (err) throw err
+      console.log('data', data)
+    })
   }
 }
 
