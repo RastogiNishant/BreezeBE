@@ -1170,6 +1170,8 @@ Estates: [ESTATES]
       lang: 'en',
     },
   },
+  THIRD_PARTY_PUBLISHERS: ['immowelt', 'is24', 'ebay'],
+
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 }
 

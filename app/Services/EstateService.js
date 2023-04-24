@@ -1413,7 +1413,10 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate, is_queue = false) {
+  static async publishEstate(
+    { estate, from_web, confirm_incomplete, publishers },
+    is_queue = false
+  ) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1423,7 +1426,7 @@ class EstateService {
         throw new HttpException(NO_ESTATE_EXIST, 400)
       }
 
-      if (user.company_id != null) {
+      if (!confirm_incomplete && user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
@@ -1453,6 +1456,10 @@ class EstateService {
       }
 
       await estate.publishEstate(status, trx)
+
+      if (from_web && publishers.length > 0) {
+        QueueService.publishEstate({ estate_id: estate.id, publishers })
+      }
 
       if (!is_queue) {
         //send email to support for landlord update...

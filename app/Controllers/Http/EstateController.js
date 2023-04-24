@@ -496,7 +496,7 @@ class EstateController {
    *
    */
   async publishEstate({ request, auth, response }) {
-    const { id, action } = request.all()
+    const { id, action, from_web, confirm_incomplete, publishers } = request.all()
 
     const estate = await Estate.findOrFail(id)
     let status = estate.status
@@ -522,7 +522,12 @@ class EstateController {
       ) {
         // Validate is Landlord fulfilled contacts
         try {
-          status = await EstateService.publishEstate(estate)
+          status = await EstateService.publishEstate({
+            estate,
+            from_web,
+            confirm_incomplete,
+            publishers,
+          })
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)
