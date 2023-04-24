@@ -1133,6 +1133,13 @@ Estates: [ESTATES]
     family_size_max: 2,
   },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
+    ohnemakler: {
+      name: 'Ohnemakler',
+      url: 'https://www.ohne-makler.net/',
+      logo: 'logo location',
+    },
+  },
   VALID_INCOME_PROOFS_PERIOD: 5,
   MATCH_PERCENT_PASS: 40,
 
