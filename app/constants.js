@@ -1135,7 +1135,7 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
     ohnemakler: {
-      name: 'Ohnemakler',
+      name: 'Ohne-makler.net',
       url: 'https://www.ohne-makler.net/',
       logo: 'logo location',
     },
