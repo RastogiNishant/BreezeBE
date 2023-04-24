@@ -1265,9 +1265,8 @@ class UserService {
         if (data && data.contact) {
           const contactKeys = Object.keys(data.contact)
           const contactInfo = contactKeys.map((key) => data.contact[key])
-          if (contactInfo.filter((i) => i != undefined).length) {
-            console.log('updateContact start point')
-            await this.updateContact(user.id, data.contact)
+          if (contactInfo.filter((i) => i).length) {
+            await this.updateContact({ user_id: user.id, data: data.contact }, trx)
           }
         }
         await trx.commit()
@@ -1290,21 +1289,28 @@ class UserService {
     }
   }
 
-  static async updateContact(user_id, contactData) {
+  static async updateContact({ user_id, data }, trx) {
     const CompanyService = require('./CompanyService')
     const currentContacts = await CompanyService.getContacts(user_id)
-    if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
-      throw new HttpException(NO_CONTACT_EXIST, 400)
-    }
 
-    if (contactData.address) {
-      await CompanyService.updateCompany(user_id, { address: contactData.address })
-    }
+    try {
+      if (data.address) {
+        await CompanyService.updateCompany(user_id, { address: data.address }, trx)
+      }
 
-    const contact = currentContacts.rows[0]
-
-    if (Object.keys(omit(contactData, ['address'])).length) {
-      await CompanyService.updateContact(contact.id, user_id, omit(contactData, ['address']))
+      if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
+        await CompanyService.createContact({ user_id, data: omit(data, ['address']) }, trx)
+      } else {
+        const contact = currentContacts.rows[0]
+        if (Object.keys(omit(data, ['address'])).length) {
+          await CompanyService.updateContact(
+            { id: contact.id, user_id, data: omit(data, ['address']) },
+            trx
+          )
+        }
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
