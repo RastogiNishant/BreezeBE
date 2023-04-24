@@ -1261,3 +1261,10 @@ Route.list().forEach((r) => {
     }
   }
 })
+
+Route.get('/test', async ({ response }) => {
+  const File = require('../app/Classes/File')
+
+  const content = await File.getGewobagUploadedContent()
+  return response.res(content)
+})
