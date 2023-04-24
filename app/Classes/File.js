@@ -395,22 +395,25 @@ class File {
   }
 
   static async getGewobagUploadedContent() {
-    AWS.config.update({
-      accessKeyId: Env.get('S3_KEY'),
-      secretAccessKey: Env.get('S3_SECRET'),
-      region: Env.get('S3_REGION'),
-    })
-    var s3 = new AWS.S3()
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION'),
+      })
+      var s3 = new AWS.S3()
 
-    var params = {
-      Bucket: 'breeze-ftp-files',
-      Delimiter: '/',
-      //Prefix: 's/5469b2f5b4292d22522e84e0/ms.files/',
+      var params = {
+        Bucket: 'breeze-ftp-files',
+        Delimiter: '/',
+        //Prefix: 's/5469b2f5b4292d22522e84e0/ms.files/',
+      }
+      const objects = await s3.listObjects(params).promise()
+      return objects.Contents
+    } catch (err) {
+      console.log('getGewobagUploadedContent', err)
+      return []
     }
-    s3.listObjects(params, function (err, data) {
-      if (err) throw err
-      console.log('data', data)
-    })
   }
 }
 
