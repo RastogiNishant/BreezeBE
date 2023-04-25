@@ -175,11 +175,13 @@ const {
   PETS_NO,
   HEATING_TYPE_UNDERFLOOR,
   HEATING_TYPE_MISC,
+  DATE_FORMAT,
 } = require('../constants')
 
 const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
+const moment = require('moment')
 
 extractValue = (key, value) => {
   const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
@@ -238,15 +240,17 @@ reverseBool = (value) => {
 }
 
 extractDate = (date) => {
-  if (isEmpty(date)) {
+  if (!date) {
     return null
   } else if (
     typeof date == 'string' &&
     (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))
   ) {
     return `${match[3]}-${match[2]}-${match[1]}`
+  } else if (typeof date === 'object') {
+    return moment(date, DATE_FORMAT).format(DATE_FORMAT)
   }
-  return date
+  return null
 }
 
 reverseExtractDate = (date) => {
@@ -1000,7 +1004,6 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        console.log('arttribute here', attribute)
         throw new HttpException(SETTINGS_ERROR, 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
