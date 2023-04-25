@@ -1413,10 +1413,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(
-    { estate, from_web, confirm_incomplete, publishers },
-    is_queue = false
-  ) {
+  static async publishEstate({ estate, confirm_incomplete, publishers }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1457,7 +1454,7 @@ class EstateService {
 
       await estate.publishEstate(status, trx)
 
-      if (from_web && publishers.length > 0) {
+      if (publishers.length > 0) {
         QueueService.publishEstate({ estate_id: estate.id, publishers })
       }
 

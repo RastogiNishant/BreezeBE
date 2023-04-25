@@ -496,7 +496,7 @@ class EstateController {
    *
    */
   async publishEstate({ request, auth, response }) {
-    const { id, action, from_web, confirm_incomplete, publishers } = request.all()
+    const { id, action, confirm_incomplete, publishers } = request.all()
 
     const estate = await Estate.findOrFail(id)
     let status = estate.status
@@ -524,7 +524,6 @@ class EstateController {
         try {
           status = await EstateService.publishEstate({
             estate,
-            from_web,
             confirm_incomplete,
             publishers,
           })
@@ -548,6 +547,8 @@ class EstateController {
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
       status = STATUS_DRAFT
+      //unpublish estate from estate_sync
+      QueueService.unpublishEstate({ estate_id: id })
     }
 
     response.res({
