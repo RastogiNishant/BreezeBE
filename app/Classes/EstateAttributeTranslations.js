@@ -238,15 +238,17 @@ reverseBool = (value) => {
 }
 
 extractDate = (date) => {
-  if (isEmpty(date)) {
+  if (!date) {
     return null
   } else if (
     typeof date == 'string' &&
     (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))
   ) {
     return `${match[3]}-${match[2]}-${match[1]}`
+  } else if (typeof date === 'object') {
+    return moment(date, DATE_FORMAT).format(DATE_FORMAT)
   }
-  return date
+  return null
 }
 
 reverseExtractDate = (date) => {
