@@ -1455,7 +1455,7 @@ class EstateService {
       await estate.publishEstate(status, trx)
 
       if (publishers.length > 0) {
-        QueueService.publishEstate({ estate_id: estate.id, publishers })
+        QueueService.estateSyncPublishEstate({ estate_id: estate.id, publishers })
       }
 
       if (!is_queue) {

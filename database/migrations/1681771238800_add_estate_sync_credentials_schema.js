@@ -5,20 +5,20 @@ const Schema = use('Schema')
 
 class AddEstateSyncCredentialsSchema extends Schema {
   up() {
-    this.create('estate_publisher_credentials', (table) => {
+    this.create('estate_sync_credentials', (table) => {
       table.increments()
-      table.string('type').comment('see ESTATE_PUBLISHER_...')
       table.integer('user_id').references('id').inTable('users').nullable()
-      table.string('source_type').comment('see ESTATE_PUBLISHER_SOURCE_...')
-      table.boolean('use_estate_sync').defaultTo(true).comment('whether to use estate_sync or not.')
+      table.string('api_key')
+      table.string('type').comment('either user or breeze')
+      table.string('estate_sync_contact_id')
       table.timestamps()
 
-      table.unique(['user_id', 'type'])
+      table.unique(['user_id'])
     })
   }
 
   down() {
-    this.drop('estate_publisher_credentials')
+    this.drop('estate_sync_credentials')
   }
 }
 

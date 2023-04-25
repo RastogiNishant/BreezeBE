@@ -7,7 +7,7 @@ class AddEstateSyncContactRequestsSchema extends Schema {
   up() {
     this.create('estate_sync_contact_requests', (table) => {
       table.increments()
-      table.string('email').unique()
+      table.string('email')
       table.json('user_info')
       table.text('message')
       table.integer('user_id').references('id').inTable('users').nullable().index()
