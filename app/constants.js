@@ -1137,7 +1137,7 @@ Estates: [ESTATES]
     ohnemakler: {
       name: 'Ohne-makler.net',
       url: 'https://www.ohne-makler.net/',
-      logo: 'logo location',
+      logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
     },
   },
   VALID_INCOME_PROOFS_PERIOD: 5,
