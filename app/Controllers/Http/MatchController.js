@@ -776,13 +776,15 @@ class MatchController {
       groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, buddies)
       counts.buddies = buddies.length
 
-      const newMatchedEstatesCount = groupedFilteredEstates.length
-      const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
+      // const newMatchedEstatesCount = groupedFilteredEstates.length
+      // const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
       counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
-      counts.totalInvite =
-        counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+      // counts.totalInvite =
+      //   counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+
+      counts.totalInvite = counts.matches + counts.buddies
 
       const currentDay = moment().startOf('day')
 
