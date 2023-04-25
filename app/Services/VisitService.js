@@ -21,8 +21,8 @@ class VisitService {
    *
    */
   static async getVisitFor15H() {
-    const dayStart = moment().startOf('day')
-    const date15H = moment().startOf('minute').subtract(1.5, 'hours')
+    const dayStart = moment.utc().startOf('day')
+    const date15H = moment.utc().startOf('minute').subtract(1.5, 'hours')
     const date15H5M = date15H.clone().subtract(5, 'minute')
     const subQuery = Database.select('estate_id', Database.raw('MIN(date) as date'))
       .table('visits')

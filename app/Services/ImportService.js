@@ -81,8 +81,8 @@ class ImportService {
         }
 
         data.status = STATUS_DRAFT
-        data.available_start_at = moment().utc(new Date()).format(DATE_FORMAT)
-        data.available_end_at = moment().utc(new Date()).add(144, 'hours').format(DATE_FORMAT)
+        data.available_start_at = null
+        data.available_end_at = null
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }

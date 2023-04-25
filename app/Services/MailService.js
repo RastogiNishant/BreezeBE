@@ -734,7 +734,9 @@ class MailService {
         email: FromEmail,
         name: FromName,
       },
-      subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
+      subject:
+        SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
+        moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
     }
     if (sendToBCC) {
