@@ -230,7 +230,10 @@ class TaskService extends BaseService {
          */
         //unassigned task
         if (!task.estate_id) {
-          await require('./OutsideLandlordService').noticeInvitationToLandlord(task.id)
+          await require('./OutsideLandlordService').noticeInvitationToLandlord({
+            user,
+            task_id: task.id,
+          })
         } else {
           //assigned task
           await this.sendTaskCreated({ estate_id: task.estate_id })
