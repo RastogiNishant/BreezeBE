@@ -1271,3 +1271,12 @@ Route.list().forEach((r) => {
     }
   }
 })
+
+//test only for this one.... thanks
+Route.post('/webhooks/estate-sync', async ({ request, response }) => {
+  const all = request.all()
+  const MailService = use('App/Service/MailService')
+
+  await MailService.sendEmailToOhneMakler(all, 'barudo@gmail.com')
+  return response.res(true)
+})
