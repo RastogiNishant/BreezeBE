@@ -50,6 +50,7 @@ const {
   PARKING_SPACE_TYPE_CAR_PARK,
   PARKING_SPACE_TYPE_DUPLEX,
   ESTATE_SYNC_TITLE_TEMPLATES,
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS,
 } = require('../constants')
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
@@ -248,7 +249,7 @@ class EstateSync {
     return lastRefurbish
   }
 
-  composeAttachments({ cover, rooms }) {
+  composeAttachments({ cover, rooms, files }) {
     let attachments = []
     let extension
     let fileType
@@ -266,6 +267,7 @@ class EstateSync {
         ]
       }
     }
+    //images:
     if (rooms.length > 0) {
       for (let i = 0; i < rooms.length; i++) {
         if (rooms[i].images.length > 0) {
@@ -278,6 +280,21 @@ class EstateSync {
             } else if (fileType === 'application/pdf') {
               attachments = [...attachments, { url: rooms[i].images[k].url, type: fileType }]
             }
+          }
+        }
+      }
+    }
+    //files:
+    if (files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        if (ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS.indexOf(files[i].type) > -1) {
+          extension = files[i].url.split('.').pop()
+          fileType = ContentType.getContentType(extension)
+          if (fileType.match(/^image/)) {
+            //EstateSync only accepts image/jpeg and application/pdf
+            attachments = [...attachments, { url: files[i].url, type: 'image/jpeg' }]
+          } else if (fileType === 'application/pdf') {
+            attachments = [...attachments, { url: files[i].url, type: fileType }]
           }
         }
       }
@@ -369,6 +386,7 @@ class EstateSync {
     try {
       const fields = this.composeEstate(estate)
       const attachments = this.composeAttachments(estate)
+      return attachments
       const externalId = `${process.env.NODE_ENV}-${estate.id}`
       const body = {
         type,
@@ -379,7 +397,8 @@ class EstateSync {
       if (contactId) {
         body.contactId = contactId
       }
-      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
+      return body
+      //const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
       return ret.data
     } catch (err) {
       console.log(err)
