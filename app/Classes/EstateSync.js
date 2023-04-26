@@ -386,7 +386,6 @@ class EstateSync {
     try {
       const fields = this.composeEstate(estate)
       const attachments = this.composeAttachments(estate)
-      return attachments
       const externalId = `${process.env.NODE_ENV}-${estate.id}`
       const body = {
         type,
@@ -397,8 +396,7 @@ class EstateSync {
       if (contactId) {
         body.contactId = contactId
       }
-      return body
-      //const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
+      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
       return ret.data
     } catch (err) {
       console.log(err)

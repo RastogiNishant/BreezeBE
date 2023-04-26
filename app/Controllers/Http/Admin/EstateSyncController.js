@@ -8,6 +8,29 @@ const EstateSyncCredential = use('App/Models/EstateSyncCredential')
 
 class EstateSyncController {
   async initialize({ request, response }) {
+    const alreadyInitialized = await EstateSyncCredential.query()
+      .whereNull('user_id')
+      .where('type', ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE)
+      .first()
+
+    if (alreadyInitialized) {
+      throw new HttpException('EstateSync setup was already done.')
+    }
+    const { contact, is24key, is24secret } = request.all()
+    const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+    const is24result = await estateSync.put('account/credentials/immobilienscout-24', {
+      key: is24key,
+      secret: is24secret,
+    })
+    if (is24result.success) {
+      const contactResult = await estateSync.post('contacts', contact)
+      if (contactResult.success) {
+        await EstateSyncCredential.createItem({
+          type: ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE,
+          estate_sync_contact_id: contactResult.data.id,
+        })
+      }
+    }
     return response.res(request.all())
   }
 
