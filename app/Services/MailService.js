@@ -754,6 +754,10 @@ class MailService {
     )
   }
 
+  static async sendPendingKnockEmail({ link, email, lang = DEFAULT_LANG }) {
+    
+  }
+
   static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
 
   static async sendToSupportLandlordConnectedOneEstate() {}

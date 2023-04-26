@@ -86,6 +86,7 @@ const exceptions = {
   NOT_FOUND_OUTSIDE_INVITAION: 'Invitation No found',
   LAT_LON_NOT_PROVIDED: 'Coord info not provided',
   NO_TASK_FOUND: 'Task not found',
+  NO_PROSPECT_KNOCK: "you haven't knocked that property",
 }
 
 const exceptionCodes = {
@@ -95,6 +96,7 @@ const exceptionCodes = {
   WRONG_PROSPECT_CODE_ERROR_CODE: 3000100,
   NO_TIME_SLOT_ERROR_CODE: 4000100,
   NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
+  ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
 }
 
 const exceptionKeys = {

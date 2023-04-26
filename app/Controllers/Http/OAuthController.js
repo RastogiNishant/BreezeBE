@@ -67,7 +67,7 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    let { token, device_token, role, code, landlord_invite, data1, data2, ip, ip_based_info } =
+    let { token, device_token, role, code, invite_type, data1, data2, ip, ip_based_info } =
       request.all()
     ip = ip || request.ip()
     let ticket
@@ -122,7 +122,7 @@ class OAuthController {
           device_token,
           role,
           owner_id,
-          landlord_invite,
+          invite_type,
           data1,
           data2,
           is_household_invitation_onboarded,
@@ -179,7 +179,7 @@ class OAuthController {
    *
    */
   async tokenAuthApple({ request, auth, response }) {
-    let { token, device_token, role, code, landlord_invite, data1, data2, ip, ip_based_info } =
+    let { token, device_token, role, code, invite_type, data1, data2, ip, ip_based_info } =
       request.all()
     ip = ip || request.ip()
     const options = { audience: Config.get('services.apple.client_id') }
@@ -233,7 +233,7 @@ class OAuthController {
             is_profile_onboarded,
             ip,
             ip_based_info,
-            landlord_invite,
+            invite_type,
             data1,
             data2,
           },

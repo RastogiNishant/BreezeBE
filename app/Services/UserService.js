@@ -58,6 +58,8 @@ const {
   WRONG_INVITATION_LINK,
   WEBSOCKET_EVENT_USER_ACTIVATE,
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN,
+  OUTSIDE_LANDLORD_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
 } = require('../constants')
 
 const {
@@ -114,7 +116,7 @@ class UserService {
     // Manages the outside tenant invitation flow
     if (
       !userData?.source_estate_id &&
-      !userData?.landlord_invite &&
+      (!userData?.invite_type || trim(userData?.invite_type) === '') &&
       userData?.data1 &&
       userData?.data2
     ) {
@@ -126,7 +128,7 @@ class UserService {
       userData.source_estate_id = estate_id
     }
 
-    const user = await User.createItem(omit(userData, ['data1, data2, landlord_invite']), trx)
+    const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
 
     if (user.role === ROLE_USER) {
       try {
@@ -154,19 +156,40 @@ class UserService {
       }
     }
 
-    //outside landlord invitation
-    if (userData?.landlord_invite && userData?.data1 && userData?.data2) {
-      await require('./OutsideLandlordService').updateOutsideLandlordInfo(
-        {
-          new_email: userData.email,
-          data1: userData.data1,
-          data2: userData.data2,
-        },
-        trx
-      )
-    }
+    await this.handleOutsideInvitation(
+      {
+        user,
+        email: userData?.email,
+        invite_type: userData?.invite_type,
+        data1: userData?.data1,
+        data2: userData?.data2,
+      },
+      trx
+    )
 
     return user
+  }
+
+  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }, trx) {
+    if (!invite_type || !data1 || !data2) {
+      return
+    }
+
+    switch (invite_type) {
+      case OUTSIDE_LANDLORD_INVITE_TYPE: //outside landlord invitation
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
+          {
+            new_email: email,
+            data1,
+            data2,
+          },
+          trx
+        )
+        break
+      case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
+        await require('./OutsideKnockService.js').createKnock({ user, data1, data2 }, trx)
+        break
+    }
   }
 
   /**
@@ -748,6 +771,7 @@ class UserService {
     return await User.query()
       .select(['id', 'email', 'lang'])
       .whereIn('email', emails)
+      .whereNotIn('status', [STATUS_DELETE])
       .where({ role: role })
       .fetch()
   }
@@ -967,7 +991,7 @@ class UserService {
       firstname,
       from_web,
       source_estate_id = null,
-      landlord_invite = false,
+      invite_type = '',
       data1,
       data2,
       ip,
@@ -1004,7 +1028,7 @@ class UserService {
           status: STATUS_EMAIL_VERIFY,
           data1,
           data2,
-          landlord_invite,
+          invite_type,
           source_estate_id,
           ip,
           ip_based_info,

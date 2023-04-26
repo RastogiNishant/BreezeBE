@@ -5,7 +5,7 @@ const Model = use('Model')
 
 class EstateSyncContactRequest extends Model {
   static get columns() {
-    return ['id', 'email', 'contact_info', 'message', 'user_id', 'estate_id', 'code']
+    return ['id', 'email', 'contact_info', 'message', 'user_id', 'estate_id', 'code', 'status']
   }
 }
 

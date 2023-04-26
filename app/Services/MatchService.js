@@ -88,7 +88,7 @@ const {
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
 
@@ -668,7 +668,7 @@ class MatchService {
   static async knockEstate(estateId, userId, knock_anyway) {
     const query = Tenant.query().where({ user_id: userId })
     if (knock_anyway) {
-      query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+      query.whereIn('status', [STATUS_ACTIVE])
     } else {
       query.where({ status: STATUS_ACTIVE })
     }
@@ -703,7 +703,7 @@ class MatchService {
     })
 
     if (!match && !like && !knock_anyway) {
-      throw new AppException('Not allowed')
+      throw new AppException('Not allowed', 400)
     }
 
     const trx = await Database.beginTransaction()
@@ -725,14 +725,18 @@ class MatchService {
           throw new AppException('Invalid match stage')
         }
       } else if (like || knock_anyway) {
-        console.log('percent here=', like)
-        //FIXME: why percent is 0? It can have value if there is a like
+        const estate = await MatchService.getEstateForScoringQuery().where({ id: estateId }).first()
+        if (!estate) {
+          throw new HttpException(NO_ESTATE_EXIST, 500)
+        }
+
+        const percent = await MatchService.calculateMatchPercent(tenant, estate)
         await Match.createItem(
           {
             status: MATCH_STATUS_KNOCK,
             user_id: userId,
             estate_id: estateId,
-            percent: 0,
+            percent,
             knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
           },
           trx

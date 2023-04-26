@@ -13,6 +13,7 @@ class AddEstateSyncContactRequestsSchema extends Schema {
       table.integer('user_id').references('id').inTable('users').nullable().index()
       table.integer('estate_id').notNullable().references('id').inTable('estates').index()
       table.string('code', 60)
+      table.integer('status').index()
       table.timestamps()
 
       table.unique(['email', 'estate_id'])
