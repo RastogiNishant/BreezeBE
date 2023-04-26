@@ -7,12 +7,9 @@ class AddEstateSyncTargetsSchema extends Schema {
   up() {
     this.create('estate_sync_targets', (table) => {
       table.increments()
-      table
-        .integer('estate_sync_credentials_id')
-        .references('id')
-        .inTable('estate_sync_credentials')
+      table.integer('estate_sync_credential_id').references('id').inTable('estate_sync_credentials')
       table.string('publishing_provider').comment('ESTATE_SYNC_PUBLISH_PROVIDER...')
-      table.string('estate_sync_listing_id')
+      table.string('estate_sync_target_id')
       table.timestamps()
     })
   }

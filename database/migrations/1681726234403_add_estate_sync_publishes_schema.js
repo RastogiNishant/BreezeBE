@@ -14,9 +14,9 @@ class AddEstateSyncPublishesSchema extends Schema {
       table.string('estate_sync_property_id')
       table.string('estate_sync_listing_id')
       table.timestamps()
-    })
 
-    table.unique(['provider', 'estate_id'])
+      table.unique(['provider', 'estate_id'])
+    })
   }
 
   down() {
