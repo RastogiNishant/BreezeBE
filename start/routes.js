@@ -173,9 +173,23 @@ Route.group(() => {
     'auth:jwtAdministrator',
   ])
 
+  /** Estate Sync */
+  Route.get('/estate-sync/targets', 'Admin/EstateSyncController.getTargets').middleware([
+    'auth:jwtAdministrator',
+  ])
+
   Route.post('/estate-sync/targets', 'Admin/EstateSyncController.addTarget').middleware([
     'auth:jwtAdministrator',
     'valid:AddEstateSyncTarget',
+  ])
+
+  Route.delete('/estate-sync/targets/:id', 'Admin/EstateSyncController.deleteTarget').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
+
+  Route.post('/estate-sync', 'Admin/EstateSyncController.initialize').middleware([
+    'auth:jwtAdministrator',
   ])
 }).prefix('api/v1/administration')
 
