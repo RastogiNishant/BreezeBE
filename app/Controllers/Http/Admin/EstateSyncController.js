@@ -29,7 +29,7 @@ class EstateSyncController {
       case 'immobilienscout-24':
         data = {
           type: 'immobilienscout-24',
-          redirectUrl: 'https://estatesync.com/',
+          redirectUrl: process.env.ESTATE_SYNC_IS24_OAUTH_TOKEN_REDIRECT,
           autoCollectRequests: true,
         }
         break
