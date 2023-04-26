@@ -9,9 +9,9 @@
 		"node": ">=14.0.0"
 	},
 	"scripts": {
-		"start": "nodemon --max-old-space-size=8192 server.js",
-		"start-dev": "nodemon --ignore 'tmp/*.*' --max-old-space-size=8192 server.js",
-		"start:track": "nodemon --trace-warnings --max-old-space-size=8192 server.js",
+		"start": "NODE_OPTIONS='--max-old-space-size=8192' nodemon server.ts",
+    "start-dev": "NODE_OPTIONS='--max-old-space-size=8192' nodemon --ignore 'tmp/*.*' server.ts",
+		"start:track": "NODE_OPTIONS='--trace-warnings --max-old-space-size=8192' nodemon server.ts",
 		"dev": "DEBUG=query DEV=true adonis serve --dev",
 		"dev:win10": "set TZ=UTC && set DEBUG=query && set DEV=true && adonis serve --dev",
 		"test": "NODE_ENV=test node ace test",
@@ -36,7 +36,6 @@
 		"@adonisjs/antl": "^2.0.7",
 		"@adonisjs/auth": "^3.0.7",
 		"@adonisjs/bodyparser": "^2.0.5",
-		"@adonisjs/cli": "^4.0.13",
 		"@adonisjs/cors": "^1.0.7",
 		"@adonisjs/drive": "^1.0.4",
 		"@adonisjs/fold": "^4.0.9",
@@ -118,6 +117,9 @@
 	"devDependencies": {
 		"@adonisjs/cli": "^4.0.13",
 		"concurrently": "^6.0.0",
-		"jsonwebtoken": "^8.5.1"
+		"jsonwebtoken": "^8.5.1",
+		"patch-package": "^6.5.1",
+		"tsconfig-paths": "^4.2.0",
+		"typescript": "^5.0.4"
 	}
 }
