@@ -172,6 +172,11 @@ Route.group(() => {
   Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
     'auth:jwtAdministrator',
   ])
+
+  Route.post('/estate-sync/targets', 'Admin/EstateSyncController.addTarget').middleware([
+    'auth:jwtAdministrator',
+    'valid:AddEstateSyncTarget',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
