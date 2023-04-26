@@ -340,9 +340,8 @@ class OhneMakler {
       newEstate.coord = `${estate.latitude},${estate.longitude}`
       newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
       if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
-        newEstate.vacant_date = moment
-          .utc(estate.uebernahme_ab, 'YYYY/MM/DD', true)
-          .add(2, 'hours')
+        newEstate.vacant_date = moment(estate.uebernahme_ab, 'YYYY/MM/DD', true)
+          .utcOffset(2)
           .format(DATE_FORMAT)
       } else {
         newEstate.vacant_date = moment.utc(new Date()).format(DATE_FORMAT)
@@ -350,7 +349,7 @@ class OhneMakler {
       }
 
       newEstate.rent_end_at = estate?.vacant_till
-        ? moment.utc(estate.vacant_till, 'YYYY/MM/DD', true).add(2, 'hours').format(DATE_FORMAT)
+        ? moment(estate.vacant_till, 'YYYY/MM/DD', true).utcOffset(2).format(DATE_FORMAT)
         : null
       //as confirmed by andrey, K is Kellergeschoss (basement or underground)
       if (newEstate.floor === 'K') {
