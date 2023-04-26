@@ -336,7 +336,7 @@ Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
 ])
 
 Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
-  'valid:SignInAppleMobile',
+  'valid:SignInGoogleMobile',
 ])
 
 //Room Custom Amenities

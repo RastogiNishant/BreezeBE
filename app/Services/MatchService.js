@@ -665,10 +665,10 @@ class MatchService {
   /**
    * Try to knock to estate
    */
-  static async knockEstate(estateId, userId, knock_anyway) {
-    const query = Tenant.query().where({ user_id: userId })
+  static async knockEstate({ estate_id, user_id, knock_anyway }, trx) {
+    const query = Tenant.query().where({ user_id })
     if (knock_anyway) {
-      query.whereIn('status', [STATUS_ACTIVE])
+      query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
     } else {
       query.where({ status: STATUS_ACTIVE })
     }
@@ -679,10 +679,7 @@ class MatchService {
 
     // Get match with allowed status
     const getMatches = async () => {
-      return Database.query()
-        .from('matches')
-        .where({ user_id: userId, estate_id: estateId })
-        .first()
+      return Database.query().from('matches').where({ user_id, estate_id }).first()
     }
 
     // Get like and check is match not exists or new
@@ -690,7 +687,7 @@ class MatchService {
       return Database.query()
         .from('likes')
         .select('matches.status')
-        .where({ 'likes.user_id': userId, 'likes.estate_id': estateId })
+        .where({ 'likes.user_id': user_id, 'likes.estate_id': estate_id })
         .leftJoin('matches', function () {
           this.on('matches.estate_id', 'likes.estate_id').on('matches.user_id', 'likes.user_id')
         })
@@ -706,7 +703,12 @@ class MatchService {
       throw new AppException('Not allowed', 400)
     }
 
-    const trx = await Database.beginTransaction()
+    let isOutsideTrxExist = true
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isOutsideTrxExist = false
+    }
+
     try {
       if (match) {
         if (match.status === MATCH_STATUS_NEW) {
@@ -717,15 +719,17 @@ class MatchService {
               knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
             })
             .where({
-              user_id: userId,
-              estate_id: estateId,
+              user_id,
+              estate_id,
             })
             .transacting(trx)
         } else {
           throw new AppException('Invalid match stage')
         }
       } else if (like || knock_anyway) {
-        const estate = await MatchService.getEstateForScoringQuery().where({ id: estateId }).first()
+        const estate = await MatchService.getEstateForScoringQuery()
+          .where({ id: estate_id })
+          .first()
         if (!estate) {
           throw new HttpException(NO_ESTATE_EXIST, 500)
         }
@@ -734,8 +738,8 @@ class MatchService {
         await Match.createItem(
           {
             status: MATCH_STATUS_KNOCK,
-            user_id: userId,
-            estate_id: estateId,
+            user_id,
+            estate_id,
             percent,
             knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
           },
@@ -743,21 +747,30 @@ class MatchService {
         )
       }
       await Dislike.query()
-        .where('user_id', userId)
-        .where('estate_id', estateId)
+        .where('user_id', user_id)
+        .where('estate_id', estate_id)
         .delete()
         .transacting(trx)
 
-      await trx.commit()
+      if (!isOutsideTrxExist) {
+        await trx.commit()
+        this.sendMatchKnockWebsocket({ estate_id, user_id })
+      }
     } catch (e) {
-      await trx.rollback()
+      if (!isOutsideTrxExist) {
+        await trx.rollback()
+      }
+
       throw new HttpException(e.message, 400)
     }
+    return true
+  }
 
+  static async sendMatchKnockWebsocket({ estate_id, user_id }) {
     this.emitMatch({
       data: {
-        estate_id: estateId,
-        user_id: userId,
+        estate_id: estate_id,
+        user_id: user_id,
         old_status: MATCH_STATUS_NEW,
         status: MATCH_STATUS_KNOCK,
       },
@@ -767,15 +780,13 @@ class MatchService {
 
     this.emitMatch({
       data: {
-        estate_id: estateId,
-        user_id: userId,
+        estate_id: estate_id,
+        user_id: user_id,
         old_status: MATCH_STATUS_NEW,
         status: MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
     })
-
-    return true
   }
 
   static async emitCreateMatchCompleted({ user_id, data }) {

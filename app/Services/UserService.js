@@ -60,6 +60,7 @@ const {
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN,
   OUTSIDE_LANDLORD_INVITE_TYPE,
   OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+  OUTSIDE_TENANT_INVITE_TYPE,
 } = require('../constants')
 
 const {
@@ -116,7 +117,7 @@ class UserService {
     // Manages the outside tenant invitation flow
     if (
       !userData?.source_estate_id &&
-      (!userData?.invite_type || trim(userData?.invite_type) === '') &&
+      userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE &&
       userData?.data1 &&
       userData?.data2
     ) {
@@ -187,7 +188,18 @@ class UserService {
         )
         break
       case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
-        await require('./OutsideKnockService.js').createKnock({ user, data1, data2 }, trx)
+        await require('./OutsideKnockService.js').createPendingKnock({ user, data1, data2 }, trx)
+        break
+      case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
+        await require('./EstateCurrentTenantService').acceptOutsideTenant(
+          {
+            data1,
+            data2,
+            email,
+            user,
+          },
+          trx
+        )
         break
     }
   }
@@ -471,16 +483,27 @@ class UserService {
     user.status = STATUS_ACTIVE
     const trx = await Database.beginTransaction()
     try {
-      if (user.role === ROLE_USER && user.source_estate_id) {
-        //If user we look for his email on estate_current_tenant and make corresponding corrections
-        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
-          { user, estate_id: user.source_estate_id },
-          trx
-        )
-        user.source_estate_id = null
+      let isKnockWebsocket = false
+      const OutsideKnockService = require('./OutsideKnockService.js')
+      if (user.role === ROLE_USER) {
+        if (user.source_estate_id) {
+          //If user we look for his email on estate_current_tenant and make corresponding corrections
+          await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
+            { user, estate_id: user.source_estate_id },
+            trx
+          )
+          user.source_estate_id = null
+        } else {
+          isKnockWebsocket = await OutsideKnockService.createKnock(user_id, trx)
+        }
       }
+
       await user.save(trx)
       await trx.commit()
+
+      if (isKnockWebsocket) {
+        await OutsideKnockService.sendBulkKnockWebsocket(isKnockWebsocket)
+      }
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)

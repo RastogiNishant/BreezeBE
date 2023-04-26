@@ -12,7 +12,8 @@ const GoogleAuth = use('GoogleAuth')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
-
+const OutsideKnockService = use('App/Services/OutsideKnockService')
+const QueueService = use('App/Services/QueueService')
 const { getAuthByRole } = require('../../Libs/utils')
 
 const {
@@ -86,93 +87,139 @@ class OAuthController {
     } else {
       anotherSameEmail = `${emailPrefix}@googlemail.com`
     }
-    let user = await this.authorizeUser([email, anotherSameEmail], role)
 
-    let owner_id
-    let member_id
-    let is_household_invitation_onboarded = true
-    let is_profile_onboarded = false
+    let user = await this.authorizeUser([email, anotherSameEmail], role)
 
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
-        if (code) {
-          const member = await Member.query()
-            .select('user_id', 'id')
-            .whereIn('email', [email, anotherSameEmail])
-            .where('code', code)
-            .firstOrFail()
-
-          owner_id = member.user_id
-          member_id = member.id
-          is_household_invitation_onboarded = false
-          is_profile_onboarded = true
-
-          // Check user not exists
-          const availableUser = await User.query()
-            .where('role', ROLE_USER)
-            .whereIn('email', [email, anotherSameEmail])
-            .first()
-          if (availableUser) {
-            throw new HttpException(USER_UNIQUE, 400)
-          }
-        }
-        user = await UserService.createUserFromOAuth(request, {
-          ...ticket.getPayload(),
-          google_id: googleId,
-          device_token,
-          role,
-          owner_id,
-          invite_type,
-          data1,
-          data2,
-          is_household_invitation_onboarded,
-          is_profile_onboarded,
-          ip,
-          ip_based_info,
-        })
+        const [firstname, secondname] = name.split(' ')
+        await this.handleSignUp(
+          request,
+          { ...ticket.getPayload(), firstname, secondname },
+          SIGN_IN_METHOD_GOOGLE
+        )
       } catch (e) {
         throw new HttpException(e.message, 400)
       }
     }
 
     if (user) {
-      if (user.status === STATUS_EMAIL_VERIFY) {
-        await UserService.socialLoginAccountActive(user.id, {
-          device_token,
-          status: STATUS_ACTIVE,
-          google_id: googleId,
-        })
-      }
-
-      if (isEmpty(ip_based_info.country_code)) {
-        const QueueService = require('../../Services/QueueService')
-        QueueService.getIpBasedInfo(user.id, ip)
-      }
-      const authenticator = getAuthByRole(auth, user.role)
-      const token = await authenticator.generate(user)
-      if (data1 && data2) {
-        await EstateCurrentTenantService.acceptOutsideTenant({
-          data1,
-          data2,
-          email,
-          user,
-        })
-      }
-      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
-        method: SIGN_IN_METHOD_GOOGLE,
-        role: user.role,
-        email: user.email,
-      })
-      if (member_id) {
-        const { name } = ticket.getPayload()
-        const [firstname, secondname] = name.split(' ')
-        await MemberService.setMemberOwner({ member_id, firstname, secondname, owner_id: user.id })
-      }
-
-      return response.res(token)
+      return response.res(await this.handleLogin(request, user, SIGN_IN_METHOD_GOOGLE))
     }
 
     throw new HttpException('Invalid role', 400)
+  }
+
+  async handleSignUp(request, payload, method) {
+    let { device_token, role, code, invite_type, data1, data2, ip, ip_based_info } = request.all()
+
+    let owner_id
+    let member_id
+    let is_household_invitation_onboarded = true
+    let is_profile_onboarded = false
+
+    if (code) {
+      const member = await Member.query()
+        .select('user_id', 'id')
+        .where('email', email)
+        .where('code', code)
+        .firstOrFail()
+
+      owner_id = member.user_id
+      member_id = member.id
+      is_household_invitation_onboarded = false
+      is_profile_onboarded = true
+
+      // Check user not exists
+      const availableUser = await User.query()
+        .where('role', ROLE_USER)
+        .where('email', email)
+        .first()
+      if (availableUser) {
+        throw new HttpException(USER_UNIQUE, 400)
+      }
+    }
+
+    const user = await UserService.createUserFromOAuth(
+      request,
+      {
+        ...payload,
+        email,
+        device_token,
+        owner_id,
+        role,
+        is_household_invitation_onboarded,
+        is_profile_onboarded,
+        ip,
+        ip_based_info,
+        invite_type,
+        data1,
+        data2,
+      },
+      method
+    )
+
+    if (isEmpty(ip_based_info.country_code)) {
+      QueueService.getIpBasedInfo(user.id, ip)
+    }
+
+    if (user && user.role === ROLE_USER && member_id) {
+      await MemberService.setMemberOwner({
+        member_id,
+        firstname: payload.firstname,
+        secondname: payload.secondname,
+        owner_id: user.id,
+      })
+    }
+  }
+
+  async handleLogin(request, user, method) {
+    let { device_token, role, code, invite_type, data1, data2, ip, ip_based_info } = request.all()
+
+    const authenticator = getAuthByRole(auth, user.role)
+    if (user.status === STATUS_EMAIL_VERIFY) {
+      await UserService.socialLoginAccountActive(user.id, { device_token, status: STATUS_ACTIVE })
+    }
+    const token = await authenticator.generate(user)
+    const trx = await Database.beginTransaction()
+    try {
+      await UserService.handleOutsideInvitation(
+        {
+          user,
+          email: user.email,
+          invite_type,
+          data1,
+          data2,
+        },
+        trx
+      )
+      let isKnockWebsocket = false
+      if (user.role === ROLE_USER) {
+        isKnockWebsocket = await OutsideKnockService.createKnock(user.id, trx)
+      }
+      await trx.commit()
+
+      if (isKnockWebsocket) {
+        await OutsideKnockService.sendBulkKnockWebsocket(isKnockWebsocket)
+      }
+    } catch (e) {
+      console.log(`outside invitation error= ${invite_type}`, e.message)
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 500)
+    }
+
+    if (isEmpty(ip_based_info.country_code)) {
+      const QueueService = require('../../Services/QueueService')
+      QueueService.getIpBasedInfo(user.id, ip)
+    }
+
+    logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
+      method,
+      role: user.role,
+      email: user.email,
+    })
+
+    return token
   }
 
   /**
@@ -191,93 +238,20 @@ class OAuthController {
       throw new HttpException(INVALID_TOKEN, 400)
     }
     let user = await this.authorizeUser(email, role)
-
-    let owner_id
-    let member_id
-    let is_household_invitation_onboarded = true
-    let is_profile_onboarded = false
-
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
-        if (code) {
-          const member = await Member.query()
-            .select('user_id', 'id')
-            .where('email', email)
-            .where('code', code)
-            .firstOrFail()
-
-          owner_id = member.user_id
-          member_id = member.id
-          is_household_invitation_onboarded = false
-          is_profile_onboarded = true
-
-          // Check user not exists
-          const availableUser = await User.query()
-            .where('role', ROLE_USER)
-            .where('email', email)
-            .first()
-          if (availableUser) {
-            throw new HttpException(USER_UNIQUE, 400)
-          }
-        }
-
-        user = await UserService.createUserFromOAuth(
+        await this.handleSignUp(
           request,
-          {
-            email,
-            device_token,
-            owner_id,
-            role,
-            name: 'Apple User',
-            is_household_invitation_onboarded,
-            is_profile_onboarded,
-            ip,
-            ip_based_info,
-            invite_type,
-            data1,
-            data2,
-          },
+          { name: 'Apple User', firstname: 'User', secondname: 'Apple' },
           SIGN_IN_METHOD_APPLE
         )
-
-        if (isEmpty(ip_based_info.country_code)) {
-          const QueueService = require('../../Services/QueueService')
-          QueueService.getIpBasedInfo(user.id, ip)
-        }
-
-        if (user && member_id) {
-          await MemberService.setMemberOwner({
-            member_id,
-            firstname: 'Apple',
-            secondname: 'User',
-            owner_id: user.id,
-          })
-        }
       } catch (e) {
         throw new HttpException(e.message, 400)
       }
     }
 
     if (user) {
-      const authenticator = getAuthByRole(auth, user.role)
-      if (user.status === STATUS_EMAIL_VERIFY) {
-        await UserService.socialLoginAccountActive(user.id, { device_token, status: STATUS_ACTIVE })
-      }
-      const token = await authenticator.generate(user)
-      if (data1 && data2) {
-        await EstateCurrentTenantService.acceptOutsideTenant({
-          data1,
-          data2,
-          email,
-          user,
-        })
-      }
-      logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
-        method: SIGN_IN_METHOD_APPLE,
-        role: user.role,
-        email: user.email,
-      })
-      return response.res(token)
+      return response.res(await this.handleLogin(request, user, SIGN_IN_METHOD_GOOGLE))
     }
 
     throw new HttpException(INVALID_USER_ROLE, 400)
