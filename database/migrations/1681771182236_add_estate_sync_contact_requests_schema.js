@@ -1,5 +1,7 @@
 'use strict'
 
+const { STATUS_DRAFT } = require('../../app/constants')
+
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 
@@ -13,6 +15,7 @@ class AddEstateSyncContactRequestsSchema extends Schema {
       table.integer('user_id').references('id').inTable('users').nullable().index()
       table.integer('estate_id').notNullable().references('id').inTable('estates').index()
       table.string('code', 60)
+      table.integer('status').unsigned().defaultTo(STATUS_DRAFT).index()
       table.timestamps()
 
       table.unique(['email', 'estate_id'])
