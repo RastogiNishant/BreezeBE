@@ -189,7 +189,7 @@ class ImportService {
             ImportService.emitImported({
               data: {
                 message: PROPERTY_HANDLE_FINISHED,
-                count: index,
+                count: index + 1,
                 total: data.length,
                 result: estateResult,
               },
