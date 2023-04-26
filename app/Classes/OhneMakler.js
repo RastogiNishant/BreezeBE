@@ -383,7 +383,7 @@ class OhneMakler {
 
       if (
         !newEstate?.available_end_at ||
-        newEstate.available_end_at > moment.utc(new Date()).add(2, 'hours').format(DATE_FORMAT)
+        newEstate.available_end_at > moment(new Date()).utcOffset(2).format(DATE_FORMAT)
       ) {
         newEstate.status = STATUS_ACTIVE
       } else {
