@@ -8,7 +8,7 @@ class AddEstateSyncContactRequestsSchema extends Schema {
     this.create('estate_sync_contact_requests', (table) => {
       table.increments()
       table.string('email').notNullable().index()
-      table.json('user_info')
+      table.json('contact_info')
       table.text('message')
       table.integer('user_id').references('id').inTable('users').nullable().index()
       table.integer('estate_id').notNullable().references('id').inTable('estates').index()
