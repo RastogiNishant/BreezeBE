@@ -1783,7 +1783,7 @@ class EstateService {
 
   static async getIsolines(estate) {
     try {
-      if (!estate.full_address && (estate.coord_raw || estate.coord)) {
+      if (estate.coord_raw || estate.coord) {
         const coords = (estate.coord_raw || estate.coord).split(',')
         const lat = coords[0]
         const lon = coords[1]
