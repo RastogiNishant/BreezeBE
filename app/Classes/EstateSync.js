@@ -389,11 +389,71 @@ class EstateSync {
 
   async publishEstate({ propertyId, targetId }) {
     try {
-      const ret = await axios.post(`${this.baseUrl}/listings`, { propertyId, targetId })
+      const ret = await axios.post(
+        `${this.baseUrl}/listings`,
+        { propertyId, targetId },
+        { timeout: 2000 }
+      )
       return ret.data
     } catch (err) {
       console.log(err)
       if (err.response.data) return err.response.data
+    }
+  }
+
+  async post(type, data) {
+    const possibleTypes = [
+      'account',
+      'properties',
+      'targets',
+      'listings',
+      'contacts',
+      'requests',
+      'webhooks',
+    ]
+    if (possibleTypes.indexOf(type) < 0) {
+      return false
+    }
+    try {
+      const ret = await axios.post(`${this.baseUrl}/${type}`, data, { timeout: 2000 })
+      return {
+        success: true,
+        data: ret.data,
+      }
+    } catch (err) {
+      if (err.response.data) {
+        return {
+          success: false,
+          data: err.response.data,
+        }
+      }
+    }
+  }
+
+  async put(type, data, id = '') {
+    const possibleTypes = [
+      'account/credentials/immobilienscout-24',
+      'account/credentials/immobilienscout-24-sandbox',
+      'properties',
+      'listings',
+      'contacts',
+    ]
+    if (possibleTypes.indexOf(type) < 0) {
+      return false
+    }
+    try {
+      const ret = await axios.put(`${this.baseUrl}/${type}${id ? '/' + id : ''}`, data)
+      return {
+        success: true,
+        data: ret.data,
+      }
+    } catch (err) {
+      if (err.response.data) {
+        return {
+          success: false,
+          data: err.response.data,
+        }
+      }
     }
   }
 

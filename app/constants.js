@@ -1170,7 +1170,13 @@ Estates: [ESTATES]
       lang: 'en',
     },
   },
-  THIRD_PARTY_PUBLISHERS: ['immowelt', 'is24', 'ebay'],
+  THIRD_PARTY_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen'],
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT: 'immowelt',
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24: 'immobilienscout-24',
+  ESTATE_SYNC_PUBLISH_PROVIDER_EBAY: 'ebay-kleinanzeigen',
+
+  ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
+  ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
 
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 }
