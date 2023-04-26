@@ -11,6 +11,8 @@ class AddEstateSyncTargetsSchema extends Schema {
       table.string('publishing_provider').comment('ESTATE_SYNC_PUBLISH_PROVIDER...')
       table.string('estate_sync_target_id')
       table.timestamps()
+
+      table.unique(['estate_sync_credential_id', 'publishing_provider'])
     })
   }
 

@@ -486,12 +486,21 @@ class EstateSync {
     }
     try {
       const ret = await axios.delete(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
-      console.log(ret)
-      if (ret.status === 200) return true
-      return false
+      if (ret.status === 200)
+        return {
+          success: true,
+        }
+      return {
+        success: false,
+      }
     } catch (err) {
       console.log(err)
-      if (err.response.data) return err.response.data
+      if (err.response.data) {
+        return {
+          success: false,
+          message: err.response.data,
+        }
+      }
     }
   }
 }

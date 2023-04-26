@@ -13,6 +13,7 @@ class AddEstateSyncPublishesSchema extends Schema {
       table.integer('status').comment('See ESTATE_SYNC_PUBLISH_STATUS...')
       table.string('estate_sync_property_id')
       table.string('estate_sync_listing_id')
+      table.string('publish_url')
       table.timestamps()
 
       table.unique(['provider', 'estate_id'])
