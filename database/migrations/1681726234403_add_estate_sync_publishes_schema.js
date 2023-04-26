@@ -7,8 +7,8 @@ class AddEstateSyncPublishesSchema extends Schema {
   up() {
     this.create('estate_sync_listings', (table) => {
       table.increments()
-      table.string('provider').comment('See ESTATE_SYNC_PUBLISH_PROVIDER...')
-      table.integer('estate_id').references('id').inTable('estates').index()
+      table.string('provider').notNullable().comment('See ESTATE_SYNC_PUBLISH_PROVIDER...')
+      table.integer('estate_id').notNullable().references('id').inTable('estates').index()
       table.integer('performed_by').references('id').inTable('users').index()
       table.integer('status').comment('See ESTATE_SYNC_PUBLISH_STATUS...')
       table.string('estate_sync_property_id')
