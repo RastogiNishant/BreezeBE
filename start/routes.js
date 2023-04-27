@@ -331,13 +331,9 @@ Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
-  'valid:SignInGoogleMobile',
-])
+Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware(['valid:OAuthSignIn'])
 
-Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
-  'valid:SignInGoogleMobile',
-])
+Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware(['valid:OAuthSignIn'])
 
 //Room Custom Amenities
 Route.group(() => {
