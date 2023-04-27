@@ -1521,7 +1521,6 @@ class EstateService {
         })
       })
       .withCount('visits')
-      .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
