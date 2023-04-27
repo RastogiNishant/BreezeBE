@@ -86,11 +86,16 @@ class QueueService {
     )
   }
 
-  static estateSyncPublishEstate({ estate_id = null, estate_sync_property_id, publishers }) {
+  static estateSyncPublishEstate({
+    estate_id,
+    estate_sync_property_id = null,
+    publishers,
+    performed_by,
+  }) {
     Queue.addJob(
       ESTATE_SYNC_PUBLISH_ESTATE,
-      { estate_id, estate_sync_property_id, publishers },
-      { delay: 200 }
+      { estate_id, estate_sync_property_id, publishers, performed_by },
+      { delay: 400 }
     )
   }
 
@@ -296,10 +301,11 @@ class QueueService {
             job.data.userId
           )
         case ESTATE_SYNC_PUBLISH_ESTATE:
-          return require('./EstateSyncService').publishEstate({
+          return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id,
             estate_sync_property_id: job.data.estate_sync_property_id,
             publishers: job.data.publishers,
+            performed_by: job.data.performed_by,
           })
         default:
           console.log(`No job processor for: ${job.name}`)

@@ -526,6 +526,7 @@ class EstateController {
             estate,
             confirm_incomplete,
             publishers,
+            performed_by: auth.user.id,
           })
         } catch (e) {
           if (e.name === 'ValidationException') {

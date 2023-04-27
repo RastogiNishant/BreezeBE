@@ -397,10 +397,21 @@ class EstateSync {
         body.contactId = contactId
       }
       const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
-      return ret.data
+      return {
+        success: true,
+        data: ret.data,
+      }
     } catch (err) {
       console.log(err)
-      if (err.response.data) return err.response.data
+      if (err.response.data) {
+        return {
+          success: false,
+          data: err.response.data,
+        }
+      }
+      return {
+        success: false,
+      }
     }
   }
 
