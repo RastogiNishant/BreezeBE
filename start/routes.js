@@ -190,6 +190,7 @@ Route.group(() => {
 
   Route.post('/estate-sync', 'Admin/EstateSyncController.initialize').middleware([
     'auth:jwtAdministrator',
+    'valid:InitializeEstateSync',
   ])
 }).prefix('api/v1/administration')
 
@@ -1291,56 +1292,4 @@ Route.list().forEach((r) => {
   }
 })
 
-//test only for this one.... thanks
-Route.post('/webhooks/estate-sync', async ({ request, response }) => {
-  const all = request.all()
-  const MailService = use('App/Services/MailService')
-
-  await MailService.sendEmailToOhneMakler(JSON.stringify(all), 'barudo@gmail.com')
-  return response.res(true)
-})
-
-Route.get('/test', async ({ request, response }) => {
-  const EstateSync = use('App/Classes/EstateSync')
-  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
-
-  const EstateService = use('App/Services/EstateService')
-
-  let estate = await EstateService.getByIdWithDetail(342)
-  estate = estate.toJSON()
-  if (!Number(estate.usable_area)) {
-    estate.usable_area = estate.area
-  }
-  const resp = await estateSync.postEstate({ estate, contactId: 'D54sojsn1y0vqr1OveGL' })
-  //const resp = estateSync.composeEstate(estate)
-  return response.res(resp)
-})
-
-Route.post('/test', async ({ request, response }) => {
-  const EstateSync = use('App/Classes/EstateSync')
-  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
-  const { propertyId, targetId } = request.all()
-
-  const resp = await estateSync.publishEstate({ propertyId, targetId })
-  return response.res(resp)
-})
-
-Route.get('/test/:type', async ({ request, response }) => {
-  const type = request.params.type
-  const { id } = request.get()
-  const EstateSync = use('App/Classes/EstateSync')
-  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
-
-  const resp = await estateSync.get(type, id)
-  return response.res(resp)
-})
-
-Route.delete('/test/:type', async ({ request, response }) => {
-  const type = request.params.type
-  const { id } = request.get()
-  const EstateSync = use('App/Classes/EstateSync')
-  const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
-
-  const resp = await estateSync.delete(id, type)
-  return response.res(resp)
-})
+Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
