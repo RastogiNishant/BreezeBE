@@ -180,18 +180,31 @@ class ImportService {
       errors = excelData.errors
       warnings = excelData.warnings
       data = excelData.data
+
       const opt = { concurrency: 1 }
       result = await Promise.map(
         data,
         async (i, index) => {
           if (i) {
             const estateResult = await ImportService.createSingleEstate(i, user_id)
+            const singleCreateErrors = [estateResult].filter(
+              (i) => has(i, 'error') && has(i, 'line')
+            )
+            let singleWarnings = []
+            ;[estateResult].map((row) => {
+              if (has(row, 'warning')) {
+                singleWarnings.push(row.warning)
+              }
+            })
+
             ImportService.emitImported({
               data: {
                 message: PROPERTY_HANDLE_FINISHED,
-                count: index + 1,
-                total: data.length,
-                result: estateResult,
+                count: errors?.length + index + 1,
+                total: data.length + errors?.length,
+                result: omit(estateResult, ['error', 'warning']),
+                errors: singleCreateErrors,
+                warnings: singleWarnings,
               },
               user_id,
             })
