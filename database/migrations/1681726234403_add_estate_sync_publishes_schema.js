@@ -11,8 +11,8 @@ class AddEstateSyncPublishesSchema extends Schema {
       table.integer('estate_id').notNullable().references('id').inTable('estates').index()
       table.integer('performed_by').references('id').inTable('users').index()
       table.integer('status').comment('See ESTATE_SYNC_PUBLISH_STATUS...')
-      table.string('estate_sync_property_id')
-      table.string('estate_sync_listing_id')
+      table.string('estate_sync_property_id').index()
+      table.string('estate_sync_listing_id').index()
       table.string('publish_url')
       table.timestamps()
 
