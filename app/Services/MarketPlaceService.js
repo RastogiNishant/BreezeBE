@@ -29,6 +29,7 @@ const {
     NO_USER_PASSED,
     NO_PROSPECT_KNOCK,
     NO_ESTATE_EXIST,
+    MARKET_PLACE_CONTACT_EXIST,
   },
 } = require('../exceptions')
 class MarketPlaceService {
@@ -120,7 +121,7 @@ class MarketPlaceService {
       `&data2=${encodeURIComponent(iv.toString('base64'))}` +
       `&email=${email}`
 
-    const prospects = await UserService.getByEmailWithRole([email], ROLE_USER)
+    const prospects = (await UserService.getByEmailWithRole([email], ROLE_USER)).toJSON()
 
     if (prospects?.length) {
       uri += `&user_id=${prospects[0].id}`
@@ -154,7 +155,11 @@ class MarketPlaceService {
     }
 
     if (code != pendingKnock.code) {
-      throw new HttpException(NO_PROSPECT_KNOCK, 400)
+      if (pendingKnock.status === STATUS_EXPIRE) {
+        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
+      } else {
+        throw new HttpException(NO_PROSPECT_KNOCK, 400)
+      }
     }
     if (pendingKnock.email != email) {
       throw new HttpException(NO_PROSPECT_KNOCK, 400)
@@ -195,7 +200,7 @@ class MarketPlaceService {
       .where('user_id', user_id)
       .update({ code: null, status: STATUS_ACTIVE })
       .transacting(trx)
-      
+
     return true
   }
 

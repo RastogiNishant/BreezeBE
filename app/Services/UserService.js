@@ -493,7 +493,7 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
-          await MarketPlaceService.createKnock(user.id, trx)
+          await MarketPlaceService.createKnock({ user_id: user.id }, trx)
         }
       }
 
@@ -792,7 +792,7 @@ class UserService {
       .select(['id', 'email', 'lang'])
       .whereIn('email', emails)
       .whereNotIn('status', [STATUS_DELETE])
-      .where({ role: role })
+      .where({ role })
       .fetch()
   }
 
