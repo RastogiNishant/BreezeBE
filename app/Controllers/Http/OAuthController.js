@@ -8,14 +8,13 @@ const User = use('App/Models/User')
 const Member = use('App/Models/Member')
 
 const Config = use('Config')
-const GoogleAuth = use('GoogleAuth')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 const MarketPlaceService = use('App/Services/MarketPlaceService')
 const QueueService = use('App/Services/QueueService')
 const { getAuthByRole } = require('../../Libs/utils')
-
+const Database = use('Database')
 const {
   ROLE_LANDLORD,
   ROLE_USER,
@@ -68,8 +67,7 @@ class OAuthController {
    * Login by OAuth token
    */
   async tokenAuth({ request, auth, response }) {
-    let { token, device_token, role, code, invite_type, data1, data2, ip, ip_based_info } =
-      request.all()
+    let { token, role, ip } = request.all()
     ip = ip || request.ip()
     let ticket
     try {
@@ -89,13 +87,13 @@ class OAuthController {
     }
 
     let user = await this.authorizeUser([email, anotherSameEmail], role)
-
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
+        const { name } = ticket.getPayload()
         const [firstname, secondname] = name.split(' ')
         await this.handleSignUp(
           request,
-          { ...ticket.getPayload(), firstname, secondname },
+          { ...ticket.getPayload(), email, google_id: googleId, firstname, secondname },
           SIGN_IN_METHOD_GOOGLE
         )
       } catch (e) {
@@ -104,7 +102,7 @@ class OAuthController {
     }
 
     if (user) {
-      return response.res(await this.handleLogin(request, user, SIGN_IN_METHOD_GOOGLE))
+      return response.res(await this.handleLogin(request, auth, user, SIGN_IN_METHOD_GOOGLE))
     }
 
     throw new HttpException('Invalid role', 400)
@@ -144,7 +142,6 @@ class OAuthController {
       request,
       {
         ...payload,
-        email,
         device_token,
         owner_id,
         role,
@@ -173,8 +170,8 @@ class OAuthController {
     }
   }
 
-  async handleLogin(request, user, method) {
-    let { device_token, role, code, invite_type, data1, data2, ip, ip_based_info } = request.all()
+  async handleLogin(request, auth, user, method) {
+    let { device_token, invite_type, data1, data2, ip, ip_based_info } = request.all()
 
     const authenticator = getAuthByRole(auth, user.role)
     if (user.status === STATUS_EMAIL_VERIFY) {
@@ -193,15 +190,11 @@ class OAuthController {
         },
         trx
       )
-      let isKnockWebsocket = false
       if (user.role === ROLE_USER) {
-        isKnockWebsocket = await MarketPlaceService.createKnock({ user_id: user.id }, trx)
+        await MarketPlaceService.createKnock({ user_id: user.id }, trx)
       }
       await trx.commit()
-
-      if (isKnockWebsocket) {
-        await MarketPlaceService.sendBulkKnockWebsocket(isKnockWebsocket)
-      }
+      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
       console.log(`outside invitation error= ${invite_type}`, e.message)
       await trx.rollback()
@@ -242,7 +235,7 @@ class OAuthController {
       try {
         await this.handleSignUp(
           request,
-          { name: 'Apple User', firstname: 'User', secondname: 'Apple' },
+          { email, name: 'Apple User', firstname: 'User', secondname: 'Apple' },
           SIGN_IN_METHOD_APPLE
         )
       } catch (e) {
@@ -251,7 +244,7 @@ class OAuthController {
     }
 
     if (user) {
-      return response.res(await this.handleLogin(request, user, SIGN_IN_METHOD_GOOGLE))
+      return response.res(await this.handleLogin(request, auth, user, SIGN_IN_METHOD_GOOGLE))
     }
 
     throw new HttpException(INVALID_USER_ROLE, 400)

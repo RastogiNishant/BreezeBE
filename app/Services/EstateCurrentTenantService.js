@@ -781,7 +781,7 @@ class EstateCurrentTenantService extends BaseService {
       }
 
       const shortLink = await createDynamicLink(
-        `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+        `${process.env.DEEP_LINK}?type=${OUTSIDE_TENANT_INVITE_TYPE}${uri}`
       )
       return {
         id: estateCurrentTenant.id,
