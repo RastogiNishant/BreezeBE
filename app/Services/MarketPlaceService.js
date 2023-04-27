@@ -17,7 +17,10 @@ const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const UserService = use('App/Services/UserService')
 const MailService = use('App/Services/MailService')
 const MatchService = use('App/Services/MatchService')
-
+const EstateService = use('App/Services/EstateService')
+const {
+  exceptions: { NO_ACTIVE_ESTATE_EXIST },
+} = require('../exceptions')
 const {
   exceptions: {
     ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID,
@@ -26,7 +29,24 @@ const {
     NO_PROSPECT_KNOCK,
   },
 } = require('../exceptions')
-class OutsideKnockService {
+class MarketPlaceService {
+  static async createContact(contact) {
+    if (!(await EstateService.isPublished(contact.estate_id))) {
+      throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
+    }
+    const contactRequest = await EstateSyncContactRequest.query()
+      .where({
+        email: contact.email,
+        estate_id: contact.estate_id,
+      })
+      .first()
+    if(contactRequest){
+
+    }
+    
+    return await EstateSyncContactRequest.createItem(contact)
+  }
+
   static async handlePendingKnock({ estate_id, email }) {
     if (!estate_id || !email) {
       throw new HttpException('Params are wrong', 500)
@@ -198,4 +218,4 @@ class OutsideKnockService {
   }
 }
 
-module.exports = OutsideKnockService
+module.exports = MarketPlaceService

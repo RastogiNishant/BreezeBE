@@ -1280,3 +1280,12 @@ Route.post('/webhooks/estate-sync', async ({ request, response }) => {
   await MailService.sendEmailToOhneMakler(all, 'barudo@gmail.com')
   return response.res(true)
 })
+
+//Test to create contact from 3rd market places
+Route.group(() => {
+  Route.post('/contact', 'MarketPlaceController.createContact').middleware([
+    'valid:MarketPlaceContact',
+  ])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwtAdministrator'])

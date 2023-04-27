@@ -12,7 +12,7 @@ const GoogleAuth = use('GoogleAuth')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
-const OutsideKnockService = use('App/Services/OutsideKnockService')
+const MarketPlaceService = use('App/Services/MarketPlaceService')
 const QueueService = use('App/Services/QueueService')
 const { getAuthByRole } = require('../../Libs/utils')
 
@@ -195,12 +195,12 @@ class OAuthController {
       )
       let isKnockWebsocket = false
       if (user.role === ROLE_USER) {
-        isKnockWebsocket = await OutsideKnockService.createKnock(user.id, trx)
+        isKnockWebsocket = await MarketPlaceService.createKnock(user.id, trx)
       }
       await trx.commit()
 
       if (isKnockWebsocket) {
-        await OutsideKnockService.sendBulkKnockWebsocket(isKnockWebsocket)
+        await MarketPlaceService.sendBulkKnockWebsocket(isKnockWebsocket)
       }
     } catch (e) {
       console.log(`outside invitation error= ${invite_type}`, e.message)

@@ -1,5 +1,7 @@
 'use strict'
 
+const { STATUS_DRAFT } = require('../../app/constants')
+
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 

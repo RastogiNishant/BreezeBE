@@ -188,7 +188,7 @@ class UserService {
         )
         break
       case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
-        await require('./OutsideKnockService.js').createPendingKnock({ user, data1, data2 }, trx)
+        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 }, trx)
         break
       case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
         await require('./EstateCurrentTenantService').acceptOutsideTenant(
@@ -484,7 +484,7 @@ class UserService {
     const trx = await Database.beginTransaction()
     try {
       let isKnockWebsocket = false
-      const OutsideKnockService = require('./OutsideKnockService.js')
+      const MarketPlaceService = require('./MarketPlaceService.js')
       if (user.role === ROLE_USER) {
         if (user.source_estate_id) {
           //If user we look for his email on estate_current_tenant and make corresponding corrections
@@ -494,7 +494,7 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
-          isKnockWebsocket = await OutsideKnockService.createKnock(user_id, trx)
+          isKnockWebsocket = await MarketPlaceService.createKnock(user_id, trx)
         }
       }
 
@@ -502,7 +502,7 @@ class UserService {
       await trx.commit()
 
       if (isKnockWebsocket) {
-        await OutsideKnockService.sendBulkKnockWebsocket(isKnockWebsocket)
+        await MarketPlaceService.sendBulkKnockWebsocket(isKnockWebsocket)
       }
     } catch (e) {
       await trx.rollback()

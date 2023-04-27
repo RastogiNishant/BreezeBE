@@ -59,6 +59,7 @@ const exceptions = {
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
   NO_ROOM_EXIST: 'Room not exists',
   NO_ESTATE_EXIST: 'Estate not exists',
+  NO_ACTIVE_ESTATE_EXIST: 'Estate is not active yet',
   MEDIA_NOT_EXIST: 'Media not exists',
   INVALID_IDS: 'ids must be an array of integers',
   NO_IMAGE_EXIST: 'Image not exists',

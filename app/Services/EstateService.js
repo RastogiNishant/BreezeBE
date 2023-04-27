@@ -2577,5 +2577,10 @@ class EstateService {
         .fetch()
     ).toJSON()
   }
+
+  static async isPublished(id) {
+    const estate = await this.getQuery({ status: STATUS_ACTIVE, id }).first()
+    return !!estate
+  }
 }
 module.exports = EstateService
