@@ -279,7 +279,7 @@ class QueueJobService {
   }
 
   static async fetchShowDateEndedEstatesFor5Minutes() {
-    const start = moment().startOf('minute').subtract(5, 'minutes')
+    const start = moment.utc().startOf('minute').subtract(5, 'minutes')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.raw(
