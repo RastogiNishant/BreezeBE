@@ -195,7 +195,7 @@ class OAuthController {
       )
       let isKnockWebsocket = false
       if (user.role === ROLE_USER) {
-        isKnockWebsocket = await MarketPlaceService.createKnock(user.id, trx)
+        isKnockWebsocket = await MarketPlaceService.createKnock({ user_id: user.id }, trx)
       }
       await trx.commit()
 

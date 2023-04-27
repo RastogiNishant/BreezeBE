@@ -60,6 +60,7 @@ const exceptions = {
   NO_ROOM_EXIST: 'Room not exists',
   NO_ESTATE_EXIST: 'Estate not exists',
   NO_ACTIVE_ESTATE_EXIST: 'Estate is not active yet',
+  MARKET_PLACE_CONTACT_EXIST: 'You have already knocked that property',
   MEDIA_NOT_EXIST: 'Media not exists',
   INVALID_IDS: 'ids must be an array of integers',
   NO_IMAGE_EXIST: 'Image not exists',

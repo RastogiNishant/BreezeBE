@@ -327,6 +327,10 @@ class EstateService {
       .first()
   }
 
+  static async getEstateWithUser(id) {
+    return await this.getActiveEstateQuery().where('id', id).with('user').first()
+  }
+
   static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))

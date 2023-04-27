@@ -483,7 +483,6 @@ class UserService {
     user.status = STATUS_ACTIVE
     const trx = await Database.beginTransaction()
     try {
-      let isKnockWebsocket = false
       const MarketPlaceService = require('./MarketPlaceService.js')
       if (user.role === ROLE_USER) {
         if (user.source_estate_id) {
@@ -494,16 +493,14 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
-          isKnockWebsocket = await MarketPlaceService.createKnock(user_id, trx)
+          await MarketPlaceService.createKnock(user.id, trx)
         }
       }
 
       await user.save(trx)
       await trx.commit()
 
-      if (isKnockWebsocket) {
-        await MarketPlaceService.sendBulkKnockWebsocket(isKnockWebsocket)
-      }
+      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)

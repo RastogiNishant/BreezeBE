@@ -1289,3 +1289,11 @@ Route.group(() => {
 })
   .prefix('api/v1/marketplace')
   .middleware(['auth:jwtAdministrator'])
+
+Route.group(() => {
+  Route.post('/knock', 'MarketPlaceController.createKnock').middleware([
+    'valid:AlreadyRegisteredOutsideTenantInvite',
+  ])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwt'])
