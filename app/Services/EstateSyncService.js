@@ -5,6 +5,7 @@ const {
   ESTATE_SYNC_CREDENTIAL_TYPE_USER,
   STATUS_DRAFT,
   STATUS_ACTIVE,
+  ROLE_USER,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -12,6 +13,8 @@ const EstateService = use('App/Services/EstateService')
 const EstateSyncCredential = use('App/Models/EstateSyncCredential')
 const EstateSyncTarget = use('App/Models/EstateSyncTarget')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+const User = use('App/Models/User')
 
 class EstateSyncService {
   static async getBreezeEstateSyncCredential() {
@@ -102,10 +105,53 @@ class EstateSyncService {
         .first()
       if (listing) {
         await listing.updateItem({ publish_url: payload.publicUrl })
-        //TODO: websocket update frontend estate_id: listing.estate_id, publisher: listing.provider
+
+        /* TODO: websocket update frontend
+        estate_id: listing.estate_id,
+        publisher: listing.provider
+        publish_url: payload.publisUrl
+        */
+
+        //call propertyProcessingSucceeded to publish unpublished properties
         await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
       }
       return
+    }
+  }
+
+  static async requestCreated(payload) {
+    const listing = await EstateSyncListing.query()
+      .where('estate_sync_property_id', payload.propertyId)
+      .first()
+    if (listing) {
+      const contactRequest = await EstateSyncContactRequest.query()
+        .where('estate_id', listing.estate_id)
+        .where('email', payload.prospect.email)
+        .first()
+      const user = await User.query()
+        .where('email', payload.prospect.email)
+        .where('role', ROLE_USER)
+        .first()
+      if (contactRequest) {
+        await contactRequest.updateItem({
+          email: payload.prospect.email,
+          contact_info: payload.prospect,
+          message: payload.message,
+          user_id: user?.id || null,
+        })
+      } else {
+        await EstateSyncContactRequest.create({
+          estate_id: listing.estate_id,
+          email: payload.prospect.email,
+          contact_info: payload.prospect,
+          message: payload.message,
+          user_id: user?.id || null,
+        })
+        /** TODO: Send email to user with deeplink for registration */
+      }
+      if (user) {
+        //add to matches table with estate_id=listing.estate_id, user_id: user.id
+      }
     }
   }
 }
