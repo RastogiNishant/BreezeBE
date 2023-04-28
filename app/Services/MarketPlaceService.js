@@ -129,6 +129,7 @@ class MarketPlaceService {
     const floor = estate.floor || 0
     const rooms_number = estate.rooms_number || 0
     const number_floors = estate.number_floors || 0
+    const cover = estate.cover_thumb || estate.cover
 
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
@@ -145,6 +146,7 @@ class MarketPlaceService {
     uri += `&floor=${floor}`
     uri += `&rooms_number=${rooms_number}`
     uri += `&number_floors=${number_floors}`
+    uri += `&cover=${cover}`
 
     const prospects = (await UserService.getByEmailWithRole([email], ROLE_USER)).toJSON()
 
