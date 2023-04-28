@@ -7,6 +7,7 @@ const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
+const { createDynamicLink } = require('../Libs/utils')
 
 const Model = require('./BaseModel')
 const {
@@ -164,6 +165,7 @@ class Estate extends Model {
       'income_sources',
       'percent',
       'is_published',
+      'share_link',
     ]
   }
 
@@ -171,7 +173,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
+    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code', 'share_link']
   }
 
   static shortColumns() {
@@ -324,9 +326,13 @@ class Estate extends Model {
         .select('id')
         .first()
     } while (exists)
+
+    const hash = Estate.getHash(id)
+    const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
+
     await Database.table('estates')
       .where('id', id)
-      .update({ six_char_code: randomString, hash: Estate.getHash(id) })
+      .update({ six_char_code: randomString, hash, share_link })
   }
 
   /**
