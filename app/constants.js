@@ -947,6 +947,8 @@ const constants = {
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH: 'landlord:estateSyncSuccessfulPublish',
+  WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_POSTING: 'landlord:estateSyncErrorPosting',
+  WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_PUBLISHING: 'landlord:estateSyncErrorPublishing',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
