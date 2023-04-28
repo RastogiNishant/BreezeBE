@@ -83,88 +83,97 @@ class EstateSyncService {
       .where('status', STATUS_DRAFT)
       .first()
 
-    if (listing) {
-      const target = await EstateSyncTarget.query()
-        .where('publishing_provider', listing.provider)
-        .where('estate_sync_credential_id', credential.id)
-        .first()
-      const estateSync = new EstateSync(credential.api_key)
-      const result = await estateSync.post('listings', {
-        targetId: target.estate_sync_target_id,
-        propertyId,
-      })
-      if (result.success) {
-        await listing.updateItem({ estate_sync_listing_id: result.data.id, status: STATUS_ACTIVE })
-      }
+    if(!listing){
+      return
+    }
+    const target = await EstateSyncTarget.query()
+      .where('publishing_provider', listing.provider)
+      .where('estate_sync_credential_id', credential.id)
+      .first()
+    const estateSync = new EstateSync(credential.api_key)
+    const result = await estateSync.post('listings', {
+      targetId: target.estate_sync_target_id,
+      propertyId,
+    })
+    if (result.success) {
+      await listing.updateItem({ estate_sync_listing_id: result.data.id, status: STATUS_ACTIVE })
     }
   }
 
   static async publicationSucceeded(payload) {
+    if (!payload?.listingId) {
+      return
+    }
+
     const listing = await EstateSyncListing.query()
       .where('estate_sync_listing_id', payload.listingId)
       .first()
-    if (payload.type === 'delete') {
-      if (listing) {
-        await listing.updateItem({ status: STATUS_DELETE })
-        return
-      }
-    }
-    if (payload.type === 'set') {
-      if (listing) {
-        await listing.updateItem({ publish_url: payload.publicUrl })
-        const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
 
-        /* websocket emit to landlord */
-        await EstateSyncService.emitWebsocketEventToLandlord({
-          event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
-          user_id: estate.user_id,
-          data: {
-            estate_id: listing.estate_id,
-            publisher: listing.provider,
-            publish_url: payload.publicUrl,
-          },
-        })
-
-        //call propertyProcessingSucceeded to publish unpublished properties
-        await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
-      }
+    if (!listing) {
       return
+    }
+
+    if (payload.type === 'delete') {
+      await listing.updateItem({ status: STATUS_DELETE })
+    } else if (payload.type === 'set') {
+      await listing.updateItem({ publish_url: payload.publicUrl })
+      const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+
+      /* websocket emit to landlord */
+      await EstateSyncService.emitWebsocketEventToLandlord({
+        event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+        user_id: estate.user_id,
+        data: {
+          estate_id: listing.estate_id,
+          publisher: listing.provider,
+          publish_url: payload.publicUrl,
+        },
+      })
+
+      //call propertyProcessingSucceeded to publish unpublished properties
+      await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
     }
   }
 
   static async requestCreated(payload) {
+    if (!payload?.propertyId) {
+      return
+    }
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', payload.propertyId)
       .first()
-    if (listing) {
-      const contactRequest = await EstateSyncContactRequest.query()
-        .where('estate_id', listing.estate_id)
-        .where('email', payload.prospect.email)
-        .first()
-      const user = await User.query()
-        .where('email', payload.prospect.email)
-        .where('role', ROLE_USER)
-        .first()
-      if (contactRequest) {
-        await contactRequest.updateItem({
-          email: payload.prospect.email,
-          contact_info: payload.prospect,
-          message: payload.message,
-          user_id: user?.id || null,
-        })
-      } else {
-        await EstateSyncContactRequest.create({
-          estate_id: listing.estate_id,
-          email: payload.prospect.email,
-          contact_info: payload.prospect,
-          message: payload.message,
-          user_id: user?.id || null,
-        })
-        /** TODO: Send email to user with deeplink for registration */
-      }
-      if (user) {
-        //add to matches table with estate_id=listing.estate_id, user_id: user.id
-      }
+
+    if (!listing) {
+      return
+    }
+
+    const contactRequest = await EstateSyncContactRequest.query()
+      .where('estate_id', listing.estate_id)
+      .where('email', payload.prospect.email)
+      .first()
+    const user = await User.query()
+      .where('email', payload.prospect.email)
+      .where('role', ROLE_USER)
+      .first()
+    if (contactRequest) {
+      await contactRequest.updateItem({
+        email: payload.prospect.email,
+        contact_info: payload.prospect,
+        message: payload.message,
+        user_id: user?.id || null,
+      })
+    } else {
+      await EstateSyncContactRequest.create({
+        estate_id: listing.estate_id,
+        email: payload.prospect.email,
+        contact_info: payload.prospect,
+        message: payload.message,
+        user_id: user?.id || null,
+      })
+      /** TODO: Send email to user with deeplink for registration */
+    }
+    if (user) {
+      //add to matches table with estate_id=listing.estate_id, user_id: user.id
     }
   }
 
