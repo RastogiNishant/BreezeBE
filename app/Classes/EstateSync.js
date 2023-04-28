@@ -377,7 +377,7 @@ class EstateSync {
 
   composeParkingSpaceType({ parking_space_type }) {
     const parkingSpaceType = invert(EstateSync.parkingSpaceType)
-    if (parking_space_type.length > 0 && parkingSpaceType[parking_space_type[0]]) {
+    if (parkingSpaceType?.[parking_space_type?.[0]]) {
       return parkingSpaceType[parking_space_type[0]]
     }
   }
