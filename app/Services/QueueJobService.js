@@ -498,6 +498,23 @@ class QueueJobService {
     )
   }
 
+  static async fillMissingEstateInfo() {
+    const estates = (
+      await Estate.query()
+        .whereNot('status', STATUS_DELETE)
+        .where(function () {
+          this.orWhereNull('share_link')
+          this.orWhereNull('hash')
+        })
+        .limit(3)
+        .fetch()
+    ).toJSON()
+
+    estates.map(async (estate) => {
+      await Estate.updateHashInfo(estate.id)
+    })
+  }
+
   static async updateThirdPartyOfferPoints() {
     if (
       process.env.PROCESS_OHNE_MAKLER_GET_POI === undefined ||
