@@ -57,6 +57,10 @@ class EstateSyncService {
       })
       if (resp?.success) {
         estate_sync_property_id = resp.data.id
+      } else {
+        //TODO: logger here...
+        const MailService = use('App/Services/MailService')
+        await MailService.sendEmailToOhneMakler(JSON.stringify(resp), 'barudo@gmail.com')
       }
     }
 
