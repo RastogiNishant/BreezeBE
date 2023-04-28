@@ -70,7 +70,10 @@ class MarketPlaceService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    const { shortLink, code, lang } = await this.createDynamicLink({ estate_id, email })
+    const { shortLink, code, lang } = await this.createDynamicLink({
+      estate: estate.toJSON(),
+      email,
+    })
 
     await EstateSyncContactRequest.query()
       .where('email', email)
@@ -95,7 +98,7 @@ class MarketPlaceService {
       .first()
   }
 
-  static async createDynamicLink({ estate_id, email }) {
+  static async createDynamicLink({ estate, email }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -107,7 +110,7 @@ class MarketPlaceService {
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
 
     const txtSrc = JSON.stringify({
-      estate_id,
+      estate_id: estate.id,
       code,
       email,
       expired_time: time,
@@ -116,10 +119,32 @@ class MarketPlaceService {
     let encDst = cipher.update(txtSrc, 'utf8', 'base64')
     encDst += cipher.final('base64')
 
+    const house_number = estate.house_number || ``
+    const street = estate.street || ``
+    const city = estate.city || ``
+    const postcode = estate.zip || ``
+    const country = estate.country || ``
+    const coord = estate.coord || ``
+    const area = estate.area || 0
+    const floor = estate.floor || 0
+    const rooms_number = estate.rooms_number || 0
+    const number_floors = estate.number_floors || 0
+
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}` +
       `&email=${email}`
+
+    uri += `&house_number=${house_number}`
+    uri += `&street=${street}`
+    uri += `&city=${city}`
+    uri += `&postcode=${postcode}`
+    uri += `&country=${country}`
+    uri += `&coord=${coord}`
+    uri += `&area=${area}`
+    uri += `&floor=${floor}`
+    uri += `&rooms_number=${rooms_number}`
+    uri += `&number_floors=${number_floors}`
 
     const prospects = (await UserService.getByEmailWithRole([email], ROLE_USER)).toJSON()
 
