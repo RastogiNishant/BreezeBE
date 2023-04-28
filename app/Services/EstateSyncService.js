@@ -7,6 +7,7 @@ const {
   STATUS_ACTIVE,
   ROLE_USER,
   WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+  STATUS_DELETE,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -99,13 +100,16 @@ class EstateSyncService {
   }
 
   static async publicationSucceeded(payload) {
+    const listing = await EstateSyncListing.query()
+      .where('estate_sync_listing_id', payload.listingId)
+      .first()
     if (payload.type === 'delete') {
-      return
+      if (listing) {
+        await listing.updateItem({ status: STATUS_DELETE })
+        return
+      }
     }
     if (payload.type === 'set') {
-      const listing = await EstateSyncListing.query()
-        .where('estate_sync_listing_id', payload.listingId)
-        .first()
       if (listing) {
         await listing.updateItem({ publish_url: payload.publicUrl })
         const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
