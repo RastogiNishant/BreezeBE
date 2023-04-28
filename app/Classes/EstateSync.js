@@ -285,11 +285,11 @@ class EstateSync {
 
   composeAddress(estate) {
     const address = {
-      city: estate.city,
-      postalCode: estate.zip,
-      publish: estate.full_address,
-      street: estate.street,
-      streetNumber: estate.house_number,
+      city: estate?.city,
+      postalCode: estate?.zip,
+      publish: estate?.full_address,
+      street: estate?.street,
+      streetNumber: estate?.house_number,
     }
     return address
   }
@@ -319,11 +319,11 @@ class EstateSync {
 
   composeEnergyClass(estate) {
     let energyClass = {}
-    if (estate.energy_efficiency) {
-      energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate.energy_efficiency)
+    if (estate?.energy_efficiency) {
+      energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate?.energy_efficiency)
     }
     const energyType = invert(EstateSync.energyType)
-    if (estate.firing.length > 0 && energyType[estate.firing[0]]) {
+    if (estate?.firing?.length > 0 && energyType[estate.firing[0]]) {
       energyClass['energySource'] = energyType[estate.firing[0]]
     }
     if (!isEmpty(energyClass)) {
