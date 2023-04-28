@@ -242,7 +242,7 @@ class EstateSync {
   }
 
   composeLastRefurbish({ last_modernization }) {
-    let lastRefurbish = ''
+    let lastRefurbish = 0
     if (last_modernization) {
       lastRefurbish = +moment(last_modernization).format('Y')
     }
@@ -251,64 +251,45 @@ class EstateSync {
 
   composeAttachments({ cover, rooms, files }) {
     let attachments = []
-    let extension
-    let fileType
     if (cover) {
-      extension = cover.split('.').pop()
-      fileType = ContentType.getContentType(extension)
-      if (fileType.match(/^image/)) {
-        //this type: image/jpeg is accepted by EstateSync and presented as img...
-        attachments = [...attachments, { url: cover, type: 'image/jpeg', title: 'Cover Image' }]
-      } else if (fileType === 'application/pdf') {
-        //EstateSync only accepts image/jpeg and application/pdf
-        attachments = [
-          ...attachments,
-          { url: cover, type: 'application/pdf', title: 'Cover Image' },
-        ]
-      }
+      attachments = EstateSync.addAttachment(cover, attachments)
     }
     //images:
-    if (rooms.length > 0) {
-      for (let i = 0; i < rooms.length; i++) {
-        if (rooms[i].images.length > 0) {
-          for (let k = 0; k < rooms[i].images.length; k++) {
-            extension = rooms[i].images[k].url.split('.').pop()
-            fileType = ContentType.getContentType(extension)
-            if (fileType.match(/^image/)) {
-              //EstateSync only accepts image/jpeg and application/pdf
-              attachments = [...attachments, { url: rooms[i].images[k].url, type: 'image/jpeg' }]
-            } else if (fileType === 'application/pdf') {
-              attachments = [...attachments, { url: rooms[i].images[k].url, type: fileType }]
-            }
-          }
+    for (let i = 0; i < rooms.length; i++) {
+      if (rooms[i].images.length > 0) {
+        for (let k = 0; k < rooms[i].images.length; k++) {
+          attachments = EstateSync.addAttachment(rooms[i].images[k].url, attachments)
         }
       }
     }
     //files:
-    if (files.length > 0) {
-      for (let i = 0; i < files.length; i++) {
-        if (ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS.indexOf(files[i].type) > -1) {
-          extension = files[i].url.split('.').pop()
-          fileType = ContentType.getContentType(extension)
-          if (fileType.match(/^image/)) {
-            //EstateSync only accepts image/jpeg and application/pdf
-            attachments = [...attachments, { url: files[i].url, type: 'image/jpeg' }]
-          } else if (fileType === 'application/pdf') {
-            attachments = [...attachments, { url: files[i].url, type: fileType }]
-          }
-        }
+    for (let i = 0; i < files.length; i++) {
+      if (ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS.indexOf(files[i].type) > -1) {
+        attachments = EstateSync.addAttachment(files[i].url, attachments)
       }
+    }
+    return attachments
+  }
+
+  static addAttachment(url, attachments) {
+    const extension = url.split('.').pop()
+    const fileType = ContentType.getContentType(extension)
+    if (fileType.match(/^image/)) {
+      //EstateSync only accepts image/jpeg and application/pdf
+      attachments = [...attachments, { url: url, type: 'image/jpeg' }]
+    } else if (fileType === 'application/pdf') {
+      attachments = [...attachments, { url: url, type: fileType }]
     }
     return attachments
   }
 
   composeAddress(estate) {
     const address = {
-      city: estate.city,
-      postalCode: estate.zip,
-      publish: estate.full_address,
-      street: estate.street,
-      streetNumber: estate.house_number,
+      city: estate?.city,
+      postalCode: estate?.zip,
+      publish: estate?.full_address,
+      street: estate?.street,
+      streetNumber: estate?.house_number,
     }
     return address
   }
@@ -338,11 +319,11 @@ class EstateSync {
 
   composeEnergyClass(estate) {
     let energyClass = {}
-    if (estate.energy_efficiency) {
-      energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate.energy_efficiency)
+    if (estate?.energy_efficiency) {
+      energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate?.energy_efficiency)
     }
     const energyType = invert(EstateSync.energyType)
-    if (estate.firing.length > 0 && energyType[estate.firing[0]]) {
+    if (estate?.firing?.length > 0 && energyType[estate.firing[0]]) {
       energyClass['energySource'] = energyType[estate.firing[0]]
     }
     if (!isEmpty(energyClass)) {
@@ -396,7 +377,7 @@ class EstateSync {
       if (contactId) {
         body.contactId = contactId
       }
-      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 2000 })
+      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 3000 })
       return {
         success: true,
         data: ret.data,
