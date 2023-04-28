@@ -1143,6 +1143,10 @@ Estates: [ESTATES]
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
 
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
+
+  OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
+  OUTSIDE_TENANT_INVITE_TYPE: 'outside_tenant_invitation',
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: 'outside_prospect_knock',
 }
 
 module.exports = constants
