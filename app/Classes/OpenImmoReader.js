@@ -5,7 +5,7 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO } = require('../constants')
+const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO, DAY_FORMAT } = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -305,7 +305,10 @@ class OpenImmoReader {
       }
       //force dates to be of the format YYYY-MM-DD
       if (property.vacant_date) {
-        property.vacant_date = moment(new Date(property.vacant_date)).format('YYYY-MM-DD')
+        property.vacant_date = moment
+          .utc(new Date(property.vacant_date))
+          .add(2, 'hours')
+          .format(DAY_FORMAT)
       } else {
         unset(property, 'vacant_date')
       }

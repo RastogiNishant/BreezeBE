@@ -2,13 +2,20 @@
 
 const yup = require('yup')
 const Base = require('./Base')
-const { ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER } = require('../constants')
+const {
+  ROLE_USER,
+  ROLE_LANDLORD,
+  ROLE_PROPERTY_MANAGER,
+  OUTSIDE_LANDLORD_INVITE_TYPE,
+  OUTSIDE_TENANT_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+} = require('../constants')
 const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, INVALID, NUMBER },
 } = require('../exceptions')
 
-class SignInGoogleMobile extends Base {
+class OAuthSignIn extends Base {
   static schema = () =>
     yup.object().shape({
       role: yup
@@ -36,6 +43,13 @@ class SignInGoogleMobile extends Base {
       code: yup.string(),
       data1: yup.string(),
       data2: yup.string(),
+      invite_type: yup
+        .string()
+        .oneOf([
+          OUTSIDE_LANDLORD_INVITE_TYPE,
+          OUTSIDE_TENANT_INVITE_TYPE,
+          OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+        ]),
       ip: yup
         .string()
         .min(7, MINLENGTH)
@@ -52,4 +66,4 @@ class SignInGoogleMobile extends Base {
     })
 }
 
-module.exports = SignInGoogleMobile
+module.exports = OAuthSignIn

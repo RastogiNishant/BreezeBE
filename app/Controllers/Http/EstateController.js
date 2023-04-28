@@ -496,7 +496,7 @@ class EstateController {
    *
    */
   async publishEstate({ request, auth, response }) {
-    const { id, action, confirm_incomplete, publishers } = request.all()
+    const { id, action, publishers } = request.all()
 
     const estate = await Estate.findOrFail(id)
     let status = estate.status
@@ -524,7 +524,6 @@ class EstateController {
         try {
           status = await EstateService.publishEstate({
             estate,
-            confirm_incomplete,
             publishers,
             performed_by: auth.user.id,
           })

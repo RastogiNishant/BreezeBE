@@ -327,6 +327,10 @@ class EstateService {
       .first()
   }
 
+  static async getEstateWithUser(id) {
+    return await this.getActiveEstateQuery().where('id', id).with('user').first()
+  }
+
   static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
@@ -1413,10 +1417,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(
-    { estate, confirm_incomplete, publishers, performed_by },
-    is_queue = false
-  ) {
+  static async publishEstate({ estate, publishers, performed_by }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1426,7 +1427,7 @@ class EstateService {
         throw new HttpException(NO_ESTATE_EXIST, 400)
       }
 
-      if (!confirm_incomplete && user.company_id != null) {
+      if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
@@ -1457,10 +1458,6 @@ class EstateService {
 
       await estate.publishEstate(status, trx)
 
-      if (publishers.length > 0) {
-        QueueService.estateSyncPublishEstate({ estate_id: estate.id, publishers, performed_by })
-      }
-
       if (!is_queue) {
         //send email to support for landlord update...
         QueueService.sendEmailToSupportForLandlordUpdate({
@@ -1472,6 +1469,11 @@ class EstateService {
       }
 
       await trx.commit()
+
+      if (publishers?.length) {
+        QueueService.estateSyncPublishEstate({ estate_id: estate.id, publishers, performed_by })
+      }
+
       return status
     } catch (e) {
       await trx.rollback()
@@ -1528,7 +1530,6 @@ class EstateService {
         })
       })
       .withCount('visits')
-      .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
@@ -2583,6 +2584,11 @@ class EstateService {
         })
         .fetch()
     ).toJSON()
+  }
+
+  static async isPublished(id) {
+    const estate = await this.getQuery({ status: STATUS_ACTIVE, id }).first()
+    return !!estate
   }
 }
 module.exports = EstateService

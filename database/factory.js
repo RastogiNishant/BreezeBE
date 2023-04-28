@@ -208,6 +208,6 @@ Factory.blueprint('App/Models/IncomeProof', async (faker, i, { income_id, offset
   return {
     income_id,
     file: doc,
-    expire_date: moment().subtract(offset, 'months').startOf('month').toDate(),
+    expire_date: moment.utc().subtract(offset, 'months').startOf('month').toDate(),
   }
 })
