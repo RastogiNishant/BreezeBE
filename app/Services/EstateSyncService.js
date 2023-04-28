@@ -58,6 +58,7 @@ class EstateSyncService {
       if (resp?.success) {
         estate_sync_property_id = resp.data.id
       } else {
+        //TODO: send websocket event: failure to post estate... data: estate_id, message: resp.data.message
         //TODO: logger here...
         const MailService = use('App/Services/MailService')
         await MailService.sendEmailToOhneMakler(JSON.stringify(resp), 'barudo@gmail.com')
@@ -109,6 +110,7 @@ class EstateSyncService {
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
       .where('status', STATUS_ACTIVE)
+      .whereNull('estate_sync_listing_id')
       .first()
 
     if (!listing) {
@@ -126,6 +128,9 @@ class EstateSyncService {
     if (result.success) {
       await listing.updateItem({ estate_sync_listing_id: result.data.id })
     } else {
+      //PUBLISHING_ERROR
+      //TODO: send websocket event: failure to publish estate...
+      //data: estate_id: listing.estate_id, provider: listing.provider, message: result.data.message
       const MailService = use('App/Services/MailService')
       await MailService.sendEmailToOhneMakler(
         `LISTING ERR RESULT: ${JSON.stringify(result)}`,
@@ -135,6 +140,11 @@ class EstateSyncService {
   }
 
   static async publicationSucceeded(payload) {
+    const MailService = use('App/Services/MailService')
+    await MailService.sendEmailToOhneMakler(
+      `PUBLICATION payload: ${JSON.stringify(payload)}`,
+      'barudo@gmail.com'
+    )
     if (!payload?.listingId) {
       return
     }
@@ -148,7 +158,7 @@ class EstateSyncService {
     }
 
     if (payload.type === 'delete') {
-      await listing.updateItem({ estate_sync_listing_id: '', publish_url: '' })
+      await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
     } else if (payload.type === 'set') {
       await listing.updateItem({ publish_url: payload.publicUrl })
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
