@@ -776,20 +776,22 @@ class MatchController {
       groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, buddies)
       counts.buddies = buddies.length
 
-      const newMatchedEstatesCount = groupedFilteredEstates.length
-      const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
+      // const newMatchedEstatesCount = groupedFilteredEstates.length
+      // const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
       counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
-      counts.totalInvite =
-        counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+      // counts.totalInvite =
+      //   counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
 
-      const currentDay = moment().startOf('day')
+      counts.totalInvite = counts.matches + counts.buddies
+
+      const currentDay = moment().utc().startOf('day')
 
       counts.expired = allEstatesJson.filter(
         (e) =>
-          moment(e.available_end_at).isBefore(currentDay) ||
-          moment(e.available_start_at).isAfter(currentDay)
+          moment.utc(e.available_end_at).isBefore(currentDay) ||
+          moment.utc(e.available_start_at).isAfter(currentDay)
       ).length
 
       const showed = await Estate.query()

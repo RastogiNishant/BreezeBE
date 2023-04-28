@@ -434,10 +434,10 @@ class MatchService {
     log({ amenitiesScore })
     scoreT += amenitiesScore
 
-    const rentStart = parseInt(moment(prospect.rent_start).startOf('day').format('X'))
-    const vacantFrom = parseInt(moment(estate.vacant_date).startOf('day').format('X'))
-    const now = parseInt(moment().startOf('day').format('X'))
-    const nextYear = parseInt(moment().add(1, 'y').format('X'))
+    const rentStart = parseInt(moment.utc(prospect.rent_start).startOf('day').format('X'))
+    const vacantFrom = parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
+    const now = parseInt(moment.utc().startOf('day').format('X'))
+    const nextYear = parseInt(moment.utc().add(1, 'y').format('X'))
 
     //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
@@ -1965,7 +1965,7 @@ class MatchService {
   }
 
   static getTenantUpcomingVisits(userId) {
-    const now = moment().format(DATE_FORMAT)
+    const now = moment.utc().format(DATE_FORMAT)
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
@@ -2002,7 +2002,7 @@ class MatchService {
   }
 
   static getLandlordUpcomingVisits(userId) {
-    const now = moment().format(DATE_FORMAT)
+    const now = moment.utc().format(DATE_FORMAT)
 
     const query = Estate.query()
       .select('time_slots.*', 'estates.*')
@@ -2978,7 +2978,7 @@ class MatchService {
    *
    */
   static async updateVisitStatusLandlord(estateId, user_id, data) {
-    const currentDay = moment().startOf('day')
+    const currentDay = moment.utc().startOf('day')
     try {
       //TODO: handle this flow. seems wrong
       const visit = await Visit.query()
