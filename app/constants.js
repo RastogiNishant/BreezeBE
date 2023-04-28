@@ -640,6 +640,7 @@ const constants = {
     'house_type',
     'apt_type',
     'options',
+    'share_link',
     'stp_garage',
     'energy_proof',
     'energy_proof_original_file',
