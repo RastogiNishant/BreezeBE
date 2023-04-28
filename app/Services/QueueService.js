@@ -127,7 +127,10 @@ class QueueService {
   }
 
   static async doEvery10MinAtNight() {
-    return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
+    return Promise.all([
+      wrapException(QueueJobService.updateThirdPartyOfferPoints),
+      wrapException(QueueJobService.fillMissingEstateInfo),
+    ])
   }
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
