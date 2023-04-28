@@ -216,7 +216,7 @@ class EstateSync {
 
   composeAvailableFrom({ vacant_date }) {
     if (vacant_date) {
-      return moment(vacant_date).utc().format()
+      return vacant_date
     }
     return 'immediately'
   }
@@ -403,7 +403,7 @@ class EstateSync {
       }
     } catch (err) {
       console.log(err)
-      if (err.response.data) {
+      if (err?.response?.data) {
         return {
           success: false,
           data: err.response.data,
@@ -422,10 +422,22 @@ class EstateSync {
         { propertyId, targetId },
         { timeout: 2000 }
       )
-      return ret.data
+      return {
+        success: true,
+        data: ret.data,
+      }
     } catch (err) {
       console.log(err)
-      if (err.response.data) return err.response.data
+      if (err?.response?.data) {
+        return {
+          success: false,
+          data: err.response.data,
+        }
+      } else {
+        return {
+          success: false,
+        }
+      }
     }
   }
 
@@ -449,10 +461,14 @@ class EstateSync {
         data: ret.data,
       }
     } catch (err) {
-      if (err.response.data) {
+      if (err?.response?.data) {
         return {
           success: false,
           data: err.response.data,
+        }
+      } else {
+        return {
+          success: false,
         }
       }
     }
@@ -476,10 +492,14 @@ class EstateSync {
         data: ret.data,
       }
     } catch (err) {
-      if (err.response.data) {
+      if (err?.response?.data) {
         return {
           success: false,
           data: err.response.data,
+        }
+      } else {
+        return {
+          success: false,
         }
       }
     }
@@ -500,10 +520,22 @@ class EstateSync {
     }
     try {
       const ret = await axios.get(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
-      return ret?.data
+      return {
+        success: true,
+        data: ret?.data,
+      }
     } catch (err) {
       console.log(err)
-      if (err.response.data) return err.response.data
+      if (err?.response?.data) {
+        return {
+          success: false,
+          data: err.response.data,
+        }
+      } else {
+        return {
+          success: false,
+        }
+      }
     }
   }
 
@@ -514,19 +546,24 @@ class EstateSync {
     }
     try {
       const ret = await axios.delete(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
-      if (ret.status === 200)
+      if (ret?.status === 200) {
         return {
           success: true,
         }
+      }
       return {
         success: false,
       }
     } catch (err) {
       console.log(err)
-      if (err.response.data) {
+      if (err?.response?.data) {
         return {
           success: false,
           message: err.response.data,
+        }
+      } else {
+        return {
+          success: false,
         }
       }
     }
