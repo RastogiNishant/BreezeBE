@@ -124,9 +124,9 @@ const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WE
         iosBundleId: process.env.IOS_BUNDLE_ID,
         iosAppStoreId: process.env.IOS_APPSTORE_ID,
       },
-      // desktopInfo: {
-      //   desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
-      // },
+      desktopInfo: {
+        desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
+      },
     },
   })
   return shortLink
