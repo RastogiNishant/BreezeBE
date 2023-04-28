@@ -88,7 +88,7 @@ const {
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
 
@@ -434,10 +434,10 @@ class MatchService {
     log({ amenitiesScore })
     scoreT += amenitiesScore
 
-    const rentStart = parseInt(moment(prospect.rent_start).startOf('day').format('X'))
-    const vacantFrom = parseInt(moment(estate.vacant_date).startOf('day').format('X'))
-    const now = parseInt(moment().startOf('day').format('X'))
-    const nextYear = parseInt(moment().add(1, 'y').format('X'))
+    const rentStart = parseInt(moment.utc(prospect.rent_start).startOf('day').format('X'))
+    const vacantFrom = parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
+    const now = parseInt(moment.utc().startOf('day').format('X'))
+    const nextYear = parseInt(moment.utc().add(1, 'y').format('X'))
 
     //vacantFrom (min) rentStart (i)
     // we check outlyers first now and nextYear
@@ -665,8 +665,8 @@ class MatchService {
   /**
    * Try to knock to estate
    */
-  static async knockEstate(estateId, userId, knock_anyway) {
-    const query = Tenant.query().where({ user_id: userId })
+  static async knockEstate({ estate_id, user_id, knock_anyway }, trx) {
+    const query = Tenant.query().where({ user_id })
     if (knock_anyway) {
       query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
     } else {
@@ -679,10 +679,7 @@ class MatchService {
 
     // Get match with allowed status
     const getMatches = async () => {
-      return Database.query()
-        .from('matches')
-        .where({ user_id: userId, estate_id: estateId })
-        .first()
+      return Database.query().from('matches').where({ user_id, estate_id }).first()
     }
 
     // Get like and check is match not exists or new
@@ -690,7 +687,7 @@ class MatchService {
       return Database.query()
         .from('likes')
         .select('matches.status')
-        .where({ 'likes.user_id': userId, 'likes.estate_id': estateId })
+        .where({ 'likes.user_id': user_id, 'likes.estate_id': estate_id })
         .leftJoin('matches', function () {
           this.on('matches.estate_id', 'likes.estate_id').on('matches.user_id', 'likes.user_id')
         })
@@ -703,10 +700,15 @@ class MatchService {
     })
 
     if (!match && !like && !knock_anyway) {
-      throw new AppException('Not allowed')
+      throw new AppException('Not allowed', 400)
     }
 
-    const trx = await Database.beginTransaction()
+    let isOutsideTrxExist = true
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isOutsideTrxExist = false
+    }
+
     try {
       if (match) {
         if (match.status === MATCH_STATUS_NEW) {
@@ -717,43 +719,58 @@ class MatchService {
               knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
             })
             .where({
-              user_id: userId,
-              estate_id: estateId,
+              user_id,
+              estate_id,
             })
             .transacting(trx)
         } else {
           throw new AppException('Invalid match stage')
         }
       } else if (like || knock_anyway) {
-        console.log('percent here=', like)
-        //FIXME: why percent is 0? It can have value if there is a like
+        const estate = await MatchService.getEstateForScoringQuery()
+          .where({ id: estate_id })
+          .first()
+        if (!estate) {
+          throw new HttpException(NO_ESTATE_EXIST, 500)
+        }
+
+        const percent = await MatchService.calculateMatchPercent(tenant, estate)
         await Match.createItem(
           {
             status: MATCH_STATUS_KNOCK,
-            user_id: userId,
-            estate_id: estateId,
-            percent: 0,
+            user_id,
+            estate_id,
+            percent,
             knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
           },
           trx
         )
       }
       await Dislike.query()
-        .where('user_id', userId)
-        .where('estate_id', estateId)
+        .where('user_id', user_id)
+        .where('estate_id', estate_id)
         .delete()
         .transacting(trx)
 
-      await trx.commit()
+      if (!isOutsideTrxExist) {
+        await trx.commit()
+        this.sendMatchKnockWebsocket({ estate_id, user_id })
+      }
     } catch (e) {
-      await trx.rollback()
+      if (!isOutsideTrxExist) {
+        await trx.rollback()
+      }
+
       throw new HttpException(e.message, 400)
     }
+    return true
+  }
 
+  static async sendMatchKnockWebsocket({ estate_id, user_id }) {
     this.emitMatch({
       data: {
-        estate_id: estateId,
-        user_id: userId,
+        estate_id: estate_id,
+        user_id: user_id,
         old_status: MATCH_STATUS_NEW,
         status: MATCH_STATUS_KNOCK,
       },
@@ -763,15 +780,13 @@ class MatchService {
 
     this.emitMatch({
       data: {
-        estate_id: estateId,
-        user_id: userId,
+        estate_id: estate_id,
+        user_id: user_id,
         old_status: MATCH_STATUS_NEW,
         status: MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
     })
-
-    return true
   }
 
   static async emitCreateMatchCompleted({ user_id, data }) {
@@ -1965,7 +1980,7 @@ class MatchService {
   }
 
   static getTenantUpcomingVisits(userId) {
-    const now = moment().format(DATE_FORMAT)
+    const now = moment.utc().format(DATE_FORMAT)
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
@@ -2002,7 +2017,7 @@ class MatchService {
   }
 
   static getLandlordUpcomingVisits(userId) {
-    const now = moment().format(DATE_FORMAT)
+    const now = moment.utc().format(DATE_FORMAT)
 
     const query = Estate.query()
       .select('time_slots.*', 'estates.*')
@@ -2978,7 +2993,7 @@ class MatchService {
    *
    */
   static async updateVisitStatusLandlord(estateId, user_id, data) {
-    const currentDay = moment().startOf('day')
+    const currentDay = moment.utc().startOf('day')
     try {
       //TODO: handle this flow. seems wrong
       const visit = await Visit.query()

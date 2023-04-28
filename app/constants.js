@@ -402,7 +402,7 @@ const constants = {
   VISIBLE_BEFORE_TENANT: 1,
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
-  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
+  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:mm',
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
 
@@ -1179,6 +1179,10 @@ Estates: [ESTATES]
   ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
 
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
+
+  OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
+  OUTSIDE_TENANT_INVITE_TYPE: 'outside_tenant_invitation',
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: 'outside_prospect_knock',
 }
 
 module.exports = constants

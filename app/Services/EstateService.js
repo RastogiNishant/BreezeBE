@@ -327,6 +327,10 @@ class EstateService {
       .first()
   }
 
+  static async getEstateWithUser(id) {
+    return await this.getActiveEstateQuery().where('id', id).with('user').first()
+  }
+
   static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
@@ -1528,7 +1532,6 @@ class EstateService {
         })
       })
       .withCount('visits')
-      .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
@@ -2583,6 +2586,11 @@ class EstateService {
         })
         .fetch()
     ).toJSON()
+  }
+
+  static async isPublished(id) {
+    const estate = await this.getQuery({ status: STATUS_ACTIVE, id }).first()
+    return !!estate
   }
 }
 module.exports = EstateService

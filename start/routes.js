@@ -351,13 +351,9 @@ Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
-  'valid:SignInGoogleMobile',
-])
+Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware(['valid:OAuthSignIn'])
 
-Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
-  'valid:SignInAppleMobile',
-])
+Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware(['valid:OAuthSignIn'])
 
 //Room Custom Amenities
 Route.group(() => {
@@ -1293,3 +1289,20 @@ Route.list().forEach((r) => {
 })
 
 Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
+
+//Test to create contact from 3rd market places
+Route.group(() => {
+  Route.post('/contact', 'MarketPlaceController.createContact').middleware([
+    'valid:MarketPlaceContact',
+  ])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwtAdministrator'])
+
+Route.group(() => {
+  Route.post('/knock', 'MarketPlaceController.createKnock').middleware([
+    'valid:AlreadyRegisteredOutsideTenantInvite',
+  ])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwt'])

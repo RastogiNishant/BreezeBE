@@ -20,7 +20,6 @@ const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
-const moment = require('moment')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {

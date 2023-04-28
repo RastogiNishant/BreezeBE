@@ -97,7 +97,11 @@ class MatchController {
     await this.getActiveEstate(estate_id, false)
 
     try {
-      const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
+      const result = await MatchService.knockEstate({
+        estate_id: estate_id,
+        user_id: auth.user.id,
+        knock_anyway,
+      })
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
       return response.res(result)
@@ -786,12 +790,12 @@ class MatchController {
 
       counts.totalInvite = counts.matches + counts.buddies
 
-      const currentDay = moment().startOf('day')
+      const currentDay = moment().utc().startOf('day')
 
       counts.expired = allEstatesJson.filter(
         (e) =>
-          moment(e.available_end_at).isBefore(currentDay) ||
-          moment(e.available_start_at).isAfter(currentDay)
+          moment.utc(e.available_end_at).isBefore(currentDay) ||
+          moment.utc(e.available_start_at).isAfter(currentDay)
       ).length
 
       const showed = await Estate.query()
