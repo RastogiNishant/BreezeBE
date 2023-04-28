@@ -317,10 +317,10 @@ class EstateSync {
     let energyClass = {}
     if (estate?.energy_efficiency) {
       energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate?.energy_efficiency)
-    }
-    const energyType = invert(EstateSync.energyType)
-    if (estate?.firing?.length > 0 && energyType[estate.firing[0]]) {
-      energyClass['energySource'] = energyType[estate.firing[0]]
+      const energyType = invert(EstateSync.energyType)
+      if (estate?.firing?.length > 0 && energyType[estate.firing[0]]) {
+        energyClass['energySource'] = energyType[estate.firing[0]]
+      }
     }
     if (!isEmpty(energyClass)) {
       energyClass['type'] = 'consumption'

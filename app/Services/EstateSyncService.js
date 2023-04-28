@@ -104,7 +104,7 @@ class EstateSyncService {
     const credential = await EstateSyncService.getBreezeEstateSyncCredential()
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
-      .where('status', STATUS_DRAFT)
+      .where('status', STATUS_ACTIVE)
       .first()
 
     if (!listing) {
