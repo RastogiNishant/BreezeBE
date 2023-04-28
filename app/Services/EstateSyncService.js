@@ -99,6 +99,17 @@ class EstateSyncService {
       })
   }
 
+  static async unpublishEstate(estate_id) {
+    const listing = await EstateSyncListing.query()
+      .where('estate_id', estate_id)
+      .whereNotNull('estate_sync_listing_id')
+      .where('status', STATUS_ACTIVE)
+      .first()
+    if (listing) {
+      await EstateSync.delete('listings', listing.estate_sync_listing_id)
+    }
+  }
+
   static async propertyProcessingSucceeded(payload) {
     const propertyId = payload.id
     const credential = await EstateSyncService.getBreezeEstateSyncCredential()
@@ -138,7 +149,8 @@ class EstateSyncService {
     }
 
     if (payload.type === 'delete') {
-      await listing.updateItem({ estate_sync_listing_id: '', publish_url: '' })
+      await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
+      await EstateSyncService.unpublishEstate(listing.estate_id)
     } else if (payload.type === 'set') {
       await listing.updateItem({ publish_url: payload.publicUrl })
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
