@@ -9,7 +9,6 @@ class PublishEstate extends Base {
     yup.object().shape({
       action: yup.string().oneOf(['publish', 'unpublish']).required(),
       publishers: yup.array().of(yup.string().oneOf(THIRD_PARTY_PUBLISHERS)),
-      confirm_incomplete: yup.boolean().default(false),
     })
 }
 
