@@ -124,7 +124,13 @@ class EstateSyncService {
       propertyId,
     })
     if (result.success) {
-      await listing.updateItem({ estate_sync_listing_id: result.data.id, status: STATUS_ACTIVE })
+      await listing.updateItem({ estate_sync_listing_id: result.data.id })
+    } else {
+      const MailService = use('App/Services/MailService')
+      await MailService.sendEmailToOhneMakler(
+        `LISTING ERR RESULT: ${JSON.stringify(result)}`,
+        'barudo@gmail.com'
+      )
     }
   }
 
