@@ -6,6 +6,8 @@ const {
   STATUS_DRAFT,
   STATUS_ACTIVE,
   ROLE_USER,
+  WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+  STATUS_DELETE,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -15,6 +17,8 @@ const EstateSyncTarget = use('App/Models/EstateSyncTarget')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const User = use('App/Models/User')
+const Estate = use('App/Models/Estate')
+const Ws = use('Ws')
 
 class EstateSyncService {
   static async getBreezeEstateSyncCredential() {
@@ -96,21 +100,30 @@ class EstateSyncService {
   }
 
   static async publicationSucceeded(payload) {
+    const listing = await EstateSyncListing.query()
+      .where('estate_sync_listing_id', payload.listingId)
+      .first()
     if (payload.type === 'delete') {
-      return
+      if (listing) {
+        await listing.updateItem({ status: STATUS_DELETE })
+        return
+      }
     }
     if (payload.type === 'set') {
-      const listing = await EstateSyncListing.query()
-        .where('estate_sync_listing_id', payload.listingId)
-        .first()
       if (listing) {
         await listing.updateItem({ publish_url: payload.publicUrl })
+        const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
 
-        /* TODO: websocket update frontend
-        estate_id: listing.estate_id,
-        publisher: listing.provider
-        publish_url: payload.publisUrl
-        */
+        /* websocket emit to landlord */
+        await EstateSyncService.emitWebsocketEventToLandlord({
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+          user_id: estate.user_id,
+          data: {
+            estate_id: listing.estate_id,
+            publisher: listing.provider,
+            publish_url: payload.publicUrl,
+          },
+        })
 
         //call propertyProcessingSucceeded to publish unpublished properties
         await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
@@ -152,6 +165,16 @@ class EstateSyncService {
       if (user) {
         //add to matches table with estate_id=listing.estate_id, user_id: user.id
       }
+    }
+  }
+
+  static async emitWebsocketEventToLandlord({ event, user_id, data }) {
+    const channel = `landlord:*`
+    const topicName = `landlord:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(event, data)
     }
   }
 }
