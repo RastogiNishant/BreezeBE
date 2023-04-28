@@ -8,6 +8,8 @@ const {
   ROLE_USER,
   WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
   STATUS_DELETE,
+  WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_POSTING,
+  WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_PUBLISHING,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -58,8 +60,16 @@ class EstateSyncService {
       if (resp?.success) {
         estate_sync_property_id = resp.data.id
       } else {
-        //TODO: send websocket event: failure to post estate... data: estate_id, message: resp.data.message
-        //TODO: logger here...
+        //POSTING ERROR. Send websocket event
+        await EstateSyncService.emitWebsocketEventToLandlord({
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_POSTING,
+          user_id: estate.user_id,
+          data: {
+            estate_id,
+            message: resp?.data?.message,
+          },
+        })
+        //FIXME: replace this with logger...
         const MailService = use('App/Services/MailService')
         await MailService.sendEmailToOhneMakler(JSON.stringify(resp), 'barudo@gmail.com')
       }
@@ -76,8 +86,8 @@ class EstateSyncService {
           status: STATUS_ACTIVE,
           performed_by,
           estate_sync_property_id,
-          estate_sync_listing_id: '',
-          publish_url: '',
+          estate_sync_listing_id: null,
+          publish_url: null,
         })
       } else {
         listings = [
@@ -121,16 +131,25 @@ class EstateSyncService {
       .where('estate_sync_credential_id', credential.id)
       .first()
     const estateSync = new EstateSync(credential.api_key)
-    const result = await estateSync.post('listings', {
+    const resp = await estateSync.post('listings', {
       targetId: target.estate_sync_target_id,
       propertyId,
     })
-    if (result.success) {
+    if (resp.success) {
       await listing.updateItem({ estate_sync_listing_id: result.data.id })
     } else {
-      //PUBLISHING_ERROR
-      //TODO: send websocket event: failure to publish estate...
-      //data: estate_id: listing.estate_id, provider: listing.provider, message: result.data.message
+      //PUBLISHING_ERROR Send websocket event
+      const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+      await EstateSyncService.emitWebsocketEventToLandlord({
+        event: WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_PUBLISHING,
+        user_id: estate.user_id,
+        data: {
+          estate_id: listing.estate_id,
+          provider: listing.provider,
+          message: resp?.data?.message,
+        },
+      })
+      //FIXME: replace this with logger...
       const MailService = use('App/Services/MailService')
       await MailService.sendEmailToOhneMakler(
         `LISTING ERR RESULT: ${JSON.stringify(result)}`,
