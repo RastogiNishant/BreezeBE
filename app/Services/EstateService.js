@@ -1535,6 +1535,7 @@ class EstateService {
       .withCount('final')
       .withCount('inviteBuddies')
       .with('slots')
+      .with('estateSyncListings')
 
     if (ids && ids.length) {
       query.whereIn('estates.user_id', ids)
