@@ -179,48 +179,6 @@ class EstateSyncService {
     }
   }
 
-  static async requestCreated(payload) {
-    if (!payload?.propertyId) {
-      return
-    }
-    const listing = await EstateSyncListing.query()
-      .where('estate_sync_property_id', payload.propertyId)
-      .first()
-
-    if (!listing) {
-      return
-    }
-
-    const contactRequest = await EstateSyncContactRequest.query()
-      .where('estate_id', listing.estate_id)
-      .where('email', payload.prospect.email)
-      .first()
-    const user = await User.query()
-      .where('email', payload.prospect.email)
-      .where('role', ROLE_USER)
-      .first()
-    if (contactRequest) {
-      await contactRequest.updateItem({
-        email: payload.prospect.email,
-        contact_info: payload.prospect,
-        message: payload.message,
-        user_id: user?.id || null,
-      })
-    } else {
-      await EstateSyncContactRequest.create({
-        estate_id: listing.estate_id,
-        email: payload.prospect.email,
-        contact_info: payload.prospect,
-        message: payload.message,
-        user_id: user?.id || null,
-      })
-      /** TODO: Send email to user with deeplink for registration */
-    }
-    if (user) {
-      //add to matches table with estate_id=listing.estate_id, user_id: user.id
-    }
-  }
-
   static async emitWebsocketEventToLandlord({ event, user_id, data }) {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
