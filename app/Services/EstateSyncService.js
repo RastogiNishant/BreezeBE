@@ -83,7 +83,7 @@ class EstateSyncService {
       .where('status', STATUS_DRAFT)
       .first()
 
-    if(!listing){
+    if (!listing) {
       return
     }
     const target = await EstateSyncTarget.query()
@@ -114,7 +114,7 @@ class EstateSyncService {
     }
 
     if (payload.type === 'delete') {
-      await listing.updateItem({ status: STATUS_DELETE })
+      await listing.updateItem({ estate_sync_listing_id: '', publish_url: '' })
     } else if (payload.type === 'set') {
       await listing.updateItem({ publish_url: payload.publicUrl })
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()

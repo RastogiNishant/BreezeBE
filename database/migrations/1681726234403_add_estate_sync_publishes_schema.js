@@ -10,9 +10,12 @@ class AddEstateSyncPublishesSchema extends Schema {
       table.string('provider').notNullable().comment('See ESTATE_SYNC_PUBLISH_PROVIDER...')
       table.integer('estate_id').notNullable().references('id').inTable('estates').index()
       table.integer('performed_by').references('id').inTable('users').index()
-      table.integer('status').comment('See ESTATE_SYNC_PUBLISH_STATUS...')
+      table.integer('status').comment('1 - means this is posted to estate sync, 2 - means deleted')
       table.string('estate_sync_property_id').index()
-      table.string('estate_sync_listing_id').index()
+      table
+        .string('estate_sync_listing_id')
+        .index()
+        .comment('if set means that this is published to provider.')
       table.string('publish_url')
       table.timestamps()
 
