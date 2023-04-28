@@ -172,6 +172,26 @@ Route.group(() => {
   Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
     'auth:jwtAdministrator',
   ])
+
+  /** Estate Sync */
+  Route.get('/estate-sync/targets', 'Admin/EstateSyncController.getTargets').middleware([
+    'auth:jwtAdministrator',
+  ])
+
+  Route.post('/estate-sync/targets', 'Admin/EstateSyncController.addTarget').middleware([
+    'auth:jwtAdministrator',
+    'valid:AddEstateSyncTarget',
+  ])
+
+  Route.delete('/estate-sync/targets/:id', 'Admin/EstateSyncController.deleteTarget').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
+
+  Route.post('/estate-sync', 'Admin/EstateSyncController.initialize').middleware([
+    'auth:jwtAdministrator',
+    'valid:InitializeEstateSync',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -1268,14 +1288,7 @@ Route.list().forEach((r) => {
   }
 })
 
-//test only for this one.... thanks
-Route.post('/webhooks/estate-sync', async ({ request, response }) => {
-  const all = request.all()
-  const MailService = use('App/Services/MailService')
-
-  await MailService.sendEmailToOhneMakler(JSON.stringify(all), 'barudo@gmail.com')
-  return response.res(true)
-})
+Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
 
 //Test to create contact from 3rd market places
 Route.group(() => {

@@ -1417,7 +1417,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1469,6 +1469,11 @@ class EstateService {
       }
 
       await trx.commit()
+
+      if (publishers?.length) {
+        QueueService.estateSyncPublishEstate({ estate_id: estate.id, publishers, performed_by })
+      }
+
       return status
     } catch (e) {
       await trx.rollback()
@@ -1530,6 +1535,7 @@ class EstateService {
       .withCount('final')
       .withCount('inviteBuddies')
       .with('slots')
+      .with('estateSyncListings')
 
     if (ids && ids.length) {
       query.whereIn('estates.user_id', ids)

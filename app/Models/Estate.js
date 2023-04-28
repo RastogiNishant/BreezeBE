@@ -354,6 +354,13 @@ class Estate extends Model {
     return this.hasMany('App/Models/Amenity', 'estate_id', 'id').whereNot('status', STATUS_DELETE)
   }
 
+  estateSyncListings() {
+    return this.hasMany('App/Models/EstateSyncListing', 'id', 'estate_id').whereNot(
+      'status',
+      STATUS_DELETE
+    )
+  }
+
   activeTasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
       .whereIn('status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])

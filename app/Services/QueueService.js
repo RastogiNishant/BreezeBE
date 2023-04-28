@@ -22,6 +22,8 @@ const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
+const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATE = 'estateSyncUnpublishEstate'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -81,6 +83,19 @@ class QueueService {
       IMPORT_ESTATES_VIA_EXCEL,
       { s3_bucket_file_name, fileName, user_id, template, import_id },
       { delay: 1 }
+    )
+  }
+
+  static estateSyncPublishEstate({
+    estate_id,
+    estate_sync_property_id = null,
+    publishers,
+    performed_by,
+  }) {
+    Queue.addJob(
+      ESTATE_SYNC_PUBLISH_ESTATE,
+      { estate_id, estate_sync_property_id, publishers, performed_by },
+      { delay: 400 }
     )
   }
 
@@ -285,6 +300,13 @@ class QueueService {
             job.data.estateId,
             job.data.userId
           )
+        case ESTATE_SYNC_PUBLISH_ESTATE:
+          return require('./EstateSyncService').postEstate({
+            estate_id: job.data.estate_id,
+            estate_sync_property_id: job.data.estate_sync_property_id,
+            publishers: job.data.publishers,
+            performed_by: job.data.performed_by,
+          })
         default:
           console.log(`No job processor for: ${job.name}`)
       }

@@ -945,6 +945,7 @@ const constants = {
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
+  WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH: 'landlord:estateSyncSuccessfulPublish',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1141,6 +1142,42 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
   PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
+
+  ENERGY_CLASS_USING_EFFICIENCY: [
+    { level: 'A+', value: 30 },
+    { level: 'A', value: 50 },
+    { level: 'B', value: 75 },
+    { level: 'C', value: 100 },
+    { level: 'D', value: 130 },
+    { level: 'E', value: 160 },
+    { level: 'F', value: 200 },
+    { level: 'G', value: 250 },
+    { level: 'H', value: 250 },
+  ],
+
+  ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external'],
+  ESTATE_SYNC_TITLE_TEMPLATES: {
+    germany: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    deutschland: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    others: {
+      key: 'rooms_number Rooms area m² apartmentType in city',
+      lang: 'en',
+    },
+  },
+  THIRD_PARTY_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen'],
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT: 'immowelt',
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24: 'immobilienscout-24',
+  ESTATE_SYNC_PUBLISH_PROVIDER_EBAY: 'ebay-kleinanzeigen',
+
+  ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
+  ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
 
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 
