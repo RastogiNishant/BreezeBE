@@ -242,11 +242,7 @@ class EstateSync {
   }
 
   composeLastRefurbish({ last_modernization }) {
-    let lastRefurbish = 0
-    if (last_modernization) {
-      lastRefurbish = +moment(last_modernization).format('Y')
-    }
-    return lastRefurbish
+    return last_modernization ? +moment(last_modernization).format('Y') || 0 : 0
   }
 
   composeAttachments({ cover, rooms, files }) {
