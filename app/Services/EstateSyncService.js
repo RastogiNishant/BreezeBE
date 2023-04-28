@@ -59,20 +59,44 @@ class EstateSyncService {
         estate_sync_property_id = resp.data.id
       }
     }
+
     let listings = []
     for (let i = 0; i < publishers.length; i++) {
-      listings = [
-        ...listings,
-        {
-          provider: publishers[i],
-          estate_id,
+      const listingExists = await EstateSyncListing.query()
+        .where('estate_id', estate_id)
+        .where('provider', publishers[i])
+        .first()
+      if (listingExists) {
+        await listingExists.updateItem({
+          status: STATUS_ACTIVE,
           performed_by,
-          status: STATUS_DRAFT,
           estate_sync_property_id,
-        },
-      ]
+          estate_sync_listing_id: '',
+          publish_url: '',
+        })
+      } else {
+        listings = [
+          ...listings,
+          {
+            provider: publishers[i],
+            estate_id,
+            performed_by,
+            status: STATUS_ACTIVE,
+            estate_sync_property_id,
+          },
+        ]
+      }
     }
-    EstateSyncListing.createMany(listings)
+    await EstateSyncListing.createMany(listings)
+    await EstateSyncListing.query()
+      .whereNotIn('provider', publishers)
+      .where('estate_id', estate_id)
+      .update({
+        estate_sync_property_id: '',
+        status: STATUS_DELETE,
+        estate_sync_listing_id: '',
+        publish_url: '',
+      })
   }
 
   static async propertyProcessingSucceeded(payload) {
