@@ -373,7 +373,7 @@ class EstateSync {
       if (contactId) {
         body.contactId = contactId
       }
-      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 3000 })
+      const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 5000 })
       return {
         success: true,
         data: ret.data,
@@ -397,7 +397,7 @@ class EstateSync {
       const ret = await axios.post(
         `${this.baseUrl}/listings`,
         { propertyId, targetId },
-        { timeout: 2000 }
+        { timeout: 5000 }
       )
       return {
         success: true,
@@ -432,7 +432,7 @@ class EstateSync {
       return false
     }
     try {
-      const ret = await axios.post(`${this.baseUrl}/${type}`, data, { timeout: 2000 })
+      const ret = await axios.post(`${this.baseUrl}/${type}`, data, { timeout: 5000 })
       return {
         success: true,
         data: ret.data,
