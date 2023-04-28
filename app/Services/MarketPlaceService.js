@@ -19,9 +19,8 @@ const UserService = use('App/Services/UserService')
 const MailService = use('App/Services/MailService')
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
-const {
-  exceptions: { NO_ACTIVE_ESTATE_EXIST },
-} = require('../exceptions')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
+
 const {
   exceptions: {
     ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID,
@@ -30,13 +29,39 @@ const {
     NO_PROSPECT_KNOCK,
     NO_ESTATE_EXIST,
     MARKET_PLACE_CONTACT_EXIST,
+    NO_ACTIVE_ESTATE_EXIST,
   },
 } = require('../exceptions')
 class MarketPlaceService {
-  static async createContact(contact) {
+  static async createContact(payload) {
+    if (!payload?.propertyId) {
+      return
+    }
+
+    const propertyId = payload.propertyId
+    const listing = await EstateSyncListing.query()
+      .where('estate_sync_property_id', propertyId)
+      .first()
+
+    if (!listing) {
+      return
+    }
+
+    if (!payload?.prospect?.email) {
+      return
+    }
+
+    const contact = {
+      estate_id: listing.estate_id,
+      email: payload.prospect.email,
+      contact_info: payload?.prospect || ``,
+      message: payload?.message || ``,
+    }
+
     if (!(await EstateService.isPublished(contact.estate_id))) {
       throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
     }
+
     const contactRequest = await EstateSyncContactRequest.query()
       .where({
         email: contact.email,
@@ -56,36 +81,39 @@ class MarketPlaceService {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact)).toJSON()
     }
 
-    await this.handlePendingKnock({ estate_id: contact.estate_id, email: contact.email })
+    await this.handlePendingKnock(contact)
     return newContactRequest
   }
 
-  static async handlePendingKnock({ estate_id, email }) {
-    if (!estate_id || !email) {
+  static async handlePendingKnock(contact) {
+    if (!contact.estate_id || !contact.email) {
       throw new HttpException('Params are wrong', 500)
     }
 
-    const estate = await EstateService.getEstateWithUser(estate_id)
+    const estate = await EstateService.getEstateWithUser(contact.estate_id)
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
     const { shortLink, code, lang } = await this.createDynamicLink({
       estate: estate.toJSON(),
-      email,
+      email: contact.email,
     })
 
     await EstateSyncContactRequest.query()
-      .where('email', email)
-      .where('estate_id', estate_id)
+      .where('email', contact.email)
+      .where('estate_id', contact.estate_id)
       .update({ code })
 
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
     const landlord_name = `${user.firstname} ${user.secondname}`
+
     MailService.sendPendingKnockEmail({
       link: shortLink,
-      email,
+      email: contact.email,
+      salutation: contact.contact_info?.salutation || ``,
+      lastName: contact.contact_info?.lastName || ``,
       landlord_name,
       lang,
     })
