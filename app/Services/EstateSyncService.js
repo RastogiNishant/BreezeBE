@@ -56,6 +56,15 @@ class EstateSyncService {
       })
       if (resp?.success) {
         estate_sync_property_id = resp.data.id
+        await EstateSyncService.emitWebsocketEventToLandlord({
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+          user_id: estate.user_id,
+          data: {
+            success: true,
+            type: 'success-posting',
+            estate_id,
+          },
+        })
       } else {
         //POSTING ERROR. Send websocket event
         await EstateSyncService.emitWebsocketEventToLandlord({
