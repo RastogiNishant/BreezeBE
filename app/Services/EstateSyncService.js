@@ -223,7 +223,7 @@ class EstateSyncService {
       //FIXME: replace this with logger...
       const MailService = use('App/Services/MailService')
       await MailService.sendEmailToOhneMakler(
-        `LISTING ERR RESULT: ${JSON.stringify(result)}`,
+        `LISTING ERR RESULT: ${JSON.stringify(resp)}`,
         'barudo@gmail.com'
       )
       //PUBLISHING_ERROR Send websocket event
