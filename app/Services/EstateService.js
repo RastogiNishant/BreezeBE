@@ -646,6 +646,8 @@ class EstateService {
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
+      QueueService.estateSyncUnpublishEstate({ estate_id: estate.id })
+
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({
           type: COMPLETE_CERTAIN_PERCENT,
@@ -1426,7 +1428,6 @@ class EstateService {
       if (!user) {
         throw new HttpException(NO_ESTATE_EXIST, 400)
       }
-
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
@@ -1581,6 +1582,10 @@ class EstateService {
         'Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
       )
     }
+    for (let i = 0; i < ids.length; i++) {
+      QueueService.estateSyncUnpublishEstate({ estate_id: ids[i] })
+    }
+
     return affectedRows
   }
 

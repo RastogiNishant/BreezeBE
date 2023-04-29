@@ -99,6 +99,10 @@ class QueueService {
     )
   }
 
+  static estateSyncUnpublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATE, { estate_id })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
@@ -310,6 +314,8 @@ class QueueService {
             publishers: job.data.publishers,
             performed_by: job.data.performed_by,
           })
+        case ESTATE_SYNC_UNPUBLISH_ESTATE:
+          return require('./EstateSyncService').unpublishEstate(job.data.estate_id)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

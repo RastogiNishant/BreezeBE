@@ -548,7 +548,7 @@ class EstateController {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
       status = STATUS_DRAFT
       //unpublish estate from estate_sync
-      QueueService.unpublishEstate({ estate_id: id })
+      QueueService.estateSyncUnpublishEstate({ estate_id: id })
     }
 
     response.res({
