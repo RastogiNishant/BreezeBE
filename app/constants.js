@@ -946,7 +946,7 @@ const constants = {
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
-  WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH: 'landlord:estateSyncSuccessfulPublish',
+  WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH: 'landlord:publishedToMarketPlace',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
