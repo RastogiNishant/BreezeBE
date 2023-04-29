@@ -57,6 +57,11 @@ class EstateSyncService {
       })
       if (resp?.success) {
         estate_sync_property_id = resp.data.id
+      } else {
+        //TODO: send websocket event: failure to post estate... data: estate_id, message: resp.data.message
+        //TODO: logger here...
+        const MailService = use('App/Services/MailService')
+        await MailService.sendEmailToOhneMakler(JSON.stringify(resp), 'barudo@gmail.com')
       }
     }
 
@@ -115,7 +120,8 @@ class EstateSyncService {
     const credential = await EstateSyncService.getBreezeEstateSyncCredential()
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
-      .where('status', STATUS_DRAFT)
+      .where('status', STATUS_ACTIVE)
+      .whereNull('estate_sync_listing_id')
       .first()
 
     if (!listing) {
@@ -131,11 +137,25 @@ class EstateSyncService {
       propertyId,
     })
     if (result.success) {
-      await listing.updateItem({ estate_sync_listing_id: result.data.id, status: STATUS_ACTIVE })
+      await listing.updateItem({ estate_sync_listing_id: result.data.id })
+    } else {
+      //PUBLISHING_ERROR
+      //TODO: send websocket event: failure to publish estate...
+      //data: estate_id: listing.estate_id, provider: listing.provider, message: result.data.message
+      const MailService = use('App/Services/MailService')
+      await MailService.sendEmailToOhneMakler(
+        `LISTING ERR RESULT: ${JSON.stringify(result)}`,
+        'barudo@gmail.com'
+      )
     }
   }
 
   static async publicationSucceeded(payload) {
+    const MailService = use('App/Services/MailService')
+    await MailService.sendEmailToOhneMakler(
+      `PUBLICATION payload: ${JSON.stringify(payload)}`,
+      'barudo@gmail.com'
+    )
     if (!payload?.listingId) {
       return
     }

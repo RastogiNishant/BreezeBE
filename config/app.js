@@ -136,7 +136,7 @@ module.exports = {
    * Logger
    */
   logger: {
-    transport: 'console',
+    transport: Env.get('LOG_TRANSPORT', 'console'),
 
     console: {
       driver: 'console',
@@ -147,7 +147,7 @@ module.exports = {
     file: {
       driver: 'file',
       name: 'adonis-app',
-      filename: 'adonis.log',
+      filename: '/tmp/adonis.log',
       level: 'info',
     },
 

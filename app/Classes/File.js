@@ -383,11 +383,10 @@ class File {
           }
         })
       }
-
       await writeFile(outputFileName)
       return outputFileName
     } catch (e) {
-      console.log('saveFunctionalTestImage Error', e.message)
+      Logger.error('File upload error', e.message)
       throw new HttpException('File upload failed. Please try again', 400)
     }
   }
