@@ -21,6 +21,7 @@ const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Ws = use('Ws')
+const Database = use('Database')
 const Promise = require('bluebird')
 const Logger = use('Logger')
 class EstateSyncService {
@@ -72,11 +73,13 @@ class EstateSyncService {
                 estate_sync_listing_id: null,
                 publish_url: null,
               })
+              .where('provider', publisher)
+              .where('estate_id', estate_id)
               .transacting(trx)
           } else {
-            await EstateSyncListing.query().createItem(
+            await EstateSyncListing.createItem(
               {
-                provider: publishers[i],
+                provider: publisher,
                 estate_id,
                 performed_by,
                 status: estate_sync_property_id ? STATUS_ACTIVE : STATUS_DRAFT,
