@@ -183,7 +183,7 @@ class ImportService {
       warnings = excelData.warnings
       data = excelData.data
 
-      fsPromise.unlink(outputFileName)
+      fsPromise.unlink(localPath)
 
       result = await Promise.map(
         data,
