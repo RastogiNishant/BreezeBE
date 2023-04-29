@@ -162,7 +162,7 @@ class EstateSyncService {
         publishers,
       })
 
-      EstateSyncService.emitWebsocketEventToLandlord({
+      await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
         user_id: estate.user_id,
         data,
@@ -204,7 +204,7 @@ class EstateSyncService {
       )
       //PUBLISHING_ERROR Send websocket event
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
-      EstateSyncService.emitWebsocketEventToLandlord({
+      await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
         user_id: estate.user_id,
         data: {
@@ -246,7 +246,7 @@ class EstateSyncService {
       await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
 
       /* websocket emit to landlord */
-      EstateSyncService.emitWebsocketEventToLandlord({
+      await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
         user_id: estate.user_id,
         data: {
