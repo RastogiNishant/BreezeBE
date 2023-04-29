@@ -5,7 +5,8 @@ const {
   ESTATE_SYNC_CREDENTIAL_TYPE_USER,
   STATUS_ACTIVE,
   ROLE_USER,
-  WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
+  WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
   STATUS_DELETE,
 } = require('../constants')
 
@@ -57,7 +58,7 @@ class EstateSyncService {
       if (resp?.success) {
         estate_sync_property_id = resp.data.id
         await EstateSyncService.emitWebsocketEventToLandlord({
-          event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
           user_id: estate.user_id,
           data: {
             success: true,
@@ -68,13 +69,13 @@ class EstateSyncService {
       } else {
         //POSTING ERROR. Send websocket event
         await EstateSyncService.emitWebsocketEventToLandlord({
-          event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
           user_id: estate.user_id,
           data: {
             success: false,
             type: 'error-posting',
             estate_id,
-            message: resp?.data?.message,
+            message: resp?.data?.message, //FIXME: message here could be too technical.
           },
         })
         //FIXME: replace this with logger...
@@ -149,7 +150,7 @@ class EstateSyncService {
       //PUBLISHING_ERROR Send websocket event
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
       await EstateSyncService.emitWebsocketEventToLandlord({
-        event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+        event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
         user_id: estate.user_id,
         data: {
           success: false,
@@ -194,7 +195,7 @@ class EstateSyncService {
 
       /* websocket emit to landlord */
       await EstateSyncService.emitWebsocketEventToLandlord({
-        event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+        event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
         user_id: estate.user_id,
         data: {
           success: true,
