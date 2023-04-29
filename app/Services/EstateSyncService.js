@@ -194,7 +194,7 @@ class EstateSyncService {
       propertyId,
     })
     if (resp.success) {
-      await listing.updateItem({ estate_sync_listing_id: result.data.id })
+      await listing.updateItem({ estate_sync_listing_id: resp.data.id })
     } else {
       //PUBLISHING_ERROR Send websocket event
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
