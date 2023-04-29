@@ -196,6 +196,12 @@ class EstateSyncService {
     if (resp.success) {
       await listing.updateItem({ estate_sync_listing_id: resp.data.id })
     } else {
+      //FIXME: replace this with logger...
+      const MailService = use('App/Services/MailService')
+      await MailService.sendEmailToOhneMakler(
+        `LISTING ERR RESULT: ${JSON.stringify(result)}`,
+        'barudo@gmail.com'
+      )
       //PUBLISHING_ERROR Send websocket event
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
       EstateSyncService.emitWebsocketEventToLandlord({
@@ -209,12 +215,6 @@ class EstateSyncService {
           message: resp?.data?.message,
         },
       })
-      //FIXME: replace this with logger...
-      const MailService = use('App/Services/MailService')
-      await MailService.sendEmailToOhneMakler(
-        `LISTING ERR RESULT: ${JSON.stringify(result)}`,
-        'barudo@gmail.com'
-      )
     }
   }
 
@@ -242,6 +242,9 @@ class EstateSyncService {
       await listing.updateItem({ publish_url: payload.publicUrl })
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
 
+      //call propertyProcessingSucceeded to publish unpublished properties
+      await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
+
       /* websocket emit to landlord */
       EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
@@ -254,9 +257,6 @@ class EstateSyncService {
           publish_url: payload.publicUrl,
         },
       })
-
-      //call propertyProcessingSucceeded to publish unpublished properties
-      await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
     }
   }
 
