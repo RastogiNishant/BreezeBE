@@ -359,8 +359,10 @@ class File {
     try {
       const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
+      Logger.info(`bucket URL ${url}`)
+      Logger.info(`Local path ${outputFileName}`)
 
-      const writeFile = async () => {
+      const writeFile = async (url, outputFileName) => {
         const writer = fs.createWriteStream(outputFileName)
         const response = await axios.get(url, { responseType: 'arraybuffer' })
         return new Promise((resolve, reject) => {
@@ -383,7 +385,7 @@ class File {
           }
         })
       }
-      await writeFile(outputFileName)
+      await writeFile(url, outputFileName)
       return outputFileName
     } catch (e) {
       Logger.error(`File upload error ${e.message}`)
