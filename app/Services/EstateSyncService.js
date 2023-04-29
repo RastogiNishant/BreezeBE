@@ -3,13 +3,10 @@
 const {
   ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE,
   ESTATE_SYNC_CREDENTIAL_TYPE_USER,
-  STATUS_DRAFT,
   STATUS_ACTIVE,
   ROLE_USER,
   WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
   STATUS_DELETE,
-  WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_POSTING,
-  WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_PUBLISHING,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -62,9 +59,11 @@ class EstateSyncService {
       } else {
         //POSTING ERROR. Send websocket event
         await EstateSyncService.emitWebsocketEventToLandlord({
-          event: WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_POSTING,
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
           user_id: estate.user_id,
           data: {
+            success: false,
+            type: 'error-posting',
             estate_id,
             message: resp?.data?.message,
           },
@@ -141,9 +140,11 @@ class EstateSyncService {
       //PUBLISHING_ERROR Send websocket event
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
       await EstateSyncService.emitWebsocketEventToLandlord({
-        event: WEBSOCKET_EVENT_ESTATE_SYNC_ERROR_PUBLISHING,
+        event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
         user_id: estate.user_id,
         data: {
+          success: false,
+          type: 'error-publishing',
           estate_id: listing.estate_id,
           provider: listing.provider,
           message: resp?.data?.message,
@@ -187,6 +188,8 @@ class EstateSyncService {
         event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
         user_id: estate.user_id,
         data: {
+          success: true,
+          type: 'success-publishing',
           estate_id: listing.estate_id,
           publisher: listing.provider,
           publish_url: payload.publicUrl,
