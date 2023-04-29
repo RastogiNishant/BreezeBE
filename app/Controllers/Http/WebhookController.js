@@ -21,7 +21,7 @@ class WebhookController {
         await EstateSyncService.requestCreated(eventPayload)
         break
     }
-    return response.res(eventPayload)
+    return response.res({ eventName, eventPayload })
   }
 }
 
