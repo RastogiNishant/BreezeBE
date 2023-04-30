@@ -90,6 +90,7 @@ const {
   MATCH_STATUS_FINISH_PENDING,
   DAY_FORMAT,
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
+  FILE_TYPE_CUSTOM,
 } = require('../constants')
 
 const {
@@ -1545,11 +1546,37 @@ class EstateService {
       query.where('estates.id', params.id)
     }
 
+    let result
     if (page === -1 || limit === -1) {
-      return await query.fetch()
+      result = await query.fetch()
     } else {
-      return await query.paginate(page, limit)
+      result = await query.paginate(page, limit)
     }
+    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = (result.data || []).map((estate) => {
+      const outside_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+      const inside_view_has_media = sum(
+        (estate?.rooms || []).map((room) => room?.images?.length || 0)
+      )
+      const document_view_has_media =
+        ((estate.files || []).filter(
+          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
+      const unassigned_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
+
+      return {
+        ...estate,
+        inside_view_has_media,
+        outside_view_has_media,
+        document_view_has_media,
+        unassigned_view_has_media,
+      }
+    })
+    delete result?.rows
+
+    return result
   }
 
   static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
@@ -2134,8 +2161,9 @@ class EstateService {
     } else {
       result = []
     }
+
     return result.map((estate) => {
-      const isMatchCountValidToChangeLettinType =
+      const isMatchCountValidToChangeLettingType =
         0 + parseInt(estate.__meta__.visits_count) ||
         0 + parseInt(estate.__meta__.knocked_count) ||
         0 + parseInt(estate.__meta__.decided_count) ||
@@ -2146,7 +2174,7 @@ class EstateService {
       return {
         ...estate,
         canChangeLettingType:
-          isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
+          isMatchCountValidToChangeLettingType || estate.current_tenant ? false : true,
       }
     })
   }
