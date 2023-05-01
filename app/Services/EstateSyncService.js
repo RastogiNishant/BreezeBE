@@ -189,6 +189,7 @@ class EstateSyncService {
       .where('estate_id', estate_id)
       .whereNotNull('estate_sync_listing_id')
       .where('status', STATUS_ACTIVE)
+      .where('publishing_error', false) //we're going to process only those that didn't have error yet
       .first()
     if (listing) {
       //This will make estate_sync call webhook publicationSucceeded type=delete
@@ -262,6 +263,7 @@ class EstateSyncService {
 
     const listing = await EstateSyncListing.query()
       .where('estate_sync_listing_id', payload.listingId)
+      .where('posting_error', false)
       .first()
 
     if (!listing) {
