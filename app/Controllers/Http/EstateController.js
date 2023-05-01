@@ -22,6 +22,7 @@ const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
 const Database = use('Database')
 const randomstring = require('randomstring')
 const l = use('Localize')
@@ -1105,6 +1106,17 @@ class EstateController {
     const { id } = request.all()
     try {
       const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
+      const listings = await EstateSyncListing.query()
+        .select('estate_id')
+        .where('status', STATUS_ACTIVE)
+        .whereIn('estate_id', id)
+        .groupBy('estate_id')
+        .fetch()
+      await Promise.all(
+        listings.rows.map(async (estateId) => {
+          await require('./EstateSyncService').unpublishEstate(estateId)
+        })
+      )
       response.res({ deleted: affectedRows })
     } catch (error) {
       throw new HttpException(error.message, 422, 1101230)
