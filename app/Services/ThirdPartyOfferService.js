@@ -62,7 +62,6 @@ class ThirdPartyOfferService {
       ohneMaklerData = data
     } catch (e) {
       console.log('Failed to fetch data!!!!')
-      throw new Error('Failed to fetch data!!!!')
     }
 
     try {
