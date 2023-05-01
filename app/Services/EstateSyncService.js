@@ -116,7 +116,7 @@ class EstateSyncService {
     }
   }
 
-  static async postEstate({ estate_id, performed_by, publishers }) {
+  static async postEstate({ estate_id }) {
     if (!estate_id) {
       return
     }
@@ -137,7 +137,6 @@ class EstateSyncService {
       contactId: credential.estate_sync_contact_id,
     })
 
-    let estate_sync_property_id = null
     let data = {
       success: true,
       type: 'success-posting',
@@ -145,7 +144,11 @@ class EstateSyncService {
     }
 
     if (resp?.success) {
-      estate_sync_property_id = resp.data.id
+      //make all with estate_id and estate_sync_property_id to draft
+      await EstateSyncListing.query().where('estate_id', estate.id).update({
+        estate_sync_property_id: resp.data.id,
+        status: STATUS_DRAFT,
+      })
     } else {
       //POSTING ERROR. Send websocket event
       data = {
@@ -154,34 +157,17 @@ class EstateSyncService {
         type: 'error-posting',
         message: resp?.data?.message, //FIXME: message here could be too technical.
       }
+      await EstateSyncListing.query().where('estate_id', estate_id).update({
+        posting_error: true,
+        posting_error_message: resp?.data?.message,
+      })
       Logger.error(JSON.stringify({ post_estate_sync_error: resp }))
       //FIXME: replace this with logger...
-      const MailService = use('App/Services/MailService')
-      MailService.sendEmailToOhneMakler(JSON.stringify(resp), 'barudo@gmail.com')
-    }
-
-    try {
-      await this.saveMarketPlacesInfo({
-        estate_id,
-        estate_sync_property_id,
-        performed_by,
-        publishers,
-      })
-
-      if (!resp?.success) {
-        await EstateSyncListing.query().where('estate_id', estate_id).update({
-          posting_error: true,
-          posting_error_message: resp?.data?.message,
-        })
-      }
-
       await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
         user_id: estate.user_id,
         data,
       })
-    } catch (e) {
-      Logger.error(JSON.stringify({ save_posting_estate_sync: e.message }))
     }
   }
 
