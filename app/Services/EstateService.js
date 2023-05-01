@@ -1473,7 +1473,7 @@ class EstateService {
       await trx.commit()
 
       if (publishers?.length) {
-        await require('app/Services/EstateSyncService').saveMarketPlacesInfo({
+        await require('./EstateSyncService.js').saveMarketPlacesInfo({
           estate_id: estate.id,
           estate_sync_property_id: null,
           performed_by,
