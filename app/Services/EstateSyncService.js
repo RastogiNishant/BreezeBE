@@ -311,36 +311,6 @@ class EstateSyncService {
   }
 
   static async publicationFailed(payload) {
-<<<<<<< HEAD
-    const listing = await EstateSyncListing.query()
-      .where('estate_sync_listing_id', payload.listingId)
-      .first()
-    if (!listing) {
-      return
-    }
-    const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
-    if (payload.type === 'delete') {
-      //mark error
-      await listing.updateItem({
-        estate_sync_listing_id: null,
-        publish_url: null,
-        publishing_error: true,
-        publishing_error_message: payload.failureMessage,
-        publishing_error_type: 'delete',
-      })
-    } else if (payload.type === 'set') {
-      //mark error
-      await listing.updateItem({
-        status: STATUS_EXPIRE,
-        publishing_error: true,
-        publishing_error_message: payload.failureMessage,
-        publishing_error_type: 'set',
-      })
-      const credential = await EstateSyncService.getBreezeEstateSyncCredential()
-      const estateSync = new EstateSync(credential.api_key)
-      await estateSync.delete(payload.listingId, 'listings')
-    }
-=======
     try {
       const listing = await EstateSyncListing.query()
         .where('estate_sync_listing_id', payload.listingId)
@@ -372,7 +342,6 @@ class EstateSyncService {
         const estateSync = new EstateSync(credential.api_key)
         await estateSync.delete(payload.listingId, 'listings')
       }
->>>>>>> development
 
       await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
