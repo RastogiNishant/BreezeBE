@@ -228,13 +228,14 @@ class ImportService {
       console.log(`${user_id} import excel error ${err}`)
     } finally {
       //correct wrong data during importing excel files
-      console.log('finallizing import excel')
+      Logger.info('finallizing import excel')
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
       }
 
       await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
+      Logger.info(`${user_id} Sending completed excel websocket event`)
       this.emitImported({
         user_id,
         data: {
