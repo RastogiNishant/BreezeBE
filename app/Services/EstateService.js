@@ -1609,9 +1609,6 @@ class EstateService {
         'Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
       )
     }
-    for (let i = 0; i < ids.length; i++) {
-      QueueService.estateSyncUnpublishEstate({ estate_id: ids[i] })
-    }
 
     return affectedRows
   }
