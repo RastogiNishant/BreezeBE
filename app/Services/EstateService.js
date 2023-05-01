@@ -2521,22 +2521,26 @@ class EstateService {
   }
 
   static async correctWrongEstates(user_id) {
-    const estates =
-      (
-        await Estate.query()
-          .select('id')
-          .where('user_id', user_id)
-          .whereNot('status', STATUS_DELETE)
-          .where(function () {
-            this.orWhereNull('hash')
-            this.orWhereNull('six_char_code')
-          })
-          .fetch()
-      ).toJSON() || []
-    let i = 0
-    while (i < estates.length) {
-      await Estate.updateBreezeId(estates[i].id)
-      i++
+    try {
+      const estates =
+        (
+          await Estate.query()
+            .select('id')
+            .where('user_id', user_id)
+            .whereNot('status', STATUS_DELETE)
+            .whereNull('six_char_code')
+            .fetch()
+        ).toJSON() || []
+
+      await Promise.map(
+        estates,
+        async (estate) => {
+          await Estate.updateBreezeId(estate.id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`${user_id} correctWrongEstates error `, e.message)
     }
   }
 
