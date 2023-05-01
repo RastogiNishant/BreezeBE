@@ -179,9 +179,11 @@ class EstateSyncService {
       .where('publishing_error', false) //we're going to process only those that didn't have error yet
       .first()
 
+    const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+    const estateSync = new EstateSync(credential.api_key)
     if (listing) {
       //This will make estate_sync call webhook publicationSucceeded type=delete
-      await EstateSync.delete(listing.estate_sync_listing_id, 'listings')
+      await estateSync.delete(listing.estate_sync_listing_id, 'listings')
     } else {
       //all listings are exhausted. We'll status delete listings of this estate_id
       const posting = await EstateSyncListing.query()
@@ -189,7 +191,7 @@ class EstateSyncService {
         .where('status', STATUS_ACTIVE)
         .first()
       if (posting) {
-        await EstateSync.delete(posting.estate_sync_property_id, 'properties')
+        await estateSync.delete(posting.estate_sync_property_id, 'properties')
         await EstateSyncListing.query()
           .where('estate_id', estate_id)
           .update({ status: STATUS_DELETE, estate_sync_property_id: null })
