@@ -146,10 +146,13 @@ class EstateSyncService {
 
     if (resp?.success) {
       //make all with estate_id and estate_sync_property_id to draft
-      await EstateSyncListing.query().where('estate_id', estate.id).update({
-        estate_sync_property_id: resp.data.id,
-        status: STATUS_DRAFT,
-      })
+      await EstateSyncListing.query()
+        .where('estate_id', estate.id)
+        .whereNot('status', STATUS_DELETE)
+        .update({
+          estate_sync_property_id: resp.data.id,
+          status: STATUS_DRAFT,
+        })
     } else {
       //POSTING ERROR. Send websocket event
       data = {
