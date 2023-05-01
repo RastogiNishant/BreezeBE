@@ -14,6 +14,11 @@ class EstateSyncListing extends Model {
       'publish_url',
       'created_at',
       'updated_at',
+      'posting_error',
+      'publishing_error',
+      'posting_error_message',
+      'publishing_error_message',
+      'publishing_error_type',
     ]
   }
 }
