@@ -219,7 +219,6 @@ class QueueJobService {
       Logger.error(e)
       return false
     }
-    console.log('handleToExpireEstates END...')
   }
 
   static async fetchToActivateEstates() {
