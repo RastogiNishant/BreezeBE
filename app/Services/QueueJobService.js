@@ -93,12 +93,16 @@ class QueueJobService {
     if (!estate || !estate.address || trim(estate.address) === '') {
       return
     }
+    const oldCoord = estate.coord
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
       await estate.updateItem({ coord })
       await QueueJobService.updateEstatePoint(estateId)
+      if (oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
@@ -106,6 +110,9 @@ class QueueJobService {
         address: estate.address,
       })
     } else {
+      if (!oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
