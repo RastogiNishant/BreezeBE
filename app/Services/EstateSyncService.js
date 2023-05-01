@@ -322,7 +322,7 @@ class EstateSyncService {
       await EstateSyncListing.updateItem({
         publishing_error: true,
         publishing_error_message: payload.failureMessage,
-        publishing_error_type: 'delete',
+        publishing_error_type: 'set',
       })
       //continue listing if ever
       await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
