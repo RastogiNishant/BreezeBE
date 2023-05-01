@@ -91,21 +91,6 @@ const {
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 class EstateController {
-  async createEstateByPM({ request, auth, response }) {
-    const data = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-
-    if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate({ request, userId: data.landlord_id })
-      response.res(estate)
-    } else {
-      throw new HttpException('Not Allowed', 400)
-    }
-  }
-
   /**
    *
    */
@@ -142,26 +127,6 @@ class EstateController {
     }
   }
 
-  async updateEstateByPM({ request, auth, response }) {
-    const { id, ...data } = request.all()
-
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-    try {
-      const estate = await Estate.findOrFail(id)
-
-      if (!estate || !landlordIds.includes(estate.user_id)) {
-        throw new HttpException('Not allow', 403)
-      }
-
-      const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
-      response.res(newEstate)
-    } catch (e) {
-      throw new HttpException(e.message, 400)
-    }
-  }
   /**
    *
    */
@@ -207,23 +172,6 @@ class EstateController {
     }
   }
 
-  async getEstatesByPM({ request, auth, response }) {
-    const { limit, page, ...params } = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-    const result = await EstateService.getEstatesByUserId({
-      ids: landlordIds,
-      limit,
-      page,
-      params,
-    })
-    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
-    delete result.rows
-    response.res(result)
-  }
-
   async searchEstates({ request, auth, response }) {
     const { query, coord } = request.all()
     if (!coord && !query) {
@@ -248,37 +196,13 @@ class EstateController {
     if (!isEmpty(request.post())) {
       params = request.post()
     }
-    // Update expired estates status to unpublished
+
     let result = await EstateService.getEstatesByUserId({
       ids: [auth.user.id],
       limit,
       page,
       params,
     })
-
-    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
-    result.data = (result.data || []).map((estate) => {
-      const outside_view_has_media =
-        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
-      const inside_view_has_media = sum(
-        (estate?.rooms || []).map((room) => room?.images?.length || 0)
-      )
-      const document_view_has_media =
-        ((estate.files || []).filter(
-          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
-        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
-      const unassigned_view_has_media =
-        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
-
-      return {
-        ...estate,
-        inside_view_has_media,
-        outside_view_has_media,
-        document_view_has_media,
-        unassigned_view_has_media,
-      }
-    })
-    delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
@@ -357,30 +281,6 @@ class EstateController {
       unassigned_view_has_media,
     }
     response.res(estate)
-  }
-
-  async getEstateByPM({ request, auth, response }) {
-    const { id } = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-    const estate = await EstateService.getQuery()
-      .where('estates.id', id)
-      .whereIn('user_id', landlordIds)
-      .whereNot('status', STATUS_DELETE)
-      .with('point')
-      .with('files')
-      .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE).with('images')
-      })
-      .first()
-
-    if (!estate) {
-      throw new HttpException('Invalid estate', 404)
-    }
-
-    response.res(estate.toJSON({ isOwner: true }))
   }
 
   /**
@@ -499,7 +399,6 @@ class EstateController {
     const { id, action, publishers } = request.all()
 
     const estate = await Estate.findOrFail(id)
-    let status = estate.status
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
@@ -522,7 +421,7 @@ class EstateController {
       ) {
         // Validate is Landlord fulfilled contacts
         try {
-          status = await EstateService.publishEstate({
+          await EstateService.publishEstate({
             estate,
             publishers,
             performed_by: auth.user.id,
@@ -546,14 +445,18 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
-      status = STATUS_DRAFT
       //unpublish estate from estate_sync
       QueueService.estateSyncUnpublishEstate({ estate_id: id })
     }
 
-    response.res({
-      status,
-    })
+    response.res(
+      (
+        await EstateService.getEstatesByUserId({
+          ids: [auth.user.id],
+          params: { id },
+        })
+      )?.data?.[0]
+    )
   }
 
   async makeEstateOffline({ request, auth, response }) {
@@ -1116,9 +1019,9 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-    let result = await EstateService.getEstatesByUserId({
+    let result = await EstateService.getEstates({
       ids: [auth.user.id],
-    })
+    }).fetch()
     let rows = []
 
     if (lang) {

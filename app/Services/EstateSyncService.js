@@ -191,9 +191,10 @@ class EstateSyncService {
       .where('status', STATUS_ACTIVE)
       .where('publishing_error', false) //we're going to process only those that didn't have error yet
       .first()
+
     if (listing) {
       //This will make estate_sync call webhook publicationSucceeded type=delete
-      await EstateSync.delete('listings', listing.estate_sync_listing_id)
+      await EstateSync.delete(listing.estate_sync_listing_id, 'listings')
     } else {
       //all listings are exhausted. We'll status delete listings of this estate_id
       const posting = await EstateSyncListing.query()
@@ -201,7 +202,9 @@ class EstateSyncService {
         .where('status', STATUS_ACTIVE)
         .first()
       if (posting) {
-        await EstateSync.delete('properties', posting.estate_sync_property_id)
+        if (listing.estate_sync_property_id) {
+          await EstateSync.delete(listing.estate_sync_property_id, 'properties')
+        }
         await EstateSyncListing.query()
           .where('estate_id', estate_id)
           .update({ status: STATUS_DELETE, estate_sync_property_id: null })
