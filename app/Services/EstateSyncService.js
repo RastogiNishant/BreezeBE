@@ -72,6 +72,11 @@ class EstateSyncService {
                 estate_sync_property_id,
                 estate_sync_listing_id: null,
                 publish_url: null,
+                posting_error: false,
+                publishing_error: false,
+                posting_error_message: '',
+                publishing_error_message: '',
+                publishing_error_type: '',
               })
               .where('provider', publisher)
               .where('estate_id', estate_id)
@@ -162,6 +167,13 @@ class EstateSyncService {
         publishers,
       })
 
+      if (!resp?.success) {
+        await EstateSyncListing.query().where('estate_id', estate_id).update({
+          posting_error: true,
+          posting_error_message: resp?.data?.message,
+        })
+      }
+
       await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
         user_id: estate.user_id,
@@ -188,7 +200,7 @@ class EstateSyncService {
         .where('status', STATUS_ACTIVE)
         .first()
       if (posting) {
-        await EstateSync.delete('properties', listing.estate_sync_property_id)
+        await EstateSync.delete('properties', posting.estate_sync_property_id)
         await EstateSyncListing.query()
           .where('estate_id', estate_id)
           .update({ status: STATUS_DELETE, estate_sync_property_id: null })
@@ -202,6 +214,7 @@ class EstateSyncService {
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
       .where('status', STATUS_ACTIVE)
+      .where('posting_error', false)
       .whereNull('estate_sync_listing_id')
       .first()
 
@@ -243,11 +256,6 @@ class EstateSyncService {
   }
 
   static async publicationSucceeded(payload) {
-    const MailService = use('App/Services/MailService')
-    await MailService.sendEmailToOhneMakler(
-      `PUBLICATION payload: ${JSON.stringify(payload)}`,
-      'barudo@gmail.com'
-    )
     if (!payload?.listingId) {
       return
     }
@@ -283,6 +291,48 @@ class EstateSyncService {
         },
       })
     }
+  }
+
+  static async publicationFailed(payload) {
+    const listing = await EstateSyncListing.query()
+      .where('estate_sync_listing_id', payload.listingId)
+      .first()
+    if (!listing) {
+      return
+    }
+    const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+    if (payload.type === 'delete') {
+      //mark error
+      await EstateSyncListing.updateItem({
+        estate_sync_listing_id: null,
+        publish_url: null,
+        publishing_error: true,
+        publishing_error_message: payload.failureMessage,
+        publishing_error_type: 'delete',
+      })
+      //continue unpublishing others
+      await EstateSyncService.unpublishEstate(listing.estate_id)
+    } else if (payload.type === 'set') {
+      //mark error
+      await EstateSyncListing.updateItem({
+        publishing_error: true,
+        publishing_error_message: payload.failureMessage,
+        publishing_error_type: 'delete',
+      })
+      //continue listing if ever
+      await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
+    }
+
+    await EstateSyncService.emitWebsocketEventToLandlord({
+      event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
+      user_id: estate.user_id,
+      data: {
+        success: true,
+        type: 'error-publishing',
+        estate_id: listing.estate_id,
+        message: payload.failureMessage,
+      },
+    })
   }
 
   static async requestCreated(payload) {
