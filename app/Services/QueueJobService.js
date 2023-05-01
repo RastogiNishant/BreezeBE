@@ -515,9 +515,10 @@ class QueueJobService {
       ).toJSON()
 
       await Promise.map(
-        estates.map(async (estate) => {
+        estates,
+        async (estate) => {
           await Estate.updateHashInfo(estate.id)
-        }),
+        },
         { concurrency: 1 }
       )
     } catch (e) {
