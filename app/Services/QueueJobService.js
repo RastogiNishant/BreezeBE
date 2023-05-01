@@ -126,10 +126,13 @@ class QueueJobService {
           .fetch()
       ).rows || []
 
-    let i = 0
-    Promise.map(estates, (estate) => {
-      QueueJobService.updateEstateCoord(estate.id)
-    })
+    await Promise.map(
+      estates,
+      async (estate) => {
+        await QueueJobService.updateEstateCoord(estate.id)
+      },
+      { concurrency: 1 }
+    )
   }
 
   static async sendLikedNotificationBeforeExpired() {
@@ -499,20 +502,27 @@ class QueueJobService {
   }
 
   static async fillMissingEstateInfo() {
-    const estates = (
-      await Estate.query()
-        .whereNot('status', STATUS_DELETE)
-        .where(function () {
-          this.orWhereNull('share_link')
-          this.orWhereNull('hash')
-        })
-        .limit(3)
-        .fetch()
-    ).toJSON()
+    try {
+      const estates = (
+        await Estate.query()
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('share_link')
+            this.orWhereNull('hash')
+          })
+          .limit(3)
+          .fetch()
+      ).toJSON()
 
-    estates.map(async (estate) => {
-      await Estate.updateHashInfo(estate.id)
-    })
+      await Promise.map(
+        estates.map(async (estate) => {
+          await Estate.updateHashInfo(estate.id)
+        }),
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      console.log('fillMissingEstateInfo error', e.message)
+    }
   }
 
   static async updateThirdPartyOfferPoints() {

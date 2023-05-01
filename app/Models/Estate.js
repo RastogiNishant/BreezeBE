@@ -327,10 +327,10 @@ class Estate extends Model {
         .first()
     } while (exists)
 
-    await this.updateHashInfo(id, randomString)
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
   }
 
-  static async updateHashInfo(id, randomString = null) {
+  static async updateHashInfo(id) {
     try {
       const hash = Estate.getHash(id)
       const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
@@ -338,9 +338,6 @@ class Estate extends Model {
       let estateInfo = {
         hash,
         share_link,
-      }
-      if (randomString) {
-        estateInfo.six_char_code = randomString
       }
       await Database.table('estates')
         .where('id', id)
