@@ -210,7 +210,7 @@ class EstateSyncService {
         .whereNull('estate_sync_listing_id')
         .fetch()
 
-      if (listings?.rows?.length) {
+      if (!listings?.rows?.length) {
         return
       }
       const estateSync = new EstateSync(credential.api_key)
