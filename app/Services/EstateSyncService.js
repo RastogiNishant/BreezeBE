@@ -296,7 +296,7 @@ class EstateSyncService {
     const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
     if (payload.type === 'delete') {
       //mark error
-      await EstateSyncListing.updateItem({
+      await listing.updateItem({
         estate_sync_listing_id: null,
         publish_url: null,
         publishing_error: true,
@@ -307,7 +307,7 @@ class EstateSyncService {
       await EstateSyncService.unpublishEstate(listing.estate_id)
     } else if (payload.type === 'set') {
       //mark error
-      await EstateSyncListing.updateItem({
+      await listing.updateItem({
         publishing_error: true,
         publishing_error_message: payload.failureMessage,
         publishing_error_type: 'set',
