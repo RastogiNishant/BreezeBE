@@ -509,6 +509,7 @@ class QueueJobService {
   }
 
   static async fillMissingEstateInfo() {
+    return
     try {
       const estates = (
         await Estate.query()
