@@ -447,7 +447,7 @@ class EstateController {
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
       //unpublish estate from estate_sync
-      QueueService.estateSyncUnpublishEstate({ estate_id: id })
+      QueueService.estateSyncUnpublishEstates([id])
     }
 
     response.res(
@@ -1106,17 +1106,7 @@ class EstateController {
     const { id } = request.all()
     try {
       const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
-      const listings = await EstateSyncListing.query()
-        .select('estate_id')
-        .where('status', STATUS_ACTIVE)
-        .whereIn('estate_id', id)
-        .groupBy('estate_id')
-        .fetch()
-      await Promise.all(
-        listings.rows.map(async (estateId) => {
-          await require('./EstateSyncService').unpublishEstate(estateId)
-        })
-      )
+      QueueService.estateSyncUnpublishEstates(id)
       response.res({ deleted: affectedRows })
     } catch (error) {
       throw new HttpException(error.message, 422, 1101230)
