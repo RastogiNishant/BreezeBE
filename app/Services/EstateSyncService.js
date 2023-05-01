@@ -203,12 +203,10 @@ class EstateSyncService {
         .where('status', STATUS_ACTIVE)
         .first()
       if (posting) {
-        if (listing.estate_sync_property_id) {
-          await EstateSync.delete(listing.estate_sync_property_id, 'properties')
-          await EstateSyncListing.query()
-            .where('estate_id', estate_id)
-            .update({ status: STATUS_DELETE, estate_sync_property_id: null })
-        }
+        await EstateSync.delete(posting.estate_sync_property_id, 'properties')
+        await EstateSyncListing.query()
+          .where('estate_id', estate_id)
+          .update({ status: STATUS_DELETE, estate_sync_property_id: null })
       }
     }
   }
