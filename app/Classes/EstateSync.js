@@ -521,6 +521,10 @@ class EstateSync {
     if (possibleTypes.indexOf(type) < 0) {
       return false
     }
+    if (!id) {
+      return false
+    }
+
     try {
       const ret = await axios.delete(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
       if (ret?.status === 200) {

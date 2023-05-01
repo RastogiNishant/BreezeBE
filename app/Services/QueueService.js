@@ -86,17 +86,8 @@ class QueueService {
     )
   }
 
-  static estateSyncPublishEstate({
-    estate_id,
-    estate_sync_property_id = null,
-    publishers,
-    performed_by,
-  }) {
-    Queue.addJob(
-      ESTATE_SYNC_PUBLISH_ESTATE,
-      { estate_id, estate_sync_property_id, publishers, performed_by },
-      { delay: 400 }
-    )
+  static estateSyncPublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
   }
 
   static estateSyncUnpublishEstate({ estate_id }) {
@@ -310,9 +301,6 @@ class QueueService {
         case ESTATE_SYNC_PUBLISH_ESTATE:
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id,
-            estate_sync_property_id: job.data.estate_sync_property_id,
-            publishers: job.data.publishers,
-            performed_by: job.data.performed_by,
           })
         case ESTATE_SYNC_UNPUBLISH_ESTATE:
           return require('./EstateSyncService').unpublishEstate(job.data.estate_id)

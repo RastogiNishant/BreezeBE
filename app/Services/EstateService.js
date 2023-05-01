@@ -1473,7 +1473,13 @@ class EstateService {
       await trx.commit()
 
       if (publishers?.length) {
-        QueueService.estateSyncPublishEstate({ estate_id: estate.id, publishers, performed_by })
+        await require('./EstateSyncService.js').saveMarketPlacesInfo({
+          estate_id: estate.id,
+          estate_sync_property_id: null,
+          performed_by,
+          publishers,
+        })
+        QueueService.estateSyncPublishEstate({ estate_id: estate.id })
       }
 
       return status
