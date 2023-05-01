@@ -1103,13 +1103,10 @@ class EstateController {
 
   async deleteMultiple({ auth, request, response }) {
     const { id } = request.all()
-    const trx = await Database.beginTransaction()
     try {
-      const affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
-      await trx.commit()
+      const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
       response.res({ deleted: affectedRows })
     } catch (error) {
-      await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
   }
