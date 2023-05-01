@@ -201,7 +201,7 @@ class EstateSyncService {
       .whereNull('estate_sync_listing_id')
       .fetch()
 
-    if (listings.rows.length < 1) {
+    if (listings?.rows?.length) {
       return
     }
     const estateSync = new EstateSync(credential.api_key)
@@ -262,7 +262,7 @@ class EstateSyncService {
         .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
         .whereNotNull('estate_sync_listing_id')
         .fetch()
-      if (listings.rows.length === 0) {
+      if (listings?.rows?.length === 0) {
         const credential = await EstateSyncService.getBreezeEstateSyncCredential()
         const estateSync = new EstateSync(credential.api_key)
         const result = await estateSync.delete(payload.propertyId, 'properties')
