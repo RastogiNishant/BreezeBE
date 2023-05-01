@@ -10,6 +10,7 @@ const {
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
   STATUS_DELETE,
   STATUS_DRAFT,
+  STATUS_NEED_VERIFY,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -67,7 +68,7 @@ class EstateSyncService {
           if (listingExists.find((list) => list.provider === publisher)) {
             await EstateSyncListing.query()
               .update({
-                status: estate_sync_property_id ? STATUS_ACTIVE : STATUS_DRAFT,
+                status: estate_sync_property_id ? STATUS_DRAFT : STATUS_NEED_VERIFY,
                 performed_by,
                 estate_sync_property_id,
                 estate_sync_listing_id: null,
@@ -87,7 +88,7 @@ class EstateSyncService {
                 provider: publisher,
                 estate_id,
                 performed_by,
-                status: estate_sync_property_id ? STATUS_ACTIVE : STATUS_DRAFT,
+                status: estate_sync_property_id ? STATUS_DRAFT : STATUS_NEED_VERIFY,
                 estate_sync_property_id,
               },
               trx
@@ -204,10 +205,10 @@ class EstateSyncService {
       if (posting) {
         if (listing.estate_sync_property_id) {
           await EstateSync.delete(listing.estate_sync_property_id, 'properties')
+          await EstateSyncListing.query()
+            .where('estate_id', estate_id)
+            .update({ status: STATUS_DELETE, estate_sync_property_id: null })
         }
-        await EstateSyncListing.query()
-          .where('estate_id', estate_id)
-          .update({ status: STATUS_DELETE, estate_sync_property_id: null })
       }
     }
   }
@@ -217,7 +218,7 @@ class EstateSyncService {
     const credential = await EstateSyncService.getBreezeEstateSyncCredential()
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
-      .where('status', STATUS_ACTIVE)
+      .where('status', STATUS_DRAFT)
       .where('posting_error', false)
       .whereNull('estate_sync_listing_id')
       .first()
@@ -236,6 +237,7 @@ class EstateSyncService {
     })
     if (resp.success) {
       await listing.updateItem({ estate_sync_listing_id: resp.data.id })
+      //has listing_id but we need to wait for websocket call to make this
     } else {
       //FIXME: replace this with logger...
       const MailService = use('App/Services/MailService')
@@ -277,7 +279,7 @@ class EstateSyncService {
       await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
       await EstateSyncService.unpublishEstate(listing.estate_id)
     } else if (payload.type === 'set') {
-      await listing.updateItem({ publish_url: payload.publicUrl })
+      await listing.updateItem({ publish_url: payload.publicUrl, status: STATUS_ACTIVE })
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
 
       //call propertyProcessingSucceeded to publish unpublished properties
