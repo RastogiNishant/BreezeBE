@@ -308,8 +308,6 @@ class EstateSyncService {
         publishing_error_message: payload.failureMessage,
         publishing_error_type: 'delete',
       })
-      //continue unpublishing others
-      await EstateSyncService.unpublishEstate(listing.estate_id)
     } else if (payload.type === 'set') {
       //mark error
       await listing.updateItem({
