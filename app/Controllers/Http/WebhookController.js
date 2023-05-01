@@ -17,6 +17,9 @@ class WebhookController {
       case 'publication.succeeded':
         await EstateSyncService.publicationSucceeded(eventPayload)
         break
+      case 'publication.failed':
+        await EstateSyncService.publicationFailed(eventPayload)
+        break
       case 'request.created':
         await EstateSyncService.requestCreated(eventPayload)
         break
