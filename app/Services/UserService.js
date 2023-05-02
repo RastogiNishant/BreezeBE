@@ -1219,7 +1219,6 @@ class UserService {
       }
       //set last login
       await User.query().where('id', user.id).update({ last_login: moment().utc().format() })
-
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
     }
 

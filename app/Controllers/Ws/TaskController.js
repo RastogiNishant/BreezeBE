@@ -31,25 +31,29 @@ class TaskController extends BaseController {
   }
 
   async onGetPreviousMessages(data) {
-    let lastId = 0
+    try {
+      let lastId = 0
 
-    if (data && data.lastId) {
-      lastId = data.lastId
-    }
-    let previousMessages = await ChatService.getPreviousMessages({
-      task_id: this.taskId,
-      lastId,
-    })
-    previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
-    if (this.topic) {
-      this.topic.emitTo(
-        'previousMessages',
-        {
-          messages: previousMessages,
-          topic: this.socket.topic,
-        },
-        [this.socket.id]
-      )
+      if (data && data.lastId) {
+        lastId = data.lastId
+      }
+      let previousMessages = await ChatService.getPreviousMessages({
+        task_id: this.taskId,
+        lastId,
+      })
+      previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
+      if (this.topic) {
+        this.topic.emitTo(
+          'previousMessages',
+          {
+            messages: previousMessages,
+            topic: this.socket.topic,
+          },
+          [this.socket.id]
+        )
+      }
+    } catch (err) {
+      this.emitError(err.message)
     }
   }
 
