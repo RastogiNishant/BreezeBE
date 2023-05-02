@@ -53,6 +53,7 @@ class ThirdPartyOffer extends Model {
       'duration_rent_min',
       'duration_rent_max',
       'firing',
+      'source_information',
     ]
   }
 

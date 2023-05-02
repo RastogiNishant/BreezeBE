@@ -229,17 +229,6 @@ class ThirdPartyOfferService {
     /* estate coord intersects with polygon of tenant */
     return await ThirdPartyOffer.query()
       .select('third_party_offers.*')
-      .select(
-        Database.raw(`case 
-        when
-          third_party_offers.source='ohnemakler' then
-          json_build_object(
-            'name', '${THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler'].name}',
-            'url', '${THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler'].url}',
-            'logo', '${THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler'].logo}'
-          )
-        end as third_party_offer_information`)
-      )
       .select('third_party_offers.status as estate_status')
       .select(Database.raw(`COALESCE(_m.percent, 0) as match`))
       .select(Database.raw(`NULL as rooms`))

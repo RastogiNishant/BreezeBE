@@ -47,6 +47,7 @@ const {
   FIRING_ELECTRIC,
   FIRING_GROUND_HEAT,
   FIRING_GAS,
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -389,6 +390,7 @@ class OhneMakler {
       } else {
         newEstate.status = STATUS_EXPIRE
       }
+      newEstate.source_information = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler']
     } catch (e) {
       console.log('e.estate', estate)
     }
