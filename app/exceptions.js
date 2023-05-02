@@ -89,6 +89,7 @@ const exceptions = {
   LAT_LON_NOT_PROVIDED: 'Coord info not provided',
   NO_TASK_FOUND: 'Task not found',
   NO_PROSPECT_KNOCK: "you haven't knocked that property",
+  IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE: 'Please wait for a while before you can re-publish',
 }
 
 const exceptionCodes = {

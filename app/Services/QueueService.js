@@ -23,7 +23,7 @@ const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlord
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
 const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
-const ESTATE_SYNC_UNPUBLISH_ESTATE = 'estateSyncUnpublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -90,8 +90,8 @@ class QueueService {
     Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
   }
 
-  static estateSyncUnpublishEstate({ estate_id }) {
-    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATE, { estate_id })
+  static estateSyncUnpublishEstates(estate_ids) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids })
   }
 
   /**
@@ -302,8 +302,8 @@ class QueueService {
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id,
           })
-        case ESTATE_SYNC_UNPUBLISH_ESTATE:
-          return require('./EstateSyncService').unpublishEstate(job.data.estate_id)
+        case ESTATE_SYNC_UNPUBLISH_ESTATES:
+          return require('./EstateSyncService').unpublishMultipleEstates(job.data.estate_ids)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

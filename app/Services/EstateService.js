@@ -28,6 +28,7 @@ const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
 const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const Import = use('App/Models/Import')
@@ -94,7 +95,13 @@ const {
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
+  exceptions: {
+    NO_ESTATE_EXIST,
+    NO_FILE_EXIST,
+    IMAGE_COUNT_LIMIT,
+    FAILED_TO_ADD_FILE,
+    IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE,
+  },
 } = require('../../app/exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -647,7 +654,7 @@ class EstateService {
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
-      QueueService.estateSyncUnpublishEstate({ estate_id: estate.id })
+      QueueService.estateSyncUnpublishEstates([estate.id])
 
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({
@@ -1433,6 +1440,14 @@ class EstateService {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
+      const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
+        .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+        .where('estate_id', estate.id)
+        .first()
+
+      if (isCurrentlyPublishedInMarketPlace) {
+        throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400)
+      }
       await props({
         delMatches: Database.table('matches')
           .where({ estate_id: estate.id })

@@ -413,6 +413,18 @@ class EstateSyncService {
       topic.broadcast(event, data)
     }
   }
+
+  static async unpublishMultipleEstates(estate_ids) {
+    const listings = await EstateSyncListing.query()
+      .select('estate_id')
+      .where('status', STATUS_ACTIVE)
+      .whereIn('estate_id', estate_ids)
+      .groupBy('estate_id')
+      .fetch()
+    await Promise.map(listings.rows, async (estateId) => {
+      await EstateSyncService.unpublishEstate(estateId)
+    })
+  }
 }
 
 module.exports = EstateSyncService
