@@ -324,8 +324,8 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const importFilePathName = request.file('file')
     try {
+      const importFilePathName = request.file('file')
       if (
         await ImportService.hasPreviousAction({
           user_id: auth.user.id,
