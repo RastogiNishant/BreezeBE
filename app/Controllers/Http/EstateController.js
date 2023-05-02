@@ -86,6 +86,7 @@ const {
     FAILED_EXTEND_ESTATE,
     UPLOAD_EXCEL_PROGRESS,
     LAT_LON_NOT_PROVIDED,
+    IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE,
   },
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
@@ -421,6 +422,16 @@ class EstateController {
         estate.letting_type !== LETTING_TYPE_LET
       ) {
         // Validate is Landlord fulfilled contacts
+
+        //Test whether estate is still published in MarketPlace
+        const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
+          .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+          .where('estate_id', estate.id)
+          .first()
+        if (isCurrentlyPublishedInMarketPlace) {
+          throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400, 113210)
+        }
+
         try {
           await EstateService.publishEstate({
             estate,

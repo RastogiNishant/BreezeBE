@@ -28,7 +28,6 @@ const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
 const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
-const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const Import = use('App/Models/Import')
@@ -95,13 +94,7 @@ const {
 } = require('../constants')
 
 const {
-  exceptions: {
-    NO_ESTATE_EXIST,
-    NO_FILE_EXIST,
-    IMAGE_COUNT_LIMIT,
-    FAILED_TO_ADD_FILE,
-    IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE,
-  },
+  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
 } = require('../../app/exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -409,6 +402,7 @@ class EstateService {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
+      .with('estateSyncListings')
 
     if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
@@ -1440,14 +1434,6 @@ class EstateService {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
-      const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
-        .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
-        .where('estate_id', estate.id)
-        .first()
-
-      if (isCurrentlyPublishedInMarketPlace) {
-        throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400)
-      }
       await props({
         delMatches: Database.table('matches')
           .where({ estate_id: estate.id })
