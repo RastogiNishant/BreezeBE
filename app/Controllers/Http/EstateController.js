@@ -443,7 +443,6 @@ class EstateController {
             Logger.error(e)
             throw new HttpException('User not activated', 409)
           }
-          console.log('e.name', JSON.parse(JSON.stringify(e)))
           throw new HttpException(e.message, e.status || 400)
         }
       } else {
