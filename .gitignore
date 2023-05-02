@@ -25,3 +25,5 @@ package-lock.json
 .history
 
 newrelic_agent.log
+newrelic.js
+
