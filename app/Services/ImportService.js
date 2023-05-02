@@ -233,7 +233,7 @@ class ImportService {
         await ImportService.completeImportFile(import_id)
       }
 
-      //await require('./EstateService').correctWrongEstates(user_id)
+      await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
       Logger.info(`${user_id} Sending completed excel websocket event`)
       this.emitImported({
