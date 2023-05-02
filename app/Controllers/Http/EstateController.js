@@ -324,49 +324,55 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const importFilePathName = request.file('file')
-
-    if (
-      await ImportService.hasPreviousAction({ user_id: auth.user.id, action: IMPORT_ACTION_IMPORT })
-    ) {
-      throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
-    }
-
-    if (importFilePathName && importFilePathName.tmpPath) {
+    try {
+      const importFilePathName = request.file('file')
       if (
-        importFilePathName.headers['content-type'] !==
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        await ImportService.hasPreviousAction({
+          user_id: auth.user.id,
+          action: IMPORT_ACTION_IMPORT,
+        })
       ) {
-        throw new HttpException('Not an excel format', 400)
+        throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
       }
-    } else {
-      throw new HttpException('Error found while uploading file.', 400)
-    }
 
-    const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
-    const files = await FileBucket.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
-    ])
+      if (importFilePathName && importFilePathName.tmpPath) {
+        if (
+          importFilePathName.headers['content-type'] !==
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ) {
+          throw new HttpException('Not an excel format', 400)
+        }
+      } else {
+        throw new HttpException('Error found while uploading file.', 400)
+      }
 
-    if (files?.file) {
-      const importItem = await ImportService.addImportFile({
-        user_id: auth.user.id,
-        filename: importFilePathName?.clientName || null,
-        type: IMPORT_TYPE_EXCEL,
-        entity: IMPORT_ENTITY_ESTATES,
-        status: IMPORT_ACTIVITY_PENDING,
-      })
+      const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
+      const files = await FileBucket.saveRequestFiles(request, [
+        { field: 'file', mime: imageMimes, isPublic: false },
+      ])
 
-      QueueService.importEstate({
-        s3_bucket_file_name: files?.file,
-        fileName: importFilePathName,
-        user_id: auth.user.id,
-        template: 'xls',
-        import_id: importItem.id,
-      })
-      response.res(importItem)
-    } else {
-      throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+      if (files?.file) {
+        const importItem = await ImportService.addImportFile({
+          user_id: auth.user.id,
+          filename: importFilePathName?.clientName || null,
+          type: IMPORT_TYPE_EXCEL,
+          entity: IMPORT_ENTITY_ESTATES,
+          status: IMPORT_ACTIVITY_PENDING,
+        })
+
+        QueueService.importEstate({
+          s3_bucket_file_name: files?.file,
+          fileName: importFilePathName,
+          user_id: auth.user.id,
+          template: 'xls',
+          import_id: importItem.id,
+        })
+        response.res(importItem)
+      } else {
+        throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+      }
+    } catch (e) {
+      Logger.error(`${auth.user.id} Importing excel error ${e.message}`)
     }
   }
 
