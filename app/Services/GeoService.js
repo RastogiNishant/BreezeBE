@@ -46,6 +46,7 @@ class GeoService {
       return null
     }
   }
+
   /**
    * Get Isoline data from GeoAPI service
    */
