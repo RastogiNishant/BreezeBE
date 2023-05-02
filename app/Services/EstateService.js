@@ -409,6 +409,7 @@ class EstateService {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
+      .with('estateSyncListings')
 
     if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
