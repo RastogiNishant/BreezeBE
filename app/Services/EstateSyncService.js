@@ -421,8 +421,8 @@ class EstateSyncService {
       .whereIn('estate_id', estate_ids)
       .groupBy('estate_id')
       .fetch()
-    await Promise.map(listings.rows, async (estateId) => {
-      await EstateSyncService.unpublishEstate(estateId)
+    await Promise.map(listings.rows, async (listing) => {
+      await EstateSyncService.unpublishEstate(listing.estate_id)
     })
   }
 }
