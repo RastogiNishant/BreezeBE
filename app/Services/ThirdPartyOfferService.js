@@ -63,7 +63,6 @@ class ThirdPartyOfferService {
       ohneMaklerData = data
     } catch (e) {
       console.log('Failed to fetch data!!!!')
-      throw new Error('Failed to fetch data!!!!')
     }
 
     try {
@@ -247,6 +246,7 @@ class ThirdPartyOfferService {
       .withCount('likes')
       .withCount('dislikes')
       .withCount('knocks')
+      .with('point')
       .leftJoin({ _m: 'third_party_matches' }, function () {
         this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
       })

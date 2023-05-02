@@ -196,14 +196,13 @@ class UserController {
             }
           })
           //FIXME: tzOffset should be coming from header or body of request
-          const tzOffset = 2
           let workingDaysAdded = 0
           let deactivateDateTime
           let daysAdded = 0
           //calculate when the deactivation will occur.
           do {
             daysAdded++
-            deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
+            deactivateDateTime = moment().utc().add(daysAdded, 'days')
             if (
               !(
                 isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||

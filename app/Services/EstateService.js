@@ -90,6 +90,7 @@ const {
   MATCH_STATUS_FINISH_PENDING,
   DAY_FORMAT,
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
+  FILE_TYPE_CUSTOM,
 } = require('../constants')
 
 const {
@@ -327,6 +328,10 @@ class EstateService {
       .first()
   }
 
+  static async getEstateWithUser(id) {
+    return await this.getActiveEstateQuery().where('id', id).with('user').first()
+  }
+
   static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
@@ -397,6 +402,7 @@ class EstateService {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
+      .with('estateSyncListings')
 
     if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
@@ -641,6 +647,8 @@ class EstateService {
 
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
+
+      QueueService.estateSyncUnpublishEstates([estate.id])
 
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({
@@ -1413,7 +1421,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1422,7 +1430,6 @@ class EstateService {
       if (!user) {
         throw new HttpException(NO_ESTATE_EXIST, 400)
       }
-
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
@@ -1465,6 +1472,17 @@ class EstateService {
       }
 
       await trx.commit()
+
+      if (publishers?.length) {
+        await require('./EstateSyncService.js').saveMarketPlacesInfo({
+          estate_id: estate.id,
+          estate_sync_property_id: null,
+          performed_by,
+          publishers,
+        })
+        QueueService.estateSyncPublishEstate({ estate_id: estate.id })
+      }
+
       return status
     } catch (e) {
       await trx.rollback()
@@ -1521,12 +1539,12 @@ class EstateService {
         })
       })
       .withCount('visits')
-      .withCount('knocked')
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
       .withCount('inviteBuddies')
       .with('slots')
+      .with('estateSyncListings')
 
     if (ids && ids.length) {
       query.whereIn('estates.user_id', ids)
@@ -1535,11 +1553,37 @@ class EstateService {
       query.where('estates.id', params.id)
     }
 
+    let result
     if (page === -1 || limit === -1) {
-      return await query.fetch()
+      result = await query.fetch()
     } else {
-      return await query.paginate(page, limit)
+      result = await query.paginate(page, limit)
     }
+    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = (result.data || []).map((estate) => {
+      const outside_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+      const inside_view_has_media = sum(
+        (estate?.rooms || []).map((room) => room?.images?.length || 0)
+      )
+      const document_view_has_media =
+        ((estate.files || []).filter(
+          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
+      const unassigned_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
+
+      return {
+        ...estate,
+        inside_view_has_media,
+        outside_view_has_media,
+        document_view_has_media,
+        unassigned_view_has_media,
+      }
+    })
+    delete result?.rows
+
+    return result
   }
 
   static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
@@ -1562,16 +1606,11 @@ class EstateService {
   /**
    * Soft deletes of estates
    */
-  static async deleteEstates(ids, user_id, trx) {
-    const affectedRows = await Estate.query(trx)
+  static async deleteEstates(ids, user_id) {
+    const affectedRows = await Estate.query()
       .where('user_id', user_id)
       .whereIn('id', ids)
       .update({ status: STATUS_DELETE })
-    if (affectedRows !== ids.length) {
-      throw new AppException(
-        'Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
-      )
-    }
     return affectedRows
   }
 
@@ -1779,7 +1818,7 @@ class EstateService {
 
   static async getIsolines(estate) {
     try {
-      if (!estate.full_address && (estate.coord_raw || estate.coord)) {
+      if (estate.coord_raw || estate.coord) {
         const coords = (estate.coord_raw || estate.coord).split(',')
         const lat = coords[0]
         const lon = coords[1]
@@ -2120,8 +2159,9 @@ class EstateService {
     } else {
       result = []
     }
+
     return result.map((estate) => {
-      const isMatchCountValidToChangeLettinType =
+      const isMatchCountValidToChangeLettingType =
         0 + parseInt(estate.__meta__.visits_count) ||
         0 + parseInt(estate.__meta__.knocked_count) ||
         0 + parseInt(estate.__meta__.decided_count) ||
@@ -2132,7 +2172,7 @@ class EstateService {
       return {
         ...estate,
         canChangeLettingType:
-          isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
+          isMatchCountValidToChangeLettingType || estate.current_tenant ? false : true,
       }
     })
   }
@@ -2482,22 +2522,26 @@ class EstateService {
   }
 
   static async correctWrongEstates(user_id) {
-    const estates =
-      (
-        await Estate.query()
-          .select('id')
-          .where('user_id', user_id)
-          .whereNot('status', STATUS_DELETE)
-          .where(function () {
-            this.orWhereNull('hash')
-            this.orWhereNull('six_char_code')
-          })
-          .fetch()
-      ).toJSON() || []
-    let i = 0
-    while (i < estates.length) {
-      await Estate.updateBreezeId(estates[i].id)
-      i++
+    try {
+      const estates =
+        (
+          await Estate.query()
+            .select('id')
+            .where('user_id', user_id)
+            .whereNot('status', STATUS_DELETE)
+            .whereNull('six_char_code')
+            .fetch()
+        ).toJSON() || []
+
+      await Promise.map(
+        estates,
+        async (estate) => {
+          await Estate.updateBreezeId(estate.id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`${user_id} correctWrongEstates error `, e.message)
     }
   }
 
@@ -2576,6 +2620,11 @@ class EstateService {
         })
         .fetch()
     ).toJSON()
+  }
+
+  static async isPublished(id) {
+    const estate = await this.getQuery({ status: STATUS_ACTIVE, id }).first()
+    return !!estate
   }
 }
 module.exports = EstateService
