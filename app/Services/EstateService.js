@@ -1471,18 +1471,19 @@ class EstateService {
         Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
       }
 
-      await trx.commit()
-
       if (publishers?.length) {
-        await require('./EstateSyncService.js').saveMarketPlacesInfo({
-          estate_id: estate.id,
-          estate_sync_property_id: null,
-          performed_by,
-          publishers,
-        })
+        await require('./EstateSyncService.js').saveMarketPlacesInfo(
+          {
+            estate_id: estate.id,
+            estate_sync_property_id: null,
+            performed_by,
+            publishers,
+          },
+          trx
+        )
         QueueService.estateSyncPublishEstate({ estate_id: estate.id })
       }
-
+      await trx.commit()
       return status
     } catch (e) {
       await trx.rollback()
