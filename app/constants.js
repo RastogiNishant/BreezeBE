@@ -1143,7 +1143,7 @@ Estates: [ESTATES]
       logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
     },
   },
-  VALID_INCOME_PROOFS_PERIOD: 5,
+  VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
 
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
