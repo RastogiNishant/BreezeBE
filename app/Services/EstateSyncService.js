@@ -44,12 +44,10 @@ class EstateSyncService {
     return credential
   }
 
-  static async saveMarketPlacesInfo({
-    estate_id,
-    estate_sync_property_id,
-    performed_by,
-    publishers,
-  }) {
+  static async saveMarketPlacesInfo(
+    { estate_id, estate_sync_property_id, performed_by, publishers },
+    trx
+  ) {
     let listingExists = []
 
     if (publishers?.length) {
@@ -60,8 +58,6 @@ class EstateSyncService {
           .fetch()
       ).toJSON()
     }
-
-    const trx = await Database.beginTransaction()
     try {
       await Promise.map(
         publishers,
@@ -109,10 +105,7 @@ class EstateSyncService {
           publish_url: null,
         })
         .transacting(trx)
-
-      await trx.commit()
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, 500)
     }
   }
