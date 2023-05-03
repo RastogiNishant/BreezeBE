@@ -100,7 +100,7 @@ class QueueEngine {
       {},
       {
         jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/2 * * * *' },
+        repeat: { cron: '*/15 * * * *' },
         removeOnComplete: true,
         removeOnFail: true,
       }
