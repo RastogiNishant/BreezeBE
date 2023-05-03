@@ -55,6 +55,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   TRANSPORT_TYPE_CAR,
+  VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
@@ -170,7 +171,10 @@ class TenantService {
    */
   static async getTenantValidProofsCount(userId, startOf) {
     if (!startOf) {
-      startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
+      startOf = moment
+        .subtract(VALID_INCOME_PROOFS_PERIOD, 'month')
+        .startOf('month')
+        .format('YYYY-MM-DD')
     }
 
     return Database.table({ _m: 'members' })
