@@ -257,7 +257,7 @@ class UserController {
       ]
     }
     status = status || STATUS_ACTIVE
-    estate_status = estate_status || STATUS_DRAFT
+    estate_status = estate_status || [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT]
     limit = 99999
     const landlordQuery = User.query()
       .select(

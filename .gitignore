@@ -23,3 +23,5 @@ package-lock.json
 .DS_Store
 .platform
 .history
+
+newrelic_agent.log

@@ -111,7 +111,11 @@ class UpdateUser extends Base {
       contact: yup
         .object()
         .shape({
-          email: yup.string().email().max(255, getExceptionMessage('email', MAXLENGTH, 255)),
+          email: yup
+            .string()
+            .email()
+            .lowercase()
+            .max(255, getExceptionMessage('email', MAXLENGTH, 255)),
           title: yup
             .number()
             .oneOf(

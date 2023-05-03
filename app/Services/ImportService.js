@@ -12,6 +12,8 @@ const AppException = use('App/Exceptions/AppException')
 const Ws = use('Ws')
 const FileBucket = use('App/Classes/File')
 const schema = require('../Validators/CreateBuddy').schema()
+const Logger = use('Logger')
+const fsPromise = require('fs/promises')
 const {
   STATUS_DRAFT,
   DATE_FORMAT,
@@ -168,20 +170,21 @@ class ImportService {
         user_id,
       })
 
-      console.log('getting s3 bucket url!!!', s3_bucket_file_name)
+      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name}`)
       const url = await FileBucket.getProtectedUrl(s3_bucket_file_name)
-      console.log('storing excel file to s3 bucket!!!')
+      Logger.info('storing excel file to s3 bucket!!!')
       const localPath = await FileBucket.saveFileTo({ url, ext: 'xlsx' })
-      console.log('saved file to path', localPath)
+      Logger.info(`saved file to path ${localPath}`)
       const reader = new EstateImportReader()
       reader.init(localPath)
-      console.log('processing excel file!!!')
+      Logger.info('processing excel file!!!')
       const excelData = await reader.process()
       errors = excelData.errors
       warnings = excelData.warnings
       data = excelData.data
 
-      const opt = { concurrency: 1 }
+      fsPromise.unlink(localPath)
+
       result = await Promise.map(
         data,
         async (i, index) => {
@@ -212,7 +215,7 @@ class ImportService {
           }
           return null
         },
-        opt
+        { concurrency: 1 }
       )
       createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
       result.map((row) => {
@@ -222,16 +225,17 @@ class ImportService {
       })
     } catch (err) {
       errors = [...errors, err.message]
-      console.log('import excel error', err)
+      console.log(`${user_id} import excel error ${err}`)
     } finally {
       //correct wrong data during importing excel files
-      console.log('finallizing import excel')
+      Logger.info('finallizing import excel')
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
       }
 
       await require('./EstateService').correctWrongEstates(user_id)
       FileBucket.remove(s3_bucket_file_name, false)
+      Logger.info(`${user_id} Sending completed excel websocket event`)
       this.emitImported({
         user_id,
         data: {

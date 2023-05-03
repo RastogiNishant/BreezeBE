@@ -48,6 +48,7 @@ const {
   DATE_FORMAT,
   LETTING_STATUS_STANDARD,
   CONNECT_ESTATE,
+  OUTSIDE_TENANT_INVITE_TYPE,
 } = require('../constants')
 
 const {
@@ -763,24 +764,24 @@ class EstateCurrentTenantService extends BaseService {
       encDst += cipher.final('base64')
 
       let uri =
-        `&data1=${encodeURIComponent(encDst)}` +
+        `&type=${OUTSIDE_TENANT_INVITE_TYPE}``&data1=${encodeURIComponent(encDst)}` +
         `&data2=${encodeURIComponent(iv.toString('base64'))}`
 
       if (estateCurrentTenant.email) {
         uri += `&email=${estateCurrentTenant.email}`
-      }
 
-      const existingUser = await User.query()
-        .where('email', estateCurrentTenant.email)
-        .where('role', ROLE_USER)
-        .first()
+        const existingUser = await User.query()
+          .where('email', estateCurrentTenant.email.toLowerCase())
+          .where('role', ROLE_USER)
+          .first()
 
-      if (existingUser) {
-        uri += `&user_id=${existingUser.id}`
+        if (existingUser) {
+          uri += `&user_id=${existingUser.id}`
+        }
       }
 
       const shortLink = await createDynamicLink(
-        `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+        `${process.env.DEEP_LINK}?type=${OUTSIDE_TENANT_INVITE_TYPE}${uri}`
       )
       return {
         id: estateCurrentTenant.id,
@@ -795,7 +796,7 @@ class EstateCurrentTenantService extends BaseService {
     }
   }
 
-  static async acceptOutsideTenant({ data1, data2, password, email, user }) {
+  static async acceptOutsideTenant({ data1, data2, password, email, user }, trx) {
     const { estateCurrentTenant, estate_id } = await this.handleInvitationLink({
       data1,
       data2,
@@ -803,7 +804,11 @@ class EstateCurrentTenantService extends BaseService {
       user,
     })
 
-    const trx = await Database.beginTransaction()
+    let isOutsideTrx = true
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isOutsideTrx = false
+    }
     try {
       if (user) {
         await EstateCurrentTenantService.updateOutsideTenantInfo({ user, estate_id }, trx)
@@ -824,10 +829,15 @@ class EstateCurrentTenantService extends BaseService {
           trx
         )
       }
-      await trx.commit()
+      if (!isOutsideTrx) {
+        await trx.commit()
+      }
+
       return user.id
     } catch (e) {
-      await trx.rollback()
+      if (!isOutsideTrx) {
+        await trx.rollback()
+      }
       throw new HttpException(e.message, 500)
     }
   }

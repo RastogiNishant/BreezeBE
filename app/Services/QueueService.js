@@ -22,6 +22,8 @@ const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
+const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -84,6 +86,14 @@ class QueueService {
     )
   }
 
+  static estateSyncPublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
+  }
+
+  static estateSyncUnpublishEstates(estate_ids) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
@@ -112,7 +122,10 @@ class QueueService {
   }
 
   static async doEvery10MinAtNight() {
-    return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
+    return Promise.all([
+      wrapException(QueueJobService.updateThirdPartyOfferPoints),
+      wrapException(QueueJobService.fillMissingEstateInfo),
+    ])
   }
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
@@ -206,7 +219,7 @@ class QueueService {
       {},
       {
         jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/2 * * * *' },
+        repeat: { cron: '*/15 * * * *' },
         removeOnComplete: true,
         removeOnFail: true,
       }
@@ -285,6 +298,12 @@ class QueueService {
             job.data.estateId,
             job.data.userId
           )
+        case ESTATE_SYNC_PUBLISH_ESTATE:
+          return require('./EstateSyncService').postEstate({
+            estate_id: job.data.estate_id,
+          })
+        case ESTATE_SYNC_UNPUBLISH_ESTATES:
+          return require('./EstateSyncService').unpublishMultipleEstates(job.data.estate_ids)
         default:
           console.log(`No job processor for: ${job.name}`)
       }
