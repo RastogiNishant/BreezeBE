@@ -769,15 +769,15 @@ class EstateCurrentTenantService extends BaseService {
 
       if (estateCurrentTenant.email) {
         uri += `&email=${estateCurrentTenant.email}`
-      }
 
-      const existingUser = await User.query()
-        .where('email', estateCurrentTenant.email)
-        .where('role', ROLE_USER)
-        .first()
+        const existingUser = await User.query()
+          .where('email', estateCurrentTenant.email.toLowerCase())
+          .where('role', ROLE_USER)
+          .first()
 
-      if (existingUser) {
-        uri += `&user_id=${existingUser.id}`
+        if (existingUser) {
+          uri += `&user_id=${existingUser.id}`
+        }
       }
 
       const shortLink = await createDynamicLink(
