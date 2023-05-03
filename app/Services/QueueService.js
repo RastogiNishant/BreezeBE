@@ -264,8 +264,8 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
-        case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
-          return QueueService.doEvery10MinAtNight()
+        // case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
+        //   return QueueService.doEvery10MinAtNight()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
