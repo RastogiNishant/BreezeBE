@@ -328,6 +328,7 @@ class OhneMakler {
       }
       newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
       newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}, ${estate.country}`
+
       if (estate?.pictures && !Array.isArray(estate?.pictures)) {
         estate.pictures = [estate?.pictures]
       }

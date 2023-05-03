@@ -3,7 +3,8 @@
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
-class PullOhnemaklerSchema extends Schema {
+
+class PopulateCostsForThirdPartyOffersSchema extends Schema {
   async up() {
     await ThirdPartyOfferService.pullOhneMakler(true)
   }
@@ -11,4 +12,4 @@ class PullOhnemaklerSchema extends Schema {
   down() {}
 }
 
-module.exports = PullOhnemaklerSchema
+module.exports = PopulateCostsForThirdPartyOffersSchema
