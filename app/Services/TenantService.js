@@ -171,7 +171,8 @@ class TenantService {
    */
   static async getTenantValidProofsCount(userId, startOf) {
     if (!startOf) {
-      startOf = moment
+      startOf = moment()
+        .utc()
         .subtract(VALID_INCOME_PROOFS_PERIOD, 'month')
         .startOf('month')
         .format('YYYY-MM-DD')
