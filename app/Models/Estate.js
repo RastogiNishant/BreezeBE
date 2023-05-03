@@ -342,8 +342,10 @@ class Estate extends Model {
       await Database.table('estates')
         .where('id', id)
         .update({ ...estateInfo })
+      return share_link
     } catch (e) {
-      console.log('updateHashInfo=', e.message)
+      Logger.error(`estate ${id} updateHashInfo error ${e.message}`)
+      return null
     }
   }
 

@@ -2626,5 +2626,21 @@ class EstateService {
     const estate = await this.getQuery({ status: STATUS_ACTIVE, id }).first()
     return !!estate
   }
+
+  static async createShareLink(user_id, id) {
+    const estate = await this.getActiveEstateQuery()
+      .where('id', id)
+      .where('user_id', user_id)
+      .first()
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (estate.share_link) {
+      return estate.share_link
+    }
+
+    return await Estate.updateHashInfo(id)
+  }
 }
 module.exports = EstateService
