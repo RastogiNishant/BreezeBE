@@ -22,6 +22,7 @@ const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
 const Database = use('Database')
 const randomstring = require('randomstring')
 const l = use('Localize')
@@ -85,27 +86,13 @@ const {
     FAILED_EXTEND_ESTATE,
     UPLOAD_EXCEL_PROGRESS,
     LAT_LON_NOT_PROVIDED,
+    IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE,
   },
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 class EstateController {
-  async createEstateByPM({ request, auth, response }) {
-    const data = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-
-    if (landlordIds.includes(data.landlord_id)) {
-      const estate = await EstateService.createEstate({ request, userId: data.landlord_id })
-      response.res(estate)
-    } else {
-      throw new HttpException('Not Allowed', 400)
-    }
-  }
-
   /**
    *
    */
@@ -142,26 +129,6 @@ class EstateController {
     }
   }
 
-  async updateEstateByPM({ request, auth, response }) {
-    const { id, ...data } = request.all()
-
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-    try {
-      const estate = await Estate.findOrFail(id)
-
-      if (!estate || !landlordIds.includes(estate.user_id)) {
-        throw new HttpException('Not allow', 403)
-      }
-
-      const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
-      response.res(newEstate)
-    } catch (e) {
-      throw new HttpException(e.message, 400)
-    }
-  }
   /**
    *
    */
@@ -207,23 +174,6 @@ class EstateController {
     }
   }
 
-  async getEstatesByPM({ request, auth, response }) {
-    const { limit, page, ...params } = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-    const result = await EstateService.getEstatesByUserId({
-      ids: landlordIds,
-      limit,
-      page,
-      params,
-    })
-    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
-    delete result.rows
-    response.res(result)
-  }
-
   async searchEstates({ request, auth, response }) {
     const { query, coord } = request.all()
     if (!coord && !query) {
@@ -248,37 +198,13 @@ class EstateController {
     if (!isEmpty(request.post())) {
       params = request.post()
     }
-    // Update expired estates status to unpublished
+
     let result = await EstateService.getEstatesByUserId({
       ids: [auth.user.id],
       limit,
       page,
       params,
     })
-
-    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
-    result.data = (result.data || []).map((estate) => {
-      const outside_view_has_media =
-        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
-      const inside_view_has_media = sum(
-        (estate?.rooms || []).map((room) => room?.images?.length || 0)
-      )
-      const document_view_has_media =
-        ((estate.files || []).filter(
-          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
-        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
-      const unassigned_view_has_media =
-        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
-
-      return {
-        ...estate,
-        inside_view_has_media,
-        outside_view_has_media,
-        document_view_has_media,
-        unassigned_view_has_media,
-      }
-    })
-    delete result?.rows
 
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
@@ -359,30 +285,6 @@ class EstateController {
     response.res(estate)
   }
 
-  async getEstateByPM({ request, auth, response }) {
-    const { id } = request.all()
-    const landlordIds = await EstatePermissionService.getLandlordIds(
-      auth.user.id,
-      PROPERTY_MANAGE_ALLOWED
-    )
-    const estate = await EstateService.getQuery()
-      .where('estates.id', id)
-      .whereIn('user_id', landlordIds)
-      .whereNot('status', STATUS_DELETE)
-      .with('point')
-      .with('files')
-      .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE).with('images')
-      })
-      .first()
-
-    if (!estate) {
-      throw new HttpException('Invalid estate', 404)
-    }
-
-    response.res(estate.toJSON({ isOwner: true }))
-  }
-
   /**
    *
    */
@@ -422,49 +324,55 @@ class EstateController {
   }
 
   async importEstate({ request, auth, response }) {
-    const importFilePathName = request.file('file')
-
-    if (
-      await ImportService.hasPreviousAction({ user_id: auth.user.id, action: IMPORT_ACTION_IMPORT })
-    ) {
-      throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
-    }
-
-    if (importFilePathName && importFilePathName.tmpPath) {
+    try {
+      const importFilePathName = request.file('file')
       if (
-        importFilePathName.headers['content-type'] !==
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        await ImportService.hasPreviousAction({
+          user_id: auth.user.id,
+          action: IMPORT_ACTION_IMPORT,
+        })
       ) {
-        throw new HttpException('Not an excel format', 400)
+        throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
       }
-    } else {
-      throw new HttpException('Error found while uploading file.', 400)
-    }
 
-    const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
-    const files = await FileBucket.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
-    ])
+      if (importFilePathName && importFilePathName.tmpPath) {
+        if (
+          importFilePathName.headers['content-type'] !==
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ) {
+          throw new HttpException('Not an excel format', 400)
+        }
+      } else {
+        throw new HttpException('Error found while uploading file.', 400)
+      }
 
-    if (files?.file) {
-      const importItem = await ImportService.addImportFile({
-        user_id: auth.user.id,
-        filename: importFilePathName?.clientName || null,
-        type: IMPORT_TYPE_EXCEL,
-        entity: IMPORT_ENTITY_ESTATES,
-        status: IMPORT_ACTIVITY_PENDING,
-      })
+      const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
+      const files = await FileBucket.saveRequestFiles(request, [
+        { field: 'file', mime: imageMimes, isPublic: false },
+      ])
 
-      QueueService.importEstate({
-        s3_bucket_file_name: files?.file,
-        fileName: importFilePathName,
-        user_id: auth.user.id,
-        template: 'xls',
-        import_id: importItem.id,
-      })
-      response.res(importItem)
-    } else {
-      throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+      if (files?.file) {
+        const importItem = await ImportService.addImportFile({
+          user_id: auth.user.id,
+          filename: importFilePathName?.clientName || null,
+          type: IMPORT_TYPE_EXCEL,
+          entity: IMPORT_ENTITY_ESTATES,
+          status: IMPORT_ACTIVITY_PENDING,
+        })
+
+        QueueService.importEstate({
+          s3_bucket_file_name: files?.file,
+          fileName: importFilePathName,
+          user_id: auth.user.id,
+          template: 'xls',
+          import_id: importItem.id,
+        })
+        response.res(importItem)
+      } else {
+        throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+      }
+    } catch (e) {
+      Logger.error(`${auth.user.id} Importing excel error ${e.message}`)
     }
   }
 
@@ -496,10 +404,9 @@ class EstateController {
    *
    */
   async publishEstate({ request, auth, response }) {
-    const { id, action } = request.all()
+    const { id, action, publishers } = request.all()
 
     const estate = await Estate.findOrFail(id)
-    let status = estate.status
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
@@ -521,8 +428,22 @@ class EstateController {
         estate.letting_type !== LETTING_TYPE_LET
       ) {
         // Validate is Landlord fulfilled contacts
+
+        //Test whether estate is still published in MarketPlace
+        const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
+          .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+          .where('estate_id', estate.id)
+          .first()
+        if (isCurrentlyPublishedInMarketPlace) {
+          throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400, 113210)
+        }
+
         try {
-          status = await EstateService.publishEstate(estate)
+          await EstateService.publishEstate({
+            estate,
+            publishers,
+            performed_by: auth.user.id,
+          })
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)
@@ -542,12 +463,18 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
-      status = STATUS_DRAFT
+      //unpublish estate from estate_sync
+      QueueService.estateSyncUnpublishEstates([id])
     }
 
-    response.res({
-      status,
-    })
+    response.res(
+      (
+        await EstateService.getEstatesByUserId({
+          ids: [auth.user.id],
+          params: { id },
+        })
+      )?.data?.[0]
+    )
   }
 
   async makeEstateOffline({ request, auth, response }) {
@@ -1110,9 +1037,9 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-    let result = await EstateService.getEstatesByUserId({
+    let result = await EstateService.getEstates({
       ids: [auth.user.id],
-    })
+    }).fetch()
     let rows = []
 
     if (lang) {
@@ -1194,13 +1121,11 @@ class EstateController {
 
   async deleteMultiple({ auth, request, response }) {
     const { id } = request.all()
-    const trx = await Database.beginTransaction()
     try {
-      const affectedRows = await EstateService.deleteEstates(id, auth.user.id, trx)
-      await trx.commit()
+      const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
+      QueueService.estateSyncUnpublishEstates(id)
       response.res({ deleted: affectedRows })
     } catch (error) {
-      await trx.rollback()
       throw new HttpException(error.message, 422, 1101230)
     }
   }
@@ -1302,6 +1227,15 @@ class EstateController {
       response.res([...insideEstates, ...outsideEstates])
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  async createShareLink({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateService.createShareLink(auth.user.id, id))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500, e.code || 0)
     }
   }
 }

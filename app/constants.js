@@ -640,6 +640,7 @@ const constants = {
     'house_type',
     'apt_type',
     'options',
+    'share_link',
     'stp_garage',
     'energy_proof',
     'energy_proof_original_file',
@@ -945,6 +946,8 @@ const constants = {
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
+  WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1133,7 +1136,14 @@ Estates: [ESTATES]
     family_size_max: 2,
   },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
-  VALID_INCOME_PROOFS_PERIOD: 5,
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
+    ohnemakler: {
+      name: 'Ohne-makler.net',
+      url: 'https://www.ohne-makler.net/',
+      logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
+    },
+  },
+  VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
 
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
@@ -1142,7 +1152,47 @@ Estates: [ESTATES]
   PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
 
+  ENERGY_CLASS_USING_EFFICIENCY: [
+    { level: 'A+', value: 30 },
+    { level: 'A', value: 50 },
+    { level: 'B', value: 75 },
+    { level: 'C', value: 100 },
+    { level: 'D', value: 130 },
+    { level: 'E', value: 160 },
+    { level: 'F', value: 200 },
+    { level: 'G', value: 250 },
+    { level: 'H', value: 250 },
+  ],
+
+  ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external'],
+  ESTATE_SYNC_TITLE_TEMPLATES: {
+    germany: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    deutschland: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    others: {
+      key: 'rooms_number Rooms area m² apartmentType in city',
+      lang: 'en',
+    },
+  },
+  THIRD_PARTY_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen'],
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT: 'immowelt',
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24: 'immobilienscout-24',
+  ESTATE_SYNC_PUBLISH_PROVIDER_EBAY: 'ebay-kleinanzeigen',
+
+  ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
+  ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
+
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
+
+  OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
+  OUTSIDE_TENANT_INVITE_TYPE: 'outside_tenant_invitation',
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: 'outside_prospect_knock',
 }
 
 module.exports = constants

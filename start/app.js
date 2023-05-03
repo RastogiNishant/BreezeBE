@@ -67,7 +67,12 @@ const aliases = {
   Cache: 'Adonis/Addons/Cache',
 }
 
-const commands = ['App/Commands/CreateAdmin', 'App/Commands/ClearCache', 'App/Commands/Recalc']
+const commands = [
+  'App/Commands/CreateAdmin',
+  'App/Commands/ClearCache',
+  'App/Commands/Recalc',
+  'App/Commands/PullOhnemakler',
+]
 
 const http = {
   loggerEnv: ['development', 'production'],

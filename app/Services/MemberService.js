@@ -778,6 +778,7 @@ class MemberService {
     const startOf = moment()
       .utc()
       .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .startOf('month')
       .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
@@ -931,6 +932,7 @@ class MemberService {
     const startOf = moment()
       .utc()
       .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .startOf('month')
       .format('YYYY-MM-DD')
     const incomeProofs =
       (
