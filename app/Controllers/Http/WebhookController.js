@@ -3,7 +3,7 @@
 const HttpException = require('../../Exceptions/HttpException')
 
 const EstateSyncService = use('App/Services/EstateSyncService')
-
+const MarketPlaceService = use('App/Services/MarketPlaceService')
 class WebhookController {
   async estateSync({ request, response }) {
     const { k, eventName, eventPayload } = request.all()
@@ -21,7 +21,7 @@ class WebhookController {
         await EstateSyncService.publicationFailed(eventPayload)
         break
       case 'request.created':
-        await EstateSyncService.requestCreated(eventPayload)
+        await MarketPlaceService.createContact(eventPayload)
         break
     }
     response.res({ eventName, eventPayload })
