@@ -327,23 +327,26 @@ class Estate extends Model {
         .first()
     } while (exists)
 
-    await this.updateHashInfo(id, randomString)
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
   }
 
-  static async updateHashInfo(id, randomString = null) {
-    const hash = Estate.getHash(id)
-    const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
+  static async updateHashInfo(id) {
+    try {
+      const hash = Estate.getHash(id)
+      const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
 
-    let estateInfo = {
-      hash,
-      share_link,
+      let estateInfo = {
+        hash,
+        share_link,
+      }
+      await Database.table('estates')
+        .where('id', id)
+        .update({ ...estateInfo })
+      return share_link
+    } catch (e) {
+      Logger.error(`estate ${id} updateHashInfo error ${e.message}`)
+      return null
     }
-    if (randomString) {
-      estateInfo.six_char_code = randomString
-    }
-    await Database.table('estates')
-      .where('id', id)
-      .update({ ...estateInfo })
   }
 
   /**

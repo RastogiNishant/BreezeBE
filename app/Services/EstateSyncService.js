@@ -1,13 +1,17 @@
 'use_strict'
 
+const HttpException = require('../Exceptions/HttpException')
 const {
   ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE,
   ESTATE_SYNC_CREDENTIAL_TYPE_USER,
-  STATUS_DRAFT,
   STATUS_ACTIVE,
   ROLE_USER,
-  WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
+  WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
   STATUS_DELETE,
+  STATUS_DRAFT,
+  STATUS_NEED_VERIFY,
+  STATUS_EXPIRE,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -19,7 +23,9 @@ const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Ws = use('Ws')
-
+const Database = use('Database')
+const Promise = require('bluebird')
+const Logger = use('Logger')
 class EstateSyncService {
   static async getBreezeEstateSyncCredential() {
     const credential = await EstateSyncCredential.query()
@@ -38,14 +44,84 @@ class EstateSyncService {
     return credential
   }
 
-  static async postEstate({ estate_id, estate_sync_property_id = null, performed_by, publishers }) {
-    let estate = await EstateService.getByIdWithDetail(estate_id)
-    let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
-    if (!credential) {
-      credential = await EstateSyncService.getBreezeEstateSyncCredential()
-    }
+  static async saveMarketPlacesInfo(
+    { estate_id, estate_sync_property_id, performed_by, publishers },
+    trx
+  ) {
+    let listingExists = []
 
-    if (!estate_sync_property_id) {
+    if (publishers?.length) {
+      listingExists = (
+        await EstateSyncListing.query()
+          .where('estate_id', estate_id)
+          .whereIn('provider', publishers)
+          .fetch()
+      ).toJSON()
+    }
+    try {
+      await Promise.map(
+        publishers,
+        async (publisher) => {
+          if (listingExists.find((list) => list.provider === publisher)) {
+            await EstateSyncListing.query()
+              .update({
+                status: estate_sync_property_id ? STATUS_DRAFT : STATUS_NEED_VERIFY,
+                performed_by,
+                estate_sync_property_id,
+                estate_sync_listing_id: null,
+                publish_url: null,
+                posting_error: false,
+                publishing_error: false,
+                posting_error_message: '',
+                publishing_error_message: '',
+                publishing_error_type: '',
+              })
+              .where('provider', publisher)
+              .where('estate_id', estate_id)
+              .transacting(trx)
+          } else {
+            await EstateSyncListing.createItem(
+              {
+                provider: publisher,
+                estate_id,
+                performed_by,
+                status: estate_sync_property_id ? STATUS_DRAFT : STATUS_NEED_VERIFY,
+                estate_sync_property_id,
+              },
+              trx
+            )
+          }
+        },
+        { concurrency: 1 }
+      )
+
+      await EstateSyncListing.query()
+        .whereNotIn('provider', publishers)
+        .where('estate_id', estate_id)
+        .update({
+          estate_sync_property_id: null,
+          status: STATUS_DELETE,
+          estate_sync_listing_id: null,
+          publish_url: null,
+        })
+        .transacting(trx)
+    } catch (e) {
+      throw new HttpException(e.message, 500)
+    }
+  }
+
+  static async postEstate({ estate_id }) {
+    try {
+      if (!estate_id) {
+        return
+      }
+
+      let estate = await EstateService.getByIdWithDetail(estate_id)
+      let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
+      if (!credential) {
+        credential = await EstateSyncService.getBreezeEstateSyncCredential()
+      }
+
       estate = estate.toJSON()
       const estateSync = new EstateSync(credential.api_key)
       if (!Number(estate.usable_area)) {
@@ -55,137 +131,253 @@ class EstateSyncService {
         estate,
         contactId: credential.estate_sync_contact_id,
       })
-      if (resp?.success) {
-        estate_sync_property_id = resp.data.id
-      } else {
-        //TODO: send websocket event: failure to post estate... data: estate_id, message: resp.data.message
-        //TODO: logger here...
-        const MailService = use('App/Services/MailService')
-        await MailService.sendEmailToOhneMakler(JSON.stringify(resp), 'barudo@gmail.com')
-      }
-    }
 
-    let listings = []
-    for (let i = 0; i < publishers.length; i++) {
-      const listingExists = await EstateSyncListing.query()
-        .where('estate_id', estate_id)
-        .where('provider', publishers[i])
-        .first()
-      if (listingExists) {
-        await listingExists.updateItem({
-          status: STATUS_ACTIVE,
-          performed_by,
-          estate_sync_property_id,
-          estate_sync_listing_id: '',
-          publish_url: '',
-        })
-      } else {
-        listings = [
-          ...listings,
-          {
-            provider: publishers[i],
-            estate_id,
-            performed_by,
-            status: STATUS_ACTIVE,
-            estate_sync_property_id,
-          },
-        ]
+      let data = {
+        success: true,
+        type: 'success-posting',
+        estate_id,
       }
+
+      if (resp?.success) {
+        //make all with estate_id and estate_sync_property_id to draft
+        await EstateSyncListing.query()
+          .where('estate_id', estate.id)
+          .whereNot('status', STATUS_DELETE)
+          .update({
+            estate_sync_property_id: resp.data.id,
+            status: STATUS_DRAFT,
+          })
+      } else {
+        //POSTING ERROR. Send websocket event
+        data = {
+          ...data,
+          success: false,
+          type: 'error-posting',
+          message: resp?.data?.message, //FIXME: message here could be too technical.
+        }
+        await EstateSyncListing.query().where('estate_id', estate_id).update({
+          posting_error: true,
+          posting_error_message: resp?.data?.message,
+        })
+        Logger.error(JSON.stringify({ post_estate_sync_error: resp }))
+        //FIXME: replace this with logger...
+        await EstateSyncService.emitWebsocketEventToLandlord({
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
+          user_id: estate.user_id,
+          data,
+        })
+      }
+    } catch (e) {
+      console.log('Post Estate to Estate Sync error', e.message)
     }
-    await EstateSyncListing.createMany(listings)
-    await EstateSyncListing.query()
-      .whereNotIn('provider', publishers)
-      .where('estate_id', estate_id)
-      .update({
-        estate_sync_property_id: '',
-        status: STATUS_DELETE,
-        estate_sync_listing_id: '',
-        publish_url: '',
+  }
+
+  static async unpublishEstate(estate_id) {
+    try {
+      const listings = await EstateSyncListing.query()
+        .where('estate_id', estate_id)
+        .whereNotNull('estate_sync_listing_id')
+        .where('status', STATUS_ACTIVE)
+        .where('publishing_error', false) //we're going to process only those that didn't have error yet
+        .fetch()
+
+      const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+      const estateSync = new EstateSync(credential.api_key)
+
+      await Promise.map(listings.rows, async (listing) => {
+        await estateSync.delete(listing.estate_sync_listing_id, 'listings')
       })
+    } catch (e) {
+      console.log('unpublishEstate error', e.message)
+    }
   }
 
   static async propertyProcessingSucceeded(payload) {
-    const propertyId = payload.id
-    const credential = await EstateSyncService.getBreezeEstateSyncCredential()
-    const listing = await EstateSyncListing.query()
-      .where('estate_sync_property_id', propertyId)
-      .where('status', STATUS_ACTIVE)
-      .whereNull('estate_sync_listing_id')
-      .first()
+    try {
+      const propertyId = payload.id
+      const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+      let listings = await EstateSyncListing.query()
+        .where('estate_sync_property_id', propertyId)
+        .where('status', STATUS_DRAFT)
+        .where('posting_error', false)
+        .whereNull('estate_sync_listing_id')
+        .fetch()
 
-    if (!listing) {
-      return
-    }
-    const target = await EstateSyncTarget.query()
-      .where('publishing_provider', listing.provider)
-      .where('estate_sync_credential_id', credential.id)
-      .first()
-    const estateSync = new EstateSync(credential.api_key)
-    const result = await estateSync.post('listings', {
-      targetId: target.estate_sync_target_id,
-      propertyId,
-    })
-    if (result.success) {
-      await listing.updateItem({ estate_sync_listing_id: result.data.id })
-    } else {
-      //PUBLISHING_ERROR
-      //TODO: send websocket event: failure to publish estate...
-      //data: estate_id: listing.estate_id, provider: listing.provider, message: result.data.message
-      const MailService = use('App/Services/MailService')
-      await MailService.sendEmailToOhneMakler(
-        `LISTING ERR RESULT: ${JSON.stringify(result)}`,
-        'barudo@gmail.com'
-      )
+      if (!listings?.rows?.length) {
+        return
+      }
+      const estateSync = new EstateSync(credential.api_key)
+      await Promise.map(listings.rows, async (listing) => {
+        const target = await EstateSyncTarget.query()
+          .where('publishing_provider', listing.provider)
+          .where('estate_sync_credential_id', credential.id)
+          .first()
+
+        const resp = await estateSync.post('listings', {
+          targetId: target.estate_sync_target_id,
+          propertyId,
+        })
+        if (resp.success) {
+          await listing.updateItem({ estate_sync_listing_id: resp.data.id })
+          //has listing_id but we need to wait for websocket call to make this
+        } else {
+          //FIXME: replace this with logger...
+          const MailService = use('App/Services/MailService')
+          await MailService.sendEmailToOhneMakler(
+            `LISTING ERR RESULT: ${JSON.stringify(resp)}`,
+            'barudo@gmail.com'
+          )
+          //PUBLISHING_ERROR Send websocket event
+          const estate = await Estate.query()
+            .select('user_id')
+            .where('id', listing.estate_id)
+            .first()
+          await EstateSyncService.emitWebsocketEventToLandlord({
+            event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
+            user_id: estate.user_id,
+            data: {
+              success: false,
+              type: 'error-publishing',
+              estate_id: listing.estate_id,
+              provider: listing.provider,
+              message: resp?.data?.message,
+            },
+          })
+        }
+      })
+    } catch (e) {
+      console.log('propertyProcessingSucceeded error', e.message)
     }
   }
 
   static async publicationSucceeded(payload) {
-    const MailService = use('App/Services/MailService')
-    await MailService.sendEmailToOhneMakler(
-      `PUBLICATION payload: ${JSON.stringify(payload)}`,
-      'barudo@gmail.com'
-    )
-    if (!payload?.listingId) {
-      return
+    try {
+      if (!payload?.listingId) {
+        return
+      }
+
+      const listing = await EstateSyncListing.query()
+        .where('estate_sync_listing_id', payload.listingId)
+        .where('posting_error', false)
+        .first()
+
+      if (!listing) {
+        return
+      }
+
+      if (payload.type === 'delete') {
+        await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
+        const listings = await EstateSyncListing.query()
+          .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+          .whereNotNull('estate_sync_listing_id')
+          .fetch()
+        if (listings?.rows?.length === 0) {
+          const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+          const estateSync = new EstateSync(credential.api_key)
+          const result = await estateSync.delete(payload.propertyId, 'properties')
+          if (result.success) {
+            await EstateSyncListing.query()
+              .where('estate_sync_property_id', payload.propertyId)
+              .update({
+                status: STATUS_DELETE,
+                estate_sync_property_id: '',
+              })
+            //add websocket call for all unpublished...
+          }
+        }
+      } else if (payload.type === 'set') {
+        await listing.updateItem({ publish_url: payload.publicUrl, status: STATUS_ACTIVE })
+        const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+        let data = listing
+        data.success = true
+        data.type = 'success-publishing'
+        /* websocket emit to landlord */
+        await EstateSyncService.emitWebsocketEventToLandlord({
+          event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
+          user_id: estate.user_id,
+          data,
+        })
+      }
+    } catch (e) {
+      console.log('publicationSucceeded error', e.message)
     }
+  }
 
-    const listing = await EstateSyncListing.query()
-      .where('estate_sync_listing_id', payload.listingId)
-      .first()
-
-    if (!listing) {
-      return
-    }
-
-    if (payload.type === 'delete') {
-      await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
-    } else if (payload.type === 'set') {
-      await listing.updateItem({ publish_url: payload.publicUrl })
+  static async publicationFailed(payload) {
+    try {
+      const listing = await EstateSyncListing.query()
+        .where('estate_sync_listing_id', payload.listingId)
+        .first()
+      if (!listing) {
+        return
+      }
       const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+      if (payload.type === 'delete') {
+        //mark error
+        await listing.updateItem({
+          estate_sync_listing_id: null,
+          publish_url: null,
+          publishing_error: true,
+          publishing_error_message: payload.failureMessage,
+          publishing_error_type: 'delete',
+        })
+        //continue unpublishing others
+        await EstateSyncService.unpublishEstate(listing.estate_id)
+      } else if (payload.type === 'set') {
+        //mark error
+        await listing.updateItem({
+          status: STATUS_EXPIRE,
+          publishing_error: true,
+          publishing_error_message: payload.failureMessage,
+          publishing_error_type: 'set',
+        })
+        const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+        const estateSync = new EstateSync(credential.api_key)
+        await estateSync.delete(payload.listingId, 'listings')
+      }
 
-      /* websocket emit to landlord */
       await EstateSyncService.emitWebsocketEventToLandlord({
-        event: WEBSOCKET_EVENT_ESTATE_SYNC_SUCCESSFUL_PUBLISH,
+        event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
         user_id: estate.user_id,
         data: {
+          success: true,
+          type: 'error-publishing',
           estate_id: listing.estate_id,
-          publisher: listing.provider,
-          publish_url: payload.publicUrl,
+          message: payload.failureMessage,
         },
       })
-
-      //call propertyProcessingSucceeded to publish unpublished properties
-      await EstateSyncService.propertyProcessingSucceeded({ id: listing.estate_sync_property_id })
+    } catch (e) {
+      console.log('publicationFailed error', e.message)
     }
   }
 
   static async emitWebsocketEventToLandlord({ event, user_id, data }) {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
+    const topic = Ws?.getChannel(channel)?.topic(topicName)
 
     if (topic) {
       topic.broadcast(event, data)
+    }
+  }
+
+  static async unpublishMultipleEstates(estate_ids) {
+    try {
+      const listings = await EstateSyncListing.query()
+        .select('estate_id')
+        .where('status', STATUS_ACTIVE)
+        .whereIn('estate_id', estate_ids)
+        .groupBy('estate_id')
+        .fetch()
+      await Promise.map(
+        listings.rows,
+        async (listing) => {
+          await EstateSyncService.unpublishEstate(listing.estate_id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.use(`unpublishMultipleEstates error ${e.message}`)
     }
   }
 }

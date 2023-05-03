@@ -16,6 +16,7 @@ const {
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_NEW,
   STATUS_DELETE,
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -62,7 +63,6 @@ class ThirdPartyOfferService {
       ohneMaklerData = data
     } catch (e) {
       console.log('Failed to fetch data!!!!')
-      throw new Error('Failed to fetch data!!!!')
     }
 
     try {

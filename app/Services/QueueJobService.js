@@ -11,6 +11,7 @@ const Logger = use('Logger')
 const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
 const Point = use('App/Models/Point')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
 
 const {
   STATUS_ACTIVE,
@@ -93,12 +94,16 @@ class QueueJobService {
     if (!estate || !estate.address || trim(estate.address) === '') {
       return
     }
+    const oldCoord = estate.coord
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
       await estate.updateItem({ coord })
       await QueueJobService.updateEstatePoint(estateId)
+      if (oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
@@ -106,6 +111,9 @@ class QueueJobService {
         address: estate.address,
       })
     } else {
+      if (!oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
@@ -126,10 +134,13 @@ class QueueJobService {
           .fetch()
       ).rows || []
 
-    let i = 0
-    Promise.map(estates, (estate) => {
-      QueueJobService.updateEstateCoord(estate.id)
-    })
+    await Promise.map(
+      estates,
+      async (estate) => {
+        await QueueJobService.updateEstateCoord(estate.id)
+      },
+      { concurrency: 1 }
+    )
   }
 
   static async sendLikedNotificationBeforeExpired() {
@@ -190,11 +201,22 @@ class QueueJobService {
         (estateIdsToDraft && estateIdsToDraft.length)
       ) {
         // Delete new matches
+        const estateIds = (estateIdsToExpire || []).concat(estateIdsToDraft || [])
         await Match.query()
-          .whereIn('estate_id', (estateIdsToExpire || []).concat(estateIdsToDraft || []))
+          .whereIn('estate_id', estateIds)
           .where('status', MATCH_STATUS_NEW)
           .delete()
           .transacting(trx)
+
+        const listings = await EstateSyncListing.query()
+          .select('estate_id')
+          .where('status', STATUS_ACTIVE)
+          .whereIn('estate_id', estateIds)
+          .groupBy('estate_id')
+          .fetch()
+        await Promise.map(listings.rows, async (estateId) => {
+          await require('./EstateSyncService').unpublishEstate(estateId)
+        })
       }
 
       await trx.commit()
@@ -499,20 +521,28 @@ class QueueJobService {
   }
 
   static async fillMissingEstateInfo() {
-    const estates = (
-      await Estate.query()
-        .whereNot('status', STATUS_DELETE)
-        .where(function () {
-          this.orWhereNull('share_link')
-          this.orWhereNull('hash')
-        })
-        .limit(3)
-        .fetch()
-    ).toJSON()
-
-    estates.map(async (estate) => {
-      await Estate.updateHashInfo(estate.id)
-    })
+    try {
+      const estates = (
+        await Estate.query()
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('share_link')
+            this.orWhereNull('hash')
+          })
+          .limit(3)
+          .fetch()
+      ).toJSON()
+      Logger.info(`fillMissingEstateInfo count ${estates.length}`)
+      await Promise.map(
+        estates,
+        async (estate) => {
+          await Estate.updateHashInfo(estate.id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`fillMissingEstateInfo error ${e.message}`)
+    }
   }
 
   static async updateThirdPartyOfferPoints() {

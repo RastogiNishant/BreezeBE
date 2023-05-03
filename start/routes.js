@@ -447,7 +447,7 @@ Route.group(() => {
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
-
+  Route.get('/:id/link', 'EstateController.createShareLink').middleware(['valid:Id'])
   //Estate Amenities
   Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware([
     'valid:EstateId',
@@ -554,7 +554,6 @@ Route.group(() => {
   ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
-
   Route.get('/search/property_id', 'EstateController.searchByPropertyId')
 })
   .prefix('/api/v1/estates')
@@ -1236,38 +1235,6 @@ Route.group(() => {
 })
   .prefix('/api/v1/letter_template')
   .middleware(['auth:jwtLandlord'])
-
-// Estate management by property manager
-Route.group(() => {
-  Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
-  Route.post('/', 'EstateController.createEstateByPM').middleware(['valid:CreateEstate,LandlordId'])
-  Route.post('/import', 'EstateController.importEstateByPM')
-  // Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
-  //   'valid:PropertyId',
-  // ])
-
-  Route.get('/:id', 'EstateController.getEstateByPM').middleware(['valid:Id'])
-  Route.put('/:id', 'EstateController.updateEstateByPM').middleware(['valid:UpdateEstate'])
-  // // Rooms manage
-  Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
-  Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
-    'valid:CreateRoom,EstateId',
-  ])
-  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
-    'valid:CreateBulkRoom,EstateId',
-  ])
-  Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
-
-  Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
-    'valid:CreateRoom,EstateId,RoomId',
-  ])
-  // // Room photos add
-  Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
-    'valid:RoomId',
-  ])
-})
-  .prefix('/api/v1/propertymanager/estates')
-  .middleware(['auth:jwtPropertyManager'])
 
 Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
   'auth:jwtLandlord',

@@ -23,7 +23,7 @@ const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlord
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
 const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
-const ESTATE_SYNC_UNPUBLISH_ESTATE = 'estateSyncUnpublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -86,17 +86,12 @@ class QueueService {
     )
   }
 
-  static estateSyncPublishEstate({
-    estate_id,
-    estate_sync_property_id = null,
-    publishers,
-    performed_by,
-  }) {
-    Queue.addJob(
-      ESTATE_SYNC_PUBLISH_ESTATE,
-      { estate_id, estate_sync_property_id, publishers, performed_by },
-      { delay: 400 }
-    )
+  static estateSyncPublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
+  }
+
+  static estateSyncUnpublishEstates(estate_ids) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids })
   }
 
   /**
@@ -224,7 +219,7 @@ class QueueService {
       {},
       {
         jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/2 * * * *' },
+        repeat: { cron: '*/15 * * * *' },
         removeOnComplete: true,
         removeOnFail: true,
       }
@@ -306,10 +301,9 @@ class QueueService {
         case ESTATE_SYNC_PUBLISH_ESTATE:
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id,
-            estate_sync_property_id: job.data.estate_sync_property_id,
-            publishers: job.data.publishers,
-            performed_by: job.data.performed_by,
           })
+        case ESTATE_SYNC_UNPUBLISH_ESTATES:
+          return require('./EstateSyncService').unpublishMultipleEstates(job.data.estate_ids)
         default:
           console.log(`No job processor for: ${job.name}`)
       }

@@ -12,6 +12,7 @@ const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
+  STATUS_DRAFT,
 } = require('../constants')
 
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
@@ -95,7 +96,7 @@ class MarketPlaceService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    const { shortLink, code, lang } = await this.createDynamicLink({
+    const { shortLink, code, lang, user_id } = await this.createDynamicLink({
       estate: estate.toJSON(),
       email: contact.email,
     })
@@ -103,7 +104,11 @@ class MarketPlaceService {
     await EstateSyncContactRequest.query()
       .where('email', contact.email)
       .where('estate_id', contact.estate_id)
-      .update({ code })
+      .update({
+        code,
+        user_id: user_id || null,
+        status: user_id ? STATUS_EMAIL_VERIFY : STATUS_DRAFT,
+      })
 
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
@@ -119,7 +124,7 @@ class MarketPlaceService {
     })
   }
 
-  static async getPendingKnock({ estate_id, email }) {
+  static async getKnockRequest({ estate_id, email }) {
     return await EstateSyncContactRequest.query()
       .where('estate_id', estate_id)
       .where('email', email)
@@ -191,6 +196,7 @@ class MarketPlaceService {
       code,
       shortLink,
       lang,
+      user_id: prospects?.[0]?.id,
     }
   }
 
@@ -204,19 +210,19 @@ class MarketPlaceService {
     }
     const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({ data1, data2 })
 
-    const pendingKnock = await this.getPendingKnock({ estate_id, email })
-    if (!pendingKnock) {
+    const knockRequest = await this.getKnockRequest({ estate_id, email })
+    if (!knockRequest) {
       throw new HttpException(NO_PROSPECT_KNOCK, 400)
     }
 
-    if (code != pendingKnock.code) {
-      if (pendingKnock.status === STATUS_EXPIRE) {
+    if (code != knockRequest.code) {
+      if (knockRequest.status === STATUS_EXPIRE) {
         throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       } else {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
     }
-    if (pendingKnock.email != email) {
+    if (knockRequest.email != email) {
       throw new HttpException(NO_PROSPECT_KNOCK, 400)
     }
 
