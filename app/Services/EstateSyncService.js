@@ -336,15 +336,15 @@ class EstateSyncService {
         await estateSync.delete(payload.listingId, 'listings')
       }
 
+      let data = listing
+      data.success = true
+      data.type = 'error-publishing'
+      data.message = payload.failureMessage
+
       await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
         user_id: estate.user_id,
-        data: {
-          success: true,
-          type: 'error-publishing',
-          estate_id: listing.estate_id,
-          message: payload.failureMessage,
-        },
+        data,
       })
     } catch (e) {
       console.log('publicationFailed error', e.message)
