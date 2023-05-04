@@ -144,14 +144,12 @@ class MatchService {
       }
     }
     const incomes = await require('./MemberService').getIncomes(prospect.user_id)
-    Logger.info(`Income count ${incomes.length}`)
     if (!incomes?.length) {
       return 0
     }
 
     const income_types = incomes.map((ic) => ic.income_type)
     const isExistIncomeSource = estate.income_sources.some((ic) => income_types.includes(ic))
-    Logger.info(`isExistIncomeSource ${isExistIncomeSource}`)
     if (!isExistIncomeSource) {
       return 0
     }
@@ -221,7 +219,6 @@ class MatchService {
     D2 - estateBudgetRel*/
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
-      Logger.info("Prospect can't afford.")
       return 0
     }
     let estateBudgetRel = estateBudget / 100
