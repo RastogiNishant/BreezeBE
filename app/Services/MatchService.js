@@ -143,7 +143,6 @@ class MatchService {
         }
       }
     }
-
     const incomes = await require('./MemberService').getIncomes(prospect.user_id)
     if (!incomes?.length) {
       return 0
@@ -220,7 +219,6 @@ class MatchService {
     D2 - estateBudgetRel*/
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
-      log("Prospect can't afford.")
       return 0
     }
     let estateBudgetRel = estateBudget / 100
@@ -2386,13 +2384,11 @@ class MatchService {
       })
       .leftJoin({ _mb: 'members' }, function () {
         //primaryUser?
-        this.on('_mb.user_id', '_m.user_id').onIn('_mb.id', function () {
-          this.min('id')
-            .from('members')
-            .where('user_id', Database.raw('_m.user_id'))
-            .whereNot('child', true)
-            .limit(1)
-        })
+        this.on(
+          Database.raw(
+            `( _mb.user_id = tenants.user_id and _mb.owner_user_id is null ) or ( _mb.owner_user_id = tenants.user_id and _mb.owner_user_id is not null )`
+          )
+        )
       })
       .leftJoin(
         //members have proofs for credit_score and no_rent_arrears
@@ -2620,6 +2616,7 @@ class MatchService {
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
+      .select('_mb.firstname', '_mb.secondname', '_mb.birthday')
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -3148,7 +3145,7 @@ class MatchService {
         //members...
         Database.raw(`
       (select
-        user_id,
+        user_id, owner_user_id,
         avg(credit_score) as credit_score,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
@@ -3157,11 +3154,15 @@ class MatchService {
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
-      group by user_id
+      group by user_id,owner_user_id
       ) as _m
       `),
         function () {
-          this.on('tenants.user_id', '_m.user_id')
+          this.on(
+            Database.raw(
+              `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
+            )
+          )
         }
       )
       .leftJoin(
