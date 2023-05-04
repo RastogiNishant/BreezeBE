@@ -1534,6 +1534,10 @@ class EstateService {
     let query = this.getEstates(user_ids, params)
       .whereNot('estates.status', STATUS_DELETE)
       .with('slots')
+      .with('rooms', function (q) {
+        q.with('images')
+      })
+      .with('files')
       .with('estateSyncListings')
 
     if (params && params.id) {
