@@ -740,10 +740,10 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
-      .with('rooms', function (q) {
-        q.with('room_amenities').with('images')
-      })
-      .with('files')
+    // .with('rooms', function (q) {
+    //   q.with('room_amenities').with('images')
+    // })
+    // .with('files')
     if (user_ids?.length) {
       query.whereIn('estates.user_id', user_ids)
     }
@@ -1537,16 +1537,6 @@ class EstateService {
   static async getEstatesByUserId({ user_ids, limit = -1, page = -1, params = {} }) {
     let query = this.getEstates(user_ids, params)
       .whereNot('estates.status', STATUS_DELETE)
-      .with('current_tenant', function (c) {
-        c.with('user', function (u) {
-          u.select('id', 'avatar')
-        })
-      })
-      .withCount('visits')
-      .withCount('decided')
-      .withCount('invite')
-      .withCount('final')
-      .withCount('inviteBuddies')
       .with('slots')
       .with('estateSyncListings')
 
