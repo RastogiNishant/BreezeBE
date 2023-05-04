@@ -711,10 +711,11 @@ class EstateService {
    *
    */
   static getEstates(user_ids, params = {}) {
+    user_ids = user_ids ? (Array.isArray(user_ids) ? user_ids : [user_ids]) : null
+
     let query = Estate.query()
       .withCount('notifications', function (n) {
-        if (user_ids && user_ids.length) {
-          user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        if (user_ids?.length) {
           n.whereIn('user_id', user_ids)
         }
         if (params && params.id) {
@@ -743,6 +744,9 @@ class EstateService {
         q.with('room_amenities').with('images')
       })
       .with('files')
+    if (user_ids?.length) {
+      query.whereIn('estates.user_id', ids)
+    }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
@@ -751,10 +755,9 @@ class EstateService {
   /**
    *
    */
-  static getUpcomingShows(ids, query = '') {
-    return this.getEstates(ids)
+  static getUpcomingShows(userIds, query = '') {
+    return this.getEstates(userIds)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -1531,8 +1534,8 @@ class EstateService {
     }
   }
 
-  static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
-    let query = this.getEstates(ids, params)
+  static async getEstatesByUserId({ user_ids, limit = -1, page = -1, params = {} }) {
+    let query = this.getEstates(user_ids, params)
       .whereNot('estates.status', STATUS_DELETE)
       .with('current_tenant', function (c) {
         c.with('user', function (u) {
@@ -1547,9 +1550,6 @@ class EstateService {
       .with('slots')
       .with('estateSyncListings')
 
-    if (ids && ids.length) {
-      query.whereIn('estates.user_id', ids)
-    }
     if (params && params.id) {
       query.where('estates.id', params.id)
     }
