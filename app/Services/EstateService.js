@@ -745,7 +745,7 @@ class EstateService {
       })
       .with('files')
     if (user_ids?.length) {
-      query.whereIn('estates.user_id', ids)
+      query.whereIn('estates.user_id', user_ids)
     }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
