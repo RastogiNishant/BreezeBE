@@ -1037,9 +1037,7 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-    let result = await EstateService.getEstates({
-      ids: [auth.user.id],
-    }).fetch()
+    let result = await EstateService.getEstates([auth.user.id]).fetch()
     let rows = []
 
     if (lang) {
