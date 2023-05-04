@@ -740,10 +740,6 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
-      .with('rooms', function (q) {
-        q.with('room_amenities').with('images')
-      })
-      .with('files')
     if (user_ids?.length) {
       query.whereIn('estates.user_id', user_ids)
     }
