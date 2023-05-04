@@ -9,7 +9,7 @@ class InitializeEstateSync extends Base {
       contact: yup
         .object()
         .shape({
-          email: yup.string().email().required(),
+          email: yup.string().email().lowercase().required(),
           title: yup.string(),
           firstName: yup.string(),
           lastName: yup.string().required(),

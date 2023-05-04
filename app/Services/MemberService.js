@@ -778,6 +778,7 @@ class MemberService {
     const startOf = moment()
       .utc()
       .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .startOf('month')
       .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
@@ -931,6 +932,7 @@ class MemberService {
     const startOf = moment()
       .utc()
       .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .startOf('month')
       .format('YYYY-MM-DD')
     const incomeProofs =
       (
@@ -941,7 +943,10 @@ class MemberService {
             this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
           })
           .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
-          .where('_m.user_id', user_id)
+          .orWhere(function () {
+            this.where('_m.user_id', user_id).whereNotNull('_m.owner_user_id')
+            this.where('_m.owner_user_id', user_id).whereNull('_m.owner_user_id')
+          })
           .where('income_proofs.status', STATUS_ACTIVE)
           .fetch()
       ).toJSON() || []

@@ -14,11 +14,6 @@ const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
 const MemberService = use('App/Services/MemberService')
-const HttpException = require('../Exceptions/HttpException')
-
-const {
-  exceptions: { USER_NOT_FOUND },
-} = require('../exceptions')
 
 const {
   MEMBER_FILE_TYPE_RENT,
@@ -60,9 +55,14 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   TRANSPORT_TYPE_CAR,
+  VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
+const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { USER_NOT_FOUND },
+} = require('../exceptions')
 class TenantService {
   /**
    *
@@ -171,7 +171,11 @@ class TenantService {
    */
   static async getTenantValidProofsCount(userId, startOf) {
     if (!startOf) {
-      startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
+      startOf = moment()
+        .utc()
+        .subtract(VALID_INCOME_PROOFS_PERIOD, 'month')
+        .startOf('month')
+        .format('YYYY-MM-DD')
     }
 
     return Database.table({ _m: 'members' })

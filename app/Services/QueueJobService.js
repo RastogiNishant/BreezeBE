@@ -74,7 +74,7 @@ class QueueJobService {
         await Point.query()
           .where('type', POINT_TYPE_POI)
           .where(Database.raw(`points."data"->'data' is null `))
-          .limit(10)
+          .limit(3)
           .fetch()
       ).rows
 
@@ -521,7 +521,6 @@ class QueueJobService {
   }
 
   static async fillMissingEstateInfo() {
-    return
     try {
       const estates = (
         await Estate.query()
@@ -533,7 +532,7 @@ class QueueJobService {
           .limit(3)
           .fetch()
       ).toJSON()
-
+      Logger.info(`fillMissingEstateInfo count ${estates.length}`)
       await Promise.map(
         estates,
         async (estate) => {
@@ -542,7 +541,7 @@ class QueueJobService {
         { concurrency: 1 }
       )
     } catch (e) {
-      console.log('fillMissingEstateInfo error', e.message)
+      Logger.error(`fillMissingEstateInfo error ${e.message}`)
     }
   }
 

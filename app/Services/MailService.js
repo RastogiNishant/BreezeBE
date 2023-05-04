@@ -756,12 +756,25 @@ class MailService {
     )
   }
 
-  static async sendPendingKnockEmail({ link, landlord_name, email, lang = DEFAULT_LANG }) {
+  static async sendPendingKnockEmail({
+    link,
+    landlord_name,
+    lastName = ``,
+    salutation = ``,
+    email,
+    lang = DEFAULT_LANG,
+  }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
 
     const final = l
       .get('prospect.no_reply_email_from_listing.final.message', lang)
       .replace('{Landlord_name}', `${landlord_name}`)
+      .replace(/\n/g, '<br />')
+
+    const intro = l
+      .get('prospect.no_reply_email_from_listing.intro.message', lang)
+      .replace('{Salutation}', `${salutation}`)
+      .replace('{Surname}', `${lastName}`)
       .replace(/\n/g, '<br />')
 
     const messages = {
@@ -774,7 +787,7 @@ class MailService {
       dynamic_template_data: {
         subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        intro: l.get('prospect.no_reply_email_from_listing.intro.message', lang),
+        intro,
         CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
         link,
         final,

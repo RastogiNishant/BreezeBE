@@ -20,6 +20,7 @@ const TaskService = use('App/Services/TaskService')
 const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
+const Logger = use('Logger')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -52,7 +53,8 @@ class TaskController extends BaseController {
           [this.socket.id]
         )
       }
-    } catch (err) {
+    } catch (e) {
+      Logger.error(`onGetPreviousMessages error ${e.message}`)
       this.emitError(err.message)
     }
   }

@@ -200,7 +200,7 @@ class EstateController {
     }
 
     let result = await EstateService.getEstatesByUserId({
-      ids: [auth.user.id],
+      user_ids: [auth.user.id],
       limit,
       page,
       params,
@@ -1037,9 +1037,12 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-    let result = await EstateService.getEstates({
-      ids: [auth.user.id],
-    }).fetch()
+    let result = await EstateService.getEstates([auth.user.id])
+      .with('rooms', function (q) {
+        q.with('room_amenities').with('images')
+      })
+      .with('files')
+      .fetch()
     let rows = []
 
     if (lang) {
@@ -1227,6 +1230,15 @@ class EstateController {
       response.res([...insideEstates, ...outsideEstates])
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  async createShareLink({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateService.createShareLink(auth.user.id, id))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500, e.code || 0)
     }
   }
 }

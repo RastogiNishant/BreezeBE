@@ -168,6 +168,7 @@ Route.group(() => {
   Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
     'auth:jwtAdministrator',
   ])
+
   Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
     'auth:jwtAdministrator',
   ])
@@ -446,7 +447,7 @@ Route.group(() => {
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
-
+  Route.get('/:id/link', 'EstateController.createShareLink').middleware(['valid:Id'])
   //Estate Amenities
   Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware([
     'valid:EstateId',
@@ -553,7 +554,6 @@ Route.group(() => {
   ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
-
   Route.get('/search/property_id', 'EstateController.searchByPropertyId')
 })
   .prefix('/api/v1/estates')
