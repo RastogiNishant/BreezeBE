@@ -271,7 +271,7 @@ class EstateSyncService {
           .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
           .whereNotNull('estate_sync_listing_id')
           .fetch()
-        if (!listings?.rows?.length) {
+        if (!listings?.rows?.length && payload.propertyId) {
           const credential = await EstateSyncService.getBreezeEstateSyncCredential()
           const estateSync = new EstateSync(credential.api_key)
           await estateSync.delete(payload.propertyId, 'properties')
@@ -279,7 +279,7 @@ class EstateSyncService {
             .where('estate_sync_property_id', payload.propertyId)
             .update({
               status: STATUS_DELETE,
-              estate_sync_property_id: '',
+              estate_sync_property_id: null,
             })
           //add websocket call for all unpublished...
         }
@@ -314,14 +314,17 @@ class EstateSyncService {
       const listing = await EstateSyncListing.query()
         .where('estate_sync_listing_id', payload.listingId)
         .first()
-      if (!listing) {
+
+      if (!listing || !listing.estate_id) {
         return
       }
+
       const estate = await Estate.query()
         .select('user_id')
         .select('property_id')
         .where('id', listing.estate_id)
         .first()
+
       if (payload.type === 'delete') {
         //mark error
         await listing.updateItem({
@@ -351,6 +354,7 @@ class EstateSyncService {
       data.type = 'error-publishing'
       data.property_id = estate.property_id
       data.message = payload.failureMessage
+      data.estate_id = listing.estate_id
 
       await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
