@@ -200,7 +200,7 @@ class EstateController {
     }
 
     let result = await EstateService.getEstatesByUserId({
-      ids: [auth.user.id],
+      user_ids: [auth.user.id],
       limit,
       page,
       params,
