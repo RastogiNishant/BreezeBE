@@ -285,10 +285,15 @@ class EstateSyncService {
         }
       } else if (payload.type === 'set') {
         await listing.updateItem({ publish_url: payload.publicUrl, status: STATUS_ACTIVE })
-        const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+        const estate = await Estate.query()
+          .select('user_id')
+          .select('property_id')
+          .where('id', listing.estate_id)
+          .first()
         let data = listing
         data.success = true
         data.type = 'success-publishing'
+        data.property_id = estate.property_id
         /* websocket emit to landlord */
         await EstateSyncService.emitWebsocketEventToLandlord({
           event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
@@ -309,7 +314,11 @@ class EstateSyncService {
       if (!listing) {
         return
       }
-      const estate = await Estate.query().select('user_id').where('id', listing.estate_id).first()
+      const estate = await Estate.query()
+        .select('user_id')
+        .select('property_id')
+        .where('id', listing.estate_id)
+        .first()
       if (payload.type === 'delete') {
         //mark error
         await listing.updateItem({
@@ -335,8 +344,9 @@ class EstateSyncService {
       }
 
       let data = listing
-      data.success = true
+      data.success = false
       data.type = 'error-publishing'
+      data.property_id = estate.property_id
       data.message = payload.failureMessage
 
       await EstateSyncService.emitWebsocketEventToLandlord({
