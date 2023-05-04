@@ -274,16 +274,14 @@ class EstateSyncService {
         if (listings?.rows?.length === 0) {
           const credential = await EstateSyncService.getBreezeEstateSyncCredential()
           const estateSync = new EstateSync(credential.api_key)
-          const result = await estateSync.delete(payload.propertyId, 'properties')
-          if (result.success) {
-            await EstateSyncListing.query()
-              .where('estate_sync_property_id', payload.propertyId)
-              .update({
-                status: STATUS_DELETE,
-                estate_sync_property_id: '',
-              })
-            //add websocket call for all unpublished...
-          }
+          await estateSync.delete(payload.propertyId, 'properties')
+          await EstateSyncListing.query()
+            .where('estate_sync_property_id', payload.propertyId)
+            .update({
+              status: STATUS_DELETE,
+              estate_sync_property_id: '',
+            })
+          //add websocket call for all unpublished...
         }
       } else if (payload.type === 'set') {
         await listing.updateItem({ publish_url: payload.publicUrl, status: STATUS_ACTIVE })
