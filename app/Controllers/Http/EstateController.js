@@ -91,6 +91,7 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
+const EstateSyncService = require('../../Services/EstateSyncService')
 
 class EstateController {
   /**
@@ -463,6 +464,7 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
+      await EstateSyncService.markListingsForDeletion(estate.id)
       //unpublish estate from estate_sync
       QueueService.estateSyncUnpublishEstates([id])
     }
