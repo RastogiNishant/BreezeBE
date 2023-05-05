@@ -91,6 +91,7 @@ const {
   exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
+const QueueService = require('./QueueService')
 
 /**
  * Check is item in data range
@@ -1612,6 +1613,9 @@ class MatchService {
 
     // need to make previous tasks which was between landlord and previous tenant archived
     await require('./TaskService').archiveTask(estate_id, trx)
+    // unpublish estates on marketplace
+    await require('./EstateSyncService').markListingsForDelete(estate_id)
+    QueueService.estateSyncUnpublishEstates([estate_id])
 
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)

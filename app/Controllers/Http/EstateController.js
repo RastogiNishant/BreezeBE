@@ -24,6 +24,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const Database = use('Database')
+const Promise = require('bluebird')
 const randomstring = require('randomstring')
 const l = use('Localize')
 const {
@@ -1128,6 +1129,7 @@ class EstateController {
     const { id } = request.all()
     try {
       const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
+      await EstateSyncService.markListingsForDelete(id)
       QueueService.estateSyncUnpublishEstates(id)
       response.res({ deleted: affectedRows })
     } catch (error) {
