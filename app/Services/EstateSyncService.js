@@ -110,7 +110,7 @@ class EstateSyncService {
     }
   }
 
-  static async isAleadyPosted(estate_id) {
+  static async isAlreadyPosted(estate_id) {
     return !!(await EstateSyncListing.query()
       .where('estate_id', estate_id)
       .whereNotNull('estate_sync_property_id')
@@ -124,7 +124,7 @@ class EstateSyncService {
         return
       }
 
-      if (await this.isAleadyPosted(estate_id)) {
+      if (await this.isAlreadyPosted(estate_id)) {
         return
       }
 
