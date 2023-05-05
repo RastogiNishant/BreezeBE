@@ -113,7 +113,7 @@ class EstateSyncService {
   static async isAleadyPosted(estate_id) {
     return !!(await EstateSyncListing.query()
       .where('estate_id', estate_id)
-      .whereNull('estate_sync_property_id')
+      .whereNotNull('estate_sync_property_id')
       .whereNot('status', STATUS_DELETE)
       .first())
   }
@@ -124,7 +124,7 @@ class EstateSyncService {
         return
       }
 
-      if (!(await this.isAleadyPosted(estate_id))) {
+      if (await this.isAleadyPosted(estate_id)) {
         return
       }
 
