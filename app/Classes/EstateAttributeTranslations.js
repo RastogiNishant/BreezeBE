@@ -175,11 +175,13 @@ const {
   PETS_NO,
   HEATING_TYPE_UNDERFLOOR,
   HEATING_TYPE_MISC,
+  DATE_FORMAT,
 } = require('../constants')
 
 const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
+const moment = require('moment')
 
 extractValue = (key, value) => {
   const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
