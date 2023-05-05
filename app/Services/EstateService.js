@@ -714,6 +714,7 @@ class EstateService {
     user_ids = user_ids ? (Array.isArray(user_ids) ? user_ids : [user_ids]) : null
 
     let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
       .withCount('notifications', function (n) {
         if (user_ids?.length) {
           n.whereIn('user_id', user_ids)
