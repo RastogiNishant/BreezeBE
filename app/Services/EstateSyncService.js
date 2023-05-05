@@ -181,7 +181,7 @@ class EstateSyncService {
       const listings = await EstateSyncListing.query()
         .where('estate_id', estate_id)
         .whereNotNull('estate_sync_listing_id')
-        .where('status', ESTATE_SYNC_LISTING_STATUS_PUBLISHED)
+        .where('status', ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE)
         .where('publishing_error', false) //we're going to process only those that didn't have error yet
         .fetch()
 
@@ -272,10 +272,7 @@ class EstateSyncService {
       if (payload.type === 'delete') {
         await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
         const listings = await EstateSyncListing.query()
-          .whereIn('status', [
-            ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
-            ESTATE_SYNC_LISTING_STATUS_POSTED,
-          ])
+          .whereIn('status', [ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE])
           .whereNotNull('estate_sync_listing_id')
           .fetch()
         if (!listings?.rows?.length && payload.propertyId) {
@@ -391,7 +388,10 @@ class EstateSyncService {
     try {
       const listings = await EstateSyncListing.query()
         .select('estate_id')
-        .where('status', ESTATE_SYNC_LISTING_STATUS_PUBLISHED)
+        .whereIn('status', [
+          ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
+          ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+        ])
         .whereIn('estate_id', estate_ids)
         .groupBy('estate_id')
         .fetch()
@@ -411,6 +411,7 @@ class EstateSyncService {
     try {
       await EstateSyncListing.query()
         .where('estate_id', estateId)
+        .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
         .update({ status: ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE })
     } catch (e) {
       Logger.use(`markListingsForDeletion error ${e.message}`)
