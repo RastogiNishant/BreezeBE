@@ -114,9 +114,21 @@ class EstateSyncService {
     }
   }
 
+  static async isAlreadyPosted(estate_id) {
+    return !!(await EstateSyncListing.query()
+      .where('estate_id', estate_id)
+      .whereNotNull('estate_sync_property_id')
+      .whereNot('status', STATUS_DELETE)
+      .first())
+  }
+
   static async postEstate({ estate_id }) {
     try {
       if (!estate_id) {
+        return
+      }
+
+      if (await this.isAlreadyPosted(estate_id)) {
         return
       }
 
