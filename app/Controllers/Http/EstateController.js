@@ -464,7 +464,7 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
-      await EstateSyncService.markListingsForDeletion(estate.id)
+      await EstateSyncService.markListingsForDelete(estate.id)
       //unpublish estate from estate_sync
       QueueService.estateSyncUnpublishEstates([id])
     }

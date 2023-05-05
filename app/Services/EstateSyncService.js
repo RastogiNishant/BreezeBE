@@ -407,7 +407,7 @@ class EstateSyncService {
     }
   }
 
-  static async markListingsForDeletion(estateId) {
+  static async markListingsForDelete(estateId) {
     try {
       await EstateSyncListing.query()
         .where('estate_id', estateId)
