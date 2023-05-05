@@ -149,15 +149,19 @@ class QueueJobService {
   }
 
   static async handleToActivateEstates() {
-    const estates = (await QueueJobService.fetchToActivateEstates()).rows
-    if (!estates || !estates.length) {
-      return false
-    }
+    try {
+      const estates = (await QueueJobService.fetchToActivateEstates()).rows
+      if (!estates || !estates.length) {
+        return false
+      }
 
-    let i = 0
-    while (i < estates.length) {
-      await require('./EstateService').publishEstate(estates[i], true)
-      i++
+      let i = 0
+      while (i < estates.length) {
+        await require('./EstateService').publishEstate({ estate: estates[i] }, true)
+        i++
+      }
+    } catch (e) {
+      Logger.error(`handleToActivateEstates error ${e.message}`)
     }
   }
 
@@ -232,8 +236,9 @@ class QueueJobService {
   }
 
   static async fetchToActivateEstates() {
-    return Estate.query()
+    return await Estate.query()
       .select('*')
+      .with('estateSyncListings')
       .where('status', STATUS_DRAFT)
       .where('is_published', true)
       .whereNot('letting_type', LETTING_TYPE_LET)
