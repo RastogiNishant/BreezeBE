@@ -1614,8 +1614,7 @@ class MatchService {
     // need to make previous tasks which was between landlord and previous tenant archived
     await require('./TaskService').archiveTask(estate_id, trx)
     // unpublish estates on marketplace
-    await require('./EstateSyncService').markListingsForDelete(estate_id)
-    QueueService.estateSyncUnpublishEstates([estate_id])
+    QueueService.estateSyncUnpublishEstates([estate_id], true)
 
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
