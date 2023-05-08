@@ -129,10 +129,7 @@ class EstateSyncService {
       }
 
       if (await this.isAlreadyPosted(estate_id)) {
-        console.log('isAlreadyPosted')
         return
-      } else {
-        console.log('NOT yet posted')
       }
 
       let estate = await EstateService.getByIdWithDetail(estate_id)
