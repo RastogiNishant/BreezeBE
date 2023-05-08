@@ -648,7 +648,7 @@ class EstateService {
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
-      QueueService.estateSyncUnpublishEstates([estate.id])
+      QueueService.estateSyncUnpublishEstates([estate.id], true)
 
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({

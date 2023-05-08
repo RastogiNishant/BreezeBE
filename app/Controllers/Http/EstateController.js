@@ -24,6 +24,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const Database = use('Database')
+const Promise = require('bluebird')
 const randomstring = require('randomstring')
 const l = use('Localize')
 const {
@@ -466,7 +467,7 @@ class EstateController {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
       await EstateSyncService.markListingsForDelete(estate.id)
       //unpublish estate from estate_sync
-      QueueService.estateSyncUnpublishEstates([id])
+      QueueService.estateSyncUnpublishEstates([id], false)
     }
 
     response.res(
@@ -1128,7 +1129,7 @@ class EstateController {
     const { id } = request.all()
     try {
       const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
-      QueueService.estateSyncUnpublishEstates(id)
+      QueueService.estateSyncUnpublishEstates(id, true)
       response.res({ deleted: affectedRows })
     } catch (error) {
       throw new HttpException(error.message, 422, 1101230)

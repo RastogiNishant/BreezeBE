@@ -396,8 +396,11 @@ class EstateSyncService {
   }
 
   /* this is called by QueueService */
-  static async unpublishMultipleEstates(estate_ids) {
+  static async unpublishMultipleEstates(estate_ids, markListingsForDelete) {
     try {
+      if (markListingsForDelete) {
+        await EstateSyncService.markListingsForDelete(estate_ids)
+      }
       const listings = await EstateSyncListing.query()
         .select('estate_id')
         .whereIn('status', [
@@ -422,8 +425,8 @@ class EstateSyncService {
   static async markListingsForDelete(estateId) {
     try {
       await EstateSyncListing.query()
-        .where('estate_id', estateId)
         .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+        .whereIn('estate_id', Array.isArray(estateId) ? estateId : [estateId])
         .update({ status: ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE })
     } catch (e) {
       Logger.use(`markListingsForDeletion error ${e.message}`)

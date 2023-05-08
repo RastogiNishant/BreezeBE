@@ -90,8 +90,8 @@ class QueueService {
     Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
   }
 
-  static estateSyncUnpublishEstates(estate_ids) {
-    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids })
+  static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids, markListingsForDelete })
   }
 
   /**
@@ -303,7 +303,10 @@ class QueueService {
             estate_id: job.data.estate_id,
           })
         case ESTATE_SYNC_UNPUBLISH_ESTATES:
-          return require('./EstateSyncService').unpublishMultipleEstates(job.data.estate_ids)
+          return require('./EstateSyncService').unpublishMultipleEstates(
+            job.data.estate_ids,
+            job.data.markListingsForDelete
+          )
         default:
           console.log(`No job processor for: ${job.name}`)
       }
