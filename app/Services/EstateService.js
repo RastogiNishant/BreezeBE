@@ -648,7 +648,7 @@ class EstateService {
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
-      QueueService.estateSyncUnpublishEstates([estate.id])
+      QueueService.estateSyncUnpublishEstates([estate.id], true)
 
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({
@@ -714,6 +714,7 @@ class EstateService {
     user_ids = user_ids ? (Array.isArray(user_ids) ? user_ids : [user_ids]) : null
 
     let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
       .withCount('notifications', function (n) {
         if (user_ids?.length) {
           n.whereIn('user_id', user_ids)
@@ -1458,6 +1459,18 @@ class EstateService {
         Event.fire('match::estate', estate.id)
       }
 
+      if (publishers?.length) {
+        await require('./EstateSyncService.js').saveMarketPlacesInfo(
+          {
+            estate_id: estate.id,
+            estate_sync_property_id: null,
+            performed_by,
+            publishers,
+          },
+          trx
+        )
+      }
+
       await estate.publishEstate(status, trx)
 
       if (!is_queue) {
@@ -1470,19 +1483,11 @@ class EstateService {
         Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
       }
 
-      if (publishers?.length) {
-        await require('./EstateSyncService.js').saveMarketPlacesInfo(
-          {
-            estate_id: estate.id,
-            estate_sync_property_id: null,
-            performed_by,
-            publishers,
-          },
-          trx
-        )
+      await trx.commit()
+
+      if (status === STATUS_ACTIVE) {
         QueueService.estateSyncPublishEstate({ estate_id: estate.id })
       }
-      await trx.commit()
       return status
     } catch (e) {
       await trx.rollback()
