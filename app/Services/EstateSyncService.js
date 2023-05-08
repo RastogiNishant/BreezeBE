@@ -118,7 +118,7 @@ class EstateSyncService {
     return !!(await EstateSyncListing.query()
       .where('estate_id', estate_id)
       .whereNotNull('estate_sync_property_id')
-      .whereNot('status', STATUS_DELETE)
+      .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
       .first())
   }
 
@@ -129,7 +129,10 @@ class EstateSyncService {
       }
 
       if (await this.isAlreadyPosted(estate_id)) {
+        console.log('isAlreadyPosted')
         return
+      } else {
+        console.log('NOT yet posted')
       }
 
       let estate = await EstateService.getByIdWithDetail(estate_id)
