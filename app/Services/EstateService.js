@@ -1484,10 +1484,6 @@ class EstateService {
       }
 
       await trx.commit()
-
-      if (status === STATUS_ACTIVE) {
-        QueueService.estateSyncPublishEstate({ estate_id: estate.id })
-      }
       return status
     } catch (e) {
       await trx.rollback()
