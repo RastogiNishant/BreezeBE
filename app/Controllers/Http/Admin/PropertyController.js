@@ -18,6 +18,9 @@ const HttpException = require('../../../Exceptions/HttpException')
 const Estate = use('App/Models/Estate')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
+const {
+  exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
+} = require('../../../exceptions')
 
 class PropertyController {
   async getProperties({ request, response }) {
@@ -99,23 +102,62 @@ class PropertyController {
   }
 
   async updatePublishStatus({ request, response }) {
-    const { ids, action } = request.all()
+    const { ids, action, id } = request.all()
     const trx = await Database.beginTransaction()
     let affectedRows
     switch (action) {
-      /*
+      case 'publish-marketplace':
+        break
       case 'publish':
         try {
-          //what will happen to previous matches when it is published?
-          affectedRows = await Estate.query()
-            .whereIn('id', ids)
-            .update({ status: STATUS_ACTIVE }, trx)
+          await Promise.map(ids, async (id) => {
+            const estate = await Estate.findOrFail(id)
+            if (
+              !estate.available_start_at ||
+              (!estate.is_duration_later && !estate.available_end_at) ||
+              (estate.is_duration_later && !estate.min_invite_count)
+            ) {
+              throw new HttpException('Estates is not completely filled', 400)
+            }
+            if (
+              [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+              estate.letting_type !== LETTING_TYPE_LET
+            ) {
+              // Validate is Landlord fulfilled contacts
+
+              //Test whether estate is still published in MarketPlace
+              const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
+                .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+                .where('estate_id', estate.id)
+                .first()
+              if (isCurrentlyPublishedInMarketPlace) {
+                throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400, 113210)
+              }
+
+              try {
+                await EstateService.publishEstate({
+                  estate,
+                  publishers,
+                  performed_by: auth.user.id,
+                })
+              } catch (e) {
+                if (e.name === 'ValidationException') {
+                  Logger.error(e)
+                  throw new HttpException('User not activated', 409)
+                }
+                throw new HttpException(e.message, e.status || 400)
+              }
+            } else {
+              throw new HttpException('Invalid estate type', 400)
+            }
+          })
+
           await trx.commit()
           return response.res(affectedRows)
         } catch (error) {
           await trx.rollback()
           throw new HttpException(error.message, 422)
-        }*/
+        }
       case 'unpublish':
         try {
           await Promise.map(ids, async (id) => {
