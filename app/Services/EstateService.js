@@ -1421,7 +1421,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate({ estate, publishers, performed_by }, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by = null }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
