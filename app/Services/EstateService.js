@@ -2638,5 +2638,23 @@ class EstateService {
 
     return await Estate.updateHashInfo(id)
   }
+
+  static async duplicateEstate(user_id, estate_id) {
+    const estate = await this.getByIdWithDetail(estate_id)
+    if (estate.user_id !== user_id) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      const estateData = {
+        ...omit(estate.toJSON(), ['rooms', 'amenities', 'slots']),
+      }
+      await this.createEstate({ data: {} })
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+    }
+  }
 }
 module.exports = EstateService
