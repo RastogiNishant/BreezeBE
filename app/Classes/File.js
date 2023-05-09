@@ -410,7 +410,13 @@ class File {
         //Prefix: 's/5469b2f5b4292d22522e84e0/ms.files/',
       }
       const objects = await s3.listObjects(params).promise()
-      return objects.Contents
+      let xml
+      for (let i = 0; i < objects.Contents.length; i++) {
+        if (objects.Contents[i].Key.match(/\.xml$/)) {
+          xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+        }
+      }
+      return xml
     } catch (err) {
       console.log('getGewobagUploadedContent', err)
       return []

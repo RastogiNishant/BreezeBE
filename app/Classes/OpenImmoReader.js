@@ -367,6 +367,24 @@ class OpenImmoReader {
       throw new Error(err.message)
     }
   }
+
+  async processXml(xml) {
+    try {
+      let json = this.extractJson(xml)
+      let properties = []
+      if ((json = this.validate(json))) {
+        properties = this.processProperties(json)
+        properties = this.parseMultipleValuesWithOptions(properties)
+        properties = this.parseSingleValues(properties)
+        properties = this.processEnergyPass(properties)
+        properties = await this.processImages(properties)
+        console.log(properties)
+      }
+      return properties
+    } catch (err) {
+      throw new Error(err.message)
+    }
+  }
 }
 
 module.exports = OpenImmoReader
