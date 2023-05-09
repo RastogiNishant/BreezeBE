@@ -168,6 +168,30 @@ Route.group(() => {
   Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
     'auth:jwtAdministrator',
   ])
+
+  Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
+    'auth:jwtAdministrator',
+  ])
+
+  /** Estate Sync */
+  Route.get('/estate-sync/targets', 'Admin/EstateSyncController.getTargets').middleware([
+    'auth:jwtAdministrator',
+  ])
+
+  Route.post('/estate-sync/targets', 'Admin/EstateSyncController.addTarget').middleware([
+    'auth:jwtAdministrator',
+    'valid:AddEstateSyncTarget',
+  ])
+
+  Route.delete('/estate-sync/targets/:id', 'Admin/EstateSyncController.deleteTarget').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
+
+  Route.post('/estate-sync', 'Admin/EstateSyncController.initialize').middleware([
+    'auth:jwtAdministrator',
+    'valid:InitializeEstateSync',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -327,13 +351,9 @@ Route.get('/api/v1/references', 'CommonController.getReferences')
 
 // Auth google
 Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware([
-  'valid:SignInGoogleMobile',
-])
+Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware(['valid:OAuthSignIn'])
 
-Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware([
-  'valid:SignInAppleMobile',
-])
+Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware(['valid:OAuthSignIn'])
 
 //Room Custom Amenities
 Route.group(() => {
@@ -427,7 +447,7 @@ Route.group(() => {
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
   Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
-
+  Route.get('/:id/link', 'EstateController.createShareLink').middleware(['valid:Id'])
   //Estate Amenities
   Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware([
     'valid:EstateId',
@@ -534,9 +554,14 @@ Route.group(() => {
   ])
 
   Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
+  Route.get('/search/property_id', 'EstateController.searchByPropertyId')
 })
   .prefix('/api/v1/estates')
   .middleware(['auth:jwtLandlord,jwtAdministrator'])
+
+Route.get('/api/v1/estates/search/onboard', 'EstateController.searchPreOnboard').middleware([
+  'valid:UpdateTenant',
+])
 
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
@@ -785,7 +810,6 @@ Route.group(() => {
 
 Route.group(() => {
   Route.get('/topic', 'TaskController.getTopicList')
-  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.post('/estate/:id/with-filters', 'TaskController.getEstateTasks').middleware([
     'valid:Pagination,Id,TaskFilter',
   ])
@@ -793,6 +817,11 @@ Route.group(() => {
     'valid:Pagination,TaskFilter',
   ])
   Route.get('/estate/:id/counts', 'TaskController.getTaskCountsByEstate').middleware(['valid:Id'])
+  Route.post('/cancel/:id', 'TaskController.cancelTenantInvitation').middleware(['valid:Id'])
+  Route.post('/accept/:id', 'TaskController.acceptTenantInvitation').middleware([
+    'valid:Id,EstateId',
+  ])
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -800,7 +829,6 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/unread_messages', 'ChatController.getUnreadMessages')
   Route.get('/quick_actions_count', 'TaskController.getQuickActionsCount')
-  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   Route.post('/init', 'TaskController.init').middleware(['valid:InitTask'])
   Route.put('/:id', 'TaskController.updateTask').middleware(['valid:CreateTask,Id'])
   Route.delete('/:id', 'TaskController.deleteTask').middleware(['valid:Id'])
@@ -808,6 +836,7 @@ Route.group(() => {
   Route.delete('/:id/removeImage', 'TaskController.removeImage').middleware([
     'valid:Id,RemoveImage',
   ])
+  Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
   //Route.post('/edit', 'TaskController.onEditMessage')
@@ -1211,38 +1240,6 @@ Route.group(() => {
   .prefix('/api/v1/letter_template')
   .middleware(['auth:jwtLandlord'])
 
-// Estate management by property manager
-Route.group(() => {
-  Route.get('/', 'EstateController.getEstatesByPM').middleware(['valid:Pagination,EstateFilter'])
-  Route.post('/', 'EstateController.createEstateByPM').middleware(['valid:CreateEstate,LandlordId'])
-  Route.post('/import', 'EstateController.importEstateByPM')
-  // Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
-  //   'valid:PropertyId',
-  // ])
-
-  Route.get('/:id', 'EstateController.getEstateByPM').middleware(['valid:Id'])
-  Route.put('/:id', 'EstateController.updateEstateByPM').middleware(['valid:UpdateEstate'])
-  // // Rooms manage
-  Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
-  Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
-    'valid:CreateRoom,EstateId',
-  ])
-  Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
-    'valid:CreateBulkRoom,EstateId',
-  ])
-  Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
-
-  Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
-    'valid:CreateRoom,EstateId,RoomId',
-  ])
-  // // Room photos add
-  Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
-    'valid:RoomId',
-  ])
-})
-  .prefix('/api/v1/propertymanager/estates')
-  .middleware(['auth:jwtPropertyManager'])
-
 Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail').middleware([
   'auth:jwtLandlord',
 ])
@@ -1268,3 +1265,22 @@ Route.get('/test', async ({ response }) => {
   const content = await File.getGewobagUploadedContent()
   return response.res(content)
 })
+
+Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
+
+//Test to create contact from 3rd market places
+Route.group(() => {
+  Route.post('/contact', 'MarketPlaceController.createContact').middleware([
+    'valid:MarketPlaceContact',
+  ])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwtAdministrator'])
+
+Route.group(() => {
+  Route.post('/knock', 'MarketPlaceController.createKnock').middleware([
+    'valid:AlreadyRegisteredOutsideTenantInvite',
+  ])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwt'])

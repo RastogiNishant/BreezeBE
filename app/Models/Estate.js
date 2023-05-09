@@ -1,12 +1,13 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, isArray, pick, trim, isEmpty, unset, isObject } = require('lodash')
+const { isString, pick, isEmpty } = require('lodash')
 const hash = require('../Libs/hash')
 const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
+const { createDynamicLink } = require('../Libs/utils')
 
 const Model = require('./BaseModel')
 const {
@@ -106,7 +107,6 @@ class Estate extends Model {
       'min_lease_duration',
       'max_lease_duration',
       'non_smoker',
-      'pets',
       'gender',
       'monumental_protection',
       'parking_space',
@@ -165,6 +165,7 @@ class Estate extends Model {
       'income_sources',
       'percent',
       'is_published',
+      'share_link',
     ]
   }
 
@@ -172,7 +173,22 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
+    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code', 'share_link']
+  }
+
+  static shortColumns() {
+    return [
+      'id',
+      'user_id',
+      'house_type',
+      'description',
+      'coord',
+      'street',
+      'city',
+      'address',
+      'house_number',
+      'country',
+    ]
   }
 
   /**
@@ -310,9 +326,27 @@ class Estate extends Model {
         .select('id')
         .first()
     } while (exists)
-    await Database.table('estates')
-      .where('id', id)
-      .update({ six_char_code: randomString, hash: Estate.getHash(id) })
+
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
+  }
+
+  static async updateHashInfo(id) {
+    try {
+      const hash = Estate.getHash(id)
+      const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
+
+      let estateInfo = {
+        hash,
+        share_link,
+      }
+      await Database.table('estates')
+        .where('id', id)
+        .update({ ...estateInfo })
+      return share_link
+    } catch (e) {
+      Logger.error(`estate ${id} updateHashInfo error ${e.message}`)
+      return null
+    }
   }
 
   /**
@@ -338,6 +372,13 @@ class Estate extends Model {
 
   amenities() {
     return this.hasMany('App/Models/Amenity', 'estate_id', 'id').whereNot('status', STATUS_DELETE)
+  }
+
+  estateSyncListings() {
+    return this.hasMany('App/Models/EstateSyncListing', 'id', 'estate_id').whereNot(
+      'status',
+      STATUS_DELETE
+    )
   }
 
   activeTasks() {
@@ -536,6 +577,26 @@ class Estate extends Model {
    */
   getAptParams() {
     return `${this.rooms_number}r ${this.area}㎡ ${this.floor}/${this.number_floors}`
+  }
+
+  static isShortTermMeet({
+    prospect_duration_min,
+    prospect_duration_max,
+    vacant_date,
+    rent_end_at,
+  }) {
+    if (!vacant_date || !rent_end_at) {
+      return false
+    }
+
+    const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+    if (
+      rent_duration < prospect_duration_min * 24 * 60 * 60 * 1000 ||
+      rent_duration > prospect_duration_max * 24 * 60 * 60 * 1000
+    ) {
+      return false
+    }
+    return true
   }
 }
 

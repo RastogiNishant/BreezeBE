@@ -10,6 +10,9 @@ const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
 const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
+const Point = use('App/Models/Point')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
+
 const {
   STATUS_ACTIVE,
   STATUS_DRAFT,
@@ -40,6 +43,7 @@ const {
   SALUTATION_NEUTRAL_LABEL,
   MAXIMUM_EXPIRE_PERIOD,
   LETTING_TYPE_LET,
+  POINT_TYPE_POI,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -64,22 +68,56 @@ class QueueJobService {
     return estate.save()
   }
 
+  static async updatePOI() {
+    try {
+      const points = (
+        await Point.query()
+          .where('type', POINT_TYPE_POI)
+          .where(Database.raw(`points."data"->'data' is null `))
+          .limit(3)
+          .fetch()
+      ).rows
+
+      let i = 0
+      while (i < points.length) {
+        await GeoService.fillPoi(points[i])
+        i++
+      }
+    } catch (e) {
+      console.log('updatePoi error', e.message)
+    }
+  }
+
   static async updateEstateCoord(estateId) {
     const estate = await Estate.find(estateId)
 
     if (!estate || !estate.address || trim(estate.address) === '') {
       return
     }
+    const oldCoord = estate.coord
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
-      await estate.updateItem({ coord: coord })
+      await estate.updateItem({ coord })
       await QueueJobService.updateEstatePoint(estateId)
+      if (oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
         coord,
+        address: estate.address,
+      })
+    } else {
+      if (!oldCoord) {
+        return
+      }
+      require('./EstateService').emitValidAddress({
+        user_id: estate.user_id,
+        id: estate.id,
+        coord: null,
         address: estate.address,
       })
     }
@@ -96,23 +134,34 @@ class QueueJobService {
           .fetch()
       ).rows || []
 
-    let i = 0
-    while (i < estates.length) {
-      await QueueJobService.updateEstateCoord(estates[i].id)
-      i++
-    }
+    await Promise.map(
+      estates,
+      async (estate) => {
+        await QueueJobService.updateEstateCoord(estate.id)
+      },
+      { concurrency: 1 }
+    )
+  }
+
+  static async sendLikedNotificationBeforeExpired() {
+    const estates = await require('./EstateService').getLikedButNotKnockedExpiringEstates()
+    await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
   static async handleToActivateEstates() {
-    const estates = (await QueueJobService.fetchToActivateEstates()).rows
-    if (!estates || !estates.length) {
-      return false
-    }
+    try {
+      const estates = (await QueueJobService.fetchToActivateEstates()).rows
+      if (!estates || !estates.length) {
+        return false
+      }
 
-    let i = 0
-    while (i < estates.length) {
-      await require('./EstateService').publishEstate(estates[i], true)
-      i++
+      let i = 0
+      while (i < estates.length) {
+        await require('./EstateService').publishEstate({ estate: estates[i] }, true)
+        i++
+      }
+    } catch (e) {
+      Logger.error(`handleToActivateEstates error ${e.message}`)
     }
   }
 
@@ -156,11 +205,22 @@ class QueueJobService {
         (estateIdsToDraft && estateIdsToDraft.length)
       ) {
         // Delete new matches
+        const estateIds = (estateIdsToExpire || []).concat(estateIdsToDraft || [])
         await Match.query()
-          .whereIn('estate_id', (estateIdsToExpire || []).concat(estateIdsToDraft || []))
+          .whereIn('estate_id', estateIds)
           .where('status', MATCH_STATUS_NEW)
           .delete()
           .transacting(trx)
+
+        const listings = await EstateSyncListing.query()
+          .select('estate_id')
+          .where('status', STATUS_ACTIVE)
+          .whereIn('estate_id', estateIds)
+          .groupBy('estate_id')
+          .fetch()
+        await Promise.map(listings.rows, async (estateId) => {
+          await require('./EstateSyncService').unpublishEstate(estateId)
+        })
       }
 
       await trx.commit()
@@ -176,8 +236,9 @@ class QueueJobService {
   }
 
   static async fetchToActivateEstates() {
-    return Estate.query()
+    return await Estate.query()
       .select('*')
+      .with('estateSyncListings')
       .where('status', STATUS_DRAFT)
       .where('is_published', true)
       .whereNot('letting_type', LETTING_TYPE_LET)
@@ -245,7 +306,7 @@ class QueueJobService {
   }
 
   static async fetchShowDateEndedEstatesFor5Minutes() {
-    const start = moment().startOf('minute').subtract(5, 'minutes')
+    const start = moment.utc().startOf('minute').subtract(5, 'minutes')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.raw(
@@ -464,6 +525,31 @@ class QueueJobService {
     )
   }
 
+  static async fillMissingEstateInfo() {
+    try {
+      const estates = (
+        await Estate.query()
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('share_link')
+            this.orWhereNull('hash')
+          })
+          .limit(3)
+          .fetch()
+      ).toJSON()
+      Logger.info(`fillMissingEstateInfo count ${estates.length}`)
+      await Promise.map(
+        estates,
+        async (estate) => {
+          await Estate.updateHashInfo(estate.id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`fillMissingEstateInfo error ${e.message}`)
+    }
+  }
+
   static async updateThirdPartyOfferPoints() {
     if (
       process.env.PROCESS_OHNE_MAKLER_GET_POI === undefined ||
@@ -493,6 +579,23 @@ class QueueJobService {
         console.log('Fetching point error', e.message)
       }
       i++
+    }
+  }
+
+  static async notifyProspectWhoLikedButNotKnocked(estateId, userId) {
+    const estate = await Estate.query()
+      .where({ id: estateId })
+      .where('status', STATUS_ACTIVE)
+      .first()
+    const stillLiked = await Database.select('*')
+      .from('likes')
+      .where('user_id', userId)
+      .where('estate_id', estateId)
+    if (estate && stillLiked.length > 0) {
+      //validate estate is active
+      //if still liked
+      NoticeService.notifyProspectWhoLikedButNotKnocked(estate, userId)
+      console.log('notifyProspectWhoLikedBUtNotKnocked', estate.id, userId)
     }
   }
 }

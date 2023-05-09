@@ -26,7 +26,6 @@ const l = use('Localize')
 const MemberService = use('App/Services/MemberService')
 const { getHash } = require('../Libs/utils.js')
 const random = require('random')
-const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const Drive = use('Drive')
 const Hash = use('Hash')
 const Config = use('Config')
@@ -59,6 +58,9 @@ const {
   WRONG_INVITATION_LINK,
   WEBSOCKET_EVENT_USER_ACTIVATE,
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN,
+  OUTSIDE_LANDLORD_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+  OUTSIDE_TENANT_INVITE_TYPE,
 } = require('../constants')
 
 const {
@@ -112,8 +114,22 @@ class UserService {
         isExist = false
       }
     }
+    // Manages the outside tenant invitation flow
+    if (
+      !userData?.source_estate_id &&
+      userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE &&
+      userData?.data1 &&
+      userData?.data2
+    ) {
+      const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
+        data1: userData.data1,
+        data2: userData.data2,
+        email: userData.email,
+      })
+      userData.source_estate_id = estate_id
+    }
 
-    const user = await User.createItem(userData, trx)
+    const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
 
     if (user.role === ROLE_USER) {
       try {
@@ -140,7 +156,52 @@ class UserService {
         throw new HttpException(e.message, e.status || 400)
       }
     }
+
+    await this.handleOutsideInvitation(
+      {
+        user,
+        email: userData?.email,
+        invite_type: userData?.invite_type,
+        data1: userData?.data1,
+        data2: userData?.data2,
+      },
+      trx
+    )
+
     return user
+  }
+
+  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }, trx) {
+    if (!invite_type || !data1 || !data2) {
+      return
+    }
+
+    switch (invite_type) {
+      case OUTSIDE_LANDLORD_INVITE_TYPE: //outside landlord invitation
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
+          {
+            new_email: email,
+            data1,
+            data2,
+          },
+          trx
+        )
+        break
+      case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
+        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 }, trx)
+        break
+      case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
+        await require('./EstateCurrentTenantService').acceptOutsideTenant(
+          {
+            data1,
+            data2,
+            email,
+            user,
+          },
+          trx
+        )
+        break
+    }
   }
 
   /**
@@ -240,7 +301,7 @@ class UserService {
           ...params.dynamicLinkInfo,
           desktopInfo: {
             desktopFallbackLink:
-              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/invalid-platform',
           },
         }
       }
@@ -377,7 +438,7 @@ class UserService {
     const deepLink_URL = from_web
       ? `${process.env.SITE_URL}/forgotPassword`
       : `${process.env.DEEP_LINK}?type=forgotPassword`
-      
+
     const { shortLink } = await firebaseDynamicLinks.createLink({
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
@@ -422,27 +483,24 @@ class UserService {
     user.status = STATUS_ACTIVE
     const trx = await Database.beginTransaction()
     try {
-      if (user.role === ROLE_USER && user.source_estate_id) {
-        //If user we look for his email on estate_current_tenant and make corresponding corrections
-        await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
-          user,
-          user.source_estate_id,
-          trx
-        )
-        user.source_estate_id = null
+      const MarketPlaceService = require('./MarketPlaceService.js')
+      if (user.role === ROLE_USER) {
+        if (user.source_estate_id) {
+          //If user we look for his email on estate_current_tenant and make corresponding corrections
+          await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
+            { user, estate_id: user.source_estate_id },
+            trx
+          )
+          user.source_estate_id = null
+        } else {
+          await MarketPlaceService.createKnock({ user_id: user.id }, trx)
+        }
       }
-      await user.save(trx)
 
-      if (user.role === ROLE_LANDLORD) {
-        await require('./OutsideLandlordService').updateTaskLandlord(
-          {
-            landlord_id: user.id,
-            email: user.email,
-          },
-          trx
-        )
-      }
+      await user.save(trx)
       await trx.commit()
+
+      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
@@ -620,6 +678,12 @@ class UserService {
     )
   }
 
+  static async getUserLang(userIds) {
+    const data = await this.getTokenWithLocale(userIds)
+    const lang = data?.[0]?.lang || DEFAULT_LANG
+    return lang
+  }
+
   /**
    *
    */
@@ -630,7 +694,7 @@ class UserService {
     userIds = uniq(userIds)
     const data = await Database.table('users')
       .select('device_token', Database.raw(`COALESCE(lang, ?) AS lang`, DEFAULT_LANG), 'id')
-      .whereIn('id', userIds)
+      .whereIn('id', Array.isArray(userIds) ? userIds : [userIds])
       .whereNot('device_token', '')
       .whereNot('device_token', null)
       .where('notice', true)
@@ -722,10 +786,13 @@ class UserService {
   }
 
   static async getByEmailWithRole(emails, role) {
+    emails = Array.isArray(emails) ? emails : [emails]
+    emails = emails.map((email) => email.toLocaleLowerCase())
     return await User.query()
-      .select(['id', 'email'])
+      .select(['id', 'email', 'lang'])
       .whereIn('email', emails)
-      .where({ role: role })
+      .whereNotIn('status', [STATUS_DELETE])
+      .where({ role })
       .fetch()
   }
 
@@ -944,7 +1011,7 @@ class UserService {
       firstname,
       from_web,
       source_estate_id = null,
-      landlord_invite = false,
+      invite_type = '',
       data1,
       data2,
       ip,
@@ -953,16 +1020,6 @@ class UserService {
     },
     trx = null
   ) {
-    // Manages the outside tenant invitation flow
-    if (!source_estate_id && !landlord_invite && data1 && data2) {
-      const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
-        data1,
-        data2,
-        email,
-      })
-      source_estate_id = estate_id
-    }
-
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
     if (!roles.includes(role)) {
@@ -989,23 +1046,15 @@ class UserService {
           email,
           firstname,
           status: STATUS_EMAIL_VERIFY,
+          data1,
+          data2,
+          invite_type,
           source_estate_id,
           ip,
           ip_based_info,
         },
         trx
       )
-
-      if (landlord_invite && data1 && data2) {
-        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
-          {
-            new_email: email,
-            data1,
-            data2,
-          },
-          trx
-        )
-      }
 
       if (isEmpty(ip_based_info.country_code)) {
         const QueueService = require('./QueueService.js')
@@ -1261,9 +1310,8 @@ class UserService {
         if (data && data.contact) {
           const contactKeys = Object.keys(data.contact)
           const contactInfo = contactKeys.map((key) => data.contact[key])
-          if (contactInfo.filter((i) => i != undefined).length) {
-            console.log('updateContact start point')
-            await this.updateContact(user.id, data.contact)
+          if (contactInfo.filter((i) => i).length) {
+            await this.updateContact({ user_id: user.id, data: data.contact }, trx)
           }
         }
         await trx.commit()
@@ -1271,7 +1319,6 @@ class UserService {
         user.company = await require('./CompanyService').getUserCompany(user.id, user.company_id)
         Event.fire('mautic:syncContact', user.id)
       } else {
-        console.log('update Profile else here')
         await trx.rollback()
       }
 
@@ -1287,21 +1334,28 @@ class UserService {
     }
   }
 
-  static async updateContact(user_id, contactData) {
+  static async updateContact({ user_id, data }, trx) {
     const CompanyService = require('./CompanyService')
     const currentContacts = await CompanyService.getContacts(user_id)
-    if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
-      throw new HttpException(NO_CONTACT_EXIST, 400)
-    }
 
-    if (contactData.address) {
-      await CompanyService.updateCompany(user_id, { address: contactData.address })
-    }
+    try {
+      if (data.address) {
+        await CompanyService.updateCompany(user_id, { address: data.address }, trx)
+      }
 
-    const contact = currentContacts.rows[0]
-
-    if (Object.keys(omit(contactData, ['address'])).length) {
-      await CompanyService.updateContact(contact.id, user_id, omit(contactData, ['address']))
+      if (!currentContacts || !currentContacts.rows || !currentContacts.rows.length) {
+        await CompanyService.createContact({ user_id, data: omit(data, ['address']) }, trx)
+      } else {
+        const contact = currentContacts.rows[0]
+        if (Object.keys(omit(data, ['address'])).length) {
+          await CompanyService.updateContact(
+            { id: contact.id, user_id, data: omit(data, ['address']) },
+            trx
+          )
+        }
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -1373,6 +1427,10 @@ class UserService {
         topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { activated })
       }
     })
+  }
+
+  static async socialLoginAccountActive(id, data) {
+    await User.query().where('id', id).update(data)
   }
 }
 

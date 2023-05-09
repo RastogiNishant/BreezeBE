@@ -25,6 +25,7 @@ class Task extends Model {
       'property_address',
       'address_detail',
       'landlord_identify_key',
+      'due_date',
     ]
   }
   static get readonly() {
@@ -40,7 +41,13 @@ class Task extends Model {
   }
 
   user() {
-    return this.belongsTo('App/Models/User', 'tenant_id', 'id')
+    return this.belongsTo('App/Models/User', 'tenant_id', 'id').select(
+      'id',
+      'avatar',
+      'firstname',
+      'secondname',
+      'sex'
+    )
   }
 }
 

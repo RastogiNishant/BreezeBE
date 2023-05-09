@@ -116,6 +116,12 @@ const {
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
 } = require('../constants')
 
 const mapping = [
@@ -174,6 +180,8 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED],
   [NOTICE_TYPE_EXPIRED_SHOW_TIME_ID, NOTICE_TYPE_EXPIRED_SHOW_TIME],
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
+  [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
+  [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
 ]
 
 class NotificationsService {
@@ -469,6 +477,18 @@ class NotificationsService {
         capitalize(data.estate_address) +
         ' \n' +
         l.get('prospect.notification.next.knock_limit_expiring.message', lang)
+      )
+    })
+  }
+
+  static async prospectLikedButNotKnocked(notices) {
+    const title = 'prospect.notification.event.liked_but_not_knocked'
+
+    return NotificationsService.sendNotes(notices, title, (data, lang) => {
+      return (
+        capitalize(data.estate_address) +
+        ' \n' +
+        l.get('prospect.notification.next.liked_but_not_knocked', lang)
       )
     })
   }
@@ -938,6 +958,12 @@ class NotificationsService {
   static async sendExpiredShowTime(notices) {
     const title = 'landlord.property.set_availability.txt_show_expired.message'
     const body = 'landlord.property.set_availability.btn_new_show.message'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async notifyLikedButNotKnockedToProspect(notices) {
+    const title = 'prospect.notification.event.knock_reminder'
+    const body = 'prospect.notification.next.knock_reminder'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

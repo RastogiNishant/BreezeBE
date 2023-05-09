@@ -9,7 +9,7 @@ class CreateBuddy extends Base {
     yup.object().shape({
       name: yup.string().max(30).required(),
       phone: phoneSchema,
-      email: yup.string().email().max('255').required(),
+      email: yup.string().email().lowercase().max('255').required(),
     })
 }
 

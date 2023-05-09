@@ -97,16 +97,17 @@ class MatchController {
     await this.getActiveEstate(estate_id, false)
 
     try {
-      const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
+      const result = await MatchService.knockEstate({
+        estate_id: estate_id,
+        user_id: auth.user.id,
+        knock_anyway,
+      })
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
       return response.res(result)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -154,10 +155,7 @@ class MatchController {
       return response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e?.status || 400, e?.code || 0)
     }
   }
 
@@ -567,21 +565,37 @@ class MatchController {
     }
 
     let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
-
-    let thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+    let thirdPartyOffers = []
+    if (filters && (filters.knock || filters.like || filters.dislike)) {
+      thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+    }
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
+    estates = [...estates, ...thirdPartyOffers]
+
     let estateData = uniqBy(estates, 'id')
-    estateData = [...estateData, ...thirdPartyOffers]
-    if (filters.like || filters.dislike || filters.knock) {
-      estateData = estateData.sort((a, b) => (a.action_at > b.action_at ? -1 : 1))
+
+    /**
+     * if a tenant invites outside landlord and create a task, need to add pending final match until a landlord accepts invitation
+     * this final pending has to be removed if a landlord assigns that task to a specific property
+     */
+    if (filters && filters.final) {
+      const pendingEstates = await EstateService.getPendingFinalMatchEstate(user.id)
+      estates = [...estates, ...pendingEstates]
+      estateData = [...estateData, ...pendingEstates]
     }
+
+    if (filters.like || filters.dislike || filters.knock) {
+      estateData = estateData.sort((a, b) => (a?.action_at > b?.action_at ? -1 : 1))
+    }
+
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
+
     estates = {
-      total: estates.length + thirdPartyOffers.length,
-      lastPage: Math.ceil((estates.length + thirdPartyOffers.length) / limit),
+      total: estateData.length,
+      lastPage: Math.ceil(estateData.length / limit),
       page,
       perPage: limit,
       data: estateData.slice(startIndex, endIndex),
@@ -766,20 +780,22 @@ class MatchController {
       groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, buddies)
       counts.buddies = buddies.length
 
-      const newMatchedEstatesCount = groupedFilteredEstates.length
-      const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
+      // const newMatchedEstatesCount = groupedFilteredEstates.length
+      // const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
       counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
-      counts.totalInvite =
-        counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+      // counts.totalInvite =
+      //   counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
 
-      const currentDay = moment().startOf('day')
+      counts.totalInvite = counts.matches + counts.buddies
+
+      const currentDay = moment().utc().startOf('day')
 
       counts.expired = allEstatesJson.filter(
         (e) =>
-          moment(e.available_end_at).isBefore(currentDay) ||
-          moment(e.available_start_at).isAfter(currentDay)
+          moment.utc(e.available_end_at).isBefore(currentDay) ||
+          moment.utc(e.available_start_at).isAfter(currentDay)
       ).length
 
       const showed = await Estate.query()

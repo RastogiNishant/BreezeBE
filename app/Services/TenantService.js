@@ -21,7 +21,6 @@ const {
   MEMBER_FILE_TYPE_INCOME,
   MEMBER_FILE_TYPE_PASSPORT,
 
-  PETS_BIG,
   PETS_SMALL,
   PETS_NO,
 
@@ -55,9 +54,15 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  TRANSPORT_TYPE_CAR,
+  VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
+const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { USER_NOT_FOUND },
+} = require('../exceptions')
 class TenantService {
   /**
    *
@@ -123,9 +128,16 @@ class TenantService {
    */
   static async updateTenantIsoline(tenantId, trx = null) {
     const tenant = await TenantService.getTenantQuery().where({ id: tenantId }).first()
+    if (!tenant) {
+      throw new HttpException(USER_NOT_FOUND, 400)
+    }
+
     const { lat, lon } = tenant.getLatLon()
 
-    if (+lat === 0 || +lon === 0 || !tenant.dist_type || !tenant.dist_min) {
+    tenant.dist_type = tenant.dist_type || TRANSPORT_TYPE_CAR
+    tenant.dist_min = tenant.dist_min || 60
+
+    if (lat === undefined && lat === null && lon === undefined && lon === null) {
       // Invalid coordinates, nothing to parse
       return false
     }
@@ -159,7 +171,11 @@ class TenantService {
    */
   static async getTenantValidProofsCount(userId, startOf) {
     if (!startOf) {
-      startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
+      startOf = moment()
+        .utc()
+        .subtract(VALID_INCOME_PROOFS_PERIOD, 'month')
+        .startOf('month')
+        .format('YYYY-MM-DD')
     }
 
     return Database.table({ _m: 'members' })
@@ -237,7 +253,7 @@ class TenantService {
 
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
-      pets: yup.number().oneOf([PETS_BIG, PETS_SMALL, PETS_NO]).required(),
+      pets: yup.number().oneOf([PETS_SMALL, PETS_NO]).required(),
       credit_score: yup.number().when(['credit_score_submit_later'], {
         is: (credit_score_submit_later) => {
           return credit_score_submit_later

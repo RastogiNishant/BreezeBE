@@ -24,7 +24,6 @@ class CompanyController {
     const files = await File.saveRequestFiles(request, [
       { field: 'avatar', mime: imageMimes, isPublic: true },
     ])
-
     if (files.avatar) {
       data.avatar = files.avatar
     } else {
@@ -111,13 +110,27 @@ class CompanyController {
 
     data.company_id = auth.user.company_id
     let contactData = data
-    if (data.address) {
-      await CompanyService.updateCompany(auth.user.id, { address: data.address })
-      contactData = omit(contactData, ['address'])
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.address) {
+        await CompanyService.updateCompany(auth.user.id, { address: data.address }, trx)
+        contactData = omit(contactData, ['address'])
+      }
+
+      const contacts = await CompanyService.createContact(
+        {
+          data: contactData,
+          user_id: auth.user.id,
+        },
+        trx
+      )
+      await trx.commit()
+      Event.fire('mautic:syncContact', auth.user.id)
+      return response.res(contacts)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
-    const contacts = await CompanyService.createContact(contactData, auth.user.id)
-    Event.fire('mautic:syncContact', auth.user.id)
-    return response.res(contacts)
   }
 
   /**
@@ -126,12 +139,22 @@ class CompanyController {
   async updateContact({ request, auth, response }) {
     const { id, ...data } = request.all()
 
-    if (data.address) {
-      await CompanyService.updateCompany(auth.user.id, { address: data.address })
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.address) {
+        await CompanyService.updateCompany(auth.user.id, { address: data.address }, trx)
+      }
+      const contact = await CompanyService.updateContact(
+        { id, user_id: auth.user.id, data: omit(data, ['address']) },
+        trx
+      )
+      await trx.commit()
+      response.res(contact)
+      Event.fire('mautic:syncContact', auth.user.id)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status)
     }
-    const contact = await CompanyService.updateContact(id, auth.user.id, omit(data, ['address']))
-    Event.fire('mautic:syncContact', auth.user.id)
-    return response.res(contact)
   }
 
   /**

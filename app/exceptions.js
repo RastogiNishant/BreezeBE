@@ -59,6 +59,8 @@ const exceptions = {
   ONLY_ONE_FAVORITE_ROOM_ALLOWED: 'Only 1 favourite room is allowed',
   NO_ROOM_EXIST: 'Room not exists',
   NO_ESTATE_EXIST: 'Estate not exists',
+  NO_ACTIVE_ESTATE_EXIST: 'Estate is not active yet',
+  MARKET_PLACE_CONTACT_EXIST: 'You have already knocked that property',
   MEDIA_NOT_EXIST: 'Media not exists',
   INVALID_IDS: 'ids must be an array of integers',
   NO_IMAGE_EXIST: 'Image not exists',
@@ -83,6 +85,11 @@ const exceptions = {
   MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
   UPLOAD_EXCEL_PROGRESS: 'Previous excel is in progress',
   WRONG_PROSPECT_CODE: 'Wrong prospect code',
+  NOT_FOUND_OUTSIDE_INVITAION: 'Invitation No found',
+  LAT_LON_NOT_PROVIDED: 'Coord info not provided',
+  NO_TASK_FOUND: 'Task not found',
+  NO_PROSPECT_KNOCK: "you haven't knocked that property",
+  IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE: 'Please wait for a while before you can re-publish',
 }
 
 const exceptionCodes = {
@@ -90,6 +97,9 @@ const exceptionCodes = {
   SHOW_ALREADY_STARTED_ERROR_CODE: 1000401,
   UPLOAD_EXCEL_PROGRESS_ERROR_CODE: 2000100,
   WRONG_PROSPECT_CODE_ERROR_CODE: 3000100,
+  NO_TIME_SLOT_ERROR_CODE: 4000100,
+  NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
+  ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
 }
 
 const exceptionKeys = {

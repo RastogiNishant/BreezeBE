@@ -1,6 +1,6 @@
 # Breeze Notes to Backend Developers 
- 
-These are notes to setup your local.  
+
+These are notes to setup your local. 
 
 ## Prerequisites
 
@@ -136,7 +136,7 @@ Don't hesitate to ask questions from dev. Contact them via slack on the #dev-hub
 
 We have a swagger documentation (currently under development) which could guide you.
 
-```/docs```
+```/docs``` 
 
 ### Breeze Sprinting Guideline active from 21.11.2022:
 

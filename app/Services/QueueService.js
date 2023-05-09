@@ -20,6 +20,10 @@ const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
 const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
+const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
+const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
+const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -82,6 +86,14 @@ class QueueService {
     )
   }
 
+  static estateSyncPublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
+  }
+
+  static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids, markListingsForDelete })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
@@ -101,16 +113,40 @@ class QueueService {
     Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
   }
 
+  static notifyProspectWhoLikedButNotKnocked(estateId, userId, delay) {
+    Queue.addJob(NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED, { estateId, userId }, { delay })
+  }
+
   static getIpBasedInfo(userId, ip) {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
 
   static async doEvery10MinAtNight() {
-    return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
+    return Promise.all([
+      wrapException(QueueJobService.updateThirdPartyOfferPoints),
+      wrapException(QueueJobService.fillMissingEstateInfo),
+    ])
   }
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
     Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
+  }
+
+  static createThirdPartyMatchesByEstate() {
+    Queue.addJob(
+      QUEUE_CREATE_THIRD_PARTY_MATCHES,
+      {},
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        delay: 1,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      }
+    )
   }
 
   /**
@@ -129,6 +165,7 @@ class QueueService {
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.expiredShowTime),
+      wrapException(QueueJobService.updatePOI),
     ])
   }
 
@@ -163,6 +200,7 @@ class QueueService {
     return Promise.all([
       wrapException(NoticeService.prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
+      wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
     ])
   }
 
@@ -181,7 +219,7 @@ class QueueService {
       {},
       {
         jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/2 * * * *' },
+        repeat: { cron: '*/15 * * * *' },
         removeOnComplete: true,
         removeOnFail: true,
       }
@@ -253,6 +291,22 @@ class QueueService {
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
           })
+        case QUEUE_CREATE_THIRD_PARTY_MATCHES:
+          return require('./ThirdPartyMatchService').matchByEstates()
+        case NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED:
+          return QueueJobService.notifyProspectWhoLikedButNotKnocked(
+            job.data.estateId,
+            job.data.userId
+          )
+        case ESTATE_SYNC_PUBLISH_ESTATE:
+          return require('./EstateSyncService').postEstate({
+            estate_id: job.data.estate_id,
+          })
+        case ESTATE_SYNC_UNPUBLISH_ESTATES:
+          return require('./EstateSyncService').unpublishMultipleEstates(
+            job.data.estate_ids,
+            job.data.markListingsForDelete
+          )
         default:
           console.log(`No job processor for: ${job.name}`)
       }

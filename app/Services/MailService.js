@@ -3,6 +3,7 @@
 const { trim, capitalize } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
+const { generateAddress } = use('App/Libs/utils')
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
@@ -628,17 +629,24 @@ class MailService {
     )
   }
 
-  static async inviteLandlordFromTenant({ task, link, lang = DEFAULT_LANG }) {
+  static async inviteLandlordFromTenant({ prospect_email, task, link, lang = DEFAULT_LANG }) {
     const templateId = LANDLORD_EMAIL_TEMPLATE
 
-    const shortMsg = `${task.property_address}, ${task.address_detail}: \n 
-                      ${l.get(task.title, lang)}:${l.get(task.description, lang)} ... ${moment
-      .utc(task.created_at)
-      .format(DATE_FORMAT)}`
+    const address = generateAddress({
+      street: task?.property_address?.street,
+      house_number: task?.property_address?.house_number,
+      zip: task?.property_address?.postcode,
+      city: task?.property_address?.city,
+      country: task?.property_address?.country,
+    })
+    const shortMsg = `<b>${task.address_detail || ``}, ${address}</b>: \n 
+                      <b>${l.get(task.title, lang)}</b>:<br/>${
+      l.get(task.description, lang) || ``
+    } `
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)
-      .replace('{{email}}', task.email)
+      .replace('{{email}}', `<b>${prospect_email}</b>`)
       .replace('{{short_message}}', shortMsg)
       .replace(/\n/g, '<br />')
     const final = l
@@ -726,7 +734,9 @@ class MailService {
         email: FromEmail,
         name: FromName,
       },
-      subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
+      subject:
+        SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
+        moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
     }
     if (sendToBCC) {
@@ -734,6 +744,74 @@ class MailService {
     }
 
     return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendPendingKnockEmail({
+    link,
+    landlord_name,
+    lastName = ``,
+    salutation = ``,
+    email,
+    lang = DEFAULT_LANG,
+  }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const final = l
+      .get('prospect.no_reply_email_from_listing.final.message', lang)
+      .replace('{Landlord_name}', `${landlord_name}`)
+      .replace(/\n/g, '<br />')
+
+    const intro = l
+      .get('prospect.no_reply_email_from_listing.intro.message', lang)
+      .replace('{Salutation}', `${salutation}`)
+      .replace('{Surname}', `${lastName}`)
+      .replace(/\n/g, '<br />')
+
+    const messages = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      templateId: templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        intro,
+        CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
+        link,
+        final,
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+      },
+    }
+
+    return sgMail.send(messages).then(
       () => {
         console.log('Email delivery successfully')
       },

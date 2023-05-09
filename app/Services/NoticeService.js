@@ -65,6 +65,7 @@ const {
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -105,6 +106,9 @@ const {
   STATUS_DRAFT,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -175,7 +179,7 @@ class NoticeService {
    * If prospect register 2 days ago and has no activity
    */
   static async sandProspectNoActivity() {
-    const dateTo = moment().startOf('day').add(-2, 'days')
+    const dateTo = moment.utc().startOf('day').add(-2, 'days')
     const dateFrom = dateTo.clone().add().add(-1, 'days')
     // WITH users register 2 days ago
     const queryWith = Database.table({ _u: 'users' })
@@ -304,7 +308,7 @@ class NoticeService {
       estate_address: estate.address,
       total,
       booked,
-      date: moment().format(GERMAN_DATE_TIME_FORMAT),
+      date: moment.utc().format(GERMAN_DATE_TIME_FORMAT),
     }
 
     const notice = {
@@ -398,7 +402,7 @@ class NoticeService {
     const result = await Database.table({ _m: 'matches' })
       .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
       .where('_m.status', MATCH_STATUS_NEW)
-      .where('_m.updated_at', '>', moment().add(-7, 'days').format(DATE_FORMAT))
+      .where('_m.updated_at', '>', moment.utc().add(-7, 'days').format(DATE_FORMAT))
       .groupBy('_m.user_id')
 
     if (isEmpty(result)) {
@@ -532,7 +536,7 @@ class NoticeService {
    * Get visits in {time}
    */
   static async getVisitsIn(hours) {
-    const start = moment().startOf('minute').add(hours, 'hours').add(2, hours) // 2 hours for the German timezone
+    const start = moment().utc().startOf('minute').add(hours, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
@@ -621,7 +625,7 @@ class NoticeService {
     }
     await Match.query()
       .where('status', MATCH_STATUS_KNOCK)
-      .update({ notified_at: moment.utc().format(DATE_FORMAT) })
+      .update({ notified_at: moment().utc().format(DATE_FORMAT) })
   }
 
   /**
@@ -645,9 +649,9 @@ class NoticeService {
    *
    */
   static async getLandlordVisitsIn(hoursOffset) {
-    const minDate = moment().startOf('day')
+    const minDate = moment().utc().startOf('day')
     const maxDate = minDate.clone().add(1, 'day')
-    const start = moment().startOf('minute').add(hoursOffset, 'hours').add(2, hours) // 2 hours for the German timezone
+    const start = moment().utc().startOf('minute').add(hoursOffset, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     const withQuery = Database.table({ _v: 'visits' })
@@ -715,12 +719,17 @@ class NoticeService {
       await P.map(Object.keys(groupMatches), async (key) => {
         const estate_ids = groupMatches[key].map((m) => m.estate_id)
         const knockCount = await require('./MatchService').getMatchNewCount(key, estate_ids)
-        if (knockCount[0].count) {
+        if (
+          knockCount &&
+          knockCount.length &&
+          knockCount[0].count &&
+          parseInt(knockCount?.[0]?.count)
+        ) {
           notices.push({
             user_id: key,
             type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
             data: {
-              count: knockCount[0].count || 0,
+              count: knockCount[0].count,
             },
           })
         }
@@ -739,7 +748,7 @@ class NoticeService {
   static async prospectProfileExpiring(skip = 0) {
     // Check is it 2 days fro month ends
     const PAGE_SIZE = 500
-    if (moment().diff(moment().add(1, 'month').startOf('month'), 'days') !== -2) {
+    if (moment.utc().diff(moment.utc().add(1, 'month').startOf('month'), 'days') !== -2) {
       return false
     }
 
@@ -896,6 +905,10 @@ class NoticeService {
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
         return NotificationsService.sendFullInvitation([notice])
+      case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
+        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
+      case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
+        return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
     }
   }
 
@@ -1264,6 +1277,37 @@ class NoticeService {
     })
     await NoticeService.insertNotices(notices)
     await NotificationsService.notifyTenantTaskResolved(notices)
+  }
+
+  static async likedButNotKnockedToProspect(estates = []) {
+    const notices = estates.map(({ estate_id, user_id, address, cover }) => {
+      return {
+        user_id,
+        type: NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
+        data: {
+          estate_id,
+          estate_address: address,
+        },
+        image: File.getPublicUrl(cover),
+      }
+    })
+
+    if (notices?.length) {
+      await NoticeService.insertNotices(notices)
+      await NotificationsService.notifyLikedButNotKnockedToProspect(notices)
+    }
+  }
+
+  static async notifyProspectWhoLikedButNotKnocked(estate, userId) {
+    const notice = {
+      user_id: userId,
+      type: NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
+      data: { estate_id: estate.id, estate_address: estate.address },
+      image: File.getPublicUrl(estate.cover),
+    }
+
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.prospectLikedButNotKnocked([notice])
   }
 }
 

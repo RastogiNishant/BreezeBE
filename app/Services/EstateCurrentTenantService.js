@@ -48,6 +48,7 @@ const {
   DATE_FORMAT,
   LETTING_STATUS_STANDARD,
   CONNECT_ESTATE,
+  OUTSIDE_TENANT_INVITE_TYPE,
 } = require('../constants')
 
 const {
@@ -219,6 +220,7 @@ class EstateCurrentTenantService extends BaseService {
 
     let currentTenant = await EstateCurrentTenant.query()
       .where('estate_id', estate_id)
+      .where('user_id', user_id)
       .where('status', STATUS_ACTIVE)
       .first()
 
@@ -308,7 +310,7 @@ class EstateCurrentTenantService extends BaseService {
     return await query.first()
   }
 
-  static async getByEstateIds(estate_ids) {
+  static async getActiveByEstateIds(estate_ids) {
     return (
       await EstateCurrentTenant.query()
         .whereIn('estate_id', Array.isArray(estate_ids) ? estate_ids : [estate_ids])
@@ -762,24 +764,24 @@ class EstateCurrentTenantService extends BaseService {
       encDst += cipher.final('base64')
 
       let uri =
-        `&data1=${encodeURIComponent(encDst)}` +
+        `&type=${OUTSIDE_TENANT_INVITE_TYPE}&data1=${encodeURIComponent(encDst)}` +
         `&data2=${encodeURIComponent(iv.toString('base64'))}`
 
       if (estateCurrentTenant.email) {
         uri += `&email=${estateCurrentTenant.email}`
-      }
 
-      const existingUser = await User.query()
-        .where('email', estateCurrentTenant.email)
-        .where('role', ROLE_USER)
-        .first()
+        const existingUser = await User.query()
+          .where('email', estateCurrentTenant.email.toLowerCase())
+          .where('role', ROLE_USER)
+          .first()
 
-      if (existingUser) {
-        uri += `&user_id=${existingUser.id}`
+        if (existingUser) {
+          uri += `&user_id=${existingUser.id}`
+        }
       }
 
       const shortLink = await createDynamicLink(
-        `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`
+        `${process.env.DEEP_LINK}?type=${OUTSIDE_TENANT_INVITE_TYPE}${uri}`
       )
       return {
         id: estateCurrentTenant.id,
@@ -794,7 +796,7 @@ class EstateCurrentTenantService extends BaseService {
     }
   }
 
-  static async acceptOutsideTenant({ data1, data2, password, email, user }) {
+  static async acceptOutsideTenant({ data1, data2, password, email, user }, trx) {
     const { estateCurrentTenant, estate_id } = await this.handleInvitationLink({
       data1,
       data2,
@@ -802,10 +804,14 @@ class EstateCurrentTenantService extends BaseService {
       user,
     })
 
-    const trx = await Database.beginTransaction()
+    let isOutsideTrx = true
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isOutsideTrx = false
+    }
     try {
       if (user) {
-        await EstateCurrentTenantService.updateOutsideTenantInfo(user, estate_id, trx)
+        await EstateCurrentTenantService.updateOutsideTenantInfo({ user, estate_id }, trx)
       } else {
         const userData = {
           role: ROLE_USER,
@@ -823,16 +829,25 @@ class EstateCurrentTenantService extends BaseService {
           trx
         )
       }
-      await trx.commit()
+      if (!isOutsideTrx) {
+        await trx.commit()
+      }
+
       return user.id
     } catch (e) {
-      await trx.rollback()
+      if (!isOutsideTrx) {
+        await trx.rollback()
+      }
       throw new HttpException(e.message, 500)
     }
   }
 
   static async handleInvitationLink({ data1, data2, email, user }) {
     const { estate_id, ...rest } = this.decryptDynamicLink({ data1, data2 })
+    if (!estate_id) {
+      return { estate_id: null, estateCurrentTenant: null }
+    }
+
     const estateCurrentTenant = await EstateCurrentTenantService.validateOutsideTenantInvitation({
       estate_id,
       ...rest,
@@ -969,7 +984,7 @@ class EstateCurrentTenantService extends BaseService {
     await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
   }
 
-  static async updateOutsideTenantInfo(user, estate_id = null, trx = null) {
+  static async updateOutsideTenantInfo({ user, estate_id = null }, trx = null) {
     if (!user || !estate_id) {
       throw new HttpException('User or estate id is not provided', 400)
     }
