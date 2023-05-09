@@ -5,6 +5,8 @@ const crypto = require('crypto')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
+const File = use('App/Classes/File')
+const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
 const {
   STATUS_ACTIVE,
@@ -106,6 +108,62 @@ class ThirdPartyOfferService {
     } catch (e) {
       console.log('pullOhneMakler error', e.message)
     }
+  }
+
+  static async pullGewobag() {
+    const xml = await File.getGewobagUploadedContent()
+    const reader = new OpenImmoReader()
+    const properties = await reader.processXml(xml)
+    await Promise.map(properties, async (estate) => {
+      let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
+      sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
+      let newEstate = {
+        source: 'gewobag',
+        source_information: JSON.stringify(sourceInformation),
+        country: estate.country,
+        house_number: estate.house_number,
+        street: estate.street,
+        city: estate.city,
+        address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
+        floor: Number(estate.floor),
+        number_floors: Number(estate.number_floors),
+        bathrooms: estate.bathrooms_number,
+        rooms_number: Number(estate.rooms_number),
+        area: Math.round(estate.area),
+        construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
+        energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
+        vacant_date: estate.vacant_date,
+        additional_costs: Number(estate.additional_costs),
+        net_rent: Number(estate.net_rent),
+        property_type: estate.property_type,
+        heating_costs: Number(estate.heating_costs),
+        extra_costs: +estate.heating_costs + +estate.additional_costs,
+        building_status: estate.building_status,
+        house_type: estate.house_type,
+        apt_type: estate.apt_type,
+        heating_type: estate.heating_type,
+        firing: estate.firing,
+        zip: estate.zip,
+        status: STATUS_ACTIVE,
+        full_address: true,
+      }
+      let images = []
+      for (let i = 0; i < estate.images.length; i++) {
+        const imageUrl = await File.getFtpPublicUrl(estate.images[i].file_name)
+        images = [
+          ...images,
+          {
+            picture: {
+              picture_url: imageUrl,
+              picture_title: '',
+            },
+          },
+        ]
+      }
+      newEstate.images = JSON.stringify(images)
+      const result = await ThirdPartyOffer.createItem(newEstate)
+      require('./QueueService').getThirdPartyCoords(result.id)
+    })
   }
 
   static async expireWhenNotOnSourceIds(sourceIds) {
