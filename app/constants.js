@@ -1106,6 +1106,7 @@ Estates: [ESTATES]
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT: 'I am interested in this apartment.',
 
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  THIRD_PARTY_OFFER_SOURCE_GEWOBAG: 'gewobag',
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: [
     'Wohnung',
@@ -1135,7 +1136,7 @@ Estates: [ESTATES]
     family_size_min: 1,
     family_size_max: 2,
   },
-  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
+  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler', 'gewobag'],
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
     ohnemakler: {
       name: 'Ohne-makler.net',
@@ -1145,7 +1146,7 @@ Estates: [ESTATES]
     gewobag: {
       name: 'Gewobag',
       url: 'https://www.gewobag.de/',
-      logo: 'https://www.gewobag.de/wp-content/themes/gewobag/assets/svg/gewobag-logo.svg',
+      logo: 'APP_URL/img/gewobag.png',
     },
   },
   VALID_INCOME_PROOFS_PERIOD: 4,

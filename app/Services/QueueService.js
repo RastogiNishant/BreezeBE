@@ -9,8 +9,10 @@ const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
 const GET_POINTS = 'getEstatePoint'
+const GET_THIRD_PARTY_POINT = 'getThirdPartyPoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
+const GET_THIRD_PARTY_COORDINATES = 'getThirdPartyCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CONTACT_OHNE_MAKLER = 'contactOhneMakler'
@@ -58,6 +60,10 @@ class QueueService {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
   }
 
+  static getThirdPartyPoint(estateId) {
+    Queue.addJob(GET_THIRD_PARTY_POINT, { estateId }, { delay: 1 })
+  }
+
   static uploadOpenImmoImages(images, estateId) {
     Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
   }
@@ -99,6 +105,10 @@ class QueueService {
    */
   static getEstateCoords(estateId) {
     Queue.addJob(GET_COORDINATES, { estateId }, { delay: 1 })
+  }
+
+  static getThirdPartyCoords(estateId) {
+    Queue.addJob(GET_THIRD_PARTY_COORDINATES, { estateId }, { delay: 1 })
   }
 
   static savePropertyBulkImages(properyImages) {
@@ -240,8 +250,12 @@ class QueueService {
           return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
+        case GET_THIRD_PARTY_POINT:
+          return QueueJobService.updateThirdPartyPoint(job.data.estateId)
         case GET_COORDINATES:
           return QueueJobService.updateEstateCoord(job.data.estateId)
+        case GET_THIRD_PARTY_COORDINATES:
+          return QueueJobService.updateThirdPartyCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case CONTACT_OHNE_MAKLER:

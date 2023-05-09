@@ -62,6 +62,7 @@ class ThirdPartyOffer extends Model {
     this.addHook('beforeSave', async (instance) => {
       if (instance.dirty.coord && isString(instance.dirty.coord)) {
         const [lat, lon] = instance.dirty.coord.split(',')
+        instance.coord_raw = instance.dirty.coord
         instance.coord = Database.gis.setSRID(Database.gis.point(lon, lat), 4326)
       }
 

@@ -68,6 +68,17 @@ class QueueJobService {
     return estate.save()
   }
 
+  static async updateThirdPartyPoint(estateId) {
+    const estate = await ThirdPartyOffer.query().where('id', estateId).first()
+    const [lat, lon] = estate.coord_raw.split(/,/)
+    if (+lat === 0 && +lon === 0) {
+      return false
+    }
+    const point = await GeoService.getOrCreatePoint({ lat, lon })
+    estate.point_id = point.id
+    return estate.save()
+  }
+
   static async updatePOI() {
     try {
       const points = (
@@ -120,6 +131,17 @@ class QueueJobService {
         coord: null,
         address: estate.address,
       })
+    }
+  }
+
+  static async updateThirdPartyCoord(estateId) {
+    const estate = await ThirdPartyOffer.query().where('id', estateId).first()
+    const result = await GeoService.geeGeoCoordByAddress(estate.address)
+    if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
+      const coord = `${result.lat},${result.lon}`
+      await estate.updateItem({ coord })
+
+      await QueueJobService.updateThirdPartyPoint(estateId)
     }
   }
 
