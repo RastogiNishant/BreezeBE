@@ -378,7 +378,6 @@ class OpenImmoReader {
         properties = this.parseSingleValues(properties)
         properties = this.processEnergyPass(properties)
         properties = await this.processImages(properties)
-        console.log(properties)
       }
       return properties
     } catch (err) {

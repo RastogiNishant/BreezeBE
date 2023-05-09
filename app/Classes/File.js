@@ -407,7 +407,6 @@ class File {
       var params = {
         Bucket: 'breeze-ftp-files',
         Delimiter: '/',
-        //Prefix: 's/5469b2f5b4292d22522e84e0/ms.files/',
       }
       const objects = await s3.listObjects(params).promise()
       let xml
@@ -421,6 +420,13 @@ class File {
       console.log('getGewobagUploadedContent', err)
       return []
     }
+  }
+
+  static async getFtpPublicUrl(object) {
+    if (!object) {
+      return null
+    }
+    return Drive.disk('breeze-ftp-files').getSignedUrl(object, 900)
   }
 }
 
