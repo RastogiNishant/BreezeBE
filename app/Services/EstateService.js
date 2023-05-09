@@ -2639,18 +2639,62 @@ class EstateService {
     return await Estate.updateHashInfo(id)
   }
 
+  static async countDuplicateProperty(property_id) {
+    const estateCount = await Estate.query()
+      .where('property_id', 'ilike', `${property_id}%`)
+      .whereNot('status', STATUS_DELETE)
+      .count('*')
+    if (estateCount?.length) {
+      return parseInt(estateCount[0].count)
+    }
+    return 0
+  }
+
   static async duplicateEstate(user_id, estate_id) {
     const estate = await this.getByIdWithDetail(estate_id)
     if (estate.user_id !== user_id) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
+    const duplicatedCount = await this.countDuplicateProperty(estate.property_id)
     const trx = await Database.beginTransaction()
     try {
+      const originalEstateData = estate.toJSON()
       const estateData = {
-        ...omit(estate.toJSON(), ['rooms', 'amenities', 'slots']),
+        ...omit(originalEstateData, [
+          'id',
+          'rooms',
+          'amenities',
+          'slots',
+          'created_at',
+          'updated_at',
+        ]),
+        property_id: `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount}`,
+        available_start_at: null,
+        available_end_at: null,
+        status: STATUS_DRAFT,
+        is_published: false,
+        vacant_date: null,
+        hash: null,
+        shared_link: null,
+        six_char_code: null,
+        rent_end_at: null,
+        cover: null,
+        repair_needed: false,
       }
-      await this.createEstate({ data: {} })
+      await this.createEstate({ data: estateData, userId: user_id }, false, trx)
+      Promise.map(
+        originalEstateData.rooms || [],
+        async (room) => {
+          await RoomService.createRoom({
+            estate_id,
+            roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
+          })
+          await RoomService.addManyImages(omit(room.images, ['id', 'room_id']), trx)
+        },
+        { concurrency: 1 }
+      )
+
       await trx.commit()
     } catch (e) {
       await trx.rollback()
