@@ -1163,7 +1163,7 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where(function () {
         this.orWhereNull('_m.id')
-        this.orWhereNull('_m.status', MATCH_STATUS_NEW)
+        this.orWhere('_m.status', MATCH_STATUS_NEW)
       })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
