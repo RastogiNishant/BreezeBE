@@ -1142,6 +1142,11 @@ Estates: [ESTATES]
       url: 'https://www.ohne-makler.net/',
       logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
     },
+    gewobag: {
+      name: 'Gewobag',
+      url: 'https://www.gewobag.de/',
+      logo: 'https://www.gewobag.de/wp-content/themes/gewobag/assets/svg/gewobag-logo.svg',
+    },
   },
   VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
