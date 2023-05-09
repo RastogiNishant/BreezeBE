@@ -1490,6 +1490,7 @@ class EstateService {
       }
       return status
     } catch (e) {
+      console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
       await trx.rollback()
       throw new HttpException(e.message, 500)
     }
@@ -2664,6 +2665,7 @@ class EstateService {
         ...omit(originalEstateData, [
           'id',
           'rooms',
+          'files',
           'amenities',
           'slots',
           'created_at',
@@ -2679,25 +2681,53 @@ class EstateService {
         shared_link: null,
         six_char_code: null,
         rent_end_at: null,
-        cover: null,
         repair_needed: false,
       }
-      await this.createEstate({ data: estateData, userId: user_id }, false, trx)
-      Promise.map(
+      const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
+      console.log('newEstate id here', newEstate.id)
+      await Promise.map(
         originalEstateData.rooms || [],
         async (room) => {
-          await RoomService.createRoom({
-            estate_id,
-            roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
-          })
-          await RoomService.addManyImages(omit(room.images, ['id', 'room_id']), trx)
+          const newRoom = await RoomService.createRoom(
+            {
+              estate_id: newEstate.id,
+              roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
+            },
+            trx
+          )
+          const newImages = room.images.map((image) => ({
+            ...omit(image, ['id', 'relativeUrl', 'thumb']),
+            url: image.relativeUrl,
+            room_id: newRoom.id,
+          }))
+          await RoomService.addManyImages(newImages, trx)
         },
         { concurrency: 1 }
       )
 
+      const newFiles = (originalEstateData.files || []).map((file) => ({
+        ...omit(file, ['id', 'relativeUrl', 'thumb']),
+        url: file.relativeUrl,
+        estate_id: newEstate.id,
+      }))
+      await this.addManyFiles(newFiles, trx)
+
+      const newAmenities =
+        originalEstateData.amenities ||
+        [].map((amenity) => ({ ...omit(amenity, ['room_id']), estate_id: newEstate.id }))
+      await Amenity.createMany(newAmenities, trx)
+
       await trx.commit()
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: newEstate.id },
+      })
+      console.log('Estates here=', estates)
+      return estates.data?.[0]
     } catch (e) {
       await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 }

@@ -1244,6 +1244,15 @@ class EstateController {
       throw new HttpException(e.message, e.status || 500, e.code || 0)
     }
   }
+
+  async duplicateEstate({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateService.duplicateEstate(auth.user.id, id))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500, e.code || 0)
+    }
+  }
 }
 
 module.exports = EstateController
