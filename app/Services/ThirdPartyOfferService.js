@@ -192,6 +192,7 @@ class ThirdPartyOfferService {
   static async expireWhenNotOnSourceIds(sourceIds) {
     await ThirdPartyOffer.query()
       .whereNotIn('source_id', sourceIds)
+      .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
       .update({ status: STATUS_EXPIRE })
   }
 
