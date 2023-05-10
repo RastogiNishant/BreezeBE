@@ -1,13 +1,10 @@
 'use_strict'
+
 const HttpException = require('../../Exceptions/HttpException')
 const EstateSyncService = use('App/Services/EstateSyncService')
 const MarketPlaceService = use('App/Services/MarketPlaceService')
 
 class WebhookController {
-  async gewobag({ request, response }) {
-    response.res(true)
-  }
-
   async estateSync({ request, response }) {
     const { k, eventName, eventPayload } = request.all()
     if (k !== process.env.ESTATE_SYNC_WEBHOOK_KEY) {
