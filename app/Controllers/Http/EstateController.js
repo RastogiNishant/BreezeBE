@@ -136,13 +136,23 @@ class EstateController {
    */
   async updateEstate({ request, auth, response }) {
     const { id } = request.all()
-    const estate = await Estate.findOrFail(id)
-    if (estate.user_id !== auth.user.id) {
-      throw new HttpException('Not allow', 403)
-    }
+    try {
+      const estate = await Estate.findOrFail(id)
+      if (estate.user_id !== auth.user.id) {
+        throw new HttpException('Not allow', 403)
+      }
 
-    const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
-    response.res(newEstate)
+      await EstateService.updateEstate({ request, user_id: auth.user.id })
+
+      const estates = await EstateService.getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id },
+      })
+      response.res(estates.data?.[0])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   async landlordTenantDetailInfo({ request, auth, response }) {

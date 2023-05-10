@@ -2723,7 +2723,6 @@ class EstateService {
         page: 1,
         params: { id: newEstate.id },
       })
-      console.log('Estates here=', estates)
       return estates.data?.[0]
     } catch (e) {
       await trx.rollback()
