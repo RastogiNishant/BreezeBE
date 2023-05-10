@@ -421,13 +421,6 @@ class File {
       return []
     }
   }
-
-  static async getFtpPublicUrl(object) {
-    if (!object) {
-      return null
-    }
-    return Drive.disk('breeze-ftp-files').getSignedUrl(object, 900)
-  }
 }
 
 module.exports = File
