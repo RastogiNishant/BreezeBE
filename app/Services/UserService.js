@@ -412,7 +412,7 @@ class UserService {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
-      const lang = await UserService.getUserLang([user_id])
+      const lang = await UserService.getUserLang([user.id])
       const forgotLink = await UserService.getForgotShortLink(from_web)
 
       if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
