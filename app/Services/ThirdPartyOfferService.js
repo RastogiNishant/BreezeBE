@@ -130,6 +130,7 @@ class ThirdPartyOfferService {
     await Promise.map(properties, async (estate) => {
       let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
       sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
+      //FIXME: create a map for this:
       let newEstate = {
         source: 'gewobag',
         source_information: JSON.stringify(sourceInformation),
