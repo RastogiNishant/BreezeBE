@@ -796,7 +796,7 @@ class EstateController {
     estate = estate.toJSON({
       isShort: true,
       role: auth.user.role,
-      extraFields: ['landlord_type', 'hash'],
+      extraFields: ['landlord_type', 'hash', 'property_type'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
     response.res(estate)
