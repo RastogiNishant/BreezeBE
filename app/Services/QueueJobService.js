@@ -45,6 +45,9 @@ const {
   LETTING_TYPE_LET,
   POINT_TYPE_POI,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+  GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
+  GERMAN_DATE_TIME_FORMAT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -606,8 +609,11 @@ class QueueJobService {
       MailService.sendEmailWithAttachment({
         textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         recipient: process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
-        subject: 'Contact Request from Breeze',
+        subject:
+          SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
+          moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
         attachment: attachment.toString('base64'),
+        from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
       })
     } catch (err) {
       console.log(err.message)
