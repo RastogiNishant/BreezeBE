@@ -578,9 +578,10 @@ class MailService {
     )
   }
 
-  static async sendInvitationToOusideTenant(links, lang = DEFAULT_LANG) {
+  static async sendInvitationToOusideTenant(links) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const messages = links.map((link) => {
+      const lang = link?.lang || DEFAULT_LANG
       return {
         to: trim(link.email),
         from: {
@@ -744,6 +745,38 @@ class MailService {
     }
 
     return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendEmailWithAttachment({ textMessage, recipient, subject, attachment }) {
+    const message = {
+      to: recipient,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      subject: subject,
+      text: textMessage,
+      attachments: [
+        {
+          content: attachment,
+          filename: 'Anfrage.xml',
+          type: 'application/xml',
+          disposition: 'attachment',
+          content_id: 'breeze-attachment',
+        },
+      ],
+    }
+    return sgMail.send(message).then(
       () => {
         console.log('Email delivery successfully')
       },
