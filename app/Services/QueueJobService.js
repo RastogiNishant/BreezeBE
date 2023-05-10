@@ -549,7 +549,6 @@ class QueueJobService {
   }
 
   static async contactGewobag(third_party_offer_id, userId) {
-    console.log('hererererere')
     const estate = await ThirdPartyOffer.query().where('id', third_party_offer_id).first()
     const prospect = await User.query()
       .join('tenants', 'tenants.user_id', 'users.id')
@@ -603,7 +602,7 @@ class QueueJobService {
       const attachment = Buffer.from(toXML(object))
       MailService.sendEmailWithAttachment({
         textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-        recipient: 'support@breeze4me.de',
+        recipient: process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
         subject: 'Contact Request from Breeze',
         attachment: attachment.toString('base64'),
       })
