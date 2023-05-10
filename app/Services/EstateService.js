@@ -1163,7 +1163,7 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where(function () {
         this.orWhereNull('_m.id')
-        this.orWhereNull('_m.status', MATCH_STATUS_NEW)
+        this.orWhere('_m.status', MATCH_STATUS_NEW)
       })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
@@ -1486,6 +1486,7 @@ class EstateService {
       await trx.commit()
       return status
     } catch (e) {
+      console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
       await trx.rollback()
       throw new HttpException(e.message, 500)
     }
@@ -2633,6 +2634,96 @@ class EstateService {
     }
 
     return await Estate.updateHashInfo(id)
+  }
+
+  static async countDuplicateProperty(property_id) {
+    const estateCount = await Estate.query()
+      .where('property_id', 'ilike', `${property_id}%`)
+      .whereNot('status', STATUS_DELETE)
+      .count('*')
+    if (estateCount?.length) {
+      return parseInt(estateCount[0].count)
+    }
+    return 0
+  }
+
+  static async duplicateEstate(user_id, estate_id) {
+    const estate = await this.getByIdWithDetail(estate_id)
+    if (estate.user_id !== user_id) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    const duplicatedCount = await this.countDuplicateProperty(estate.property_id)
+    const trx = await Database.beginTransaction()
+    try {
+      const originalEstateData = estate.toJSON()
+      const estateData = {
+        ...omit(originalEstateData, [
+          'id',
+          'rooms',
+          'files',
+          'amenities',
+          'slots',
+          'created_at',
+          'updated_at',
+        ]),
+        property_id: `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount}`,
+        available_start_at: null,
+        available_end_at: null,
+        status: STATUS_DRAFT,
+        is_published: false,
+        vacant_date: null,
+        hash: null,
+        shared_link: null,
+        six_char_code: null,
+        rent_end_at: null,
+        repair_needed: false,
+      }
+      const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
+      console.log('newEstate id here', newEstate.id)
+      await Promise.map(
+        originalEstateData.rooms || [],
+        async (room) => {
+          const newRoom = await RoomService.createRoom(
+            {
+              estate_id: newEstate.id,
+              roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
+            },
+            trx
+          )
+          const newImages = room.images.map((image) => ({
+            ...omit(image, ['id', 'relativeUrl', 'thumb']),
+            url: image.relativeUrl,
+            room_id: newRoom.id,
+          }))
+          await RoomService.addManyImages(newImages, trx)
+        },
+        { concurrency: 1 }
+      )
+
+      const newFiles = (originalEstateData.files || []).map((file) => ({
+        ...omit(file, ['id', 'relativeUrl', 'thumb']),
+        url: file.relativeUrl,
+        estate_id: newEstate.id,
+      }))
+      await this.addManyFiles(newFiles, trx)
+
+      const newAmenities =
+        originalEstateData.amenities ||
+        [].map((amenity) => ({ ...omit(amenity, ['room_id']), estate_id: newEstate.id }))
+      await Amenity.createMany(newAmenities, trx)
+
+      await trx.commit()
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: newEstate.id },
+      })
+      return estates.data?.[0]
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 }
 module.exports = EstateService

@@ -584,7 +584,11 @@ class MatchService {
         if (
           oldMatches.find((o) => o.user_id === match.user_id && o.estate_id === match.estate_id)
         ) {
-          await Match.updateItemWithTrx(match, trx)
+          await Match.query()
+            .where('user_id', match.user_id)
+            .where('estate_id', match.estate_id)
+            .update({ percent: match.percent })
+            .transacting(trx)
         } else {
           await Match.createItem(match, trx)
         }

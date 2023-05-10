@@ -214,15 +214,10 @@ class EstateCurrentTenantService extends BaseService {
   }
 
   static async updateCurrentTenant({ id, data, estate_id, user_id }, trx = null) {
+    let currentTenant
     if (id) {
-      await this.hasPermission(id, user_id)
+      currentTenant = await this.hasPermission(id, user_id)
     }
-
-    let currentTenant = await EstateCurrentTenant.query()
-      .where('estate_id', estate_id)
-      .where('user_id', user_id)
-      .where('status', STATUS_ACTIVE)
-      .first()
 
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant

@@ -756,6 +756,38 @@ class MailService {
     )
   }
 
+  static async sendEmailWithAttachment({ textMessage, recipient, subject, attachment }) {
+    const message = {
+      to: recipient,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      subject: subject,
+      text: textMessage,
+      attachments: [
+        {
+          content: attachment,
+          filename: 'Anfrage.xml',
+          type: 'application/xml',
+          disposition: 'attachment',
+          content_id: 'breeze-attachment',
+        },
+      ],
+    }
+    return sgMail.send(message).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
   static async sendPendingKnockEmail({
     link,
     landlord_name,
