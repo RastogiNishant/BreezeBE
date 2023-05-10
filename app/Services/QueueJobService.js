@@ -599,7 +599,10 @@ class QueueJobService {
       },
     }
     try {
-      const attachment = Buffer.from(toXML(object))
+      const xmlOptions = {
+        header: true,
+      }
+      const attachment = Buffer.from(toXML(object, xmlOptions))
       MailService.sendEmailWithAttachment({
         textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         recipient: process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
