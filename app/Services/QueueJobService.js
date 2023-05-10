@@ -599,14 +599,18 @@ class QueueJobService {
         },
       },
     }
-    let attachment = toXML(object)
-    attachment = Buffer.from(attachment)
-    MailService.sendEmailWithAttachment({
-      textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-      recipient: 'support@breeze4me.de',
-      subject: 'Contact Request from Breeze',
-      attachment: attachment.toString('base64'),
-    })
+    try {
+      let attachment = toXML(object)
+      attachment = Buffer.from(attachment)
+      MailService.sendEmailWithAttachment({
+        textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+        recipient: 'support@breeze4me.de',
+        subject: 'Contact Request from Breeze',
+        attachment: attachment.toString('base64'),
+      })
+    } catch (err) {
+      console.log(err.message)
+    }
   }
 
   static async fillMissingEstateInfo() {
