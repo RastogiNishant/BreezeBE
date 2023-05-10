@@ -44,6 +44,7 @@ const {
   MAXIMUM_EXPIRE_PERIOD,
   LETTING_TYPE_LET,
   POINT_TYPE_POI,
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -545,6 +546,66 @@ class QueueJobService {
       recipient,
       process.env.BREEZE_OHNE_MAKLER_RECIPIENT_EMAIL || false
     )
+  }
+
+  static async contactGewobag(third_party_offer_id, userId) {
+    console.log('hererererere')
+    const estate = await ThirdPartyOffer.query().where('id', third_party_offer_id).first()
+    const prospect = await User.query()
+      .join('tenants', 'tenants.user_id', 'users.id')
+      .where('users.id', userId)
+      .first()
+    const titleFromGender = (genderId) => {
+      switch (genderId) {
+        case GENDER_MALE:
+          return l.get(SALUTATION_MR_LABEL, 'en')
+        case GENDER_FEMALE:
+          return l.get(SALUTATION_MS_LABEL, 'en')
+        case GENDER_ANY:
+          return l.get(SALUTATION_SIR_OR_MADAM_LABEL, 'en')
+        case GENDER_NEUTRAL:
+          return l.get(SALUTATION_NEUTRAL_LABEL, 'en')
+      }
+      return null
+    }
+    const object = {
+      openimmo_feedback: {
+        version: '1.2.5',
+        sender: {
+          name: 'Breeze Venture GmbH',
+          openimo_anid: null,
+          datum: moment(new Date()).format('MM.DD.YYYY'),
+          makler_id: '',
+          regi_id: '',
+        },
+        objekt: {
+          portal_obj_id: estate.id,
+          oobj_id: estate.property_id,
+          expose_url: '',
+          vermarktungsart: 'Miete', //temporary for demo purpose
+          strass: `${estate.street} ${estate.house_number}`,
+          ort: `${estate.zip} ${estate.city}`,
+          interessent: {
+            anrede: titleFromGender(prospect.sex),
+            vorname: prospect.firstname,
+            nachname: prospect.secondname,
+            strasse: prospect.address,
+            plz: '',
+            ort: '',
+            tel: prospect.phone,
+            email: prospect.email,
+            anfrage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+          },
+        },
+      },
+    }
+    const attachment = toXML(object)
+    MailService.sendEmailWithAttachment({
+      textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+      recipient: 'support@breeze4me.de',
+      subject: 'Contact Request from Breeze',
+      attachment: btoa(attachment),
+    })
   }
 
   static async fillMissingEstateInfo() {

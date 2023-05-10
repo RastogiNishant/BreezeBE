@@ -21,6 +21,7 @@ const {
   MATCH_STATUS_NEW,
   STATUS_DELETE,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
+  THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -345,11 +346,19 @@ class ThirdPartyOfferService {
           liked: null,
           knocked_at: moment().utc().format(),
         }
-        QueueService.contactOhneMakler({
-          third_party_offer_id: id,
-          userId,
-          message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-        })
+        const estate = await ThirdPartyOffer.query().where('id', id).first()
+        if (estate.source === THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER) {
+          QueueService.contactOhneMakler({
+            third_party_offer_id: id,
+            userId,
+            message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+          })
+        } else if (estate.source === THIRD_PARTY_OFFER_SOURCE_GEWOBAG) {
+          QueueService.contactGewobag({
+            third_party_offer_id: id,
+            userId,
+          })
+        }
         break
       case 'cancel knock':
         value = {
