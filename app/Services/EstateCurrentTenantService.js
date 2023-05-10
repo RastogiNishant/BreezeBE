@@ -408,8 +408,6 @@ class EstateCurrentTenantService extends BaseService {
 
   static async inviteTenantToAppByEmail({ ids, user_id }, trx) {
     try {
-      const data = await UserService.getTokenWithLocale([user_id])
-      const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
       let { failureCount, links } = await this.getDynamicLinks(
         {
           ids,
@@ -417,6 +415,7 @@ class EstateCurrentTenantService extends BaseService {
         },
         trx
       )
+
       const validLinks = links.filter(
         (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
       )
@@ -424,12 +423,13 @@ class EstateCurrentTenantService extends BaseService {
       failureCount += (links.length || 0) - (validLinks.length || 0)
       const successCount = (ids.length || 0) - failureCount
       if (validLinks && validLinks.length) {
-        MailService.sendInvitationToOusideTenant(validLinks, lang)
+        MailService.sendInvitationToOusideTenant(validLinks)
       }
 
       const totalInviteCount = await EstateCurrentTenantService.inviteOusideTenantCount(user_id)
       return { successCount, failureCount, totalInviteCount }
     } catch (e) {
+      console.log('inviteTenantToAppByEmail error', e.message)
       return { successCount: 0, failureCount: ids.length || 0, totalInviteCount: 0 }
     }
   }
@@ -633,13 +633,12 @@ class EstateCurrentTenantService extends BaseService {
         link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
     )
     failureCount += (links.length || 0) - (validLinks.length || 0)
-    const data = await UserService.getTokenWithLocale([user_id])
-    const lang = data && data.length && data[0].lang ? data[0].lang : DEFAULT_LANG
 
     await Promise.all(
       validLinks.map(async (link) => {
         try {
-          const txt = l.get('sms.tenant.invitation', lang) + ` ${link.shortLink}`
+          const txt =
+            l.get('sms.tenant.invitation', link.lang || DEFAULT_LANG) + ` ${link.shortLink}`
           await SMSService.send({ to: link.phone_number, txt })
         } catch (e) {
           failureCount++
@@ -762,10 +761,11 @@ class EstateCurrentTenantService extends BaseService {
         `&type=${OUTSIDE_TENANT_INVITE_TYPE}&data1=${encodeURIComponent(encDst)}` +
         `&data2=${encodeURIComponent(iv.toString('base64'))}`
 
+      let existingUser
       if (estateCurrentTenant.email) {
         uri += `&email=${estateCurrentTenant.email}`
 
-        const existingUser = await User.query()
+        existingUser = await User.query()
           .where('email', estateCurrentTenant.email.toLowerCase())
           .where('role', ROLE_USER)
           .first()
@@ -784,6 +784,7 @@ class EstateCurrentTenantService extends BaseService {
         email: estateCurrentTenant.email,
         phone_number: estateCurrentTenant.phone_number,
         shortLink,
+        lang: existingUser?.lang || DEFAULT_LANG,
       }
     } catch (e) {
       console.log('createDynamic link error=', e.message)
