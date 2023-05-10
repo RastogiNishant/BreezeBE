@@ -600,8 +600,7 @@ class QueueJobService {
       },
     }
     try {
-      let attachment = toXML(object)
-      attachment = Buffer.from(attachment)
+      const attachment = Buffer.from(toXML(object))
       MailService.sendEmailWithAttachment({
         textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
         recipient: 'support@breeze4me.de',
