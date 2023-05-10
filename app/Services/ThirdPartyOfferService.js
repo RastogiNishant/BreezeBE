@@ -8,6 +8,8 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
+const uuid = require('uuid')
+const Drive = use('Drive')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -110,6 +112,17 @@ class ThirdPartyOfferService {
     }
   }
 
+  static async moveFileFromFTPtoS3Public(imageInfo, imageFile) {
+    const ext = imageInfo.file_name.split('.').pop()
+    const filename = `${uuid.v4()}.${ext}`
+    const dir = moment().format('YYYYMM')
+    const filePathName = `${dir}/${filename}`
+    const options = imageInfo.headers
+    options.ACL = 'public-read'
+    await Drive.disk('s3public').put(filePathName, imageFile, options)
+    return Drive.disk('s3public').getUrl(filePathName)
+  }
+
   static async pullGewobag() {
     const xml = await File.getGewobagUploadedContent()
     const reader = new OpenImmoReader()
@@ -149,16 +162,24 @@ class ThirdPartyOfferService {
       }
       let images = []
       for (let i = 0; i < estate.images.length; i++) {
-        const imageUrl = await File.getFtpPublicUrl(estate.images[i].file_name)
-        images = [
-          ...images,
-          {
-            picture: {
-              picture_url: imageUrl,
-              picture_title: '',
+        if (estate.images[i].format.match(/^image/)) {
+          const imageFile = await Drive.disk('breeze-ftp-files').getObject(
+            estate.images[i].file_name
+          )
+          const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
+            estate.images[i],
+            imageFile.Body
+          )
+          images = [
+            ...images,
+            {
+              picture: {
+                picture_url: imageUrl,
+                picture_title: '',
+              },
             },
-          },
-        ]
+          ]
+        }
       }
       newEstate.images = JSON.stringify(images)
       const result = await ThirdPartyOffer.createItem(newEstate)
