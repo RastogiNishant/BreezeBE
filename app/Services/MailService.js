@@ -578,9 +578,10 @@ class MailService {
     )
   }
 
-  static async sendInvitationToOusideTenant(links, lang = DEFAULT_LANG) {
+  static async sendInvitationToOusideTenant(links) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const messages = links.map((link) => {
+      const lang = link?.lang || DEFAULT_LANG
       return {
         to: trim(link.email),
         from: {
