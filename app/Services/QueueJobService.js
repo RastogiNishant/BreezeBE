@@ -573,7 +573,7 @@ class QueueJobService {
         version: '1.2.5',
         sender: {
           name: 'Breeze Venture GmbH',
-          openimo_anid: null,
+          openimo_anid: '',
           datum: moment(new Date()).format('MM.DD.YYYY'),
           makler_id: '',
           regi_id: '',
