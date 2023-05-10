@@ -1188,10 +1188,6 @@ Route.group(() => {
 }).prefix('api/v1/tenantReportAbuse')
 
 Route.group(() => {
-  Route.get('/gewobag', 'WebhookController.gewobag').middleware(['valid:GewobagWebhook'])
-}).prefix('webhooks')
-
-Route.group(() => {
   Route.post('/id', 'EstatePermissionController.requestPermissionToLandlordById').middleware([
     'auth:jwtPropertyManager',
     'valid:Ids',
