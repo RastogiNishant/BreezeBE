@@ -5,6 +5,8 @@ const uuid = require('uuid')
 const moment = require('moment')
 const Promise = require('bluebird')
 const { nth, isEmpty, isString, trim } = require('lodash')
+const AWS = require('aws-sdk')
+const Env = use('Env')
 
 const Logger = use('Logger')
 const Drive = use('Drive')
@@ -390,6 +392,33 @@ class File {
     } catch (e) {
       Logger.error(`File upload error ${e.message}`)
       throw new HttpException('File upload failed. Please try again', 400)
+    }
+  }
+
+  static async getGewobagUploadedContent() {
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION'),
+      })
+      var s3 = new AWS.S3()
+
+      var params = {
+        Bucket: 'breeze-ftp-files',
+        Delimiter: '/',
+      }
+      const objects = await s3.listObjects(params).promise()
+      let xml
+      for (let i = 0; i < objects.Contents.length; i++) {
+        if (objects.Contents[i].Key.match(/\.xml$/)) {
+          xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+        }
+      }
+      return xml
+    } catch (err) {
+      console.log('getGewobagUploadedContent', err)
+      return []
     }
   }
 }

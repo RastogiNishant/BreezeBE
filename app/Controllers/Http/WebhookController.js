@@ -1,9 +1,9 @@
 'use_strict'
 
 const HttpException = require('../../Exceptions/HttpException')
-
 const EstateSyncService = use('App/Services/EstateSyncService')
 const MarketPlaceService = use('App/Services/MarketPlaceService')
+
 class WebhookController {
   async estateSync({ request, response }) {
     const { k, eventName, eventPayload } = request.all()
