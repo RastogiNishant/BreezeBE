@@ -467,8 +467,12 @@ class TaskService extends BaseService {
     if (status) {
       taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
     }
+
+    if (estate_id) {
+      taskQuery.where('tasks.estate_id', estate_id)
+    }
+
     taskQuery
-      .where('tasks.estate_id', estate_id)
       .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
       .orderBy('tasks.urgency', 'desc')

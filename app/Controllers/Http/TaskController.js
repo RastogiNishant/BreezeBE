@@ -84,7 +84,7 @@ class TaskController {
         await TaskService.getAllTasks({
           user_id: auth.user.id,
           role: auth.user.role,
-          estate_id: estate_id,
+          estate_id,
           status: status,
           page,
           limit,
