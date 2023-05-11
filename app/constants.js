@@ -810,6 +810,7 @@ const constants = {
     'rooms_number',
     'number_floors',
     'city',
+    'cover',
     'coord_raw',
     'property_id',
     'address',
