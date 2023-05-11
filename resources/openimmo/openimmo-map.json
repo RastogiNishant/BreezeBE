@@ -50,6 +50,7 @@
   "terraces_number": "flaechen.0.anzahl_terrassen.0",
   "usable_area": "flaechen.0.nutzflaeche.0",
   "use_type": "objektkategorie.0.nutzungsart.0.$",
+  "wbs": "verwaltung_objekt.0.wbs_sozialwohnung.0",
   "wc_number": "flaechen.0.anzahl_sep_wc.0",
   "zip": "geo.0.plz.0"
 }
