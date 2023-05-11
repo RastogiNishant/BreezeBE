@@ -30,12 +30,12 @@ class PaymentController {
     try {
       const { ...paymentData } = request.all()
       const payment = await PaymentService.processStripePayment({
-          ...paymentData,
+        ...paymentData,
       })
       const plan_id = paymentData.plan_id || 4
       const plan = await PlanService.getPlan(plan_id)
-      const planJson = (plan) ? plan.toJSON() : {}
-      const lettings = (planJson) ? planJson['lettings'] : ''
+      const planJson = plan ? plan.toJSON() : {}
+      const lettings = planJson ? planJson['lettings'] : ''
       const transaction = await this.createTransaction({
         transaction_id: payment.id,
         payment_method: 'STRIPE',
@@ -44,7 +44,7 @@ class PaymentController {
         lettings: lettings,
         payment_method_response: payment,
         plan_id: plan_id,
-        plan_response: planJson
+        plan_response: planJson,
       })
 
       UserService.updatePaymentPlan(auth.current.user.id, plan_id)
@@ -61,17 +61,17 @@ class PaymentController {
       const { ...paymentData } = request.all()
       const plan_id = paymentData.plan_id
       const plan = await PlanService.getPlan(plan_id)
-      const planJson = (plan) ? plan.toJSON() : {}
-      const lettings = (planJson) ? planJson.get('lettings') : ''
+      const planJson = plan ? plan.toJSON() : {}
+      const lettings = planJson ? planJson.get('lettings') : ''
       const transaction = await this.createTransaction({
         transaction_id: paymentData.value.details.purchase_units[0].payments.captures[0].id,
         payment_method: 'PAYPAL',
         amount: parseInt(paymentData.value.details.purchase_units[0].amount.value) * 100,
         user_id: auth.current.user.id,
         lettings: lettings,
-        payment_method_response:{},
+        payment_method_response: {},
         plan_id: plan_id,
-        plan_response: planJson
+        plan_response: planJson,
       })
       return response.res(transaction)
     } catch (e) {
@@ -90,7 +90,6 @@ class PaymentController {
       throw e
     }
   }
-
 }
 
 module.exports = PaymentController
