@@ -45,6 +45,9 @@ const {
   LETTING_TYPE_LET,
   POINT_TYPE_POI,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+  GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
+  GERMAN_DATE_TIME_FORMAT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -549,7 +552,6 @@ class QueueJobService {
   }
 
   static async contactGewobag(third_party_offer_id, userId) {
-    console.log('hererererere')
     const estate = await ThirdPartyOffer.query().where('id', third_party_offer_id).first()
     const prospect = await User.query()
       .join('tenants', 'tenants.user_id', 'users.id')
@@ -600,12 +602,18 @@ class QueueJobService {
       },
     }
     try {
-      const attachment = Buffer.from(toXML(object))
+      const xmlOptions = {
+        header: true,
+      }
+      const attachment = Buffer.from(toXML(object, xmlOptions))
       MailService.sendEmailWithAttachment({
         textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-        recipient: 'support@breeze4me.de',
-        subject: 'Contact Request from Breeze',
+        recipient: process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
+        subject:
+          SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
+          moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
         attachment: attachment.toString('base64'),
+        from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
       })
     } catch (err) {
       console.log(err.message)

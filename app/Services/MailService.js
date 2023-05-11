@@ -757,13 +757,10 @@ class MailService {
     )
   }
 
-  static async sendEmailWithAttachment({ textMessage, recipient, subject, attachment }) {
+  static async sendEmailWithAttachment({ textMessage, recipient, subject, attachment, from }) {
     const message = {
       to: recipient,
-      from: {
-        email: FromEmail,
-        name: FromName,
-      },
+      from,
       subject: subject,
       text: textMessage,
       attachments: [
