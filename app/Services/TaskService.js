@@ -457,7 +457,7 @@ class TaskService extends BaseService {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.select(ESTATE_FIELD_FOR_TASK).with('user')
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
