@@ -585,7 +585,7 @@ class QueueJobService {
           oobj_id: estate.property_id,
           expose_url: '',
           vermarktungsart: 'Miete', //temporary for demo purpose
-          strass: `${estate.street} ${estate.house_number}`,
+          strasse: `${estate.street} ${estate.house_number}`,
           ort: `${estate.zip} ${estate.city}`,
           interessent: {
             anrede: titleFromGender(prospect.sex),
