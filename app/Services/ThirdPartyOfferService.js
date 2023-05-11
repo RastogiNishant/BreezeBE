@@ -125,6 +125,7 @@ class ThirdPartyOfferService {
   }
 
   static async pullGewobag() {
+    console.log('start pulling gewobag...')
     const xml = await File.getGewobagUploadedContent()
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
@@ -161,6 +162,7 @@ class ThirdPartyOfferService {
         zip: estate.zip,
         status: STATUS_ACTIVE,
         full_address: true,
+        wbs: estate.wbs,
       }
       let images = []
       for (let i = 0; i < estate.images.length; i++) {
@@ -186,6 +188,7 @@ class ThirdPartyOfferService {
       newEstate.images = JSON.stringify(images)
       const result = await ThirdPartyOffer.createItem(newEstate)
       require('./QueueService').getThirdPartyCoords(result.id)
+      console.log('pulling gewobag finished...')
     })
   }
 
