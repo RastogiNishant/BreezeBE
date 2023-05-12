@@ -2653,7 +2653,7 @@ class EstateService {
 
   static async duplicateEstate(user_id, estate_id) {
     const estate = await this.getByIdWithDetail(estate_id)
-    if (estate.user_id !== user_id) {
+    if (estate?.user_id !== user_id) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
@@ -2668,6 +2668,8 @@ class EstateService {
           'files',
           'amenities',
           'slots',
+          'cover_thumb',
+          'verified_address',
           'created_at',
           'updated_at',
         ]),
@@ -2686,7 +2688,7 @@ class EstateService {
           ? `${originalEstateData?.construction_year}-01-01`
           : null,
       }
-      console.log('newEstate id here', estateData)
+
       const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
       await Promise.map(
         originalEstateData.rooms || [],
