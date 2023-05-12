@@ -138,7 +138,17 @@ class ThirdPartyOfferService {
     )
   }
 
-  static async pullGewobag() {
+  static async pullGewobag(forced = false) {
+    if (!forced) {
+      if (
+        process.env.PULL_GEWOBAG === undefined ||
+        (process.env.PULL_GEWOBAG !== undefined && !+process.env.PULL_GEWOBAG)
+      ) {
+        console.log('not pulling gewobag...')
+        return
+      }
+    }
+    console.log('pulling gewobag...')
     const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
     const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
@@ -211,6 +221,7 @@ class ThirdPartyOfferService {
         console.log('error', newEstate)
       }
     })
+    console.log('finished pulling gewobag...')
   }
 
   static async expireWhenNotOnSourceIds(sourceIds) {
