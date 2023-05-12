@@ -136,7 +136,7 @@ module.exports = {
    * Logger
    */
   logger: {
-    transport: 'console',
+    transport: Env.get('LOG_TRANSPORT', 'console'),
 
     console: {
       driver: 'console',
