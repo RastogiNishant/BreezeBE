@@ -216,13 +216,11 @@ class ThirdPartyOfferService {
       try {
         let result
         if (estateFound) {
-          console.log('updating...', estateFound.id)
           await estateFound.updateItem(newEstate)
           if (estateFound.address !== newEstate.address) {
             require('./QueueService').getThirdPartyCoords(estateFound.id)
           }
         } else {
-          console.log('creating...')
           result = await ThirdPartyOffer.createItem(newEstate)
           require('./QueueService').getThirdPartyCoords(result.id)
         }
