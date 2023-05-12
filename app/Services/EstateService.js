@@ -2682,9 +2682,12 @@ class EstateService {
         six_char_code: null,
         rent_end_at: null,
         repair_needed: false,
+        construction_year: originalEstateData?.construction_year
+          ? `${originalEstateData?.construction_year}-01-01`
+          : null,
       }
+      console.log('newEstate id here', estateData)
       const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
-      console.log('newEstate id here', newEstate.id)
       await Promise.map(
         originalEstateData.rooms || [],
         async (room) => {
