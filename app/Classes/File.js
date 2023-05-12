@@ -365,25 +365,12 @@ class File {
       Logger.info(`Local path ${outputFileName}`)
 
       const writeFile = async (url, outputFileName) => {
-        const writer = fs.createWriteStream(outputFileName)
         const response = await axios.get(url, { responseType: 'arraybuffer' })
         return new Promise((resolve, reject) => {
-          if (response.data instanceof Buffer) {
-            writer.write(response.data)
-            resolve(outputFileName)
-          } else {
-            response.data.pipe(writer)
-            let error = null
-            writer.on('error', (err) => {
-              error = err
-              writer.close()
-              reject(err)
-            })
-            writer.on('close', () => {
-              if (!error) {
-                resolve(outputFileName)
-              }
-            })
+          try {
+            fs.writeFile(outputFileName, response.data, {}, resolve)
+          } catch (e) {
+            reject(err)
           }
         })
       }
