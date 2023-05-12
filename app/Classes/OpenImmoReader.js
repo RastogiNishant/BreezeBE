@@ -5,7 +5,14 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO, DAY_FORMAT } = require('../constants')
+const {
+  FILE_TYPE_UNASSIGNED,
+  PETS_SMALL,
+  PETS_NO,
+  DAY_FORMAT,
+  STATUS_ACTIVE,
+  STATUS_DRAFT,
+} = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -194,6 +201,7 @@ class OpenImmoReader {
   }
 
   processProperties(json) {
+    const transmittal = json['openimmo']['uebertragung'][0]['$']
     const estates = json['openimmo']['anbieter'][0]['immobilie']
     const map = require('../../resources/openimmo/openimmo-map.json')
     const properties = estates.map((property) => {
@@ -201,6 +209,7 @@ class OpenImmoReader {
       forOwn(map, (value, key) => {
         obj = { ...obj, [key]: get(property, value) }
       })
+      obj.status = transmittal.art
       return obj
     })
     return properties
@@ -305,10 +314,17 @@ class OpenImmoReader {
       }
       //force dates to be of the format YYYY-MM-DD
       if (property.vacant_date) {
-        property.vacant_date = moment
-          .utc(new Date(property.vacant_date))
-          .add(2, 'hours')
-          .format(DAY_FORMAT)
+        //vacant_date in openimmo (verfuegbar_ab) is string
+        let matches = property.vacant_date.match(/([0-9]{2})\.([0-9]{2})\.([0-9]{4})/)
+        if (matches) {
+          property.vacant_date = `${matches[3]}-${matches[2]}-${matches[1]}`
+          property.vacant_date = moment
+            .utc(new Date(property.vacant_date))
+            .add(2, 'hours')
+            .format(DAY_FORMAT)
+        } else {
+          unset(property, 'vacant_date')
+        }
       } else {
         unset(property, 'vacant_date')
       }
@@ -328,6 +344,12 @@ class OpenImmoReader {
         property.pets_allowed = PETS_SMALL
       } else if (property.pets_allowed === 'false') {
         property.pets_allowed = PETS_NO
+      }
+
+      if (property.status === 'ONLINE') {
+        property.status = STATUS_ACTIVE
+      } else if (property.status === 'OFFLINE') {
+        property.status = STATUS_DRAFT
       }
     })
     return properties
@@ -368,16 +390,20 @@ class OpenImmoReader {
     }
   }
 
-  async processXml(xml) {
+  async processXml(xmls) {
     try {
-      let json = this.extractJson(xml)
       let properties = []
-      if ((json = this.validate(json))) {
-        properties = this.processProperties(json)
-        properties = this.parseMultipleValuesWithOptions(properties)
-        properties = this.parseSingleValues(properties)
-        properties = this.processEnergyPass(properties)
-        properties = await this.processImages(properties)
+      for (let i = 0; i < xmls.length; i++) {
+        let property
+        let json = this.extractJson(xmls[i])
+        if ((json = this.validate(json))) {
+          property = this.processProperties(json)
+          property = this.parseMultipleValuesWithOptions(property)
+          property = this.parseSingleValues(property)
+          property = this.processEnergyPass(property)
+          property = await this.processImages(property)
+          properties = [...properties, property[0]]
+        }
       }
       return properties
     } catch (err) {

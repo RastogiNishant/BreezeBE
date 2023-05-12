@@ -124,17 +124,34 @@ class ThirdPartyOfferService {
     return Drive.disk('s3public').getUrl(filePathName)
   }
 
+  static async getFilesAndLastModified() {
+    let gewobagFiles = await ThirdPartyOffer.query()
+      .select(Database.raw(`CONCAT("source_id", '.xml') as key`))
+      .select('ftp_last_update')
+      .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+      .fetch()
+    return await gewobagFiles.toJSON().reduce(
+      (files, file) => ({
+        ...files,
+        [file.key]: moment(new Date(file.ftp_last_update)).utc().format(),
+      }),
+      {}
+    )
+  }
+
   static async pullGewobag() {
-    const xml = await File.getGewobagUploadedContent()
+    const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
+    const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
-    await Promise.map(properties, async (estate) => {
+    await Promise.map(properties.slice(0, 5), async (estate) => {
       let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
       sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
       //FIXME: create a map for this:
       let newEstate = {
         source: 'gewobag',
         source_information: JSON.stringify(sourceInformation),
+        source_id: estate.source_id,
         country: estate.country,
         house_number: estate.house_number,
         street: estate.street,
@@ -147,7 +164,7 @@ class ThirdPartyOfferService {
         area: Math.round(estate.area),
         construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
         energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
-        vacant_date: estate.vacant_date,
+        vacant_date: moment(new Date(estate.vacant_date)).format(),
         additional_costs: Number(estate.additional_costs),
         net_rent: Number(estate.net_rent),
         property_type: estate.property_type,
@@ -161,6 +178,8 @@ class ThirdPartyOfferService {
         zip: estate.zip,
         status: STATUS_ACTIVE,
         full_address: true,
+        property_id: estate.property_id,
+        ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
       }
       let images = []
       for (let i = 0; i < estate.images.length; i++) {
@@ -184,8 +203,13 @@ class ThirdPartyOfferService {
         }
       }
       newEstate.images = JSON.stringify(images)
-      const result = await ThirdPartyOffer.createItem(newEstate)
-      require('./QueueService').getThirdPartyCoords(result.id)
+      try {
+        const result = await ThirdPartyOffer.createItem(newEstate)
+        require('./QueueService').getThirdPartyCoords(result.id)
+      } catch (e) {
+        console.log(e)
+        console.log('error', newEstate)
+      }
     })
   }
 
