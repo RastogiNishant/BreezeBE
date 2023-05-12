@@ -25,7 +25,7 @@ const {
   GERMAN_DATE_TIME_FORMAT,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
-
+const Logger = use('Logger')
 class MailService {
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
@@ -310,6 +310,9 @@ class MailService {
       },
       (error) => {
         console.log('Email delivery failed', error)
+        Logger.error(
+          `Email Confirmation failed ${email}= ${error?.response?.body || error?.message || error}`
+        )
         if (error.response) {
           console.error(error.response.body)
           throw new HttpException(error.response.body)

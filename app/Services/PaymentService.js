@@ -14,7 +14,9 @@ class PaymentService {
    */
   //Stripe
   static async processStripePayment(paymentData) {
-    const stripe = require('stripe')('sk_test_51KGnHhLHZE8cb7ZfIKz5loWVvonITW21SlB5tFjn4Sy7k6cZrzX9yTGL3XoWHrMmN3WjvfrazSUmJTwQZQfhXNNi00Wj3O5rc5');
+    const stripe = require('stripe')(
+      'sk_test_51KGnHhLHZE8cb7ZfIKz5loWVvonITW21SlB5tFjn4Sy7k6cZrzX9yTGL3XoWHrMmN3WjvfrazSUmJTwQZQfhXNNi00Wj3O5rc5'
+    )
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: paymentData.amount,
@@ -25,23 +27,19 @@ class PaymentService {
       // metadata: {
       //   order_id: '1003',
       // },
-    });
+    })
     const paymentIntent1 = await stripe.paymentIntents.confirm(
       paymentIntent.id,
       // paymentIntent.payment_method
-      {payment_method: 'pm_card_visa'}
-    );
+      { payment_method: 'pm_card_visa' }
+    )
     return paymentIntent1
-
   }
   /**
    *
    */
   static async getUserPayments(userId) {
-    return await Payment.query()
-      .where('user_id', userId)
-      .orderBy('updated_at', 'desc')
-      .fetch()
+    return await Payment.query().where('user_id', userId).orderBy('updated_at', 'desc').fetch()
   }
 }
 

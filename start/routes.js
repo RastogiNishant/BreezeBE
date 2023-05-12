@@ -1274,3 +1274,9 @@ Route.group(() => {
 })
   .prefix('api/v1/marketplace')
   .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.get('/products', 'StripeController.getProducts')
+})
+  .prefix('api/v1/stripe')
+  .middleware(['auth:jwt,jwtLandlord'])

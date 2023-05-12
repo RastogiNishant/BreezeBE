@@ -49,9 +49,8 @@ class ThirdPartyOfferService {
   static async pullOhneMakler(forced = false) {
     if (!forced) {
       if (
-        process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
-        (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-          !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
+        process.env.PULL_OHNE_MAKLER === undefined ||
+        (process.env.PULL_OHNE_MAKLER !== undefined && !+process.env.PULL_OHNE_MAKLER)
       ) {
         console.log('not pulling ohne makler...')
         return
