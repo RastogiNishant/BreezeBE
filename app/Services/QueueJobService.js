@@ -48,6 +48,7 @@ const {
   GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
+  GERMAN_DATE_FORMAT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -576,15 +577,15 @@ class QueueJobService {
         sender: {
           name: 'Breeze Venture GmbH',
           openimo_anid: '',
-          datum: moment(new Date()).format('MM.DD.YYYY'),
+          datum: moment(new Date()).format(GERMAN_DATE_FORMAT),
           makler_id: '',
           regi_id: '',
         },
         objekt: {
-          portal_obj_id: estate.id,
+          portal_obj_id: estate.property_id,
           oobj_id: estate.property_id,
           expose_url: '',
-          vermarktungsart: 'Miete', //temporary for demo purpose
+          vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
           strasse: `${estate.street} ${estate.house_number}`,
           ort: `${estate.zip} ${estate.city}`,
           interessent: {
@@ -608,7 +609,10 @@ class QueueJobService {
       const attachment = Buffer.from(toXML(object, xmlOptions))
       MailService.sendEmailWithAttachment({
         textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-        recipient: process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
+        recipient:
+          process.env.NODE_ENV === 'production'
+            ? estate.contact.email
+            : process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
         subject:
           SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
           moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),

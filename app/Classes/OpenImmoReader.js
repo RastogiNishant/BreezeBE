@@ -11,7 +11,7 @@ const {
   PETS_NO,
   DAY_FORMAT,
   STATUS_ACTIVE,
-  STATUS_DRAFT,
+  STATUS_EXPIRE,
 } = require('../constants')
 
 const energyPassVariables = {
@@ -349,7 +349,7 @@ class OpenImmoReader {
       if (property.status === 'ONLINE') {
         property.status = STATUS_ACTIVE
       } else if (property.status === 'OFFLINE') {
-        property.status = STATUS_DRAFT
+        property.status = STATUS_EXPIRE
       }
     })
     return properties
