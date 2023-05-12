@@ -2661,7 +2661,6 @@ class EstateService {
     const trx = await Database.beginTransaction()
     try {
       const originalEstateData = estate.toJSON()
-      console.log('new property id', `${originalEstateData.property_id}-${duplicatedCount + 1}`)
 
       const estateData = {
         ...omit(originalEstateData, [
@@ -2675,7 +2674,7 @@ class EstateService {
           'created_at',
           'updated_at',
         ]),
-        property_id: `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount + 1}`,
+        property_id: `${originalEstateData.property_id}-${duplicatedCount + 1}`,
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
