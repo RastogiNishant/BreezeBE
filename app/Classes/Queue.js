@@ -69,7 +69,7 @@ class QueueEngine {
         SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
         {},
         {
-          repeat: { cron: '27 */1 * * *' },
+          repeat: { cron: '37 */1 * * *' },
           removeOnComplete: true,
           removeOnFail: true,
           attempts: 3,
