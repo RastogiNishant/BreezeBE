@@ -16,20 +16,27 @@ class StripeService {
     }))
   }
 
-  static async createSubscription({ user_id, product_id, quantity = 1 }) {
+  static async createSubscription({ user_id, subscriptions }) {
     try {
-      const pricePlans = await PricePlanService.getPlanByProductId(product_id)
+      const product_ids = subscriptions.map((subscription) => subscription.product_id)
+      const pricePlans = await PricePlanService.getPlanByProductId(product_ids)
 
       if (!pricePlans?.length) {
         throw new HttpException(NO_PRODUCTS_EXIST, 400)
       }
 
       const mode = pricePlans.find((price) => !price.one_time_pay) ? 'subscription' : 'payment'
-      const prices = pricePlans.map((price) => price.price_id)
+      const prices = pricePlans.map((price) => {
+        const quantity =
+          subscriptions.filter((subscription) => subscription.product_id === price.product_id)?.[0]
+            ?.quantity || 1
+        if (price?.one_time_pay) return { price: price.price_id, quantity }
+        return { price: price.price_id }
+      })
+      console.log('create Subscription=', prices)
       const checkoutSession = await Stripe.createCheckoutSessions({
         user_id,
         mode,
-        quantity,
         prices,
       })
       return {

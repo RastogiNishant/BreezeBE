@@ -14,7 +14,7 @@ class Stripe {
   }
 
   static async createCheckoutSessions({ user_id, mode = 'payment', quantity = 1, prices }) {
-    const line_items = prices.map((price) => ({ price, quantity }))
+    const line_items = prices
     return await stripe.checkout.sessions.create({
       success_url: `${process.env.SITE_URL}/success`,
       cancel_url: `${process.env.SITE_URL}/cancel`,
