@@ -500,8 +500,8 @@ class MatchService {
       // Max radius
       const trx = await Database.beginTransaction()
       try {
-        const insideMatches = await this.createNewMatches({ tenant, has_notification_sent }, trx)
-        const outsideMatches = await ThirdPartyMatchService.createNewMatches(
+        await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
@@ -509,7 +509,6 @@ class MatchService {
           trx
         )
         await trx.commit()
-        count = insideMatches?.length + outsideMatches?.length
       } catch (e) {
         console.log('matchByUser error', e.message)
         await trx.rollback()
@@ -520,6 +519,7 @@ class MatchService {
       message = e.message
     } finally {
       const matches = await EstateService.getTenantEstates({ user_id: userId, page: 1, limit: 20 })
+      count = matches?.count || 0
       await this.emitCreateMatchCompleted({
         user_id: userId,
         data: {
