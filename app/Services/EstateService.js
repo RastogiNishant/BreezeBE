@@ -2642,7 +2642,7 @@ class EstateService {
 
   static async countDuplicateProperty(property_id) {
     const estateCount = await Estate.query()
-      .where('property_id', 'ilike', `${property_id}%`)
+      .where('property_id', 'ilike', `${property_id}-%`)
       .whereNot('status', STATUS_DELETE)
       .count('*')
     if (estateCount?.length) {
@@ -2661,6 +2661,11 @@ class EstateService {
     const trx = await Database.beginTransaction()
     try {
       const originalEstateData = estate.toJSON()
+      console.log(
+        'new property id',
+        `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount + 1}`
+      )
+
       const estateData = {
         ...omit(originalEstateData, [
           'id',
@@ -2673,7 +2678,7 @@ class EstateService {
           'created_at',
           'updated_at',
         ]),
-        property_id: `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount}`,
+        property_id: `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount + 1}`,
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
