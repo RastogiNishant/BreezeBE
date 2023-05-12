@@ -54,6 +54,8 @@ class ThirdPartyOffer extends Model {
       'duration_rent_max',
       'firing',
       'source_information',
+      'property_id',
+      'ftp_last_update',
     ]
   }
 

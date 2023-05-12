@@ -382,7 +382,7 @@ class File {
     }
   }
 
-  static async getGewobagUploadedContent() {
+  static async getGewobagUploadedContent(filesWorked) {
     try {
       AWS.config.update({
         accessKeyId: Env.get('S3_KEY'),
@@ -396,13 +396,27 @@ class File {
         Delimiter: '/',
       }
       const objects = await s3.listObjects(params).promise()
-      let xml
+      let xmls = []
+      let filesLastModified = []
       for (let i = 0; i < objects.Contents.length; i++) {
-        if (objects.Contents[i].Key.match(/\.xml$/)) {
-          xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+        const fileLastModifiedOnRecord = filesWorked[objects.Contents[i].Key] || null
+        if (
+          objects.Contents[i].Key.match(/\.xml$/) &&
+          moment(new Date(objects.Contents[i].LastModified)).utc().format() !==
+            fileLastModifiedOnRecord
+        ) {
+          const xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+          xmls = [...xmls, xml]
+          filesLastModified = {
+            ...filesLastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+          }
         }
       }
-      return xml
+      return {
+        xml: xmls,
+        filesLastModified,
+      }
     } catch (err) {
       console.log('getGewobagUploadedContent', err)
       return []
