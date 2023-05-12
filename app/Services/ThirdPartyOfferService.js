@@ -232,6 +232,7 @@ class ThirdPartyOfferService {
       }
     })
     console.log('finished pulling gewobag...')
+    return true
   }
 
   static async expireWhenNotOnSourceIds(sourceIds) {

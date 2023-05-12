@@ -56,7 +56,8 @@ class OpenImmoReader {
     const xmlParser = xml2js.Parser()
     xmlParser.parseString(xml, function (err, result) {
       if (err) {
-        throw new AppException(`Error parsing xml: ${err}`)
+        console.log(err)
+        that.json = false
       }
       that.json = result
     })
@@ -376,7 +377,7 @@ class OpenImmoReader {
       data = await fsPromises.readFile(dfile)
       let json = this.extractJson(data)
       let properties = []
-      if ((json = this.validate(json))) {
+      if (json && this.validate(json)) {
         properties = this.processProperties(json)
         properties = this.parseMultipleValuesWithOptions(properties)
         properties = this.parseSingleValues(properties)
@@ -396,7 +397,7 @@ class OpenImmoReader {
       for (let i = 0; i < xmls.length; i++) {
         let property
         let json = this.extractJson(xmls[i])
-        if ((json = this.validate(json))) {
+        if (json && this.validate(json)) {
           property = this.processProperties(json)
           property = this.parseMultipleValuesWithOptions(property)
           property = this.parseSingleValues(property)

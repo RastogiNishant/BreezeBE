@@ -413,19 +413,18 @@ class File {
       let filesLastModified = []
       for (let i = 0; i < objects.Contents.length; i++) {
         const fileLastModifiedOnRecord = filesWorked[objects.Contents[i].Key] || null
-        /*
         if (
           objects.Contents[i].Key.match(/\.xml$/) &&
           moment(new Date(objects.Contents[i].LastModified)).utc().format() !==
             fileLastModifiedOnRecord
-        ) {*/
-        const xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
-        xmls = [...xmls, xml]
-        filesLastModified = {
-          ...filesLastModified,
-          [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+        ) {
+          const xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+          xmls = [...xmls, xml]
+          filesLastModified = {
+            ...filesLastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+          }
         }
-        //}
       }
       return {
         xml: xmls,

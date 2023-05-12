@@ -87,7 +87,6 @@ class QueueService {
   }
 
   static contactGewobag({ third_party_offer_id, userId }) {
-    console.log('queueing contact gewobag...')
     Queue.addJob(CONTACT_GEWOBAG, { third_party_offer_id, userId }, { delay: 1 })
   }
 
@@ -195,8 +194,8 @@ class QueueService {
   }
 
   static async performEvery37thMinuteHourly() {
-    const ThirdPartyOfferService = require('../Services/ThirdPartyMatchService')
-    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag())])
+    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag)])
   }
 
   static async sendEveryDayMidday() {
