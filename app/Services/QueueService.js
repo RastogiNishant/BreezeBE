@@ -31,6 +31,7 @@ const {
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
+  SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
@@ -193,6 +194,11 @@ class QueueService {
     return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
   }
 
+  static async performEvery37thMinuteHourly() {
+    const ThirdPartyOfferService = require('../Services/ThirdPartyMatchService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag())])
+  }
+
   static async sendEveryDayMidday() {
     return Promise.all([
       wrapException(NoticeService.sendLandlordNewProperty),
@@ -292,6 +298,8 @@ class QueueService {
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
           return QueueService.performEvery3rdHour23rdMinuteJob()
+        case SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB:
+          return QueueService.performEvery37thMinuteHourly()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:

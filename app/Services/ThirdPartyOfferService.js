@@ -193,29 +193,39 @@ class ThirdPartyOfferService {
       }
       let images = []
       for (let i = 0; i < estate.images.length; i++) {
-        if (estate.images[i].format.match(/^image/)) {
-          const imageFile = await Drive.disk('breeze-ftp-files').getObject(
-            estate.images[i].file_name
-          )
-          const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
-            estate.images[i],
-            imageFile.Body
-          )
-          images = [
-            ...images,
-            {
-              picture: {
-                picture_url: imageUrl,
-                picture_title: '',
-              },
+        const imageFile = await Drive.disk('breeze-ftp-files').getObject(estate.images[i].file_name)
+        const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
+          estate.images[i],
+          imageFile.Body
+        )
+        images = [
+          ...images,
+          {
+            picture: {
+              picture_url: imageUrl,
+              picture_title: '',
             },
-          ]
-        }
+          },
+        ]
       }
       newEstate.images = JSON.stringify(images)
+      const estateFound = await ThirdPartyOffer.query()
+        .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+        .where('source_id', estate.source_id)
+        .first()
       try {
-        const result = await ThirdPartyOffer.createItem(newEstate)
-        require('./QueueService').getThirdPartyCoords(result.id)
+        let result
+        if (estateFound) {
+          console.log('updating...', estateFound.id)
+          await estateFound.updateItem(newEstate)
+          if (estateFound.address !== newEstate.address) {
+            require('./QueueService').getThirdPartyCoords(estateFound.id)
+          }
+        } else {
+          console.log('creating...')
+          result = await ThirdPartyOffer.createItem(newEstate)
+          require('./QueueService').getThirdPartyCoords(result.id)
+        }
       } catch (e) {
         console.log(e)
         console.log('error', newEstate)
