@@ -11,6 +11,12 @@ class StripeService {
       prices: (prices?.data || []).filter((price) => product.id === price.product),
     }))
   }
+
+  static async createSubscription({ user_id, product_id, quantity = 1 }) {
+    const prices = []
+    const mode = 'payment'
+    await Stripe.createCheckoutSessions({ user_id, mode, quantity, prices })
+  }
 }
 
 module.exports = StripeService
