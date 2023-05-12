@@ -90,6 +90,8 @@ const exceptions = {
   NO_TASK_FOUND: 'Task not found',
   NO_PROSPECT_KNOCK: "you haven't knocked that property",
   IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE: 'Please wait for a while before you can re-publish',
+  NO_PRODUCTS_EXIST: 'Products Not found',
+  SUBSCRIPTION_FAILED: 'failed to create subscription',
 }
 
 const exceptionCodes = {

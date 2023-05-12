@@ -1276,6 +1276,14 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
+  Route.post('/subscription', 'StripeController.createSubscription').middleware([
+    'valid:CreateSubscription',
+  ])
+})
+  .prefix('api/v1/stripe')
+  .middleware(['auth:jwtLandlord'])
+
+Route.group(() => {
   Route.get('/products', 'StripeController.getProducts')
 })
   .prefix('api/v1/stripe')
