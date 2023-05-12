@@ -191,6 +191,58 @@ class ThirdPartyOfferService {
         property_id: estate.property_id,
         ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
       }
+      //amenities:
+      const amenityKeys = {
+        balconies_number: {
+          type: 'numeric',
+          value: 'Balkon',
+        },
+        barrier_free: {
+          type: 'boolean',
+          value: 'Barrierefrei',
+        },
+        basement: {
+          type: 'boolean',
+          value: 'Keller',
+        },
+        chimney: {
+          type: 'boolean',
+          value: 'Kamin',
+        },
+        garden: {
+          type: 'boolean',
+          value: 'Garten',
+        },
+        guest_toilet: {
+          type: 'boolean',
+          value: 'Gäste-WC',
+        },
+        sauna: {
+          type: 'boolean',
+          value: 'Sauna',
+        },
+        swimmingpool: {
+          type: 'boolean',
+          value: 'Pool / Schwimmbad',
+        },
+        terraces_number: {
+          type: 'numeric',
+          value: 'Terrasse',
+        },
+        wintergarten: {
+          type: 'boolean',
+          value: 'Wintergarten',
+        },
+      }
+      let amenities = []
+      for (const [key, value] of Object.entries(amenityKeys)) {
+        if (value.type === 'numeric' && estate[key] > 0) {
+          amenities = [...amenities, value.value]
+        } else if (value.type === 'boolean' && estate[key] === true) {
+          amenities = [...amenities, value.value]
+        }
+      }
+      newEstate.amenities = amenities
       let images = []
       for (let i = 0; i < estate.images.length; i++) {
         const imageFile = await Drive.disk('breeze-ftp-files').getObject(estate.images[i].file_name)

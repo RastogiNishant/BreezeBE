@@ -347,10 +347,23 @@ class OpenImmoReader {
         property.pets_allowed = PETS_NO
       }
 
+      property.barrier_free = property.barrier_free === 'true'
+      property.chimney = property.chimney === 'true'
+      property.elevator = property.elevator && property.elevator.length > 0
+      property.garden = property.garden === 'true'
+      property.sauna = property.sauna === 'true'
+      property.swimmingpool = property.swimmingpool === 'true'
+      property.wintergarten = property.wintergarten === 'true'
+      property.guest_toilet = property.guest_toilet === 'true'
+
       if (property.status === 'ONLINE') {
         property.status = STATUS_ACTIVE
       } else if (property.status === 'OFFLINE') {
         property.status = STATUS_EXPIRE
+      }
+
+      if (property.basement === 'JA') {
+        property.basement = true
       }
     })
     return properties
