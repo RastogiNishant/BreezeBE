@@ -5,6 +5,7 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
+const Logger = use('Logger')
 const {
   FILE_TYPE_UNASSIGNED,
   PETS_SMALL,
@@ -12,6 +13,7 @@ const {
   DAY_FORMAT,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
+  DATE_FORMAT,
 } = require('../constants')
 
 const energyPassVariables = {
@@ -202,18 +204,23 @@ class OpenImmoReader {
   }
 
   processProperties(json) {
-    const transmittal = json['openimmo']['uebertragung'][0]['$']
-    const estates = json['openimmo']['anbieter'][0]['immobilie']
-    const map = require('../../resources/openimmo/openimmo-map.json')
-    const properties = estates.map((property) => {
-      let obj = {}
-      forOwn(map, (value, key) => {
-        obj = { ...obj, [key]: get(property, value) }
+    try {
+      const transmittal = json['openimmo']['uebertragung'][0]['$']
+      const estates = json['openimmo']['anbieter'][0]['immobilie']
+      const map = require('../../resources/openimmo/openimmo-map.json')
+      const properties = estates.map((property) => {
+        let obj = {}
+        forOwn(map, (value, key) => {
+          obj = { ...obj, [key]: get(property, value) }
+        })
+        obj.status = transmittal.art
+        return obj
       })
-      obj.status = transmittal.art
-      return obj
-    })
-    return properties
+      return properties
+    } catch (e) {
+      Logger.error('process properties error ', e.message)
+      return []
+    }
   }
 
   async processImages(properties) {
@@ -319,10 +326,9 @@ class OpenImmoReader {
         let matches = property.vacant_date.match(/([0-9]{2})\.([0-9]{2})\.([0-9]{4})/)
         if (matches) {
           property.vacant_date = `${matches[3]}-${matches[2]}-${matches[1]}`
-          property.vacant_date = moment
-            .utc(new Date(property.vacant_date))
-            .add(2, 'hours')
-            .format(DAY_FORMAT)
+          moment(new Date(property.vacant_date), 'YYYY/MM/DD', true)
+            .utcOffset(2)
+            .format(DATE_FORMAT)
         } else {
           unset(property, 'vacant_date')
         }
@@ -349,7 +355,7 @@ class OpenImmoReader {
 
       property.barrier_free = property.barrier_free === 'true'
       property.chimney = property.chimney === 'true'
-      property.elevator = property.elevator && property.elevator.length > 0
+      property.elevator = property?.elevator?.length > 0
       property.garden = property.garden === 'true'
       property.sauna = property.sauna === 'true'
       property.swimmingpool = property.swimmingpool === 'true'
