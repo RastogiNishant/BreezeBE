@@ -187,7 +187,7 @@ class ThirdPartyOfferService {
         firing: estate.firing,
         zip: estate.zip,
         status: estate.status,
-        full_address: true,
+        full_address: estate.full_address,
         wbs: estate.wbs,
         property_id: estate.property_id,
         ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
@@ -217,6 +217,10 @@ class ThirdPartyOfferService {
         guest_toilet: {
           type: 'boolean',
           value: 'Gäste-WC',
+        },
+        pets_allowed: {
+          type: 'boolean',
+          value: 'Haustier',
         },
         sauna: {
           type: 'boolean',
