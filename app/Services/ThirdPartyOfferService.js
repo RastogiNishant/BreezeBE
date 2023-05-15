@@ -25,6 +25,7 @@ const {
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
   PETS_NO,
+  GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -169,140 +170,143 @@ class ThirdPartyOfferService {
     })
     var s3 = new AWS.S3()
 
-    await Promise.map(properties.slice(0, 20), async (estate) => {
-      let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
-      sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
-      //FIXME: create a map for this:
-      let newEstate = {
-        source: 'gewobag',
-        source_information: JSON.stringify(sourceInformation),
-        source_id: estate.source_id,
-        country: estate.country,
-        house_number: estate.house_number,
-        street: estate.street,
-        city: estate.city,
-        address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
-        contact: JSON.stringify({ email: estate.contact }),
-        floor: Number(estate.floor),
-        number_floors: Number(estate.number_floors),
-        bathrooms: estate.bathrooms_number,
-        rooms_number: Number(estate.rooms_number),
-        area: Math.round(estate.area),
-        construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
-        energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
-        vacant_date: moment(new Date(estate.vacant_date)).format(),
-        additional_costs: Number(estate.additional_costs),
-        net_rent: Number(estate.net_rent),
-        property_type: estate.property_type,
-        heating_costs: Number(estate.heating_costs),
-        extra_costs: +estate.heating_costs + +estate.additional_costs,
-        building_status: estate.building_status,
-        house_type: estate.house_type,
-        apt_type: estate.apt_type,
-        heating_type: estate.heating_type,
-        firing: estate.firing,
-        zip: estate.zip,
-        status: estate.status,
-        full_address: estate.full_address,
-        wbs: estate.wbs,
-        property_id: estate.property_id,
-        ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
-      }
-      //amenities:
-      //parse this to boolean... openimmo standard for pets is boolean
-      estate.pets_allowed = estate.pets_allowed !== PETS_NO
-      const amenityKeys = {
-        balconies_number: {
-          type: 'numeric',
-          value: 'Balkon',
-        },
-        barrier_free: {
-          type: 'boolean',
-          value: 'Barrierefrei',
-        },
-        basement: {
-          type: 'boolean',
-          value: 'Keller',
-        },
-        chimney: {
-          type: 'boolean',
-          value: 'Kamin',
-        },
-        garden: {
-          type: 'boolean',
-          value: 'Garten',
-        },
-        guest_toilet: {
-          type: 'boolean',
-          value: 'Gäste-WC',
-        },
-        pets_allowed: {
-          type: 'boolean',
-          value: 'Haustier',
-        },
-        sauna: {
-          type: 'boolean',
-          value: 'Sauna',
-        },
-        swimmingpool: {
-          type: 'boolean',
-          value: 'Pool / Schwimmbad',
-        },
-        terraces_number: {
-          type: 'numeric',
-          value: 'Terrasse',
-        },
-        wintergarten: {
-          type: 'boolean',
-          value: 'Wintergarten',
-        },
-      }
-      let amenities = []
-      for (const [key, value] of Object.entries(amenityKeys)) {
-        if (value.type === 'numeric' && estate[key] > 0) {
-          amenities = [...amenities, value.value]
-        } else if (value.type === 'boolean' && estate[key] === true) {
-          amenities = [...amenities, value.value]
+    await Promise.map(
+      properties.slice(0, GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL),
+      async (estate) => {
+        let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
+        sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
+        //FIXME: create a map for this:
+        let newEstate = {
+          source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+          source_information: JSON.stringify(sourceInformation),
+          source_id: estate.source_id,
+          country: estate.country,
+          house_number: estate.house_number,
+          street: estate.street,
+          city: estate.city,
+          address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
+          contact: JSON.stringify({ email: estate.contact }),
+          floor: Number(estate.floor),
+          number_floors: Number(estate.number_floors),
+          bathrooms: estate.bathrooms_number,
+          rooms_number: Number(estate.rooms_number),
+          area: Math.round(estate.area),
+          construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
+          energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
+          vacant_date: moment(new Date(estate.vacant_date)).format(),
+          additional_costs: Number(estate.additional_costs),
+          net_rent: Number(estate.net_rent),
+          property_type: estate.property_type,
+          heating_costs: Number(estate.heating_costs),
+          extra_costs: +estate.heating_costs + +estate.additional_costs,
+          building_status: estate.building_status,
+          house_type: estate.house_type,
+          apt_type: estate.apt_type,
+          heating_type: estate.heating_type,
+          firing: estate.firing,
+          zip: estate.zip,
+          status: estate.status,
+          full_address: estate.full_address,
+          wbs: estate.wbs,
+          property_id: estate.property_id,
+          ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
         }
-      }
-      newEstate.amenities = amenities
-      let images = []
-      for (let i = 0; i < estate.images.length; i++) {
-        const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
-          estate.images[i],
-          s3
-        )
-        images = [
-          ...images,
-          {
-            picture: {
-              picture_url: imageUrl,
-              picture_title: '',
-            },
+        //amenities:
+        //parse this to boolean... openimmo standard for pets is boolean
+        estate.pets_allowed = estate.pets_allowed !== PETS_NO
+        const amenityKeys = {
+          balconies_number: {
+            type: 'numeric',
+            value: 'Balkon',
           },
-        ]
-      }
-      newEstate.images = JSON.stringify(images)
-      const estateFound = await ThirdPartyOffer.query()
-        .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
-        .where('source_id', estate.source_id)
-        .first()
-      try {
-        let result
-        if (estateFound) {
-          await estateFound.updateItem(newEstate)
-          if (estateFound.address !== newEstate.address) {
-            require('./QueueService').getThirdPartyCoords(estateFound.id)
-          }
-        } else {
-          result = await ThirdPartyOffer.createItem(newEstate)
-          require('./QueueService').getThirdPartyCoords(result.id)
+          barrier_free: {
+            type: 'boolean',
+            value: 'Barrierefrei',
+          },
+          basement: {
+            type: 'boolean',
+            value: 'Keller',
+          },
+          chimney: {
+            type: 'boolean',
+            value: 'Kamin',
+          },
+          garden: {
+            type: 'boolean',
+            value: 'Garten',
+          },
+          guest_toilet: {
+            type: 'boolean',
+            value: 'Gäste-WC',
+          },
+          pets_allowed: {
+            type: 'boolean',
+            value: 'Haustier',
+          },
+          sauna: {
+            type: 'boolean',
+            value: 'Sauna',
+          },
+          swimmingpool: {
+            type: 'boolean',
+            value: 'Pool / Schwimmbad',
+          },
+          terraces_number: {
+            type: 'numeric',
+            value: 'Terrasse',
+          },
+          wintergarten: {
+            type: 'boolean',
+            value: 'Wintergarten',
+          },
         }
-      } catch (e) {
-        console.log(e)
-        console.log('error', newEstate)
+        let amenities = []
+        for (const [key, value] of Object.entries(amenityKeys)) {
+          if (value.type === 'numeric' && estate[key] > 0) {
+            amenities = [...amenities, value.value]
+          } else if (value.type === 'boolean' && estate[key] === true) {
+            amenities = [...amenities, value.value]
+          }
+        }
+        newEstate.amenities = amenities
+        let images = []
+        for (let i = 0; i < estate.images.length; i++) {
+          const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
+            estate.images[i],
+            s3
+          )
+          images = [
+            ...images,
+            {
+              picture: {
+                picture_url: imageUrl,
+                picture_title: '',
+              },
+            },
+          ]
+        }
+        newEstate.images = JSON.stringify(images)
+        const estateFound = await ThirdPartyOffer.query()
+          .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+          .where('source_id', estate.source_id)
+          .first()
+        try {
+          let result
+          if (estateFound) {
+            await estateFound.updateItem(newEstate)
+            if (estateFound.address !== newEstate.address) {
+              require('./QueueService').getThirdPartyCoords(estateFound.id)
+            }
+          } else {
+            result = await ThirdPartyOffer.createItem(newEstate)
+            require('./QueueService').getThirdPartyCoords(result.id)
+          }
+        } catch (e) {
+          console.log(e)
+          console.log('error', newEstate)
+        }
       }
-    })
+    )
     console.log('finished pulling gewobag...')
     return true
   }
