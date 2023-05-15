@@ -44,7 +44,7 @@
   "non_smoker": "verwaltung_objekt.0.nichtraucher.0",
   "number_floors": "geo.0.anzahl_etagen.0",
   "parking_space_type": "ausstattung.0.stellplatzart.0.$",
-  "pets": "verwaltung_objekt.0.haustiere.0",
+  "pets_allowed": "verwaltung_objekt.0.haustiere.0",
   "property_id": "verwaltung_techn.0.objektnr_extern.0",
   "property_type": "objektkategorie.0.objektart.0.wohnung.0.$.wohnungtyp",
   "rooms_number": "flaechen.0.anzahl_zimmer.0",
