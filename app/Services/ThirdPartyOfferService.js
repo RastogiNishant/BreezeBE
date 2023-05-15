@@ -9,7 +9,6 @@ const File = use('App/Classes/File')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
 const uuid = require('uuid')
-const Drive = use('Drive')
 const AWS = require('aws-sdk')
 const Env = use('Env')
 const {
@@ -18,10 +17,8 @@ const {
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-  ISO_DATE_FORMAT,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_NEW,
-  STATUS_DELETE,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
   PETS_NO,
