@@ -579,13 +579,15 @@ class QueueJobService {
         sender: {
           name: 'Breeze Venture GmbH',
           openimo_anid: '',
+          email_zentrale: 'anfragen@gewobag.interessentenanfragen.de',
+          email_direct: 'anfragen@gewobag.interessentenanfragen.de',
           datum: moment(new Date()).format(GERMAN_DATE_FORMAT),
           makler_id: '',
           regi_id: '',
         },
         objekt: {
-          portal_obj_id: estate.property_id,
-          oobj_id: estate.source_id,
+          portal_obj_id: estate.id,
+          oobj_id: estate.property_id,
           expose_url: '',
           vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
           strasse: `${estate.street} ${estate.house_number}`,
