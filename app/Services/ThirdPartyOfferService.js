@@ -164,7 +164,7 @@ class ThirdPartyOfferService {
       secretAccessKey: Env.get('S3_SECRET'),
       region: Env.get('S3_REGION'),
     })
-    var s3 = new AWS.S3()
+    const s3 = new AWS.S3()
 
     await Promise.map(
       properties.slice(0, GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL),
