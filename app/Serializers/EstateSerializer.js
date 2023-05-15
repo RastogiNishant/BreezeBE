@@ -39,7 +39,8 @@ class EstateSerializer extends BaseSerializer {
       item.cover = File.getPublicUrl(item.cover)
     } else if (item?.cover?.includes('http')) {
       const splits = item.cover.split('/')
-      const len = splits?.len || 0
+      const len = splits?.length || 0
+
       item.cover_thumb =
         len > 3
           ? File.getPublicUrl(
