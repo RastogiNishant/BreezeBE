@@ -61,6 +61,7 @@
   "terraces_number": "flaechen.0.anzahl_terrassen.0",
   "usable_area": "flaechen.0.nutzflaeche.0",
   "use_type": "objektkategorie.0.nutzungsart.0.$",
+  "wbs": "verwaltung_objekt.0.wbs_sozialwohnung.0",
   "vacant_date": "verwaltung_objekt.0.verfuegbar_ab.0",
   "wc_number": "flaechen.0.anzahl_sep_wc.0",
   "wintergarten": "ausstattung.0.wintergarten.0",

@@ -188,6 +188,7 @@ class ThirdPartyOfferService {
         zip: estate.zip,
         status: estate.status,
         full_address: true,
+        wbs: estate.wbs,
         property_id: estate.property_id,
         ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
       }
