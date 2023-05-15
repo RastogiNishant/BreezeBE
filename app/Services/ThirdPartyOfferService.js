@@ -10,6 +10,8 @@ const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
 const uuid = require('uuid')
 const Drive = use('Drive')
+const AWS = require('aws-sdk')
+const Env = use('Env')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -22,6 +24,7 @@ const {
   STATUS_DELETE,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+  PETS_NO,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -112,14 +115,19 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async moveFileFromFTPtoS3Public(imageInfo, imageFile) {
+  static async moveFileFromFTPtoS3Public(imageInfo, s3) {
+    const bucketName = 'breeze-ftp-files'
     const ext = imageInfo.file_name.split('.').pop()
     const filename = `${uuid.v4()}.${ext}`
     const dir = moment().format('YYYYMM')
     const filePathName = `${dir}/${filename}`
-    const options = imageInfo.headers
-    options.ACL = 'public-read'
-    await Drive.disk('s3public').put(filePathName, imageFile, options)
+    var params = {
+      Bucket: process.env.S3_PUBLIC_BUCKET,
+      CopySource: bucketName + '/' + imageInfo.file_name,
+      Key: filePathName,
+      ACL: 'public-read',
+    }
+    await s3.copyObject(params).promise()
     return Drive.disk('s3public').getUrl(filePathName)
   }
 
@@ -153,7 +161,15 @@ class ThirdPartyOfferService {
     const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
-    await Promise.map(properties.slice(0, 5), async (estate) => {
+
+    AWS.config.update({
+      accessKeyId: Env.get('S3_KEY'),
+      secretAccessKey: Env.get('S3_SECRET'),
+      region: Env.get('S3_REGION'),
+    })
+    var s3 = new AWS.S3()
+
+    await Promise.map(properties.slice(0, 20), async (estate) => {
       let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
       sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
       //FIXME: create a map for this:
@@ -193,6 +209,8 @@ class ThirdPartyOfferService {
         ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
       }
       //amenities:
+      //parse this to boolean... openimmo standard for pets is boolean
+      estate.pets_allowed = estate.pets_allowed !== PETS_NO
       const amenityKeys = {
         balconies_number: {
           type: 'numeric',
@@ -250,10 +268,9 @@ class ThirdPartyOfferService {
       newEstate.amenities = amenities
       let images = []
       for (let i = 0; i < estate.images.length; i++) {
-        const imageFile = await Drive.disk('breeze-ftp-files').getObject(estate.images[i].file_name)
         const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
           estate.images[i],
-          imageFile.Body
+          s3
         )
         images = [
           ...images,
