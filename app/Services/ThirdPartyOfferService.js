@@ -122,14 +122,18 @@ class ThirdPartyOfferService {
     const filename = `${uuid.v4()}.${ext}`
     const dir = moment().format('YYYYMM')
     const filePathName = `${dir}/${filename}`
-    var params = {
+    const params = {
       Bucket: process.env.S3_PUBLIC_BUCKET,
       CopySource: bucketName + '/' + imageInfo.file_name,
       Key: filePathName,
       ACL: 'public-read',
     }
-    await s3.copyObject(params).promise()
-    return File.getPublicUrl(filePathName)
+    try {
+      const ret = await s3.copyObject(params).promise()
+      return File.getPublicUrl(filePathName)
+    } catch (err) {
+      console.log('err', err)
+    }
   }
 
   static async getFilesAndLastModified() {
