@@ -399,6 +399,10 @@ class File {
         Delimiter: '/',
       }
       const objects = await s3.listObjects(params).promise()
+      if (!objects?.Contents) {
+        return []
+      }
+
       let xmls = []
       let filesLastModified = []
       for (let i = 0; i < objects.Contents.length; i++) {

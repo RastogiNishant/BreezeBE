@@ -620,7 +620,7 @@ class QueueJobService {
             : process.env.GEWOBAG_CONTACT_EMAIL,
         subject:
           SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
-          moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
+          moment(new Date()).utcOffset(2).format(GERMAN_DATE_TIME_FORMAT),
         attachment: attachment.toString('base64'),
         from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
       })
