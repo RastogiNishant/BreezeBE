@@ -2642,7 +2642,7 @@ class EstateService {
 
   static async countDuplicateProperty(property_id) {
     const estateCount = await Estate.query()
-      .where('property_id', 'ilike', `${property_id}%`)
+      .where('property_id', 'ilike', `${property_id}-%`)
       .whereNot('status', STATUS_DELETE)
       .count('*')
     if (estateCount?.length) {
@@ -2653,7 +2653,7 @@ class EstateService {
 
   static async duplicateEstate(user_id, estate_id) {
     const estate = await this.getByIdWithDetail(estate_id)
-    if (estate.user_id !== user_id) {
+    if (estate?.user_id !== user_id) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
@@ -2661,6 +2661,7 @@ class EstateService {
     const trx = await Database.beginTransaction()
     try {
       const originalEstateData = estate.toJSON()
+
       const estateData = {
         ...omit(originalEstateData, [
           'id',
@@ -2668,10 +2669,12 @@ class EstateService {
           'files',
           'amenities',
           'slots',
+          'cover_thumb',
+          'verified_address',
           'created_at',
           'updated_at',
         ]),
-        property_id: `${originalEstateData.property_id.split('-')[0]}-${duplicatedCount}`,
+        property_id: `${originalEstateData.property_id}-${duplicatedCount + 1}`,
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
@@ -2682,9 +2685,12 @@ class EstateService {
         six_char_code: null,
         rent_end_at: null,
         repair_needed: false,
+        construction_year: originalEstateData?.construction_year
+          ? `${originalEstateData?.construction_year}-01-01`
+          : null,
       }
+
       const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
-      console.log('newEstate id here', newEstate.id)
       await Promise.map(
         originalEstateData.rooms || [],
         async (room) => {

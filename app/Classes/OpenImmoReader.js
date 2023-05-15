@@ -361,6 +361,8 @@ class OpenImmoReader {
       property.swimmingpool = property.swimmingpool === 'true'
       property.wintergarten = property.wintergarten === 'true'
       property.guest_toilet = property.guest_toilet === 'true'
+      property.wbs = property.wbs === 'true'
+      property.full_address = property.full_address === 'true'
 
       if (property.status === 'ONLINE') {
         property.status = STATUS_ACTIVE

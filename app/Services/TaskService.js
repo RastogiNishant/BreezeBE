@@ -539,7 +539,7 @@ class TaskService extends BaseService {
     const filter = new TaskFilters(param, query)
     query = filter.process()
 
-    query.orderBy('tasks.updated_at')
+    query.orderBy('tasks.updated_at', 'desc')
 
     if (!page || page === -1 || !limit || limit === -1) {
       return await query.fetch()
