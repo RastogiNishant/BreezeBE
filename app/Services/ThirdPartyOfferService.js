@@ -147,16 +147,7 @@ class ThirdPartyOfferService {
     )
   }
 
-  static async pullGewobag(forced = false) {
-    if (!forced) {
-      if (
-        process.env.PULL_GEWOBAG === undefined ||
-        (process.env.PULL_GEWOBAG !== undefined && !+process.env.PULL_GEWOBAG)
-      ) {
-        console.log('not pulling gewobag...')
-        return
-      }
-    }
+  static async pullGewobag() {
     console.log('pulling gewobag...')
     const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
     const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
