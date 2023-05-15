@@ -2718,9 +2718,11 @@ class EstateService {
       }))
       await this.addManyFiles(newFiles, trx)
 
-      const newAmenities =
-        originalEstateData.amenities ||
-        [].map((amenity) => ({ ...omit(amenity, ['room_id']), estate_id: newEstate.id }))
+      const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
+        ...omit(amenity, ['room_id', 'id']),
+        estate_id: newEstate.id,
+      }))
+
       await Amenity.createMany(newAmenities, trx)
 
       await trx.commit()
