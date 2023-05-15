@@ -48,6 +48,9 @@ const {
   GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
+  GERMAN_DATE_FORMAT,
+  GEWOBAG_EMAIL_CONTENT,
+  SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -560,13 +563,13 @@ class QueueJobService {
     const titleFromGender = (genderId) => {
       switch (genderId) {
         case GENDER_MALE:
-          return l.get(SALUTATION_MR_LABEL, 'en')
+          return l.get(SALUTATION_MR_LABEL, 'de')
         case GENDER_FEMALE:
-          return l.get(SALUTATION_MS_LABEL, 'en')
+          return l.get(SALUTATION_MS_LABEL, 'de')
         case GENDER_ANY:
-          return l.get(SALUTATION_SIR_OR_MADAM_LABEL, 'en')
+          return l.get(SALUTATION_SIR_OR_MADAM_LABEL, 'de')
         case GENDER_NEUTRAL:
-          return l.get(SALUTATION_NEUTRAL_LABEL, 'en')
+          return l.get(SALUTATION_NEUTRAL_LABEL, 'de')
       }
       return null
     }
@@ -576,7 +579,9 @@ class QueueJobService {
         sender: {
           name: 'Breeze Venture GmbH',
           openimo_anid: '',
-          datum: moment(new Date()).format('MM.DD.YYYY'),
+          email_zentrale: 'anfragen@gewobag.interessentenanfragen.de',
+          email_direct: 'anfragen@gewobag.interessentenanfragen.de',
+          datum: moment(new Date()).format(GERMAN_DATE_FORMAT),
           makler_id: '',
           regi_id: '',
         },
@@ -584,19 +589,19 @@ class QueueJobService {
           portal_obj_id: estate.id,
           oobj_id: estate.property_id,
           expose_url: '',
-          vermarktungsart: 'Miete', //temporary for demo purpose
-          strass: `${estate.street} ${estate.house_number}`,
+          vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
+          strasse: `${estate.street} ${estate.house_number}`,
           ort: `${estate.zip} ${estate.city}`,
           interessent: {
             anrede: titleFromGender(prospect.sex),
             vorname: prospect.firstname,
             nachname: prospect.secondname,
-            strasse: prospect.address,
+            strasse: '',
             plz: '',
             ort: '',
             tel: prospect.phone,
             email: prospect.email,
-            anfrage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+            anfrage: GEWOBAG_EMAIL_CONTENT,
           },
         },
       },
@@ -604,13 +609,17 @@ class QueueJobService {
     try {
       const xmlOptions = {
         header: true,
+        indent: '  ',
       }
       const attachment = Buffer.from(toXML(object, xmlOptions))
       MailService.sendEmailWithAttachment({
-        textMessage: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-        recipient: process.env.GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
+        textMessage: GEWOBAG_EMAIL_CONTENT,
+        recipient:
+          process.env.NODE_ENV === 'production'
+            ? estate.contact.email
+            : process.env.GEWOBAG_CONTACT_EMAIL,
         subject:
-          SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
+          SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
           moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
         attachment: attachment.toString('base64'),
         from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,

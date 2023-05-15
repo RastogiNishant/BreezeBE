@@ -9,19 +9,20 @@ const File = use('App/Classes/File')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
 const uuid = require('uuid')
-const Drive = use('Drive')
+const AWS = require('aws-sdk')
+const Env = use('Env')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
-  ISO_DATE_FORMAT,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_NEW,
-  STATUS_DELETE,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+  PETS_NO,
+  GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -112,80 +113,197 @@ class ThirdPartyOfferService {
     }
   }
 
-  static async moveFileFromFTPtoS3Public(imageInfo, imageFile) {
+  static async moveFileFromFTPtoS3Public(imageInfo, s3) {
+    const bucketName = 'breeze-ftp-files'
     const ext = imageInfo.file_name.split('.').pop()
     const filename = `${uuid.v4()}.${ext}`
     const dir = moment().format('YYYYMM')
     const filePathName = `${dir}/${filename}`
-    const options = imageInfo.headers
-    options.ACL = 'public-read'
-    await Drive.disk('s3public').put(filePathName, imageFile, options)
-    return Drive.disk('s3public').getUrl(filePathName)
+    const params = {
+      Bucket: process.env.S3_PUBLIC_BUCKET,
+      CopySource: bucketName + '/' + imageInfo.file_name,
+      Key: filePathName,
+      ACL: 'public-read',
+    }
+    try {
+      await s3.copyObject(params).promise()
+      return File.getPublicUrl(filePathName)
+    } catch (err) {
+      console.log('err', err)
+      return false
+    }
+  }
+
+  static async getFilesAndLastModified() {
+    let gewobagFiles = await ThirdPartyOffer.query()
+      .select(Database.raw(`CONCAT("source_id", '.xml') as key`))
+      .select('ftp_last_update')
+      .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+      .fetch()
+    return await gewobagFiles.toJSON().reduce(
+      (files, file) => ({
+        ...files,
+        [file.key]: moment(new Date(file.ftp_last_update)).utc().format(),
+      }),
+      {}
+    )
   }
 
   static async pullGewobag() {
-    const xml = await File.getGewobagUploadedContent()
+    console.log('pulling gewobag...')
+    const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
+    const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
-    await Promise.map(properties, async (estate) => {
-      let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
-      sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
-      //FIXME: create a map for this:
-      let newEstate = {
-        source: 'gewobag',
-        source_information: JSON.stringify(sourceInformation),
-        country: estate.country,
-        house_number: estate.house_number,
-        street: estate.street,
-        city: estate.city,
-        address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
-        floor: Number(estate.floor),
-        number_floors: Number(estate.number_floors),
-        bathrooms: estate.bathrooms_number,
-        rooms_number: Number(estate.rooms_number),
-        area: Math.round(estate.area),
-        construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
-        energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
-        vacant_date: estate.vacant_date,
-        additional_costs: Number(estate.additional_costs),
-        net_rent: Number(estate.net_rent),
-        property_type: estate.property_type,
-        heating_costs: Number(estate.heating_costs),
-        extra_costs: +estate.heating_costs + +estate.additional_costs,
-        building_status: estate.building_status,
-        house_type: estate.house_type,
-        apt_type: estate.apt_type,
-        heating_type: estate.heating_type,
-        firing: estate.firing,
-        zip: estate.zip,
-        status: STATUS_ACTIVE,
-        full_address: true,
-      }
-      let images = []
-      for (let i = 0; i < estate.images.length; i++) {
-        if (estate.images[i].format.match(/^image/)) {
-          const imageFile = await Drive.disk('breeze-ftp-files').getObject(
-            estate.images[i].file_name
-          )
+
+    AWS.config.update({
+      accessKeyId: Env.get('S3_KEY'),
+      secretAccessKey: Env.get('S3_SECRET'),
+      region: Env.get('S3_REGION'),
+    })
+    const s3 = new AWS.S3()
+
+    await Promise.map(
+      properties.slice(0, GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL),
+      async (estate) => {
+        let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
+        sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
+        //FIXME: create a map for this:
+        let newEstate = {
+          source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+          source_information: JSON.stringify(sourceInformation),
+          source_id: estate.source_id,
+          country: estate.country,
+          house_number: estate.house_number,
+          street: estate.street,
+          city: estate.city,
+          address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
+          contact: JSON.stringify({ email: estate.contact }),
+          floor: Number(estate.floor),
+          number_floors: Number(estate.number_floors),
+          bathrooms: estate.bathrooms_number,
+          rooms_number: Number(estate.rooms_number),
+          area: Number(estate.area),
+          construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
+          energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
+          vacant_date: moment(new Date(estate.vacant_date)).format(),
+          additional_costs: Number(estate.additional_costs),
+          net_rent: Number(estate.net_rent),
+          property_type: estate.property_type,
+          heating_costs: Number(estate.heating_costs),
+          extra_costs: +estate.heating_costs + +estate.additional_costs,
+          building_status: estate.building_status,
+          house_type: estate.house_type,
+          apt_type: estate.apt_type,
+          heating_type: estate.heating_type,
+          firing: estate.firing,
+          zip: estate.zip,
+          status: estate.status,
+          full_address: estate.full_address,
+          wbs: estate.wbs,
+          property_id: estate.property_id,
+          ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
+        }
+        //amenities:
+        //parse this to boolean... openimmo standard for pets is boolean
+        estate.pets_allowed = estate.pets_allowed !== PETS_NO
+        const amenityKeys = {
+          balconies_number: {
+            type: 'numeric',
+            value: 'Balkon',
+          },
+          barrier_free: {
+            type: 'boolean',
+            value: 'Barrierefrei',
+          },
+          basement: {
+            type: 'boolean',
+            value: 'Keller',
+          },
+          chimney: {
+            type: 'boolean',
+            value: 'Kamin',
+          },
+          garden: {
+            type: 'boolean',
+            value: 'Garten',
+          },
+          guest_toilet: {
+            type: 'boolean',
+            value: 'Gäste-WC',
+          },
+          pets_allowed: {
+            type: 'boolean',
+            value: 'Haustiere',
+          },
+          sauna: {
+            type: 'boolean',
+            value: 'Sauna',
+          },
+          swimmingpool: {
+            type: 'boolean',
+            value: 'Pool / Schwimmbad',
+          },
+          terraces_number: {
+            type: 'numeric',
+            value: 'Terrasse',
+          },
+          wintergarten: {
+            type: 'boolean',
+            value: 'Wintergarten',
+          },
+        }
+        let amenities = []
+        for (const [key, value] of Object.entries(amenityKeys)) {
+          if (value.type === 'numeric' && estate[key] > 0) {
+            amenities = [...amenities, value.value]
+          } else if (value.type === 'boolean' && estate[key] === true) {
+            amenities = [...amenities, value.value]
+          }
+        }
+        newEstate.amenities = amenities
+        let images = []
+        for (let i = 0; i < estate.images.length; i++) {
           const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
             estate.images[i],
-            imageFile.Body
+            s3
           )
-          images = [
-            ...images,
-            {
-              picture: {
-                picture_url: imageUrl,
-                picture_title: '',
+          if (imageUrl) {
+            images = [
+              ...images,
+              {
+                picture: {
+                  picture_url: imageUrl,
+                  picture_title: '',
+                },
               },
-            },
-          ]
+            ]
+          }
+        }
+        newEstate.images = JSON.stringify(images)
+        const estateFound = await ThirdPartyOffer.query()
+          .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+          .where('source_id', estate.source_id)
+          .first()
+        try {
+          let result
+          if (estateFound) {
+            await estateFound.updateItem(newEstate)
+            if (estateFound.address !== newEstate.address) {
+              require('./QueueService').getThirdPartyCoords(estateFound.id)
+            }
+          } else {
+            result = await ThirdPartyOffer.createItem(newEstate)
+            require('./QueueService').getThirdPartyCoords(result.id)
+          }
+        } catch (e) {
+          console.log(e)
+          console.log('error', newEstate)
         }
       }
-      newEstate.images = JSON.stringify(images)
-      const result = await ThirdPartyOffer.createItem(newEstate)
-      require('./QueueService').getThirdPartyCoords(result.id)
-    })
+    )
+    console.log('finished pulling gewobag...')
+    return true
   }
 
   static async expireWhenNotOnSourceIds(sourceIds) {
