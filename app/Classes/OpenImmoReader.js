@@ -5,7 +5,14 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO, DAY_FORMAT } = require('../constants')
+const {
+  FILE_TYPE_UNASSIGNED,
+  PETS_SMALL,
+  PETS_NO,
+  DAY_FORMAT,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+} = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -49,7 +56,8 @@ class OpenImmoReader {
     const xmlParser = xml2js.Parser()
     xmlParser.parseString(xml, function (err, result) {
       if (err) {
-        throw new AppException(`Error parsing xml: ${err}`)
+        console.log(err)
+        that.json = false
       }
       that.json = result
     })
@@ -194,6 +202,7 @@ class OpenImmoReader {
   }
 
   processProperties(json) {
+    const transmittal = json['openimmo']['uebertragung'][0]['$']
     const estates = json['openimmo']['anbieter'][0]['immobilie']
     const map = require('../../resources/openimmo/openimmo-map.json')
     const properties = estates.map((property) => {
@@ -201,6 +210,7 @@ class OpenImmoReader {
       forOwn(map, (value, key) => {
         obj = { ...obj, [key]: get(property, value) }
       })
+      obj.status = transmittal.art
       return obj
     })
     return properties
@@ -305,10 +315,17 @@ class OpenImmoReader {
       }
       //force dates to be of the format YYYY-MM-DD
       if (property.vacant_date) {
-        property.vacant_date = moment
-          .utc(new Date(property.vacant_date))
-          .add(2, 'hours')
-          .format(DAY_FORMAT)
+        //vacant_date in openimmo (verfuegbar_ab) is string
+        let matches = property.vacant_date.match(/([0-9]{2})\.([0-9]{2})\.([0-9]{4})/)
+        if (matches) {
+          property.vacant_date = `${matches[3]}-${matches[2]}-${matches[1]}`
+          property.vacant_date = moment
+            .utc(new Date(property.vacant_date))
+            .add(2, 'hours')
+            .format(DAY_FORMAT)
+        } else {
+          unset(property, 'vacant_date')
+        }
       } else {
         unset(property, 'vacant_date')
       }
@@ -328,6 +345,27 @@ class OpenImmoReader {
         property.pets_allowed = PETS_SMALL
       } else if (property.pets_allowed === 'false') {
         property.pets_allowed = PETS_NO
+      }
+
+      property.barrier_free = property.barrier_free === 'true'
+      property.chimney = property.chimney === 'true'
+      property.elevator = property.elevator && property.elevator.length > 0
+      property.garden = property.garden === 'true'
+      property.sauna = property.sauna === 'true'
+      property.swimmingpool = property.swimmingpool === 'true'
+      property.wintergarten = property.wintergarten === 'true'
+      property.guest_toilet = property.guest_toilet === 'true'
+      property.wbs = property.wbs === 'true'
+      property.full_address = property.full_address === 'true'
+
+      if (property.status === 'ONLINE') {
+        property.status = STATUS_ACTIVE
+      } else if (property.status === 'OFFLINE') {
+        property.status = STATUS_EXPIRE
+      }
+
+      if (property.basement === 'JA') {
+        property.basement = true
       }
     })
     return properties
@@ -354,7 +392,7 @@ class OpenImmoReader {
       data = await fsPromises.readFile(dfile)
       let json = this.extractJson(data)
       let properties = []
-      if ((json = this.validate(json))) {
+      if (json && this.validate(json)) {
         properties = this.processProperties(json)
         properties = this.parseMultipleValuesWithOptions(properties)
         properties = this.parseSingleValues(properties)
@@ -368,16 +406,20 @@ class OpenImmoReader {
     }
   }
 
-  async processXml(xml) {
+  async processXml(xmls) {
     try {
-      let json = this.extractJson(xml)
       let properties = []
-      if ((json = this.validate(json))) {
-        properties = this.processProperties(json)
-        properties = this.parseMultipleValuesWithOptions(properties)
-        properties = this.parseSingleValues(properties)
-        properties = this.processEnergyPass(properties)
-        properties = await this.processImages(properties)
+      for (let i = 0; i < xmls.length; i++) {
+        let property
+        let json = this.extractJson(xmls[i])
+        if (json && this.validate(json)) {
+          property = this.processProperties(json)
+          property = this.parseMultipleValuesWithOptions(property)
+          property = this.parseSingleValues(property)
+          property = this.processEnergyPass(property)
+          property = await this.processImages(property)
+          properties = [...properties, property[0]]
+        }
       }
       return properties
     } catch (err) {

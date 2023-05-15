@@ -290,10 +290,10 @@ class Estate extends Model {
         parseInt(instance.dirty.extra_costs) &&
         (parseInt(instance.dirty.heating_costs) || parseInt(instance.dirty.additional_costs))
       ) {
-        throw new HttpException(
-          'Cannot update extra_costs with heating and/or additional_costs',
-          422
-        )
+        // throw new HttpException(
+        //   'Cannot update extra_costs with heating and/or additional_costs',
+        //   422
+        // )
       } else if (instance.dirty.heating_costs || instance.dirty.additional_costs) {
         instance.extra_costs =
           (Number(instance.dirty.additional_costs) || Number(instance.additional_costs) || 0) +

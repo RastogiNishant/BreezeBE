@@ -457,7 +457,7 @@ class TaskService extends BaseService {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.select(ESTATE_FIELD_FOR_TASK).with('user')
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
@@ -539,7 +539,7 @@ class TaskService extends BaseService {
     const filter = new TaskFilters(param, query)
     query = filter.process()
 
-    query.orderBy('tasks.updated_at')
+    query.orderBy('tasks.updated_at', 'desc')
 
     if (!page || page === -1 || !limit || limit === -1) {
       return await query.fetch()
