@@ -366,10 +366,13 @@ class File {
 
       const writeFile = async (url, outputFileName) => {
         const response = await axios.get(url, { responseType: 'arraybuffer' })
+        Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
         return new Promise((resolve, reject) => {
           try {
             fs.writeFile(outputFileName, response.data, {}, resolve)
+            Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
           } catch (e) {
+            Logger.info(`failed to write ${url} at ${new Date().toISOString()} ${e.message}`)
             reject(err)
           }
         })
