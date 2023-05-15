@@ -33,10 +33,19 @@ class EstateSerializer extends BaseSerializer {
             ? File.getPublicUrl(
                 `thumbnail/${item.cover.split('/')[0]}/thumb_${item.cover.split('/')[1]}`
               )
-            : ''
+            : null
       }
 
       item.cover = File.getPublicUrl(item.cover)
+    } else if (item?.cover?.includes('http')) {
+      const splits = item.cover.split('/')
+      const len = splits?.len || 0
+      item.cover_thumb =
+        len > 3
+          ? File.getPublicUrl(
+              `thumbnail/${item.cover.split('/')[len - 2]}/thumb_${item.cover.split('/')[len - 1]}`
+            )
+          : null
     }
 
     if (isString(item.energy_proof) && !item.energy_proof.includes('http')) {
