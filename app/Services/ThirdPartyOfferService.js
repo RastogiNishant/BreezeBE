@@ -232,7 +232,7 @@ class ThirdPartyOfferService {
           },
           pets_allowed: {
             type: 'boolean',
-            value: 'Haustier',
+            value: 'Haustiere',
           },
           sauna: {
             type: 'boolean',
