@@ -129,7 +129,7 @@ class ThirdPartyOfferService {
       ACL: 'public-read',
     }
     await s3.copyObject(params).promise()
-    return Drive.disk('s3public').getUrl(filePathName)
+    return File.getPublicUrl(filePathName)
   }
 
   static async getFilesAndLastModified() {
