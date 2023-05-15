@@ -49,9 +49,8 @@ class ThirdPartyOfferService {
   static async pullOhneMakler(forced = false) {
     if (!forced) {
       if (
-        process.env.PROCESS_OHNE_MAKLER_GET_ESTATES === undefined ||
-        (process.env.PROCESS_OHNE_MAKLER_GET_ESTATES !== undefined &&
-          !+process.env.PROCESS_OHNE_MAKLER_GET_ESTATES)
+        process.env.PULL_OHNE_MAKLER === undefined ||
+        (process.env.PULL_OHNE_MAKLER !== undefined && !+process.env.PULL_OHNE_MAKLER)
       ) {
         console.log('not pulling ohne makler...')
         return
@@ -124,23 +123,50 @@ class ThirdPartyOfferService {
     return Drive.disk('s3public').getUrl(filePathName)
   }
 
-  static async pullGewobag() {
-    console.log('start pulling gewobag...')
-    const xml = await File.getGewobagUploadedContent()
+  static async getFilesAndLastModified() {
+    let gewobagFiles = await ThirdPartyOffer.query()
+      .select(Database.raw(`CONCAT("source_id", '.xml') as key`))
+      .select('ftp_last_update')
+      .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+      .fetch()
+    return await gewobagFiles.toJSON().reduce(
+      (files, file) => ({
+        ...files,
+        [file.key]: moment(new Date(file.ftp_last_update)).utc().format(),
+      }),
+      {}
+    )
+  }
+
+  static async pullGewobag(forced = false) {
+    if (!forced) {
+      if (
+        process.env.PULL_GEWOBAG === undefined ||
+        (process.env.PULL_GEWOBAG !== undefined && !+process.env.PULL_GEWOBAG)
+      ) {
+        console.log('not pulling gewobag...')
+        return
+      }
+    }
+    console.log('pulling gewobag...')
+    const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
+    const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
-    await Promise.map(properties, async (estate) => {
+    await Promise.map(properties.slice(0, 5), async (estate) => {
       let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
       sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
       //FIXME: create a map for this:
       let newEstate = {
         source: 'gewobag',
         source_information: JSON.stringify(sourceInformation),
+        source_id: estate.source_id,
         country: estate.country,
         house_number: estate.house_number,
         street: estate.street,
         city: estate.city,
         address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
+        contact: JSON.stringify({ email: estate.contact }),
         floor: Number(estate.floor),
         number_floors: Number(estate.number_floors),
         bathrooms: estate.bathrooms_number,
@@ -148,7 +174,7 @@ class ThirdPartyOfferService {
         area: Math.round(estate.area),
         construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
         energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
-        vacant_date: estate.vacant_date,
+        vacant_date: moment(new Date(estate.vacant_date)).format(),
         additional_costs: Number(estate.additional_costs),
         net_rent: Number(estate.net_rent),
         property_type: estate.property_type,
@@ -160,36 +186,104 @@ class ThirdPartyOfferService {
         heating_type: estate.heating_type,
         firing: estate.firing,
         zip: estate.zip,
-        status: STATUS_ACTIVE,
+        status: estate.status,
         full_address: true,
         wbs: estate.wbs,
+        property_id: estate.property_id,
+        ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
       }
-      let images = []
-      for (let i = 0; i < estate.images.length; i++) {
-        if (estate.images[i].format.match(/^image/)) {
-          const imageFile = await Drive.disk('breeze-ftp-files').getObject(
-            estate.images[i].file_name
-          )
-          const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
-            estate.images[i],
-            imageFile.Body
-          )
-          images = [
-            ...images,
-            {
-              picture: {
-                picture_url: imageUrl,
-                picture_title: '',
-              },
-            },
-          ]
+      //amenities:
+      const amenityKeys = {
+        balconies_number: {
+          type: 'numeric',
+          value: 'Balkon',
+        },
+        barrier_free: {
+          type: 'boolean',
+          value: 'Barrierefrei',
+        },
+        basement: {
+          type: 'boolean',
+          value: 'Keller',
+        },
+        chimney: {
+          type: 'boolean',
+          value: 'Kamin',
+        },
+        garden: {
+          type: 'boolean',
+          value: 'Garten',
+        },
+        guest_toilet: {
+          type: 'boolean',
+          value: 'Gäste-WC',
+        },
+        sauna: {
+          type: 'boolean',
+          value: 'Sauna',
+        },
+        swimmingpool: {
+          type: 'boolean',
+          value: 'Pool / Schwimmbad',
+        },
+        terraces_number: {
+          type: 'numeric',
+          value: 'Terrasse',
+        },
+        wintergarten: {
+          type: 'boolean',
+          value: 'Wintergarten',
+        },
+      }
+      let amenities = []
+      for (const [key, value] of Object.entries(amenityKeys)) {
+        if (value.type === 'numeric' && estate[key] > 0) {
+          amenities = [...amenities, value.value]
+        } else if (value.type === 'boolean' && estate[key] === true) {
+          amenities = [...amenities, value.value]
         }
       }
+      newEstate.amenities = amenities
+      let images = []
+      for (let i = 0; i < estate.images.length; i++) {
+        const imageFile = await Drive.disk('breeze-ftp-files').getObject(estate.images[i].file_name)
+        const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
+          estate.images[i],
+          imageFile.Body
+        )
+        images = [
+          ...images,
+          {
+            picture: {
+              picture_url: imageUrl,
+              picture_title: '',
+            },
+          },
+        ]
+      }
       newEstate.images = JSON.stringify(images)
-      const result = await ThirdPartyOffer.createItem(newEstate)
-      require('./QueueService').getThirdPartyCoords(result.id)
-      console.log('pulling gewobag finished...')
+      const estateFound = await ThirdPartyOffer.query()
+        .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
+        .where('source_id', estate.source_id)
+        .first()
+      try {
+        let result
+        if (estateFound) {
+          await estateFound.updateItem(newEstate)
+          if (estateFound.address !== newEstate.address) {
+            require('./QueueService').getThirdPartyCoords(estateFound.id)
+          }
+        } else {
+          result = await ThirdPartyOffer.createItem(newEstate)
+          require('./QueueService').getThirdPartyCoords(result.id)
+        }
+      } catch (e) {
+        console.log(e)
+        console.log('error', newEstate)
+      }
     })
+    console.log('finished pulling gewobag...')
+    return true
   }
 
   static async expireWhenNotOnSourceIds(sourceIds) {

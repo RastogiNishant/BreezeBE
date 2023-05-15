@@ -55,6 +55,8 @@ class ThirdPartyOffer extends Model {
       'firing',
       'source_information',
       'wbs',
+      'property_id',
+      'ftp_last_update',
     ]
   }
 

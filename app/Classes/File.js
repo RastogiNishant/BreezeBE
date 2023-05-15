@@ -18,7 +18,7 @@ const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
 const heicConvert = require('heic-convert')
 const axios = require('axios')
-const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp/uploads'
 
 class File {
   static IMAGE_JPG = 'image/jpg'
@@ -359,31 +359,18 @@ class File {
 
   static async saveFileTo({ url, ext = 'jpg' }) {
     try {
-      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const TEMP_PATH = PDF_TEMP_PATH
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
       Logger.info(`bucket URL ${url}`)
       Logger.info(`Local path ${outputFileName}`)
 
       const writeFile = async (url, outputFileName) => {
-        const writer = fs.createWriteStream(outputFileName)
         const response = await axios.get(url, { responseType: 'arraybuffer' })
         return new Promise((resolve, reject) => {
-          if (response.data instanceof Buffer) {
-            writer.write(response.data)
-            resolve(outputFileName)
-          } else {
-            response.data.pipe(writer)
-            let error = null
-            writer.on('error', (err) => {
-              error = err
-              writer.close()
-              reject(err)
-            })
-            writer.on('close', () => {
-              if (!error) {
-                resolve(outputFileName)
-              }
-            })
+          try {
+            fs.writeFile(outputFileName, response.data, {}, resolve)
+          } catch (e) {
+            reject(err)
           }
         })
       }
@@ -395,7 +382,7 @@ class File {
     }
   }
 
-  static async getGewobagUploadedContent() {
+  static async getGewobagUploadedContent(filesWorked) {
     try {
       AWS.config.update({
         accessKeyId: Env.get('S3_KEY'),
@@ -409,13 +396,27 @@ class File {
         Delimiter: '/',
       }
       const objects = await s3.listObjects(params).promise()
-      let xml
+      let xmls = []
+      let filesLastModified = []
       for (let i = 0; i < objects.Contents.length; i++) {
-        if (objects.Contents[i].Key.match(/\.xml$/)) {
-          xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+        const fileLastModifiedOnRecord = filesWorked[objects.Contents[i].Key] || null
+        if (
+          objects.Contents[i].Key.match(/\.xml$/) &&
+          moment(new Date(objects.Contents[i].LastModified)).utc().format() !==
+            fileLastModifiedOnRecord
+        ) {
+          const xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+          xmls = [...xmls, xml]
+          filesLastModified = {
+            ...filesLastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+          }
         }
       }
-      return xml
+      return {
+        xml: xmls,
+        filesLastModified,
+      }
     } catch (err) {
       console.log('getGewobagUploadedContent', err)
       return []
