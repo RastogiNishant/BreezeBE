@@ -129,10 +129,11 @@ class ThirdPartyOfferService {
       ACL: 'public-read',
     }
     try {
-      const ret = await s3.copyObject(params).promise()
+      await s3.copyObject(params).promise()
       return File.getPublicUrl(filePathName)
     } catch (err) {
       console.log('err', err)
+      return false
     }
   }
 
@@ -270,15 +271,17 @@ class ThirdPartyOfferService {
             estate.images[i],
             s3
           )
-          images = [
-            ...images,
-            {
-              picture: {
-                picture_url: imageUrl,
-                picture_title: '',
+          if (imageUrl) {
+            images = [
+              ...images,
+              {
+                picture: {
+                  picture_url: imageUrl,
+                  picture_title: '',
+                },
               },
-            },
-          ]
+            ]
+          }
         }
         newEstate.images = JSON.stringify(images)
         const estateFound = await ThirdPartyOffer.query()
