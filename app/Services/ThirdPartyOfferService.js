@@ -171,7 +171,7 @@ class ThirdPartyOfferService {
         number_floors: Number(estate.number_floors),
         bathrooms: estate.bathrooms_number,
         rooms_number: Number(estate.rooms_number),
-        area: Math.round(estate.area),
+        area: Number(estate.area),
         construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
         energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
         vacant_date: moment(new Date(estate.vacant_date)).format(),
