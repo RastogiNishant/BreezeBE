@@ -38,15 +38,18 @@ class EstateSerializer extends BaseSerializer {
 
       item.cover = File.getPublicUrl(item.cover)
     } else if (item?.cover?.includes('http')) {
-      const splits = item.cover.split('/')
-      const len = splits?.length || 0
-
-      item.cover_thumb =
-        len > 3
-          ? File.getPublicUrl(
-              `thumbnail/${item.cover.split('/')[len - 2]}/thumb_${item.cover.split('/')[len - 1]}`
-            )
-          : null
+      if (!extraFields.includes('cover_thumb')) {
+        const splits = item.cover.split('/')
+        const len = splits?.length || 0
+        item.cover_thumb =
+          len > 3
+            ? File.getPublicUrl(
+                `thumbnail/${item.cover.split('/')[len - 2]}/thumb_${
+                  item.cover.split('/')[len - 1]
+                }`
+              )
+            : null
+      }
     }
 
     if (isString(item.energy_proof) && !item.energy_proof.includes('http')) {

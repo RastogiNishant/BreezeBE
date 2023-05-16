@@ -588,7 +588,7 @@ class EstateService {
     data = request ? request.all() : data
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
       status: STATUS_DRAFT,
     }
 
@@ -645,6 +645,12 @@ class EstateService {
         }
       }
 
+      updateData = {
+        ...estate.toJSON({
+          extraFields: ['verified_address', 'cover_thumb'],
+        }),
+        ...updateData,
+      }
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
