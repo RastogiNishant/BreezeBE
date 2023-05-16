@@ -6,7 +6,7 @@ const Base = require('./Base')
 class UnitSubscription extends Base {
   static schema = () =>
     yup.object().shape({
-      product_id: yup.string().required().required(),
+      product_id: yup.string().required(),
       quantity: yup.number().positive(),
     })
 }
