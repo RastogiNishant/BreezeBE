@@ -3,6 +3,7 @@
 const HttpException = require('../../Exceptions/HttpException')
 const Stripe = require('../../Classes/Stripe')
 const StripeService = use('App/Services/StripeService')
+const Logger = use('Logger')
 class StripeController {
   async getProducts({ request, response }) {
     response.res(await StripeService.getProducts())
