@@ -1422,13 +1422,13 @@ class UserService {
     }
   }
 
-  static emitAccountEnabled(ids = [], activated = true) {
+  static emitAccountEnabled(ids, data) {
     ids = !Array.isArray(ids) ? [ids] : ids
 
     ids.map((id) => {
       const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
       if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { activated })
+        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { ...data })
       }
     })
   }
