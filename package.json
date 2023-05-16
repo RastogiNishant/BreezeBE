@@ -13,7 +13,7 @@
     "start-dev": "NODE_OPTIONS='--max-old-space-size=8192' nodemon --ignore 'tmp/*.*' server.ts",
 		"start:track": "NODE_OPTIONS='--trace-warnings --max-old-space-size=8192' nodemon server.ts",
 		"dev": "DEBUG=query DEV=true adonis serve --dev",
-		"dev:win10": "set TZ=UTC && set DEBUG=query && set DEV=true && adonis serve --dev",
+		"dev:win10": "set NO_LOCALIZATION_PULL=true && set DEBUG=query && set DEV=true && adonis serve --dev",
 		"test": "NODE_ENV=test node ace test",
 		"ace": "node ace",
 		"clear": "node ace app:clear",
@@ -119,6 +119,7 @@
 		"concurrently": "^6.0.0",
 		"jsonwebtoken": "^8.5.1",
 		"patch-package": "^6.5.1",
+		"ts-node": "^10.9.1",
 		"tsconfig-paths": "^4.2.0",
 		"typescript": "^5.0.4"
 	}
