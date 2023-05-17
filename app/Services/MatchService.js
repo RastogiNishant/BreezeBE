@@ -3581,7 +3581,7 @@ class MatchService {
           .innerJoin({ _m: 'matches' }, function () {
             this.on('_m.estate_id', 'estates.id')
               .onIn('_m.user_id', [userId])
-              .onIn('_m.status', MATCH_STATUS_NEW)
+              .onIn('_m.status', [MATCH_STATUS_NEW])
           })
           .whereNot('_m.buddy', true)
           .where('estates.status', STATUS_ACTIVE)

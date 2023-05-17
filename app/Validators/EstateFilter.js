@@ -37,7 +37,7 @@ const {
 class EstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
-      query: yup.string().min(2),
+      query: yup.string().min(2).nullable(),
       filter: yup
         .array()
         .of(

@@ -588,7 +588,7 @@ class EstateService {
     data = request ? request.all() : data
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
       status: STATUS_DRAFT,
     }
 
@@ -645,6 +645,12 @@ class EstateService {
         }
       }
 
+      updateData = {
+        ...estate.toJSON({
+          extraFields: ['verified_address', 'cover_thumb'],
+        }),
+        ...updateData,
+      }
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
@@ -1237,40 +1243,7 @@ class EstateService {
    */
 
   static getActiveMatchesQuery(userId) {
-    return Estate.query()
-      .select('estates.*')
-      .withCount('knocked')
-      .select(Database.raw(`_m.percent AS match`))
-      .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id')
-          .onIn('_m.user_id', [userId])
-          .onIn('_m.status', MATCH_STATUS_NEW)
-      })
-      .whereNot('_m.buddy', true)
-      .where('estates.status', STATUS_ACTIVE)
-      .whereNotIn('estates.id', function () {
-        // Remove already liked/disliked
-        this.select('estate_id')
-          .from('likes')
-          .where('user_id', userId)
-          .union(function () {
-            this.select('estate_id').from('dislikes').where('user_id', userId)
-          })
-      })
-      .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE).with('images')
-      })
-      .with('files')
-      .with('user', function (u) {
-        u.select('id', 'company_id')
-        u.with('company', function (c) {
-          c.select('id', 'avatar', 'name', 'visibility')
-          c.with('contacts', function (ct) {
-            ct.select('id', 'full_name', 'company_id')
-          })
-        })
-      })
-      .orderBy('_m.percent', 'DESC')
+    return this.getMachesQuery(Estate.query(), userId)
   }
 
   static async getTenantTrashEstates(userId) {
@@ -1333,6 +1306,42 @@ class EstateService {
     return trashedEstates
   }
 
+  static getMachesQuery(query, userId) {
+    return query
+      .select('estates.*')
+      .withCount('knocked')
+      .select(Database.raw(`_m.percent AS match`))
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id')
+          .onIn('_m.user_id', [userId])
+          .onIn('_m.status', [MATCH_STATUS_NEW])
+      })
+      .whereNot('_m.buddy', true)
+      .where('estates.status', STATUS_ACTIVE)
+      .whereNotIn('estates.id', function () {
+        // Remove already liked/disliked
+        this.select('estate_id')
+          .from('likes')
+          .where('user_id', userId)
+          .union(function () {
+            this.select('estate_id').from('dislikes').where('user_id', userId)
+          })
+      })
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
+      })
+      .with('files')
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+      .orderBy('_m.percent', 'DESC')
+  }
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
@@ -1359,45 +1368,7 @@ class EstateService {
       throw new AppException('Invalid match query')
     }
 
-    query.where({ status: STATUS_ACTIVE }).whereNotIn('estates.id', function () {
-      // Remove already liked/disliked
-      this.select('estate_id')
-        .from('likes')
-        .where('user_id', userId)
-        .union(function () {
-          this.select('estate_id').from('dislikes').where('user_id', userId)
-        })
-    })
-
-    query.whereNotIn('estates.id', function () {
-      // Remove already matched
-      this.select('estate_id')
-        .from('matches')
-        .whereNot('status', MATCH_STATUS_NEW)
-        .where('user_id', userId)
-    })
-
-    return (
-      query
-        .select('estates.*')
-        .withCount('knocked')
-        .with('rooms', function (b) {
-          b.whereNot('status', STATUS_DELETE).with('images')
-        })
-        .with('files')
-        .with('user', function (u) {
-          u.select('id', 'company_id')
-          u.with('company', function (c) {
-            c.select('id', 'avatar', 'name', 'visibility')
-            c.with('contacts', function (ct) {
-              ct.select('id', 'full_name', 'company_id')
-            })
-          })
-        })
-        .select(Database.raw(`'0' AS match`))
-        // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
-        .orderBy('estates.id', 'DESC')
-    )
+    return this.getMachesQuery(query, userId)
   }
 
   /**
@@ -2477,6 +2448,7 @@ class EstateService {
       user_id
     )
     totalCount = parseInt(insideNewMatchesCount) + parseInt(outsideNewMatchesCount)
+    console.log('insideNewMatchesCount=', insideNewMatchesCount)
     let enoughOfInsideMatch = false
     const offsetCount = insideNewMatchesCount % limit
     const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
@@ -2714,9 +2686,11 @@ class EstateService {
       }))
       await this.addManyFiles(newFiles, trx)
 
-      const newAmenities =
-        originalEstateData.amenities ||
-        [].map((amenity) => ({ ...omit(amenity, ['room_id']), estate_id: newEstate.id }))
+      const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
+        ...omit(amenity, ['room_id', 'id']),
+        estate_id: newEstate.id,
+      }))
+
       await Amenity.createMany(newAmenities, trx)
 
       await trx.commit()

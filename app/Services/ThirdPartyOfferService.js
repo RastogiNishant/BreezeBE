@@ -183,10 +183,10 @@ class ThirdPartyOfferService {
           number_floors: Number(estate.number_floors),
           bathrooms: estate.bathrooms_number,
           rooms_number: Number(estate.rooms_number),
-          area: Math.round(estate.area),
+          area: Number(estate.area),
           construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
           energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
-          vacant_date: moment(new Date(estate.vacant_date)).format(),
+          vacant_date: moment(new Date(estate.vacant_date)).format(DATE_FORMAT),
           additional_costs: Number(estate.additional_costs),
           net_rent: Number(estate.net_rent),
           property_type: estate.property_type,
@@ -263,7 +263,8 @@ class ThirdPartyOfferService {
         }
         newEstate.amenities = amenities
         let images = []
-        for (let i = 0; i < estate.images.length; i++) {
+        const estateImages = estate?.images || []
+        for (let i = 0; i < estateImages.length; i++) {
           const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
             estate.images[i],
             s3
