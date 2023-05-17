@@ -51,6 +51,7 @@ const {
   GERMAN_DATE_FORMAT,
   GEWOBAG_EMAIL_CONTENT,
   SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT,
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -616,7 +617,7 @@ class QueueJobService {
         textMessage: GEWOBAG_EMAIL_CONTENT,
         recipient:
           process.env.NODE_ENV === 'production'
-            ? estate.contact.email
+            ? GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL
             : process.env.GEWOBAG_CONTACT_EMAIL,
         bcc: process.env.NODE_ENV === 'production' ? process.env.GEWOBAG_CONTACT_EMAIL : null,
         subject:
