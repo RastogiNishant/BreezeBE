@@ -11,6 +11,7 @@ const Promise = require('bluebird')
 const uuid = require('uuid')
 const AWS = require('aws-sdk')
 const Env = use('Env')
+const l = use('Localize')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
@@ -23,6 +24,7 @@ const {
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
   PETS_NO,
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
+  DATE_FORMAT,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -234,7 +236,7 @@ class ThirdPartyOfferService {
           },
           pets_allowed: {
             type: 'boolean',
-            value: 'Haustiere',
+            value: l.get('web.letting.property.import.Pets_Allowed.message', 'de'),
           },
           sauna: {
             type: 'boolean',
