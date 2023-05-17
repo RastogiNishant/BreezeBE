@@ -22,6 +22,7 @@ const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
+const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
 } = require('../../../exceptions')
@@ -60,6 +61,7 @@ class PropertyController {
         'estates.user_id',
         '_u.user_id'
       )
+      .with('estateSyncListings')
       .withCount('visits')
       .with('final')
       .withCount('inviteBuddies')
@@ -154,15 +156,24 @@ class PropertyController {
     }
   }
 
+  async publishToMarketPlace(id, publishers = []) {
+    if (publishers && publishers.length > 0) {
+    }
+    QueueService.estateSyncPublishEstate({ estate_id: id })
+    return true
+  }
+
   async updatePublishStatus({ request, response }) {
     const { ids, action, publishers, id } = request.all()
     const trx = await Database.beginTransaction()
     let affectedRows
+    let ret
     switch (action) {
       case 'publish-marketplace':
-        break
+        ret = await this.publishToMarketPlace(id, publishers)
+        return ret
       case 'publish':
-        const ret = await this.publishEstate(id, publishers)
+        ret = await this.publishEstate(id, publishers)
         return response.res(ret)
       case 'unpublish':
         try {
