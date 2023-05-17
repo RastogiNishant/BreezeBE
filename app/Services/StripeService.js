@@ -49,6 +49,63 @@ class StripeService {
       throw new HttpException(SUBSCRIPTION_FAILED, 400)
     }
   }
+
+  static async handle(stripeData) {
+    if (!stripeData?.data?.object) {
+      throw new HttpException(Stripe.STRIPE_EXCEPTIONS.NOT_VALID_PARAM, 400)
+    }
+
+    const event = stripeData.type
+    const data = stripeData?.data?.object
+    switch (event) {
+      case Stripe.STRIPE_EVENTS.CUSTOMER_CREATED:
+        break
+      case Stripe.STRIPE_EVENTS.PAYMENT_SUCCEEDED:
+        break
+      case Stripe.STRIPE_EVENTS.SUBSCRIPTION_CREATED:
+        break
+      case Stripe.STRIPE_EVENTS.CHECKOUT_SESSION_COMPLETED:
+        await this.CheckoutSessionCompleted({
+          data,
+          livemode: stripeData.livemode,
+        })
+        break
+      case Stripe.STRIPE_EVENTS.CHECKOUT_ASYNC_PAYMENT_SUCCEEDED:
+        await this.createPayment({ data, livemode: stripeData.livemode })
+        break
+      //TODO: Implement refund to suspend using connect & match
+      default:
+        break
+    }
+  }
+
+  static async CheckoutSessionCompleted({ data, livemode }) {
+    //data.client_reference_id
+    if (data.complete !== Stripe.STRIPE_STATUS.COMPLETE) {
+      return
+    }
+
+    // if (data.client_reference_id && data.customer) {
+    //   await PaymentAccountService.saveCustomer({
+    //     user_id: data.client_reference_id,
+    //     account_id: data.customer,
+    //   })
+    // }
+
+    //TODO: Need to save payment information though it's draft, because it will be paid asynchronously , need to compare with payment_intent later
+
+    if (data.payment_status === Stripe.STRIPE_STATUS.PAID) {
+      this.createPayment({ data, livemode })
+    }
+  }
+
+  static async createPayment({ data, livemode = false }) {
+    //TODO: need to save product info to env
+  }
+
+  static async createSubscription(data) {
+    //console.log('createSubscription=', data)
+  }
 }
 
 module.exports = StripeService
