@@ -51,6 +51,7 @@ const {
   GERMAN_DATE_FORMAT,
   GEWOBAG_EMAIL_CONTENT,
   SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT,
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -612,11 +613,17 @@ class QueueJobService {
         indent: '  ',
       }
       const attachment = Buffer.from(toXML(object, xmlOptions))
+      const recipient =
+        process.env.NODE_ENV === 'production'
+          ? GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL
+          : process.env.GEWOBAG_CONTACT_EMAIL
+
       MailService.sendEmailWithAttachment({
         textMessage: GEWOBAG_EMAIL_CONTENT,
-        recipient:
-          process.env.NODE_ENV === 'production'
-            ? estate.contact.email
+        recipient,
+        bcc:
+          recipient === process.env.GEWOBAG_CONTACT_EMAIL
+            ? null
             : process.env.GEWOBAG_CONTACT_EMAIL,
         subject:
           SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
