@@ -143,6 +143,7 @@ class PropertyController {
           publishers,
           performed_by: null,
         })
+        QueueService.estateSyncPublishEstate({ estate_id: id })
         return result
       } catch (e) {
         if (e.name === 'ValidationException') {
