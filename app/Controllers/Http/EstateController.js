@@ -441,20 +441,6 @@ class EstateController {
         [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
         estate.letting_type !== LETTING_TYPE_LET
       ) {
-        // Validate is Landlord fulfilled contacts
-
-        //Test whether estate is still published in MarketPlace
-        const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
-          .whereIn('status', [
-            ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
-            ESTATE_SYNC_LISTING_STATUS_POSTED,
-          ])
-          .where('estate_id', estate.id)
-          .first()
-        if (isCurrentlyPublishedInMarketPlace) {
-          throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400, 113210)
-        }
-
         try {
           await EstateService.publishEstate({
             estate,
