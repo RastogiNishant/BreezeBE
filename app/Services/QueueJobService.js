@@ -613,13 +613,18 @@ class QueueJobService {
         indent: '  ',
       }
       const attachment = Buffer.from(toXML(object, xmlOptions))
+      const recipient =
+        process.env.NODE_ENV === 'production'
+          ? GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL
+          : process.env.GEWOBAG_CONTACT_EMAIL
+
       MailService.sendEmailWithAttachment({
         textMessage: GEWOBAG_EMAIL_CONTENT,
-        recipient:
-          process.env.NODE_ENV === 'production'
-            ? GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL
+        recipient,
+        bcc:
+          recipient === process.env.GEWOBAG_CONTACT_EMAIL
+            ? null
             : process.env.GEWOBAG_CONTACT_EMAIL,
-        bcc: process.env.NODE_ENV === 'production' ? process.env.GEWOBAG_CONTACT_EMAIL : null,
         subject:
           SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
           moment(new Date()).utcOffset(2).format(GERMAN_DATE_TIME_FORMAT),
