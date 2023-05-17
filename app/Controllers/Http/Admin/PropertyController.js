@@ -156,9 +156,7 @@ class PropertyController {
     }
   }
 
-  async publishToMarketPlace(id, publishers = []) {
-    if (publishers && publishers.length > 0) {
-    }
+  async publishToMarketPlace(id) {
     QueueService.estateSyncPublishEstate({ estate_id: id })
     return true
   }
@@ -170,7 +168,7 @@ class PropertyController {
     let ret
     switch (action) {
       case 'publish-marketplace':
-        ret = await this.publishToMarketPlace(id, publishers)
+        ret = await this.publishToMarketPlace(id)
         return ret
       case 'publish':
         ret = await this.publishEstate(id, publishers)
