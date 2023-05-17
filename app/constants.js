@@ -1177,7 +1177,7 @@ Estates: [ESTATES]
   ],
 
   ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
-  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external', 'plan', 'custom', 'unassigned'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external', 'plan', 'custom'],
   ESTATE_SYNC_TITLE_TEMPLATES: {
     germany: {
       key: 'rooms_number Zimmer area m² apartmentType in city',
