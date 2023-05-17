@@ -403,6 +403,7 @@ const constants = {
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:mm',
+  GERMAN_DATE_FORMAT: 'DD.MM.YYYY',
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
 
@@ -428,6 +429,7 @@ const constants = {
     'number_floors',
   ],
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
+  SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
@@ -810,6 +812,7 @@ const constants = {
     'rooms_number',
     'number_floors',
     'city',
+    'cover',
     'coord_raw',
     'property_id',
     'address',
@@ -1103,9 +1106,11 @@ Estates: [ESTATES]
     'Heavily neglected',
   ],
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+  SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT: 'Breeze: Interessentenanfragen vom ',
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT: 'I am interested in this apartment.',
 
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  THIRD_PARTY_OFFER_SOURCE_GEWOBAG: 'gewobag',
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: [
     'Wohnung',
@@ -1135,17 +1140,24 @@ Estates: [ESTATES]
     family_size_min: 1,
     family_size_max: 2,
   },
-  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
+  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler', 'gewobag'],
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
     ohnemakler: {
       name: 'Ohne-makler.net',
       url: 'https://www.ohne-makler.net/',
       logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
     },
+    gewobag: {
+      name: 'Gewobag',
+      url: 'https://www.gewobag.de/',
+      logo: 'APP_URL/img/gewobag.png',
+    },
   },
   VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
-
+  GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL: ' wohnungshelden@breeze4me.net',
+  GEWOBAG_EMAIL_CONTENT: 'I interessiere mich für das Objekt.',
+  GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL: 30,
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
   THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
@@ -1184,6 +1196,13 @@ Estates: [ESTATES]
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT: 'immowelt',
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24: 'immobilienscout-24',
   ESTATE_SYNC_PUBLISH_PROVIDER_EBAY: 'ebay-kleinanzeigen',
+
+  ESTATE_SYNC_LISTING_STATUS_INITIALIZED: 3,
+  ESTATE_SYNC_LISTING_STATUS_POSTED: 5,
+  ESTATE_SYNC_LISTING_STATUS_PUBLISHED: 1,
+  ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND: 6,
+  ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE: 7,
+  ESTATE_SYNC_LISTING_STATUS_DELETED: 2,
 
   ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
   ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',

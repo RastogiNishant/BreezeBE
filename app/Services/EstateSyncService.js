@@ -4,14 +4,14 @@ const HttpException = require('../Exceptions/HttpException')
 const {
   ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE,
   ESTATE_SYNC_CREDENTIAL_TYPE_USER,
-  STATUS_ACTIVE,
-  ROLE_USER,
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING,
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
-  STATUS_DELETE,
-  STATUS_DRAFT,
-  STATUS_NEED_VERIFY,
-  STATUS_EXPIRE,
+  ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
+  ESTATE_SYNC_LISTING_STATUS_POSTED,
+  ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+  ESTATE_SYNC_LISTING_STATUS_DELETED,
+  ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
+  ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -65,7 +65,9 @@ class EstateSyncService {
           if (listingExists.find((list) => list.provider === publisher)) {
             await EstateSyncListing.query()
               .update({
-                status: estate_sync_property_id ? STATUS_DRAFT : STATUS_NEED_VERIFY,
+                status: estate_sync_property_id
+                  ? ESTATE_SYNC_LISTING_STATUS_POSTED
+                  : ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
                 performed_by,
                 estate_sync_property_id,
                 estate_sync_listing_id: null,
@@ -85,7 +87,9 @@ class EstateSyncService {
                 provider: publisher,
                 estate_id,
                 performed_by,
-                status: estate_sync_property_id ? STATUS_DRAFT : STATUS_NEED_VERIFY,
+                status: estate_sync_property_id
+                  ? ESTATE_SYNC_LISTING_STATUS_POSTED
+                  : ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
                 estate_sync_property_id,
               },
               trx
@@ -100,7 +104,7 @@ class EstateSyncService {
         .where('estate_id', estate_id)
         .update({
           estate_sync_property_id: null,
-          status: STATUS_DELETE,
+          status: ESTATE_SYNC_LISTING_STATUS_DELETED,
           estate_sync_listing_id: null,
           publish_url: null,
         })
@@ -110,9 +114,21 @@ class EstateSyncService {
     }
   }
 
+  static async isAlreadyPosted(estate_id) {
+    return !!(await EstateSyncListing.query()
+      .where('estate_id', estate_id)
+      .whereNotNull('estate_sync_property_id')
+      .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+      .first())
+  }
+
   static async postEstate({ estate_id }) {
     try {
       if (!estate_id) {
+        return
+      }
+
+      if (await this.isAlreadyPosted(estate_id)) {
         return
       }
 
@@ -142,10 +158,10 @@ class EstateSyncService {
         //make all with estate_id and estate_sync_property_id to draft
         await EstateSyncListing.query()
           .where('estate_id', estate.id)
-          .whereNot('status', STATUS_DELETE)
+          .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
           .update({
             estate_sync_property_id: resp.data.id,
-            status: STATUS_DRAFT,
+            status: ESTATE_SYNC_LISTING_STATUS_POSTED,
           })
       } else {
         //POSTING ERROR. Send websocket event
@@ -177,7 +193,7 @@ class EstateSyncService {
       const listings = await EstateSyncListing.query()
         .where('estate_id', estate_id)
         .whereNotNull('estate_sync_listing_id')
-        .where('status', STATUS_ACTIVE)
+        .where('status', ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE)
         .where('publishing_error', false) //we're going to process only those that didn't have error yet
         .fetch()
 
@@ -198,7 +214,7 @@ class EstateSyncService {
       const credential = await EstateSyncService.getBreezeEstateSyncCredential()
       let listings = await EstateSyncListing.query()
         .where('estate_sync_property_id', propertyId)
-        .where('status', STATUS_DRAFT)
+        .where('status', ESTATE_SYNC_LISTING_STATUS_POSTED)
         .where('posting_error', false)
         .whereNull('estate_sync_listing_id')
         .fetch()
@@ -268,7 +284,7 @@ class EstateSyncService {
       if (payload.type === 'delete') {
         await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
         const listings = await EstateSyncListing.query()
-          .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+          .whereIn('status', [ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE])
           .whereNotNull('estate_sync_listing_id')
           .fetch()
         if (!listings?.rows?.length && payload.propertyId) {
@@ -278,13 +294,16 @@ class EstateSyncService {
           await EstateSyncListing.query()
             .where('estate_sync_property_id', payload.propertyId)
             .update({
-              status: STATUS_DELETE,
+              status: ESTATE_SYNC_LISTING_STATUS_DELETED,
               estate_sync_property_id: null,
             })
           //add websocket call for all unpublished...
         }
       } else if (payload.type === 'set') {
-        await listing.updateItem({ publish_url: payload.publicUrl, status: STATUS_ACTIVE })
+        await listing.updateItem({
+          publish_url: payload.publicUrl,
+          status: ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+        })
         const estate = await Estate.query()
           .select('user_id')
           .select('property_id')
@@ -339,7 +358,7 @@ class EstateSyncService {
       } else if (payload.type === 'set') {
         //mark error
         await listing.updateItem({
-          status: STATUS_EXPIRE,
+          status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
           publishing_error: true,
           publishing_error_message: payload.failureMessage,
           publishing_error_type: 'set',
@@ -376,11 +395,18 @@ class EstateSyncService {
     }
   }
 
-  static async unpublishMultipleEstates(estate_ids) {
+  /* this is called by QueueService */
+  static async unpublishMultipleEstates(estate_ids, markListingsForDelete) {
     try {
+      if (markListingsForDelete) {
+        await EstateSyncService.markListingsForDelete(estate_ids)
+      }
       const listings = await EstateSyncListing.query()
         .select('estate_id')
-        .where('status', STATUS_ACTIVE)
+        .whereIn('status', [
+          ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
+          ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+        ])
         .whereIn('estate_id', estate_ids)
         .groupBy('estate_id')
         .fetch()
@@ -393,6 +419,17 @@ class EstateSyncService {
       )
     } catch (e) {
       Logger.use(`unpublishMultipleEstates error ${e.message}`)
+    }
+  }
+
+  static async markListingsForDelete(estateId) {
+    try {
+      await EstateSyncListing.query()
+        .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+        .whereIn('estate_id', Array.isArray(estateId) ? estateId : [estateId])
+        .update({ status: ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE })
+    } catch (e) {
+      Logger.use(`markListingsForDeletion error ${e.message}`)
     }
   }
 }

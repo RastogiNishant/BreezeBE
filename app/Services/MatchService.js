@@ -91,6 +91,7 @@ const {
   exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
+const QueueService = require('./QueueService')
 
 /**
  * Check is item in data range
@@ -499,8 +500,8 @@ class MatchService {
       // Max radius
       const trx = await Database.beginTransaction()
       try {
-        const insideMatches = await this.createNewMatches({ tenant, has_notification_sent }, trx)
-        const outsideMatches = await ThirdPartyMatchService.createNewMatches(
+        await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
@@ -508,7 +509,6 @@ class MatchService {
           trx
         )
         await trx.commit()
-        count = insideMatches?.length + outsideMatches?.length
       } catch (e) {
         console.log('matchByUser error', e.message)
         await trx.rollback()
@@ -519,6 +519,7 @@ class MatchService {
       message = e.message
     } finally {
       const matches = await EstateService.getTenantEstates({ user_id: userId, page: 1, limit: 20 })
+      count = matches?.count || 0
       await this.emitCreateMatchCompleted({
         user_id: userId,
         data: {
@@ -583,7 +584,11 @@ class MatchService {
         if (
           oldMatches.find((o) => o.user_id === match.user_id && o.estate_id === match.estate_id)
         ) {
-          await Match.updateItemWithTrx(match, trx)
+          await Match.query()
+            .where('user_id', match.user_id)
+            .where('estate_id', match.estate_id)
+            .update({ percent: match.percent })
+            .transacting(trx)
         } else {
           await Match.createItem(match, trx)
         }
@@ -1612,6 +1617,8 @@ class MatchService {
 
     // need to make previous tasks which was between landlord and previous tenant archived
     await require('./TaskService').archiveTask(estate_id, trx)
+    // unpublish estates on marketplace
+    QueueService.estateSyncUnpublishEstates([estate_id], true)
 
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
@@ -3574,7 +3581,7 @@ class MatchService {
           .innerJoin({ _m: 'matches' }, function () {
             this.on('_m.estate_id', 'estates.id')
               .onIn('_m.user_id', [userId])
-              .onIn('_m.status', MATCH_STATUS_NEW)
+              .onIn('_m.status', [MATCH_STATUS_NEW])
           })
           .whereNot('_m.buddy', true)
           .where('estates.status', STATUS_ACTIVE)

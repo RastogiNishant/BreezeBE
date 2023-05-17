@@ -72,6 +72,7 @@ const commands = [
   'App/Commands/ClearCache',
   'App/Commands/Recalc',
   'App/Commands/PullOhnemakler',
+  'App/Commands/PullGewobag',
 ]
 
 const http = {

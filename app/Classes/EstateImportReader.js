@@ -11,6 +11,7 @@ const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
+const Logger = use('Logger')
 
 class EstateImportReader {
   validHeaderVars = [
@@ -111,8 +112,8 @@ class EstateImportReader {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
     } catch (e) {
-      console.log('Excel parse error', e.message)
-      throw new HttpException('File upload failed. please try again', 400)
+      Logger.error('Excel parse error', e.message)
+      throw new HttpException('Excel parse failed. please try again', 400)
     }
   }
 

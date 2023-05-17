@@ -412,8 +412,7 @@ class UserService {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
-      const data = await UserService.getTokenWithLocale([user.id])
-      const lang = data && data.length && data[0].lang ? data[0].lang : user.lang
+      const lang = await UserService.getUserLang([user.id])
       const forgotLink = await UserService.getForgotShortLink(from_web)
 
       if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
@@ -508,8 +507,7 @@ class UserService {
 
     await DataStorage.remove(user.id, 'confirm_email')
 
-    const localData = await UserService.getTokenWithLocale([user.id])
-    const lang = localData && localData.length && localData[0].lang ? localData[0].lang : user.lang
+    const lang = await UserService.getUserLang([user.id])
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
@@ -678,8 +676,16 @@ class UserService {
     )
   }
 
-  static async getUserLang(userIds) {
-    const data = await this.getTokenWithLocale(userIds)
+  static async getUserLang(userIds, limit = 500) {
+    if (isEmpty(userIds)) {
+      return []
+    }
+    userIds = uniq(userIds)
+    const data = await Database.table('users')
+      .select(Database.raw(`COALESCE(lang, ?) AS lang`, DEFAULT_LANG), 'id')
+      .whereIn('id', Array.isArray(userIds) ? userIds : [userIds])
+      .limit(Math.min(userIds.length, limit))
+
     const lang = data?.[0]?.lang || DEFAULT_LANG
     return lang
   }
@@ -891,9 +897,7 @@ class UserService {
 
   static async sendSMS(userId, phone, paramLang) {
     const code = random.int(1000, 9999)
-    const data = await UserService.getTokenWithLocale([userId])
-
-    const lang = paramLang ? paramLang : data && data.length && data[0].lang ? data[0].lang : 'en'
+    const lang = await UserService.getUserLang([userId])
 
     const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
     await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
@@ -1418,13 +1422,13 @@ class UserService {
     }
   }
 
-  static emitAccountEnabled(ids = [], activated = true) {
+  static emitAccountEnabled(ids, data) {
     ids = !Array.isArray(ids) ? [ids] : ids
 
     ids.map((id) => {
       const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
       if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { activated })
+        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { ...data })
       }
     })
   }

@@ -24,6 +24,7 @@ const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const Database = use('Database')
+const Promise = require('bluebird')
 const randomstring = require('randomstring')
 const l = use('Localize')
 const {
@@ -91,6 +92,7 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
+const EstateSyncService = require('../../Services/EstateSyncService')
 
 class EstateController {
   /**
@@ -134,13 +136,23 @@ class EstateController {
    */
   async updateEstate({ request, auth, response }) {
     const { id } = request.all()
-    const estate = await Estate.findOrFail(id)
-    if (estate.user_id !== auth.user.id) {
-      throw new HttpException('Not allow', 403)
-    }
+    try {
+      const estate = await Estate.findOrFail(id)
+      if (estate.user_id !== auth.user.id) {
+        throw new HttpException('Not allow', 403)
+      }
 
-    const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
-    response.res(newEstate)
+      await EstateService.updateEstate({ request, user_id: auth.user.id })
+
+      const estates = await EstateService.getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id },
+      })
+      response.res(estates.data?.[0])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   async landlordTenantDetailInfo({ request, auth, response }) {
@@ -463,8 +475,9 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
+      await EstateSyncService.markListingsForDelete(estate.id)
       //unpublish estate from estate_sync
-      QueueService.estateSyncUnpublishEstates([id])
+      QueueService.estateSyncUnpublishEstates([id], false)
     }
 
     response.res(
@@ -783,7 +796,7 @@ class EstateController {
     estate = estate.toJSON({
       isShort: true,
       role: auth.user.role,
-      extraFields: ['landlord_type', 'hash'],
+      extraFields: ['landlord_type', 'hash', 'property_type'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
     response.res(estate)
@@ -1126,7 +1139,7 @@ class EstateController {
     const { id } = request.all()
     try {
       const affectedRows = await EstateService.deleteEstates(id, auth.user.id)
-      QueueService.estateSyncUnpublishEstates(id)
+      QueueService.estateSyncUnpublishEstates(id, true)
       response.res({ deleted: affectedRows })
     } catch (error) {
       throw new HttpException(error.message, 422, 1101230)
@@ -1237,6 +1250,15 @@ class EstateController {
     const { id } = request.all()
     try {
       response.res(await EstateService.createShareLink(auth.user.id, id))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500, e.code || 0)
+    }
+  }
+
+  async duplicateEstate({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateService.duplicateEstate(auth.user.id, id))
     } catch (e) {
       throw new HttpException(e.message, e.status || 500, e.code || 0)
     }
