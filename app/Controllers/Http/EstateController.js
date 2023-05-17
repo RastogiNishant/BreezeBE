@@ -62,6 +62,8 @@ const {
   LOG_TYPE_PUBLISHED_PROPERTY,
   ROLE_LANDLORD,
   IMPORT_ACTION_IMPORT,
+  ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+  ESTATE_SYNC_LISTING_STATUS_POSTED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -443,7 +445,10 @@ class EstateController {
 
         //Test whether estate is still published in MarketPlace
         const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
-          .whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
+          .whereIn('status', [
+            ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+            ESTATE_SYNC_LISTING_STATUS_POSTED,
+          ])
           .where('estate_id', estate.id)
           .first()
         if (isCurrentlyPublishedInMarketPlace) {
