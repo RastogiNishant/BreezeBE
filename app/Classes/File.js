@@ -363,10 +363,10 @@ class File {
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
       Logger.info(`bucket URL ${url}`)
       Logger.info(`Local path ${outputFileName}`)
+      const response = await axios.get(url, { responseType: 'arraybuffer' })
+      Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
 
       const writeFile = async (url, outputFileName) => {
-        const response = await axios.get(url, { responseType: 'arraybuffer' })
-        Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
         return new Promise((resolve, reject) => {
           try {
             fs.writeFile(outputFileName, response.data, {}, resolve)
@@ -380,8 +380,8 @@ class File {
       await writeFile(url, outputFileName)
       return outputFileName
     } catch (e) {
-      Logger.error(`File upload error ${e.message}`)
-      throw new HttpException('File upload failed. Please try again', 400)
+      Logger.error(`File saved error ${e.message}`)
+      throw new HttpException('File saved failed. Please try again', 400)
     }
   }
 

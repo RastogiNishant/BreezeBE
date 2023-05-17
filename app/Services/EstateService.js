@@ -2452,7 +2452,6 @@ class EstateService {
       user_id
     )
     totalCount = parseInt(insideNewMatchesCount) + parseInt(outsideNewMatchesCount)
-    console.log('insideNewMatchesCount=', insideNewMatchesCount)
     let enoughOfInsideMatch = false
     const offsetCount = insideNewMatchesCount % limit
     const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
