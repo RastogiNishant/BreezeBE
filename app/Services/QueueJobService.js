@@ -618,6 +618,7 @@ class QueueJobService {
           process.env.NODE_ENV === 'production'
             ? estate.contact.email
             : process.env.GEWOBAG_CONTACT_EMAIL,
+        bcc: process.env.NODE_ENV === 'production' ? process.env.GEWOBAG_CONTACT_EMAIL : null,
         subject:
           SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
           moment(new Date()).utcOffset(2).format(GERMAN_DATE_TIME_FORMAT),
