@@ -14,6 +14,10 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_SITE,
 } = require('../constants')
 
 const energyPassVariables = {
@@ -372,6 +376,16 @@ class OpenImmoReader {
 
       if (property.basement === 'JA') {
         property.basement = true
+      }
+
+      if (property.apt_type) {
+        property.property_type = PROPERTY_TYPE_APARTMENT
+      } else if (property.house_type) {
+        property.property_type = PROPERTY_TYPE_HOUSE
+      } else if (property.room_type) {
+        property.property_type = PROPERTY_TYPE_ROOM
+      } else if (property.site_type) {
+        property.property_type = PROPERTY_TYPE_SITE
       }
     })
     return properties
