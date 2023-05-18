@@ -81,7 +81,7 @@ class StripeService {
   }
 
   static async handle(stripeData) {
-    Logger.info(`stripe webhook payload ${JSON.stringify(data)}`)
+    Logger.info(`stripe webhook payload ${JSON.stringify(stripeData)}`)
     if (!stripeData?.data?.object) {
       throw new HttpException(Stripe.STRIPE_EXCEPTIONS.NOT_VALID_PARAM, 400)
     }
