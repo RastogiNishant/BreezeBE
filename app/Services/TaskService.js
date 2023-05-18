@@ -596,10 +596,7 @@ class TaskService extends BaseService {
 
     if (estate_id) {
       const finalMatch = await MatchService.getFinalMatch(estate_id)
-      if (!finalMatch) {
-        throw new HttpException('No final match yet for property', 400)
-      }
-      return finalMatch.user_id
+      return finalMatch?.user_id
     }
 
     if (role === ROLE_USER) {
