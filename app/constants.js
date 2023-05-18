@@ -951,6 +951,7 @@ const constants = {
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
+  WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1213,6 +1214,15 @@ Estates: [ESTATES]
   OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
   OUTSIDE_TENANT_INVITE_TYPE: 'outside_tenant_invitation',
   OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: 'outside_prospect_knock',
+
+  PAYMENT_METHOD_STRIPE: 'stripe',
+  PAYMENT_METHOD_PAYPAL: 'paypal',
+
+  PAID_PENDING_STATUS: 1,
+  PAID_PARTIALY_STATUS: 2,
+  PAID_COMPLETE_STATUS: 3,
+  PAID_REFUNDED: 4,
+  PAID_FAILED: 5,
 }
 
 module.exports = constants

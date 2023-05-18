@@ -6,6 +6,8 @@ class Stripe {
     CUSTOMER_CREATED: 'customer.created',
     CHECKOUT_SESSION_COMPLETED: 'checkout.session.completed',
     CHECKOUT_ASYNC_PAYMENT_SUCCEEDED: 'checkout.session.async_payment_succeeded',
+    CHECKOUT_SESSION_FAILED: 'checkout.session.async_payment_failed',
+    CHARGE_REFUNDED: 'charge.refunded',
   }
 
   static STRIPE_EXCEPTIONS = {
@@ -16,6 +18,7 @@ class Stripe {
     SUCCESS: 'succeeded',
     PAID: 'paid',
     COMPLETE: 'complete',
+    PENDING: 'pending',
   }
 
   static async verifyWebhook(data, signature) {
@@ -45,15 +48,18 @@ class Stripe {
     })
   }
 
-  static async createCheckoutSessions({ user_id, mode = 'payment', quantity = 1, prices }) {
-    const line_items = prices
+  static async createCheckoutSession({ user_id, mode = 'payment', prices }) {
     return await stripe.checkout.sessions.create({
       success_url: `${process.env.SITE_URL}/success`,
       cancel_url: `${process.env.SITE_URL}/cancel`,
-      line_items,
+      line_items: prices,
       client_reference_id: user_id,
       mode,
     })
+  }
+
+  static async getCheckoutSession(id) {
+    return await stripe.checkout.sessions.retrieve(id)
   }
 }
 

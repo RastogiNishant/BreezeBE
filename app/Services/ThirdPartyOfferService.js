@@ -23,6 +23,7 @@ const {
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
   PETS_NO,
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
+  DATE_FORMAT,
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')

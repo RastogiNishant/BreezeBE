@@ -787,8 +787,13 @@ class UserService {
     return await User.query().whereIn('id', ids).where({ role: role }).pluck('id')
   }
 
-  static async getById(id) {
-    return await User.query().where('id', id).firstOrFail()
+  static async getById(id, role) {
+    let query = User.query().where('id', id).whereNot('status', STATUS_DELETE)
+    if (role === ROLE_LANDLORD) {
+      query.where('role', ROLE_LANDLORD)
+      // query.where('activation_status', USER_ACTIVATION_STATUS_ACTIVATED)
+    }
+    return await query.first()
   }
 
   static async getByEmailWithRole(emails, role) {
