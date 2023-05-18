@@ -562,6 +562,9 @@ class QueueJobService {
       .join('tenants', 'tenants.user_id', 'users.id')
       .where('users.id', userId)
       .first()
+    if (!estate || !prospect) {
+      return
+    }
     const titleFromGender = (genderId) => {
       switch (genderId) {
         case GENDER_MALE:
