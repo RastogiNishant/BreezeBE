@@ -12,7 +12,7 @@ const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
 const Point = use('App/Models/Point')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
-const { createDynamicLink } = require('../../Libs/utils')
+const { createDynamicLink } = require('../Libs/utils')
 
 const {
   STATUS_ACTIVE,
