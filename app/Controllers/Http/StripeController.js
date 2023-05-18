@@ -10,8 +10,8 @@ class StripeController {
   }
 
   async createSubscription({ request, auth, response }) {
-    const { subscriptions } = request.all()
-    response.res(await StripeService.createSubscription({ user_id: auth.user.id, subscriptions }))
+    const { product_id } = request.all()
+    response.res(await StripeService.createSubscription({ user_id: auth.user.id, product_id }))
   }
 
   async webhook({ request, response }) {

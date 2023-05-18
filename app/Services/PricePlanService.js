@@ -12,7 +12,7 @@ class PricePlanService {
   }
 
   static async getPlanByProductId(product_ids) {
-    product_ids = Array.isArray(product_ids) ? product_ids : []
+    product_ids = Array.isArray(product_ids) ? product_ids : [product_ids]
     return (
       await PricePlan.query()
         .where('status', STATUS_ACTIVE)

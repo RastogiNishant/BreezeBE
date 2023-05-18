@@ -13,6 +13,10 @@ const {
   PAID_PARTIALY_STATUS,
   PAID_PENDING_STATUS,
   PAID_FAILED,
+  PAY_MODE_UPFRONT,
+  PAY_MODE_ONE_TIME,
+  PAY_MODE_RECURRING,
+  PAY_MODE_USAGE,
 } = require('../constants')
 const PricePlanService = use('App/Services/PricePlanService')
 const PaymentAccountService = use('App/Services/PaymentAccountService')
@@ -38,29 +42,28 @@ class StripeService {
     }))
   }
 
-  static async createSubscription({ user_id, subscriptions }) {
+  static async createSubscription({ user_id, product_id }) {
     try {
-      const paymentAccount = await UserService.getById(user_id, ROLE_LANDLORD)
-      if (!paymentAccount) {
+      const user = await UserService.getById(user_id, ROLE_LANDLORD)
+      if (!user) {
         return null
       }
 
-      const product_ids = subscriptions.map((subscription) => subscription.product_id)
-      const pricePlans = await PricePlanService.getPlanByProductId(product_ids)
+      let pricePlans = await PricePlanService.getPlanByProductId(product_id)
 
       if (!pricePlans?.length) {
         throw new HttpException(NO_PRODUCTS_EXIST, 400)
       }
 
-      const mode = pricePlans.find((price) => !price.one_time_pay) ? 'subscription' : 'payment'
+      pricePlans = pricePlans.filter((price) => price.mode !== PAY_MODE_ONE_TIME)
+
+      const mode = pricePlans.find((price) => price.mode === PAY_MODE_UPFRONT)
+        ? 'payment'
+        : 'subscription'
       const prices = pricePlans.map((price) => {
-        const quantity =
-          subscriptions.filter((subscription) => subscription.product_id === price.product_id)?.[0]
-            ?.quantity || 1
-        if (price?.one_time_pay) return { price: price.price_id, quantity }
+        if (price.mode !== PAY_MODE_USAGE) return { price: price.price_id, quantity: 1 }
         return { price: price.price_id }
       })
-
       const checkoutSession = await Stripe.createCheckoutSession({
         user_id,
         mode,
@@ -87,7 +90,7 @@ class StripeService {
 
     let data = stripeData?.data?.object
     data.client_reference_id = 13
-
+    Logger.info(`stripe webhook payload ${data}`)
     switch (event) {
       case Stripe.STRIPE_EVENTS.CUSTOMER_CREATED:
         break

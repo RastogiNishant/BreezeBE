@@ -8,7 +8,7 @@ const { ROLE_USER, ROLE_LANDLORD } = require('../constants')
 class CreateSubscription extends Base {
   static schema = () =>
     yup.object().shape({
-      subscriptions: yup.array().of(UnitSubscription.schema()).required(),
+      product_id: yup.string().required(),
     })
 }
 
