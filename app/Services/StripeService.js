@@ -81,6 +81,7 @@ class StripeService {
   }
 
   static async handle(stripeData) {
+    Logger.info(`stripe webhook payload ${JSON.stringify(data)}`)
     if (!stripeData?.data?.object) {
       throw new HttpException(Stripe.STRIPE_EXCEPTIONS.NOT_VALID_PARAM, 400)
     }
@@ -90,7 +91,6 @@ class StripeService {
 
     let data = stripeData?.data?.object
     data.client_reference_id = 13
-    Logger.info(`stripe webhook payload ${JSON.stringify(data)}`)
     switch (event) {
       case Stripe.STRIPE_EVENTS.CUSTOMER_CREATED:
         break
