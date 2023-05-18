@@ -12,6 +12,7 @@ const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
 const Point = use('App/Models/Point')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
+const { createDynamicLink } = require('../../Libs/utils')
 
 const {
   STATUS_ACTIVE,
@@ -574,6 +575,9 @@ class QueueJobService {
       }
       return null
     }
+    const deepLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}/type=THIRD_PARTY_KNOCKED&user_id=${userId}&estate_id=${third_party_offer_id}`
+    )
     const object = {
       openimmo_feedback: {
         version: '1.2.5',
@@ -589,7 +593,7 @@ class QueueJobService {
         objekt: {
           portal_obj_id: estate.id,
           oobj_id: estate.property_id,
-          expose_url: '',
+          expose_url: deepLink,
           vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
           strasse: `${estate.street} ${estate.house_number}`,
           ort: `${estate.zip} ${estate.city}`,
