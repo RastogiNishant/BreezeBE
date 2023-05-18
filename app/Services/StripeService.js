@@ -90,7 +90,7 @@ class StripeService {
 
     let data = stripeData?.data?.object
     data.client_reference_id = 13
-    Logger.info(`stripe webhook payload ${data}`)
+    Logger.info(`stripe webhook payload ${JSON.stringify(data)}`)
     switch (event) {
       case Stripe.STRIPE_EVENTS.CUSTOMER_CREATED:
         break

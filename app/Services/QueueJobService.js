@@ -648,7 +648,7 @@ class QueueJobService {
           .limit(3)
           .fetch()
       ).toJSON()
-      Logger.info(`fillMissingEstateInfo count ${estates.length}`)
+
       await Promise.map(
         estates,
         async (estate) => {
