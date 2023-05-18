@@ -91,7 +91,7 @@ class OAuthController {
       try {
         const { name } = ticket.getPayload()
         const [firstname, secondname] = name.split(' ')
-        await this.handleSignUp(
+        user = await this.handleSignUp(
           request,
           { ...ticket.getPayload(), email, google_id: googleId, firstname, secondname },
           SIGN_IN_METHOD_GOOGLE
@@ -168,6 +168,7 @@ class OAuthController {
         owner_id: user.id,
       })
     }
+    return user
   }
 
   async handleLogin(request, auth, user, method) {
@@ -233,7 +234,7 @@ class OAuthController {
     let user = await this.authorizeUser(email, role)
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
-        await this.handleSignUp(
+        user = await this.handleSignUp(
           request,
           { email, name: 'Apple User', firstname: 'User', secondname: 'Apple' },
           SIGN_IN_METHOD_APPLE
