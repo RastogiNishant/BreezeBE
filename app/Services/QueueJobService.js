@@ -576,7 +576,7 @@ class QueueJobService {
       return null
     }
     const deepLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}/type=THIRD_PARTY_KNOCKED&email=${prospect.email}&user_id=${userId}&estate_id=${third_party_offer_id}`
+      `${process.env.DEEP_LINK}/?type=THIRD_PARTY_KNOCKED&email=${prospect.email}&user_id=${userId}&estate_id=${third_party_offer_id}`
     )
     const object = {
       openimmo_feedback: {
