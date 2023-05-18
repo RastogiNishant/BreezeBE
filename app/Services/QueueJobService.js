@@ -12,6 +12,7 @@ const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
 const Point = use('App/Models/Point')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
+const { createDynamicLink } = require('../Libs/utils')
 
 const {
   STATUS_ACTIVE,
@@ -51,6 +52,7 @@ const {
   GERMAN_DATE_FORMAT,
   GEWOBAG_EMAIL_CONTENT,
   SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT,
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -560,6 +562,9 @@ class QueueJobService {
       .join('tenants', 'tenants.user_id', 'users.id')
       .where('users.id', userId)
       .first()
+    if (!estate || !prospect) {
+      return
+    }
     const titleFromGender = (genderId) => {
       switch (genderId) {
         case GENDER_MALE:
@@ -573,6 +578,9 @@ class QueueJobService {
       }
       return null
     }
+    const deepLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}/?type=THIRD_PARTY_KNOCKED&email=${prospect.email}&user_id=${userId}&estate_id=${third_party_offer_id}`
+    )
     const object = {
       openimmo_feedback: {
         version: '1.2.5',
@@ -588,7 +596,7 @@ class QueueJobService {
         objekt: {
           portal_obj_id: estate.id,
           oobj_id: estate.property_id,
-          expose_url: '',
+          expose_url: deepLink,
           vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
           strasse: `${estate.street} ${estate.house_number}`,
           ort: `${estate.zip} ${estate.city}`,
@@ -612,11 +620,17 @@ class QueueJobService {
         indent: '  ',
       }
       const attachment = Buffer.from(toXML(object, xmlOptions))
+      const recipient =
+        process.env.NODE_ENV === 'production'
+          ? GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL
+          : process.env.GEWOBAG_CONTACT_EMAIL
+
       MailService.sendEmailWithAttachment({
         textMessage: GEWOBAG_EMAIL_CONTENT,
-        recipient:
-          process.env.NODE_ENV === 'production'
-            ? estate.contact.email
+        recipient,
+        bcc:
+          recipient === process.env.GEWOBAG_CONTACT_EMAIL
+            ? null
             : process.env.GEWOBAG_CONTACT_EMAIL,
         subject:
           SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +

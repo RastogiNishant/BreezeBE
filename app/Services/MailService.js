@@ -760,7 +760,14 @@ class MailService {
     )
   }
 
-  static async sendEmailWithAttachment({ textMessage, recipient, subject, attachment, from }) {
+  static async sendEmailWithAttachment({
+    textMessage,
+    recipient,
+    bcc = null,
+    subject,
+    attachment,
+    from,
+  }) {
     const message = {
       to: recipient,
       from,
@@ -775,6 +782,9 @@ class MailService {
           content_id: 'breeze-attachment',
         },
       ],
+    }
+    if (bcc) {
+      message.bcc = bcc
     }
     return sgMail.send(message).then(
       () => {

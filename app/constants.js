@@ -1156,6 +1156,7 @@ Estates: [ESTATES]
   VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
   GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL: ' wohnungshelden@breeze4me.net',
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL: 'anfragen@gewobag.interessentenanfragen.de',
   GEWOBAG_EMAIL_CONTENT: 'I interessiere mich für das Objekt.',
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL: 30,
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
@@ -1177,7 +1178,7 @@ Estates: [ESTATES]
   ],
 
   ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
-  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external', 'plan', 'custom'],
   ESTATE_SYNC_TITLE_TEMPLATES: {
     germany: {
       key: 'rooms_number Zimmer area m² apartmentType in city',

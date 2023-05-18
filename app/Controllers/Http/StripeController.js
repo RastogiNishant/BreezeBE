@@ -3,6 +3,7 @@
 const HttpException = require('../../Exceptions/HttpException')
 const Stripe = require('../../Classes/Stripe')
 const StripeService = use('App/Services/StripeService')
+const Logger = use('Logger')
 class StripeController {
   async getProducts({ request, response }) {
     response.res(await StripeService.getProducts())
@@ -16,12 +17,14 @@ class StripeController {
   async webhook({ request, response }) {
     try {
       const stripeSignature = request.headers()['stripe-signature']
+      Logger.info(`Stripe signature ${stripeSignature}`)
+      Logger.info(`Stripe body ${request.raw()}`)
       const data = await Stripe.verifyWebhook(request.raw(), stripeSignature)
-      Logger.info(`Stripe webhook info`, data)
-      await StripeService.handle(data)
+      Logger.info(`Stripe webhook info ${JSON.stringify(data)}`)
+      //await StripeService.handle(data)
       response.res(true)
     } catch (e) {
-      // Logger.error(`stripe webhook error ${e.message}`)
+      Logger.error(`stripe webhook error ${e.message}`)
       throw new HttpException(e.message, 400)
     }
   }
