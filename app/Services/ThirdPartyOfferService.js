@@ -191,7 +191,7 @@ class ThirdPartyOfferService {
           vacant_date: moment(new Date(estate.vacant_date)).format(DATE_FORMAT),
           additional_costs: Number(estate.additional_costs),
           net_rent: Number(estate.net_rent),
-          property_type: estate.property_type,
+          property_type: 1, //estate.property_type, FIXME: this is currently mapped to apt_type
           heating_costs: Number(estate.heating_costs),
           extra_costs: +estate.heating_costs + +estate.additional_costs,
           building_status: estate.building_status,
