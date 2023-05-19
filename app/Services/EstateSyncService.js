@@ -199,10 +199,31 @@ class EstateSyncService {
 
       const credential = await EstateSyncService.getBreezeEstateSyncCredential()
       const estateSync = new EstateSync(credential.api_key)
-
-      await Promise.map(listings.rows, async (listing) => {
-        await estateSync.delete(listing.estate_sync_listing_id, 'listings')
-      })
+      if (listings.rows.length) {
+        await Promise.map(listings.rows, async (listing) => {
+          await estateSync.delete(listing.estate_sync_listing_id, 'listings')
+        })
+      } else {
+        //fix bug where property is initialized but not published
+        const notPublishedListing = await EstateSyncListing.query()
+          .where('estate_id', estate_id)
+          .where('status', ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE)
+          .first()
+        if (notPublishedListing) {
+          const ret = await estateSync.delete(
+            notPublishedListing.estate_sync_property_id,
+            'properties'
+          )
+          if (ret) {
+            await EstateSyncListing.query().where('estate_id', estate_id).update({
+              estate_sync_property_id: null,
+              status: ESTATE_SYNC_LISTING_STATUS_DELETED,
+              estate_sync_listing_id: null,
+              publish_url: null,
+            })
+          }
+        }
+      }
     } catch (e) {
       console.log('unpublishEstate error', e.message)
     }

@@ -144,7 +144,7 @@ class PropertyController {
           performed_by: null,
         })
         QueueService.estateSyncPublishEstate({ estate_id: id })
-        return result
+        return await EstateService.getByIdWithDetail(id)
       } catch (e) {
         if (e.name === 'ValidationException') {
           Logger.error(e)
@@ -183,6 +183,7 @@ class PropertyController {
             .whereIn('id', ids)
             .update({ status: STATUS_DRAFT }, trx)
           await trx.commit()
+          QueueService.estateSyncUnpublishEstates(ids, true)
           return response.res(affectedRows)
         } catch (error) {
           await trx.rollback()
