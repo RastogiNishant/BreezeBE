@@ -17,6 +17,7 @@ const {
   PAY_MODE_ONE_TIME,
   PAY_MODE_RECURRING,
   PAY_MODE_USAGE,
+  DAY_FORMAT,
 } = require('../constants')
 const PricePlanService = use('App/Services/PricePlanService')
 const PaymentAccountService = use('App/Services/PaymentAccountService')
@@ -96,7 +97,12 @@ class StripeService {
         break
       case Stripe.STRIPE_EVENTS.PAYMENT_SUCCEEDED:
         break
+      case Stripe.STRIPE_EVENTS.PAYMENT_INTENT_SUCCEEDED:
+        break
       case Stripe.STRIPE_EVENTS.SUBSCRIPTION_CREATED:
+        break
+      case Stripe.STRIPE_EVENTS.INVOICE_CREATED:
+        await this.invoiceCreated(data)
         break
       case Stripe.STRIPE_EVENTS.CHECKOUT_SESSION_COMPLETED:
         await this.checkoutSessionCompleted(data)
@@ -160,8 +166,9 @@ class StripeService {
       {
         user_id: data.client_reference_id,
         contract_id: data.id,
+        subscription_id: data.subscription,
         payment_method: PAYMENT_METHOD_STRIPE,
-        date: moment(data.created).format(DATE_FORMAT),
+        date: moment.utc(data.created * 1000).format(DATE_FORMAT),
         livemode: data.livemode,
         status,
       },
@@ -171,8 +178,9 @@ class StripeService {
     await OrderService.createOrder(
       {
         user_id: data.client_reference_id,
-        contract_id: data.id,
-        date: moment(data.created).format(DATE_FORMAT),
+        subscription_id: data.subscription,
+        date: moment.utc(data.created * 1000).format(DATE_FORMAT),
+        start_at: moment.utc(data.created * 1000).format(DAY_FORMAT),
         livemode: data.livemode,
         status: status === STATUS_ACTIVE ? PAID_PARTIALY_STATUS : PAID_PENDING_STATUS,
       },
@@ -197,12 +205,16 @@ class StripeService {
       await ContractService.updateContract(
         {
           user_id: data.client_reference_id,
-          contract_id: data.id,
+          subscription_id: data.subscription,
+          subscription_id: data.id,
           status: STATUS_ACTIVE,
         },
         trx
       )
-      await OrderService.updateOrder({ contract_id: data.id, status: PAID_PARTIALY_STATUS }, trx)
+      await OrderService.updateOrder(
+        { subscription_id: data.id, status: PAID_PARTIALY_STATUS },
+        trx
+      )
 
       await trx.commit()
     } catch (e) {
@@ -212,6 +224,18 @@ class StripeService {
       await trx.rollback()
     }
   }
+
+  static async invoiceCreated(data) {
+    try {
+      await OrderService.addInvoice(data)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async paidByPaymentIntent(data) {}
+
+  static async paiddByCharge(data) {}
 
   static async refundOrder(data) {
     const paymentAccount = await PaymentAccountService.getByAccountId(data.customer)
@@ -233,7 +257,8 @@ class StripeService {
         },
         trx
       )
-      await OrderService.updateOrder({ contract_id: data.id, status: PAID_PENDING_STATUS }, trx)
+
+      //TODO: need to update order & bill status
 
       await trx.commit()
     } catch (e) {

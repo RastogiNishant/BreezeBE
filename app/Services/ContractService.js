@@ -27,6 +27,13 @@ class ContractService {
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .first()
   }
+
+  static async getContractBySubcription(subscription_id) {
+    return await Contract.query()
+      .where('subscription_id', subscription_id)
+      .whereNotIn('status', [STATUS_DELETE])
+      .first()
+  }
 }
 
 module.exports = ContractService

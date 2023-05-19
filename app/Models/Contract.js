@@ -11,6 +11,7 @@ class Contract extends Model {
       'id',
       'user_id',
       'contract_id',
+      'subscription_id',
       'customer_id', // only for stripe
       'payment_method',
       'date',

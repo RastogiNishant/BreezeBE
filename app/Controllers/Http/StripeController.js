@@ -25,6 +25,17 @@ class StripeController {
       throw new HttpException(e.message, 400)
     }
   }
+  async webhookTest({ request, response }) {
+    try {
+      const Stripe = require('../../Classes/Stripe')
+      const lineItems = await Stripe.getBoughtLineItems(
+        'cs_test_b1K7SQa3UuXSmYRpKnWBzLlZtclMfD8Y7oi81bRXajRAhUiGmaSKqN82zR'
+      )
+      response.res(lineItems)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
 }
 
 module.exports = StripeController

@@ -1290,3 +1290,4 @@ Route.group(() => {
   .middleware(['auth:jwt,jwtLandlord'])
 
 Route.post('/api/webhooks/stripe', 'StripeController.webhook')
+Route.post('/api/webhooks/stripe/test', 'StripeController.webhookTest')
