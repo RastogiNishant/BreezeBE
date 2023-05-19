@@ -11,7 +11,7 @@ class StripeController {
 
   async createSubscription({ request, auth, response }) {
     const { product_id } = request.all()
-    response.res(await StripeService.createSubscription({ user_id: auth.user.id, product_id }))
+    response.res(await StripeService.createCheckoutSession({ user_id: auth.user.id, product_id }))
   }
 
   async webhook({ request, response }) {
@@ -22,6 +22,17 @@ class StripeController {
       response.res(true)
     } catch (e) {
       Logger.error(`stripe webhook error ${e.message}`)
+      throw new HttpException(e.message, 400)
+    }
+  }
+  async webhookTest({ request, response }) {
+    try {
+      const Stripe = require('../../Classes/Stripe')
+      const lineItems = await Stripe.getBoughtLineItems(
+        'cs_test_b1K7SQa3UuXSmYRpKnWBzLlZtclMfD8Y7oi81bRXajRAhUiGmaSKqN82zR'
+      )
+      response.res(lineItems)
+    } catch (e) {
       throw new HttpException(e.message, 400)
     }
   }
