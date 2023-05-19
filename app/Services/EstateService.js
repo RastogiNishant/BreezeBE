@@ -462,11 +462,11 @@ class EstateService {
   static async getEstateWithTenant(id, user_id) {
     const query = Estate.query()
       .select('estates.*', '_u.avatar')
-      .innerJoin({ _m: 'matches' }, function () {
+      .leftJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
         this.on('_m.status', MATCH_STATUS_FINISH)
       })
-      .innerJoin({ _u: 'users' }, '_m.user_id', '_u.id')
+      .leftJoin({ _u: 'users' }, '_m.user_id', '_u.id')
       .where('estates.id', id)
       .whereNotIn('estates.status', [STATUS_DELETE])
 
@@ -2447,7 +2447,6 @@ class EstateService {
       user_id
     )
     totalCount = parseInt(insideNewMatchesCount) + parseInt(outsideNewMatchesCount)
-    console.log('insideNewMatchesCount=', insideNewMatchesCount)
     let enoughOfInsideMatch = false
     const offsetCount = insideNewMatchesCount % limit
     const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1

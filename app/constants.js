@@ -951,6 +951,7 @@ const constants = {
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
+  WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1156,6 +1157,7 @@ Estates: [ESTATES]
   VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
   GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL: ' wohnungshelden@breeze4me.net',
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL: 'anfragen@gewobag.interessentenanfragen.de',
   GEWOBAG_EMAIL_CONTENT: 'I interessiere mich für das Objekt.',
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL: 30,
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
@@ -1177,7 +1179,7 @@ Estates: [ESTATES]
   ],
 
   ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
-  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external', 'plan', 'custom'],
   ESTATE_SYNC_TITLE_TEMPLATES: {
     germany: {
       key: 'rooms_number Zimmer area m² apartmentType in city',
@@ -1212,6 +1214,20 @@ Estates: [ESTATES]
   OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
   OUTSIDE_TENANT_INVITE_TYPE: 'outside_tenant_invitation',
   OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: 'outside_prospect_knock',
+
+  PAYMENT_METHOD_STRIPE: 'stripe',
+  PAYMENT_METHOD_PAYPAL: 'paypal',
+
+  PAID_PENDING_STATUS: 1,
+  PAID_PARTIALY_STATUS: 2,
+  PAID_COMPLETE_STATUS: 3,
+  PAID_REFUNDED: 4,
+  PAID_FAILED: 5,
+
+  PAY_MODE_UPFRONT: 1,
+  PAY_MODE_ONE_TIME: 2,
+  PAY_MODE_RECURRING: 3,
+  PAY_MODE_USAGE: 4,
 }
 
 module.exports = constants

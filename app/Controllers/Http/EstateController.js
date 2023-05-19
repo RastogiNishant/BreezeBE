@@ -383,10 +383,12 @@ class EstateController {
         })
         response.res(importItem)
       } else {
+        Logger.error(`${auth.user.id} Failed to upload to s3 bucket`)
         throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
       }
     } catch (e) {
       Logger.error(`${auth.user.id} Importing excel error ${e.message}`)
+      throw new HttpException(e.message, 400)
     }
   }
 
