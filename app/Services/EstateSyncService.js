@@ -145,7 +145,6 @@ class EstateSyncService {
       }
       const resp = await estateSync.postEstate({
         estate,
-        contactId: credential.estate_sync_contact_id,
       })
 
       let data = {
