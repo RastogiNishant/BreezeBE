@@ -181,7 +181,7 @@ class PropertyController {
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)
-            .update({ status: STATUS_DRAFT }, trx)
+            .update({ status: STATUS_DRAFT, is_published: false }, trx)
           await trx.commit()
           QueueService.estateSyncUnpublishEstates(ids, true)
           return response.res(affectedRows)
