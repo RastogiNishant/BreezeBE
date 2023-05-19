@@ -6,37 +6,23 @@ const Database = use('Database')
 const Order = use('App/Models/Order')
 const moment = require('moment')
 const { DAY_FORMAT, DATE_FORMAT } = require('../constants')
-const ContractService = require('./ContractService')
+const SubscriptionService = require('./SubscriptionService')
 const BillService = require('./BillService')
 class OrderService {
   static async createOrder(data, trx) {
     return await Order.createItem(data, trx)
   }
 
-  static async updateOrder(data, trx) {
-    return await Order.query()
-      .where('subscription_id', data.subscription_id)
-      .where('start_at', data.start_at)
-      .update(data)
-      .transacting(trx)
+  static async updateOrder(data) {
+    return await Order.query().where('invoice_id', data.invoice_id).update(data)
   }
 
-  static async getOrder({ subscription_id, start_at }) {
-    let query = Order.query()
-
-    if (subscription_id) {
-      query.where('subscription_id', subscription_id)
-    }
-
-    if (start_at) {
-      query.where('start_at', start_at)
-    }
-
-    return await query.first()
+  static async getOrderByInvoice(invoice_id) {
+    return await Order.query().where('invoice_id', invoice_id).first()
   }
 
-  static async addInvoice(data, trx) {
-    if (!data.subscription || !data.id) {
+  static async addInvoice(data) {
+    if (!data.id) {
       throw new HttpException('Invoice format is wrong', 400)
     }
 
@@ -57,36 +43,27 @@ class OrderService {
       )
       .format(DAY_FORMAT)
 
-    const order = await this.getOrder({ subscription_id: data.subscription, start_at })
     const trx = await Database.beginTransaction()
     try {
-      if (!order) {
-        const contract = await ContractService.getContractBySubcription(order.subscription_id)
-        await this.createOrder(
-          {
-            user_id: contract?.user_id,
-            subscription_id: data.subscription,
-            invoice_id: data.id,
-            date: moment.utc(data.created * 1000).format(DATE_FORMAT),
-            start_at,
-            end_at,
-            livemode: data.livemode,
-          },
-          trx
-        )
-      } else {
-        await this.updateOrder(
-          {
-            subscription_id: data.subscription,
-            invoice_id: data.id,
-            start_at,
-            end_at,
-          },
-          trx
+      if (boughtItems[0]?.subscription) {
+        const subscription = await SubscriptionService.getContractBySubcription(
+          boughtItems[0]?.subscription
         )
       }
+
+      await this.createOrder(
+        {
+          subscription_id: data.subscription,
+          invoice_id: data.id,
+          date: moment.utc(data.created * 1000).format(DATE_FORMAT),
+          start_at,
+          end_at,
+          livemode: data.livemode,
+        },
+        trx
+      )
       //TODO: create bill here
-      await BillService.createBill({ invoide_id, boughtItems }, trx)
+      await BillService.createBill({ invoice_id: data.id, data: boughtItems }, trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()

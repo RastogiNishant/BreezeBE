@@ -6,10 +6,11 @@ const Bill = use('App/Models/Bill')
 class BillService {
   static async createBill({ invoice_id, data }, trx) {
     data = Array.isArray(data) ? data : [data]
+
     const bills = data.map((item) => ({
       invoice_id,
-      bill_id: item.id,
-      price_id: item.price.id,
+      bill_id: item?.subscription_item,
+      price_id: item?.price?.id,
       status: PAID_PENDING_STATUS,
     }))
 

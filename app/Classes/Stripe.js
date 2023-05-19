@@ -9,6 +9,7 @@ class Stripe {
     CHECKOUT_SESSION_FAILED: 'checkout.session.async_payment_failed',
     CHARGE_REFUNDED: 'charge.refunded',
     INVOICE_CREATED: 'invoice.created',
+    INVOICE_PAID: 'invoice.paid',
     PAYMENT_INTENT_SUCCEEDED: 'payment_intent.succeeded',
   }
 

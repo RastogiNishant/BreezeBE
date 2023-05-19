@@ -18,11 +18,12 @@ const {
   PAY_MODE_RECURRING,
   PAY_MODE_USAGE,
   DAY_FORMAT,
+  PAID_COMPLETE_STATUS,
 } = require('../constants')
 const PricePlanService = use('App/Services/PricePlanService')
 const PaymentAccountService = use('App/Services/PaymentAccountService')
 const UserService = use('App/Services/UserService')
-const ContractService = require('./ContractService')
+const SubscriptionService = require('./SubscriptionService')
 const OrderService = require('./OrderService')
 const Database = use('Database')
 const Logger = use('Logger')
@@ -43,7 +44,7 @@ class StripeService {
     }))
   }
 
-  static async createSubscription({ user_id, product_id }) {
+  static async createCheckoutSession({ user_id, product_id }) {
     try {
       const user = await UserService.getById(user_id, ROLE_LANDLORD)
       if (!user) {
@@ -82,7 +83,7 @@ class StripeService {
   }
 
   static async handle(stripeData) {
-    Logger.info(`stripe webhook payload ${JSON.stringify(stripeData)}`)
+    //Logger.info(`stripe webhook payload ${JSON.stringify(stripeData)}`)
     if (!stripeData?.data?.object) {
       throw new HttpException(Stripe.STRIPE_EXCEPTIONS.NOT_VALID_PARAM, 400)
     }
@@ -104,18 +105,21 @@ class StripeService {
       case Stripe.STRIPE_EVENTS.INVOICE_CREATED:
         await this.invoiceCreated(data)
         break
+      case Stripe.STRIPE_EVENTS.INVOICE_PAID:
+        await this.invoicePaid(data)
+        break
       case Stripe.STRIPE_EVENTS.CHECKOUT_SESSION_COMPLETED:
         await this.checkoutSessionCompleted(data)
         break
       case Stripe.STRIPE_EVENTS.CHECKOUT_ASYNC_PAYMENT_SUCCEEDED:
-        await this.fillContract(data)
+        await this.fillSubscription(data)
         break
       case Stripe.CHECKOUT_SESSION_FAILED:
         await this.failedCheckoutSession(data)
         break
-      case Stripe.STRIPE_EVENTS.CHARGE_REFUNDED:
-        await this.refundOrder(data)
-        break
+      // case Stripe.STRIPE_EVENTS.CHARGE_REFUNDED:
+      //   await this.refundOrder(data)
+      //   break
       default:
         break
     }
@@ -141,12 +145,11 @@ class StripeService {
           trx
         )
       }
-
       //TODO: Need to save payment information though it's draft, because it will be paid asynchronously , need to compare with payment_intent later
       if (data.payment_status === Stripe.STRIPE_STATUS.PAID) {
-        await this.createContract({ data, status: STATUS_ACTIVE }, trx)
+        await this.createSubscription({ data, status: STATUS_ACTIVE }, trx)
       } else {
-        await this.createContract({ data, status: STATUS_DRAFT }, trx)
+        await this.createSubscription({ data, status: STATUS_DRAFT }, trx)
         /*
         - create order with paid amount
         - probably need to compare paid amount & sum of one time paid amount if a customer paid all amounts
@@ -160,13 +163,12 @@ class StripeService {
     }
   }
 
-  static async createContract({ data, status }, trx) {
-    //TODO: need to save product info to env
-    await ContractService.createContract(
+  static async createSubscription({ data, status }, trx) {
+    await SubscriptionService.createSubscription(
       {
         user_id: data.client_reference_id,
         contract_id: data.id,
-        subscription_id: data.subscription,
+        subscription_id: data?.subscription,
         payment_method: PAYMENT_METHOD_STRIPE,
         date: moment.utc(data.created * 1000).format(DATE_FORMAT),
         livemode: data.livemode,
@@ -175,20 +177,21 @@ class StripeService {
       trx
     )
 
-    await OrderService.createOrder(
-      {
-        user_id: data.client_reference_id,
-        subscription_id: data.subscription,
-        date: moment.utc(data.created * 1000).format(DATE_FORMAT),
-        start_at: moment.utc(data.created * 1000).format(DAY_FORMAT),
-        livemode: data.livemode,
-        status: status === STATUS_ACTIVE ? PAID_PARTIALY_STATUS : PAID_PENDING_STATUS,
-      },
-      trx
-    )
+    // await OrderService.createOrder(
+    //   {
+    //     user_id: data.client_reference_id,
+    //     contract_id: data.id,
+    //     subscription_id: data?.subscription,
+    //     date: moment.utc(data.created * 1000).format(DATE_FORMAT),
+    //     start_at: moment.utc(data.created * 1000).format(DAY_FORMAT),
+    //     livemode: data.livemode,
+    //     status: status === STATUS_ACTIVE ? PAID_PARTIALY_STATUS : PAID_PENDING_STATUS,
+    //   },
+    //   trx
+    // )
   }
 
-  static async fillContract(data) {
+  static async fillSubscription(data) {
     const trx = await Database.beginTransaction()
     try {
       if (data.client_reference_id && data.customer) {
@@ -202,20 +205,19 @@ class StripeService {
         )
       }
 
-      await ContractService.updateContract(
+      await SubscriptionService.updateSubscriptionByContractId(
         {
           user_id: data.client_reference_id,
-          subscription_id: data.subscription,
-          subscription_id: data.id,
+          contract_id: data.id,
+          subscription_id: data?.subscription,
           status: STATUS_ACTIVE,
         },
         trx
       )
-      await OrderService.updateOrder(
-        { subscription_id: data.id, status: PAID_PARTIALY_STATUS },
-        trx
-      )
-
+      // await OrderService.updateOrder(
+      //   { subscription_id: data.id, status: PAID_PARTIALY_STATUS },
+      //   trx
+      // )
       await trx.commit()
     } catch (e) {
       Logger.error(
@@ -233,9 +235,13 @@ class StripeService {
     }
   }
 
-  static async paidByPaymentIntent(data) {}
-
-  static async paiddByCharge(data) {}
+  static async invoicePaid(data) {
+    try {
+      await OrderService.updateOrder({ invoice_id: data.id, status: PAID_COMPLETE_STATUS })
+    } catch (e) {
+      Logger.error(`Invoice paid failed ${e.message}`)
+    }
+  }
 
   static async refundOrder(data) {
     const paymentAccount = await PaymentAccountService.getByAccountId(data.customer)
@@ -244,14 +250,14 @@ class StripeService {
     }
 
     const user_id = paymentAccount.user_id
-    const contract = await ContractService.getContractByUser(user_id)
+    const subscription = await SubscriptionService.getContractBySubcription(user_id)
     const trx = await Database.beginTransaction()
     try {
       //TODO: need to consider if all refunded
-      await ContractService.updateContract(
+      await SubscriptionService.updateContract(
         {
           user_id: data.client_reference_id,
-          contract_id: contract.contract_id,
+          subscription_id: subscription.subscription_id,
           livemode: data.livemode,
           status: STATUS_DELETE,
         },
@@ -271,16 +277,16 @@ class StripeService {
   static async failedCheckoutSession(data) {
     const trx = await Database.beginTransaction()
     try {
-      await ContractService.updateContract(
+      await SubscriptionService.updateSubscription(
         {
           user_id: data.client_reference_id,
-          contract_id: data.id,
+          subscription_id: data.subscription,
           livemode: data.livemode,
           status: STATUS_DELETE,
         },
         trx
       )
-      await OrderService.updateOrder({ contract_id: data.id, status: PAID_FAILED }, trx)
+
       await PaymentAccountService.deleteCustomer(
         { user_id: data.client_reference_id, contract_id: data.id },
         trx

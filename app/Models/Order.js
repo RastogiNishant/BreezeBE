@@ -9,7 +9,6 @@ class Order extends Model {
   static get columns() {
     return [
       'id',
-      'user_id',
       'subscription_id',
       'invoice_id',
       'date',

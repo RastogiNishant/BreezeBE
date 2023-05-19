@@ -7,10 +7,10 @@ class AddSubscriptionStartEndDateToOrderSchema extends Schema {
   up() {
     this.table('orders', (table) => {
       // alter table
-      table.date('start_at').notNullable().index()
-      table.date('end_at').notNullable().index()
-      table.string('subscription_id').notNullable().index()
-      table.string('invoice_id').notNullable().index()
+      table.date('start_at').index()
+      table.date('end_at').index()
+      table.string('subscription_id').index()
+      table.string('invoice_id').index()
       table.unique(['invoice_id'])
     })
   }

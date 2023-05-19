@@ -11,7 +11,7 @@ class StripeController {
 
   async createSubscription({ request, auth, response }) {
     const { product_id } = request.all()
-    response.res(await StripeService.createSubscription({ user_id: auth.user.id, product_id }))
+    response.res(await StripeService.createCheckoutSession({ user_id: auth.user.id, product_id }))
   }
 
   async webhook({ request, response }) {

@@ -9,12 +9,9 @@ class Bill extends Model {
   static get columns() {
     return [
       'id',
-      'order_id',
-      'bill_id',
+      'invoice_id',
+      'bill_id', // subscription_item in invoice.created. it will be used to create an invoice again for usage
       'price_id',
-      'amount',
-      'paid_amount',
-      'unit_amount',
       'status',
     ]
   }
