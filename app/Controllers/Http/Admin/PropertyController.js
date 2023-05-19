@@ -7,17 +7,26 @@ const {
   STATUS_EXPIRE,
   STATUS_DELETE,
   ROLE_LANDLORD,
+  LETTING_TYPE_LET,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   USER_ACTIVATION_STATUS_ACTIVATED,
   USER_ACTIVATION_STATUS_DEACTIVATED,
+  ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+  ESTATE_SYNC_LISTING_STATUS_POSTED,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const Promise = require('bluebird')
 const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
+const QueueService = use('App/Services/QueueService')
+const {
+  exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
+} = require('../../../exceptions')
+const AppException = require('../../../Exceptions/AppException')
 
 class PropertyController {
   async getProperties({ request, response }) {
@@ -52,6 +61,7 @@ class PropertyController {
         'estates.user_id',
         '_u.user_id'
       )
+      .with('estateSyncListings')
       .withCount('visits')
       .with('final')
       .withCount('inviteBuddies')
@@ -98,24 +108,72 @@ class PropertyController {
     return response.res(estate)
   }
 
+  async publishEstate(id, publishers) {
+    const estate = await Estate.query().where('id', id).whereNot('status', STATUS_DELETE).first()
+    if (!estate) {
+      throw new HttpException('Estate not found', 400, 113214)
+    }
+    if (
+      !estate.available_start_at ||
+      (!estate.is_duration_later && !estate.available_end_at) ||
+      (estate.is_duration_later && !estate.min_invite_count)
+    ) {
+      throw new HttpException('Estate is not completely filled', 400, 113215)
+    }
+    if (
+      [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+      estate.letting_type !== LETTING_TYPE_LET
+    ) {
+      // Validate is Landlord fulfilled contacts
+      //Test whether estate is still published in MarketPlace
+      const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
+        .whereIn('status', [
+          ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+          ESTATE_SYNC_LISTING_STATUS_POSTED,
+        ])
+        .where('estate_id', estate.id)
+        .first()
+      if (isCurrentlyPublishedInMarketPlace) {
+        throw new HttpException(IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE, 400, 113210)
+      }
+
+      try {
+        const result = await EstateService.publishEstate({
+          estate,
+          publishers,
+          performed_by: null,
+        })
+        QueueService.estateSyncPublishEstate({ estate_id: id })
+        return await EstateService.getByIdWithDetail(id)
+      } catch (e) {
+        if (e.name === 'ValidationException') {
+          Logger.error(e)
+          throw new HttpException('User not activated', 409, 113212)
+        }
+        throw new HttpException(e.message, e.status || 400, 113213)
+      }
+    } else {
+      throw new HttpException('Estate status is invalid', 400, 113211)
+    }
+  }
+
+  async publishToMarketPlace(id) {
+    QueueService.estateSyncPublishEstate({ estate_id: id })
+    return true
+  }
+
   async updatePublishStatus({ request, response }) {
-    const { ids, action } = request.all()
+    const { ids, action, publishers, id } = request.all()
     const trx = await Database.beginTransaction()
     let affectedRows
+    let ret
     switch (action) {
-      /*
+      case 'publish-marketplace':
+        ret = await this.publishToMarketPlace(id)
+        return ret
       case 'publish':
-        try {
-          //what will happen to previous matches when it is published?
-          affectedRows = await Estate.query()
-            .whereIn('id', ids)
-            .update({ status: STATUS_ACTIVE }, trx)
-          await trx.commit()
-          return response.res(affectedRows)
-        } catch (error) {
-          await trx.rollback()
-          throw new HttpException(error.message, 422)
-        }*/
+        ret = await this.publishEstate(id, publishers)
+        return response.res(ret)
       case 'unpublish':
         try {
           await Promise.map(ids, async (id) => {
@@ -123,8 +181,9 @@ class PropertyController {
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)
-            .update({ status: STATUS_DRAFT }, trx)
+            .update({ status: STATUS_DRAFT, is_published: false }, trx)
           await trx.commit()
+          QueueService.estateSyncUnpublishEstates(ids, true)
           return response.res(affectedRows)
         } catch (error) {
           await trx.rollback()

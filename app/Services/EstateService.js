@@ -1392,7 +1392,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate({ estate, publishers, performed_by }, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by = null }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1426,20 +1426,19 @@ class EstateService {
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
         status = STATUS_ACTIVE
+        if (publishers?.length) {
+          await require('./EstateSyncService.js').saveMarketPlacesInfo(
+            {
+              estate_id: estate.id,
+              estate_sync_property_id: null,
+              performed_by,
+              publishers,
+            },
+            trx
+          )
+        }
         // Run match estate
         Event.fire('match::estate', estate.id)
-      }
-
-      if (publishers?.length) {
-        await require('./EstateSyncService.js').saveMarketPlacesInfo(
-          {
-            estate_id: estate.id,
-            estate_sync_property_id: null,
-            performed_by,
-            publishers,
-          },
-          trx
-        )
       }
 
       await estate.publishEstate(status, trx)
@@ -1455,10 +1454,6 @@ class EstateService {
       }
 
       await trx.commit()
-
-      if (status === STATUS_ACTIVE) {
-        QueueService.estateSyncPublishEstate({ estate_id: estate.id })
-      }
       return status
     } catch (e) {
       console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
