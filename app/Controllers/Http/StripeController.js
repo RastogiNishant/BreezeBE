@@ -10,18 +10,15 @@ class StripeController {
   }
 
   async createSubscription({ request, auth, response }) {
-    const { subscriptions } = request.all()
-    response.res(await StripeService.createSubscription({ user_id: auth.user.id, subscriptions }))
+    const { product_id } = request.all()
+    response.res(await StripeService.createSubscription({ user_id: auth.user.id, product_id }))
   }
 
   async webhook({ request, response }) {
     try {
       const stripeSignature = request.headers()['stripe-signature']
-      Logger.info(`Stripe signature ${stripeSignature}`)
-      Logger.info(`Stripe body ${request.raw()}`)
       const data = await Stripe.verifyWebhook(request.raw(), stripeSignature)
-      Logger.info(`Stripe webhook info ${JSON.stringify(data)}`)
-      //await StripeService.handle(data)
+      await StripeService.handle(data)
       response.res(true)
     } catch (e) {
       Logger.error(`stripe webhook error ${e.message}`)
