@@ -647,7 +647,7 @@ class EstateService {
 
       updateData = {
         ...estate.toJSON({
-          extraFields: ['verified_address', 'cover_thumb'],
+          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
         }),
         ...updateData,
       }
