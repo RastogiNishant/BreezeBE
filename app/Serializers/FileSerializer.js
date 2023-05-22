@@ -20,6 +20,7 @@ class FileSerializer extends BaseSerializer {
       url: Drive.disk(disk).getUrl(url),
       type,
       order,
+      disk,
       file_name,
       relativeUrl: url,
       thumb,
