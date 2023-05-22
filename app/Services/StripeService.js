@@ -19,6 +19,7 @@ const {
   PAY_MODE_USAGE,
   DAY_FORMAT,
   PAID_COMPLETE_STATUS,
+  PRICE_MATCH,
 } = require('../constants')
 const PricePlanService = use('App/Services/PricePlanService')
 const PaymentAccountService = use('App/Services/PaymentAccountService')
@@ -31,7 +32,13 @@ const Ws = use('Ws')
 const moment = require('moment')
 
 const {
-  exceptions: { NO_PRODUCTS_EXIST, SUBSCRIPTION_FAILED },
+  exceptions: {
+    NO_PRODUCTS_EXIST,
+    SUBSCRIPTION_FAILED,
+    ERROR_SUBSCRIPTION_NOT_CREATED,
+    ERRUR_PRICE_PLAN_CONFIGURATION,
+  },
+  exceptionCodes: { ERROR_SUBSCRIPTION_NOT_CREATED_CODE, ERRUR_PRICE_PLAN_CONFIGURATION_CODE },
 } = require('../exceptions')
 
 class StripeService {
@@ -304,6 +311,38 @@ class StripeService {
       )
       await trx.rollback()
     }
+  }
+
+  static async buyPublishEstate({ user_id, plan_id }) {
+    if (!plan_id) {
+      throw new HttpException(
+        ERROR_SUBSCRIPTION_NOT_CREATED,
+        400,
+        ERROR_SUBSCRIPTION_NOT_CREATED_CODE
+      )
+    }
+
+    const paymentAccount = await PaymentAccountService.getByUserId({ user_id })
+    if (!paymentAccount) {
+      throw new HttpException(
+        ERROR_SUBSCRIPTION_NOT_CREATED,
+        400,
+        ERROR_SUBSCRIPTION_NOT_CREATED_CODE
+      )
+    }
+    const publishPlan = await PricePlanService.get({ plan_id, type: PRICE_MATCH })
+    if (!publishPlan) {
+      throw new HttpException(
+        ERRUR_PRICE_PLAN_CONFIGURATION,
+        400,
+        ERRUR_PRICE_PLAN_CONFIGURATION_CODE
+      )
+    }
+
+    const subscription = await Stripe.createSubscription({
+      customer: paymentAccount.account_id,
+      items: [{ price: publishPlan.price_id, quantity: 1 }],
+    })
   }
 
   static async emitEvent({ user_id, event, data }) {

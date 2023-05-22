@@ -26,6 +26,17 @@ class PricePlanService {
     const prices = await this.getAll(price_ids)
     return prices?.[0]?.plan_id
   }
+
+  static async get({ plan_id, type }) {
+    let query = PricePlan.query()
+    if (plan_id) {
+      query.where('plan_id', plan_id)
+    }
+    if (type) {
+      query.where('type', type)
+    }
+    return await query.frist()
+  }
 }
 
 module.exports = PricePlanService

@@ -64,6 +64,13 @@ class Stripe {
   static async getCheckoutSession(id) {
     return await stripe.checkout.sessions.retrieve(id)
   }
+
+  static async createSubscription({ customer, items }) {
+    return await stripe.subscriptions.create({
+      customer,
+      items,
+    })
+  }
 }
 
 module.exports = Stripe

@@ -1228,6 +1228,10 @@ Estates: [ESTATES]
   PAY_MODE_ONE_TIME: 2,
   PAY_MODE_RECURRING: 3,
   PAY_MODE_USAGE: 4,
+
+  PRICE_MEMBERSHIP: 1,
+  PRICE_MATCH: 2,
+  PRICE_CONNECT: 3,
 }
 
 module.exports = constants
