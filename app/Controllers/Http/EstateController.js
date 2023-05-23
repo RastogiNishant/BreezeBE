@@ -256,30 +256,6 @@ class EstateController {
       params,
     })
 
-    result.data = await EstateService.checkCanChangeLettingStatus(result, { isOwner: true })
-    result.data = (result.data || []).map((estate) => {
-      const outside_view_has_media =
-        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
-      const inside_view_has_media = sum(
-        (estate?.rooms || []).map((room) => room?.images?.length || 0)
-      )
-      const document_view_has_media =
-        ((estate.files || []).filter(
-          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
-        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
-      const unassigned_view_has_media =
-        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
-
-      return {
-        ...estate,
-        inside_view_has_media,
-        outside_view_has_media,
-        document_view_has_media,
-        unassigned_view_has_media,
-      }
-    })
-    delete result?.rows
-
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
