@@ -584,6 +584,9 @@ class EstateService {
     }
   }
 
+  static async updateShowRequired({ id, is_not_show = false }) {
+    await Estate.query().where('id', id).update({ is_not_show })
+  }
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
 
@@ -647,7 +650,7 @@ class EstateService {
 
       updateData = {
         ...estate.toJSON({
-          extraFields: ['verified_address', 'cover_thumb'],
+          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
         }),
         ...updateData,
       }

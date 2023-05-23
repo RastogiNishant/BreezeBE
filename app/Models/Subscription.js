@@ -2,22 +2,23 @@
 
 const Model = require('./BaseModel')
 
-class Order extends Model {
+class Subscription extends Model {
   // 1 landlord can have at most 2 orders
   // active: current plan
   //expired: previous plan, but not completely paid yet, if paid completely at the end of the month, it will be changed to deleted
   static get columns() {
     return [
       'id',
+      'user_id',
+      'contract_id',
       'subscription_id',
-      'invoice_id',
+      'customer_id', // only for stripe
+      'payment_method',
       'date',
-      'start_at',
-      'end_at',
       'status',
       'livemode',
     ]
   }
 }
 
-module.exports = Order
+module.exports = Subscription

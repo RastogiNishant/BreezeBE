@@ -92,6 +92,7 @@ const exceptions = {
   IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE: 'Please wait for a while before you can re-publish',
   NO_PRODUCTS_EXIST: 'Products Not found',
   SUBSCRIPTION_FAILED: 'failed to create subscription',
+  UNSECURE_PROFILE_SHARE: "Please don't share your profile",
 }
 
 const exceptionCodes = {
@@ -102,6 +103,7 @@ const exceptionCodes = {
   NO_TIME_SLOT_ERROR_CODE: 4000100,
   NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
   ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
+  WARNING_UNSECURE_PROFILE_SHARE: 8000100,
 }
 
 const exceptionKeys = {
