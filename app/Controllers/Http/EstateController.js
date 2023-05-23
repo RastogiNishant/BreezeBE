@@ -1086,9 +1086,12 @@ class EstateController {
 
   async export({ request, auth, response }) {
     const { lang } = request.params
-    let result = await EstateService.getEstatesByUserId({
-      ids: [auth.user.id],
-    })
+    let result = await EstateService.getEstates([auth.user.id])
+      .with('rooms', function (q) {
+        q.with('room_amenities').with('images')
+      })
+      .with('files')
+      .fetch()
     let rows = []
 
     if (lang) {
