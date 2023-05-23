@@ -335,7 +335,9 @@ class RoomService {
   }
 
   static async createRoom({ user, estate_id, roomData }, trx) {
-    await this.hasPermission(estate_id, user)
+    if (user) {
+      await this.hasPermission(estate_id, user)
+    }
 
     if (roomData.favorite) {
       await Room.query()

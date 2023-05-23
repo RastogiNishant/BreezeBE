@@ -90,6 +90,7 @@ const {
   MATCH_STATUS_FINISH_PENDING,
   DAY_FORMAT,
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
+  FILE_TYPE_CUSTOM,
 } = require('../constants')
 
 const {
@@ -582,7 +583,7 @@ class EstateService {
     data = request ? request.all() : data
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
       status: STATUS_DRAFT,
     }
 
@@ -639,6 +640,12 @@ class EstateService {
         }
       }
 
+      updateData = {
+        ...estate.toJSON({
+          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+        }),
+        ...updateData,
+      }
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
@@ -703,10 +710,11 @@ class EstateService {
    *
    */
   static getEstates(user_ids, params = {}) {
+    user_ids = user_ids ? (Array.isArray(user_ids) ? user_ids : [user_ids]) : null
     let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
       .withCount('notifications', function (n) {
-        if (user_ids && user_ids.length) {
-          user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        if (user_ids?.length) {
           n.whereIn('user_id', user_ids)
         }
         if (params && params.id) {
@@ -735,6 +743,9 @@ class EstateService {
         q.with('room_amenities').with('images')
       })
       .with('files')
+    if (user_ids?.length) {
+      query.whereIn('estates.user_id', user_ids)
+    }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
@@ -1535,11 +1546,37 @@ class EstateService {
       query.where('estates.id', params.id)
     }
 
+    let result
     if (page === -1 || limit === -1) {
-      return await query.fetch()
+      result = await query.fetch()
     } else {
-      return await query.paginate(page, limit)
+      result = await query.paginate(page, limit)
     }
+    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = (result.data || []).map((estate) => {
+      const outside_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+      const inside_view_has_media = sum(
+        (estate?.rooms || []).map((room) => room?.images?.length || 0)
+      )
+      const document_view_has_media =
+        ((estate.files || []).filter(
+          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
+      const unassigned_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
+
+      return {
+        ...estate,
+        inside_view_has_media,
+        outside_view_has_media,
+        document_view_has_media,
+        unassigned_view_has_media,
+      }
+    })
+    delete result?.rows
+
+    return result
   }
 
   static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
@@ -2576,6 +2613,104 @@ class EstateService {
         })
         .fetch()
     ).toJSON()
+  }
+
+  static async countDuplicateProperty(property_id) {
+    const estateCount = await Estate.query()
+      .where('property_id', 'ilike', `${property_id}-%`)
+      .whereNot('status', STATUS_DELETE)
+      .count('*')
+    if (estateCount?.length) {
+      return parseInt(estateCount[0].count)
+    }
+    return 0
+  }
+
+  static async duplicateEstate(user_id, estate_id) {
+    const estate = await this.getByIdWithDetail(estate_id)
+    if (estate?.user_id !== user_id) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    const duplicatedCount = await this.countDuplicateProperty(estate.property_id)
+    const trx = await Database.beginTransaction()
+    try {
+      const originalEstateData = estate.toJSON()
+
+      const estateData = {
+        ...omit(originalEstateData, [
+          'id',
+          'rooms',
+          'files',
+          'amenities',
+          'slots',
+          'cover_thumb',
+          'verified_address',
+          'created_at',
+          'updated_at',
+        ]),
+        property_id: `${originalEstateData.property_id}-${duplicatedCount + 1}`,
+        available_start_at: null,
+        available_end_at: null,
+        status: STATUS_DRAFT,
+        is_published: false,
+        vacant_date: null,
+        hash: null,
+        shared_link: null,
+        six_char_code: null,
+        rent_end_at: null,
+        repair_needed: false,
+        construction_year: originalEstateData?.construction_year
+          ? `${originalEstateData?.construction_year}-01-01`
+          : null,
+      }
+
+      const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
+      await Promise.map(
+        originalEstateData.rooms || [],
+        async (room) => {
+          const newRoom = await RoomService.createRoom(
+            {
+              estate_id: newEstate.id,
+              roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
+            },
+            trx
+          )
+          const newImages = room.images.map((image) => ({
+            ...omit(image, ['id', 'relativeUrl', 'thumb']),
+            url: image.relativeUrl,
+            room_id: newRoom.id,
+          }))
+          await RoomService.addManyImages(newImages, trx)
+        },
+        { concurrency: 1 }
+      )
+
+      const newFiles = (originalEstateData.files || []).map((file) => ({
+        ...omit(file, ['id', 'relativeUrl', 'thumb']),
+        url: file.relativeUrl,
+        estate_id: newEstate.id,
+      }))
+      await this.addManyFiles(newFiles, trx)
+
+      const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
+        ...omit(amenity, ['room_id', 'id']),
+        estate_id: newEstate.id,
+      }))
+
+      await Amenity.createMany(newAmenities, trx)
+
+      await trx.commit()
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: newEstate.id },
+      })
+      return estates.data?.[0]
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 }
 module.exports = EstateService
