@@ -868,11 +868,11 @@ class EstateController {
       }
 
       if (data.start_at && data.end_at) {
-        slot = await TimeSlotService.createSlot(omit(data, ['is_not_show']), estate)
+        slot = (await TimeSlotService.createSlot(omit(data, ['is_not_show']), estate)).toJSON()
       }
       response.res({
         is_not_show: data.is_not_show,
-        ...slot.toJSON(),
+        ...slot,
       })
     } catch (e) {
       Logger.error(e)
