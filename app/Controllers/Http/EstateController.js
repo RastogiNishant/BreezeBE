@@ -862,15 +862,18 @@ class EstateController {
     }
 
     try {
-      let slot
+      let slot = {}
       if (data.is_not_show !== undefined) {
         await EstateService.updateShowRequired({ id: estate_id, is_not_show: data.is_not_show })
       }
 
       if (data.start_at && data.end_at) {
-        slot = await TimeSlotService.createSlot(data, estate)
+        slot = await TimeSlotService.createSlot(omit(data, ['is_not_show']), estate)
       }
-      response.res(slot)
+      response.res({
+        is_not_show: data.is_not_show,
+        ...slot.toJSON(),
+      })
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
@@ -890,11 +893,16 @@ class EstateController {
         })
       }
 
+      let slot = {}
       if (data.start_at && data.end_at) {
-        response.res(
+        slot = (
           await TimeSlotService.updateTimeSlot(auth.user.id, omit(data, ['is_not_show']))
-        )
+        ).toJSON()
       }
+      response.res({
+        is_not_show: data.is_not_show,
+        ...slot,
+      })
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)

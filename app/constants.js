@@ -652,6 +652,7 @@ const constants = {
     'rent_end_at',
     'knocked_at',
     'action_at',
+    'is_not_show',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
