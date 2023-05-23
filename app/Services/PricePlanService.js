@@ -35,7 +35,7 @@ class PricePlanService {
     if (type) {
       query.where('type', type)
     }
-    return await query.frist()
+    return await query.first()
   }
 }
 

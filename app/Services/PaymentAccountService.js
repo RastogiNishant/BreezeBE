@@ -42,7 +42,7 @@ class PaymentAccountService {
   }
 
   static async getByUserId({ user_id, account_id }) {
-    let query = await PaymentAccount.query()
+    let query = PaymentAccount.query()
 
     if (user_id) {
       query.where('user_id', user_id)

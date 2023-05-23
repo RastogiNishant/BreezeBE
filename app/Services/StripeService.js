@@ -339,9 +339,15 @@ class StripeService {
       )
     }
 
-    const subscription = await Stripe.createSubscription({
+    // const subscription = await Stripe.createSubscription({
+    //   customer: paymentAccount.account_id,
+    //   items: [{ price: publishPlan.price_id, quantity: 1 }],
+    // })
+    // return subscription
+
+    return await Stripe.createPaymentIntent({
       customer: paymentAccount.account_id,
-      items: [{ price: publishPlan.price_id, quantity: 1 }],
+      amount: 9800,
     })
   }
 

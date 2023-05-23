@@ -66,9 +66,46 @@ class Stripe {
   }
 
   static async createSubscription({ customer, items }) {
+    console.log('customer her=', customer)
+    console.log('items here=', items)
     return await stripe.subscriptions.create({
       customer,
       items,
+      collection_method: 'charge_automatically',
+    })
+  }
+
+  static async updateSubscription({ id, items }) {
+    return await stripe.subscriptions.update(id, {
+      items,
+    })
+  }
+
+  static async getSubsription(id) {
+    return await stripe.subscriptions.retrieve(id)
+  }
+
+  static async getInvoice(id) {
+    return await stripe.invoices.retrieve(id)
+  }
+
+  static async getPaymentIntent(id) {
+    return await stripe.paymentIntents.retrieve(id)
+  }
+
+  static async createPaymentIntent({ customer, amount }) {
+    const invoice = await this.getInvoice('in_1NAd6RLHZE8cb7ZfVsQhqm55')
+    console.log('checkout here=', invoice)
+    const paymentIntent = await this.getPaymentIntent(invoice.payment_intent)
+    return await stripe.paymentIntents.create({
+      customer,
+      amount,
+      currency: 'eur',
+      setup_future_usage: 'off_session',
+      confirmation_method: 'automatic',
+      payment_method: paymentIntent.payment_method,
+      confirm: true,
+      //automatic_payment_methods: { enabled: true },
     })
   }
 }

@@ -2,6 +2,7 @@
 
 const HttpException = require('../../Exceptions/HttpException')
 const Stripe = require('../../Classes/Stripe')
+const { auth } = require('firebase-admin')
 const StripeService = use('App/Services/StripeService')
 const Logger = use('Logger')
 class StripeController {
@@ -34,6 +35,16 @@ class StripeController {
       response.res(lineItems)
     } catch (e) {
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  async testPublishPayment({ request, auth, response }) {
+    try {
+      response.res(
+        await StripeService.buyPublishEstate({ user_id: auth.user.id, plan_id: auth.user.plan_id })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 }
