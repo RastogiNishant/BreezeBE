@@ -22,6 +22,7 @@ const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
+const MailService = use('App/Services/MailService')
 const EstateSyncService = use('App/Services/EstateSyncService')
 const QueueService = use('App/Services/QueueService')
 const {
@@ -170,8 +171,12 @@ class PropertyController {
 
   async approvePublish(id) {
     const isRequestingPublish = await Estate.query()
-      .where('id', id)
-      .where('status', STATUS_ACTIVE)
+      .select('estates.*')
+      .select('estates.id as estate_id')
+      .select('users.*')
+      .innerJoin('users', 'users.id', 'estates.user_id')
+      .where('estates.id', id)
+      .where('estates.status', STATUS_ACTIVE)
       .where('is_published', false)
       .first()
     if (!isRequestingPublish) {
@@ -181,15 +186,15 @@ class PropertyController {
     try {
       await props({
         delMatches: Database.table('matches')
-          .where({ estate_id: isRequestingPublish.id })
+          .where({ estate_id: isRequestingPublish.estate_id })
           .delete()
           .transacting(trx),
         delLikes: Database.table('likes')
-          .where({ estate_id: isRequestingPublish.id })
+          .where({ estate_id: isRequestingPublish.estate_id })
           .delete()
           .transacting(trx),
         delDislikes: Database.table('dislikes')
-          .where({ estate_id: isRequestingPublish.id })
+          .where({ estate_id: isRequestingPublish.estate_id })
           .delete()
           .transacting(trx),
       })
@@ -197,6 +202,7 @@ class PropertyController {
         .where('id', id)
         .update({ status: STATUS_ACTIVE, is_published: true }, trx)
       await trx.commit()
+      await MailService.estatePublishRequestApproved(isRequestingPublish)
       QueueService.estateSyncPublishEstate({ estate_id: id })
       return true
     } catch (err) {
@@ -217,7 +223,6 @@ class PropertyController {
     }
     await Estate.query().where('id', id).update({ status: STATUS_DRAFT, is_published: false })
     await EstateSyncService.markListingsForDelete(id)
-    //await MailService.sendEmailDeclinedPublished()
     QueueService.estateSyncUnpublishEstates([id], false)
     return true
   }

@@ -93,6 +93,7 @@ const {
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
   FILE_TYPE_CUSTOM,
   LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT,
+  ADMIN_URLS,
 } = require('../constants')
 
 const {
@@ -1429,7 +1430,7 @@ class EstateService {
         }
 
         const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
-        const link = `${process.env.APP_URL}/properties?id=${estate.id}` //fixme: make a deeplink
+        const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
         let textMessage =
           `Landlord: ${user.firstname} ${user.secondname}\r\n` +
           `Landlord Email: ${user.email}\r\n` +
