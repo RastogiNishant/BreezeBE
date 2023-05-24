@@ -215,6 +215,7 @@ class StripeService {
         },
         trx
       )
+      await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
       // await OrderService.updateOrder(
       //   { subscription_id: data.id, status: PAID_PARTIALY_STATUS },
       //   trx

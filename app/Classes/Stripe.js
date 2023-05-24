@@ -61,6 +61,7 @@ class Stripe {
       cancel_url: `${process.env.SITE_URL}/cancel`,
       line_items: prices,
       client_reference_id: user_id,
+      payment_method_collection: 'always',
       mode,
     })
   }
