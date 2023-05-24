@@ -185,7 +185,7 @@ class ThirdPartyOfferService {
           extra_costs: Number(+estate.heating_costs + +estate.additional_costs) || 0,
           firing: estate.firing,
           floor: Number(estate.floor) || 0,
-          ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
+          ftp_last_update: estate.source_id ? filesLastModified?.[`${estate.source_id}.xml`] : '',
           full_address: estate.full_address,
           heating_costs: Number(estate.heating_costs) || 0,
           heating_type: estate.heating_type,
