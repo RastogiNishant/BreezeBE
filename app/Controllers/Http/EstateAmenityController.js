@@ -4,6 +4,7 @@ const Amenity = use('App/Models/Amenity')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const EstateService = use('App/Services/EstateService')
+const EstateAmenityService = use('App/Services/EstateAmenityService')
 const {
   STATUS_ACTIVE,
   STATUS_DELETE,
@@ -16,61 +17,21 @@ const { reverse } = require('lodash')
 class EstateAmenityController {
   async get({ request, response }) {
     const { location, estate_id } = request.all()
-    let amenities
-
-    if (location) {
-      amenities = await Database.select(
-        Database.raw(`location, json_agg(damenities.* order by sequence_order desc) as amenities`)
-      )
-        .from(
-          Database.raw(`(select amenities.*,
-        case
-          when
-            "amenities".type='amenity'
-          then
-            "options"."title"
-          else
-            "amenities"."amenity"
-              end as amenity
-         from amenities
-         left join options
-         on options.id=amenities.option_id
-         and estate_id='${estate_id}'
-         and status='${STATUS_ACTIVE}'
-         ) as damenities`)
-        )
-        .where('location', location)
-        .where('estate_id', estate_id)
-        .where('status', STATUS_ACTIVE)
-        .groupBy('location')
-    } else {
-      amenities = await Database.select(
-        Database.raw(`location, json_agg(damenities.* order by sequence_order desc) as amenities`)
-      )
-        .from(
-          Database.raw(`(select amenities.*,
-            case
-              when
-                "amenities".type='amenity'
-              then
-                "options"."title"
-              else
-                "amenities"."amenity"
-                  end as amenity
-             from amenities
-             left join options
-             on options.id=amenities.option_id
-             and estate_id='${estate_id}'
-             and status='${STATUS_ACTIVE}'
-             and location<>'room'
-             ) as damenities`)
-        )
-        .where('estate_id', estate_id)
-        .where('status', STATUS_ACTIVE)
-        .groupBy('location')
-    }
-
+    console.log('amenity get=', location)
+    const amenities = await EstateAmenityService.getByEstate({ estate_id, location })
     return response.res({ amenities })
+  }
+
+  async addBulk({ request, auth, response }) {
+    let { amenities, estate_id } = request.all()
+
+    try {
+      await EstateService.hasPermission({ id: estate_id, user_id: auth.user.id })
+      await EstateAmenityService.handleMultipleAmenities(amenities)
+      response.res(await EstateAmenityService.getByEstate({ estate_id }))
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   async add({ auth, request, response }) {
@@ -139,35 +100,12 @@ class EstateAmenityController {
         await newEstateAmenity.save(trx)
         newEstateAmenityId = newEstateAmenity.id
       }
-      //we return all amenities like getAll...
-      const amenities = await Database.select(
-        Database.raw(`location, json_agg(damenities.* order by sequence_order desc) as amenities`)
-      )
-        .from(
-          Database.raw(`(select amenities.*,
-            case
-              when
-                "amenities".type='amenity'
-              then
-                "options"."title"
-              else
-                "amenities"."amenity"
-                  end as amenity
-             from amenities
-             left join options
-             on options.id=amenities.option_id
-             and estate_id='${estate_id}'
-             and status='${STATUS_ACTIVE}'
-             and location<>'room'
-             ) as damenities`)
-        )
-        .where('estate_id', estate_id)
-        .where('status', STATUS_ACTIVE)
-        .groupBy('location')
-        .transacting(trx)
-
       await EstateService.updatePercent({ estate_id, amenities: [{ estate_id, option_id }] }, trx)
       await trx.commit()
+
+      //we return all amenities like getAll...
+      const amenities = await EstateAmenityService.getByEstate({ estate_id })
+
       return response.res({
         newEstateAmenityId,
         total: amenities.length,
