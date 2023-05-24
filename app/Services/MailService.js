@@ -706,8 +706,8 @@ class MailService {
     )
   }
 
-  static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
-    const msg = {
+  static async sendEmailToSupport({ subject, textMessage, htmlMessage = '' }) {
+    let msg = {
       to: FromEmail,
       from: {
         email: FromEmail,
@@ -715,7 +715,10 @@ class MailService {
       },
       subject: subject,
       text: textMessage,
-      html: htmlMessage,
+    }
+
+    if (htmlMessage) {
+      msg.html = htmlMessage
     }
 
     return sgMail.send(msg).then(

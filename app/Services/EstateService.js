@@ -37,6 +37,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
 const GeoAPI = use('GeoAPI')
+const { capitalize } = require('../Libs/utils')
 
 const {
   STATUS_DRAFT,
@@ -91,6 +92,7 @@ const {
   DAY_FORMAT,
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
   FILE_TYPE_CUSTOM,
+  LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT,
 } = require('../constants')
 
 const {
@@ -1426,6 +1428,18 @@ class EstateService {
           )
         }
 
+        const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
+        const link = `${process.env.APP_URL}/properties?id=${estate.id}` //fixme: make a deeplink
+        let textMessage =
+          `Landlord: ${user.firstname} ${user.secondname}\r\n` +
+          `Landlord Email: ${user.email}\r\n` +
+          `Estate Address: ${capitalize(estate.address)}\r\n` +
+          `Url: ${link}\r\n` +
+          `Marketplace Publishers:\r\n`
+        publishers.map((publisher) => {
+          textMessage += ` - ${publisher}\r\n`
+        })
+        await require('./MailService').sendEmailToSupport({ subject, textMessage })
         // Run match estate
         Event.fire('match::estate', estate.id)
       }
