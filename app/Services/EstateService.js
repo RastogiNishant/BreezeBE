@@ -586,7 +586,6 @@ class EstateService {
 
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
-
     let updateData = {
       ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
       status: STATUS_DRAFT,
@@ -644,13 +643,14 @@ class EstateService {
           }
         }
       }
-
+      console.log('estateJson', estate.toJSON())
       updateData = {
         ...estate.toJSON({
           extraFields: ['verified_address', 'cover_thumb'],
         }),
         ...updateData,
       }
+      console.log('updateData', updateData)
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
@@ -1405,18 +1405,6 @@ class EstateService {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
-      await props({
-        delMatches: Database.table('matches')
-          .where({ estate_id: estate.id })
-          .delete()
-          .transacting(trx),
-        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
-        delDislikes: Database.table('dislikes')
-          .where({ estate_id: estate.id })
-          .delete()
-          .transacting(trx),
-      })
-
       if (
         estate.available_start_at &&
         moment(estate.available_start_at).format(DATE_FORMAT) <=
@@ -1437,6 +1425,22 @@ class EstateService {
             trx
           )
         }
+
+        //we can do this anyway...
+        await props({
+          delMatches: Database.table('matches')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+          delLikes: Database.table('likes')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+          delDislikes: Database.table('dislikes')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+        })
         // Run match estate
         Event.fire('match::estate', estate.id)
       }

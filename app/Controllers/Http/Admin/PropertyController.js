@@ -30,7 +30,7 @@ const AppException = require('../../../Exceptions/AppException')
 
 class PropertyController {
   async getProperties({ request, response }) {
-    let { activation_status, user_status, estate_status } = request.all()
+    let { activation_status, user_status, estate_status, id } = request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -40,7 +40,7 @@ class PropertyController {
     }
     user_status = user_status || STATUS_ACTIVE
     estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE]
-    let estates = await Estate.query()
+    let query = Estate.query()
       .select('estates.id', 'estates.address', 'estates.status', 'estates.six_char_code')
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
@@ -67,7 +67,10 @@ class PropertyController {
       .withCount('inviteBuddies')
       .withCount('knocked')
       .orderBy('estates.updated_at', 'desc')
-      .fetch()
+    if (id) {
+      query.where('id', id)
+    }
+    let estates = await query.fetch()
     estates = estates.toJSON().map((estate) => {
       estate.invite_count =
         parseInt(estate['__meta__'].knocked_count) +
