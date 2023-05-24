@@ -85,6 +85,10 @@ const {
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
 
+  FURNISHING_NOT_FURNISHED,
+  FURNISHING_PARTIALLY_FURNISHED,
+  FURNISHING_FULLY_FURNISHED,
+
   USE_TYPE_RESIDENTIAL,
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
@@ -268,6 +272,8 @@ class EstateAttributeTranslations {
   reverseDataMapping = {
     non_smoker: reverseBool,
     rent_arrears: reverseBool,
+    available_date: reverseExtractDate,
+    from_date: reverseExtractDate,
     furnished: reverseBool,
     vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
@@ -451,6 +457,8 @@ class EstateAttributeTranslations {
     kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
     rent_arrears: toBool,
+    available_date: extractDate,
+    from_date: extractDate,
     furnished: toBool,
     vacant_date: extractDate,
     last_modernization: extractDate,
@@ -768,6 +776,18 @@ class EstateAttributeTranslations {
           'property.attribute.EQUIPMENT_STANDARD.Enhanced.message',
         ],
         values: [EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED],
+      },
+      furnished: {
+        keys: [
+          'no.message',
+          'apartment.amenities.Apartment.partially_furnished.message',
+          'yes.message',
+        ],
+        values: [
+          FURNISHING_NOT_FURNISHED,
+          FURNISHING_PARTIALLY_FURNISHED,
+          FURNISHING_FULLY_FURNISHED,
+        ],
       },
       parking_space_type: {
         keys: [

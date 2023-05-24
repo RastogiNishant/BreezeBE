@@ -166,6 +166,7 @@ class Estate extends Model {
       'percent',
       'is_published',
       'share_link',
+      'is_not_show',
     ]
   }
 

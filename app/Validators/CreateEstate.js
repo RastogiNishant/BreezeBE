@@ -671,6 +671,7 @@ class CreateEstate extends Base {
               INCOME_TYPE_TRAINEE,
             ])
         ),
+      is_not_show: yup.boolean().nullable(),
     })
 }
 

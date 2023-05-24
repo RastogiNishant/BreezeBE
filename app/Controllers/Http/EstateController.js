@@ -66,7 +66,7 @@ const {
   ESTATE_SYNC_LISTING_STATUS_POSTED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
+const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
 const EstateAttributeTranslations = require('../../Classes/EstateAttributeTranslations')
 const EstateFilters = require('../../Classes/EstateFilters')
 const MailService = require('../../Services/MailService')
@@ -862,8 +862,18 @@ class EstateController {
     }
 
     try {
-      const slot = await TimeSlotService.createSlot(data, estate)
-      return response.res(slot)
+      let slot = {}
+      if (data.is_not_show !== undefined) {
+        await EstateService.updateShowRequired({ id: estate_id, is_not_show: data.is_not_show })
+      }
+
+      if (data.start_at && data.end_at) {
+        slot = (await TimeSlotService.createSlot(omit(data, ['is_not_show']), estate)).toJSON()
+      }
+      response.res({
+        is_not_show: data.is_not_show,
+        ...slot,
+      })
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)
@@ -876,7 +886,23 @@ class EstateController {
   async updateSlot({ request, auth, response }) {
     const data = request.all()
     try {
-      response.res(await TimeSlotService.updateTimeSlot(auth.user.id, data))
+      if (data.is_not_show !== undefined) {
+        await EstateService.updateShowRequired({
+          id: data.estate_id,
+          is_not_show: data.is_not_show,
+        })
+      }
+
+      let slot = {}
+      if (data.start_at && data.end_at) {
+        slot = (
+          await TimeSlotService.updateTimeSlot(auth.user.id, omit(data, ['is_not_show']))
+        ).toJSON()
+      }
+      response.res({
+        is_not_show: data.is_not_show,
+        ...slot,
+      })
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, 400)

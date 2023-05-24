@@ -209,7 +209,7 @@ class MemberController {
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
-      if (data?.phone !== member.phone) {
+      if (data?.phone && data?.phone !== member.phone) {
         newData.phone_verified = false
       }
       const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)

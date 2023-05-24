@@ -668,7 +668,7 @@ class MatchService {
   /**
    * Try to knock to estate
    */
-  static async knockEstate({ estate_id, user_id, knock_anyway }, trx) {
+  static async knockEstate({ estate_id, user_id, share_profile, knock_anyway }, trx) {
     const query = Tenant.query().where({ user_id })
     if (knock_anyway) {
       query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
@@ -718,7 +718,8 @@ class MatchService {
           // Update match to knock
           await Match.query()
             .update({
-              status: MATCH_STATUS_KNOCK,
+              status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+              share: share_profile ? true : false,
               knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
             })
             .where({
@@ -740,7 +741,8 @@ class MatchService {
         const percent = await MatchService.calculateMatchPercent(tenant, estate)
         await Match.createItem(
           {
-            status: MATCH_STATUS_KNOCK,
+            status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+            share: share_profile ? true : false,
             user_id,
             estate_id,
             percent,
@@ -757,7 +759,7 @@ class MatchService {
 
       if (!isOutsideTrxExist) {
         await trx.commit()
-        this.sendMatchKnockWebsocket({ estate_id, user_id })
+        this.sendMatchKnockWebsocket({ estate_id, user_id, share_profile })
       }
     } catch (e) {
       if (!isOutsideTrxExist) {
@@ -769,13 +771,14 @@ class MatchService {
     return true
   }
 
-  static async sendMatchKnockWebsocket({ estate_id, user_id }) {
+  static async sendMatchKnockWebsocket({ estate_id, user_id, share_profile = false }) {
     this.emitMatch({
       data: {
         estate_id: estate_id,
         user_id: user_id,
         old_status: MATCH_STATUS_NEW,
-        status: MATCH_STATUS_KNOCK,
+        share: share_profile,
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
       event: WEBSOCKET_EVENT_MATCH_STAGE,
@@ -786,7 +789,8 @@ class MatchService {
         estate_id: estate_id,
         user_id: user_id,
         old_status: MATCH_STATUS_NEW,
-        status: MATCH_STATUS_KNOCK,
+        share: share_profile,
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
     })

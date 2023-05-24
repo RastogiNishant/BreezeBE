@@ -449,6 +449,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE: 'notification_prospect_invite',
   NOTICE_TYPE_PROSPECT_VISIT3H: 'notification_prospect_visit_1',
   NOTICE_TYPE_PROSPECT_VISIT30M: 'notification_prospect_visit_2',
+  NOTICE_TYPE_PROSPECT_VISIT48H: 'notification_prospect_visit_3',
   NOTICE_TYPE_PROSPECT_COMMIT: 'notification_prospect_commit',
   NOTICE_TYPE_PROSPECT_REJECT: 'notification_prospect_reject',
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY: 'notification_prospect_no_activity',
@@ -546,6 +547,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
+  NOTICE_TYPE_PROSPECT_VISIT48H_ID: 59,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -580,6 +582,10 @@ const constants = {
   BASIC_MEMBER: 1,
   PENDING_PREMIUM_MEMBER: 2,
   PREMIUM_MEMBER: 3,
+
+  FURNISHING_NOT_FURNISHED: 0,
+  FURNISHING_PARTIALLY_FURNISHED: 1,
+  FURNISHING_FULLY_FURNISHED: 2,
 
   PROPERTY_MANAGE_REQUEST: 1,
   PROPERTY_MANAGE_ALLOWED: 2,
@@ -652,6 +658,7 @@ const constants = {
     'rent_end_at',
     'knocked_at',
     'action_at',
+    'is_not_show',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
