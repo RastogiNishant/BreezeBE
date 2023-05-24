@@ -2648,7 +2648,7 @@ class EstateService {
       .select('estates.id as estate_id')
       .select('users.*')
       .innerJoin('users', 'users.id', 'estates.user_id')
-      .where('id', id)
+      .where('estates.id', id)
       .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
       .where('is_published', true)
       .first()
