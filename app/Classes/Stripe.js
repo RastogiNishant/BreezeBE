@@ -53,6 +53,7 @@ class Stripe {
 
   static async createCheckoutSession({ user_id, mode = 'payment', prices }) {
     return await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
       success_url: `${process.env.SITE_URL}/success`,
       cancel_url: `${process.env.SITE_URL}/cancel`,
       line_items: prices,
@@ -93,18 +94,44 @@ class Stripe {
     return await stripe.paymentIntents.retrieve(id)
   }
 
-  static async createPaymentIntent({ customer, amount }) {
-    const invoice = await this.getInvoice('in_1NAd6RLHZE8cb7ZfVsQhqm55')
-    console.log('checkout here=', invoice)
-    const paymentIntent = await this.getPaymentIntent(invoice.payment_intent)
+  static async createInvoice(customer) {
+    return await stripe.invoices.create({
+      customer,
+      collection_method: 'charge_automatically',
+      pending_invoice_items_behavior: 'exclude',
+    })
+  }
+
+  static async createInvoiceItem({ customer, price, invoice }) {
+    const invoiceItem = await stripe.invoiceItems.create({
+      customer,
+      price,
+      invoice,
+    })
+  }
+
+  static async finalizeInvoice(invoice) {
+    await stripe.invoices.finalizeInvoice(invoice)
+  }
+
+  static async sendInvoice(invoice) {
+    return await stripe.invoices.sendInvoice(invoice)
+  }
+
+  static async payInvoice(invoice) {
+    return await stripe.invoices.pay(invoice)
+  }
+
+  static async createPaymentIntent({ customer, payment_intent, amount }) {
+    const paymentIntent = await this.getPaymentIntent(payment_intent)
     return await stripe.paymentIntents.create({
       customer,
       amount,
-      currency: 'eur',
       setup_future_usage: 'off_session',
       confirmation_method: 'automatic',
       payment_method: paymentIntent.payment_method,
       confirm: true,
+      currency: 'eur',
       //automatic_payment_methods: { enabled: true },
     })
   }

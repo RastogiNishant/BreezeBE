@@ -66,13 +66,17 @@ class StripeService {
 
       pricePlans = pricePlans.filter((price) => price.mode !== PAY_MODE_ONE_TIME)
 
-      const mode = pricePlans.find((price) => price.mode === PAY_MODE_UPFRONT)
-        ? 'payment'
-        : 'subscription'
+      const mode = pricePlans.find((price) =>
+        [PAY_MODE_RECURRING, PAY_MODE_USAGE].includes(price.mode)
+      )
+        ? 'subscription'
+        : 'payment'
+
       const prices = pricePlans.map((price) => {
         if (price.mode !== PAY_MODE_USAGE) return { price: price.price_id, quantity: 1 }
         return { price: price.price_id }
       })
+
       const checkoutSession = await Stripe.createCheckoutSession({
         user_id,
         mode,
@@ -344,11 +348,31 @@ class StripeService {
     //   items: [{ price: publishPlan.price_id, quantity: 1 }],
     // })
     // return subscription
+    try {
+      const customer = paymentAccount.account_id
+      // console.log('customer here', customer)
+      // const invoice = await Stripe.createInvoice(customer)
+      // console.log('created invoice', JSON.stringify(invoice))
+      // console.log('created invoice price id', publishPlan.price_id)
+      // await Stripe.createInvoiceItem({
+      //   customer,
+      //   price: 'price_1N8kDqLHZE8cb7Zf2n9fva0n',
+      //   invoice: invoice.id,
+      // })
+      // await Stripe.finalizeInvoice(invoice.id)
+      // await Stripe.payInvoice(invoice.id)
 
-    return await Stripe.createPaymentIntent({
-      customer: paymentAccount.account_id,
-      amount: 9800,
-    })
+      const invoice = await Stripe.getInvoice('in_1NAzqtLHZE8cb7ZfsZfdDIxm')
+
+      const paymentIntent = await Stripe.getPaymentIntent(invoice.payment_intent)
+      await Stripe.createPaymentIntent({
+        customer,
+        payment_intent: invoice.payment_intent,
+        amount: 12800,
+      })
+    } catch (e) {
+      Logger.error(` ${user_id} paying publishing fee is failed ${e.message}`)
+    }
   }
 
   static async emitEvent({ user_id, event, data }) {
