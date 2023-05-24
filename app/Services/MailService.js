@@ -31,6 +31,8 @@ const {
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
+const { createDynamicLink } = require('../Libs/utils')
+
 class MailService {
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
@@ -712,7 +714,7 @@ class MailService {
   }
 
   static async estatePublishRequestApproved(estate) {
-    const lang = estate.lang
+    const lang = estate.lang || DEFAULT_LANG
     const parseFloorDirection = (direction) => {
       switch (direction) {
         case ESTATE_FLOOR_DIRECTION_LEFT:
@@ -747,6 +749,10 @@ class MailService {
       )
       .replace(/\n/g, '<br />')
 
+    const shortLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}?type=PUBLISHING_APPROVED&estate_id=${estate.estate_id}&email=${estate.email}`,
+      `${process.env.SITE_URL}/connect?type=PUBLISHING_APPROVED&tab=0&estate_id=${estate.estate_id}&email=${estate.email}`
+    )
     const msg = {
       to: trim(estate.email),
       from: {
@@ -760,7 +766,7 @@ class MailService {
         intro: intro,
         final: '',
         CTA: l.get('landlord.email_property_published.CTA.message', lang),
-        link: '', //link,
+        link: shortLink,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
         position: l.get('email_signature.position.message', lang),
