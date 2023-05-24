@@ -15,18 +15,18 @@ const {
   ESTATE_SYNC_LISTING_STATUS_POSTED,
 } = require('../../../constants')
 const { isArray } = require('lodash')
-const Promise = require('bluebird')
+const { props, Promise } = require('bluebird')
 const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
+const EstateSyncService = use('App/Services/EstateSyncService')
 const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
 } = require('../../../exceptions')
-const AppException = require('../../../Exceptions/AppException')
 
 class PropertyController {
   async getProperties({ request, response }) {
@@ -39,9 +39,15 @@ class PropertyController {
       ]
     }
     user_status = user_status || STATUS_ACTIVE
-    estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE]
+    estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE, STATUS_DRAFT]
     let query = Estate.query()
-      .select('estates.id', 'estates.address', 'estates.status', 'estates.six_char_code')
+      .select(
+        'estates.id',
+        'estates.address',
+        'estates.status',
+        'estates.six_char_code',
+        'estates.is_published'
+      )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
       .whereIn('estates.status', estate_status)
@@ -162,8 +168,57 @@ class PropertyController {
     }
   }
 
-  async publishToMarketPlace(id) {
-    QueueService.estateSyncPublishEstate({ estate_id: id })
+  async approvePublish(id) {
+    const isRequestingPublish = await Estate.query()
+      .where('id', id)
+      .where('status', STATUS_ACTIVE)
+      .where('is_published', false)
+      .first()
+    if (!isRequestingPublish) {
+      throw new HttpException('This estate is not marked for publish', 400, 114001)
+    }
+    const trx = await Database.beginTransaction()
+    try {
+      await props({
+        delMatches: Database.table('matches')
+          .where({ estate_id: isRequestingPublish.id })
+          .delete()
+          .transacting(trx),
+        delLikes: Database.table('likes')
+          .where({ estate_id: isRequestingPublish.id })
+          .delete()
+          .transacting(trx),
+        delDislikes: Database.table('dislikes')
+          .where({ estate_id: isRequestingPublish.id })
+          .delete()
+          .transacting(trx),
+      })
+      await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_ACTIVE, is_published: true }, trx)
+      await trx.commit()
+      QueueService.estateSyncPublishEstate({ estate_id: id })
+      return true
+    } catch (err) {
+      console.log(err)
+      await trx.rollback()
+      throw new HttpException(err.messsage, 400, 114002)
+    }
+  }
+
+  async declinePublish(id) {
+    const isRequestingPublish = await Estate.query()
+      .where('id', id)
+      .where('status', STATUS_ACTIVE)
+      .where('is_published', false)
+      .first()
+    if (!isRequestingPublish) {
+      throw new HttpException('This estate is not marked for publish', 400, 114002)
+    }
+    await Estate.query().where('id', id).update({ status: STATUS_DRAFT, is_published: false })
+    await EstateSyncService.markListingsForDelete(id)
+    //await MailService.sendEmailDeclinedPublished()
+    QueueService.estateSyncUnpublishEstates([id], false)
     return true
   }
 
@@ -173,9 +228,12 @@ class PropertyController {
     let affectedRows
     let ret
     switch (action) {
-      case 'publish-marketplace':
-        ret = await this.publishToMarketPlace(id)
-        return ret
+      case 'approve-publish':
+        ret = await this.approvePublish(id)
+        return response.res(ret)
+      case 'decline-publish':
+        ret = await this.declinePublish(id)
+        return response.res(ret)
       case 'publish':
         ret = await this.publishEstate(id, publishers)
         return response.res(ret)
