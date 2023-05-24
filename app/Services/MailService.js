@@ -750,7 +750,7 @@ class MailService {
       .replace(/\n/g, '<br />')
 
     const shortLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}?type=PUBLISHING_APPROVED&estate_id=${estate.estate_id}&email=${estate.email}`,
+      `${process.env.DEEP_LINK}?type=PUBLISHING_APPROVED&estate_id=${estate.estate_id}&email=${estate.email}&hash=${estate.hash}`,
       `${process.env.SITE_URL}/connect?type=PUBLISHING_APPROVED&tab=0&estate_id=${estate.estate_id}&email=${estate.email}`
     )
     const msg = {
