@@ -438,7 +438,6 @@ class OpenImmoReader {
         let json = this.extractJson(xmls[i])
         if (json && this.validate(json)) {
           property = this.processProperties(json)
-          console.log('processProperties', property)
           property = this.parseMultipleValuesWithOptions(property)
           property = this.parseSingleValues(property)
           property = this.processEnergyPass(property)
