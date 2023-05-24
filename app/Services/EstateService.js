@@ -1426,26 +1426,11 @@ class EstateService {
           )
         }
 
-        //we can do this anyway...
-        await props({
-          delMatches: Database.table('matches')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-          delLikes: Database.table('likes')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-          delDislikes: Database.table('dislikes')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-        })
         // Run match estate
         Event.fire('match::estate', estate.id)
       }
 
-      await estate.publishEstate(status, trx)
+      await estate.publishEstate(status, performed_by, trx)
 
       if (!is_queue) {
         //send email to support for landlord update...
@@ -1456,7 +1441,6 @@ class EstateService {
         })
         Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
       }
-
       await trx.commit()
       return status
     } catch (e) {
