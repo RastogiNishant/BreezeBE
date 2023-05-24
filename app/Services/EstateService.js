@@ -9,6 +9,7 @@ const {
   countBy,
   maxBy,
   orderBy,
+  isArray,
   sum,
   trim,
 } = require('lodash')
@@ -548,7 +549,6 @@ class EstateService {
         createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
         createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
       }
-
       let estateHash
       const estate = await Estate.createItem(
         {
