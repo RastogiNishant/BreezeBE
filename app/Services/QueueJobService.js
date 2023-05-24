@@ -179,6 +179,7 @@ class QueueJobService {
     await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
+  /** we don't need this one, because all activation will be done by Breeze admin */
   static async handleToActivateEstates() {
     try {
       const estates = (await QueueJobService.fetchToActivateEstates()).rows
@@ -273,8 +274,8 @@ class QueueJobService {
     return await Estate.query()
       .select('*')
       .with('estateSyncListings')
-      .whereIn('status', [STATUS_DRAFT, STATUS_EXPIRE])
-      .where('is_published', false)
+      .where('status', STATUS_DRAFT)
+      .where('is_published', publish)
       .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))

@@ -2637,6 +2637,17 @@ class EstateService {
     return 0
   }
 
+  static async publishRequestedProperty(id) {
+    return await Estate.query()
+      .select('estates.*')
+      .select('estates.id as estate_id')
+      .select('users.*')
+      .innerJoin('users', 'users.id', 'estates.user_id')
+      .where('id', id)
+      .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
+      .where('is_published', true)
+      .first()
+  }
   static async duplicateEstate(user_id, estate_id) {
     const estate = await this.getByIdWithDetail(estate_id)
     if (estate?.user_id !== user_id) {
