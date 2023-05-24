@@ -94,6 +94,18 @@ class Stripe {
     return await stripe.paymentIntents.retrieve(id)
   }
 
+  static async getCustomer(customer_id) {
+    return await stripe.customers.retrieve(customer_id)
+  }
+
+  static async hasDefaultPaymentMethod(customer_id) {
+    const customer = await this.getCustomer(customer_id)
+    if (!customer.invoice_settings.default_payment_method) {
+      return false
+    }
+    return true
+  }
+
   static async createInvoice(customer) {
     return await stripe.invoices.create({
       customer,

@@ -343,35 +343,32 @@ class StripeService {
       )
     }
 
-    // const subscription = await Stripe.createSubscription({
-    //   customer: paymentAccount.account_id,
-    //   items: [{ price: publishPlan.price_id, quantity: 1 }],
-    // })
-    // return subscription
     try {
       const customer = paymentAccount.account_id
-      // console.log('customer here', customer)
-      // const invoice = await Stripe.createInvoice(customer)
-      // console.log('created invoice', JSON.stringify(invoice))
-      // console.log('created invoice price id', publishPlan.price_id)
-      // await Stripe.createInvoiceItem({
-      //   customer,
-      //   price: 'price_1N8kDqLHZE8cb7Zf2n9fva0n',
-      //   invoice: invoice.id,
-      // })
-      // await Stripe.finalizeInvoice(invoice.id)
-      // await Stripe.payInvoice(invoice.id)
+      console.log('customer here', customer)
 
-      const invoice = await Stripe.getInvoice('in_1NAzqtLHZE8cb7ZfsZfdDIxm')
-
-      const paymentIntent = await Stripe.getPaymentIntent(invoice.payment_intent)
-      await Stripe.createPaymentIntent({
+      const invoice = await Stripe.createInvoice(customer)
+      await Stripe.getPaymentIntent(invoice.id)
+      console.log('created invoice', JSON.stringify(invoice))
+      console.log('created invoice price id', publishPlan.price_id)
+      await Stripe.createInvoiceItem({
         customer,
-        payment_intent: invoice.payment_intent,
-        amount: 12800,
+        price: 'price_1N8kDqLHZE8cb7Zf2n9fva0n',
+        invoice: invoice.id,
       })
+      await Stripe.finalizeInvoice(invoice.id)
+      await Stripe.payInvoice(invoice.id)
+
+      // const invoice = await Stripe.getInvoice('in_1NAzqtLHZE8cb7ZfsZfdDIxm')
+
+      // await Stripe.createPaymentIntent({
+      //   customer,
+      //   payment_intent: invoice.payment_intent,
+      //   amount: 12800,
+      // })
     } catch (e) {
       Logger.error(` ${user_id} paying publishing fee is failed ${e.message}`)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 

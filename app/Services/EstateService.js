@@ -1389,6 +1389,12 @@ class EstateService {
     return query.paginate(page, limit)
   }
 
+  static async countPublishedPropertyByLandlord(user_id) {
+    return await Estate.query().where('user_id', user_id).where('is_published', true).count('*')
+  }
+
+  static async isPaid() {}
+
   /**
    *
    */
