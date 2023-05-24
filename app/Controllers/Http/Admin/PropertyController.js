@@ -13,6 +13,8 @@ const {
   USER_ACTIVATION_STATUS_DEACTIVATED,
   ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
   ESTATE_SYNC_LISTING_STATUS_POSTED,
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
+  ESTATE_SYNC_LISTING_STATUS_DELETED,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -191,6 +193,21 @@ class PropertyController {
       })*/
       await Estate.query().where('id', id).update({ status: STATUS_ACTIVE }, trx)
       await trx.commit()
+      const listings = await EstateSyncListing.query()
+        .where('estate_id', id)
+        .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+        .fetch()
+      const data = {
+        success: true,
+        property_id: requestPublishEstate.id,
+        type: 'approved-publish',
+        listings: listings?.rows || [],
+      }
+      await EstateSyncService.emitWebsocketEventToLandlord({
+        event: WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
+        user_id: requestPublishEstate.user_id,
+        data,
+      })
       await MailService.estatePublishRequestApproved(requestPublishEstate)
       QueueService.estateSyncPublishEstate({ estate_id: id })
       return true
