@@ -5,7 +5,7 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_UNASSIGNED } = require('../constants')
+const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO, DAY_FORMAT } = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -304,15 +304,13 @@ class OpenImmoReader {
         property.coord = `${property.coord.breitengrad},${property.coord.laengengrad}`
       }
       //force dates to be of the format YYYY-MM-DD
-      if (property.available_date) {
-        property.available_date = moment(new Date(property.available_date)).format('YYYY-MM-DD')
+      if (property.vacant_date) {
+        property.vacant_date = moment
+          .utc(new Date(property.vacant_date))
+          .add(2, 'hours')
+          .format(DAY_FORMAT)
       } else {
-        unset(property, 'available_date')
-      }
-      if (property.from_date) {
-        property.from_date = moment(new Date(property.from_date)).format('YYYY-MM-DD')
-      } else {
-        unset(property, 'from_date')
+        unset(property, 'vacant_date')
       }
 
       property.construction_year = property.construction_year
@@ -326,10 +324,10 @@ class OpenImmoReader {
           : null
       }
 
-      if (property.pets === 'true') {
-        property.pets = null
-      } else if (property.pets === 'false') {
-        property.pets = 1
+      if (property.pets_allowed === 'true') {
+        property.pets_allowed = PETS_SMALL
+      } else if (property.pets_allowed === 'false') {
+        property.pets_allowed = PETS_NO
       }
     })
     return properties

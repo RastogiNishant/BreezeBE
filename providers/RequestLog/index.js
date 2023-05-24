@@ -15,7 +15,7 @@ const moment = require('moment')
 const { get } = require('lodash')
 
 var graylog2 = require('graylog2')
-const { TEST_ENVIRONMENT } = require('../../app/constants')
+const { TEST_ENVIRONMENT, DEV_ENVIRONMENT } = require('../../app/constants')
 var grayLog = new graylog2.graylog({
   servers: [{ host: 'logs.app.breeze4me.de', port: 12201 }],
   hostname: 'logs.app.breeze4me.de', // the name of this host
@@ -146,7 +146,7 @@ class Logger {
     const headers = this.request.headers()
     const ip = get(headers, 'x-real-ip') || this.request.ip()
     onFinished(this.res, (error, res) => {
-      if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
+      if (process.env.NODE_ENV === TEST_ENVIRONMENT || process.env.NODE_ENV === DEV_ENVIRONMENT) {
         return
       }
 

@@ -60,18 +60,19 @@ class AccountController {
         throw new HttpException(USER_UNIQUE, 400)
       }
 
-      throw e
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
   async housekeeperSignup({ request, response }) {
-    const { firstname, email, password, code, lang, ip, ip_based_info } = request.all()
+    const { firstname, email, secondname, password, code, lang, ip, ip_based_info } = request.all()
     try {
       const user = await UserService.housekeeperSignup({
         code,
         email,
         password,
         firstname,
+        secondname,
         lang,
         ip,
         ip_based_info,
@@ -100,9 +101,9 @@ class AccountController {
    *
    */
   async resendUserConfirm({ request, response }) {
-    const { user_id } = request.all()
+    const { user_id, from_web } = request.all()
     try {
-      const result = await UserService.resendUserConfirm(user_id)
+      const result = await UserService.resendUserConfirm(user_id, from_web)
       response.res(result)
     } catch (e) {
       throw new HttpException(e.message, e.status || e.code, e.code || 0)
@@ -120,7 +121,7 @@ class AccountController {
       if (!user) {
         throw new HttpException(USER_NOT_EXIST, 400)
       }
-      await UserService.confirmEmail(user, code)
+      await UserService.confirmEmail(user, code, from_web)
       Event.fire('mautic:syncContact', user.id, { email_verification_date: new Date() })
     } catch (e) {
       Logger.error(e)

@@ -229,21 +229,21 @@ definitions:
     type: number
     enum: [1, 2, 3, 4, 5, 6, 7, 8, 9]
     default: "1"
-  avail_duration:
-    name: avail_duration
+  available_start_at:
+    name: available_start_at
     in: formData
     type: number
-    default: 72
+    default:  2023-03-10 00:00:00
+  available_end_at:
+    name: available_start_at
+    in: formData
+    type: number
+    default:  2023-03-10 00:00:00
   vacant_date:
     name: vacant_date
     in: formData
     type: date
     default: "2020-06-20 20:00:00"
-  from_date:
-    name: from_date
-    in: formData
-    type: date
-    default: "2020-04-04"
   to_date:
     name: to_date
     in: formData

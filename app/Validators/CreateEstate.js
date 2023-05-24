@@ -22,6 +22,12 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
 
   // House type
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
@@ -97,6 +103,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -118,6 +125,8 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -207,7 +216,7 @@ const {
 } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
 } = require('../exceptions')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -248,6 +257,12 @@ class CreateEstate extends Base {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
+          APARTMENT_TYPE_TERRACES,
+          APARTMENT_TYPE_ETAGE,
+          APARTMENT_TYPE_HOLIDAY,
+          APARTMENT_TYPE_GALLERY,
+          APARTMENT_TYPE_RAW_ATTIC,
+          APARTMENT_TYPE_ATTIC,
         ]),
       house_type: yup
         .number()
@@ -382,18 +397,39 @@ class CreateEstate extends Base {
             ])
         ),
       vacant_date: yup.date(),
-      avail_duration: yup.number().integer().positive().max(5000),
+      available_start_at: yup.date().nullable(),
+      available_end_at: yup
+        .date()
+        .when(['available_start_at'], (available_start_at, schema, { value }) => {
+          if (!available_start_at) return schema
+          return value && value <= available_start_at
+            ? yup
+                .date()
+                .min(
+                  available_start_at,
+                  getExceptionMessage(
+                    'available_end_at',
+                    SHOULD_BE_AFTER,
+                    moment(available_start_at).format(DATE_FORMAT)
+                  )
+                )
+            : schema
+        })
+        .nullable(),
       is_duration_later: yup.boolean(),
-      min_invite_count: yup.number().when('is_duration_later', {
-        is: true,
-        then: yup
-          .number()
-          .integer()
-          .positive()
-          .typeError(getExceptionMessage('min_invite_count', NUMBER)),
-      }),
-
-      from_date: yup.date().nullable(),
+      min_invite_count: yup
+        .number()
+        .integer()
+        .positive()
+        .when('is_duration_later', {
+          is: true,
+          then: yup
+            .number()
+            .integer()
+            .positive()
+            .required()
+            .typeError(getExceptionMessage('min_invite_count', NUMBER)),
+        }),
       to_date: yup.date(),
       rent_end_at: yup
         .date()
@@ -405,7 +441,7 @@ class CreateEstate extends Base {
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
+      pets_allowed: yup.number().integer().oneOf([PETS_NO, PETS_SMALL]).nullable(),
       gender: yup
         .number()
         .integer()
@@ -445,6 +481,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
@@ -481,6 +518,8 @@ class CreateEstate extends Base {
               HEATING_TYPE_FLOOR,
               HEATING_TYPE_REMOTE,
               HEATING_TYPE_OVEN,
+              HEATING_TYPE_UNDERFLOOR,
+              HEATING_TYPE_MISC,
             ])
         ),
       equipment: yup
@@ -537,7 +576,6 @@ class CreateEstate extends Base {
         ])
         .nullable(),
       energy_proof: yup.mixed(),
-      status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40),
       zip: yup.string().max(8),
       budget: yup.number().integer().min(0).max(100),
@@ -595,6 +633,7 @@ class CreateEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup

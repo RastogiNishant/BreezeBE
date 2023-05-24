@@ -7,7 +7,7 @@ const { STATUS_ACTIVE } = require('../constants')
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
-const CurrentTenant = use('App/Models/EstateCurrentTenant')
+const CurrentTenant = use('App/Models/User')
 const HttpException = use('App/Exceptions/HttpException')
 
 class UserIsATenant {
@@ -34,9 +34,10 @@ class UserIsATenant {
         throw new HttpException('User can only connect to tenant topic containing his id.')
       }
       let tenantEstates = await CurrentTenant.query()
-        .where('user_id', auth.user.id)
+        .where('id', auth.user.id)
         .where('status', STATUS_ACTIVE)
         .fetch()
+
       if (tenantEstates.toJSON().length < 1) {
         throw new HttpException('Topic is only available to current tenants.')
       }

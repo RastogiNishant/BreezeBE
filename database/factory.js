@@ -114,7 +114,7 @@ Factory.blueprint(
       Math.round(space - space * 0.1),
       Math.round(space + space * 0.1),
     ]
-    const petsData = !!parseInt(pets) ? faker.pickone([PETS_SMALL, PETS_BIG]) : PETS_NO
+    const petsData = !!parseInt(pets) ? faker.pickone([PETS_SMALL]) : PETS_NO
     let [lat, lon] = getCoordFromBoundary(lat1, lon1, lat2, lon2)
     lat = Point.round(lat)
     lon = Point.round(lon)
@@ -208,6 +208,6 @@ Factory.blueprint('App/Models/IncomeProof', async (faker, i, { income_id, offset
   return {
     income_id,
     file: doc,
-    expire_date: moment().subtract(offset, 'months').startOf('month').toDate(),
+    expire_date: moment.utc().subtract(offset, 'months').startOf('month').toDate(),
   }
 })

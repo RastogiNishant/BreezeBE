@@ -23,10 +23,14 @@ const {
   IMPORT_ENTITY_ESTATES,
   WEBSOCKET_EVENT_IMPORT_EXCEL,
   IMPORT_ACTIVITY_DONE,
+  IMPORT_ACTIVITY_PENDING,
   LETTING_TYPE_LET,
   STATUS_DELETE,
   IMPORT_ACTION_IMPORT,
   IMPORT_ACTION_EXPORT,
+  WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS,
+  PREPARING_TO_UPLOAD,
+  PROPERTY_HANDLE_FINISHED,
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -45,10 +49,12 @@ class ImportService {
    */
   static async createSingleEstate({ data, line, six_char_code }, userId) {
     let estate
+    line += 1
     const trx = await Database.beginTransaction()
     try {
       if (six_char_code) {
         //check if this is an edit...
+        console.log('Update estate', six_char_code)
         estate = await Estate.query()
           .where('six_char_code', six_char_code)
           .where('user_id', userId)
@@ -58,33 +64,25 @@ class ImportService {
           return {
             error: [`${six_char_code} is an invalid Breeze ID`],
             line,
+            property_id: data.property_id,
             address: data.address,
           }
         }
         await ImportService.updateImportBySixCharCode({ six_char_code, data }, trx)
       } else {
         if (!data.address) {
+          await trx.rollback()
           return {
             error: [`address is empty`],
             line,
             address: data.address,
+            property_id: data.property_id,
           }
         }
-        const address = data.address.toLowerCase()
-        const existingEstate = await require('./EstateService')
-          .getQuery()
-          .where('user_id', userId)
-          .where('address', 'LIKE', `%${address}%`)
-          .whereNot('status', STATUS_DELETE)
-          .first()
-        let warning
-        if (existingEstate) {
-          //await EstateService.completeRemoveEstate(existingEstate.id)
-          warning = `Probably duplicate found on address: ${address}. Please use Breeze ID if you want to update.`
-        }
-        data.avail_duration = 144
+
         data.status = STATUS_DRAFT
-        data.available_date = data.available_date || moment().format(DATE_FORMAT)
+        data.available_start_at = null
+        data.available_end_at = null
         if (!data.letting_type) {
           data.letting_type = LETTING_TYPE_NA
         }
@@ -111,10 +109,6 @@ class ImportService {
             trx
           )
         }
-        if (warning) {
-          await trx.rollback()
-          return { warning, line, address: data.address }
-        }
       }
       await trx.commit()
 
@@ -126,8 +120,9 @@ class ImportService {
 
       return estate
     } catch (e) {
+      console.log('createSingleEstate error', e.message)
       await trx.rollback()
-      return { error: [e.message], line, address: data.address }
+      return { error: [e.message], line, address: data.address, estate: null }
     }
   }
 
@@ -166,18 +161,56 @@ class ImportService {
     let data = []
     let warnings = []
     try {
+      this.emitImported({
+        data: {
+          message: PREPARING_TO_UPLOAD,
+        },
+        user_id,
+      })
+
+      console.log('getting s3 bucket url!!!', s3_bucket_file_name)
       const url = await FileBucket.getProtectedUrl(s3_bucket_file_name)
+      console.log('storing excel file to s3 bucket!!!')
       const localPath = await FileBucket.saveFileTo({ url, ext: 'xlsx' })
-      const reader = new EstateImportReader(localPath)
+      console.log('saved file to path', localPath)
+      const reader = new EstateImportReader()
+      reader.init(localPath)
+      console.log('processing excel file!!!')
       const excelData = await reader.process()
       errors = excelData.errors
       warnings = excelData.warnings
       data = excelData.data
+
       const opt = { concurrency: 1 }
       result = await Promise.map(
         data,
-        async (i) => {
-          if (i) await ImportService.createSingleEstate(i, user_id)
+        async (i, index) => {
+          if (i) {
+            const estateResult = await ImportService.createSingleEstate(i, user_id)
+            const singleCreateErrors = [estateResult].filter(
+              (i) => has(i, 'error') && has(i, 'line')
+            )
+            let singleWarnings = []
+            ;[estateResult].map((row) => {
+              if (has(row, 'warning')) {
+                singleWarnings.push(row.warning)
+              }
+            })
+
+            ImportService.emitImported({
+              data: {
+                message: PROPERTY_HANDLE_FINISHED,
+                count: errors?.length + index + 1,
+                total: data.length + errors?.length,
+                result: omit(estateResult, ['error', 'warning']),
+                errors: singleCreateErrors,
+                warnings: singleWarnings,
+              },
+              user_id,
+            })
+            return estateResult
+          }
+          return null
         },
         opt
       )
@@ -189,13 +222,16 @@ class ImportService {
       })
     } catch (err) {
       errors = [...errors, err.message]
+      console.log('import excel error', err)
     } finally {
       //correct wrong data during importing excel files
-      await require('./EstateService').correctWrongEstates(user_id)
-      FileBucket.remove(s3_bucket_file_name, false)
+      console.log('finallizing import excel')
       if (import_id && !isNaN(import_id)) {
         await ImportService.completeImportFile(import_id)
       }
+
+      await require('./EstateService').correctWrongEstates(user_id)
+      FileBucket.remove(s3_bucket_file_name, false)
       this.emitImported({
         user_id,
         data: {
@@ -207,6 +243,7 @@ class ImportService {
           success: result.length - createErrors.length,
           warnings: [...warnings],
         },
+        event: WEBSOCKET_EVENT_IMPORT_EXCEL,
       })
     }
   }
@@ -220,13 +257,13 @@ class ImportService {
    * @returns
    */
 
-  static async emitImported({ data, user_id }) {
+  static async emitImported({ data, user_id, event = WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS }) {
     const channel = `landlord:*`
     const topicName = `landlord:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
 
     if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_IMPORT_EXCEL, data)
+      topic.broadcast(event, data)
     }
   }
 
@@ -291,6 +328,7 @@ class ImportService {
         'salutation_int',
       ])
       let estate = await Estate.query().where('six_char_code', six_char_code).first()
+
       const user_id = estate.user_id
       if (!estate) {
         throw new HttpException('estate no exists')
@@ -298,10 +336,30 @@ class ImportService {
       if (!estate_data.letting_type) {
         estate_data.letting_type = LETTING_TYPE_NA
       }
-      estate_data.id = estate.id
-      estate.fill(estate_data)
-      await estate.save(trx)
 
+      const estateCurrentTenants = await EstateCurrentTenantService.getActiveByEstateIds([
+        estate.id,
+      ])
+
+      //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
+      //so addrss can only be updated only in the cases above
+      if (
+        (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) ||
+        estate.status === STATUS_ACTIVE
+      ) {
+        estate_data = omit(estate_data, ['city', 'country', 'zip', 'street', 'house_number'])
+        estate_data.is_coord_changed = false
+      } else {
+        estate_data.is_coord_changed = true
+      }
+
+      await require('./EstateService').updateEstate(
+        {
+          data: { ...estate_data, id: estate.id },
+          user_id,
+        },
+        trx
+      )
       if (data.letting_type === LETTING_TYPE_LET) {
         await EstateCurrentTenantService.updateCurrentTenant(
           {
@@ -312,13 +370,16 @@ class ImportService {
           trx
         )
       } else {
-        await EstateCurrentTenantService.deleteByEstate(
-          {
-            estate_ids: [estate.id],
-            user_id,
-          },
-          trx
-        )
+        //TODO: Do we really need to delete current estate if letting type changed from importing excel????
+        if (estateCurrentTenants && estateCurrentTenants.length) {
+          await EstateCurrentTenantService.deleteByEstate(
+            {
+              estate_ids: [estate.id],
+              user_id,
+            },
+            trx
+          )
+        }
       }
       //update Rooms
       let rooms = []
@@ -331,11 +392,14 @@ class ImportService {
       if (rooms.length) {
         await require('./RoomService').updateRoomsFromImport({ estate_id: estate.id, rooms }, trx)
       } else {
-        await require('./RoomService').removeAllRoom(estate.id, trx)
+        // we don't have to remove rooms because some rooms will have images for now, if user is going to delete rooms, he has to remove it via web frontend manually
+        //TODO: only has to remove rooms which don't have images & reindex room names according to room type
+        //await require('./RoomService').removeAllRoom(estate.id, trx)
       }
 
       return estate
     } catch (e) {
+      console.log('update estate error happened=', e.message)
       throw new HttpException(e.message, e.status || 500)
     }
   }
@@ -352,6 +416,18 @@ class ImportService {
 
   static async completeImportFile(id) {
     return await Import.query().where('id', id).update({ status: IMPORT_ACTIVITY_DONE })
+  }
+
+  static async hasPreviousAction({ user_id, action }) {
+    const actionRow = await Import.query()
+      .where('user_id', user_id)
+      .where('action', action)
+      .orderBy('id', 'desc')
+      .first()
+    if (actionRow && actionRow.status === IMPORT_ACTIVITY_PENDING) {
+      return true
+    }
+    return false
   }
 
   static async getLastImportActivities(user_id) {

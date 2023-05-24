@@ -1,5 +1,6 @@
 const constants = {
   TEST_ENVIRONMENT: 'test',
+  DEV_ENVIRONMENT: 'development',
   USER_ACTIVATION_STATUS_NOT_ACTIVATED: 1,
   USER_ACTIVATION_STATUS_ACTIVATED: 2,
   USER_ACTIVATION_STATUS_DEACTIVATED: 3,
@@ -124,6 +125,7 @@ const constants = {
   PROPERTY_TYPE_HOUSE: 3,
   PROPERTY_TYPE_SITE: 4,
   PROPERTY_TYPE_OFFICE: 5,
+  PROPERTY_TYPE_SHORT_TERM: 6,
 
   ENERGY_TYPE_LOW_ENERGY: 1,
   ENERGY_TYPE_PASSIVE_HOUSE: 2,
@@ -243,6 +245,8 @@ const constants = {
   HEATING_TYPE_FLOOR: 2,
   HEATING_TYPE_REMOTE: 3,
   HEATING_TYPE_OVEN: 4,
+  HEATING_TYPE_UNDERFLOOR: 5,
+  HEATING_TYPE_MISC: 6,
 
   EQUIPMENT_STANDARD_SIMPLE: 1,
   EQUIPMENT_STANDARD_NORMAL: 2,
@@ -394,10 +398,15 @@ const constants = {
   LANDLORD_TABS_TOP: 'top',
   LANDLORD_TABS_COMMIT: 'commit',
 
+  NO_VISIBLE_BEFORE_TENANT: 0,
+  VISIBLE_BEFORE_TENANT: 1,
+
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
-  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
+  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:mm',
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
+
+  MAXIMUM_EXPIRE_PERIOD: 3 * 30, // 90 days
 
   AMENITIES_OPTIONS: [
     'elevator',
@@ -418,7 +427,9 @@ const constants = {
     'floor',
     'number_floors',
   ],
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
@@ -478,6 +489,8 @@ const constants = {
 
   NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING: 'notification_prospect_like_expiring',
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK: 'notification_prospect_liked_but_not_knock',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -529,6 +542,8 @@ const constants = {
   NOTICE_TYPE_PROSPECT_DEACTIVATED_ID: 54,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID: 55,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
+  NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
+  NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -612,7 +627,8 @@ const constants = {
     'sex',
     'address',
     'user_id',
-    'available_date',
+    'available_start_at',
+    'available_end_at',
     'vacant_date',
     'others',
     'full_address',
@@ -632,6 +648,7 @@ const constants = {
     'transfer_budget',
     'rent_end_at',
     'knocked_at',
+    'action_at',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -717,6 +734,7 @@ const constants = {
   PREDEFINED_MSG_OPEN_ENDED: 3,
   PREDEFINED_NOT_A_QUESTION: 4,
   PREDEFINED_LAST: 5,
+  PREDEFINED_MSG_OPTION_SIGNLE_CHOICE: 7,
 
   URGENCY_LOW: 1,
   URGENCY_NORMAL: 2,
@@ -891,6 +909,8 @@ const constants = {
   EMAIL_REG_EXP:
     /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
   PHONE_REG_EXP: /^\+[1-9]{1,2}[0-9]{9,11}$/,
+  VALID_URL_REG_EXP:
+    /^((https?|ftp):\/\/)?(www.)?(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i,
 
   //Date period
   TASK_RESOLVE_HISTORY_PERIOD: 3,
@@ -922,14 +942,20 @@ const constants = {
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ: 'taskMessageRead',
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
+  WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
+  WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
+  WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
   //MATCH WEB SOCKET
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
+  WEBSOCKET_EVENT_MATCH_STAGE: 'matchStageChanged',
   //if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
+  WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
+  WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
   MATCH_SCORE_GOOD_MATCH: 70,
 
   IMPORT_TYPE_EXCEL: 'excel',
@@ -1073,6 +1099,50 @@ Estates: [ESTATES]
     'Odorous',
     'Heavily neglected',
   ],
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT: 'I am interested in this apartment.',
+
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
+  OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: [
+    'Wohnung',
+    'Haus',
+    'Möbliertes Wohnen / Wohnen auf Zeit',
+    'Zimmer',
+  ],
+
+  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING: {
+    income_sources: [
+      'employee',
+      'worker',
+      'unemployed',
+      'civil_servant',
+      'freelancer',
+      'housewife_husband',
+      'pensioner',
+      'self',
+      'trainee',
+    ],
+    credit_score: 95,
+    budget: 30,
+    rent_arrears: false,
+    min_age: 25,
+    max_age: 65,
+    pets_allowed: 2, // PETS_SMALL
+    family_size_min: 1,
+    family_size_max: 2,
+  },
+  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
+  VALID_INCOME_PROOFS_PERIOD: 5,
+  MATCH_PERCENT_PASS: 40,
+
+  THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
+  THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
+  THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
+  PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
+  PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
+
+  LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 }
 
 module.exports = constants

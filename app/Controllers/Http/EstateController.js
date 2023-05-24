@@ -16,6 +16,7 @@ const TenantService = use('App/Services/TenantService')
 const MemberService = use('App/Services/MemberService')
 const CompanyService = use('App/Services/CompanyService')
 const EstatePermissionService = use('App/Services/EstatePermissionService')
+const PointService = use('App/Services/PointService')
 const HttpException = use('App/Exceptions/HttpException')
 const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
@@ -56,6 +57,9 @@ const {
   FILE_TYPE_EXTERNAL,
   FILE_TYPE_CUSTOM,
   FILE_TYPE_PLAN,
+  LOG_TYPE_PUBLISHED_PROPERTY,
+  ROLE_LANDLORD,
+  IMPORT_ACTION_IMPORT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum } = require('lodash')
@@ -78,8 +82,13 @@ const {
     FAILED_IMPORT_FILE_UPLOAD,
     FAILED_TO_ADD_FILE,
     CURRENT_IMAGE_COUNT,
+    FAILED_EXTEND_ESTATE,
+    UPLOAD_EXCEL_PROGRESS,
+    LAT_LON_NOT_PROVIDED,
   },
+  exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 class EstateController {
   async createEstateByPM({ request, auth, response }) {
@@ -147,7 +156,7 @@ class EstateController {
         throw new HttpException('Not allow', 403)
       }
 
-      const newEstate = await EstateService.updateEstate(request, auth.user.id)
+      const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
       response.res(newEstate)
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -163,7 +172,7 @@ class EstateController {
       throw new HttpException('Not allow', 403)
     }
 
-    const newEstate = await EstateService.updateEstate(request, auth.user.id)
+    const newEstate = await EstateService.updateEstate({ request, user_id: auth.user.id })
     response.res(newEstate)
   }
 
@@ -357,7 +366,7 @@ class EstateController {
       PROPERTY_MANAGE_ALLOWED
     )
     const estate = await EstateService.getQuery()
-      .where('id', id)
+      .where('estates.id', id)
       .whereIn('user_id', landlordIds)
       .whereNot('status', STATUS_DELETE)
       .with('point')
@@ -378,14 +387,25 @@ class EstateController {
    *
    */
   async extendEstate({ request, auth, response }) {
-    const { estate_id, avail_duration } = request.all()
-    const available_date = moment().add(avail_duration, 'hours').toDate()
-    const estate = await EstateService.getQuery()
-      .where('id', estate_id)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .update({ available_date: available_date, status: STATUS_ACTIVE })
-    response.res(estate)
+    const { estate_id, available_end_at, is_duration_later, min_invite_count } = request.all()
+    try {
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
+      response.res(
+        await EstateService.getEstateWithDetails({
+          id: estate_id,
+          user_id: auth.user.id,
+          role: ROLE_LANDLORD,
+        })
+      )
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
   }
 
   /**
@@ -403,6 +423,12 @@ class EstateController {
 
   async importEstate({ request, auth, response }) {
     const importFilePathName = request.file('file')
+
+    if (
+      await ImportService.hasPreviousAction({ user_id: auth.user.id, action: IMPORT_ACTION_IMPORT })
+    ) {
+      throw new HttpException(UPLOAD_EXCEL_PROGRESS, 400, UPLOAD_EXCEL_PROGRESS_ERROR_CODE)
+    }
 
     if (importFilePathName && importFilePathName.tmpPath) {
       if (
@@ -473,17 +499,22 @@ class EstateController {
     const { id, action } = request.all()
 
     const estate = await Estate.findOrFail(id)
+    let status = estate.status
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
-    if (!estate.avail_duration) {
+    if (
+      !estate.available_start_at ||
+      (!estate.is_duration_later && !estate.available_end_at) ||
+      (estate.is_duration_later && !estate.min_invite_count)
+    ) {
       throw new HttpException('Estates is not completely filled', 400)
     }
 
     if (action === 'publish') {
-      if (estate.status === STATUS_ACTIVE) {
-        throw new HttpException('Cant update status', 400)
-      }
+      // if (estate.status === STATUS_ACTIVE) {
+      //   throw new HttpException('Cant update status', 400)
+      // }
 
       if (
         [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
@@ -491,22 +522,32 @@ class EstateController {
       ) {
         // Validate is Landlord fulfilled contacts
         try {
-          await EstateService.publishEstate(estate, request)
+          status = await EstateService.publishEstate(estate)
         } catch (e) {
           if (e.name === 'ValidationException') {
             Logger.error(e)
             throw new HttpException('User not activated', 409)
           }
-          throw e
+          throw new HttpException(e.message, e.status || 400)
         }
       } else {
         throw new HttpException('Invalid estate type', 400)
       }
+      logEvent(
+        request,
+        LOG_TYPE_PUBLISHED_PROPERTY,
+        estate.user_id,
+        { estate_id: estate.id },
+        false
+      )
     } else {
-      await estate.updateItem({ status: STATUS_DRAFT }, true)
+      await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
+      status = STATUS_DRAFT
     }
 
-    response.res(true)
+    response.res({
+      status,
+    })
   }
 
   async makeEstateOffline({ request, auth, response }) {
@@ -516,7 +557,7 @@ class EstateController {
       const estate = await Estate.query().where('id', id).first()
       if (estate) {
         estate.status = STATUS_DRAFT
-        await EstateService.handleOfflineEstate(estate.id, trx)
+        await EstateService.handleOfflineEstate({ estate_id: estate.id }, trx)
         await estate.save(trx)
         await trx.commit()
         response.res(true)
@@ -750,34 +791,48 @@ class EstateController {
       throw new HttpException(e.message, e.status || 400)
     }
   }
+
+  _processExcludes(exclude) {
+    let exclude_third_party_offers = []
+    let exclude_estates = []
+    let matches
+    if (exclude && exclude.length > 0) {
+      exclude.map((m) => {
+        if (typeof m === 'number') {
+          exclude_estates = [...exclude_estates, m]
+          return
+        }
+        matches = m.match(/^[a-z]+\-([0-9]+)$/)
+        if (matches) {
+          exclude_third_party_offers = [...exclude_third_party_offers, matches[1]]
+        }
+      })
+    }
+
+    return {
+      exclude_estates,
+      exclude_third_party_offers,
+    }
+  }
   /**
    *
    */
   async getTenantEstates({ request, auth, response }) {
-    const { exclude_from, exclude_to, exclude, limit = 20 } = request.all()
-
-    const user = auth.user
-    let estates
-    try {
-      estates = await EstateService.getTenantAllEstates(
-        user.id,
-        { exclude_from, exclude_to, exclude },
-        limit
-      )
-      estates = await Promise.all(
-        estates.toJSON({ isShort: true, role: user.role }).map(async (estate) => {
-          estate.isoline = await EstateService.getIsolines(estate)
-          return estate
-        })
-      )
-    } catch (e) {
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 406)
-      }
-      throw e
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
     }
-
-    response.res(estates)
+    //const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
+    const user = auth.user
+    try {
+      const tenant = await TenantService.getTenantQuery().where({ user_id: user.id }).first()
+      if (!tenant || !tenant.coord) {
+        throw new HttpException(LAT_LON_NOT_PROVIDED, 400)
+      }
+      response.res(await EstateService.getTenantEstates({ user_id: user.id, page, limit }))
+    } catch (e) {
+      throw new HttpException(e.message, 406)
+    }
   }
 
   /**
@@ -801,9 +856,19 @@ class EstateController {
     estate = estate.toJSON({
       isShort: true,
       role: auth.user.role,
-      extraFields: ['landlord_type'],
+      extraFields: ['landlord_type', 'hash'],
     })
     estate = await EstateService.assignEstateAmenities(estate)
+    response.res(estate)
+  }
+
+  async getThirdPartyOfferEstate({ request, auth, response }) {
+    const { id } = request.all()
+    let estate = await ThirdPartyOfferService.getEstate(auth.user.id, id)
+    if (!estate) {
+      throw new HttpException('Estate not found.', 404)
+    }
+    estate.isoline = await EstateService.getIsolines(estate)
     response.res(estate)
   }
 
@@ -894,7 +959,7 @@ class EstateController {
       response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
     } catch (e) {
       Logger.error(e)
-      throw new HttpException(e.message, 400)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
@@ -1078,10 +1143,9 @@ class EstateController {
           }
           row.breeze_id = row.six_char_code
           let rooms_parsed = {}
-          await row.rooms.map((room) => {
-            if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] = l.get(`${room.name}.message`, lang)
-            }
+          await row.rooms.map((room, r_index) => {
+            rooms_parsed[`room_${r_index}`] =
+              l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
           })
           row.rooms_parsed = rooms_parsed
           row.deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
@@ -1097,10 +1161,8 @@ class EstateController {
       await Promise.all(
         rows.map(async (row, index) => {
           let rooms_parsed = {}
-          await row.rooms.map((room) => {
-            if (room.import_sequence) {
-              rooms_parsed[`room_${room.import_sequence}`] = room.type
-            }
+          await row.rooms.map((room, r_index) => {
+            rooms_parsed[`room_${r_index}`] = room.type
           })
           rows[index].rooms_parsed = rooms_parsed
           rows[index].deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
@@ -1211,6 +1273,35 @@ class EstateController {
       response.res(await EstateService.getFilesByEstateId(estate_id))
     } catch (err) {
       throw new HttpException(err.message)
+    }
+  }
+
+  async getCityList({ request, auth, response }) {
+    response.res((await EstateService.getCities(auth.user.id)).toJSON({ isShort: true }))
+  }
+
+  async searchByPropertyId({ request, auth, response }) {
+    const { property_id } = request.all()
+    response.res(
+      await EstateService.searchNotConnectedAddressByPropertyId({
+        user_id: auth.user.id,
+        property_id,
+      })
+    )
+  }
+
+  async searchPreOnboard({ request, response }) {
+    const data = request.all()
+    try {
+      const point = await PointService.getPointId({ ...data })
+      if (!point) {
+        throw new HttpException('No point info', 400)
+      }
+      const insideEstates = await EstateService.searchEstateByPoint(point.id)
+      const outsideEstates = await ThirdPartyOfferService.searchTenantEstatesByPoint(point.id)
+      response.res([...insideEstates, ...outsideEstates])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 }

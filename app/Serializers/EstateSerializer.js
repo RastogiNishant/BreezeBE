@@ -10,7 +10,7 @@ const File = require('../Classes/File')
 class EstateSerializer extends BaseSerializer {
   mergeData(item, options = {}) {
     const { isOwner = false, isShort = false, extraFields = [], role = null } = options
-    if (!isOwner) {
+    if (!isOwner && !extraFields.includes('hash')) {
       item.hash = undefined
     }
 

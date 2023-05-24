@@ -289,14 +289,13 @@ components:
             - 8
             - 9
           example: 1
-        avail_duration:
-          type: integer
-          example: 1000
-        vacant_date: 
+        avail_start_at:
           type: string
-          format: date
-          example: '2022-04-25'
-        from_date:
+          example:  2023-03-10 00:00:00
+        avail_end_at:
+          type: string
+          example:  2023-03-10 00:00:00
+        vacant_date: 
           type: string
           format: date
           example: '2022-04-25'
@@ -637,6 +636,7 @@ components:
             - BUILDING_STATUS_DEVELOPED: 13
             - BUILDING_STATUS_ABRISSOBJEKT: 14
             - BUILDING_STATUS_PROJECTED: 15
+            - BUILDING_STATUS_FULLY_REFURBISHED: 16
           enum:
             - 1
             - 2

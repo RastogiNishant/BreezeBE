@@ -72,7 +72,7 @@ class PropertyController {
   async getSingle({ request, response }) {
     const { id } = request.all()
     const estate = await Estate.query()
-      .where('id', id)
+      .where('estates.id', id)
       .whereNot('status', STATUS_DELETE)
       .with('user', function (u) {
         u.select('id', 'company_id', 'firstname', 'secondname', 'email as landlordEmail')
@@ -119,7 +119,7 @@ class PropertyController {
       case 'unpublish':
         try {
           await Promise.map(ids, async (id) => {
-            await EstateService.handleOfflineEstate(id, trx)
+            await EstateService.handleOfflineEstate({ estate_id: id }, trx)
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)

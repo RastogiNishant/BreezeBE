@@ -10,7 +10,6 @@ const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 const { reduce, isEmpty, isNull, uniqBy } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
@@ -50,6 +49,8 @@ const {
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
 } = require('../../constants')
+const { createDynamicLink } = require('../../Libs/utils')
+const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
@@ -102,10 +103,7 @@ class MatchController {
       return response.res(result)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -153,10 +151,7 @@ class MatchController {
       return response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e?.status || 400, e?.code || 0)
     }
   }
 
@@ -258,24 +253,11 @@ class MatchController {
     try {
       const currentTenant = await MatchService.findCurrentTenant(estate_id, tenant_id)
       if (currentTenant) {
-        const result = await MatchService.invitedTenant(estate_id, tenant_id, invite_to)
-        const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
-
+        await MatchService.invitedTenant(estate_id, tenant_id, invite_to)
         if (invite_to === TENANT_EMAIL_INVITE) {
-          const { shortLink } = await firebaseDynamicLinks.createLink({
-            dynamicLinkInfo: {
-              domainUriPrefix: process.env.DOMAIN_PREFIX,
-              link: `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`,
-              androidInfo: {
-                androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-              },
-              iosInfo: {
-                iosBundleId: process.env.IOS_BUNDLE_ID,
-                iosAppStoreId: process.env.IOS_APPSTORE_ID,
-              },
-            },
-          })
-
+          const shortLink = await createDynamicLink(
+            `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`
+          )
           MailService.sendInvitationToTenant(currentTenant.email, shortLink)
         } else {
         }
@@ -449,13 +431,18 @@ class MatchController {
    */
   async moveUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
-    const success = await MatchService.toTop(estate_id, user_id)
-    if (!success) {
-      throw new HttpException('Cant move to top', 400)
+    try {
+      await this.getOwnEstate(estate_id, auth.user.id)
+      const success = await MatchService.toTop(estate_id, user_id)
+      if (!success) {
+        throw new HttpException('Cant move to top', 400)
+      }
+      NoticeService.landlordMovedProspectToTop(estate_id, user_id)
+      response.res(true)
+    } catch (e) {
+      console.log('moveUserToTop', e.message)
+      throw new HttpException(e.message, e.status || 400)
     }
-    NoticeService.landlordMovedProspectToTop(estate_id, user_id)
-    response.res(true)
   }
 
   async cancelTopByTenant({ request, auth, response }) {
@@ -528,10 +515,7 @@ class MatchController {
       response.res(true)
     } catch (e) {
       Logger.error(e)
-      if (e.name === 'AppException') {
-        throw new HttpException(e.message, 400)
-      }
-      throw e
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -576,21 +560,43 @@ class MatchController {
       currentTab = activeFilters[0]
     }
 
-    const isDislikeFilter = filters.dislike
-
-    let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).paginate(
-      isDislikeFilter ? 1 : page,
-      isDislikeFilter ? 9999 : limit
-    )
-
-    const countResult =
-      (await MatchService.getCountTenantMatchesWithFilterQuery(user.id, filters)).toJSON() || []
+    let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
+    let thirdPartyOffers = []
+    if (filters && (filters.knock || filters.like || filters.dislike)) {
+      thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+    }
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     estates = estates.toJSON(params)
-    estates.data = uniqBy(estates.data, 'id')
-    estates.total = countResult.length ? parseInt(countResult[0]?.count) : 0
-    estates.lastPage = parseInt(estates.total / limit) + 1
+    estates = [...estates, ...thirdPartyOffers]
+
+    let estateData = uniqBy(estates, 'id')
+
+    /**
+     * if a tenant invites outside landlord and create a task, need to add pending final match until a landlord accepts invitation
+     * this final pending has to be removed if a landlord assigns that task to a specific property
+     */
+    if (filters && filters.final) {
+      const pendingEstates = await EstateService.getPendingFinalMatchEstate(user.id)
+      estates = [...estates, ...pendingEstates]
+      estateData = [...estateData, ...pendingEstates]
+    }
+
+    if (filters.like || filters.dislike || filters.knock) {
+      estateData = estateData.sort((a, b) => (a?.action_at > b?.action_at ? -1 : 1))
+    }
+
+    const startIndex = (page - 1) * limit
+    const endIndex = startIndex + limit
+
+    estates = {
+      total: estateData.length,
+      lastPage: Math.ceil(estateData.length / limit),
+      page,
+      perPage: limit,
+      data: estateData.slice(startIndex, endIndex),
+    }
+
     if (filters?.dislike) {
       const trashEstates = await EstateService.getTenantTrashEstates(user.id)
       estates = {
@@ -700,7 +706,7 @@ class MatchController {
         .where('user_id', user.id)
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
         .select('id')
-        .select('available_date')
+        .select('available_start_at', 'available_end_at')
         .fetch()
 
       const allEstatesJson = allEstates.toJSON()
@@ -770,18 +776,22 @@ class MatchController {
       groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, buddies)
       counts.buddies = buddies.length
 
-      const newMatchedEstatesCount = groupedFilteredEstates.length
-      const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
+      // const newMatchedEstatesCount = groupedFilteredEstates.length
+      // const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
       counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
-      counts.totalInvite =
-        counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+      // counts.totalInvite =
+      //   counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
 
-      const currentDay = moment().startOf('day')
+      counts.totalInvite = counts.matches + counts.buddies
 
-      counts.expired = allEstatesJson.filter((e) =>
-        moment(e.available_date).isBefore(currentDay)
+      const currentDay = moment().utc().startOf('day')
+
+      counts.expired = allEstatesJson.filter(
+        (e) =>
+          moment.utc(e.available_end_at).isBefore(currentDay) ||
+          moment.utc(e.available_start_at).isAfter(currentDay)
       ).length
 
       const showed = await Estate.query()
@@ -801,7 +811,7 @@ class MatchController {
           query.where('status', MATCH_STATUS_FINISH)
         })
         .count()
-      console.log('finalMatches here=', finalMatches)
+
       counts.finalMatches = finalMatches[0].count
 
       return response.res(counts)
@@ -865,7 +875,9 @@ class MatchController {
     const estate = await EstateService.getQuery({
       id: estate_id,
       'estates.user_id': user.id,
-    }).first()
+    })
+      .with('slots')
+      .first()
     if (!estate) {
       throw new HttpException('Not found', 400)
     }
@@ -1138,6 +1150,23 @@ class MatchController {
       invite,
     })
     response.res(result)
+  }
+
+  async postThirdPartyOfferAction({ request, auth, response }) {
+    let { action, id, comment, message } = request.all()
+    try {
+      const result = await ThirdPartyOfferService.postAction(
+        auth.user.id,
+        id,
+        action,
+        comment,
+        message
+      )
+      return response.res(result)
+    } catch (err) {
+      console.log(err)
+      throw new HttpException(err.message, 400)
+    }
   }
 }
 

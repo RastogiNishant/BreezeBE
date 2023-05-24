@@ -196,14 +196,13 @@ class UserController {
             }
           })
           //FIXME: tzOffset should be coming from header or body of request
-          const tzOffset = 2
           let workingDaysAdded = 0
           let deactivateDateTime
           let daysAdded = 0
           //calculate when the deactivation will occur.
           do {
             daysAdded++
-            deactivateDateTime = moment().utcOffset(tzOffset).add(daysAdded, 'days')
+            deactivateDateTime = moment().utc().add(daysAdded, 'days')
             if (
               !(
                 isHoliday(deactivateDateTime.format('yyyy-MM-DD')) ||
@@ -249,6 +248,7 @@ class UserController {
 
   async getLandlords({ request, response }) {
     let { activation_status, status, estate_status, page, limit, query, today } = request.all()
+    let { light } = request.get()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -287,6 +287,9 @@ class UserController {
         isArray(activation_status) ? activation_status : [activation_status]
       )
       .with('estates', function (e) {
+        if (light && +light === 1) {
+          e.select('id', 'user_id', 'status', 'address')
+        }
         e.whereNot('status', STATUS_DELETE)
         e.whereIn('status', isArray(estate_status) ? estate_status : [estate_status])
         e.withCount('current_tenant', function (q) {

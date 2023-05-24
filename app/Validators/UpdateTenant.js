@@ -19,6 +19,13 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
+
   // Building type
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
@@ -33,12 +40,16 @@ const {
   //Minor
   MAX_MINOR_COUNT,
 } = require('../constants')
+const {
+  getExceptionMessage,
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
+} = require('../exceptions')
 
 class UpdateTenant extends Base {
   static schema = () =>
     yup.object().shape({
       private_use: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PETS_ANY, PETS_BIG]).nullable(),
+      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PETS_ANY]).nullable(),
       pets_species: yup.string().max(255).nullable(),
       non_smoker: yup.boolean(),
       parking_space: yup.number().min(0),
@@ -78,6 +89,12 @@ class UpdateTenant extends Base {
               APARTMENT_TYPE_SOCIAL,
               APARTMENT_TYPE_SOUTERRAIN,
               APARTMENT_TYPE_PENTHOUSE,
+              APARTMENT_TYPE_TERRACES,
+              APARTMENT_TYPE_ETAGE,
+              APARTMENT_TYPE_HOLIDAY,
+              APARTMENT_TYPE_GALLERY,
+              APARTMENT_TYPE_RAW_ATTIC,
+              APARTMENT_TYPE_ATTIC,
             ])
         ),
       house_type: yup
@@ -105,8 +122,30 @@ class UpdateTenant extends Base {
       options: yup.array().of(yup.number().integer().positive().max(999)),
       rent_start: yup.date(),
       transfer_budget_min: yup.number().integer().positive().min(0).max(2500).nullable(),
-      transfer_budget_max: yup.number().integer().positive().min(0).max(500_000).nullable(),
-      residency_duration: yup.number().integer().nullable().min(0).max(36).nullable(),
+      transfer_budget_max: yup.number().integer().positive().min(0).max(500000).nullable(),
+      is_short_term_rent: yup.boolean(),
+      residency_duration_min: yup.number().integer().nullable().min(0).nullable(),
+      residency_duration_max: yup
+        .number()
+        .integer()
+        .when(['residency_duration_min'], (residency_duration_min, schema, { value }) => {
+          if (!residency_duration_min) return schema
+          return value && value <= residency_duration_min
+            ? yup
+                .number()
+                .integer()
+                .min(
+                  available_start_at,
+                  getExceptionMessage(
+                    'residency_duration_max',
+                    SHOULD_BE_AFTER,
+                    residency_duration_min
+                  )
+                )
+            : schema
+        })
+        .nullable(),
+      selected_adults_count: yup.number().integer(),
     })
 }
 

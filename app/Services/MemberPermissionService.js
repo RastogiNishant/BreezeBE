@@ -30,18 +30,27 @@ class MemberPermissionService {
     return false
   }
 
-  static async deletePermission(member_id, trans = null) {
+  static async deletePermission(member_id, trx = null) {
     try {
-      await MemberPermission.query().where('member_id', member_id).delete(trans)
+      if (trx) {
+        await MemberPermission.query().where('member_id', member_id).delete().transacting(trx)
+      } else {
+        await MemberPermission.query().where('member_id', member_id).delete()
+      }
       return true
     } catch (e) {
       throw e
     }
   }
 
-  static async deletePermissionByUser(user_id, trans = null) {
+  static async deletePermissionByUser(user_id, trx = null) {
     try {
-      await MemberPermission.query().where('user_id', user_id).delete(trans)
+      if (trx) {
+        await MemberPermission.query().where('user_id', user_id).delete().transacting(trx)
+      } else {
+        await MemberPermission.query().where('user_id', user_id).delete()
+      }
+
       return true
     } catch (e) {
       throw e

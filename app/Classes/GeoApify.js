@@ -92,7 +92,7 @@ class GeoPify {
         return this.promisedAnswer(id)
       })
       .catch((e) => {
-        console.log('err', e)
+        console.log('makeBatchedCall error', e.message)
       })
   }
 

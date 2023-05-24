@@ -14,6 +14,7 @@ class HosekeeperSignUp extends Base {
   static schema = () =>
     yup.object().shape({
       firstname: yup.string().min(2).max(254),
+      secondname: yup.string().min(2).max(254),
       email: yup.string().email().lowercase().required(),
       password: yup.string().trim().min(6).max(36).required(),
       // confirmPassword: yup.string().trim().min(6).max(36).required(),
