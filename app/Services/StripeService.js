@@ -348,7 +348,6 @@ class StripeService {
       console.log('customer here', customer)
 
       const invoice = await Stripe.createInvoice(customer)
-      await Stripe.getPaymentIntent(invoice.id)
       console.log('created invoice', JSON.stringify(invoice))
       console.log('created invoice price id', publishPlan.price_id)
       await Stripe.createInvoiceItem({
@@ -358,8 +357,6 @@ class StripeService {
       })
       await Stripe.finalizeInvoice(invoice.id)
       await Stripe.payInvoice(invoice.id)
-
-      // const invoice = await Stripe.getInvoice('in_1NAzqtLHZE8cb7ZfsZfdDIxm')
 
       // await Stripe.createPaymentIntent({
       //   customer,
