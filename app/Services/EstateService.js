@@ -647,14 +647,12 @@ class EstateService {
           }
         }
       }
-      console.log('estateJson', estate.toJSON())
       updateData = {
         ...estate.toJSON({
           extraFields: ['verified_address', 'cover_thumb'],
         }),
         ...updateData,
       }
-      console.log('updateData', updateData)
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
 
