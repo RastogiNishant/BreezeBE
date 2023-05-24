@@ -196,9 +196,7 @@ class PropertyController {
           .delete()
           .transacting(trx),
       })
-      await Estate.query()
-        .where('id', id)
-        .update({ status: STATUS_ACTIVE, is_published: true }, trx)
+      await Estate.query().where('id', id).update({ status: STATUS_ACTIVE }, trx)
       await trx.commit()
       await MailService.estatePublishRequestApproved(isRequestingPublish)
       QueueService.estateSyncPublishEstate({ estate_id: id })
