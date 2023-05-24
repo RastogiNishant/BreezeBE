@@ -535,11 +535,11 @@ class Estate extends Model {
   /**
    *
    */
-  async publishEstate(status, performed_by = null, trx) {
+  async publishEstate(status, trx) {
     await this.updateItemWithTrx(
       {
         status: status,
-        is_published: performed_by === null,
+        is_published: true,
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),

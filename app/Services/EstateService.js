@@ -2,6 +2,7 @@
 const moment = require('moment')
 const {
   isEmpty,
+  isNull,
   filter,
   omit,
   flatten,
@@ -1416,7 +1417,6 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
-        status = STATUS_ACTIVE
         if (publishers?.length) {
           await require('./EstateSyncService.js').saveMarketPlacesInfo(
             {
@@ -1445,7 +1445,7 @@ class EstateService {
         Event.fire('match::estate', estate.id)
       }
 
-      await estate.publishEstate(status, performed_by, trx)
+      await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
 
       if (!is_queue) {
         //send email to support for landlord update...

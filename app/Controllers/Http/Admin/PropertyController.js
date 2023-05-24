@@ -153,9 +153,7 @@ class PropertyController {
           publishers,
           performed_by: null,
         })
-        if (result === STATUS_ACTIVE) {
-          QueueService.estateSyncPublishEstate({ estate_id: id })
-        }
+        QueueService.estateSyncPublishEstate({ estate_id: id })
         return await EstateService.getByIdWithDetail(id)
       } catch (e) {
         if (e.name === 'ValidationException') {
@@ -176,8 +174,8 @@ class PropertyController {
       .select('users.*')
       .innerJoin('users', 'users.id', 'estates.user_id')
       .where('estates.id', id)
-      .where('estates.status', STATUS_ACTIVE)
-      .where('is_published', false)
+      .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
+      .where('is_published', true)
       .first()
     if (!isRequestingPublish) {
       throw new HttpException('This estate is not marked for publish', 400, 114001)
@@ -215,8 +213,8 @@ class PropertyController {
   async declinePublish(id) {
     const isRequestingPublish = await Estate.query()
       .where('id', id)
-      .where('status', STATUS_ACTIVE)
-      .where('is_published', false)
+      .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
+      .where('is_published', true)
       .first()
     if (!isRequestingPublish) {
       throw new HttpException('This estate is not marked for publish', 400, 114002)

@@ -229,7 +229,7 @@ class QueueJobService {
 
       if (estateIdsToDraft && estateIdsToDraft.length) {
         await Estate.query()
-          .update({ status: STATUS_DRAFT })
+          .update({ status: STATUS_DRAFT, is_published: false })
           .whereIn('id', estateIdsToDraft)
           .transacting(trx)
       }
@@ -273,8 +273,8 @@ class QueueJobService {
     return await Estate.query()
       .select('*')
       .with('estateSyncListings')
-      .where('status', STATUS_DRAFT)
-      .where('is_published', true)
+      .whereIn('status', [STATUS_DRAFT, STATUS_EXPIRE])
+      .where('is_published', false)
       .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
