@@ -188,7 +188,10 @@ class QueueJobService {
 
       let i = 0
       while (i < estates.length) {
-        await require('./EstateService').publishEstate({ estate: estates[i] }, true)
+        await require('./EstateService').publishEstate(
+          { estate: estates[i], performed_by: estates[i].user_id },
+          true
+        )
         i++
       }
     } catch (e) {
@@ -219,7 +222,7 @@ class QueueJobService {
     try {
       if (estateIdsToExpire && estateIdsToExpire.length) {
         await Estate.query()
-          .update({ status: STATUS_EXPIRE })
+          .update({ status: STATUS_EXPIRE, is_published: false })
           .whereIn('id', estateIdsToExpire)
           .transacting(trx)
       }
