@@ -11,6 +11,7 @@ const {
   CHAT_TYPE_MESSAGE,
   CHAT_EDIT_STATUS_UNEDITED,
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT,
+  OUTSIDE_LANDLORD_INVITE_TYPE,
 } = require('../constants')
 const {
   exceptions: { NOT_FOUND_OUTSIDE_INVITAION },
@@ -99,7 +100,7 @@ class OutsideLandlordService {
 
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
-      `&data2=${encodeURIComponent(iv.toString('base64'))}&landlord_invite=true` +
+      `&data2=${encodeURIComponent(iv.toString('base64'))}` +
       `&email=${task.email}`
 
     const landlords = (
@@ -114,8 +115,8 @@ class OutsideLandlordService {
     uri += `&lang=${lang}`
 
     const shortLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}?type=outsideinvitation${uri}`,
-      `${process.env.SITE_URL}/connect?type=outsideinvitation&tab=1${uri}`
+      `${process.env.DEEP_LINK}?type=${OUTSIDE_LANDLORD_INVITE_TYPE}${uri}`,
+      `${process.env.SITE_URL}/connect?type=${OUTSIDE_LANDLORD_INVITE_TYPE}&tab=1${uri}`
     )
     return {
       id: task.id,

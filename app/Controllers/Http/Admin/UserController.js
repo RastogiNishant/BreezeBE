@@ -133,7 +133,10 @@ class UserController {
             })
           })
 
-          UserService.emitAccountEnabled(ids, true)
+          UserService.emitAccountEnabled(ids, {
+            activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
+            activated: true,
+          })
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -175,7 +178,10 @@ class UserController {
           })
           //send notifications
           NoticeService.landlordsDeactivated(ids, estateIds)
-          UserService.emitAccountEnabled(ids, false)
+          UserService.emitAccountEnabled(ids, {
+            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+            activated: false,
+          })
           return response.res({ affectedRows })
         } catch (err) {
           console.log(err.message)
@@ -257,7 +263,7 @@ class UserController {
       ]
     }
     status = status || STATUS_ACTIVE
-    estate_status = estate_status || STATUS_DRAFT
+    estate_status = estate_status || [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT]
     limit = 99999
     const landlordQuery = User.query()
       .select(

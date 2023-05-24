@@ -457,7 +457,7 @@ class TaskService extends BaseService {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.select(ESTATE_FIELD_FOR_TASK).with('user')
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
@@ -467,8 +467,12 @@ class TaskService extends BaseService {
     if (status) {
       taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
     }
+
+    if (estate_id) {
+      taskQuery.where('tasks.estate_id', estate_id)
+    }
+
     taskQuery
-      .where('tasks.estate_id', estate_id)
       .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
       .orderBy('tasks.urgency', 'desc')
@@ -535,7 +539,7 @@ class TaskService extends BaseService {
     const filter = new TaskFilters(param, query)
     query = filter.process()
 
-    query.orderBy('tasks.updated_at')
+    query.orderBy('tasks.updated_at', 'desc')
 
     if (!page || page === -1 || !limit || limit === -1) {
       return await query.fetch()
@@ -592,10 +596,7 @@ class TaskService extends BaseService {
 
     if (estate_id) {
       const finalMatch = await MatchService.getFinalMatch(estate_id)
-      if (!finalMatch) {
-        throw new HttpException('No final match yet for property', 400)
-      }
-      return finalMatch.user_id
+      return finalMatch?.user_id
     }
 
     if (role === ROLE_USER) {

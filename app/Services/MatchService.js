@@ -88,9 +88,10 @@ const {
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND },
+  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
+const QueueService = require('./QueueService')
 
 /**
  * Check is item in data range
@@ -143,7 +144,6 @@ class MatchService {
         }
       }
     }
-
     const incomes = await require('./MemberService').getIncomes(prospect.user_id)
     if (!incomes?.length) {
       return 0
@@ -220,7 +220,6 @@ class MatchService {
     D2 - estateBudgetRel*/
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
-      log("Prospect can't afford.")
       return 0
     }
     let estateBudgetRel = estateBudget / 100
@@ -501,8 +500,8 @@ class MatchService {
       // Max radius
       const trx = await Database.beginTransaction()
       try {
-        const insideMatches = await this.createNewMatches({ tenant, has_notification_sent }, trx)
-        const outsideMatches = await ThirdPartyMatchService.createNewMatches(
+        await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
@@ -510,7 +509,6 @@ class MatchService {
           trx
         )
         await trx.commit()
-        count = insideMatches?.length + outsideMatches?.length
       } catch (e) {
         console.log('matchByUser error', e.message)
         await trx.rollback()
@@ -521,6 +519,7 @@ class MatchService {
       message = e.message
     } finally {
       const matches = await EstateService.getTenantEstates({ user_id: userId, page: 1, limit: 20 })
+      count = matches?.count || 0
       await this.emitCreateMatchCompleted({
         user_id: userId,
         data: {
@@ -585,7 +584,11 @@ class MatchService {
         if (
           oldMatches.find((o) => o.user_id === match.user_id && o.estate_id === match.estate_id)
         ) {
-          await Match.updateItemWithTrx(match, trx)
+          await Match.query()
+            .where('user_id', match.user_id)
+            .where('estate_id', match.estate_id)
+            .update({ percent: match.percent })
+            .transacting(trx)
         } else {
           await Match.createItem(match, trx)
         }
@@ -665,8 +668,8 @@ class MatchService {
   /**
    * Try to knock to estate
    */
-  static async knockEstate(estateId, userId, knock_anyway) {
-    const query = Tenant.query().where({ user_id: userId })
+  static async knockEstate({ estate_id, user_id, share_profile, knock_anyway }, trx) {
+    const query = Tenant.query().where({ user_id })
     if (knock_anyway) {
       query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
     } else {
@@ -679,10 +682,7 @@ class MatchService {
 
     // Get match with allowed status
     const getMatches = async () => {
-      return Database.query()
-        .from('matches')
-        .where({ user_id: userId, estate_id: estateId })
-        .first()
+      return Database.query().from('matches').where({ user_id, estate_id }).first()
     }
 
     // Get like and check is match not exists or new
@@ -690,7 +690,7 @@ class MatchService {
       return Database.query()
         .from('likes')
         .select('matches.status')
-        .where({ 'likes.user_id': userId, 'likes.estate_id': estateId })
+        .where({ 'likes.user_id': user_id, 'likes.estate_id': estate_id })
         .leftJoin('matches', function () {
           this.on('matches.estate_id', 'likes.estate_id').on('matches.user_id', 'likes.user_id')
         })
@@ -703,59 +703,82 @@ class MatchService {
     })
 
     if (!match && !like && !knock_anyway) {
-      throw new AppException('Not allowed')
+      throw new AppException('Not allowed', 400)
     }
 
-    const trx = await Database.beginTransaction()
+    let isOutsideTrxExist = true
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      isOutsideTrxExist = false
+    }
+
     try {
       if (match) {
         if (match.status === MATCH_STATUS_NEW) {
           // Update match to knock
           await Match.query()
             .update({
-              status: MATCH_STATUS_KNOCK,
+              status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+              share: share_profile ? true : false,
               knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
             })
             .where({
-              user_id: userId,
-              estate_id: estateId,
+              user_id,
+              estate_id,
             })
             .transacting(trx)
         } else {
           throw new AppException('Invalid match stage')
         }
       } else if (like || knock_anyway) {
-        console.log('percent here=', like)
-        //FIXME: why percent is 0? It can have value if there is a like
+        const estate = await MatchService.getEstateForScoringQuery()
+          .where({ id: estate_id })
+          .first()
+        if (!estate) {
+          throw new HttpException(NO_ESTATE_EXIST, 500)
+        }
+
+        const percent = await MatchService.calculateMatchPercent(tenant, estate)
         await Match.createItem(
           {
-            status: MATCH_STATUS_KNOCK,
-            user_id: userId,
-            estate_id: estateId,
-            percent: 0,
+            status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+            share: share_profile ? true : false,
+            user_id,
+            estate_id,
+            percent,
             knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
           },
           trx
         )
       }
       await Dislike.query()
-        .where('user_id', userId)
-        .where('estate_id', estateId)
+        .where('user_id', user_id)
+        .where('estate_id', estate_id)
         .delete()
         .transacting(trx)
 
-      await trx.commit()
+      if (!isOutsideTrxExist) {
+        await trx.commit()
+        this.sendMatchKnockWebsocket({ estate_id, user_id, share_profile })
+      }
     } catch (e) {
-      await trx.rollback()
+      if (!isOutsideTrxExist) {
+        await trx.rollback()
+      }
+
       throw new HttpException(e.message, 400)
     }
+    return true
+  }
 
+  static async sendMatchKnockWebsocket({ estate_id, user_id, share_profile = false }) {
     this.emitMatch({
       data: {
-        estate_id: estateId,
-        user_id: userId,
+        estate_id: estate_id,
+        user_id: user_id,
         old_status: MATCH_STATUS_NEW,
-        status: MATCH_STATUS_KNOCK,
+        share: share_profile,
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
       event: WEBSOCKET_EVENT_MATCH_STAGE,
@@ -763,15 +786,14 @@ class MatchService {
 
     this.emitMatch({
       data: {
-        estate_id: estateId,
-        user_id: userId,
+        estate_id: estate_id,
+        user_id: user_id,
         old_status: MATCH_STATUS_NEW,
-        status: MATCH_STATUS_KNOCK,
+        share: share_profile,
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
     })
-
-    return true
   }
 
   static async emitCreateMatchCompleted({ user_id, data }) {
@@ -1599,6 +1621,8 @@ class MatchService {
 
     // need to make previous tasks which was between landlord and previous tenant archived
     await require('./TaskService').archiveTask(estate_id, trx)
+    // unpublish estates on marketplace
+    QueueService.estateSyncUnpublishEstates([estate_id], true)
 
     if (!fromInvitation) {
       await EstateCurrentTenantService.createOnFinalMatch(user, estate_id, trx)
@@ -2309,7 +2333,6 @@ class MatchService {
   static searchForLandlord(userId, searchQuery) {
     const query = EstateService.getEstates(userId)
       .select('*')
-      .where('estates.user_id', userId)
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
     if (searchQuery) {
@@ -2372,13 +2395,11 @@ class MatchService {
       })
       .leftJoin({ _mb: 'members' }, function () {
         //primaryUser?
-        this.on('_mb.user_id', '_m.user_id').onIn('_mb.id', function () {
-          this.min('id')
-            .from('members')
-            .where('user_id', Database.raw('_m.user_id'))
-            .whereNot('child', true)
-            .limit(1)
-        })
+        this.on(
+          Database.raw(
+            `( _mb.user_id = tenants.user_id and _mb.owner_user_id is null ) or ( _mb.owner_user_id = tenants.user_id and _mb.owner_user_id is not null )`
+          )
+        )
       })
       .leftJoin(
         //members have proofs for credit_score and no_rent_arrears
@@ -2606,6 +2627,7 @@ class MatchService {
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
+      .select('_mb.firstname', '_mb.secondname', '_mb.birthday')
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -3134,7 +3156,7 @@ class MatchService {
         //members...
         Database.raw(`
       (select
-        user_id,
+        user_id, owner_user_id,
         avg(credit_score) as credit_score,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
@@ -3143,11 +3165,15 @@ class MatchService {
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
-      group by user_id
+      group by user_id,owner_user_id
       ) as _m
       `),
         function () {
-          this.on('tenants.user_id', '_m.user_id')
+          this.on(
+            Database.raw(
+              `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
+            )
+          )
         }
       )
       .leftJoin(
@@ -3559,7 +3585,7 @@ class MatchService {
           .innerJoin({ _m: 'matches' }, function () {
             this.on('_m.estate_id', 'estates.id')
               .onIn('_m.user_id', [userId])
-              .onIn('_m.status', MATCH_STATUS_NEW)
+              .onIn('_m.status', [MATCH_STATUS_NEW])
           })
           .whereNot('_m.buddy', true)
           .where('estates.status', STATUS_ACTIVE)

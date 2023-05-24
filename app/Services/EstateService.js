@@ -90,6 +90,7 @@ const {
   MATCH_STATUS_FINISH_PENDING,
   DAY_FORMAT,
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
+  FILE_TYPE_CUSTOM,
 } = require('../constants')
 
 const {
@@ -327,6 +328,10 @@ class EstateService {
       .first()
   }
 
+  static async getEstateWithUser(id) {
+    return await this.getActiveEstateQuery().where('id', id).with('user').first()
+  }
+
   static async getEstateWithDetails({ id, user_id, role }) {
     const estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
@@ -397,6 +402,7 @@ class EstateService {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
+      .with('estateSyncListings')
 
     if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
@@ -456,11 +462,11 @@ class EstateService {
   static async getEstateWithTenant(id, user_id) {
     const query = Estate.query()
       .select('estates.*', '_u.avatar')
-      .innerJoin({ _m: 'matches' }, function () {
+      .leftJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
         this.on('_m.status', MATCH_STATUS_FINISH)
       })
-      .innerJoin({ _u: 'users' }, '_m.user_id', '_u.id')
+      .leftJoin({ _u: 'users' }, '_m.user_id', '_u.id')
       .where('estates.id', id)
       .whereNotIn('estates.status', [STATUS_DELETE])
 
@@ -578,11 +584,14 @@ class EstateService {
     }
   }
 
+  static async updateShowRequired({ id, is_not_show = false }) {
+    await Estate.query().where('id', id).update({ is_not_show })
+  }
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
 
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type']),
+      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
       status: STATUS_DRAFT,
     }
 
@@ -639,8 +648,16 @@ class EstateService {
         }
       }
 
+      updateData = {
+        ...estate.toJSON({
+          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
+        }),
+        ...updateData,
+      }
       await estate.updateItemWithTrx(updateData, trx)
       await this.handleOfflineEstate({ estate_id: estate.id }, trx)
+
+      QueueService.estateSyncUnpublishEstates([estate.id], true)
 
       if (+updateData.percent >= ESTATE_COMPLETENESS_BREAKPOINT) {
         QueueService.sendEmailToSupportForLandlordUpdate({
@@ -703,10 +720,12 @@ class EstateService {
    *
    */
   static getEstates(user_ids, params = {}) {
+    user_ids = user_ids ? (Array.isArray(user_ids) ? user_ids : [user_ids]) : null
+
     let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
       .withCount('notifications', function (n) {
-        if (user_ids && user_ids.length) {
-          user_ids = Array.isArray(user_ids) ? user_ids : [user_ids]
+        if (user_ids?.length) {
           n.whereIn('user_id', user_ids)
         }
         if (params && params.id) {
@@ -731,10 +750,9 @@ class EstateService {
       .with('current_tenant', function (q) {
         q.with('user')
       })
-      .with('rooms', function (q) {
-        q.with('room_amenities').with('images')
-      })
-      .with('files')
+    if (user_ids?.length) {
+      query.whereIn('estates.user_id', user_ids)
+    }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
     return query.orderBy('estates.id', 'desc')
@@ -743,10 +761,9 @@ class EstateService {
   /**
    *
    */
-  static getUpcomingShows(ids, query = '') {
-    return this.getEstates(ids)
+  static getUpcomingShows(userIds, query = '') {
+    return this.getEstates(userIds)
       .innerJoin({ _t: 'time_slots' }, '_t.estate_id', 'estates.id')
-      .whereIn('estates.user_id', ids)
       .whereNotIn('status', [STATUS_DELETE, STATUS_DRAFT])
       .whereNot('area', 0)
       .where(function () {
@@ -1155,7 +1172,7 @@ class EstateService {
       .where('_t.user_id', tenant.user_id)
       .where(function () {
         this.orWhereNull('_m.id')
-        this.orWhereNull('_m.status', MATCH_STATUS_NEW)
+        this.orWhere('_m.status', MATCH_STATUS_NEW)
       })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
@@ -1229,40 +1246,7 @@ class EstateService {
    */
 
   static getActiveMatchesQuery(userId) {
-    return Estate.query()
-      .select('estates.*')
-      .withCount('knocked')
-      .select(Database.raw(`_m.percent AS match`))
-      .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', 'estates.id')
-          .onIn('_m.user_id', [userId])
-          .onIn('_m.status', MATCH_STATUS_NEW)
-      })
-      .whereNot('_m.buddy', true)
-      .where('estates.status', STATUS_ACTIVE)
-      .whereNotIn('estates.id', function () {
-        // Remove already liked/disliked
-        this.select('estate_id')
-          .from('likes')
-          .where('user_id', userId)
-          .union(function () {
-            this.select('estate_id').from('dislikes').where('user_id', userId)
-          })
-      })
-      .with('rooms', function (b) {
-        b.whereNot('status', STATUS_DELETE).with('images')
-      })
-      .with('files')
-      .with('user', function (u) {
-        u.select('id', 'company_id')
-        u.with('company', function (c) {
-          c.select('id', 'avatar', 'name', 'visibility')
-          c.with('contacts', function (ct) {
-            ct.select('id', 'full_name', 'company_id')
-          })
-        })
-      })
-      .orderBy('_m.percent', 'DESC')
+    return this.getMachesQuery(Estate.query(), userId)
   }
 
   static async getTenantTrashEstates(userId) {
@@ -1325,6 +1309,42 @@ class EstateService {
     return trashedEstates
   }
 
+  static getMachesQuery(query, userId) {
+    return query
+      .select('estates.*')
+      .withCount('knocked')
+      .select(Database.raw(`_m.percent AS match`))
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id')
+          .onIn('_m.user_id', [userId])
+          .onIn('_m.status', [MATCH_STATUS_NEW])
+      })
+      .whereNot('_m.buddy', true)
+      .where('estates.status', STATUS_ACTIVE)
+      .whereNotIn('estates.id', function () {
+        // Remove already liked/disliked
+        this.select('estate_id')
+          .from('likes')
+          .where('user_id', userId)
+          .union(function () {
+            this.select('estate_id').from('dislikes').where('user_id', userId)
+          })
+      })
+      .with('rooms', function (b) {
+        b.whereNot('status', STATUS_DELETE).with('images')
+      })
+      .with('files')
+      .with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+      .orderBy('_m.percent', 'DESC')
+  }
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
@@ -1351,45 +1371,7 @@ class EstateService {
       throw new AppException('Invalid match query')
     }
 
-    query.where({ status: STATUS_ACTIVE }).whereNotIn('estates.id', function () {
-      // Remove already liked/disliked
-      this.select('estate_id')
-        .from('likes')
-        .where('user_id', userId)
-        .union(function () {
-          this.select('estate_id').from('dislikes').where('user_id', userId)
-        })
-    })
-
-    query.whereNotIn('estates.id', function () {
-      // Remove already matched
-      this.select('estate_id')
-        .from('matches')
-        .whereNot('status', MATCH_STATUS_NEW)
-        .where('user_id', userId)
-    })
-
-    return (
-      query
-        .select('estates.*')
-        .withCount('knocked')
-        .with('rooms', function (b) {
-          b.whereNot('status', STATUS_DELETE).with('images')
-        })
-        .with('files')
-        .with('user', function (u) {
-          u.select('id', 'company_id')
-          u.with('company', function (c) {
-            c.select('id', 'avatar', 'name', 'visibility')
-            c.with('contacts', function (ct) {
-              ct.select('id', 'full_name', 'company_id')
-            })
-          })
-        })
-        .select(Database.raw(`'0' AS match`))
-        // .orderByRaw("COALESCE(estates.updated_at, '2000-01-01') DESC")
-        .orderBy('estates.id', 'DESC')
-    )
+    return this.getMachesQuery(query, userId)
   }
 
   /**
@@ -1413,7 +1395,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate(estate, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by = null }, is_queue = false) {
     let status = estate.status
     const trx = await Database.beginTransaction()
 
@@ -1422,7 +1404,6 @@ class EstateService {
       if (!user) {
         throw new HttpException(NO_ESTATE_EXIST, 400)
       }
-
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
@@ -1448,6 +1429,17 @@ class EstateService {
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
         status = STATUS_ACTIVE
+        if (publishers?.length) {
+          await require('./EstateSyncService.js').saveMarketPlacesInfo(
+            {
+              estate_id: estate.id,
+              estate_sync_property_id: null,
+              performed_by,
+              publishers,
+            },
+            trx
+          )
+        }
         // Run match estate
         Event.fire('match::estate', estate.id)
       }
@@ -1467,6 +1459,7 @@ class EstateService {
       await trx.commit()
       return status
     } catch (e) {
+      console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
       await trx.rollback()
       throw new HttpException(e.message, 500)
     }
@@ -1512,33 +1505,51 @@ class EstateService {
     }
   }
 
-  static async getEstatesByUserId({ ids, limit = -1, page = -1, params = {} }) {
-    let query = this.getEstates(ids, params)
+  static async getEstatesByUserId({ user_ids, limit = -1, page = -1, params = {} }) {
+    let query = this.getEstates(user_ids, params)
       .whereNot('estates.status', STATUS_DELETE)
-      .with('current_tenant', function (c) {
-        c.with('user', function (u) {
-          u.select('id', 'avatar')
-        })
-      })
-      .withCount('visits')
-      .withCount('decided')
-      .withCount('invite')
-      .withCount('final')
-      .withCount('inviteBuddies')
       .with('slots')
+      .with('rooms', function (q) {
+        q.with('images')
+      })
+      .with('files')
+      .with('estateSyncListings')
 
-    if (ids && ids.length) {
-      query.whereIn('estates.user_id', ids)
-    }
     if (params && params.id) {
       query.where('estates.id', params.id)
     }
 
+    let result
     if (page === -1 || limit === -1) {
-      return await query.fetch()
+      result = await query.fetch()
     } else {
-      return await query.paginate(page, limit)
+      result = await query.paginate(page, limit)
     }
+    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = (result.data || []).map((estate) => {
+      const outside_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
+      const inside_view_has_media = sum(
+        (estate?.rooms || []).map((room) => room?.images?.length || 0)
+      )
+      const document_view_has_media =
+        ((estate.files || []).filter(
+          (f) => f.type === FILE_TYPE_CUSTOM || f.type === FILE_TYPE_PLAN
+        ).length || 0) + (estate.energy_proof && trim(estate.energy_proof) !== '' ? 1 : 0)
+      const unassigned_view_has_media =
+        (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
+
+      return {
+        ...estate,
+        inside_view_has_media,
+        outside_view_has_media,
+        document_view_has_media,
+        unassigned_view_has_media,
+      }
+    })
+    delete result?.rows
+
+    return result
   }
 
   static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
@@ -1561,16 +1572,11 @@ class EstateService {
   /**
    * Soft deletes of estates
    */
-  static async deleteEstates(ids, user_id, trx) {
-    const affectedRows = await Estate.query(trx)
+  static async deleteEstates(ids, user_id) {
+    const affectedRows = await Estate.query()
       .where('user_id', user_id)
       .whereIn('id', ids)
       .update({ status: STATUS_DELETE })
-    if (affectedRows !== ids.length) {
-      throw new AppException(
-        'Number of rows deleted did not match number of properties to be deleted. Transaction was rolled back.'
-      )
-    }
     return affectedRows
   }
 
@@ -2119,8 +2125,9 @@ class EstateService {
     } else {
       result = []
     }
+
     return result.map((estate) => {
-      const isMatchCountValidToChangeLettinType =
+      const isMatchCountValidToChangeLettingType =
         0 + parseInt(estate.__meta__.visits_count) ||
         0 + parseInt(estate.__meta__.knocked_count) ||
         0 + parseInt(estate.__meta__.decided_count) ||
@@ -2131,7 +2138,7 @@ class EstateService {
       return {
         ...estate,
         canChangeLettingType:
-          isMatchCountValidToChangeLettinType || estate.current_tenant ? false : true,
+          isMatchCountValidToChangeLettingType || estate.current_tenant ? false : true,
       }
     })
   }
@@ -2481,22 +2488,26 @@ class EstateService {
   }
 
   static async correctWrongEstates(user_id) {
-    const estates =
-      (
-        await Estate.query()
-          .select('id')
-          .where('user_id', user_id)
-          .whereNot('status', STATUS_DELETE)
-          .where(function () {
-            this.orWhereNull('hash')
-            this.orWhereNull('six_char_code')
-          })
-          .fetch()
-      ).toJSON() || []
-    let i = 0
-    while (i < estates.length) {
-      await Estate.updateBreezeId(estates[i].id)
-      i++
+    try {
+      const estates =
+        (
+          await Estate.query()
+            .select('id')
+            .where('user_id', user_id)
+            .whereNot('status', STATUS_DELETE)
+            .whereNull('six_char_code')
+            .fetch()
+        ).toJSON() || []
+
+      await Promise.map(
+        estates,
+        async (estate) => {
+          await Estate.updateBreezeId(estate.id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`${user_id} correctWrongEstates error `, e.message)
     }
   }
 
@@ -2575,6 +2586,134 @@ class EstateService {
         })
         .fetch()
     ).toJSON()
+  }
+
+  static async isPublished(id) {
+    const estate = await this.getQuery({ status: STATUS_ACTIVE, id }).first()
+    return !!estate
+  }
+
+  static async createShareLink(user_id, id) {
+    const estate = await this.getActiveEstateQuery()
+      .where('id', id)
+      .where('user_id', user_id)
+      .first()
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (estate.share_link) {
+      return estate.share_link
+    }
+
+    return await Estate.updateHashInfo(id)
+  }
+
+  static async countDuplicateProperty(property_id) {
+    console.log('countDuplicateProperty=', property_id)
+    const estateCount = await Estate.query()
+      .where('property_id', 'ilike', `${property_id}%`)
+      .whereNot('status', STATUS_DELETE)
+      .count('*')
+    if (estateCount?.length) {
+      return parseInt(estateCount[0].count)
+    }
+    return 0
+  }
+
+  static async duplicateEstate(user_id, estate_id) {
+    const estate = await this.getByIdWithDetail(estate_id)
+    if (estate?.user_id !== user_id) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    const property_id_list = estate?.property_id?.split('-') || ``
+    if (!isNaN(property_id_list[property_id_list.length - 1])) {
+      property_id_list.splice(property_id_list.length - 1, 1)
+    }
+
+    console.log('property_id_list=', property_id_list)
+    const property_id = property_id_list.join('')
+
+    const duplicatedCount = await this.countDuplicateProperty(property_id)
+    const trx = await Database.beginTransaction()
+    try {
+      const originalEstateData = estate.toJSON()
+
+      const estateData = {
+        ...omit(originalEstateData, [
+          'id',
+          'rooms',
+          'files',
+          'amenities',
+          'slots',
+          'cover_thumb',
+          'verified_address',
+          'created_at',
+          'updated_at',
+        ]),
+        property_id: `${property_id}-${duplicatedCount}`,
+        available_start_at: null,
+        available_end_at: null,
+        status: STATUS_DRAFT,
+        is_published: false,
+        vacant_date: null,
+        hash: null,
+        shared_link: null,
+        six_char_code: null,
+        rent_end_at: null,
+        repair_needed: false,
+        construction_year: originalEstateData?.construction_year
+          ? `${originalEstateData?.construction_year}-01-01`
+          : null,
+      }
+
+      const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
+      await Promise.map(
+        originalEstateData.rooms || [],
+        async (room) => {
+          const newRoom = await RoomService.createRoom(
+            {
+              estate_id: newEstate.id,
+              roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
+            },
+            trx
+          )
+          const newImages = room.images.map((image) => ({
+            ...omit(image, ['id', 'relativeUrl', 'thumb']),
+            url: image.relativeUrl,
+            room_id: newRoom.id,
+          }))
+          await RoomService.addManyImages(newImages, trx)
+        },
+        { concurrency: 1 }
+      )
+
+      const newFiles = (originalEstateData.files || []).map((file) => ({
+        ...omit(file, ['id', 'relativeUrl', 'thumb']),
+        url: file.relativeUrl,
+        estate_id: newEstate.id,
+      }))
+      await this.addManyFiles(newFiles, trx)
+
+      const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
+        ...omit(amenity, ['room_id', 'id']),
+        estate_id: newEstate.id,
+      }))
+
+      await Amenity.createMany(newAmenities, trx)
+
+      await trx.commit()
+      const estates = await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        page: 1,
+        params: { id: newEstate.id },
+      })
+      return estates.data?.[0]
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 }
 module.exports = EstateService

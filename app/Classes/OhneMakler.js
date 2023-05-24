@@ -47,6 +47,7 @@ const {
   FIRING_ELECTRIC,
   FIRING_GROUND_HEAT,
   FIRING_GAS,
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -331,6 +332,32 @@ class OhneMakler {
       if (estate?.pictures && !Array.isArray(estate?.pictures)) {
         estate.pictures = [estate?.pictures]
       }
+      newEstate.images = estate?.pictures?.length
+        ? JSON.stringify(estate.pictures)
+        : JSON.stringify([
+            {
+              picture: {
+                picture_url:
+                  'https://cdn4.vectorstock.com/i/1000x1000/21/23/isolated-avatar-man-and-house-design-vector-25982123.jpg',
+                picture_title: 'Außenansicht ',
+              },
+            },
+          ])
+      if (!isEmpty(estate.ausstattung)) {
+        newEstate.amenities = estate.ausstattung.split(', ')
+      }
+      newEstate.status = STATUS_ACTIVE
+      newEstate.coord = `${estate.latitude},${estate.longitude}`
+      newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
+      if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
+        newEstate.vacant_from = estate.uebernahme_ab
+      } else {
+        newEstate.vacant_from_string = estate.uebernahme_ab
+      }
+
+      if (estate?.pictures && !Array.isArray(estate?.pictures)) {
+        estate.pictures = [estate?.pictures]
+      }
       newEstate.images = estate?.pictures?.length ? JSON.stringify(estate.pictures) : null
 
       if (!isEmpty(estate.ausstattung)) {
@@ -389,6 +416,7 @@ class OhneMakler {
       } else {
         newEstate.status = STATUS_EXPIRE
       }
+      newEstate.source_information = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler']
     } catch (e) {
       console.log('e.estate', estate)
     }

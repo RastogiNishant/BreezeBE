@@ -7,9 +7,7 @@ class LandlordInviteToView extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: yup.number().integer().required(),
-      emails: yup.array().of(
-        yup.string().email()
-      )
+      emails: yup.array().of(yup.string().email().lowercase()),
     })
 }
 

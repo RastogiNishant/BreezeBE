@@ -25,7 +25,7 @@ const {
   GERMAN_DATE_TIME_FORMAT,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
-
+const Logger = use('Logger')
 class MailService {
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
@@ -310,6 +310,9 @@ class MailService {
       },
       (error) => {
         console.log('Email delivery failed', error)
+        Logger.error(
+          `Email Confirmation failed ${email}= ${error?.response?.body || error?.message || error}`
+        )
         if (error.response) {
           console.error(error.response.body)
           throw new HttpException(error.response.body)
@@ -578,9 +581,10 @@ class MailService {
     )
   }
 
-  static async sendInvitationToOusideTenant(links, lang = DEFAULT_LANG) {
+  static async sendInvitationToOusideTenant(links) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const messages = links.map((link) => {
+      const lang = link?.lang || DEFAULT_LANG
       return {
         to: trim(link.email),
         from: {
@@ -744,6 +748,113 @@ class MailService {
     }
 
     return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendEmailWithAttachment({
+    textMessage,
+    recipient,
+    bcc = null,
+    subject,
+    attachment,
+    from,
+  }) {
+    const message = {
+      to: recipient,
+      from,
+      subject: subject,
+      text: textMessage,
+      attachments: [
+        {
+          content: attachment,
+          filename: 'Anfrage.xml',
+          type: 'application/xml',
+          disposition: 'attachment',
+          content_id: 'breeze-attachment',
+        },
+      ],
+    }
+    if (bcc) {
+      message.bcc = bcc
+    }
+    return sgMail.send(message).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendPendingKnockEmail({
+    link,
+    landlord_name,
+    lastName = ``,
+    salutation = ``,
+    email,
+    lang = DEFAULT_LANG,
+  }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const final = l
+      .get('prospect.no_reply_email_from_listing.final.message', lang)
+      .replace('{Landlord_name}', `${landlord_name}`)
+      .replace(/\n/g, '<br />')
+
+    const intro = l
+      .get('prospect.no_reply_email_from_listing.intro.message', lang)
+      .replace('{Salutation}', `${salutation}`)
+      .replace('{Surname}', `${lastName}`)
+      .replace(/\n/g, '<br />')
+
+    const messages = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      templateId: templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        intro,
+        CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
+        link,
+        final,
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+      },
+    }
+
+    return sgMail.send(messages).then(
       () => {
         console.log('Email delivery successfully')
       },

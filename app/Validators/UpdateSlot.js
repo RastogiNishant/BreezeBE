@@ -21,15 +21,25 @@ const transformTime = (value) => {
 class UpdateSlot extends Base {
   static schema = () =>
     yup.object().shape({
+      is_not_show: yup.boolean(),
       start_at: yup
         .string()
         .transform(transformTime)
-        .required(getExceptionMessage('start_at', REQUIRED))
+        .when('is_not_show', (is_not_show, schema, { value }) => {
+          if (!is_not_show) {
+            return schema.required(getExceptionMessage('start_at', REQUIRED))
+          }
+          return schema
+        })
         .typeError(getExceptionMessage('start_at', STRING)),
       end_at: yup
         .string()
         .transform(transformTime)
-        .when('start_at', (startAt, schema, { value }) => {
+        .when(['is_not_show', 'start_at'], (is_not_show, startAt, schema, { value }) => {
+          if (is_not_show && !value) {
+            return schema
+          }
+
           const begin = moment.utc(startAt, DATE_FORMAT)
           const end = moment.utc(value, DATE_FORMAT)
 
