@@ -1216,6 +1216,15 @@ Estates: [ESTATES]
   ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
   ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
 
+  ADMIN_URLS: {
+    localhost: 'http://localhost:3001',
+    development: 'https://development.d2x826avxkg7om.amplifyapp.com',
+    staging: 'https://staging.d2x826avxkg7om.amplifyapp.com',
+    production: 'https://master.d2x826avxkg7om.amplifyapp.com',
+  },
+
+  LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT: 'Landlord Request to Publish an Estate',
+
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 
   OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',

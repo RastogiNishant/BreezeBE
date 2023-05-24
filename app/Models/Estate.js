@@ -539,7 +539,7 @@ class Estate extends Model {
   async publishEstate(status, trx) {
     await this.updateItemWithTrx(
       {
-        status: status,
+        status,
         is_published: true,
         available_end_at:
           this.available_end_at ||
