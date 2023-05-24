@@ -26,6 +26,12 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
 
   // House type
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
@@ -101,6 +107,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -122,7 +129,9 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  HEATING_TYPE_FLOOR_HEATING,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
+
   // equipment
   EQUIPMENT_STACK,
   EQUIPMENT_AIR_CONDITIONED,
@@ -198,6 +207,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   GENDER_NEUTRAL,
   LETTING_STATUS_NEW_RENOVATED,
+  MAX_MINOR_COUNT,
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -239,6 +249,12 @@ class ImportEstate extends Base {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
+          APARTMENT_TYPE_TERRACES,
+          APARTMENT_TYPE_ETAGE,
+          APARTMENT_TYPE_HOLIDAY,
+          APARTMENT_TYPE_GALLERY,
+          APARTMENT_TYPE_RAW_ATTIC,
+          APARTMENT_TYPE_ATTIC,
         ]),
       house_type: yup
         .number()
@@ -365,13 +381,11 @@ class ImportEstate extends Base {
           ENERGY_TYPE_MINERGIE_CERTIFIED,
         ]),
       vacant_date: yup.date(),
-      avail_duration: yup.number().integer().positive().max(5000),
-      from_date: yup.date().nullable(),
       to_date: yup.date(),
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
       non_smoker: yup.boolean(),
-      pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
+      pets_allowed: yup.number().integer().oneOf([PETS_NO, PETS_SMALL]).nullable(),
       gender: yup
         .number()
         .integer()
@@ -411,6 +425,7 @@ class ImportEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       building_age: yup.number().integer().min(0),
       firing: yup
@@ -441,7 +456,8 @@ class ImportEstate extends Base {
           HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
           HEATING_TYPE_REMOTE,
-          HEATING_TYPE_FLOOR_HEATING,
+          HEATING_TYPE_UNDERFLOOR,
+          HEATING_TYPE_MISC,
         ]),
       equipment: yup
         .array()
@@ -497,20 +513,15 @@ class ImportEstate extends Base {
           }),
         ])
         .nullable(),
-      status: yup.number().integer().positive().oneOf([STATUS_ACTIVE, STATUS_DELETE, STATUS_DRAFT]),
       city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
       zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
-      budget: yup.number().integer().min(0).max(100),
-      credit_score: yup.number().min(0).max(100),
+      budget: yup.string(),
+      credit_score: yup.string(),
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
       furnished: yup.boolean().nullable(),
-      kids_type: yup
-        .number()
-        .integer()
-        .oneOf([KIDS_NO_KIDS, KIDS_TO_5, KIDS_UP_5, null])
-        .nullable(),
+      kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()
         .integer()
@@ -555,6 +566,7 @@ class ImportEstate extends Base {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ]),
       extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup

@@ -11,6 +11,7 @@ const {
   extendsResponse,
   extendsView,
 } = require('../app/Libs/Extends.js')
+const { GLOBAL_CACHE_KEY, GLOBAL_CACHE_OPTION } = require('../app/constants.js')
 
 ioc.bind('App/Serializers/UserSerializer', () => {
   return require('../app/Serializers/UserSerializer')
@@ -23,6 +24,7 @@ hooks.after.providersBooted(async () => {
   const Event = use('Event')
   const Logger = use('Logger')
   const Database = use('Database')
+  const DataStorage = use('DataStorage')
   Database.gis = KnexPostgis(Database)
 
   if (!Helpers.isAceCommand() || process.env.NODE_ENV === 'testing') {
@@ -38,6 +40,8 @@ hooks.after.providersBooted(async () => {
     const Queue = use('Queue')
     await Queue.init()
   }
+
+  await DataStorage.remove(GLOBAL_CACHE_KEY, GLOBAL_CACHE_OPTION)
 
   // Log all internal events
   Event.onAny((name, data) => {

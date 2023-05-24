@@ -10,9 +10,11 @@ const {
   URGENCY_SUPER,
   URGENCY_NORMAL,
 } = require('../../constants')
+const OutsideLandlordService = require('../../Services/OutsideLandlordService')
 const TaskService = use('App/Services/TaskService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
+const PredefinedMessageService = use('App/Services/PredefinedMessageService')
 
 class TaskController {
   async createTask({ request, auth, response }) {
@@ -64,6 +66,8 @@ class TaskController {
       response.res(
         await TaskService.getAllUnassignedTasks({
           user_id: auth.user.id,
+          role: auth.user.role,
+          email: auth.user.email,
           page,
           limit,
         })
@@ -80,7 +84,7 @@ class TaskController {
         await TaskService.getAllTasks({
           user_id: auth.user.id,
           role: auth.user.role,
-          estate_id: estate_id,
+          estate_id,
           status: status,
           page,
           limit,
@@ -175,12 +179,12 @@ class TaskController {
   async getLandlordTasks({ request, auth, response }) {
     const params = request.post()
     try {
-      const estates = await EstateService.getEstatesWithTask(
-        auth.user,
+      const estates = await EstateService.getEstatesWithTask({
+        user_id: auth.user.id,
         params,
-        params?.filter_by_unread_message ? -1 : params.page || -1,
-        params?.filter_by_unread_message ? -1 : params.limit || -1
-      )
+        page: params?.filter_by_unread_message ? -1 : params.page || -1,
+        limit: params?.filter_by_unread_message ? -1 : params.limit || -1,
+      })
 
       const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
 
@@ -210,6 +214,35 @@ class TaskController {
     } catch (e) {
       throw new HttpException(e.message, 500)
     }
+  }
+
+  async getTopicList({ request, auth, response }) {
+    const topicList = await PredefinedMessageService.getTopicList()
+    console.log('topicList=', topicList)
+    response.res(topicList ? topicList.toJSON().choices : [])
+  }
+
+  async cancelTenantInvitation({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(
+      await OutsideLandlordService.cancelInvitation({
+        landlord_id: auth.user.id,
+        email: auth.user.email,
+        task_id: id,
+      })
+    )
+  }
+
+  async acceptTenantInvitation({ request, auth, response }) {
+    const { id, estate_id } = request.all()
+    response.res(
+      await OutsideLandlordService.acceptTenantInvitation({
+        user_id: auth.user.id,
+        task_id: id,
+        email: auth.user.email,
+        estate_id,
+      })
+    )
   }
 
   // async onEditMessage({ request, auth, response }) {

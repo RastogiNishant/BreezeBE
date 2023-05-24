@@ -1,67 +1,25 @@
-const { toLower, isArray, isNull, trim } = require('lodash')
+const { toLower, isArray, isNull } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 const Database = use('Database')
 const moment = require('moment')
 const { DAY_FORMAT } = require('../constants')
-const FilterColumnsService = use('App/Services/FilterColumnsService')
 
 class Filter {
   params
   query = null
-  static paramToField = {}
+  paramToField = null
   MappingInfo = null
-  TableInfo = {}
+  TableInfo = null
   globalSearchFields = []
-  matchFilters = []
 
-  user_id = null
-  filterName = ''
-  columns = []
-
-
-  constructor(params, query, user_id, filterName = '') {
+  constructor(params, query) {
     this.params = params
     this.query = query
-    this.filterName = filterName
-    this.user_id = user_id
   }
 
   /**
    * to use processGlobals, set this.globalSearchFields on the child class
    */
-
-  async init() {
-    if (!this.user_id || !this.filterName || trim(this.filterName) === '') {
-      return
-    }
-
-    this.columns = (
-      await FilterColumnsService.getAll({
-        user_id: this.user_id,
-        filter: { filterName: this.filterName },
-      })
-    ).toJSON({ isOwner: true })
-    this.globalSearchFields = (this.columns || [])
-      .filter((column) => column.used_global_search && column.visible)
-      .map((column) => `${column.tableAlias || column.tableName}.${column.fieldName}`)
-
-    this.matchFilters = (this.columns || [])
-      .filter((column) => !column.is_used_filter && column.visible)
-      .map((column) => column.fieldName)
-
-    this.TableInfo = (this.columns || []).reduce((tableInfo, column) => {
-      const fieldName = column.fieldName
-      return {
-        ...tableInfo,
-        [fieldName]: column.tableAlias || column.tableName,
-      }
-    }, {})
-  }
-
-  isExist(fieldName) {
-    return !!this.columns.find((column) => column.fieldName === fieldName && column.visible)
-  }
-
   processGlobals() {
     if (this.params.global && this.params.global.value) {
       const globalSearchFields = this.globalSearchFields
@@ -185,9 +143,9 @@ class Filter {
   }
 
   static getField(param) {
-    return this.TableInfo && this.TableInfo[param]
-      ? `${this.TableInfo[param]}.${Filter.mapParamToField(param)}`
-      : Filter.mapParamToField(param)
+    return Filter.TableInfo && Filter.TableInfo[param]
+      ? `${Filter.TableInfo[param]}.${param}`
+      : param
   }
 
   static parseMatchMode(param, value, matchMode) {

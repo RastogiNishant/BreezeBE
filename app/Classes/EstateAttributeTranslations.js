@@ -18,6 +18,12 @@ const {
   APARTMENT_TYPE_SOCIAL,
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
+  APARTMENT_TYPE_TERRACES,
+  APARTMENT_TYPE_ETAGE,
+  APARTMENT_TYPE_HOLIDAY,
+  APARTMENT_TYPE_GALLERY,
+  APARTMENT_TYPE_RAW_ATTIC,
+  APARTMENT_TYPE_ATTIC,
 
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
   HOUSE_TYPE_HIGH_RISE,
@@ -62,6 +68,7 @@ const {
   BUILDING_STATUS_DEVELOPED,
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
+  BUILDING_STATUS_FULLY_REFURBISHED,
 
   FIRING_OEL,
   FIRING_GAS,
@@ -94,7 +101,6 @@ const {
   HEATING_TYPE_FLOOR,
   HEATING_TYPE_CENTRAL,
   HEATING_TYPE_REMOTE,
-  HEATING_TYPE_FLOOR_HEATING,
 
   EQUIPMENT_STANDARD_SIMPLE,
   EQUIPMENT_STANDARD_NORMAL,
@@ -168,11 +174,27 @@ const {
   GENDER_NEUTRAL,
   GENDER_ANY,
   LETTING_STATUS_NEW_RENOVATED,
+  MAX_MINOR_COUNT,
+  PETS_SMALL,
+  PETS_NO,
+  HEATING_TYPE_UNDERFLOOR,
+  HEATING_TYPE_MISC,
+  DATE_FORMAT,
 } = require('../constants')
 
 const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
+const moment = require('moment')
+
+extractValue = (key, value) => {
+  const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
+  const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
+  if (filterValues && filterValues.length) {
+    return filterValues[0]
+  }
+  return null
+}
 
 escapeStr = (v) => {
   return (v || '')
@@ -191,7 +213,7 @@ toPercent = (i) => {
   if (isNaN(parseFloat(i))) {
     i = NULL
   } else {
-    i = parseFloat(i) * 100
+    i = parseInt(parseFloat(i) * 100)
   }
 
   return i
@@ -222,15 +244,17 @@ reverseBool = (value) => {
 }
 
 extractDate = (date) => {
-  if (isEmpty(date)) {
+  if (!date) {
     return null
   } else if (
     typeof date == 'string' &&
     (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))
   ) {
     return `${match[3]}-${match[2]}-${match[1]}`
+  } else if (typeof date === 'object') {
+    return moment(date, DATE_FORMAT).format(DATE_FORMAT)
   }
-  return date
+  return null
 }
 
 reverseExtractDate = (date) => {
@@ -239,7 +263,7 @@ reverseExtractDate = (date) => {
     (match = date.match(/^([0-9]{4})\-([0-9]{2})\-([0-9]{2})/)) &&
     this.lang === 'de'
   ) {
-    return `${match[2]}.${match[1]}-${match[3]}`
+    return `${match[2]}.${match[1]}.${match[3]}`
   }
   return date
 }
@@ -250,6 +274,8 @@ class EstateAttributeTranslations {
     rent_arrears: reverseBool,
     available_date: reverseExtractDate,
     from_date: reverseExtractDate,
+    furnished: reverseBool,
+    vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
     contract_end: reverseExtractDate,
   }
@@ -270,6 +296,9 @@ class EstateAttributeTranslations {
       social: APARTMENT_TYPE_SOCIAL,
       souterrain: APARTMENT_TYPE_SOUTERRAIN,
       penthouse: APARTMENT_TYPE_PENTHOUSE,
+      terrassen: APARTMENT_TYPE_TERRACES,
+      attika: APARTMENT_TYPE_ATTIC,
+      //TODO: need to add more type here but later
     },
     // Building type
     house_type: {
@@ -326,6 +355,7 @@ class EstateAttributeTranslations {
       developed: BUILDING_STATUS_DEVELOPED,
       abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
       projected: BUILDING_STATUS_PROJECTED,
+      refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
     },
     apartment_status: {
       first_time_occupied: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -343,6 +373,7 @@ class EstateAttributeTranslations {
       developed: BUILDING_STATUS_DEVELOPED,
       abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
       projected: BUILDING_STATUS_PROJECTED,
+      refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
     },
     firing: {
       oel: FIRING_OEL,
@@ -362,10 +393,12 @@ class EstateAttributeTranslations {
     },
     heating_type: {
       no_heating: HEATING_TYPE_NO,
-      oven: HEATING_TYPE_OVEN,
-      floor: HEATING_TYPE_FLOOR,
       central: HEATING_TYPE_CENTRAL,
+      floor: HEATING_TYPE_FLOOR,
       remote: HEATING_TYPE_REMOTE,
+      oven: HEATING_TYPE_OVEN,
+      underfloor: HEATING_TYPE_UNDERFLOOR,
+      misc: HEATING_TYPE_MISC,
     },
     equipment_standard: {
       simple: EQUIPMENT_STANDARD_SIMPLE,
@@ -421,22 +454,18 @@ class EstateAttributeTranslations {
       family_with_kids: FAMILY_STATUS_WITH_CHILD,
       single: FAMILY_STATUS_SINGLE,
     },
-    kids_type: {
-      no_kids: KIDS_NO_KIDS,
-      to_5_year: KIDS_TO_5,
-      up_5_year: KIDS_UP_5,
-    },
+    kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
     rent_arrears: toBool,
     available_date: extractDate,
     from_date: extractDate,
+    furnished: toBool,
+    vacant_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2,
-      PETS_ANY: null,
-      PETS_BIG: 3,
     },
     stp_garage: (i) => parseInt(i) || 0,
     budget: toPercent,
@@ -486,15 +515,6 @@ class EstateAttributeTranslations {
     },
   }
 
-  extractValue(key, value) {
-    const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
-    const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
-    if (filterValues && filterValues.length) {
-      return filterValues[0]
-    }
-    return null
-  }
-
   constructor(lang = 'en') {
     this.setLang(lang)
     let dataMap = {
@@ -524,6 +544,8 @@ class EstateAttributeTranslations {
           'property.attribute.APARTMENT_TYPE.Social.message',
           'property.attribute.APARTMENT_TYPE.Souterrain.message',
           'property.attribute.APARTMENT_TYPE.Penthouse.message',
+          'property.attribute.APARTMENT_TYPE.Terrassen.message',
+          'property.attribute.APARTMENT_TYPE.Attika.message',
         ],
         values: [
           APARTMENT_TYPE_FLAT,
@@ -534,6 +556,8 @@ class EstateAttributeTranslations {
           APARTMENT_TYPE_SOCIAL,
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
+          APARTMENT_TYPE_TERRACES,
+          APARTMENT_TYPE_ATTIC,
         ],
       },
       house_type: {
@@ -634,6 +658,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
+          'property.attribute.BUILDING_STATUS.fully_refurbished',
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -651,6 +676,7 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ],
       },
       apartment_status: {
@@ -670,6 +696,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
+          'property.attribute.BUILDING_STATUS.fully_refurbished',
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -687,6 +714,7 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
+          BUILDING_STATUS_FULLY_REFURBISHED,
         ],
       },
       firing: {
@@ -725,18 +753,20 @@ class EstateAttributeTranslations {
       },
       heating_type: {
         keys: [
-          'property.attribute.HEATING_TYPE.Floor_heating.message',
-          'property.attribute.HEATING_TYPE.Oven.message',
-          'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Central.message',
+          'property.attribute.HEATING_TYPE.Floor.message',
           'property.attribute.HEATING_TYPE.Remote.message',
+          'property.attribute.HEATING_TYPE.Oven.message',
+          'property.attribute.HEATING_TYPE.Underfloor_heating.message',
+          'property.attribute.HEATING_TYPE.Other.message',
         ],
         values: [
-          HEATING_TYPE_FLOOR_HEATING,
-          HEATING_TYPE_OVEN,
-          HEATING_TYPE_FLOOR,
           HEATING_TYPE_CENTRAL,
+          HEATING_TYPE_FLOOR,
           HEATING_TYPE_REMOTE,
+          HEATING_TYPE_OVEN,
+          HEATING_TYPE_UNDERFLOOR,
+          HEATING_TYPE_MISC,
         ],
       },
       equipment_standard: {
@@ -925,10 +955,10 @@ class EstateAttributeTranslations {
       },
       pets_allowed: {
         keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
-        values: [true, false],
+        values: [PETS_SMALL, PETS_NO],
       },
       minors: {
-        keys: ['web.letting.property.import.No_matter.message', 'yes.message'],
+        keys: ['landlord.property.tenant_pref.habits.children.no.message', 'yes.message'],
         values: [false, true],
       },
       let_type: {

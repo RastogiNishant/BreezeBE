@@ -119,32 +119,45 @@ class CompanyService {
   /**
    *
    */
-  static async createContact(data, userId) {
-    const currentContacts = await this.getContacts(userId)
+  static async createContact({ data, user_id }, trx) {
+    const currentContacts = await this.getContacts(user_id)
 
     if (currentContacts?.rows?.length > 0) {
       throw new HttpException('only 1 contact can be added', 400)
     }
 
-    const user = await require('./UserService').getById(userId)
+    const user = await require('./UserService').getById(user_id)
     if (!user) {
       throw new HttpException('User not exists', 500)
     }
 
-    return await Contact.createItem({
-      ...data,
-      company_id: user.company_id,
-      user_id: userId,
-    })
+    let contact
+    if (trx) {
+      contact = await Contact.createItem(
+        {
+          ...data,
+          company_id: user.company_id,
+          user_id: user_id,
+        },
+        trx
+      )
+    } else {
+      contact = await Contact.createItem({
+        ...data,
+        company_id: user.company_id,
+        user_id: user_id,
+      })
+    }
+    return contact
   }
 
   /**
    *
    */
-  static async updateContact(id, userId, data) {
+  static async updateContact({ id, user_id, data }, trx) {
     const contact = await Contact.query()
       .select('contacts.*')
-      .where({ 'contacts.id': id, 'contacts.user_id': userId })
+      .where({ 'contacts.id': id, 'contacts.user_id': user_id })
       .innerJoin({ _cm: 'companies' }, function () {
         this.on('_cm.id', 'contacts.company_id').onNotIn('_cm.status', [STATUS_DELETE])
       })
@@ -153,7 +166,11 @@ class CompanyService {
     if (!contact) {
       throw new AppException('No contact exist', 400)
     }
-    await contact.updateItem(data)
+    if (trx) {
+      await contact.updateItemWithTrx(data, trx)
+    } else {
+      await contact.updateItem(data)
+    }
 
     return contact
   }
@@ -175,7 +192,7 @@ class CompanyService {
       .select('companies.*')
       .innerJoin({ _m: 'matches' }, function () {
         this.onIn('_m.estate_id', function () {
-          this.select('id').from('estates').where('user_id', userId)
+          this.select('estates.id').from('estates').where('user_id', userId)
         })
           .onIn('_m.user_id', [tenantUserId])
           .onIn('_m.status', [MATCH_STATUS_FINISH])
@@ -204,7 +221,7 @@ class CompanyService {
     if (isEmpty(contacts.rows)) {
       const error = new ValidationException()
       error.messages = [{ field: null, validation: 'Contacts not exists' }]
-      throw error
+      throw new HttpException(error.messages, 400)
     }
 
     const schema = yup.object().shape({

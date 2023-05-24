@@ -31,8 +31,9 @@ class CreateTask extends Base {
           TASK_STATUS_UNRESOLVED,
           TASK_STATUS_RESOLVED,
         ]),
-      description: yup.string(),
+      description: yup.string().nullable(),
       file: yup.mixed(),
+      due_date: yup.date(),
     })
 }
 

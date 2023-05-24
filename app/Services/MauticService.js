@@ -1,10 +1,10 @@
 const { isString, isNil } = require('lodash')
 const fetch = require('node-fetch')
 const Env = use('Env')
-const MAUTIC_API_URL = Env.get('MAUTIC_API_URL')
+const MAUTIC_API_URL = Env.get('MAUTIC_API_URL') || `https://mautic-dev.breeze4me.de/api`
 const MAUTIC_AUTH_TOKEN = Env.get('MAUTIC_AUTH_TOKEN')
-const LANDLORD_WELCOME_SEGMENT_ID = Env.get('LANDLORD_WELCOME_SEGMENT_ID')
-const TENANT_WELCOME_SEGMENT_ID = Env.get('TENANT_WELCOME_SEGMENT_ID')
+const LANDLORD_WELCOME_SEGMENT_ID = Env.get('LANDLORD_WELCOME_SEGMENT_ID') || 1
+const TENANT_WELCOME_SEGMENT_ID = Env.get('TENANT_WELCOME_SEGMENT_ID') || 2
 const User = use('App/Models/User')
 const Company = use('App/Models/Company')
 const {
@@ -137,7 +137,14 @@ class MauticService {
     }
     const user = await User.query().where('id', userId).first()
     try {
-      const body = JSON.stringify(await getUserData(user))
+      const userData = await getUserData(user)
+      // We have addresses with the country name = "Deutschland" in our database
+      // But Mautic doesn't accept it, it only accepts English country names
+      // TODO: Find a dynamic solution for every country name
+      if (userData?.country === 'Deutschland') {
+        userData.country = 'Germany'
+      }
+      const body = JSON.stringify(userData)
       const response = await fetch(`${MAUTIC_API_URL}/contacts/new`, {
         method: 'POST',
         body,
@@ -245,7 +252,8 @@ class MauticService {
         },
       })
     } catch (err) {
-      console.log('Mautic Sync Failed : User Id = ' + user.id, err)
+      //TODO: implement logging here (graylog)
+      // console.log('Mautic Sync Failed : User Id = ' + user.id, err)
     }
   }
 }

@@ -3,6 +3,7 @@ const Database = use('Database')
 const Amenity = use('App/Models/Amenity')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
+const EstateService = use('App/Services/EstateService')
 const {
   STATUS_ACTIVE,
   STATUS_DELETE,
@@ -164,6 +165,8 @@ class EstateAmenityController {
         .where('status', STATUS_ACTIVE)
         .groupBy('location')
         .transacting(trx)
+
+      await EstateService.updatePercent({ estate_id, amenities: [{ estate_id, option_id }] }, trx)
       await trx.commit()
       return response.res({
         newEstateAmenityId,
@@ -183,6 +186,7 @@ class EstateAmenityController {
       .where('location', location)
       .where('id', id)
       .update({ status: STATUS_DELETE })
+    await EstateService.updatePercent({ estate_id })
     return response.res({ deleted: affectedRows })
   }
 

@@ -21,7 +21,6 @@ const {
   MEMBER_FILE_TYPE_INCOME,
   MEMBER_FILE_TYPE_PASSPORT,
 
-  PETS_BIG,
   PETS_SMALL,
   PETS_NO,
 
@@ -55,9 +54,15 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  TRANSPORT_TYPE_CAR,
+  VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
+const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { USER_NOT_FOUND },
+} = require('../exceptions')
 class TenantService {
   /**
    *
@@ -91,9 +96,12 @@ class TenantService {
     } else if (fileType === MEMBER_FILE_TYPE_INCOME) {
       const incomeProof = await IncomeProof.query()
         .select('income_proofs.*')
-        .innerJoin({ _i: 'incomes' }, '_i.id', 'income_proofs.income_id')
+        .innerJoin({ _i: 'incomes' }, function () {
+          this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+        })
         .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
         .where('income_proofs.id', fileId)
+        .where('income_proofs.status', STATUS_ACTIVE)
         .where('_m.id', memberId)
         .where('_m.user_id', userId)
         .first()
@@ -120,9 +128,16 @@ class TenantService {
    */
   static async updateTenantIsoline(tenantId, trx = null) {
     const tenant = await TenantService.getTenantQuery().where({ id: tenantId }).first()
+    if (!tenant) {
+      throw new HttpException(USER_NOT_FOUND, 400)
+    }
+
     const { lat, lon } = tenant.getLatLon()
 
-    if (+lat === 0 || +lon === 0 || !tenant.dist_type || !tenant.dist_min) {
+    tenant.dist_type = tenant.dist_type || TRANSPORT_TYPE_CAR
+    tenant.dist_min = tenant.dist_min || 60
+
+    if (lat === undefined && lat === null && lon === undefined && lon === null) {
       // Invalid coordinates, nothing to parse
       return false
     }
@@ -156,13 +171,21 @@ class TenantService {
    */
   static async getTenantValidProofsCount(userId, startOf) {
     if (!startOf) {
-      startOf = moment.utc().add(-3, 'month').startOf('month').format('YYYY-MM-DD')
+      startOf = moment()
+        .utc()
+        .subtract(VALID_INCOME_PROOFS_PERIOD, 'month')
+        .startOf('month')
+        .format('YYYY-MM-DD')
     }
 
     return Database.table({ _m: 'members' })
       .select(Database.raw(`COUNT(_ip.id) as income_proofs_count`))
-      .leftJoin({ _i: 'incomes' }, '_i.member_id', '_m.id')
-      .leftJoin({ _ip: 'income_proofs' }, '_ip.income_id', '_i.id')
+      .leftJoin({ _i: 'incomes' }, function () {
+        this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
+      })
+      .leftJoin({ _ip: 'income_proofs' }, function () {
+        this.on('_ip.income_id', '_i.id').on('_ip.status', STATUS_ACTIVE)
+      })
       .where('_m.user_id', userId)
       .whereNot('_m.child', true)
       .where('_ip.expire_date', '>=', startOf)
@@ -212,7 +235,9 @@ class TenantService {
         .leftJoin({ _m: 'members' }, function () {
           this.on('_m.user_id', '_t.user_id').onNotIn('_m.child', [true])
         })
-        .leftJoin({ _i: 'incomes' }, '_i.member_id', '_m.id')
+        .leftJoin({ _i: 'incomes' }, function () {
+          this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
+        })
         .where('_t.id', tenantId)
     }
     const data = await getRequiredTenantData(tenant.id)
@@ -228,7 +253,7 @@ class TenantService {
 
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
-      pets: yup.number().oneOf([PETS_BIG, PETS_SMALL, PETS_NO]).required(),
+      pets: yup.number().oneOf([PETS_SMALL, PETS_NO]).required(),
       credit_score: yup.number().when(['credit_score_submit_later'], {
         is: (credit_score_submit_later) => {
           return credit_score_submit_later

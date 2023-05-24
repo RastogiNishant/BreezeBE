@@ -12,7 +12,7 @@ class InitTask extends Base {
       predefined_message_choice_id: yup.number().positive(),
       estate_id: yup.number().positive(),
       task_id: yup.number().nullable(),
-      answer: yup.string(),
+      answer: yup.mixed(),
       prev_predefined_message_id: yup.string(),
       attachments: yup.array().of(yup.string()).nullable(),
     })

@@ -11,6 +11,7 @@ class OptionSerializer extends BaseSerializer {
       id: item.id,
       title: item.title,
       type: item.type,
+      order: item.order,
     }
   }
 }

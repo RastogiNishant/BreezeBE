@@ -22,6 +22,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
 } = require('../../constants')
+const QueueService = require('../../Services/QueueService')
 const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
@@ -103,6 +104,11 @@ class TenantController {
         throw new HttpException('Transfer budget min has to be smaller than max', 400)
       }
 
+      if (!data.is_short_term_rent) {
+        data.residency_duration_min = null
+        data.residency_duration_max = null
+      }
+
       await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
 
@@ -116,16 +122,20 @@ class TenantController {
       const updatedTenant = await Tenant.find(tenant.id)
 
       // Add tenant anchor zone processing
-      if (lat && lon && tenant.dist_type && tenant.dist_min) {
+      if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
 
       if (shouldDeactivateTenant) {
         updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
-      } else {
-        await MatchService.matchByUser({ userId: auth.user.id, has_notification_sent: false })
       }
+
+      QueueService.getTenantMatchProperties({
+        userId: auth.user.id,
+        has_notification_sent: false,
+      })
+
       response.res(updatedTenant)
     } catch (e) {
       await trx.rollback()

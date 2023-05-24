@@ -66,7 +66,11 @@ class Member extends Model {
    *
    */
   incomes() {
-    return this.hasMany('App/Models/Income')
+    return this.hasMany('App/Models/Income').where('status', STATUS_ACTIVE)
+  }
+
+  final_incomes() {
+    return this.hasMany('App/Models/Income').where('is_final', true)    
   }
 
   passports() {

@@ -1,4 +1,4 @@
-const { toLower, isArray, trim, includes, without } = require('lodash')
+const { toLower, isArray, isEmpty, trim, includes, isBoolean } = require('lodash')
 const Database = use('Database')
 const {
   LETTING_TYPE_LET,
@@ -25,7 +25,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   LETTING_STATUS_NEW_RENOVATED,
-  FILTER_NAME_ESTATE,
+  MATCH_STATUS_NEW,
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -64,54 +64,33 @@ class EstateFilters extends Filter {
     site: PROPERTY_TYPE_SITE,
     office: PROPERTY_TYPE_OFFICE,
   }
+  static possibleStringParams = [
+    'address',
+    'customArea',
+    'customFloor',
+    'property_id',
+    'customRent',
+    'customNumFloor',
+    'rooms_number',
+    'customUpdatedAt',
+  ]
+  globalSearchFields = ['property_id', 'address', 'six_char_code']
 
-  static possibleStringParams = []
-
-  constructor(params, query, user_id = null) {
-    super(params, query, user_id, FILTER_NAME_ESTATE)
-  }
-
-  async init() {
-    await super.init()
-    const params = this.params
+  constructor(params, query) {
+    super(params, query)
+    if (isEmpty(params)) {
+      return
+    }
+    this.processGlobals()
     Filter.paramToField = {
-      ...Filter.paramToField,
       customArea: 'area',
       customFloor: 'floor',
       customNumFloor: 'number_floors',
       customRent: 'net_rent',
-      customPropertyType: 'property_type',
-      customStatus: 'status',
-      customFloorDirection: 'floor_direction',
+      customUpdatedAt: 'updated_at',
     }
 
-    Filter.MappingInfo = {
-      customStatus: {
-        online: STATUS_ACTIVE,
-        offline: STATUS_DRAFT,
-        expired: STATUS_EXPIRE,
-      },
-      customPropertyType: {
-        apartment: PROPERTY_TYPE_APARTMENT,
-        room: PROPERTY_TYPE_ROOM,
-        house: PROPERTY_TYPE_HOUSE,
-        site: PROPERTY_TYPE_SITE,
-        office: PROPERTY_TYPE_OFFICE,
-      },
-      customFloorDirection: {
-        na: ESTATE_FLOOR_DIRECTION_NA,
-        left: ESTATE_FLOOR_DIRECTION_LEFT,
-        right: ESTATE_FLOOR_DIRECTION_RIGHT,
-        straight: ESTATE_FLOOR_DIRECTION_STRAIGHT,
-        straight_left: ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
-        straight_right: ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
-      },
-    }
-
-    EstateFilters.possibleStringParams = this.matchFilters
-    this.matchFilters = without(this.matchFilters, 'customLettingStatus')
-    this.matchFilter(this.matchFilters, params)
-    this.processGlobals()
+    this.matchFilter(EstateFilters.possibleStringParams, params)
 
     /* address, area, property_id, net_rent */
     /* filter for combined letting_status and letting_type */
@@ -159,15 +138,24 @@ class EstateFilters extends Filter {
         this.orWhere('estates.zip', 'ilike', `${params.query}%`)
       })
     }
-
-    if (params.status) {
-      this.query.whereIn('estates.status', isArray(params.status) ? params.status : [params.status])
+    /* status */
+    if (params.customStatus && params.customStatus.value) {
+      let statuses = EstateFilters.customStatusesToValue(params.customStatus.value)
+      this.query.whereIn('estates.status', statuses)
     }
 
     /* floor direction */
-    if (params.floor_direction && params.floor_direction.value) {
-      let floor_directions = EstateFilters.customFloorDirectionToValue(params.floor_direction.value)
-      this.query.whereIn('estates.floor_direction', floor_directions)
+    if (params.customFloorDirection && params.customFloorDirection.value) {
+      let customFloorDirection = EstateFilters.customFloorDirectionToValue(
+        params.customFloorDirection.value
+      )
+      this.query.whereIn('estates.floor_direction', customFloorDirection)
+    }
+
+    /* property_type */
+    if (params.customPropertyType && params.customPropertyType.value) {
+      let propertyTypes = EstateFilters.customPropertyTypesToValue(params.customPropertyType.value)
+      this.query.whereIn('estates.property_type', propertyTypes)
     }
 
     if (params.property_type) {
@@ -185,10 +173,29 @@ class EstateFilters extends Filter {
       this.query.whereIn('estates.letting_status', params.letting_status)
     }
     /* this should be changed to match_status */
-    if (params.filter) {
+    if (params.filter && params.filter.length) {
       this.query.whereHas('matches', (query) => {
         query.whereIn('status', params.filter)
       })
+    }
+
+    if (params.is_expired_no_match_exclude) {
+      this.query.where(function () {
+        this.orWhere(function () {
+          this.where('estates.status', STATUS_EXPIRE)
+          this.whereHas('matches', (query) => {
+            query.whereNotIn('status', [MATCH_STATUS_NEW])
+          })
+        })
+        this.orWhere('estates.status', STATUS_ACTIVE)
+      })
+    } else {
+      if (params.status) {
+        this.query.whereIn(
+          'estates.status',
+          isArray(params.status) ? params.status : [params.status]
+        )
+      }
     }
   }
 

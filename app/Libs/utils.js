@@ -1,4 +1,6 @@
 const url = require('url')
+const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
+
 const { isString, get, isEmpty, capitalize, includes, trim } = require('lodash')
 const {
   ROLE_USER,
@@ -6,6 +8,7 @@ const {
   ROLE_ADMIN,
   ROLE_PROPERTY_MANAGER,
   GERMAN_HOLIDAYS,
+  ENERGY_CLASS_USING_EFFICIENCY,
 } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
@@ -108,6 +111,38 @@ const generateAddress = ({ street, house_number, zip, city, country }) => {
     .toLowerCase()
 }
 
+const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WEB_LINK) => {
+  const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+
+  const { shortLink } = await firebaseDynamicLinks.createLink({
+    dynamicLinkInfo: {
+      domainUriPrefix: process.env.DOMAIN_PREFIX,
+      link,
+      androidInfo: {
+        androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+      },
+      iosInfo: {
+        iosBundleId: process.env.IOS_BUNDLE_ID,
+        iosAppStoreId: process.env.IOS_APPSTORE_ID,
+      },
+      desktopInfo: {
+        desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
+      },
+    },
+  })
+  return shortLink
+}
+
+const calculateEnergyClassFromEfficiency = (efficiency) => {
+  let idx
+  if (efficiency >= ENERGY_CLASS_USING_EFFICIENCY.slice(-1)[0].value) {
+    idx = ENERGY_CLASS_USING_EFFICIENCY.length - 1
+  } else {
+    idx = ENERGY_CLASS_USING_EFFICIENCY.slice(0, -1).findIndex((level) => efficiency < level.value)
+  }
+  return ENERGY_CLASS_USING_EFFICIENCY[idx].level
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -119,4 +154,6 @@ module.exports = {
   rc: localeTemplateToValue,
   isHoliday,
   generateAddress,
+  createDynamicLink,
+  calculateEnergyClassFromEfficiency,
 }

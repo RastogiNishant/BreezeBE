@@ -16,20 +16,47 @@ const {
     TIME_SLOT_CROSSING_EXISTING,
     TIME_SLOT_NOT_FOUND,
     SHOW_ALREADY_STARTED,
+    FAILED_CREATE_TIME_SLOT,
   },
+  exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE },
 } = require('../exceptions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length }, estate) {
+    start_at = moment.utc(start_at).format(DATE_FORMAT)
+    end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
-    // Checks is time slot crossing existing
-    const existing = await this.getCrossTimeslotQuery({ end_at, start_at }, estate.user_id).first()
+    //Checks is time slot crossing existing
+    const existing = await this.getCrossTimeslotQuery(
+      { end_at, start_at, estate_id: estate.id },
+      estate.user_id
+    ).first()
 
     if (existing) {
       throw new AppException(TIME_SLOT_CROSSING_EXISTING)
     }
 
-    return TimeSlot.createItem({ end_at, start_at, slot_length, estate_id: estate.id })
+    const trx = await Database.beginTransaction()
+    try {
+      const slot = await TimeSlot.createItem(
+        {
+          start_at,
+          end_at,
+          slot_length,
+          estate_id: estate.id,
+        },
+        trx
+      )
+      await require('./EstateService').updatePercent(
+        { estate_id: estate.id, slots: [slot.toJSON()] },
+        trx
+      )
+      await trx.commit()
+      return slot
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(FAILED_CREATE_TIME_SLOT, 500)
+    }
   }
 
   static async updateTimeSlot(user_id, data) {
@@ -104,7 +131,7 @@ class TimeSlotService {
 
     const estate = await Estate.find(slot.estate_id)
     const crossingSlot = await this.getCrossTimeslotQuery(
-      { end_at: slot.end_at, start_at: slot.start_at },
+      { end_at: slot.end_at, start_at: slot.start_at, estate_id: estate.id },
       estate.user_id
     )
       .whereNot('id', slot.id)
@@ -148,10 +175,10 @@ class TimeSlotService {
     return removeVisitRanges
   }
 
-  static getCrossTimeslotQuery({ end_at, start_at }, userId) {
+  static getCrossTimeslotQuery({ end_at, start_at, estate_id }, userId) {
     return TimeSlot.query()
       .whereIn('estate_id', function () {
-        this.select('id').from('estates').where('user_id', userId)
+        this.select('id').from('estates').where('user_id', userId).where('estate_id', estate_id)
       })
       .where(function () {
         this.orWhere(function () {
@@ -192,7 +219,7 @@ class TimeSlotService {
   }
 
   static async getFreeTimeslots(estateId) {
-    const dateFrom = moment().format(DATE_FORMAT)
+    const dateFrom = moment().utc().format(DATE_FORMAT)
     // Get estate available slots
     const getSlots = async () => {
       return Database.table('time_slots')
@@ -280,34 +307,37 @@ class TimeSlotService {
 
     // The landlord can't remove the slot if it is already started
     if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
-      throw new HttpException(SHOW_ALREADY_STARTED)
+      throw new HttpException(SHOW_ALREADY_STARTED, 400, SHOW_ALREADY_STARTED_ERROR_CODE)
     }
 
     // If slot's end date is passed, we only delete the slot
     // But if slot's end date is not passed, we delete the slot and all the visits
-    if (slot.end_at < new Date()) {
-      await slot.delete()
-      return true
-    } else {
-      const trx = await Database.beginTransaction()
-      try {
+    const trx = await Database.beginTransaction()
+    try {
+      if (slot.end_at < new Date()) {
+        await slot.delete(trx)
+      } else {
         const estateId = slot.estate_id
         const userIds = await require('./MatchService').handleDeletedTimeSlotVisits(slot, trx)
         await slot.delete(trx)
-
-        await trx.commit()
-
-        const notificationPromises = userIds.map((userId) =>
-          NoticeService.cancelVisit(estateId, userId)
-        )
-        await Promise.all(notificationPromises)
-        await trx.commit()
-        return true
-      } catch (e) {
-        await trx.rollback()
-        Logger.error(e)
-        throw new HttpException(e.message, 400)
+        let idx = 0
+        while (idx < userIds.length) {
+          await NoticeService.cancelVisit(estateId, userIds[idx])
+          idx++
+        }
       }
+      await require('./EstateService').updatePercent(
+        {
+          estate_id: slot.estate_id,
+          deleted_slots_ids: [slot_id],
+        },
+        trx
+      )
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(e)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 }

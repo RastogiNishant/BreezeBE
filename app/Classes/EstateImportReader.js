@@ -1,7 +1,7 @@
 'use_strict'
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
-const { get, has, isString, isFunction, unset } = require('lodash')
+const { get, has, isString, isFunction, unset, omit } = require('lodash')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
@@ -11,6 +11,7 @@ const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
+const Logger = use('Logger')
 
 class EstateImportReader {
   validHeaderVars = [
@@ -57,8 +58,7 @@ class EstateImportReader {
     'stp_garage',
     'deposit',
     'currency',
-    'available_date',
-    'from_date',
+    'vacant_date',
     'txt_salutation',
     'surname',
     'contract_end',
@@ -80,33 +80,41 @@ class EstateImportReader {
   warnings = []
   data = []
 
-  constructor(filePath, overrides = {}) {
-    const data = xlsx.parse(filePath, { cellDates: true })
-    if (overrides?.sheetName) {
-      this.sheetName = overrides.sheetName
-    }
-    if (overrides?.rowForColumnKeys) {
-      this.rowForColumnKeys = overrides?.rowForColumnKeys
-    }
-    if (overrides?.dataStart) {
-      this.dataStart = overrides.dataStart
-    }
-    if (overrides?.validHeaderVars) {
-      this.validHeaderVars = overrides.validHeaderVars
-    }
-    const sheet = data.find((i) => i.name === this.sheetName)
-    this.sheet = sheet
-    //sheet where the estates to import are found...
-    if (!sheet || !sheet.data) {
-      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
-    }
-    this.reverseTranslator = new EstateAttributeTranslations()
-    this.dataMapping = this.reverseTranslator.getMap()
-    this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
-    if (!this.validateColumns(this.validColumns)) {
-      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
-    }
+  constructor() {
     return this
+  }
+
+  init(filePath, overrides = {}) {
+    try {
+      const data = xlsx.parse(filePath, { cellDates: true })
+      if (overrides?.sheetName) {
+        this.sheetName = overrides.sheetName
+      }
+      if (overrides?.rowForColumnKeys) {
+        this.rowForColumnKeys = overrides?.rowForColumnKeys
+      }
+      if (overrides?.dataStart) {
+        this.dataStart = overrides.dataStart
+      }
+      if (overrides?.validHeaderVars) {
+        this.validHeaderVars = overrides.validHeaderVars
+      }
+      const sheet = data.find((i) => i.name === this.sheetName)
+      this.sheet = sheet
+      //sheet where the estates to import are found...
+      if (!sheet || !sheet.data) {
+        throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      }
+      this.reverseTranslator = new EstateAttributeTranslations()
+      this.dataMapping = this.reverseTranslator.getMap()
+      this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
+      if (!this.validateColumns(this.validColumns)) {
+        throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      }
+    } catch (e) {
+      Logger.error('Excel parse error', e.message)
+      throw new HttpException('Excel parse failed. please try again', 400)
+    }
   }
 
   setValidColumns(columns) {
@@ -147,7 +155,11 @@ class EstateImportReader {
             row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
           }
         })
-        if (Object.keys(row) && Object.keys(row).length) {
+
+        if (
+          Object.keys(omit(row, ['six_char_code'])) &&
+          Object.keys(omit(row, ['six_char_code'])).length
+        ) {
           row = await this.processRow(row, k)
           if (row) {
             this.data.push(row)
@@ -182,6 +194,7 @@ class EstateImportReader {
       return value
     } catch (e) {
       console.log('mapValue error', `${e.message} occurred for ${columnName} ${value}`)
+      return null
     }
   }
 

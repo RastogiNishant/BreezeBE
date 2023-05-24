@@ -135,7 +135,7 @@ class RoomService {
         const name = room.name.split(' ')[0]
         updateRooms.push({
           ...room,
-          name: index ? `${name} ${index}` : name,
+          name: `${name} ${index + 1}`,
         })
       })
     })
@@ -148,12 +148,21 @@ class RoomService {
   }
 
   static async removeAllRoom(estate_id, trx) {
-    return await Room.query()
-      .where('estate_id', estate_id)
-      .update({ name: `deleted_${uuid.v4()}`, status: STATUS_DELETE })
-      .transacting(trx)
+    const rooms = (await this.getRoomsByEstate(estate_id)).toJSON()
+
+    if (rooms && rooms.length) {
+      await Promise.map(rooms, async (room) => {
+        await Room.query()
+          .where('id', room.id)
+          .update({ name: `deleted_${room.id}_${uuid.v4()}`, status: STATUS_DELETE })
+          .transacting(trx)
+      })
+    }
   }
 
+  static async getFavoriteRoom(estate_id) {
+    return await Room.query().where('estate_id', estate_id).where('favorite', true).first()
+  }
   /**
    *
    */
@@ -220,7 +229,6 @@ class RoomService {
           }
         })
         const images = await this.addManyImages(data, trx)
-        console.log('Room Images=', images)
         await require('./EstateService').updateCover(
           { room: room.toJSON(), addImage: images[0] },
           trx
@@ -252,14 +260,17 @@ class RoomService {
    *
    */
   static async removeImage(id, trx) {
+    let image
     try {
-      const image = await Image.findOrFail(id)
-
-      //await Drive.disk(image.disk).delete(image.url)
+      image = await Image.findOrFail(id)
       await image.delete(trx)
       return image
     } catch (e) {
       throw new HttpException(NO_IMAGE_EXIST, 400)
+    } finally {
+      if (image) {
+        File.remove(image.url)
+      }
     }
   }
 
@@ -324,7 +335,9 @@ class RoomService {
   }
 
   static async createRoom({ user, estate_id, roomData }, trx) {
-    await this.hasPermission(estate_id, user)
+    if (user) {
+      await this.hasPermission(estate_id, user)
+    }
 
     if (roomData.favorite) {
       await Room.query()
@@ -344,6 +357,19 @@ class RoomService {
 
     return room
   }
+
+  static async setFavorite({ estate_id, room_id, favorite = false }, trx = null) {
+    if (trx) {
+      await Room.query()
+        .where('id', room_id)
+        .where('estate_id', estate_id)
+        .update({ favorite })
+        .transacting(trx)
+    } else {
+      await Room.query().where('id', room_id).where('estate_id').update({ favorite })
+    }
+  }
+
   static async createRoomsFromImport({ estate_id, rooms }, trx) {
     try {
       const roomsInfo = rooms.reduce((roomsInfo, room, index) => {
@@ -357,7 +383,6 @@ class RoomService {
           newRoomsInfo.push({
             ...room,
             name: index ? `${room.name} ${index + 1}` : room.name,
-            import_sequence: null,
             order: index + 1,
           })
         })
@@ -432,6 +457,7 @@ class RoomService {
         const newRoomsByRoomTypes = roomTypes.map((type) =>
           filter(roomsInfo, (room) => room.type === type)
         )
+
         const differentRooms = newRoomsByRoomTypes.map((newRoomByType, index) => {
           if (newRoomByType.length > oldRoomsByRoomTypes[index].length) {
             const oldRoomLength = oldRoomsByRoomTypes[index].length
@@ -464,10 +490,7 @@ class RoomService {
             element.rooms.map((room, index) => {
               addRooms.push({
                 ...room,
-                name: element.nameIndex
-                  ? `${room.name} ${element.nameIndex + 1 + index}`
-                  : room.name,
-                import_sequence: null,
+                name: `${room.name} ${element.nameIndex + 1 + index}`,
                 order:
                   element.orderIndex === ROOM_DEFAULT_ORDER
                     ? ROOM_DEFAULT_ORDER
@@ -495,6 +518,7 @@ class RoomService {
         }
 
         if (addRooms && addRooms.length) {
+          console.log('Add Rooms here=', addRooms)
           await Room.createMany(addRooms, trx)
         }
       }
@@ -545,7 +569,11 @@ class RoomService {
     })
 
     if (imagesInfo) {
-      await Image.createMany(imagesInfo, trx)
+      const allocatedRoomImages = await Image.createMany(imagesInfo, trx)
+      await require('./EstateService').updateCover(
+        { estate_id, addImage: { ...allocatedRoomImages[0].toJSON(), room_id: undefined } },
+        trx
+      )
     }
 
     return images.map((image) => image.id)

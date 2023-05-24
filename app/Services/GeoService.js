@@ -6,7 +6,7 @@ const Database = use('Database')
 const Point = use('App/Models/Point')
 const AppException = use('App/Exceptions/AppException')
 
-const { isString, isArray, toNumber, range, get } = require('lodash')
+const { isString, isArray, toNumber, range, get, maxBy } = require('lodash')
 const {
   POINT_TYPE_POI,
   POINT_TYPE_ZONE,
@@ -28,14 +28,23 @@ class GeoService {
     let data
     try {
       data = await GeoAPI.getBatchedPlaces({ lat, lon })
+      point.data = { data }
     } catch (e) {
       Logger.error(e)
-      throw e
+      point.data = {}
     }
-    point.data = { data }
     await point.save()
 
     return point
+  }
+
+  static async getPOI({ lat, lon }) {
+    try {
+      return await GeoAPI.getBatchedPlaces({ lat, lon })
+    } catch (e) {
+      console.log('getPOI error', e.message)
+      return null
+    }
   }
 
   /**
@@ -79,14 +88,28 @@ class GeoService {
       const geo = get(data, 'features.0.geometry.coordinates') || []
       // await File.logFile({ geo })
       // const data = await File.readLog()
-      // const { geo } = JSON.parse(data)
-      return filterPoints(get(geo, '0.0', []))
+      //console.log('filterPoints', JSON.stringify(geo))
+      const geoPoints = geo.map((g) => {
+        return g.length ? g[0] : []
+      })
+      const maxPoints = maxBy(geoPoints, (gp) => gp.length)
+      return filterPoints(maxPoints)
     } catch (e) {
       Logger.error(e)
       throw e
     }
   }
 
+  static async fillPoi(point) {
+    const lat = Point.round(point.lat)
+    const lon = Point.round(point.lon)
+
+    if (!point.data?.data) {
+      const data = await this.getPOI({ lat, lon })
+      point.data = data ? { data } : {}
+      await point.save()
+    }
+  }
   /**
    *
    */
@@ -99,6 +122,11 @@ class GeoService {
       .where('type', POINT_TYPE_POI)
       .first()
     if (point) {
+      if (!point.data?.data) {
+        const data = await this.getPOI({ lat, lon })
+        point.data = data ? { data } : {}
+        await point.save()
+      }
       return point
     }
 
@@ -283,15 +311,15 @@ class GeoService {
         throw new AppException('Invalid address')
       } else {
         //if there is no matching address, we need to find any address who has average quality ( mittel ), we can estimate price range.
-//         const nonPreciseResult = await Database.select('*')
-//           .where('quality', 'mittel')
-//           .from('build_qualities').limit(1)
-// console.log('NnPreciseResult', nonPreciseResult)
-//         if (nonPreciseResult) {
-//           return nonPreciseResult
-//         }
+        //         const nonPreciseResult = await Database.select('*')
+        //           .where('quality', 'mittel')
+        //           .from('build_qualities').limit(1)
+        // console.log('NnPreciseResult', nonPreciseResult)
+        //         if (nonPreciseResult) {
+        //           return nonPreciseResult
+        //         }
 
-//         throw new AppException('Invalid address')
+        //         throw new AppException('Invalid address')
         return 'mittel'
       }
     }

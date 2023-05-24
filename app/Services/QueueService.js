@@ -9,16 +9,29 @@ const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
 const GET_POINTS = 'getEstatePoint'
+const GET_THIRD_PARTY_POINT = 'getThirdPartyPoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
+const GET_THIRD_PARTY_COORDINATES = 'getThirdPartyCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
+const CONTACT_OHNE_MAKLER = 'contactOhneMakler'
+const CONTACT_GEWOBAG = 'contactGewobag'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
 const IMPORT_ESTATES_VIA_EXCEL = 'importEstate'
+const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
+const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
+const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
+const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
+const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const {
+  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
+  SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
+  SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
@@ -49,12 +62,32 @@ class QueueService {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
   }
 
+  static getThirdPartyPoint(estateId) {
+    Queue.addJob(GET_THIRD_PARTY_POINT, { estateId }, { delay: 1 })
+  }
+
   static uploadOpenImmoImages(images, estateId) {
     Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
   }
 
   static getAnchorIsoline(tenantId) {
     Queue.addJob(GET_ISOLINE, { tenantId }, { delay: 1 })
+  }
+
+  static sendEmailToSupportForLandlordUpdate({ type, landlordId, estateIds }) {
+    Queue.addJob(
+      SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE,
+      { type, landlordId, estateIds },
+      { delay: 1 }
+    )
+  }
+
+  static contactOhneMakler({ third_party_offer_id, userId, message }) {
+    Queue.addJob(CONTACT_OHNE_MAKLER, { third_party_offer_id, userId, message }, { delay: 1 })
+  }
+
+  static contactGewobag({ third_party_offer_id, userId }) {
+    Queue.addJob(CONTACT_GEWOBAG, { third_party_offer_id, userId }, { delay: 1 })
   }
 
   static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
@@ -65,11 +98,23 @@ class QueueService {
     )
   }
 
+  static estateSyncPublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
+  }
+
+  static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids, markListingsForDelete })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
   static getEstateCoords(estateId) {
     Queue.addJob(GET_COORDINATES, { estateId }, { delay: 1 })
+  }
+
+  static getThirdPartyCoords(estateId) {
+    Queue.addJob(GET_THIRD_PARTY_COORDINATES, { estateId }, { delay: 1 })
   }
 
   static savePropertyBulkImages(properyImages) {
@@ -84,8 +129,40 @@ class QueueService {
     Queue.addJob(DEACTIVATE_LANDLORD, { deactivationId, userId }, { delay })
   }
 
+  static notifyProspectWhoLikedButNotKnocked(estateId, userId, delay) {
+    Queue.addJob(NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED, { estateId, userId }, { delay })
+  }
+
   static getIpBasedInfo(userId, ip) {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
+  }
+
+  static async doEvery10MinAtNight() {
+    return Promise.all([
+      wrapException(QueueJobService.updateThirdPartyOfferPoints),
+      wrapException(QueueJobService.fillMissingEstateInfo),
+    ])
+  }
+
+  static getTenantMatchProperties({ userId, has_notification_sent = false }) {
+    Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
+  }
+
+  static createThirdPartyMatchesByEstate() {
+    Queue.addJob(
+      QUEUE_CREATE_THIRD_PARTY_MATCHES,
+      {},
+      {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        delay: 1,
+        backoff: {
+          type: 'exponential',
+          delay: 5000,
+        },
+      }
+    )
   }
 
   /**
@@ -94,7 +171,8 @@ class QueueService {
   static async sendEvery5Min() {
     const NoticeService = require('./NoticeService')
     return Promise.all([
-      wrapException(QueueJobService.handleExpiredEstates),
+      wrapException(QueueJobService.handleToExpireEstates),
+      wrapException(QueueJobService.handleToActivateEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
       wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
@@ -103,12 +181,23 @@ class QueueService {
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.expiredShowTime),
+      wrapException(QueueJobService.updatePOI),
     ])
   }
 
   /**
    *
    */
+  static async performEvery3rdHour23rdMinuteJob() {
+    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
+  }
+
+  static async performEvery37thMinuteHourly() {
+    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag)])
+  }
+
   static async sendEveryDayMidday() {
     return Promise.all([
       wrapException(NoticeService.sendLandlordNewProperty),
@@ -132,6 +221,7 @@ class QueueService {
     return Promise.all([
       wrapException(NoticeService.prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
+      wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
     ])
   }
 
@@ -142,6 +232,25 @@ class QueueService {
     return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
+  static async addJobFetchPOI() {
+    const job = await Queue.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
+    job?.remove()
+    await Queue.addJob(
+      SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+      {},
+      {
+        jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+        repeat: { cron: '*/15 * * * *' },
+        removeOnComplete: true,
+        removeOnFail: true,
+      }
+    )
+  }
+
+  static async removeJobFetchPOI() {
+    const job = await Queue?.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
+    job?.remove()
+  }
   /**
    *
    */
@@ -152,10 +261,28 @@ class QueueService {
           return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
+        case GET_THIRD_PARTY_POINT:
+          return QueueJobService.updateThirdPartyPoint(job.data.estateId)
         case GET_COORDINATES:
           return QueueJobService.updateEstateCoord(job.data.estateId)
+        case GET_THIRD_PARTY_COORDINATES:
+          return QueueJobService.updateThirdPartyCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
+        case CONTACT_OHNE_MAKLER:
+          return QueueJobService.contactOhneMakler(
+            job.data.third_party_offer_id,
+            job.data.userId,
+            job.data.message
+          )
+        case CONTACT_GEWOBAG:
+          return QueueJobService.contactGewobag(job.data.third_party_offer_id, job.data.userId)
+        case SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE:
+          return QueueJobService.sendEmailToSupportForLandlordUpdate({
+            type: job.data.type,
+            landlordId: job.data.landlordId,
+            estateIds: job.data.estateIds,
+          })
         case IMPORT_ESTATES_VIA_EXCEL:
           return ImportService.process({
             s3_bucket_file_name: job.data.s3_bucket_file_name,
@@ -164,8 +291,14 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
+        case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
+          return QueueService.doEvery10MinAtNight()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
+        case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
+          return QueueService.performEvery3rdHour23rdMinuteJob()
+        case SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB:
+          return QueueService.performEvery37thMinuteHourly()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:
@@ -182,6 +315,27 @@ class QueueService {
           return QueueJobService.deactivateLandlord(job.data.deactivationId, job.data.userId)
         case GET_IP_BASED_INFO:
           return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
+        case GET_TENANT_MATCH_PROPERTIES:
+          return require('./MatchService').matchByUser({
+            userId: job.data.userId,
+            has_notification_sent: job.data.has_notification_sent,
+          })
+        case QUEUE_CREATE_THIRD_PARTY_MATCHES:
+          return require('./ThirdPartyMatchService').matchByEstates()
+        case NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED:
+          return QueueJobService.notifyProspectWhoLikedButNotKnocked(
+            job.data.estateId,
+            job.data.userId
+          )
+        case ESTATE_SYNC_PUBLISH_ESTATE:
+          return require('./EstateSyncService').postEstate({
+            estate_id: job.data.estate_id,
+          })
+        case ESTATE_SYNC_UNPUBLISH_ESTATES:
+          return require('./EstateSyncService').unpublishMultipleEstates(
+            job.data.estate_ids,
+            job.data.markListingsForDelete
+          )
         default:
           console.log(`No job processor for: ${job.name}`)
       }

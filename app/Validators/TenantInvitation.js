@@ -28,18 +28,21 @@ class TenantInvitation extends Base {
           }),
           city: yup
             .string()
+            .nullable()
             .max(40)
             .when('estate_id', (estate_id, schema) => {
               return estate_id ? schema : yup.string().max(40).required()
             }),
           zip: yup
             .string()
+            .nullable()
             .max(8)
             .when('estate_id', (estate_id, schema) => {
               return estate_id ? schema : yup.string().max(8).required()
             }),
           street: yup
             .string()
+            .nullable()
             .min(2)
             .max(255)
             .when('estate_id', (estate_id, schema) => {
@@ -47,6 +50,7 @@ class TenantInvitation extends Base {
             }),
           house_number: yup
             .string()
+            .nullable()
             .min(1)
             .max(255)
             .when('estate_id', (estate_id, schema) => {
@@ -54,6 +58,7 @@ class TenantInvitation extends Base {
             }),
           country: yup
             .string()
+            .nullable()
             .min(1)
             .max(255)
             .when('estate_id', (estate_id, schema) => {
@@ -61,6 +66,7 @@ class TenantInvitation extends Base {
             }),
           coord: yup
             .string()
+            .nullable()
             .matches(
               /^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/,
               getExceptionMessage('address', MATCH)
@@ -68,10 +74,11 @@ class TenantInvitation extends Base {
             .when('estate_id', (estate_id, schema) => {
               return estate_id ? schema : yup.string().required()
             }),
-          floor: yup.number().integer().min(0).max(21), //0: ground floor, 21: root floor
+          floor: yup.number().integer().min(0).max(21).nullable(), //0: ground floor, 21: root floor
           floor_direction: yup
             .number()
             .integer()
+            .nullable(true)
             .oneOf([
               ESTATE_FLOOR_DIRECTION_NA,
               ESTATE_FLOOR_DIRECTION_LEFT,
@@ -79,10 +86,19 @@ class TenantInvitation extends Base {
               ESTATE_FLOOR_DIRECTION_STRAIGHT,
               ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
               ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+              null,
             ]),
-          surname: yup.string(),
-          email: yup.string().email().max(255, getExceptionMessage('email', MAXLENGTH, 255)),
+          surname: yup.string().nullable(),
           phone: phoneSchema.nullable(),
+          email: yup
+            .string()
+            .email()
+            .max(255, getExceptionMessage('email', MAXLENGTH, 255))
+            .nullable()
+            .when('phone', {
+              is: (phone) => !phone,
+              then: yup.string().required(),
+            }),
         })
       ),
     })
