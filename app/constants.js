@@ -958,6 +958,7 @@ const constants = {
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED: 'landlord:estatePublishApproved',
   WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
