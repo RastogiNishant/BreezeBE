@@ -39,6 +39,10 @@ class Stripe {
     }
   }
 
+  static async updateCustomer(customer, params) {
+    await stripe.customers.update(customer, params)
+  }
+
   static async getProducts() {
     // return await stripe.products.list({ limit: 30, active: true, expand: ['data.default_price'] })
     return await stripe.products.list({ limit: 30, active: true })
@@ -63,6 +67,24 @@ class Stripe {
 
   static async getCheckoutSession(id) {
     return await stripe.checkout.sessions.retrieve(id)
+  }
+
+  static async getPaymentIntent(id) {
+    return await stripe.paymentIntents.retrieve(id)
+  }
+
+  static async setPaymentMethodToCustomer(customer, paymentIntent) {
+    const paymentMethod = await this.getPaymentMethod(paymentIntent)
+    if (paymentMethod) {
+      await this.updateCustomer(customer, {
+        invoice_settings: { custom_fields: '', default_payment_method: paymentMethod },
+      })
+    }
+  }
+
+  static async getPaymentMethod(id) {
+    const paymentIntent = await this.getPaymentIntent(id)
+    return paymentIntent?.payment_method
   }
 }
 
