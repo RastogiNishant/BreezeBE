@@ -1427,6 +1427,21 @@ class EstateService {
           )
         }
 
+        await props({
+          delMatches: Database.table('matches')
+            .where({ estate_id: isRequestingPublish.estate_id })
+            .delete()
+            .transacting(trx),
+          delLikes: Database.table('likes')
+            .where({ estate_id: isRequestingPublish.estate_id })
+            .delete()
+            .transacting(trx),
+          delDislikes: Database.table('dislikes')
+            .where({ estate_id: isRequestingPublish.estate_id })
+            .delete()
+            .transacting(trx),
+        })
+
         const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
         const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
         let textMessage =

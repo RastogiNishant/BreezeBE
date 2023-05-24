@@ -182,6 +182,7 @@ class PropertyController {
     }
     const trx = await Database.beginTransaction()
     try {
+      /*
       await props({
         delMatches: Database.table('matches')
           .where({ estate_id: isRequestingPublish.estate_id })
@@ -195,7 +196,7 @@ class PropertyController {
           .where({ estate_id: isRequestingPublish.estate_id })
           .delete()
           .transacting(trx),
-      })
+      })*/
       await Estate.query().where('id', id).update({ status: STATUS_ACTIVE }, trx)
       await trx.commit()
       await MailService.estatePublishRequestApproved(isRequestingPublish)
