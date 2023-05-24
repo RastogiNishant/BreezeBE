@@ -95,6 +95,7 @@ const {
   FILE_TYPE_CUSTOM,
   LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT,
   ADMIN_URLS,
+  GERMAN_DATE_FORMAT,
 } = require('../constants')
 
 const {
@@ -1429,15 +1430,15 @@ class EstateService {
 
         await props({
           delMatches: Database.table('matches')
-            .where({ estate_id: isRequestingPublish.estate_id })
+            .where({ estate_id: estate.id })
             .delete()
             .transacting(trx),
           delLikes: Database.table('likes')
-            .where({ estate_id: isRequestingPublish.estate_id })
+            .where({ estate_id: estate.id })
             .delete()
             .transacting(trx),
           delDislikes: Database.table('dislikes')
-            .where({ estate_id: isRequestingPublish.estate_id })
+            .where({ estate_id: estate.id })
             .delete()
             .transacting(trx),
         })
@@ -1448,6 +1449,9 @@ class EstateService {
           `Landlord: ${user.firstname} ${user.secondname}\r\n` +
           `Landlord Email: ${user.email}\r\n` +
           `Estate Address: ${capitalize(estate.address)}\r\n` +
+          `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
+            GERMAN_DATE_FORMAT
+          )}\r\n` +
           `Url: ${link}\r\n` +
           `Marketplace Publishers:\r\n`
         publishers.map((publisher) => {

@@ -804,7 +804,7 @@ class MailService {
 
   static async sendEmailToSupport({ subject, textMessage, htmlMessage = '' }) {
     let msg = {
-      to: FromEmail,
+      to: 'barudo@gmail.com', //FromEmail,
       from: {
         email: FromEmail,
         name: FromName,
