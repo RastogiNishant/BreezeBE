@@ -93,6 +93,8 @@ const exceptions = {
   NO_PRODUCTS_EXIST: 'Products Not found',
   SUBSCRIPTION_FAILED: 'failed to create subscription',
   UNSECURE_PROFILE_SHARE: "Please don't share your profile",
+  ERROR_SUBSCRIPTION_NOT_CREATED: 'Not subscribed plan yet',
+  ERRUR_PRICE_PLAN_CONFIGURATION: 'Price plan misconfiguration',
 }
 
 const exceptionCodes = {
@@ -104,6 +106,8 @@ const exceptionCodes = {
   NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
   ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
   WARNING_UNSECURE_PROFILE_SHARE: 8000100,
+  ERROR_SUBSCRIPTION_NOT_CREATED_CODE: 9000100,
+  ERRUR_PRICE_PLAN_CONFIGURATION_CODE: 9000200,
 }
 
 const exceptionKeys = {

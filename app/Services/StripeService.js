@@ -19,6 +19,7 @@ const {
   PAY_MODE_USAGE,
   DAY_FORMAT,
   PAID_COMPLETE_STATUS,
+  PRICE_MATCH,
 } = require('../constants')
 const PricePlanService = use('App/Services/PricePlanService')
 const PaymentAccountService = use('App/Services/PaymentAccountService')
@@ -31,7 +32,13 @@ const Ws = use('Ws')
 const moment = require('moment')
 
 const {
-  exceptions: { NO_PRODUCTS_EXIST, SUBSCRIPTION_FAILED },
+  exceptions: {
+    NO_PRODUCTS_EXIST,
+    SUBSCRIPTION_FAILED,
+    ERROR_SUBSCRIPTION_NOT_CREATED,
+    ERRUR_PRICE_PLAN_CONFIGURATION,
+  },
+  exceptionCodes: { ERROR_SUBSCRIPTION_NOT_CREATED_CODE, ERRUR_PRICE_PLAN_CONFIGURATION_CODE },
 } = require('../exceptions')
 
 class StripeService {
@@ -69,6 +76,7 @@ class StripeService {
         if (price.mode !== PAY_MODE_USAGE) return { price: price.price_id, quantity: 1 }
         return { price: price.price_id }
       })
+
       const checkoutSession = await Stripe.createCheckoutSession({
         user_id,
         mode,
@@ -308,6 +316,72 @@ class StripeService {
         `${data.client_reference_id} checkout.session.async_payment_succeeded failed ${e.message}`
       )
       await trx.rollback()
+    }
+  }
+
+  static async buyPublishEstate({ user_id, plan_id }) {
+    if (!plan_id) {
+      throw new HttpException(
+        ERROR_SUBSCRIPTION_NOT_CREATED,
+        400,
+        ERROR_SUBSCRIPTION_NOT_CREATED_CODE
+      )
+    }
+
+    const paymentAccount = await PaymentAccountService.getByUserId({ user_id })
+    if (!paymentAccount) {
+      throw new HttpException(
+        ERROR_SUBSCRIPTION_NOT_CREATED,
+        400,
+        ERROR_SUBSCRIPTION_NOT_CREATED_CODE
+      )
+    }
+    const publishPlan = await PricePlanService.get({ plan_id, type: PRICE_MATCH })
+    if (!publishPlan) {
+      throw new HttpException(
+        ERRUR_PRICE_PLAN_CONFIGURATION,
+        400,
+        ERRUR_PRICE_PLAN_CONFIGURATION_CODE
+      )
+    }
+
+    try {
+      /** TODO: calculate published count for current month */
+      const publishedCount = 0
+      const customer = paymentAccount.account_id
+      /**
+       * can't be used for recurring payment. only can be used for one time payment
+       */
+      // const invoice = await Stripe.createInvoice(customer)
+      // await Stripe.createInvoiceItem({
+      //   customer,
+      //   price: 'price_1NBgpnLHZE8cb7Zfn0icdMe5',
+      //   invoice: invoice.id,
+      // })
+      // console.log('invoice created=', invoice.id)
+      // await Stripe.finalizeInvoice(invoice.id)
+      // await Stripe.payInvoice(invoice.id)
+
+      /**
+       * end of invoice
+       *  */
+      /** already attached payment intent to customer, so no need to pass payment_method */
+      const price = await Stripe.getUnitAmount({
+        id: publishPlan.price_id,
+        count: publishedCount + 1,
+      })
+      const order = await Stripe.createPaymentIntent({
+        customer,
+        amount: price,
+      })
+
+      /** TODO:
+       * need to store this payment as pending and send websocket event paid successfully
+       * need to update status from webhook
+       */
+    } catch (e) {
+      Logger.error(` ${user_id} paying publishing fee is failed ${e.message}`)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
