@@ -1,3 +1,5 @@
+const { minBy } = require('lodash')
+const HttpException = require('../Exceptions/HttpException')
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 class Stripe {
   static STRIPE_EVENTS = {
@@ -58,6 +60,8 @@ class Stripe {
       cancel_url: `${process.env.SITE_URL}/cancel`,
       line_items: prices,
       client_reference_id: user_id,
+      automatic_tax: { enabled: true },
+      customer_update: { address: 'auto' },
       mode,
     })
   }
@@ -90,12 +94,8 @@ class Stripe {
     return await stripe.invoices.retrieve(id)
   }
 
-  static async getPaymentIntent(id) {
-    return await stripe.paymentIntents.retrieve(id)
-  }
-
-  static async getCustomer(customer_id) {
-    return await stripe.customers.retrieve(customer_id)
+  static async getCustomer(customer_id, expand = {}) {
+    return await stripe.customers.retrieve(customer_id, expand)
   }
 
   static async hasDefaultPaymentMethod(customer_id) {
@@ -114,11 +114,12 @@ class Stripe {
     })
   }
 
-  static async createInvoiceItem({ customer, price, invoice }) {
+  static async createInvoiceItem({ customer, price, invoice, quantity = 1 }) {
     const invoiceItem = await stripe.invoiceItems.create({
       customer,
       price,
       invoice,
+      quantity,
     })
   }
 
@@ -134,18 +135,43 @@ class Stripe {
     return await stripe.invoices.pay(invoice)
   }
 
-  static async createPaymentIntent({ customer, payment_intent, amount }) {
-    const paymentIntent = await this.getPaymentIntent(payment_intent)
+  static async createPaymentIntent({ customer, amount }) {
+    const customerObject = await this.getCustomer(customer, { expand: ['invoice_settings'] })
+    if (!customerObject.invoice_settings?.default_payment_method) {
+      throw new HttpException('No set customer payment intent yet', 400)
+    }
+
     return await stripe.paymentIntents.create({
       customer,
       amount,
       setup_future_usage: 'off_session',
       confirmation_method: 'automatic',
-      payment_method: paymentIntent.payment_method,
+      payment_method: customerObject.invoice_settings?.default_payment_method,
       confirm: true,
       currency: 'eur',
       //automatic_payment_methods: { enabled: true },
     })
+  }
+
+  static async getPrice(id) {
+    return await stripe.prices.retrieve(id, { expand: ['tiers'] })
+  }
+
+  static async getUnitAmount({ id, count }) {
+    try {
+      const price = await this.getPrice(id)
+      if (price.tiers) {
+        const tierItem = minBy(
+          price.tiers.filter((tier) => tier.up_to >= count),
+          (tier) => tier.up_to
+        )
+        return tierItem.unit_amount
+      } else {
+        return price.unit_amount
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 }
 

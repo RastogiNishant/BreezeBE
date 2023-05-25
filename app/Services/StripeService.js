@@ -344,25 +344,39 @@ class StripeService {
     }
 
     try {
+      /** TODO: calculate published count for current month */
+      const publishedCount = 0
       const customer = paymentAccount.account_id
-      console.log('customer here', customer)
-
-      const invoice = await Stripe.createInvoice(customer)
-      console.log('created invoice', JSON.stringify(invoice))
-      console.log('created invoice price id', publishPlan.price_id)
-      await Stripe.createInvoiceItem({
-        customer,
-        price: 'price_1N8kDqLHZE8cb7Zf2n9fva0n',
-        invoice: invoice.id,
-      })
-      await Stripe.finalizeInvoice(invoice.id)
-      await Stripe.payInvoice(invoice.id)
-
-      // await Stripe.createPaymentIntent({
+      /**
+       * can't be used for recurring payment. only can be used for one time payment
+       */
+      // const invoice = await Stripe.createInvoice(customer)
+      // await Stripe.createInvoiceItem({
       //   customer,
-      //   payment_intent: invoice.payment_intent,
-      //   amount: 12800,
+      //   price: 'price_1NBgpnLHZE8cb7Zfn0icdMe5',
+      //   invoice: invoice.id,
       // })
+      // console.log('invoice created=', invoice.id)
+      // await Stripe.finalizeInvoice(invoice.id)
+      // await Stripe.payInvoice(invoice.id)
+
+      /**
+       * end of invoice
+       *  */
+      /** already attached payment intent to customer, so no need to pass payment_method */
+      const price = await Stripe.getUnitAmount({
+        id: publishPlan.price_id,
+        count: publishedCount + 1,
+      })
+      const order = await Stripe.createPaymentIntent({
+        customer,
+        amount: price,
+      })
+
+      /** TODO:
+       * need to store this payment as pending and send websocket event paid successfully
+       * need to update status from webhook
+       */
     } catch (e) {
       Logger.error(` ${user_id} paying publishing fee is failed ${e.message}`)
       throw new HttpException(e.message, e.status || 400, e.code || 0)
