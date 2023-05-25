@@ -214,6 +214,7 @@ class StripeService {
         },
         trx
       )
+      await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
       // await OrderService.updateOrder(
       //   { subscription_id: data.id, status: PAID_PARTIALY_STATUS },
       //   trx
@@ -238,6 +239,7 @@ class StripeService {
   static async invoicePaid(data) {
     try {
       await OrderService.updateOrder({ invoice_id: data.id, status: PAID_COMPLETE_STATUS })
+      await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
     } catch (e) {
       Logger.error(`Invoice paid failed ${e.message}`)
     }

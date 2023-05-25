@@ -213,6 +213,9 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   MAX_MINOR_COUNT,
+  FURNISHING_NOT_FURNISHED,
+  FURNISHING_PARTIALLY_FURNISHED,
+  FURNISHING_FULLY_FURNISHED,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -583,7 +586,14 @@ class CreateEstate extends Base {
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
-      furnished: yup.boolean().nullable(),
+      furnished: yup
+        .number()
+        .integer()
+        .oneOf([
+          FURNISHING_NOT_FURNISHED,
+          FURNISHING_PARTIALLY_FURNISHED,
+          FURNISHING_FULLY_FURNISHED,
+        ]),
       kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()

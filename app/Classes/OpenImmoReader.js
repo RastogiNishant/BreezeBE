@@ -18,6 +18,7 @@ const {
   PROPERTY_TYPE_HOUSE,
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_SITE,
+  STATUS_DELETE,
 } = require('../constants')
 
 const energyPassVariables = {
@@ -218,6 +219,7 @@ class OpenImmoReader {
           obj = { ...obj, [key]: get(property, value) }
         })
         obj.status = transmittal.art
+        obj.action = transmittal.modus
         return obj
       })
       return properties
@@ -368,7 +370,9 @@ class OpenImmoReader {
       property.wbs = property.wbs === 'true'
       property.full_address = property.full_address === 'true'
 
-      if (property.status === 'ONLINE') {
+      if (property.action === 'DELETE') {
+        property.status = STATUS_DELETE
+      } else if (property.status === 'ONLINE') {
         property.status = STATUS_ACTIVE
       } else if (property.status === 'OFFLINE') {
         property.status = STATUS_EXPIRE
@@ -378,13 +382,13 @@ class OpenImmoReader {
         property.basement = true
       }
 
-      if (property.apt_type) {
+      if (property?.apt_type) {
         property.property_type = PROPERTY_TYPE_APARTMENT
-      } else if (property.house_type) {
+      } else if (property?.house_type) {
         property.property_type = PROPERTY_TYPE_HOUSE
-      } else if (property.room_type) {
+      } else if (property?.room_type) {
         property.property_type = PROPERTY_TYPE_ROOM
-      } else if (property.site_type) {
+      } else if (property?.site_type) {
         property.property_type = PROPERTY_TYPE_SITE
       }
     })

@@ -2,6 +2,7 @@
 const moment = require('moment')
 const {
   isEmpty,
+  isNull,
   filter,
   omit,
   flatten,
@@ -9,6 +10,7 @@ const {
   countBy,
   maxBy,
   orderBy,
+  isArray,
   sum,
   trim,
 } = require('lodash')
@@ -37,6 +39,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
 const GeoAPI = use('GeoAPI')
+const { capitalize } = require('../Libs/utils')
 
 const {
   STATUS_DRAFT,
@@ -91,6 +94,12 @@ const {
   DAY_FORMAT,
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER,
   FILE_TYPE_CUSTOM,
+  LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT,
+  ADMIN_URLS,
+  GERMAN_DATE_FORMAT,
+  PUBLISH_STATUS_INIT,
+  PUBLISH_STATUS_BY_LANDLORD,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const {
@@ -362,6 +371,7 @@ class EstateService {
       .withCount('inviteBuddies')
       .with('point')
       .with('files')
+      .with('amenities')
       .with('current_tenant', function (q) {
         q.with('user')
       })
@@ -548,7 +558,6 @@ class EstateService {
         createData.letting_type = createData.letting_type || LETTING_TYPE_VOID
         createData.letting_status = createData.letting_status || LETTING_STATUS_VACANCY
       }
-
       let estateHash
       const estate = await Estate.createItem(
         {
@@ -589,7 +598,6 @@ class EstateService {
   }
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
-
     let updateData = {
       ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
       status: STATUS_DRAFT,
@@ -647,7 +655,6 @@ class EstateService {
           }
         }
       }
-
       updateData = {
         ...estate.toJSON({
           extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
@@ -1408,18 +1415,6 @@ class EstateService {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
-      await props({
-        delMatches: Database.table('matches')
-          .where({ estate_id: estate.id })
-          .delete()
-          .transacting(trx),
-        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
-        delDislikes: Database.table('dislikes')
-          .where({ estate_id: estate.id })
-          .delete()
-          .transacting(trx),
-      })
-
       if (
         estate.available_start_at &&
         moment(estate.available_start_at).format(DATE_FORMAT) <=
@@ -1428,7 +1423,6 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
-        status = STATUS_ACTIVE
         if (publishers?.length) {
           await require('./EstateSyncService.js').saveMarketPlacesInfo(
             {
@@ -1440,20 +1434,54 @@ class EstateService {
             trx
           )
         }
+
+        await props({
+          delMatches: Database.table('matches')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+          delLikes: Database.table('likes')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+          delDislikes: Database.table('dislikes')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+        })
+
+        const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
+        const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
+        let textMessage =
+          `Landlord: ${user.firstname} ${user.secondname}\r\n` +
+          `Landlord Email: ${user.email}\r\n` +
+          `Estate Address: ${capitalize(estate.address)}\r\n` +
+          `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
+            GERMAN_DATE_FORMAT
+          )}\r\n` +
+          `Url: ${link}\r\n` +
+          `Marketplace Publishers:\r\n`
+        publishers?.map((publisher) => {
+          textMessage += ` - ${publisher}\r\n`
+        })
+        await require('./MailService').sendEmailToSupport({ subject, textMessage })
         // Run match estate
         Event.fire('match::estate', estate.id)
-      }
+        await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
 
-      await estate.publishEstate(status, trx)
-
-      if (!is_queue) {
-        //send email to support for landlord update...
-        QueueService.sendEmailToSupportForLandlordUpdate({
-          type: PUBLISH_ESTATE,
-          landlordId: estate.user_id,
-          estateIds: [estate.id],
-        })
-        Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+        if (isNull(performed_by)) {
+          //comes from admin so we can publish to market place
+          await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
+        }
+        if (!is_queue) {
+          //send email to support for landlord update...
+          QueueService.sendEmailToSupportForLandlordUpdate({
+            type: PUBLISH_ESTATE,
+            landlordId: estate.user_id,
+            estateIds: [estate.id],
+          })
+          Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+        }
       }
 
       await trx.commit()
@@ -1852,6 +1880,7 @@ class EstateService {
 
     query.leftJoin('tasks', function () {
       this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
+        TASK_STATUS_ARCHIVED,
         TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
@@ -2071,7 +2100,7 @@ class EstateService {
         status: STATUS_DRAFT,
         letting_type: LETTING_TYPE_LET,
         letting_status: LETTING_STATUS_STANDARD,
-        is_published: false,
+        publish_status: PUBLISH_STATUS_INIT,
       })
       .transacting(trx)
   }
@@ -2620,6 +2649,17 @@ class EstateService {
     return 0
   }
 
+  static async publishRequestedProperty(id) {
+    return await Estate.query()
+      .select('estates.*')
+      .select('estates.id as estate_id')
+      .select('users.*')
+      .innerJoin('users', 'users.id', 'estates.user_id')
+      .where('estates.id', id)
+      .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
+      .where('publish_status', PUBLISH_STATUS_BY_LANDLORD)
+      .first()
+  }
   static async duplicateEstate(user_id, estate_id) {
     const estate = await this.getByIdWithDetail(estate_id)
     if (estate?.user_id !== user_id) {
@@ -2654,7 +2694,7 @@ class EstateService {
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
-        is_published: false,
+        publish_status: PUBLISH_STATUS_INIT,
         vacant_date: null,
         hash: null,
         shared_link: null,
