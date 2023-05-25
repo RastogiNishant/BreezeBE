@@ -15,6 +15,9 @@ const {
   ESTATE_SYNC_LISTING_STATUS_POSTED,
   WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
   ESTATE_SYNC_LISTING_STATUS_DELETED,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_DECLINED_BY_ADMIN,
+  PUBLISH_STATUS_INIT,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -49,7 +52,7 @@ class PropertyController {
         'estates.address',
         'estates.status',
         'estates.six_char_code',
-        'estates.is_published'
+        'estates.publish_status'
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
@@ -190,7 +193,9 @@ class PropertyController {
           .delete()
           .transacting(trx),
       })*/
-      await Estate.query().where('id', id).update({ status: STATUS_ACTIVE }, trx)
+      await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
       await trx.commit()
       const listings = await EstateSyncListing.query()
         .where('estate_id', id)
@@ -221,7 +226,9 @@ class PropertyController {
     if (!(await EstateService.publishRequestedProperty(id))) {
       throw new HttpException('This estate is not marked for publish', 400, 114002)
     }
-    await Estate.query().where('id', id).update({ status: STATUS_DRAFT, is_published: false })
+    await Estate.query()
+      .where('id', id)
+      .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN })
     await EstateSyncService.markListingsForDelete(id)
     QueueService.estateSyncUnpublishEstates([id], false)
     return true
@@ -249,7 +256,7 @@ class PropertyController {
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)
-            .update({ status: STATUS_DRAFT, is_published: false }, trx)
+            .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT }, trx)
           await trx.commit()
           QueueService.estateSyncUnpublishEstates(ids, true)
           return response.res(affectedRows)

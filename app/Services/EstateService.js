@@ -97,6 +97,7 @@ const {
   LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT,
   ADMIN_URLS,
   GERMAN_DATE_FORMAT,
+  PUBLISH_STATUS_INIT,
 } = require('../constants')
 
 const {
@@ -2096,7 +2097,7 @@ class EstateService {
         status: STATUS_DRAFT,
         letting_type: LETTING_TYPE_LET,
         letting_status: LETTING_STATUS_STANDARD,
-        is_published: false,
+        publish_status: PUBLISH_STATUS_INIT,
       })
       .transacting(trx)
   }
@@ -2692,7 +2693,7 @@ class EstateService {
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
-        is_published: false,
+        publish_status: PUBLISH_STATUS_INIT,
         vacant_date: null,
         hash: null,
         shared_link: null,
