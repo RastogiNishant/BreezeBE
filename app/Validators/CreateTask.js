@@ -33,7 +33,7 @@ class CreateTask extends Base {
         ]),
       description: yup.string().nullable(),
       file: yup.mixed(),
-      due_date: yup.date(),
+      due_date: yup.date().nullable(),
     })
 }
 
