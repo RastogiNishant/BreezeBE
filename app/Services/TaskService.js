@@ -471,6 +471,12 @@ class TaskService extends BaseService {
 
     if (status) {
       taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
+    } else {
+      taskQuery.whereNotIn('tasks.status', [
+        TASK_STATUS_ARCHIVED,
+        TASK_STATUS_DELETE,
+        TASK_STATUS_DRAFT,
+      ])
     }
 
     if (estate_id) {
@@ -545,7 +551,7 @@ class TaskService extends BaseService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
