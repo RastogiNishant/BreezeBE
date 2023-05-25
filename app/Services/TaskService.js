@@ -441,6 +441,11 @@ class TaskService extends BaseService {
     let taskQuery = Task.query()
       .select('tasks.*')
       .select(
+        Database.raw(
+          `coalesce( tasks.unread_role = ${role} AND tasks.unread_count > 0 , false) as is_unread_task`
+        )
+      )
+      .select(
         Database.raw(`coalesce(
         ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
           or ("tasks"."status" = ${TASK_STATUS_RESOLVED}
@@ -481,6 +486,7 @@ class TaskService extends BaseService {
     }
 
     taskQuery
+      .orderBy('is_unread_task', 'desc')
       .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
       .orderBy('tasks.urgency', 'desc')
