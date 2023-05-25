@@ -1458,25 +1458,29 @@ class EstateService {
           )}\r\n` +
           `Url: ${link}\r\n` +
           `Marketplace Publishers:\r\n`
-        publishers.map((publisher) => {
+        publishers?.map((publisher) => {
           textMessage += ` - ${publisher}\r\n`
         })
         await require('./MailService').sendEmailToSupport({ subject, textMessage })
         // Run match estate
         Event.fire('match::estate', estate.id)
+        await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
+
+        if (isNull(performed_by)) {
+          //comes from admin so we can publish to market place
+          await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
+        }
+        if (!is_queue) {
+          //send email to support for landlord update...
+          QueueService.sendEmailToSupportForLandlordUpdate({
+            type: PUBLISH_ESTATE,
+            landlordId: estate.user_id,
+            estateIds: [estate.id],
+          })
+          Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+        }
       }
 
-      await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
-
-      if (!is_queue) {
-        //send email to support for landlord update...
-        QueueService.sendEmailToSupportForLandlordUpdate({
-          type: PUBLISH_ESTATE,
-          landlordId: estate.user_id,
-          estateIds: [estate.id],
-        })
-        Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
-      }
       await trx.commit()
       return status
     } catch (e) {
