@@ -5,14 +5,14 @@
     "LOFT-STUDIO-ATELIER": 5,
     "PENTHOUSE": 8,
     "TERRASSEN": 9,
-    "ETAGE": 10,
+    "ETAGE": 1,
     "ERDGESCHOSS": 2,
     "SOUTERRAIN": 7,
     "APARTMENT": 1,
-    "FERIENWOHNUNG": 11,
-    "GALERIE": 12,
-    "ROHDACHBODEN": 13,
-    "ATTIKAWOHNUNG": 14,
+    "FERIENWOHNUNG": 10,
+    "GALERIE": 11,
+    "ROHDACHBODEN": 12,
+    "ATTIKAWOHNUNG": 12,
     "KEINE_ANGABE": 0
   },
   "bath_options": {
@@ -384,22 +384,6 @@
     "FREIPLATZ": 3,
     "PARKHAUS": 4,
     "DUPLEX": 5
-  },
-  "property_type": {
-    "DACHGESCHOSS": 3,
-    "MAISONETTE": 4,
-    "LOFT-STUDIO-ATELIER": 5,
-    "PENTHOUSE": 8,
-    "TERRASSEN": 9,
-    "ETAGE": 10,
-    "ERDGESCHOSS": 2,
-    "SOUTERRAIN": 7,
-    "APARTMENT": 1,
-    "FERIENWOHNUNG": 11,
-    "GALERIE": 12,
-    "ROHDACHBODEN": 13,
-    "ATTIKAWOHNUNG": 14,
-    "KEINE_ANGABE": 0
   },
   "use_type": {
     "ANLAGE": 3,

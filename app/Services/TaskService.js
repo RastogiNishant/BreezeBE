@@ -437,9 +437,14 @@ class TaskService extends BaseService {
     }
   }
 
-  static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
+  static async getAllTasks({ user_id, role, estate_id, query, status, page = -1, limit = -1 }) {
     let taskQuery = Task.query()
       .select('tasks.*')
+      .select(
+        Database.raw(
+          `coalesce( tasks.unread_role = ${role} AND tasks.unread_count > 0 , false) as is_unread_task`
+        )
+      )
       .select(
         Database.raw(`coalesce(
         ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
@@ -457,7 +462,7 @@ class TaskService extends BaseService {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.select(ESTATE_FIELD_FOR_TASK).with('user')
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
@@ -466,9 +471,28 @@ class TaskService extends BaseService {
 
     if (status) {
       taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
+    } else {
+      taskQuery.whereNotIn('tasks.status', [
+        TASK_STATUS_ARCHIVED,
+        TASK_STATUS_DELETE,
+        TASK_STATUS_DRAFT,
+      ])
     }
+
+    if (estate_id) {
+      taskQuery.where('tasks.estate_id', estate_id)
+    }
+
+    if (query) {
+      taskQuery.where(function () {
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('tasks.title', 'ilike', `%${query}%`)
+      })
+    }
+
     taskQuery
-      .where('tasks.estate_id', estate_id)
+      .orderBy('is_unread_task', 'desc')
       .orderBy('tasks.updated_at', 'desc')
       .orderBy('tasks.status', 'asc')
       .orderBy('tasks.urgency', 'desc')
@@ -527,7 +551,7 @@ class TaskService extends BaseService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
@@ -535,7 +559,7 @@ class TaskService extends BaseService {
     const filter = new TaskFilters(param, query)
     query = filter.process()
 
-    query.orderBy('tasks.updated_at')
+    query.orderBy('tasks.updated_at', 'desc')
 
     if (!page || page === -1 || !limit || limit === -1) {
       return await query.fetch()
@@ -592,10 +616,7 @@ class TaskService extends BaseService {
 
     if (estate_id) {
       const finalMatch = await MatchService.getFinalMatch(estate_id)
-      if (!finalMatch) {
-        throw new HttpException('No final match yet for property', 400)
-      }
-      return finalMatch.user_id
+      return finalMatch?.user_id
     }
 
     if (role === ROLE_USER) {

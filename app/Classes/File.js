@@ -5,6 +5,8 @@ const uuid = require('uuid')
 const moment = require('moment')
 const Promise = require('bluebird')
 const { nth, isEmpty, isString, trim } = require('lodash')
+const AWS = require('aws-sdk')
+const Env = use('Env')
 
 const Logger = use('Logger')
 const Drive = use('Drive')
@@ -16,7 +18,7 @@ const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
 const heicConvert = require('heic-convert')
 const axios = require('axios')
-const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp/uploads'
 
 class File {
   static IMAGE_JPG = 'image/jpg'
@@ -357,38 +359,74 @@ class File {
 
   static async saveFileTo({ url, ext = 'jpg' }) {
     try {
-      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const TEMP_PATH = PDF_TEMP_PATH
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
+      Logger.info(`bucket URL ${url}`)
+      Logger.info(`Local path ${outputFileName}`)
+      const response = await axios.get(url, { responseType: 'arraybuffer' })
+      Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
 
-      const writeFile = async () => {
-        const writer = fs.createWriteStream(outputFileName)
-        const response = await axios.get(url, { responseType: 'arraybuffer' })
+      const writeFile = async (url, outputFileName) => {
         return new Promise((resolve, reject) => {
-          if (response.data instanceof Buffer) {
-            writer.write(response.data)
-            resolve(outputFileName)
-          } else {
-            response.data.pipe(writer)
-            let error = null
-            writer.on('error', (err) => {
-              error = err
-              writer.close()
-              reject(err)
-            })
-            writer.on('close', () => {
-              if (!error) {
-                resolve(outputFileName)
-              }
-            })
+          try {
+            fs.writeFile(outputFileName, response.data, {}, resolve)
+            Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
+          } catch (e) {
+            Logger.info(`failed to write ${url} at ${new Date().toISOString()} ${e.message}`)
+            reject(err)
           }
         })
       }
-
-      await writeFile(outputFileName)
+      await writeFile(url, outputFileName)
       return outputFileName
     } catch (e) {
-      console.log('saveFunctionalTestImage Error', e.message)
-      throw new HttpException('File upload failed. Please try again', 400)
+      Logger.error(`File saved error ${e.message}`)
+      throw new HttpException('File saved failed. Please try again', 400)
+    }
+  }
+
+  static async getGewobagUploadedContent(filesWorked) {
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION'),
+      })
+      var s3 = new AWS.S3()
+
+      var params = {
+        Bucket: 'breeze-ftp-files',
+        Delimiter: '/',
+      }
+      const objects = await s3.listObjects(params).promise()
+      if (!objects?.Contents) {
+        return []
+      }
+
+      let xmls = []
+      let filesLastModified = []
+      for (let i = 0; i < objects.Contents.length; i++) {
+        const fileLastModifiedOnRecord = filesWorked[objects.Contents[i].Key] || null
+        if (
+          objects.Contents[i].Key.match(/\.xml$/) &&
+          moment(new Date(objects.Contents[i].LastModified)).utc().format() !==
+            fileLastModifiedOnRecord
+        ) {
+          const xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+          xmls = [...xmls, xml]
+          filesLastModified = {
+            ...filesLastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+          }
+        }
+      }
+      return {
+        xml: xmls,
+        filesLastModified,
+      }
+    } catch (err) {
+      console.log('getGewobagUploadedContent', err)
+      return []
     }
   }
 }

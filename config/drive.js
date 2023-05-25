@@ -29,5 +29,12 @@ module.exports = {
       bucket: Env.get('S3_PUBLIC_BUCKET'),
       region: Env.get('S3_REGION'),
     },
+    'breeze-ftp-files': {
+      driver: 's3',
+      key: Env.get('S3_KEY'),
+      secret: Env.get('S3_SECRET'),
+      bucket: 'breeze-ftp-files',
+      region: Env.get('S3_REGION'),
+    },
   },
 }

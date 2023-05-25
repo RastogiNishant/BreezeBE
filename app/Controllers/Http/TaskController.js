@@ -79,13 +79,14 @@ class TaskController {
 
   async getAllTasks({ request, auth, response }) {
     try {
-      const { estate_id, status, page, limit } = request.all()
+      const { estate_id, status, query, page, limit } = request.all()
       response.res(
         await TaskService.getAllTasks({
           user_id: auth.user.id,
           role: auth.user.role,
-          estate_id: estate_id,
-          status: status,
+          estate_id,
+          status,
+          query,
           page,
           limit,
         })

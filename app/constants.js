@@ -199,11 +199,11 @@ const constants = {
   APARTMENT_TYPE_SOUTERRAIN: 7,
   APARTMENT_TYPE_PENTHOUSE: 8,
   APARTMENT_TYPE_TERRACES: 9,
-  APARTMENT_TYPE_ETAGE: 10,
-  APARTMENT_TYPE_HOLIDAY: 11,
-  APARTMENT_TYPE_GALLERY: 12,
-  APARTMENT_TYPE_RAW_ATTIC: 13,
-  APARTMENT_TYPE_ATTIC: 14,
+  //APARTMENT_TYPE_ETAGE: 10, REMAPPED to APARTMENT_TYPE_FLAT
+  APARTMENT_TYPE_HOLIDAY: 10,
+  APARTMENT_TYPE_GALLERY: 11,
+  //APARTMENT_TYPE_RAW_ATTIC: 12, REMAPPED to APARTMENT_TYPE_ATTIC
+  APARTMENT_TYPE_ATTIC: 12,
 
   // Building type
   HOUSE_TYPE_MULTIFAMILY_HOUSE: 1,
@@ -402,7 +402,8 @@ const constants = {
   VISIBLE_BEFORE_TENANT: 1,
 
   DATE_FORMAT: 'YYYY-MM-DD HH:mm:ss',
-  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:MM',
+  GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:mm',
+  GERMAN_DATE_FORMAT: 'DD.MM.YYYY',
   DAY_FORMAT: 'YYYY-MM-DD',
   ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
 
@@ -428,6 +429,7 @@ const constants = {
     'number_floors',
   ],
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
+  SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
@@ -447,6 +449,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE: 'notification_prospect_invite',
   NOTICE_TYPE_PROSPECT_VISIT3H: 'notification_prospect_visit_1',
   NOTICE_TYPE_PROSPECT_VISIT30M: 'notification_prospect_visit_2',
+  NOTICE_TYPE_PROSPECT_VISIT48H: 'notification_prospect_visit_3',
   NOTICE_TYPE_PROSPECT_COMMIT: 'notification_prospect_commit',
   NOTICE_TYPE_PROSPECT_REJECT: 'notification_prospect_reject',
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY: 'notification_prospect_no_activity',
@@ -544,6 +547,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
+  NOTICE_TYPE_PROSPECT_VISIT48H_ID: 59,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -578,6 +582,10 @@ const constants = {
   BASIC_MEMBER: 1,
   PENDING_PREMIUM_MEMBER: 2,
   PREMIUM_MEMBER: 3,
+
+  FURNISHING_NOT_FURNISHED: 0,
+  FURNISHING_PARTIALLY_FURNISHED: 1,
+  FURNISHING_FULLY_FURNISHED: 2,
 
   PROPERTY_MANAGE_REQUEST: 1,
   PROPERTY_MANAGE_ALLOWED: 2,
@@ -640,6 +648,7 @@ const constants = {
     'house_type',
     'apt_type',
     'options',
+    'share_link',
     'stp_garage',
     'energy_proof',
     'energy_proof_original_file',
@@ -649,6 +658,7 @@ const constants = {
     'rent_end_at',
     'knocked_at',
     'action_at',
+    'is_not_show',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -809,6 +819,7 @@ const constants = {
     'rooms_number',
     'number_floors',
     'city',
+    'cover',
     'coord_raw',
     'property_id',
     'address',
@@ -945,6 +956,12 @@ const constants = {
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
+  WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED: 'landlord:estatePublishApproved',
+  WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN: 'landlord:estateUnpublishedByAdmin',
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED: 'landlord:estateUnpublished',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1100,9 +1117,11 @@ Estates: [ESTATES]
     'Heavily neglected',
   ],
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
+  SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT: 'Breeze: Interessentenanfragen vom ',
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT: 'I am interested in this apartment.',
 
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER: 'ohnemakler',
+  THIRD_PARTY_OFFER_SOURCE_GEWOBAG: 'gewobag',
   OHNE_MAKLER_ESTATE_TYPE_VALUE_TO_QUALIFY: 'for rent',
   OHNE_MAKLER_ESTATE_OBJEKTART_TO_QUALIFY: [
     'Wohnung',
@@ -1132,17 +1151,107 @@ Estates: [ESTATES]
     family_size_min: 1,
     family_size_max: 2,
   },
-  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler'],
-  VALID_INCOME_PROOFS_PERIOD: 5,
+  THIRD_PARTY_OFFER_SOURCES: ['ohnemakler', 'gewobag'],
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
+    ohnemakler: {
+      name: 'Ohne-makler.net',
+      url: 'https://www.ohne-makler.net/',
+      logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
+    },
+    gewobag: {
+      name: 'Gewobag',
+      url: 'https://www.gewobag.de/',
+      logo: 'APP_URL/img/gewobag.png',
+    },
+  },
+  VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
-
+  GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL: ' wohnungshelden@breeze4me.net',
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL: 'anfragen@gewobag.interessentenanfragen.de',
+  GEWOBAG_EMAIL_CONTENT: 'I interessiere mich für das Objekt.',
+  GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL: 30,
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
   THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
   PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
 
+  ENERGY_CLASS_USING_EFFICIENCY: [
+    { level: 'A+', value: 30 },
+    { level: 'A', value: 50 },
+    { level: 'B', value: 75 },
+    { level: 'C', value: 100 },
+    { level: 'D', value: 130 },
+    { level: 'E', value: 160 },
+    { level: 'F', value: 200 },
+    { level: 'G', value: 250 },
+    { level: 'H', value: 250 },
+  ],
+
+  ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external', 'plan', 'custom'],
+  ESTATE_SYNC_TITLE_TEMPLATES: {
+    germany: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    deutschland: {
+      key: 'rooms_number Zimmer area m² apartmentType in city',
+      lang: 'de',
+    },
+    others: {
+      key: 'rooms_number Rooms area m² apartmentType in city',
+      lang: 'en',
+    },
+  },
+  THIRD_PARTY_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen'],
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT: 'immowelt',
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24: 'immobilienscout-24',
+  ESTATE_SYNC_PUBLISH_PROVIDER_EBAY: 'ebay-kleinanzeigen',
+
+  ESTATE_SYNC_LISTING_STATUS_INITIALIZED: 3,
+  ESTATE_SYNC_LISTING_STATUS_POSTED: 5,
+  ESTATE_SYNC_LISTING_STATUS_PUBLISHED: 1,
+  ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND: 6,
+  ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE: 7,
+  ESTATE_SYNC_LISTING_STATUS_DELETED: 2,
+
+  ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
+  ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
+
+  ADMIN_URLS: {
+    localhost: 'http://localhost:3001',
+    development: 'https://development.d2x826avxkg7om.amplifyapp.com',
+    staging: 'https://staging.d2x826avxkg7om.amplifyapp.com',
+    production: 'https://master.d2x826avxkg7om.amplifyapp.com',
+  },
+
+  LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT: 'Landlord Request to Publish an Estate',
+
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
+
+  OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
+  OUTSIDE_TENANT_INVITE_TYPE: 'outside_tenant_invitation',
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: 'outside_prospect_knock',
+
+  PAYMENT_METHOD_STRIPE: 'stripe',
+  PAYMENT_METHOD_PAYPAL: 'paypal',
+
+  PAID_PENDING_STATUS: 1,
+  PAID_PARTIALY_STATUS: 2,
+  PAID_COMPLETE_STATUS: 3,
+  PAID_REFUNDED: 4,
+  PAID_FAILED: 5,
+
+  PAY_MODE_UPFRONT: 1,
+  PAY_MODE_ONE_TIME: 2,
+  PAY_MODE_RECURRING: 3,
+  PAY_MODE_USAGE: 4,
+
+  PUBLISH_STATUS_INIT: 0,
+  PUBLISH_STATUS_BY_LANDLORD: 1,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN: 2,
+  PUBLISH_STATUS_DECLINED_BY_ADMIN: 3,
 }
 
 module.exports = constants

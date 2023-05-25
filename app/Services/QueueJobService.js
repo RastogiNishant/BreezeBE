@@ -11,6 +11,8 @@ const Logger = use('Logger')
 const l = use('Localize')
 const { isEmpty, trim } = require('lodash')
 const Point = use('App/Models/Point')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
+const { createDynamicLink } = require('../Libs/utils')
 
 const {
   STATUS_ACTIVE,
@@ -43,6 +45,16 @@ const {
   MAXIMUM_EXPIRE_PERIOD,
   LETTING_TYPE_LET,
   POINT_TYPE_POI,
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+  GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
+  SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
+  GERMAN_DATE_TIME_FORMAT,
+  GERMAN_DATE_FORMAT,
+  GEWOBAG_EMAIL_CONTENT,
+  SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT,
+  GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
+  PUBLISH_STATUS_INIT,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -59,6 +71,17 @@ class QueueJobService {
     }
 
     const { lat, lon } = estate.getLatLon()
+    if (+lat === 0 && +lon === 0) {
+      return false
+    }
+    const point = await GeoService.getOrCreatePoint({ lat, lon })
+    estate.point_id = point.id
+    return estate.save()
+  }
+
+  static async updateThirdPartyPoint(estateId) {
+    const estate = await ThirdPartyOffer.query().where('id', estateId).first()
+    const [lat, lon] = estate.coord_raw.split(/,/)
     if (+lat === 0 && +lon === 0) {
       return false
     }
@@ -93,12 +116,16 @@ class QueueJobService {
     if (!estate || !estate.address || trim(estate.address) === '') {
       return
     }
+    const oldCoord = estate.coord
 
     const result = await GeoService.geeGeoCoordByAddress(estate.address)
     if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
       const coord = `${result.lat},${result.lon}`
       await estate.updateItem({ coord })
       await QueueJobService.updateEstatePoint(estateId)
+      if (oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
@@ -106,12 +133,26 @@ class QueueJobService {
         address: estate.address,
       })
     } else {
+      if (!oldCoord) {
+        return
+      }
       require('./EstateService').emitValidAddress({
         user_id: estate.user_id,
         id: estate.id,
         coord: null,
         address: estate.address,
       })
+    }
+  }
+
+  static async updateThirdPartyCoord(estateId) {
+    const estate = await ThirdPartyOffer.query().where('id', estateId).first()
+    const result = await GeoService.geeGeoCoordByAddress(estate.address)
+    if (result && result.lat && result.lon && !isNaN(result.lat) && !isNaN(result.lon)) {
+      const coord = `${result.lat},${result.lon}`
+      await estate.updateItem({ coord })
+
+      await QueueJobService.updateThirdPartyPoint(estateId)
     }
   }
 
@@ -126,10 +167,13 @@ class QueueJobService {
           .fetch()
       ).rows || []
 
-    let i = 0
-    Promise.map(estates, (estate) => {
-      QueueJobService.updateEstateCoord(estate.id)
-    })
+    await Promise.map(
+      estates,
+      async (estate) => {
+        await QueueJobService.updateEstateCoord(estate.id)
+      },
+      { concurrency: 1 }
+    )
   }
 
   static async sendLikedNotificationBeforeExpired() {
@@ -137,16 +181,24 @@ class QueueJobService {
     await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
+  /** we don't need this one, because all activation will be done by Breeze admin */
   static async handleToActivateEstates() {
-    const estates = (await QueueJobService.fetchToActivateEstates()).rows
-    if (!estates || !estates.length) {
-      return false
-    }
+    try {
+      const estates = (await QueueJobService.fetchToActivateEstates()).rows
+      if (!estates || !estates.length) {
+        return false
+      }
 
-    let i = 0
-    while (i < estates.length) {
-      await require('./EstateService').publishEstate(estates[i], true)
-      i++
+      let i = 0
+      while (i < estates.length) {
+        await require('./EstateService').publishEstate(
+          { estate: estates[i], performed_by: estates[i].user_id },
+          true
+        )
+        i++
+      }
+    } catch (e) {
+      Logger.error(`handleToActivateEstates error ${e.message}`)
     }
   }
 
@@ -173,14 +225,14 @@ class QueueJobService {
     try {
       if (estateIdsToExpire && estateIdsToExpire.length) {
         await Estate.query()
-          .update({ status: STATUS_EXPIRE })
+          .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
           .whereIn('id', estateIdsToExpire)
           .transacting(trx)
       }
 
       if (estateIdsToDraft && estateIdsToDraft.length) {
         await Estate.query()
-          .update({ status: STATUS_DRAFT })
+          .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT })
           .whereIn('id', estateIdsToDraft)
           .transacting(trx)
       }
@@ -190,11 +242,22 @@ class QueueJobService {
         (estateIdsToDraft && estateIdsToDraft.length)
       ) {
         // Delete new matches
+        const estateIds = (estateIdsToExpire || []).concat(estateIdsToDraft || [])
         await Match.query()
-          .whereIn('estate_id', (estateIdsToExpire || []).concat(estateIdsToDraft || []))
+          .whereIn('estate_id', estateIds)
           .where('status', MATCH_STATUS_NEW)
           .delete()
           .transacting(trx)
+
+        const listings = await EstateSyncListing.query()
+          .select('estate_id')
+          .where('status', STATUS_ACTIVE)
+          .whereIn('estate_id', estateIds)
+          .groupBy('estate_id')
+          .fetch()
+        await Promise.map(listings.rows, async (estateId) => {
+          await require('./EstateSyncService').unpublishEstate(estateId)
+        })
       }
 
       await trx.commit()
@@ -210,10 +273,10 @@ class QueueJobService {
   }
 
   static async fetchToActivateEstates() {
-    return Estate.query()
+    return await Estate.query()
       .select('*')
+      .with('estateSyncListings')
       .where('status', STATUS_DRAFT)
-      .where('is_published', true)
       .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))
@@ -279,7 +342,7 @@ class QueueJobService {
   }
 
   static async fetchShowDateEndedEstatesFor5Minutes() {
-    const start = moment().startOf('minute').subtract(5, 'minutes')
+    const start = moment.utc().startOf('minute').subtract(5, 'minutes')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.raw(
@@ -498,11 +561,122 @@ class QueueJobService {
     )
   }
 
+  static async contactGewobag(third_party_offer_id, userId) {
+    const estate = await ThirdPartyOffer.query().where('id', third_party_offer_id).first()
+    const prospect = await User.query()
+      .join('tenants', 'tenants.user_id', 'users.id')
+      .where('users.id', userId)
+      .first()
+    if (!estate || !prospect) {
+      return
+    }
+    const titleFromGender = (genderId) => {
+      switch (genderId) {
+        case GENDER_MALE:
+          return l.get(SALUTATION_MR_LABEL, 'de')
+        case GENDER_FEMALE:
+          return l.get(SALUTATION_MS_LABEL, 'de')
+        case GENDER_ANY:
+          return l.get(SALUTATION_SIR_OR_MADAM_LABEL, 'de')
+        case GENDER_NEUTRAL:
+          return l.get(SALUTATION_NEUTRAL_LABEL, 'de')
+      }
+      return null
+    }
+    const deepLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}/?type=THIRD_PARTY_KNOCKED&email=${prospect.email}&user_id=${userId}&estate_id=${third_party_offer_id}`
+    )
+    const object = {
+      openimmo_feedback: {
+        version: '1.2.5',
+        sender: {
+          name: 'Breeze Venture GmbH',
+          openimo_anid: '',
+          email_zentrale: 'anfragen@gewobag.interessentenanfragen.de',
+          email_direct: 'anfragen@gewobag.interessentenanfragen.de',
+          datum: moment(new Date()).format(GERMAN_DATE_FORMAT),
+          makler_id: '',
+          regi_id: '',
+        },
+        objekt: {
+          portal_obj_id: estate.id,
+          oobj_id: estate.property_id,
+          expose_url: deepLink,
+          vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
+          strasse: `${estate.street} ${estate.house_number}`,
+          ort: `${estate.zip} ${estate.city}`,
+          interessent: {
+            anrede: titleFromGender(prospect.sex),
+            vorname: prospect.firstname,
+            nachname: prospect.secondname,
+            strasse: '',
+            plz: '',
+            ort: '',
+            tel: prospect.phone,
+            email: prospect.email,
+            anfrage: GEWOBAG_EMAIL_CONTENT,
+          },
+        },
+      },
+    }
+    try {
+      const xmlOptions = {
+        header: true,
+        indent: '  ',
+      }
+      const attachment = Buffer.from(toXML(object, xmlOptions))
+      const recipient =
+        process.env.NODE_ENV === 'production'
+          ? GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL
+          : process.env.GEWOBAG_CONTACT_EMAIL
+
+      MailService.sendEmailWithAttachment({
+        textMessage: GEWOBAG_EMAIL_CONTENT,
+        recipient,
+        bcc:
+          recipient === process.env.GEWOBAG_CONTACT_EMAIL
+            ? null
+            : process.env.GEWOBAG_CONTACT_EMAIL,
+        subject:
+          SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
+          moment(new Date()).utcOffset(2).format(GERMAN_DATE_TIME_FORMAT),
+        attachment: attachment.toString('base64'),
+        from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
+      })
+    } catch (err) {
+      console.log(err.message)
+    }
+  }
+
+  static async fillMissingEstateInfo() {
+    try {
+      const estates = (
+        await Estate.query()
+          .whereNot('status', STATUS_DELETE)
+          .where(function () {
+            this.orWhereNull('share_link')
+            this.orWhereNull('hash')
+          })
+          .limit(3)
+          .fetch()
+      ).toJSON()
+
+      await Promise.map(
+        estates,
+        async (estate) => {
+          await Estate.updateHashInfo(estate.id)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`fillMissingEstateInfo error ${e.message}`)
+    }
+  }
+
   static async updateThirdPartyOfferPoints() {
     if (
-      process.env.PROCESS_OHNE_MAKLER_GET_POI === undefined ||
-      (process.env.PROCESS_OHNE_MAKLER_GET_POI !== undefined &&
-        !+process.env.PROCESS_OHNE_MAKLER_GET_POI)
+      process.env.PULL_OHNE_MAKLER_POI === undefined ||
+      (process.env.PULL_OHNE_MAKLER_POI !== undefined && !+process.env.PULL_OHNE_MAKLER_POI)
     ) {
       return
     }

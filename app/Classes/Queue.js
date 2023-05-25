@@ -7,6 +7,7 @@ const defaultOptions = {
 const {
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
+  SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
@@ -65,6 +66,23 @@ class QueueEngine {
 
     this.commonQueue
       .add(
+        SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
+        {},
+        {
+          repeat: { cron: '37 */1 * * *' },
+          removeOnComplete: true,
+          removeOnFail: true,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        }
+      )
+      .catch(Logger.error)
+
+    this.commonQueue
+      .add(
         SCHEDULED_13H_DAY_JOB,
         {},
         { repeat: { cron: '15 13 * * *' }, removeOnComplete: true, removeOnFail: true }
@@ -100,7 +118,7 @@ class QueueEngine {
       {},
       {
         jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/2 * * * *' },
+        repeat: { cron: '*/15 * * * *' },
         removeOnComplete: true,
         removeOnFail: true,
       }

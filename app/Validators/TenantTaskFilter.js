@@ -12,7 +12,7 @@ const {
 class TenantTaskFilter extends Base {
   static schema = () =>
     yup.object().shape({
-      estate_id: id.required(),
+      estate_id: id,
       status: yup
         .array()
         .of(
@@ -25,6 +25,7 @@ class TenantTaskFilter extends Base {
               TASK_STATUS_RESOLVED,
             ])
         ),
+      query: yup.string().min(1).nullable(),
     })
 }
 

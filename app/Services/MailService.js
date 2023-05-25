@@ -1,6 +1,6 @@
 'use strict'
 
-const { trim, capitalize } = require('lodash')
+const { trim, capitalize, startCase } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
 const { generateAddress } = use('App/Libs/utils')
@@ -23,8 +23,15 @@ const {
   DATE_FORMAT,
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
+const Logger = use('Logger')
+const { createDynamicLink } = require('../Libs/utils')
 
 class MailService {
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
@@ -310,6 +317,9 @@ class MailService {
       },
       (error) => {
         console.log('Email delivery failed', error)
+        Logger.error(
+          `Email Confirmation failed ${email}= ${error?.response?.body || error?.message || error}`
+        )
         if (error.response) {
           console.error(error.response.body)
           throw new HttpException(error.response.body)
@@ -578,9 +588,10 @@ class MailService {
     )
   }
 
-  static async sendInvitationToOusideTenant(links, lang = DEFAULT_LANG) {
+  static async sendInvitationToOusideTenant(links) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const messages = links.map((link) => {
+      const lang = link?.lang || DEFAULT_LANG
       return {
         to: trim(link.email),
         from: {
@@ -702,8 +713,97 @@ class MailService {
     )
   }
 
-  static async sendEmailToSupport({ subject, textMessage, htmlMessage }) {
+  static async estatePublishRequestApproved(estate) {
+    const lang = estate.lang || DEFAULT_LANG
+    const parseFloorDirection = (direction) => {
+      switch (direction) {
+        case ESTATE_FLOOR_DIRECTION_LEFT:
+          return 'property.attribute.floor_direction.left.message'
+        case ESTATE_FLOOR_DIRECTION_RIGHT:
+          return 'property.attribute.floor_direction.right.message'
+        case ESTATE_FLOOR_DIRECTION_STRAIGHT:
+          return 'property.attribute.floor_direction.straight.message'
+        case ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT:
+          return 'property.attribute.floor_direction.straight.left.message'
+        case ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT:
+          return 'property.attribute.floor_direction.straight.right.message'
+        default:
+          return null
+      }
+    }
+    const templateId = LANDLORD_EMAIL_TEMPLATE
+    const address = generateAddress({
+      street: estate?.street,
+      house_number: estate?.house_number,
+      zip: estate?.postcode,
+      city: estate?.city,
+      country: estate?.country,
+    })
+    const intro = l
+      .get('landlord.email_property_published.intro.message', lang)
+      .replace('{{property_address}}', trim(startCase(address), ','))
+      .replace('{{floor}}', estate.floor)
+      .replace(
+        '{{direction}}',
+        estate.direction > 1 ? l.get(parseFloorDirection(estate.direction), lang) : ''
+      )
+      .replace(/\n/g, '<br />')
+
+    const shortLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}?type=PUBLISHING_APPROVED&estate_id=${estate.estate_id}&email=${estate.email}&hash=${estate.hash}`,
+      `${process.env.SITE_URL}/connect?type=PUBLISHING_APPROVED&tab=0&estate_id=${estate.estate_id}&email=${estate.email}`
+    )
     const msg = {
+      to: trim(estate.email),
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      templateId: templateId,
+      dynamic_template_data: {
+        subject: l.get('landlord.email_property_published.subject.message', lang),
+        salutation: '',
+        intro: intro,
+        final: '',
+        CTA: l.get('landlord.email_property_published.CTA.message', lang),
+        link: shortLink,
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+      },
+    }
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+          throw new HttpException(error.response.body)
+        } else {
+          throw new HttpException(error)
+        }
+      }
+    )
+  }
+
+  static async sendEmailToSupport({ subject, textMessage, htmlMessage = '' }) {
+    let msg = {
       to: FromEmail,
       from: {
         email: FromEmail,
@@ -711,7 +811,10 @@ class MailService {
       },
       subject: subject,
       text: textMessage,
-      html: htmlMessage,
+    }
+
+    if (htmlMessage) {
+      msg.html = htmlMessage
     }
 
     return sgMail.send(msg).then(
@@ -734,7 +837,9 @@ class MailService {
         email: FromEmail,
         name: FromName,
       },
-      subject: SEND_EMAIL_TO_OHNEMAKLER_SUBJECT + moment().format(GERMAN_DATE_TIME_FORMAT),
+      subject:
+        SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
+        moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
       text: textMessage,
     }
     if (sendToBCC) {
@@ -742,6 +847,113 @@ class MailService {
     }
 
     return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendEmailWithAttachment({
+    textMessage,
+    recipient,
+    bcc = null,
+    subject,
+    attachment,
+    from,
+  }) {
+    const message = {
+      to: recipient,
+      from,
+      subject: subject,
+      text: textMessage,
+      attachments: [
+        {
+          content: attachment,
+          filename: 'Anfrage.xml',
+          type: 'application/xml',
+          disposition: 'attachment',
+          content_id: 'breeze-attachment',
+        },
+      ],
+    }
+    if (bcc) {
+      message.bcc = bcc
+    }
+    return sgMail.send(message).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendPendingKnockEmail({
+    link,
+    landlord_name,
+    lastName = ``,
+    salutation = ``,
+    email,
+    lang = DEFAULT_LANG,
+  }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const final = l
+      .get('prospect.no_reply_email_from_listing.final.message', lang)
+      .replace('{Landlord_name}', `${landlord_name}`)
+      .replace(/\n/g, '<br />')
+
+    const intro = l
+      .get('prospect.no_reply_email_from_listing.intro.message', lang)
+      .replace('{Salutation}', `${salutation}`)
+      .replace('{Surname}', `${lastName}`)
+      .replace(/\n/g, '<br />')
+
+    const messages = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      templateId: templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        intro,
+        CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
+        link,
+        final,
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        ),
+      },
+    }
+
+    return sgMail.send(messages).then(
       () => {
         console.log('Email delivery successfully')
       },

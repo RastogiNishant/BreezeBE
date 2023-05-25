@@ -8,6 +8,7 @@ const {
   ROLE_ADMIN,
   ROLE_PROPERTY_MANAGER,
   GERMAN_HOLIDAYS,
+  ENERGY_CLASS_USING_EFFICIENCY,
 } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
@@ -132,6 +133,16 @@ const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WE
   return shortLink
 }
 
+const calculateEnergyClassFromEfficiency = (efficiency) => {
+  let idx
+  if (efficiency >= ENERGY_CLASS_USING_EFFICIENCY.slice(-1)[0].value) {
+    idx = ENERGY_CLASS_USING_EFFICIENCY.length - 1
+  } else {
+    idx = ENERGY_CLASS_USING_EFFICIENCY.slice(0, -1).findIndex((level) => efficiency < level.value)
+  }
+  return ENERGY_CLASS_USING_EFFICIENCY[idx].level
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -144,4 +155,5 @@ module.exports = {
   isHoliday,
   generateAddress,
   createDynamicLink,
+  calculateEnergyClassFromEfficiency,
 }

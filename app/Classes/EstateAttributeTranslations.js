@@ -85,6 +85,10 @@ const {
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
 
+  FURNISHING_NOT_FURNISHED,
+  FURNISHING_PARTIALLY_FURNISHED,
+  FURNISHING_FULLY_FURNISHED,
+
   USE_TYPE_RESIDENTIAL,
   USE_TYPE_COMMERCIAL,
   USE_TYPE_CONSTRUCT,
@@ -175,11 +179,13 @@ const {
   PETS_NO,
   HEATING_TYPE_UNDERFLOOR,
   HEATING_TYPE_MISC,
+  DATE_FORMAT,
 } = require('../constants')
 
 const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
+const moment = require('moment')
 
 extractValue = (key, value) => {
   const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
@@ -238,15 +244,17 @@ reverseBool = (value) => {
 }
 
 extractDate = (date) => {
-  if (isEmpty(date)) {
+  if (!date) {
     return null
   } else if (
     typeof date == 'string' &&
     (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))
   ) {
     return `${match[3]}-${match[2]}-${match[1]}`
+  } else if (typeof date === 'object') {
+    return moment(date, DATE_FORMAT).format(DATE_FORMAT)
   }
-  return date
+  return null
 }
 
 reverseExtractDate = (date) => {
@@ -264,6 +272,8 @@ class EstateAttributeTranslations {
   reverseDataMapping = {
     non_smoker: reverseBool,
     rent_arrears: reverseBool,
+    available_date: reverseExtractDate,
+    from_date: reverseExtractDate,
     furnished: reverseBool,
     vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
@@ -447,6 +457,8 @@ class EstateAttributeTranslations {
     kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
     rent_arrears: toBool,
+    available_date: extractDate,
+    from_date: extractDate,
     furnished: toBool,
     vacant_date: extractDate,
     last_modernization: extractDate,
@@ -765,6 +777,18 @@ class EstateAttributeTranslations {
         ],
         values: [EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED],
       },
+      furnished: {
+        keys: [
+          'no.message',
+          'apartment.amenities.Apartment.partially_furnished.message',
+          'yes.message',
+        ],
+        values: [
+          FURNISHING_NOT_FURNISHED,
+          FURNISHING_PARTIALLY_FURNISHED,
+          FURNISHING_FULLY_FURNISHED,
+        ],
+      },
       parking_space_type: {
         keys: [
           'web.letting.property.import.No_Parking.message',
@@ -1000,7 +1024,6 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        console.log('arttribute here', attribute)
         throw new HttpException(SETTINGS_ERROR, 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {

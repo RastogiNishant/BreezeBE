@@ -5,7 +5,7 @@ const {
   ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH,
   ESTATE_AMENITY_LOCATIONS,
 } = require('../constants')
-
+const { id } = require('../Libs/schemas')
 class CreateEstateAmenity extends Base {
   static schema = () =>
     yup.object().shape({
@@ -27,7 +27,14 @@ class CreateEstateAmenity extends Base {
         then: yup.number().integer().positive().required('Estate amenity is required.'),
       }),
       estate_id: yup.number().integer().positive().required('Estate Id is required'),
-      location: yup.string().oneOf(ESTATE_AMENITY_LOCATIONS),
+      location: yup
+        .string()
+        .oneOf(ESTATE_AMENITY_LOCATIONS)
+        .when('type', {
+          is: 'amenity',
+          then: yup.string().required('Location is required'),
+        }),
+      sequence_order: yup.number(),
     })
 }
 

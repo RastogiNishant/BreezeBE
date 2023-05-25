@@ -8,7 +8,7 @@ class Amenity extends Model {
     return [
       'id',
       'room_id',
-      'options_id',
+      'option_id',
       'amenity',
       'status',
       'sequence_order',
