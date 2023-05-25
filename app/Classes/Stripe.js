@@ -65,7 +65,6 @@ class Stripe {
       line_items: prices,
       client_reference_id: user_id,
       automatic_tax: { enabled: true },
-      customer_update: { address: 'auto' },
       payment_method_collection: 'always',
       mode,
     })
