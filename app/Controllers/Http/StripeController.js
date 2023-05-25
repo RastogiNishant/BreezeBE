@@ -28,10 +28,14 @@ class StripeController {
   async webhookTest({ request, response }) {
     try {
       const Stripe = require('../../Classes/Stripe')
-      const lineItems = await Stripe.getBoughtLineItems(
-        'cs_test_b1K7SQa3UuXSmYRpKnWBzLlZtclMfD8Y7oi81bRXajRAhUiGmaSKqN82zR'
+      // const lineItems = await Stripe.getBoughtLineItems(
+      //   'cs_test_b1K7SQa3UuXSmYRpKnWBzLlZtclMfD8Y7oi81bRXajRAhUiGmaSKqN82zR'
+      // )
+      //response.res(lineItems)
+
+      response.res(
+        await Stripe.setPaymentMethodToCustomer('cus_NxGelQWRooKO41', 'pi_3NBM7GLHZE8cb7Zf0BzUAb6H')
       )
-      response.res(lineItems)
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
