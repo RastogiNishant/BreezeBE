@@ -59,9 +59,12 @@ class StripeService {
 
       pricePlans = pricePlans.filter((price) => price.mode !== PAY_MODE_ONE_TIME)
 
-      const mode = pricePlans.find((price) => price.mode === PAY_MODE_UPFRONT)
-        ? 'payment'
-        : 'subscription'
+      const mode = pricePlans.find((price) =>
+        [PAY_MODE_RECURRING, PAY_MODE_USAGE].includes(price.mode)
+      )
+        ? 'subscription'
+        : 'payment'
+
       const prices = pricePlans.map((price) => {
         if (price.mode !== PAY_MODE_USAGE) return { price: price.price_id, quantity: 1 }
         return { price: price.price_id }
