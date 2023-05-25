@@ -15,6 +15,7 @@ const {
   ESTATE_SYNC_LISTING_STATUS_POSTED,
   WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
   ESTATE_SYNC_LISTING_STATUS_DELETED,
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   PUBLISH_STATUS_DECLINED_BY_ADMIN,
   PUBLISH_STATUS_INIT,
@@ -203,7 +204,9 @@ class PropertyController {
         .fetch()
       const data = {
         success: true,
-        property_id: requestPublishEstate.id,
+        property_id: requestPublishEstate.property_id,
+        estate_id: requestPublishEstate.estate_id,
+        publish_status: requestPublishEstate.publish_status,
         type: 'approved-publish',
         listings: listings?.rows || [],
       }
@@ -253,6 +256,18 @@ class PropertyController {
         try {
           await Promise.map(ids, async (id) => {
             await EstateService.handleOfflineEstate({ estate_id: id }, trx)
+            const estate = await Estate.query().where('id', id).first()
+            const data = {
+              success: true,
+              estate_id: estate.id,
+              property_id: estate.property_id,
+              publish_status: estate.publish_status,
+            }
+            await EstateSyncService.emitWebsocketEventToLandlord({
+              event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN,
+              user_id: estate.user_id,
+              data,
+            })
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)
