@@ -301,7 +301,6 @@ class QueueJobService {
     return Estate.query()
       .select('id')
       .where('status', STATUS_ACTIVE)
-      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
       .where(function () {
         this.orWhereNull('available_start_at')
         this.orWhere('available_start_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
