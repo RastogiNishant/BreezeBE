@@ -88,7 +88,7 @@ class StripeService {
         url: checkoutSession.url,
       }
     } catch (e) {
-      console.log('create subscription failed', e.message)
+      Logger.error('create subscription failed', e.message)
       throw new HttpException(SUBSCRIPTION_FAILED, 400)
     }
   }
