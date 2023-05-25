@@ -172,7 +172,7 @@ class QueueService {
     const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(QueueJobService.handleToExpireEstates),
-      wrapException(QueueJobService.handleToActivateEstates),
+      // wrapException(QueueJobService.handleToActivateEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
       wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
@@ -180,6 +180,7 @@ class QueueService {
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(NoticeService.getProspectVisitIn48H),
       wrapException(NoticeService.expiredShowTime),
       wrapException(QueueJobService.updatePOI),
     ])

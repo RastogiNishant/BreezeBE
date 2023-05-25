@@ -30,7 +30,7 @@ class ExtendEstate extends Base {
                 )
             : schema
         })
-        .required(),
+        .nullable(),
       is_duration_later: yup.boolean(),
       min_invite_count: yup
         .number()

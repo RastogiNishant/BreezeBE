@@ -6,7 +6,7 @@ const { THIRD_PARTY_PUBLISHERS } = require('../constants')
 class AdminUpdatePublishStatus extends Base {
   static schema = () =>
     yup.object().shape({
-      action: yup.string().oneOf(['unpublish', 'publish', 'publish-marketplace']),
+      action: yup.string().oneOf(['unpublish', 'publish', 'approve-publish', 'decline-publish']),
       publishers: yup.array().of(yup.string().oneOf(THIRD_PARTY_PUBLISHERS)),
       ids: yup.array().when('action', {
         is: 'unpublish',
@@ -20,7 +20,8 @@ class AdminUpdatePublishStatus extends Base {
         .number()
         .integer()
         .when('action', {
-          is: (action) => action === 'publish' || action === 'publish-marketplace',
+          is: (action) =>
+            action === 'publish' || action === 'approve-publish' || action === 'decline-publish',
           then: yup.number().integer().required('id is required'),
         }),
     })

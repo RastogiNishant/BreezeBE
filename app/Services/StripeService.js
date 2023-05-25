@@ -94,7 +94,7 @@ class StripeService {
   }
 
   static async handle(stripeData) {
-    //Logger.info(`stripe webhook payload ${JSON.stringify(stripeData)}`)
+    Logger.info(`stripe webhook payload ${JSON.stringify(stripeData)}`)
     if (!stripeData?.data?.object) {
       throw new HttpException(Stripe.STRIPE_EXCEPTIONS.NOT_VALID_PARAM, 400)
     }
@@ -225,6 +225,7 @@ class StripeService {
         },
         trx
       )
+      await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
       // await OrderService.updateOrder(
       //   { subscription_id: data.id, status: PAID_PARTIALY_STATUS },
       //   trx
@@ -249,6 +250,7 @@ class StripeService {
   static async invoicePaid(data) {
     try {
       await OrderService.updateOrder({ invoice_id: data.id, status: PAID_COMPLETE_STATUS })
+      await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
     } catch (e) {
       Logger.error(`Invoice paid failed ${e.message}`)
     }

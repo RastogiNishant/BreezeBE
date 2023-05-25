@@ -25,6 +25,7 @@ class TenantTaskFilter extends Base {
               TASK_STATUS_RESOLVED,
             ])
         ),
+      query: yup.string().min(1).nullable(),
     })
 }
 

@@ -462,6 +462,10 @@ Route.group(() => {
     'valid:EstateId,CreateEstateAmenity',
     'LandlordOwnsThisEstate',
   ])
+  Route.post('/:estate_id/bulk/amenities', 'EstateAmenityController.addBulk').middleware([
+    'valid:EstateId,CreateBulkEstateAmenities',
+    'LandlordOwnsThisEstate',
+  ])
   Route.put('/:estate_id/amenities/:location', 'EstateAmenityController.update').middleware([
     'valid:EstateId,EstateAmenitiesLocation,UpdateEstateAmenity',
     'LandlordOwnsThisEstate',

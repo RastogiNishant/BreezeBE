@@ -132,6 +132,15 @@ class EstateSyncService {
         return
       }
 
+      const toPost = await EstateSyncListing.query()
+        .where('estate_id', estate_id)
+        .where('status', ESTATE_SYNC_LISTING_STATUS_INITIALIZED)
+        .first()
+
+      if (!toPost) {
+        return
+      }
+
       let estate = await EstateService.getByIdWithDetail(estate_id)
       let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       if (!credential) {
@@ -213,14 +222,12 @@ class EstateSyncService {
             notPublishedListing.estate_sync_property_id,
             'properties'
           )
-          if (ret) {
-            await EstateSyncListing.query().where('estate_id', estate_id).update({
-              estate_sync_property_id: null,
-              status: ESTATE_SYNC_LISTING_STATUS_DELETED,
-              estate_sync_listing_id: null,
-              publish_url: null,
-            })
-          }
+          await EstateSyncListing.query().where('estate_id', estate_id).update({
+            estate_sync_property_id: null,
+            status: ESTATE_SYNC_LISTING_STATUS_DELETED,
+            estate_sync_listing_id: null,
+            publish_url: null,
+          })
         }
       }
     } catch (e) {

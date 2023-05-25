@@ -199,11 +199,11 @@ const constants = {
   APARTMENT_TYPE_SOUTERRAIN: 7,
   APARTMENT_TYPE_PENTHOUSE: 8,
   APARTMENT_TYPE_TERRACES: 9,
-  APARTMENT_TYPE_ETAGE: 10,
-  APARTMENT_TYPE_HOLIDAY: 11,
-  APARTMENT_TYPE_GALLERY: 12,
-  APARTMENT_TYPE_RAW_ATTIC: 13,
-  APARTMENT_TYPE_ATTIC: 14,
+  //APARTMENT_TYPE_ETAGE: 10, REMAPPED to APARTMENT_TYPE_FLAT
+  APARTMENT_TYPE_HOLIDAY: 10,
+  APARTMENT_TYPE_GALLERY: 11,
+  //APARTMENT_TYPE_RAW_ATTIC: 12, REMAPPED to APARTMENT_TYPE_ATTIC
+  APARTMENT_TYPE_ATTIC: 12,
 
   // Building type
   HOUSE_TYPE_MULTIFAMILY_HOUSE: 1,
@@ -449,6 +449,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_INVITE: 'notification_prospect_invite',
   NOTICE_TYPE_PROSPECT_VISIT3H: 'notification_prospect_visit_1',
   NOTICE_TYPE_PROSPECT_VISIT30M: 'notification_prospect_visit_2',
+  NOTICE_TYPE_PROSPECT_VISIT48H: 'notification_prospect_visit_3',
   NOTICE_TYPE_PROSPECT_COMMIT: 'notification_prospect_commit',
   NOTICE_TYPE_PROSPECT_REJECT: 'notification_prospect_reject',
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY: 'notification_prospect_no_activity',
@@ -546,6 +547,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID: 56,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
+  NOTICE_TYPE_PROSPECT_VISIT48H_ID: 59,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -580,6 +582,10 @@ const constants = {
   BASIC_MEMBER: 1,
   PENDING_PREMIUM_MEMBER: 2,
   PREMIUM_MEMBER: 3,
+
+  FURNISHING_NOT_FURNISHED: 0,
+  FURNISHING_PARTIALLY_FURNISHED: 1,
+  FURNISHING_FULLY_FURNISHED: 2,
 
   PROPERTY_MANAGE_REQUEST: 1,
   PROPERTY_MANAGE_ALLOWED: 2,
@@ -652,6 +658,7 @@ const constants = {
     'rent_end_at',
     'knocked_at',
     'action_at',
+    'is_not_show',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -951,7 +958,10 @@ const constants = {
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED: 'landlord:estatePublishApproved',
   WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN: 'landlord:estateUnpublishedByAdmin',
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED: 'landlord:estateUnpublished',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1209,6 +1219,15 @@ Estates: [ESTATES]
   ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE: 'breeze',
   ESTATE_SYNC_CREDENTIAL_TYPE_USER: 'user',
 
+  ADMIN_URLS: {
+    localhost: 'http://localhost:3001',
+    development: 'https://development.d2x826avxkg7om.amplifyapp.com',
+    staging: 'https://staging.d2x826avxkg7om.amplifyapp.com',
+    production: 'https://master.d2x826avxkg7om.amplifyapp.com',
+  },
+
+  LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT: 'Landlord Request to Publish an Estate',
+
   LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER: 24,
 
   OUTSIDE_LANDLORD_INVITE_TYPE: 'outside_landlord_invitation',
@@ -1232,6 +1251,11 @@ Estates: [ESTATES]
   PRICE_MEMBERSHIP: 1,
   PRICE_MATCH: 2,
   PRICE_CONNECT: 3,
+
+  PUBLISH_STATUS_INIT: 0,
+  PUBLISH_STATUS_BY_LANDLORD: 1,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN: 2,
+  PUBLISH_STATUS_DECLINED_BY_ADMIN: 3,
 }
 
 module.exports = constants

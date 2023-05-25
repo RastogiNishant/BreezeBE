@@ -13,24 +13,31 @@ const {
   USER_ACTIVATION_STATUS_DEACTIVATED,
   ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
   ESTATE_SYNC_LISTING_STATUS_POSTED,
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
+  ESTATE_SYNC_LISTING_STATUS_DELETED,
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_DECLINED_BY_ADMIN,
+  PUBLISH_STATUS_INIT,
 } = require('../../../constants')
 const { isArray } = require('lodash')
-const Promise = require('bluebird')
+const { props, Promise } = require('bluebird')
 const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
+const MailService = use('App/Services/MailService')
+const EstateSyncService = use('App/Services/EstateSyncService')
 const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
 } = require('../../../exceptions')
-const AppException = require('../../../Exceptions/AppException')
 
 class PropertyController {
   async getProperties({ request, response }) {
-    let { activation_status, user_status, estate_status } = request.all()
+    let { activation_status, user_status, estate_status, id } = request.all()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -39,9 +46,15 @@ class PropertyController {
       ]
     }
     user_status = user_status || STATUS_ACTIVE
-    estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE]
-    let estates = await Estate.query()
-      .select('estates.id', 'estates.address', 'estates.status', 'estates.six_char_code')
+    estate_status = estate_status || [STATUS_EXPIRE, STATUS_ACTIVE, STATUS_DRAFT]
+    let query = Estate.query()
+      .select(
+        'estates.id',
+        'estates.address',
+        'estates.status',
+        'estates.six_char_code',
+        'estates.publish_status'
+      )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
       .whereIn('estates.status', estate_status)
@@ -67,7 +80,10 @@ class PropertyController {
       .withCount('inviteBuddies')
       .withCount('knocked')
       .orderBy('estates.updated_at', 'desc')
-      .fetch()
+    if (id) {
+      query.where('id', id)
+    }
+    let estates = await query.fetch()
     estates = estates.toJSON().map((estate) => {
       estate.invite_count =
         parseInt(estate['__meta__'].knocked_count) +
@@ -143,9 +159,6 @@ class PropertyController {
           publishers,
           performed_by: null,
         })
-        if (result === STATUS_ACTIVE) {
-          QueueService.estateSyncPublishEstate({ estate_id: id })
-        }
         return await EstateService.getByIdWithDetail(id)
       } catch (e) {
         if (e.name === 'ValidationException') {
@@ -159,8 +172,69 @@ class PropertyController {
     }
   }
 
-  async publishToMarketPlace(id) {
-    QueueService.estateSyncPublishEstate({ estate_id: id })
+  async approvePublish(id) {
+    const requestPublishEstate = await EstateService.publishRequestedProperty(id)
+    if (!requestPublishEstate) {
+      throw new HttpException('This estate is not marked for publish', 400, 114001)
+    }
+    const trx = await Database.beginTransaction()
+    try {
+      /*
+      await props({
+        delMatches: Database.table('matches')
+          .where({ estate_id: isRequestingPublish.estate_id })
+          .delete()
+          .transacting(trx),
+        delLikes: Database.table('likes')
+          .where({ estate_id: isRequestingPublish.estate_id })
+          .delete()
+          .transacting(trx),
+        delDislikes: Database.table('dislikes')
+          .where({ estate_id: isRequestingPublish.estate_id })
+          .delete()
+          .transacting(trx),
+      })*/
+      await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
+      await trx.commit()
+      const listings = await EstateSyncListing.query()
+        .where('estate_id', id)
+        .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+        .fetch()
+      const data = {
+        success: true,
+        property_id: requestPublishEstate.property_id,
+        estate_id: requestPublishEstate.estate_id,
+        publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN,
+        status: STATUS_ACTIVE,
+        type: 'approved-publish',
+        listings: listings?.rows || [],
+      }
+      await EstateSyncService.emitWebsocketEventToLandlord({
+        event: WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
+        user_id: requestPublishEstate.user_id,
+        data,
+      })
+      await MailService.estatePublishRequestApproved(requestPublishEstate)
+      QueueService.estateSyncPublishEstate({ estate_id: id })
+      return true
+    } catch (err) {
+      console.log(err)
+      await trx.rollback()
+      throw new HttpException(err.messsage, 400, 114002)
+    }
+  }
+
+  async declinePublish(id) {
+    if (!(await EstateService.publishRequestedProperty(id))) {
+      throw new HttpException('This estate is not marked for publish', 400, 114002)
+    }
+    await Estate.query()
+      .where('id', id)
+      .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN })
+    await EstateSyncService.markListingsForDelete(id)
+    QueueService.estateSyncUnpublishEstates([id], false)
     return true
   }
 
@@ -170,9 +244,12 @@ class PropertyController {
     let affectedRows
     let ret
     switch (action) {
-      case 'publish-marketplace':
-        ret = await this.publishToMarketPlace(id)
-        return ret
+      case 'approve-publish':
+        ret = await this.approvePublish(id)
+        return response.res(ret)
+      case 'decline-publish':
+        ret = await this.declinePublish(id)
+        return response.res(ret)
       case 'publish':
         ret = await this.publishEstate(id, publishers)
         return response.res(ret)
@@ -180,10 +257,23 @@ class PropertyController {
         try {
           await Promise.map(ids, async (id) => {
             await EstateService.handleOfflineEstate({ estate_id: id }, trx)
+            const estate = await Estate.query().where('id', id).first()
+            const data = {
+              success: true,
+              estate_id: estate.id,
+              property_id: estate.property_id,
+              publish_status: PUBLISH_STATUS_INIT,
+              status: STATUS_DRAFT,
+            }
+            await EstateSyncService.emitWebsocketEventToLandlord({
+              event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN,
+              user_id: estate.user_id,
+              data,
+            })
           })
           affectedRows = await Estate.query()
             .whereIn('id', ids)
-            .update({ status: STATUS_DRAFT, is_published: false }, trx)
+            .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT }, trx)
           await trx.commit()
           QueueService.estateSyncUnpublishEstates(ids, true)
           return response.res(affectedRows)

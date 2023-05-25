@@ -31,6 +31,7 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT90M_ID,
   NOTICE_TYPE_LANDLORD_VISIT90M_ID,
   NOTICE_TYPE_PROSPECT_VISIT30M_ID,
+  NOTICE_TYPE_PROSPECT_VISIT48H_ID,
   NOTICE_TYPE_PROSPECT_COMMIT_ID,
   NOTICE_TYPE_PROSPECT_REJECT_ID,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID,
@@ -56,6 +57,7 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT90M,
   NOTICE_TYPE_LANDLORD_VISIT90M,
   NOTICE_TYPE_PROSPECT_VISIT30M,
+  NOTICE_TYPE_PROSPECT_VISIT48H,
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_REJECT,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY,
@@ -802,6 +804,28 @@ class NoticeService {
   /**
    *
    */
+  static async getProspectVisitIn48H() {
+    const result = await NoticeService.getVisitsIn(48)
+
+    result.map((r) => {
+      const lang = r.lang ? r.lang : DEFAULT_LANG
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+    })
+
+    const notices = result.map(({ user_id, estate_id, address, cover }) => ({
+      user_id,
+      type: NOTICE_TYPE_PROSPECT_VISIT48H_ID,
+      data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendProspectFirstVisitConfirm(notices)
+  }
+
+  /**
+   *
+   */
   static async landlordVisitIn30m() {
     const result = await NoticeService.getLandlordVisitsIn(0.5)
     if (isEmpty(result)) {
@@ -880,6 +904,8 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_VISIT90M:
         return NotificationsService.sendLandlordVisit90m([notice])
       case NOTICE_TYPE_PROSPECT_VISIT30M:
+        return NotificationsService.sendProspectFinalVisitConfirm([notice])
+      case NOTICE_TYPE_PROSPECT_VISIT48H:
         return NotificationsService.sendProspectFinalVisitConfirm([notice])
       case NOTICE_TYPE_PROSPECT_COMMIT:
         return NotificationsService.sendProspectLandlordConfirmed(notice)

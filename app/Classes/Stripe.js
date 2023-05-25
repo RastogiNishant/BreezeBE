@@ -41,6 +41,10 @@ class Stripe {
     }
   }
 
+  static async updateCustomer(customer, params) {
+    await stripe.customers.update(customer, params)
+  }
+
   static async getProducts() {
     // return await stripe.products.list({ limit: 30, active: true, expand: ['data.default_price'] })
     return await stripe.products.list({ limit: 30, active: true })
@@ -62,6 +66,7 @@ class Stripe {
       client_reference_id: user_id,
       automatic_tax: { enabled: true },
       customer_update: { address: 'auto' },
+      payment_method_collection: 'always',
       mode,
     })
   }
@@ -172,6 +177,23 @@ class Stripe {
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
+  }
+  static async getPaymentIntent(id) {
+    return await stripe.paymentIntents.retrieve(id)
+  }
+
+  static async setPaymentMethodToCustomer(customer, paymentIntent) {
+    const paymentMethod = await this.getPaymentMethod(paymentIntent)
+    if (paymentMethod) {
+      await this.updateCustomer(customer, {
+        invoice_settings: { custom_fields: '', default_payment_method: paymentMethod },
+      })
+    }
+  }
+
+  static async getPaymentMethod(id) {
+    const paymentIntent = await this.getPaymentIntent(id)
+    return paymentIntent?.payment_method
   }
 }
 
