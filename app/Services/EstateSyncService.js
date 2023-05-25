@@ -132,6 +132,15 @@ class EstateSyncService {
         return
       }
 
+      const toPost = await EstateSyncListing.query()
+        .where('estate_id', estate_id)
+        .where('status', ESTATE_SYNC_LISTING_STATUS_INITIALIZED)
+        .first()
+
+      if (!toPost) {
+        return
+      }
+
       let estate = await EstateService.getByIdWithDetail(estate_id)
       let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       if (!credential) {

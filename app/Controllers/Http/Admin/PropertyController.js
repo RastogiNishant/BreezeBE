@@ -155,7 +155,6 @@ class PropertyController {
           publishers,
           performed_by: null,
         })
-        QueueService.estateSyncPublishEstate({ estate_id: id })
         return await EstateService.getByIdWithDetail(id)
       } catch (e) {
         if (e.name === 'ValidationException') {
