@@ -51,6 +51,8 @@ const {
   ROLE_USER,
   MAXIMUM_EXPIRE_PERIOD,
   DATE_FORMAT,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_BY_LANDLORD,
 } = require('../constants')
 
 class Estate extends Model {
@@ -164,9 +166,9 @@ class Estate extends Model {
       'rent_end_at',
       'income_sources',
       'percent',
-      'is_published',
       'share_link',
       'is_not_show',
+      'publish_status',
     ]
   }
 
@@ -540,7 +542,8 @@ class Estate extends Model {
     await this.updateItemWithTrx(
       {
         status,
-        is_published: true,
+        publish_status:
+          status === STATUS_ACTIVE ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_BY_LANDLORD,
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
