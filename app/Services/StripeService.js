@@ -148,7 +148,6 @@ class StripeService {
       //TODO: Need to save payment information though it's draft, because it will be paid asynchronously , need to compare with payment_intent later
       if (data.payment_status === Stripe.STRIPE_STATUS.PAID) {
         await this.createSubscription({ data, status: STATUS_ACTIVE }, trx)
-        await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
       } else {
         await this.createSubscription({ data, status: STATUS_DRAFT }, trx)
         /*
@@ -240,6 +239,7 @@ class StripeService {
   static async invoicePaid(data) {
     try {
       await OrderService.updateOrder({ invoice_id: data.id, status: PAID_COMPLETE_STATUS })
+      await Stripe.setPaymentMethodToCustomer(data.customer, data.payment_intent)
     } catch (e) {
       Logger.error(`Invoice paid failed ${e.message}`)
     }
