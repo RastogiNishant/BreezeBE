@@ -206,6 +206,7 @@ class PropertyController {
         success: true,
         property_id: requestPublishEstate.property_id,
         estate_id: requestPublishEstate.estate_id,
+        publish_status: requestPublishEstate.publish_status,
         type: 'approved-publish',
         listings: listings?.rows || [],
       }
@@ -260,6 +261,7 @@ class PropertyController {
               success: true,
               estate_id: estate.id,
               property_id: estate.property_id,
+              publish_status: estate.publish_status,
             }
             await EstateSyncService.emitWebsocketEventToLandlord({
               event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN,
