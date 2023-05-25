@@ -164,7 +164,6 @@ class ThirdPartyOfferService {
       region: Env.get('S3_REGION'),
     })
     const s3 = new AWS.S3()
-
     await Promise.map(
       properties.slice(0, GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL),
       async (estate) => {
@@ -172,43 +171,48 @@ class ThirdPartyOfferService {
         sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
         //FIXME: create a map for this:
         let newEstate = {
-          source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
-          source_information: JSON.stringify(sourceInformation),
-          source_id: estate.source_id,
-          country: estate.country,
-          house_number: estate.house_number,
-          street: estate.street,
-          city: estate.city,
+          additional_costs: Number(estate.additional_costs) || 0,
           address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
-          contact: JSON.stringify({ email: estate.contact }),
-          floor: Number(estate.floor),
-          number_floors: Number(estate.number_floors),
-          bathrooms: estate.bathrooms_number,
-          rooms_number: Number(estate.rooms_number),
-          area: Number(estate.area),
-          construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
-          energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
-          vacant_date: moment(new Date(estate.vacant_date)).format(DATE_FORMAT),
-          additional_costs: Number(estate.additional_costs),
-          net_rent: Number(estate.net_rent),
-          property_type: estate.property_type,
-          heating_costs: Number(estate.heating_costs),
-          extra_costs: +estate.heating_costs + +estate.additional_costs,
-          building_status: estate.building_status,
-          house_type: estate.house_type,
           apt_type: estate.apt_type,
-          heating_type: estate.heating_type,
+          area: Number(estate.area) || 0,
+          bathrooms: Number(estate.bathrooms_number) || 0,
+          building_status: estate.building_status,
+          city: estate.city,
+          construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
+          contact: JSON.stringify({ email: estate.contact }),
+          country: estate.country,
+          energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
+          extra_costs: Number(+estate.heating_costs + +estate.additional_costs) || 0,
           firing: estate.firing,
-          zip: estate.zip,
-          status: estate.status,
+          floor: Number(estate.floor) || 0,
+          ftp_last_update: estate.source_id ? filesLastModified?.[`${estate.source_id}.xml`] : '',
           full_address: estate.full_address,
-          wbs: estate.wbs,
+          heating_costs: Number(estate.heating_costs) || 0,
+          heating_type: estate.heating_type,
+          house_number: estate.house_number,
+          house_type: estate.house_type,
+          net_rent: Number(estate.net_rent) || 0,
+          number_floors: Number(estate.number_floors) || 0,
           property_id: estate.property_id,
-          ftp_last_update: filesLastModified[`${estate.source_id}.xml`],
+          property_type: estate.property_type,
+          rooms_number: Number(estate.rooms_number) || 0,
+          source_id: estate.source_id,
+          source_information: JSON.stringify(sourceInformation),
+          source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+          status: estate.status,
+          street: estate.street,
+          vacant_date: estate.vacant_date
+            ? moment(new Date(estate.vacant_date)).format(DATE_FORMAT)
+            : null,
+          wbs: estate.wbs,
+          zip: estate.zip,
         }
         //amenities:
         //parse this to boolean... openimmo standard for pets is boolean
-        estate.pets_allowed = estate.pets_allowed !== PETS_NO
+        if (estate.pets_allowed !== undefined) {
+          estate.pets_allowed = estate.pets_allowed !== PETS_NO
+        }
+
         const amenityKeys = {
           balconies_number: {
             type: 'numeric',

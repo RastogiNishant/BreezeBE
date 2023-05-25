@@ -53,6 +53,8 @@ const {
   GEWOBAG_EMAIL_CONTENT,
   SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT,
   GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
+  PUBLISH_STATUS_INIT,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -179,6 +181,7 @@ class QueueJobService {
     await require('./NoticeService').likedButNotKnockedToProspect(estates)
   }
 
+  /** we don't need this one, because all activation will be done by Breeze admin */
   static async handleToActivateEstates() {
     try {
       const estates = (await QueueJobService.fetchToActivateEstates()).rows
@@ -188,7 +191,10 @@ class QueueJobService {
 
       let i = 0
       while (i < estates.length) {
-        await require('./EstateService').publishEstate({ estate: estates[i] }, true)
+        await require('./EstateService').publishEstate(
+          { estate: estates[i], performed_by: estates[i].user_id },
+          true
+        )
         i++
       }
     } catch (e) {
@@ -219,14 +225,14 @@ class QueueJobService {
     try {
       if (estateIdsToExpire && estateIdsToExpire.length) {
         await Estate.query()
-          .update({ status: STATUS_EXPIRE })
+          .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
           .whereIn('id', estateIdsToExpire)
           .transacting(trx)
       }
 
       if (estateIdsToDraft && estateIdsToDraft.length) {
         await Estate.query()
-          .update({ status: STATUS_DRAFT })
+          .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT })
           .whereIn('id', estateIdsToDraft)
           .transacting(trx)
       }
@@ -271,7 +277,6 @@ class QueueJobService {
       .select('*')
       .with('estateSyncListings')
       .where('status', STATUS_DRAFT)
-      .where('is_published', true)
       .whereNot('letting_type', LETTING_TYPE_LET)
       .whereNotNull('available_start_at')
       .where('available_start_at', '<', moment.utc(new Date()).format(DATE_FORMAT))

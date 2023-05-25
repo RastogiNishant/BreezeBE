@@ -1,4 +1,5 @@
 {
+  "action": "uebertragung.0.$.modus",
   "additional_costs": "preise.0.nebenkosten.0",
   "apt_type": "objektkategorie.0.objektart.0.wohnung.0.$.wohnungtyp",
   "area": "flaechen.0.wohnflaeche.0",
