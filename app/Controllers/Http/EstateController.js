@@ -64,6 +64,7 @@ const {
   IMPORT_ACTION_IMPORT,
   ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
   ESTATE_SYNC_LISTING_STATUS_POSTED,
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
@@ -468,6 +469,16 @@ class EstateController {
       )
     } else {
       await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
+      const data = {
+        success: true,
+        estate_id: estate.id,
+        property_id: estate.property_id,
+      }
+      await EstateSyncService.emitWebsocketEventToLandlord({
+        event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+        user_id: estate.user_id,
+        data,
+      })
       await EstateSyncService.markListingsForDelete(estate.id)
       //unpublish estate from estate_sync
       QueueService.estateSyncUnpublishEstates([id], false)
