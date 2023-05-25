@@ -64,6 +64,9 @@ const {
   IMPORT_ACTION_IMPORT,
   ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
   ESTATE_SYNC_LISTING_STATUS_POSTED,
+  PUBLISH_STATUS_BY_LANDLORD,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_INIT,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
@@ -439,6 +442,14 @@ class EstateController {
       //   throw new HttpException('Cant update status', 400)
       // }
 
+      if (estate.publish_status === PUBLISH_STATUS_BY_LANDLORD) {
+        throw new HttpException('Estate is under review. Kindly wait.', 400)
+      }
+
+      if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+        throw new HttpException('Estate is already approved. You cannot republish it.', 400)
+      }
+
       if (
         [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
         estate.letting_type !== LETTING_TYPE_LET
@@ -467,7 +478,7 @@ class EstateController {
         false
       )
     } else {
-      await estate.updateItem({ status: STATUS_DRAFT, is_published: false }, true)
+      await estate.updateItem({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT }, true)
       await EstateSyncService.markListingsForDelete(estate.id)
       //unpublish estate from estate_sync
       QueueService.estateSyncUnpublishEstates([id], false)

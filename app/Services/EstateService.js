@@ -97,6 +97,8 @@ const {
   LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT,
   ADMIN_URLS,
   GERMAN_DATE_FORMAT,
+  PUBLISH_STATUS_INIT,
+  PUBLISH_STATUS_BY_LANDLORD,
   TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
@@ -2098,7 +2100,7 @@ class EstateService {
         status: STATUS_DRAFT,
         letting_type: LETTING_TYPE_LET,
         letting_status: LETTING_STATUS_STANDARD,
-        is_published: false,
+        publish_status: PUBLISH_STATUS_INIT,
       })
       .transacting(trx)
   }
@@ -2656,7 +2658,7 @@ class EstateService {
       .innerJoin('users', 'users.id', 'estates.user_id')
       .where('estates.id', id)
       .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
-      .where('is_published', true)
+      .where('publish_status', PUBLISH_STATUS_BY_LANDLORD)
       .first()
   }
   static async duplicateEstate(user_id, estate_id) {
@@ -2694,7 +2696,7 @@ class EstateService {
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
-        is_published: false,
+        publish_status: PUBLISH_STATUS_INIT,
         vacant_date: null,
         hash: null,
         shared_link: null,
