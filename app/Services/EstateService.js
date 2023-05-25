@@ -98,6 +98,7 @@ const {
   ADMIN_URLS,
   GERMAN_DATE_FORMAT,
   PUBLISH_STATUS_INIT,
+  PUBLISH_STATUS_BY_LANDLORD,
 } = require('../constants')
 
 const {
@@ -2655,7 +2656,7 @@ class EstateService {
       .innerJoin('users', 'users.id', 'estates.user_id')
       .where('estates.id', id)
       .whereIn('estates.status', [STATUS_EXPIRE, STATUS_DRAFT])
-      .where('is_published', true)
+      .where('publish_status', PUBLISH_STATUS_BY_LANDLORD)
       .first()
   }
   static async duplicateEstate(user_id, estate_id) {
