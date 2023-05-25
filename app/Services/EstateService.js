@@ -99,6 +99,7 @@ const {
   GERMAN_DATE_FORMAT,
   PUBLISH_STATUS_INIT,
   PUBLISH_STATUS_BY_LANDLORD,
+  TASK_STATUS_ARCHIVED,
 } = require('../constants')
 
 const {
@@ -1879,6 +1880,7 @@ class EstateService {
 
     query.leftJoin('tasks', function () {
       this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
+        TASK_STATUS_ARCHIVED,
         TASK_STATUS_DRAFT,
         TASK_STATUS_DELETE,
       ])
