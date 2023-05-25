@@ -437,7 +437,7 @@ class TaskService extends BaseService {
     }
   }
 
-  static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
+  static async getAllTasks({ user_id, role, estate_id, query, status, page = -1, limit = -1 }) {
     let taskQuery = Task.query()
       .select('tasks.*')
       .select(
@@ -470,6 +470,14 @@ class TaskService extends BaseService {
 
     if (estate_id) {
       taskQuery.where('tasks.estate_id', estate_id)
+    }
+
+    if (query) {
+      taskQuery.where(function () {
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('tasks.title', 'ilike', `%${query}%`)
+      })
     }
 
     taskQuery
