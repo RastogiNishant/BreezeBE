@@ -167,6 +167,7 @@ class Estate extends Model {
       'is_published',
       'share_link',
       'is_not_show',
+      'publish_status',
     ]
   }
 
