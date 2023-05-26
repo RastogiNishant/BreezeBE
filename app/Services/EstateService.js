@@ -100,10 +100,34 @@ const {
   PUBLISH_STATUS_INIT,
   PUBLISH_STATUS_BY_LANDLORD,
   TASK_STATUS_ARCHIVED,
+  DEACTIVATE_PROPERTY,
+  WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+  WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 
 const {
-  exceptions: { NO_ESTATE_EXIST, NO_FILE_EXIST, IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
+  exceptions: {
+    NO_ESTATE_EXIST,
+    NO_FILE_EXIST,
+    IMAGE_COUNT_LIMIT,
+    FAILED_TO_ADD_FILE,
+    ERROR_PROPERTY_AREADY_PUBLISHED,
+    ERROR_PROPERTY_AVAILABLE_DURATION,
+    ERROR_PROPERTY_UNDER_REVIEW,
+    ERROR_PROPERTY_ALREADY_RENTED,
+    ERROR_PROPERTY_INVALID_STATUS,
+    ERROR_PROPERTY_NOT_PUBLISHED,
+  },
+  exceptionCodes: {
+    ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
+    ERROR_PROPERTY_AVAILABLE_DURATION_CODE,
+    ERROR_PROPERTY_UNDER_REVIEW_CODE,
+    ERROR_PROPERTY_ALREADY_RENTED_CODE,
+    ERROR_PROPERTY_INVALID_STATUS_CODE,
+    ERROR_PROPERTY_NOT_PUBLISHED_CODE,
+  },
 } = require('../../app/exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -662,7 +686,7 @@ class EstateService {
         ...updateData,
       }
       await estate.updateItemWithTrx(updateData, trx)
-      await this.handleOfflineEstate({ estate_id: estate.id }, trx)
+      await this.deleteMatchInfo({ estate_id: estate.id }, trx)
 
       QueueService.estateSyncUnpublishEstates([estate.id], true)
 
@@ -1409,14 +1433,57 @@ class EstateService {
    *
    */
   static async publishEstate({ estate, publishers, performed_by = null }, is_queue = false) {
+    const user = await User.query().where('id', estate.user_id).first()
+    if (!user) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (
+      !estate.available_start_at ||
+      (!estate.is_duration_later && !estate.available_end_at) ||
+      (estate.is_duration_later && !estate.min_invite_count)
+    ) {
+      throw new HttpException(
+        ERROR_PROPERTY_AVAILABLE_DURATION,
+        400,
+        ERROR_PROPERTY_AVAILABLE_DURATION_CODE
+      )
+    }
+
+    if (estate.status === STATUS_ACTIVE) {
+      throw new HttpException(
+        ERROR_PROPERTY_AREADY_PUBLISHED,
+        400,
+        ERROR_PROPERTY_AREADY_PUBLISHED_CODE
+      )
+    }
+
+    if (estate.publish_status === PUBLISH_STATUS_BY_LANDLORD) {
+      throw new HttpException(ERROR_PROPERTY_UNDER_REVIEW, 400, ERROR_PROPERTY_UNDER_REVIEW_CODE)
+    }
+
+    if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+      throw new HttpException(
+        ERROR_PROPERTY_ALREADY_RENTED,
+        400,
+        ERROR_PROPERTY_ALREADY_RENTED_CODE
+      )
+    }
+    if (
+      [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
+      estate.letting_type === LETTING_TYPE_LET
+    ) {
+      throw new HttpException(
+        ERROR_PROPERTY_INVALID_STATUS,
+        400,
+        ERROR_PROPERTY_INVALID_STATUS_CODE
+      )
+    }
+
     let status = estate.status
     const trx = await Database.beginTransaction()
 
     try {
-      const user = await User.query().where('id', estate.user_id).first()
-      if (!user) {
-        throw new HttpException(NO_ESTATE_EXIST, 400)
-      }
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
@@ -1499,6 +1566,104 @@ class EstateService {
     }
   }
 
+  static async deactivateEstate(id) {
+    const estate = await Estate.findOrFail(id)
+    const trx = await Database.beginTransaction()
+    try {
+      await estate.updateItemWithTrx(
+        {
+          status: STATUS_DRAFT,
+          publish_status: PUBLISH_STATUS_INIT,
+        },
+        trx,
+        true
+      )
+
+      await this.deleteMatchInfo({ estate_id: id }, trx)
+      await trx.commit()
+      await this.handleOffline({ estate, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  static async offMarketPublish(estate) {
+    if (estate.status === STATUS_ACTIVE) {
+      throw HttpException(ERROR_PROPERTY_ALREADY_RENTED, 400, ERROR_PROPERTY_ALREADY_RENTED_CODE)
+    }
+    try {
+      await estate.updateItem(
+        {
+          status: STATUS_OFFLINE_ACTIVE,
+          publish_status: PUBLISH_STATUS_INIT,
+        },
+        true
+      )
+    } catch (e) {
+      console.log('offMarketPublish error=', e.message)
+    }
+  }
+
+  static async deactivateBulkEstates(ids) {
+    await Promise.map(
+      ids,
+      async (id) => {
+        await this.deactivateEstate(id)
+      },
+      { concurrency: 1 }
+    )
+  }
+
+  static async unpublishBulkEstates(ids) {
+    await Promise.map(
+      ids,
+      async (id) => {
+        const estate = await Estate.findByOrFail(id)
+        await this.unpublishEstate(estate)
+      },
+      { concurrency: 1 }
+    )
+  }
+  static async unpublishEstate(estate) {
+    if (
+      estate.publish_status !== PUBLISH_STATUS_BY_LANDLORD ||
+      estate.publish_status !== PUBLISH_STATUS_APPROVED_BY_ADMIN
+    ) {
+      throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
+    }
+
+    await estate.updateItem(
+      {
+        status: STATUS_EXPIRE,
+        publish_status: PUBLISH_STATUS_INIT,
+      },
+      true
+    )
+
+    await this.handleOffline({ estate, event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
+  }
+
+  static async handleOffline({ estate, event }) {
+    const data = {
+      success: true,
+      estate_id: estate.id,
+      statu: estate.status,
+      property_id: estate.property_id,
+      publish_status: estate.publish_status,
+    }
+
+    const EstateSyncService = require('./EstateSyncService')
+    await EstateSyncService.emitWebsocketEventToLandlord({
+      event,
+      user_id: estate.user_id,
+      data,
+    })
+    await EstateSyncService.markListingsForDelete(estate.id)
+    //unpublish estate from estate_sync
+    QueueService.estateSyncUnpublishEstates([estate.id], false)
+  }
+
   static async extendEstate({
     user_id,
     estate_id,
@@ -1513,7 +1678,7 @@ class EstateService {
       .update({ available_end_at, is_duration_later, min_invite_count, status: STATUS_ACTIVE })
   }
 
-  static async handleOfflineEstate({ estate_id, is_notification = true }, trx) {
+  static async deleteMatchInfo({ estate_id, is_notification = true }, trx) {
     const matches = await Estate.query()
       .select('estates.*')
       .where('estates.id', estate_id)

@@ -53,6 +53,7 @@ const {
   DATE_FORMAT,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   PUBLISH_STATUS_BY_LANDLORD,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -244,7 +245,7 @@ class Estate extends Model {
     this.addHook('beforeUpdate', async (instance) => {
       if (
         instance.letting_type === LETTING_TYPE_LET &&
-        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+        ![STATUS_DRAFT, STATUS_DELETE, STATUS_OFFLINE_ACTIVE].includes(instance.status)
       ) {
         instance.status = STATUS_DRAFT
       }
