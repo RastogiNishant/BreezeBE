@@ -758,7 +758,7 @@ class EstateCurrentTenantService extends BaseService {
       encDst += cipher.final('base64')
 
       let uri =
-        `&type=${OUTSIDE_TENANT_INVITE_TYPE}&data1=${encodeURIComponent(encDst)}` +
+        `&data1=${encodeURIComponent(encDst)}` +
         `&data2=${encodeURIComponent(iv.toString('base64'))}`
 
       let existingUser
