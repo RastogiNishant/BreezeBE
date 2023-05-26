@@ -17,10 +17,7 @@ class AdjustDraftEstateMatchesSchema extends Schema {
     try {
       while (i < estates.length) {
         const estate = estates[i]
-        await EstateService.handleOfflineEstate(
-          { estate_id: estate.id, is_notification: false },
-          trx
-        )
+        await EstateService.deleteMatchInfo({ estate_id: estate.id, is_notification: false }, trx)
         i++
       }
       await trx.commit()
