@@ -73,6 +73,7 @@ const constants = {
   STATUS_EMAIL_VERIFY: 4,
   STATUS_DRAFT: 5,
   STATUS_EXPIRE: 6,
+  STATUS_OFFLINE_ACTIVE: 7,
 
   IS_PRIVATE: 1,
   IS_PUBLIC: 2,
@@ -1261,6 +1262,7 @@ Estates: [ESTATES]
   PUBLISH_PROPERTY: 'publish',
   UNPUBLISH_PROPERTY: 'unpublish',
   DEACTIVATE_PROPERTY: 'deactivate',
+  PUBLISH_OFFLINE_PROPERTY: 'offlinePublish',
 }
 
 module.exports = constants

@@ -232,6 +232,12 @@ class PropertyController {
 
   async updatePublishStatus({ request, response }) {
     const { ids, action, publishers, id } = request.all()
+
+    const estate = await EstateService.getById(id)
+    if (!estate) {
+      throw new HttpException('Estate not found', 400, 113214)
+    }
+
     const trx = await Database.beginTransaction()
     let ret
     switch (action) {
