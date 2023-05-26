@@ -310,9 +310,9 @@
     "FLUESSIGGAS": 14
   },
   "furnished": {
-    "VOLL": true,
-    "": false,
-    "TEIL": null
+    "VOLL": 2,
+    "": 0,
+    "TEIL": 1
   },
   "gender": {
     "EGAL": 3,

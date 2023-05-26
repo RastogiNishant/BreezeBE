@@ -308,17 +308,9 @@ class OpenImmoReader {
     properties.map((property) => {
       fields.map((field) => {
         let propertyValue
-        if (field === 'furnished') {
-          let propertyField = property[field]
-          if (!property[field]) {
-            propertyField = ''
-          }
-          propertyValue = options[field][propertyField]
-        } else {
-          let dproperty = property[field]
-          if (dproperty) {
-            propertyValue = options[field][dproperty]
-          }
+        let dproperty = property[field]
+        if (dproperty) {
+          propertyValue = options[field][dproperty]
         }
         property[field] = propertyValue
       })
