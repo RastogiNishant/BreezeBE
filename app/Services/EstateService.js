@@ -104,6 +104,7 @@ const {
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
   WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 
 const {
@@ -1587,6 +1588,23 @@ class EstateService {
     }
   }
 
+  static async offMarketPublish(estate) {
+    if (estate.status === STATUS_ACTIVE) {
+      throw HttpException(ERROR_PROPERTY_ALREADY_RENTED, 400, ERROR_PROPERTY_ALREADY_RENTED_CODE)
+    }
+    try {
+      await estate.updateItem(
+        {
+          status: STATUS_OFFLINE_ACTIVE,
+          publish_status: PUBLISH_STATUS_INIT,
+        },
+        true
+      )
+    } catch (e) {
+      console.log('offMarketPublish error=', e.message)
+    }
+  }
+
   static async deactivateBulkEstates(ids) {
     await Promise.map(
       ids,
@@ -1601,13 +1619,13 @@ class EstateService {
     await Promise.map(
       ids,
       async (id) => {
-        await this.unpublishEstate(id)
+        const estate = await Estate.findByOrFail(id)
+        await this.unpublishEstate(estate)
       },
       { concurrency: 1 }
     )
   }
-  static async unpublishEstate(id) {
-    const estate = await Estate.findOrFail(id)
+  static async unpublishEstate(estate) {
     if (
       estate.publish_status !== PUBLISH_STATUS_BY_LANDLORD ||
       estate.publish_status !== PUBLISH_STATUS_APPROVED_BY_ADMIN

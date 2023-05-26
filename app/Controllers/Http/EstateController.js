@@ -72,6 +72,7 @@ const {
   DEACTIVATE_PROPERTY,
   PUBLISH_PROPERTY,
   UNPUBLISH_PROPERTY,
+  PUBLISH_OFFLINE_PROPERTY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
@@ -430,8 +431,8 @@ class EstateController {
   async publishEstate({ request, auth, response }) {
     const { id, action, publishers } = request.all()
 
-    const estate = await Estate.findOrFail(id)
-    if (estate.user_id !== auth.user.id) {
+    const estate = await EstateService.getById(id)
+    if (estate?.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
 
@@ -450,9 +451,11 @@ class EstateController {
         false
       )
     } else if (action === UNPUBLISH_PROPERTY) {
-      await EstateService.unpublishEstate(id)
+      await EstateService.unpublishEstate(estate)
     } else if (action === DEACTIVATE_PROPERTY) {
-      await EstateService.deactivateEstate(id)
+      await EstateService.deactivateEstate(estate)
+    } else if (action === PUBLISH_OFFLINE_PROPERTY) {
+      await EstateService.offMarketPublish(estate)
     }
     response.res(
       (
