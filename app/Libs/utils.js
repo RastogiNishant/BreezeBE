@@ -112,6 +112,8 @@ const generateAddress = ({ street, house_number, zip, city, country }) => {
 }
 
 const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WEB_LINK) => {
+  link = querystring.parse(link)
+  desktopLink = querystring.parse(desktopLink)
   const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
   const { shortLink } = await firebaseDynamicLinks.createLink({
