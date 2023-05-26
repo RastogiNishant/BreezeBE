@@ -962,6 +962,7 @@ const constants = {
   WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN: 'landlord:estateUnpublishedByAdmin',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED: 'landlord:estateUnpublished',
+  WEBSOCKET_EVENT_ESTATE_DEACTIVATED: 'landlord:estateDeactivated',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
@@ -1256,6 +1257,10 @@ Estates: [ESTATES]
   PUBLISH_STATUS_BY_LANDLORD: 1,
   PUBLISH_STATUS_APPROVED_BY_ADMIN: 2,
   PUBLISH_STATUS_DECLINED_BY_ADMIN: 3,
+
+  PUBLISH_PROPERTY: 'publish',
+  UNPUBLISH_PROPERTY: 'unpublish',
+  DEACTIVATE_PROPERTY: 'deactivate',
 }
 
 module.exports = constants

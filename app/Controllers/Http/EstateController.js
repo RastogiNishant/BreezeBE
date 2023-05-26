@@ -68,6 +68,10 @@ const {
   PUBLISH_STATUS_BY_LANDLORD,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   PUBLISH_STATUS_INIT,
+  DATE_FORMAT,
+  DEACTIVATE_PROPERTY,
+  PUBLISH_PROPERTY,
+  UNPUBLISH_PROPERTY,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
@@ -430,47 +434,14 @@ class EstateController {
     if (estate.user_id !== auth.user.id) {
       throw new HttpException('Not allow', 403)
     }
-    if (
-      !estate.available_start_at ||
-      (!estate.is_duration_later && !estate.available_end_at) ||
-      (estate.is_duration_later && !estate.min_invite_count)
-    ) {
-      throw new HttpException('Estates is not completely filled', 400)
-    }
 
-    if (action === 'publish') {
-      // if (estate.status === STATUS_ACTIVE) {
-      //   throw new HttpException('Cant update status', 400)
-      // }
+    if (action === PUBLISH_PROPERTY) {
+      await EstateService.publishEstate({
+        estate,
+        publishers,
+        performed_by: auth.user.id,
+      })
 
-      if (estate.publish_status === PUBLISH_STATUS_BY_LANDLORD) {
-        throw new HttpException('Estate is under review. Kindly wait.', 400)
-      }
-
-      if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
-        throw new HttpException('Estate is already approved. You cannot republish it.', 400)
-      }
-
-      if (
-        [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
-        estate.letting_type !== LETTING_TYPE_LET
-      ) {
-        try {
-          await EstateService.publishEstate({
-            estate,
-            publishers,
-            performed_by: auth.user.id,
-          })
-        } catch (e) {
-          if (e.name === 'ValidationException') {
-            Logger.error(e)
-            throw new HttpException('User not activated', 409)
-          }
-          throw new HttpException(e.message, e.status || 400)
-        }
-      } else {
-        throw new HttpException('Invalid estate type', 400)
-      }
       logEvent(
         request,
         LOG_TYPE_PUBLISHED_PROPERTY,
@@ -478,24 +449,11 @@ class EstateController {
         { estate_id: estate.id },
         false
       )
-    } else {
-      await estate.updateItem({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT }, true)
-      const data = {
-        success: true,
-        estate_id: estate.id,
-        property_id: estate.property_id,
-        publish_status: estate.publish_status,
-      }
-      await EstateSyncService.emitWebsocketEventToLandlord({
-        event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
-        user_id: estate.user_id,
-        data,
-      })
-      await EstateSyncService.markListingsForDelete(estate.id)
-      //unpublish estate from estate_sync
-      QueueService.estateSyncUnpublishEstates([id], false)
+    } else if (action === UNPUBLISH_PROPERTY) {
+      await EstateService.unpublishEstate(id)
+    } else if (action === DEACTIVATE_PROPERTY) {
+      await EstateService.deactivateEstate(id)
     }
-
     response.res(
       (
         await EstateService.getEstatesByUserId({
@@ -508,20 +466,17 @@ class EstateController {
 
   async makeEstateOffline({ request, auth, response }) {
     const { id } = request.all()
-    const trx = await Database.beginTransaction()
     try {
-      const estate = await Estate.query().where('id', id).first()
-      if (estate) {
-        estate.status = STATUS_DRAFT
-        await EstateService.handleOfflineEstate({ estate_id: estate.id }, trx)
-        await estate.save(trx)
-        await trx.commit()
-        response.res(true)
-      } else {
-        throw new HttpException('You are attempted to edit wrong estate', 409)
-      }
+      await EstateService.deactivateEstate(id)
+      response.res(
+        (
+          await EstateService.getEstatesByUserId({
+            ids: [auth.user.id],
+            params: { id },
+          })
+        )?.data?.[0]
+      )
     } catch (e) {
-      await trx.rollback()
       console.log({ e })
       throw new HttpException(e?.message ?? e, 400)
     }
