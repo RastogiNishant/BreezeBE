@@ -278,9 +278,11 @@ class UserService {
       user = await User.findByOrFail({ email })
       const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-      const deepLink_URL = from_web
-        ? `${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}&email=${email}`
-        : `${process.env.DEEP_LINK}?type=newpassword&code=${code}`
+      const deepLink_URL = querystring.parse(
+        from_web
+          ? `${process.env.SITE_URL}/reset-password?type=forgotpassword&code=${code}&email=${email}`
+          : `${process.env.DEEP_LINK}?type=newpassword&code=${code}`
+      )
 
       let params = {
         dynamicLinkInfo: {
@@ -434,9 +436,11 @@ class UserService {
   static async getForgotShortLink(from_web = false) {
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-    const deepLink_URL = from_web
-      ? `${process.env.SITE_URL}/forgotPassword`
-      : `${process.env.DEEP_LINK}?type=forgotPassword`
+    const deepLink_URL = querystring.parse(
+      from_web
+        ? `${process.env.SITE_URL}/forgotPassword`
+        : `${process.env.DEEP_LINK}?type=forgotPassword`
+    )
 
     const { shortLink } = await firebaseDynamicLinks.createLink({
       dynamicLinkInfo: {
@@ -514,7 +518,9 @@ class UserService {
     let params = {
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
-        link: `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`,
+        link: querystring.parse(
+          `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`
+        ),
         androidInfo: {
           androidPackageName: process.env.ANDROID_PACKAGE_NAME,
         },
