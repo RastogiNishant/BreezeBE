@@ -93,6 +93,14 @@ const exceptions = {
   NO_PRODUCTS_EXIST: 'Products Not found',
   SUBSCRIPTION_FAILED: 'failed to create subscription',
   UNSECURE_PROFILE_SHARE: "Please don't share your profile",
+  ERROR_SUBSCRIPTION_NOT_CREATED: 'Not subscribed plan yet',
+  ERROR_PRICE_PLAN_CONFIGURATION: 'Price plan misconfiguration',
+  ERROR_PROPERTY_AREADY_PUBLISHED: 'property already published. You cannot republish it.',
+  ERROR_PROPERTY_AVAILABLE_DURATION: 'Available duration not configured',
+  ERROR_PROPERTY_UNDER_REVIEW: 'Estate is under review. Kindly wait.',
+  ERROR_PROPERTY_ALREADY_RENTED: "Estate already rented. You can't publish it",
+  ERROR_PROPERTY_INVALID_STATUS: 'Invalid status to publish property',
+  ERROR_PROPERTY_NOT_PUBLISHED: 'Estate has not published yet',
 }
 
 const exceptionCodes = {
@@ -104,6 +112,14 @@ const exceptionCodes = {
   NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
   ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
   WARNING_UNSECURE_PROFILE_SHARE: 8000100,
+  ERROR_SUBSCRIPTION_NOT_CREATED_CODE: 9000100,
+  ERROR_PRICE_PLAN_CONFIGURATION_CODE: 9000200,
+  ERROR_PROPERTY_AREADY_PUBLISHED_CODE: 9000300,
+  ERROR_PROPERTY_AVAILABLE_DURATION_CODE: 9000400,
+  ERROR_PROPERTY_UNDER_REVIEW_CODE: 9000500,
+  ERROR_PROPERTY_ALREADY_RENTED_CODE: 9000600,
+  ERROR_PROPERTY_INVALID_STATUS_CODE: 9000700,
+  ERROR_PROPERTY_NOT_PUBLISHED_CODE: 9000800,
 }
 
 const exceptionKeys = {

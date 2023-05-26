@@ -8,7 +8,7 @@ const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
 const { createDynamicLink } = require('../Libs/utils')
-
+const Logger = use('Logger')
 const Model = require('./BaseModel')
 const {
   BATH_TUB,
@@ -53,6 +53,7 @@ const {
   DATE_FORMAT,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   PUBLISH_STATUS_BY_LANDLORD,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -244,7 +245,7 @@ class Estate extends Model {
     this.addHook('beforeUpdate', async (instance) => {
       if (
         instance.letting_type === LETTING_TYPE_LET &&
-        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+        ![STATUS_DRAFT, STATUS_DELETE, STATUS_OFFLINE_ACTIVE].includes(instance.status)
       ) {
         instance.status = STATUS_DRAFT
       }
@@ -337,7 +338,6 @@ class Estate extends Model {
     try {
       const hash = Estate.getHash(id)
       const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
-
       let estateInfo = {
         hash,
         share_link,
@@ -347,7 +347,7 @@ class Estate extends Model {
         .update({ ...estateInfo })
       return share_link
     } catch (e) {
-      Logger.error(`estate ${id} updateHashInfo error ${e.message}`)
+      Logger.error(`estate ${id} updateHashInfo error ${e.message || e}`)
       return null
     }
   }

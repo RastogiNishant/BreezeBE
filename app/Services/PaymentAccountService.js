@@ -42,11 +42,17 @@ class PaymentAccountService {
   }
 
   static async getByUserId({ user_id, account_id }) {
-    return await PaymentAccount.query()
-      .where('user_id', user_id)
-      .where('account_id', account_id)
-      .where('status', STATUS_ACTIVE)
-      .first()
+    let query = PaymentAccount.query()
+
+    if (user_id) {
+      query.where('user_id', user_id)
+    }
+
+    if (account_id) {
+      query.where('account_id', account_id)
+    }
+
+    return await query.where('status', STATUS_ACTIVE).first()
   }
 
   static async getByAccountId(account_id) {
