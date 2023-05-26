@@ -8,7 +8,7 @@ const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
 const { createDynamicLink } = require('../Libs/utils')
-
+const Logger = use('Logger')
 const Model = require('./BaseModel')
 const {
   BATH_TUB,
@@ -338,7 +338,6 @@ class Estate extends Model {
     try {
       const hash = Estate.getHash(id)
       const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
-
       let estateInfo = {
         hash,
         share_link,
@@ -348,7 +347,7 @@ class Estate extends Model {
         .update({ ...estateInfo })
       return share_link
     } catch (e) {
-      Logger.error(`estate ${id} updateHashInfo error ${e.message}`)
+      Logger.error(`estate ${id} updateHashInfo error ${e.message || e}`)
       return null
     }
   }

@@ -2801,12 +2801,13 @@ class EstateService {
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
+    return await Estate.updateHashInfo(id)
 
     if (estate.share_link) {
       return estate.share_link
     }
 
-    return await Estate.updateHashInfo(id)
+    // return await Estate.updateHashInfo(id)
   }
 
   static async countDuplicateProperty(property_id) {
