@@ -53,7 +53,10 @@ class PropertyController {
         'estates.address',
         'estates.status',
         'estates.six_char_code',
-        'estates.publish_status'
+        'estates.publish_status',
+        'estates.property_id',
+        'estates.available_start_at',
+        'estates.available_end_at'
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
