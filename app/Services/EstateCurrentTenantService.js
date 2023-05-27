@@ -763,7 +763,7 @@ class EstateCurrentTenantService extends BaseService {
 
       let existingUser
       if (estateCurrentTenant.email) {
-        uri += `&email=${estateCurrentTenant.email}`
+        uri += `&email=${encodeURIComponent(estateCurrentTenant.email)}`
 
         existingUser = await User.query()
           .where('email', estateCurrentTenant.email.toLowerCase())
