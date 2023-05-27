@@ -115,8 +115,6 @@ const encodeURL = (link) => {
   return link.replace(/\+/g, '%20')
 }
 const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WEB_LINK) => {
-  link = encodeURL(link)
-  desktopLink = encodeURL(link)
   const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
   try {
     const { shortLink } = await firebaseDynamicLinks.createLink({
