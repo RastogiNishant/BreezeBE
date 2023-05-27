@@ -814,13 +814,13 @@ class MatchService {
     let landlordSenderId = null
 
     if (event === WEBSOCKET_EVENT_MATCH) {
+      console.log('emitMatch WEBSOCKET_EVENT_MATCH=', data)
       const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
         page: 1,
         params: { id: data?.estate_id },
       })
-
-      estate = estates.rows?.[0]
+      estate = estates.data?.[0]
       landlordSenderId = estate?.user_id
     } else {
       const estateInfo = await require('./EstateService')
@@ -842,7 +842,7 @@ class MatchService {
     if (role === ROLE_LANDLORD) {
       data = {
         ...data,
-        estate: estate?.toJSON() || null,
+        estate: estate || null,
       }
     }
 

@@ -101,7 +101,7 @@ class OutsideLandlordService {
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}` +
-      `&email=${task.email}`
+      `&email=${encodeURIComponent(task.email)}`
 
     const landlords = (
       await require('./UserService').getByEmailWithRole([task.email], ROLE_LANDLORD)

@@ -55,6 +55,7 @@ const {
   GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
   PUBLISH_STATUS_INIT,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_DECLINED_BY_ADMIN,
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -218,7 +219,12 @@ class QueueJobService {
       .filter((estate) => estate.available_start_at)
       .map((estate) => estate.id)
     const estateIdsToDraft = estates
-      .filter((estate) => !estate.available_start_at)
+      .filter(
+        (estate) =>
+          !estate.available_start_at ||
+          estate.publish_status === PUBLISH_STATUS_INIT ||
+          estate.publish_status === PUBLISH_STATUS_DECLINED_BY_ADMIN
+      )
       .map((estate) => estate.id)
 
     const trx = await Database.beginTransaction()

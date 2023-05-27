@@ -32,6 +32,7 @@ const {
   MATCH_STATUS_TOP,
   MATCH_STATUS_FINISH,
   FILTER_CONSTRAINTS_DATE_MATCH_MODES,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 
 class EstateFilter extends Base {
@@ -184,7 +185,11 @@ class EstateFilter extends Base {
         if (isArray(value)) {
           return yup
             .array()
-            .of(yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE]))
+            .of(
+              yup
+                .number()
+                .oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
+            )
             .min(1)
         } else {
           return yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE])
