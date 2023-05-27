@@ -167,11 +167,11 @@ class MarketPlaceService {
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}` +
-      `&email=${email}`
+      `&email=${encodeURIComponent(email)}`
 
     uri += `&house_number=${house_number}`
-    uri += `&street=${street}`
-    uri += `&city=${city}`
+    uri += `&street=${encodeURIComponent(street)}`
+    uri += `&city=${encodeURIComponent(city)}`
     uri += `&postcode=${postcode}`
     uri += `&country=${country}`
     uri += `&coord=${coord}`
