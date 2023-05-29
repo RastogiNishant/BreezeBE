@@ -396,7 +396,6 @@ class EstateService {
       .withCount('inviteBuddies')
       .with('point')
       .with('files')
-      .with('amenities')
       .with('current_tenant', function (q) {
         q.with('user')
       })
