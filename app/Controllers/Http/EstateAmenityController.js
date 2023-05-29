@@ -27,7 +27,7 @@ class EstateAmenityController {
 
     try {
       await EstateService.hasPermission({ id: estate_id, user_id: auth.user.id })
-      await EstateAmenityService.handleMultipleAmenities(amenities)
+      await EstateAmenityService.handleMultipleAmenities(estate_id, amenities)
       response.res(await EstateAmenityService.getByEstate({ estate_id }))
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
