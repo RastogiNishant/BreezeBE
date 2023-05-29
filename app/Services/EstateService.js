@@ -347,7 +347,7 @@ class EstateService {
   }
 
   static async getById(id) {
-    return await this.getActiveEstateQuery().where({ id }).first()
+    return await EstateService.getActiveEstateQuery().where('estates.id', id).first()
   }
 
   static async getByIdWithDetail(id) {
@@ -1497,6 +1497,7 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
+        console.log({ publishers })
         if (publishers?.length) {
           await require('./EstateSyncService.js').saveMarketPlacesInfo(
             {
@@ -1621,7 +1622,7 @@ class EstateService {
     await Promise.map(
       ids,
       async (id) => {
-        const estate = await Estate.findByOrFail(id)
+        const estate = await Estate.findByOrFail({ id })
         await this.unpublishEstate(estate)
       },
       { concurrency: 1 }
@@ -1629,8 +1630,10 @@ class EstateService {
   }
   static async unpublishEstate(estate) {
     if (
-      estate.publish_status !== PUBLISH_STATUS_BY_LANDLORD ||
-      estate.publish_status !== PUBLISH_STATUS_APPROVED_BY_ADMIN
+      !(
+        estate.publish_status === PUBLISH_STATUS_BY_LANDLORD ||
+        estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN
+      )
     ) {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }

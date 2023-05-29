@@ -172,6 +172,7 @@ class Estate extends Model {
       'is_not_show',
       'publish_status',
       'publish_type',
+      'unit_amenities',
     ]
   }
 

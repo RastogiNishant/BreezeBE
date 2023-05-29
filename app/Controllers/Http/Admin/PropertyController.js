@@ -121,6 +121,7 @@ class PropertyController {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
+      .with('estateSyncListings')
       .with('files')
       .with('point')
       .first()
@@ -235,12 +236,13 @@ class PropertyController {
 
   async updatePublishStatus({ request, response }) {
     const { ids, action, publishers, id } = request.all()
-
-    const estate = await EstateService.getById(id)
-    if (!estate) {
-      throw new HttpException('Estate not found', 400, 113214)
+    if (id) {
+      console.log('id herere', id)
+      const estate = await EstateService.getById(id)
+      if (!estate) {
+        throw new HttpException('Estate not found', 400, 113214)
+      }
     }
-
     const trx = await Database.beginTransaction()
     let ret
     switch (action) {
