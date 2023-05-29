@@ -105,6 +105,7 @@ const {
   WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   STATUS_OFFLINE_ACTIVE,
+  PUBLISH_TYPE_OFFLINE_MARKET,
 } = require('../constants')
 
 const {
@@ -1109,7 +1110,7 @@ class EstateService {
   static async getEstateByHash(hash) {
     return Estate.query()
       .where('hash', hash)
-      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('status', [STATUS_ACTIVE, STATUS_OFFLINE_ACTIVE, STATUS_EXPIRE])
       .first()
   }
 
@@ -1597,6 +1598,7 @@ class EstateService {
         {
           status: STATUS_OFFLINE_ACTIVE,
           publish_status: PUBLISH_STATUS_INIT,
+          publish_type: PUBLISH_TYPE_OFFLINE_MARKET,
         },
         true
       )

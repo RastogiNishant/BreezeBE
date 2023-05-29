@@ -84,6 +84,7 @@ const {
   PROPERTY_TYPE_SHORT_TERM,
   MATCH_PERCENT_PASS,
   WEBSOCKET_EVENT_MATCH_CREATED,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -668,7 +669,10 @@ class MatchService {
   /**
    * Try to knock to estate
    */
-  static async knockEstate({ estate_id, user_id, share_profile, knock_anyway }, trx) {
+  static async knockEstate(
+    { estate_id, user_id, share_profile, knock_anyway, buddy = false },
+    trx
+  ) {
     const query = Tenant.query().where({ user_id })
     if (knock_anyway) {
       query.whereIn('status', [STATUS_ACTIVE, STATUS_DRAFT])
@@ -697,6 +701,7 @@ class MatchService {
         .first()
     }
 
+    let newMatch
     const { like, match } = await props({
       match: getMatches(),
       like: getLikes(),
@@ -714,14 +719,17 @@ class MatchService {
 
     try {
       if (match) {
+        newMatch = {
+          ...match.toJSON(),
+          status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+          share: share_profile ? true : false,
+          buddy,
+          knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+        }
         if (match.status === MATCH_STATUS_NEW) {
           // Update match to knock
           await Match.query()
-            .update({
-              status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
-              share: share_profile ? true : false,
-              knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
-            })
+            .update(newMatch)
             .where({
               user_id,
               estate_id,
@@ -739,17 +747,16 @@ class MatchService {
         }
 
         const percent = await MatchService.calculateMatchPercent(tenant, estate)
-        await Match.createItem(
-          {
-            status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
-            share: share_profile ? true : false,
-            user_id,
-            estate_id,
-            percent,
-            knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
-          },
-          trx
-        )
+        newMatch = {
+          status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+          share: share_profile ? true : false,
+          user_id,
+          estate_id,
+          percent,
+          buddy,
+          knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+        }
+        await Match.createItem(newMatch, trx)
       }
       await Dislike.query()
         .where('user_id', user_id)
@@ -768,7 +775,7 @@ class MatchService {
 
       throw new HttpException(e.message, 400)
     }
-    return true
+    return newMatch
   }
 
   static async sendMatchKnockWebsocket({ estate_id, user_id, share_profile = false }) {
@@ -814,7 +821,6 @@ class MatchService {
     let landlordSenderId = null
 
     if (event === WEBSOCKET_EVENT_MATCH) {
-      console.log('emitMatch WEBSOCKET_EVENT_MATCH=', data)
       const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
         page: 1,
@@ -1704,6 +1710,20 @@ class MatchService {
       await newBuddy.save()
     }
 
+    if (estate.status === STATUS_OFFLINE_ACTIVE) {
+      return await this.knockEstate({
+        estate_id: estate.id,
+        user_id: tenantId,
+        share_profile: true,
+        knock_anyway: true,
+        buddy: true,
+      })
+    } else {
+      return await this.createBuddyMatch({ tenantId, estateId: estate.id })
+    }
+  }
+
+  static async createBuddyMatch({ tenantId, estateId }) {
     const match = await Database.table('matches')
       .where({
         user_id: tenantId,
@@ -1718,29 +1738,6 @@ class MatchService {
         percent: 0,
         buddy: true,
         status: MATCH_STATUS_NEW,
-      })
-
-      this.emitMatch({
-        data: {
-          estate_id: estateId,
-          user_id: tenantId,
-          old_status: NO_MATCH_STATUS,
-          status: MATCH_STATUS_NEW,
-          buddy: true,
-        },
-        role: ROLE_LANDLORD,
-      })
-
-      this.emitMatch({
-        data: {
-          estate_id: estateId,
-          user_id: tenantId,
-          old_status: NO_MATCH_STATUS,
-          status: MATCH_STATUS_NEW,
-          buddy: true,
-        },
-        role: ROLE_LANDLORD,
-        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
       return result
     }
