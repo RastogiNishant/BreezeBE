@@ -3112,7 +3112,7 @@ class MatchService {
         Database.raw(`
         (select estate_id, json_agg(option_id) as options
         from amenities where type='amenity' and location in
-        ('building', 'apartment', 'vicinity') group by estate_id) as amenities
+        ('build', 'apt', 'out') group by estate_id) as amenities
         `),
         function () {
           this.on('amenities.estate_id', 'estates.id')

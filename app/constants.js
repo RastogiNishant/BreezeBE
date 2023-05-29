@@ -723,7 +723,7 @@ const constants = {
   ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 34338761,
   ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH: 35,
 
-  ESTATE_AMENITY_LOCATIONS: ['building', 'apartment', 'outside', 'vicinity', 'kitchen'],
+  ESTATE_AMENITY_LOCATIONS: ['build', 'apt', 'out', 'room'],
 
   FILTER_CONSTRAINTS_MATCH_MODES: [
     'startsWith',
