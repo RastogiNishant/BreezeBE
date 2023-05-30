@@ -132,6 +132,7 @@ class PropertyController {
   }
 
   async publishEstate(id, publishers) {
+    const estate = await EstateService.getById(id)
     if (
       [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
       estate.letting_type !== LETTING_TYPE_LET
@@ -261,7 +262,7 @@ class PropertyController {
       case UNPUBLISH_PROPERTY:
         try {
           await EstateService.unpublishBulkEstates(ids)
-          return response.res(ids)
+          return response.res(ids.length)
         } catch (error) {
           await trx.rollback()
           throw new HttpException(error.message, 422)
