@@ -56,7 +56,7 @@ const unitAmenities = [
   'apartment.amenities.Apartment.Espressomachine',
   'apartment.amenities.Apartment.Glasses_Dishes',
 ]
-
+/*
 const roomAmenities = [
   'apartment.amenities.Apartment.Singlebed',
   'apartment.amenities.Apartment.Doublebed',
@@ -65,13 +65,13 @@ const roomAmenities = [
   'apartment.amenities.Apartment.Towels',
   'apartment.amenities.Apartment.Sharedbathroom',
   'apartment.amenities.Apartment.Separatebeds',
-]
+]*/
 
 class AddUnitAmenitiesEstateSchema extends Schema {
   async up() {
     const amenityTypes = [
       { type: 'apt', amenities: unitAmenities },
-      { type: 'room', amenities: roomAmenities },
+      { type: 'room', amenities: unitAmenities },
     ]
     await Promise.map(amenityTypes, async (amenityType) => {
       const lastUnitTypeOption = await Option.query()
