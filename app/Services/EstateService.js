@@ -1497,7 +1497,6 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
-        console.log({ publishers })
         if (publishers?.length) {
           await require('./EstateSyncService.js').saveMarketPlacesInfo(
             {
