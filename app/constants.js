@@ -650,6 +650,8 @@ const constants = {
     'apt_type',
     'options',
     'share_link',
+    'publish_status',
+    'publish_type',
     'stp_garage',
     'energy_proof',
     'energy_proof_original_file',
@@ -721,7 +723,7 @@ const constants = {
   ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH: 34338761,
   ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH: 35,
 
-  ESTATE_AMENITY_LOCATIONS: ['building', 'apartment', 'outside', 'vicinity', 'kitchen'],
+  ESTATE_AMENITY_LOCATIONS: ['build', 'apt', 'out', 'room'],
 
   FILTER_CONSTRAINTS_MATCH_MODES: [
     'startsWith',
@@ -1263,6 +1265,9 @@ Estates: [ESTATES]
   UNPUBLISH_PROPERTY: 'unpublish',
   DEACTIVATE_PROPERTY: 'deactivate',
   PUBLISH_OFFLINE_PROPERTY: 'offlinePublish',
+
+  PUBLISH_TYPE_ONLINE_MARKET: 1,
+  PUBLISH_TYPE_OFFLINE_MARKET: 2,
 }
 
 module.exports = constants

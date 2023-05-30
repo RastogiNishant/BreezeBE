@@ -10,10 +10,9 @@ const Promise = require('bluebird')
 
 const mapTypeToLocation = (type) => {
   const typeMap = {
-    build: 'building',
-    apt: 'apartment',
-    out: 'vicinity',
-    kitchen: 'room',
+    build: 'build',
+    apt: 'apt',
+    out: 'out',
     bad: 'room',
     room: 'room',
   }

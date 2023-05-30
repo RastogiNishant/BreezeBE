@@ -54,6 +54,7 @@ const {
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   PUBLISH_STATUS_BY_LANDLORD,
   STATUS_OFFLINE_ACTIVE,
+  PUBLISH_TYPE_ONLINE_MARKET,
 } = require('../constants')
 
 class Estate extends Model {
@@ -170,6 +171,7 @@ class Estate extends Model {
       'share_link',
       'is_not_show',
       'publish_status',
+      'publish_type',
     ]
   }
 
@@ -504,10 +506,6 @@ class Estate extends Model {
     return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
-  amenities() {
-    return this.hasMany('App/Models/Amenity')
-  }
-
   notifications() {
     return this.hasOne('App/Models/Notice')
   }
@@ -542,6 +540,7 @@ class Estate extends Model {
     await this.updateItemWithTrx(
       {
         status,
+        publish_type: PUBLISH_TYPE_ONLINE_MARKET,
         publish_status:
           status === STATUS_ACTIVE ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_BY_LANDLORD,
         available_end_at:
