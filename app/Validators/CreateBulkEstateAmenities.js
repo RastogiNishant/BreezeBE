@@ -10,7 +10,7 @@ const CreateEstateAmenity = require('./CreateEstateAmenity')
 class CreateBulkEstateAmenities extends Base {
   static schema = () =>
     yup.object().shape({
-      amenities: yup.array().of(CreateEstateAmenity.schema()).required(),
+      amenities: yup.array().of(CreateEstateAmenity.schema()).nullable(),
     })
 }
 
