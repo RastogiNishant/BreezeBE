@@ -1,9 +1,10 @@
 'use strict'
 
 const Database = use('Database')
-const { STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE, ESTATE_AMENITY_LOCATIONS } = require('../constants')
 const Promise = require('bluebird')
 const { omit } = require('lodash')
+const HttpException = require('../Exceptions/HttpException')
 const Amenity = use('App/Models/Amenity')
 class EstateAmenityService {
   static async getByEstate({ estate_id, location }) {
@@ -81,20 +82,31 @@ class EstateAmenityService {
     }
   }
 
-  static async handleMultipleAmenities(amenities) {
+  static async handleMultipleAmenities(estate_id, amenities) {
+    amenities = (amenities || []).map((amenity) => omit(amenity, ['id']))
     const trx = await Database.beginTransaction()
     try {
-      await Promise.map(
-        amenities,
-        async (amenity) => {
-          await this.handleSingleAmenity(amenity, trx)
-        },
-        { concurrency: 1 }
-      )
+      await this.removeAmenitiesByLocation({ location: ['build', 'apt', 'out'], estate_id }, trx)
+      if (amenities?.length) {
+        await Amenity.createMany(amenities, trx)
+      }
+
       await trx.commit()
     } catch (e) {
+      console.log('handleMultipleAmenities error=', e.message)
       await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
+  }
+
+  static async removeAmenitiesByLocation({ location, estate_id }, trx) {
+    let query = Amenity.query().delete()
+    if (location) {
+      location = Array.isArray(location) ? location : [location]
+      query.whereIn('location', location)
+    }
+    query.where('estate_id', estate_id).transacting(trx)
+    await query
   }
 }
 
