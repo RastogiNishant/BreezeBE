@@ -67,7 +67,7 @@ class UserCanChatHere {
 
     // check if this estate has a top match
     if (!chatUser) {
-      chatUser = MatchService.getUserToChat({ user_id, estate_id, role })
+      chatUser = await MatchService.getUserToChat({ user_id, estate_id, role })
     }
 
     return chatUser

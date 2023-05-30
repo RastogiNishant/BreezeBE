@@ -1376,27 +1376,39 @@ class MatchService {
   /**
    *
    */
-  static async toTop(estateId, tenantId) {
-    const result = await Database.table('matches')
-      .update({ status: MATCH_STATUS_TOP })
-      .where({
-        user_id: tenantId,
-        estate_id: estateId,
-        share: true,
-      })
-      .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+  static async toTop({ estateId, tenantId, landlordId }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const topMatch = await Match.query()
+        .update({ status: MATCH_STATUS_TOP })
+        .where('user_id', tenantId)
+        .where('estate_id', estateId)
+        .where('share', true)
+        .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+        .transacting(trx)
 
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: tenantId,
-        old_status: MATCH_STATUS_SHARE,
-        share: true,
-        status: MATCH_STATUS_TOP,
-      },
-      role: ROLE_USER,
-    })
-    return result
+      if (topMatch) {
+        await require('./TaskService').createGlobalTask({ tenantId, landlordId, estateId }, trx)
+      } else {
+        throw new HttpException('No record found', 400)
+      }
+
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: tenantId,
+          old_status: MATCH_STATUS_SHARE,
+          share: true,
+          status: MATCH_STATUS_TOP,
+        },
+        role: ROLE_USER,
+      })
+      await trx.commit()
+      return topMatch
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   static async cancelTopByTenant(estateId, tenantId) {
@@ -2254,17 +2266,21 @@ class MatchService {
     let query = Match.query()
       .select('_e.user_id as estate_user_id')
       .select('matches.user_id as tenant_user_id')
-      .where('status', '>=', MATCH_STATUS_TOP)
+      .where('matches.status', '>=', MATCH_STATUS_TOP)
       .where('estate_id', estate_id)
 
     if (role === ROLE_LANDLORD) {
-      query
-        .innerJoin({ _e: 'estates' })
-        .on('_e.id', 'matches.estate_id')
-        .on('_e.user_id', user_id)
-        .onNotIn('_e.status', [STATUS_DELETE])
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id')
+          .on('_e.user_id', user_id)
+          .onNotIn('_e.status', [STATUS_DELETE])
+      })
     } else {
-      query.where('user_id', user_id)
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onNotIn('_e.status', [STATUS_DELETE])
+      })
+
+      query.where('matches.user_id', user_id)
     }
 
     return await query.first()

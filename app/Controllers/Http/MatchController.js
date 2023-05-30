@@ -443,7 +443,11 @@ class MatchController {
     const { user_id, estate_id } = request.all()
     try {
       await this.getOwnEstate(estate_id, auth.user.id)
-      const success = await MatchService.toTop(estate_id, user_id)
+      const success = await MatchService.toTop({
+        estateId: estate_id,
+        tenantId: user_id,
+        landlordId: auth.user.id,
+      })
       if (!success) {
         throw new HttpException('Cant move to top', 400)
       }
