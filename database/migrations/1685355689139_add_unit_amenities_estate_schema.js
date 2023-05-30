@@ -3,6 +3,7 @@
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 const Option = use('App/Models/Option')
+const Promise = require('bluebird')
 const unitAmenities = [
   'apartment.amenities.Apartment.OneIntermediatecleaning',
   'apartment.amenities.Apartment.Twointermediatecleanings',
@@ -56,20 +57,39 @@ const unitAmenities = [
   'apartment.amenities.Apartment.Glasses_Dishes',
 ]
 
+const roomAmenities = [
+  'apartment.amenities.Apartment.Singlebed',
+  'apartment.amenities.Apartment.Doublebed',
+  'apartment.amenities.Apartment.Air-conditioned',
+  'apartment.amenities.Apartment.Showerbath',
+  'apartment.amenities.Apartment.Towels',
+  'apartment.amenities.Apartment.Sharedbathroom',
+  'apartment.amenities.Apartment.Separatebeds',
+]
+
 class AddUnitAmenitiesEstateSchema extends Schema {
   async up() {
-    const lastUnitTypeOption = await Option.query()
-      .where('type', 'apt')
-      .orderBy('order', 'desc')
-      .first()
-    const lastOrderNumber = lastUnitTypeOption.order
-    const optionsToBeAdded = unitAmenities.reduce((optionsToBeAdded, amenity, index) => {
-      return [
-        ...optionsToBeAdded,
-        { title: amenity, type: 'apt', order: lastOrderNumber + index * 10 },
-      ]
-    }, [])
-    await Option.createMany(optionsToBeAdded)
+    const amenityTypes = [
+      { type: 'apt', amenities: unitAmenities },
+      { type: 'room', amenities: roomAmenities },
+    ]
+    await Promise.map(amenityTypes, async (amenityType) => {
+      const lastUnitTypeOption = await Option.query()
+        .where('type', amenityType.type)
+        .orderBy('order', 'desc')
+        .first()
+      let lastOrderNumber = lastUnitTypeOption.order
+      const optionsToBeAdded = amenityType['amenities'].reduce(
+        (optionsToBeAdded, amenity, index) => {
+          return [
+            ...optionsToBeAdded,
+            { title: amenity, type: amenityType.type, order: lastOrderNumber + index * 10 },
+          ]
+        },
+        []
+      )
+      await Option.createMany(optionsToBeAdded)
+    })
   }
 
   down() {}
