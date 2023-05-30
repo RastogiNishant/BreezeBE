@@ -83,11 +83,14 @@ class EstateAmenityService {
   }
 
   static async handleMultipleAmenities(estate_id, amenities) {
-    amenities = amenities.map((amenity) => omit(amenity, ['id']))
+    amenities = (amenities || []).map((amenity) => omit(amenity, ['id']))
     const trx = await Database.beginTransaction()
     try {
       await this.removeAmenitiesByLocation({ location: ['build', 'apt', 'out'], estate_id }, trx)
-      await Amenity.createMany(amenities, trx)
+      if (amenities?.length) {
+        await Amenity.createMany(amenities, trx)
+      }
+
       await trx.commit()
     } catch (e) {
       console.log('handleMultipleAmenities error=', e.message)
