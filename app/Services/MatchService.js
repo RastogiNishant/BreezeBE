@@ -720,7 +720,7 @@ class MatchService {
     try {
       if (match) {
         newMatch = {
-          ...match.toJSON(),
+          ...match,
           status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
           share: share_profile ? true : false,
           buddy,
