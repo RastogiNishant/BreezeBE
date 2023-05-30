@@ -15,7 +15,7 @@ const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const DataStorage = use('DataStorage')
 const Ws = use('Ws')
 const Estate = use('App/Models/Estate')
-const File = use('App/Classes/File')
+const { omit } = require('lodash')
 
 const {
   ROLE_USER,
@@ -78,7 +78,11 @@ class EstateCurrentTenantService extends BaseService {
    * @param {*} param0
    * @returns
    */
-  static async addCurrentTenant({ data, estate_id }, trx) {
+  static async addCurrentTenant({ data, estate_id, user_id }, trx) {
+    if (!estate_id) {
+      throw new HttpException('Estate id not passed', 400)
+    }
+
     const shouldCommitTrx = trx ? false : true
 
     if (shouldCommitTrx) {
@@ -87,19 +91,43 @@ class EstateCurrentTenantService extends BaseService {
 
     data = await this.correctData(data)
     try {
-      let currentTenant = new EstateCurrentTenant()
-      currentTenant.fill({
-        estate_id,
-        salutation: data.txt_salutation || '',
-        surname: data.surname || '',
-        email: data.email,
-        contract_end: data.contract_end,
-        phone_number: data.phone_number,
-        status: STATUS_ACTIVE,
-        salutation_int: data.salutation_int,
-      })
+      let currentTenant
+      currentTenant = await this.getCurrentTenantByEstateId({ estate_id })
 
-      await currentTenant.save(trx)
+      if (currentTenant) {
+        await this.updateCurrentTenant(
+          {
+            id: currentTenant.id,
+            data: {
+              salutation: data.txt_salutation || currentTenant.salutation,
+              surname: data.surname || currentTenant.surname,
+              email: data.email || currentTenant.email,
+              contract_end: data.contract_end || currentTenant.contract_end,
+              phone_number: data.phone_number || currentTenant.phone_number,
+              status: STATUS_ACTIVE,
+              salutation_int: data.salutation_int || currentTenant.salutation_int,
+            },
+            estate_id: currentTenant.estate_id,
+            user_id,
+          },
+          trx
+        )
+      } else {
+        currentTenant = new EstateCurrentTenant()
+        currentTenant.fill({
+          estate_id,
+          salutation: data.txt_salutation || '',
+          surname: data.surname || '',
+          email: data.email,
+          contract_end: data.contract_end,
+          phone_number: data.phone_number,
+          status: STATUS_ACTIVE,
+          salutation_int: data.salutation_int,
+        })
+
+        await currentTenant.save(trx)
+      }
+
       //send email to support for connect
 
       if (shouldCommitTrx) {
@@ -216,8 +244,9 @@ class EstateCurrentTenantService extends BaseService {
   static async updateCurrentTenant({ id, data, estate_id, user_id }, trx = null) {
     let currentTenant
     if (id) {
-      currentTenant = await this.hasPermission(id, user_id)
+      await this.hasPermission(id, user_id, estate_id)
     }
+    currentTenant = await this.getCurrentTenantByEstateId({ estate_id })
 
     if (!currentTenant) {
       //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
