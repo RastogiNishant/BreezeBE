@@ -48,6 +48,7 @@ const {
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../../constants')
 const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
@@ -78,11 +79,7 @@ class MatchController {
    *
    */
   async getActiveEstate(estateId, withExpired = true) {
-    const estate = await EstateService.getActiveById(
-      estateId,
-      withExpired ? undefined : { status: STATUS_ACTIVE }
-    )
-
+    const estate = await EstateService.getActiveById(estateId)
     if (!estate) {
       throw new HttpException('Estate not found', 404)
     }
@@ -97,7 +94,7 @@ class MatchController {
   async knockEstate({ request, auth, response }) {
     const { estate_id, knock_anyway, share_profile, buddy } = request.all()
     const estate = await this.getActiveEstate(estate_id, false)
-    if (!estate.is_not_show && share_profile) {
+    if (!estate.is_not_show && estate.status !== STATUS_OFFLINE_ACTIVE && share_profile) {
       throw new HttpException(UNSECURE_PROFILE_SHARE, 400, WARNING_UNSECURE_PROFILE_SHARE)
     }
     try {
