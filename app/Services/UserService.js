@@ -133,7 +133,8 @@ class UserService {
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
-        const tenant = userData.signupData
+
+        const tenant = userData?.signupData
         await Tenant.create(
           {
             user_id: user.id,
@@ -146,7 +147,7 @@ class UserService {
         )
 
         await MemberService.createMember(
-          { firstname: user.firstname, secondname: user.secondname, is_verified: true },
+          { firstname: user?.firstname, secondname: user?.secondname, is_verified: true },
           user.id,
           trx
         )
@@ -189,17 +190,17 @@ class UserService {
       case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
         await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 }, trx)
         break
-      case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
-        await require('./EstateCurrentTenantService').acceptOutsideTenant(
-          {
-            data1,
-            data2,
-            email,
-            user,
-          },
-          trx
-        )
-        break
+      // case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
+      //   await require('./EstateCurrentTenantService').acceptOutsideTenant(
+      //     {
+      //       data1,
+      //       data2,
+      //       email,
+      //       user,
+      //     },
+      //     trx
+      //   )
+      //   break
     }
   }
 
@@ -554,12 +555,16 @@ class UserService {
     if (user.role !== ROLE_USER) {
       throw new AppException(INVALID_USER_ROLE)
     }
-    const tenant = await Tenant.query().where('user_id', user.id).first()
-    if (tenant) {
-      return tenant
-    }
+    try {
+      const tenant = await Tenant.query().where('user_id', user.id).first()
+      if (tenant) {
+        return tenant
+      }
 
-    return Tenant.createItem({ user_id: user.id }, trx)
+      return Tenant.create({ user_id: user.id }, trx)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500, e.code || 0)
+    }
   }
 
   /**

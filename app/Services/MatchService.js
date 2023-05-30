@@ -1600,7 +1600,7 @@ class MatchService {
     }
 
     if (existingMatch) {
-      await Database.table('matches')
+      await Match.query()
         .update({
           status: MATCH_STATUS_FINISH,
           final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
@@ -1612,14 +1612,10 @@ class MatchService {
         })
         .transacting(trx)
     } else {
-      await Database.table('matches')
-        .insert({
-          user_id: user.id,
-          estate_id: estate_id,
-          percent: 0,
-          status: MATCH_STATUS_FINISH,
-        })
-        .transacting(trx)
+      await Match.createItem(
+        { user_id: user.id, estate_id: estate_id, percent: 0, status: MATCH_STATUS_FINISH },
+        trx
+      )
     }
 
     await EstateService.rented(estate_id, trx)
@@ -3112,7 +3108,7 @@ class MatchService {
         Database.raw(`
         (select estate_id, json_agg(option_id) as options
         from amenities where type='amenity' and location in
-        ('building', 'apartment', 'vicinity') group by estate_id) as amenities
+        ('build', 'apt', 'out') group by estate_id) as amenities
         `),
         function () {
           this.on('amenities.estate_id', 'estates.id')

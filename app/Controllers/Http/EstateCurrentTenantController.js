@@ -12,6 +12,7 @@ class EstateCurrentTenantController {
     const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
       data,
       estate_id,
+      user_id: auth.user.id,
     })
     response.res(estateCurrentTenant)
   }
