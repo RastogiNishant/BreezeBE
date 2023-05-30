@@ -121,6 +121,7 @@ class PropertyController {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
+      .with('estateSyncListings')
       .with('files')
       .with('point')
       .first()
@@ -131,6 +132,7 @@ class PropertyController {
   }
 
   async publishEstate(id, publishers) {
+    const estate = await EstateService.getById(id)
     if (
       [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
       estate.letting_type !== LETTING_TYPE_LET
@@ -235,12 +237,12 @@ class PropertyController {
 
   async updatePublishStatus({ request, response }) {
     const { ids, action, publishers, id } = request.all()
-
-    const estate = await EstateService.getById(id)
-    if (!estate) {
-      throw new HttpException('Estate not found', 400, 113214)
+    if (id) {
+      const estate = await EstateService.getById(id)
+      if (!estate) {
+        throw new HttpException('Estate not found', 400, 113214)
+      }
     }
-
     const trx = await Database.beginTransaction()
     let ret
     switch (action) {
@@ -259,7 +261,7 @@ class PropertyController {
       case UNPUBLISH_PROPERTY:
         try {
           await EstateService.unpublishBulkEstates(ids)
-          return response.res(ids)
+          return response.res(ids.length)
         } catch (error) {
           await trx.rollback()
           throw new HttpException(error.message, 422)
