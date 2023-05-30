@@ -95,7 +95,7 @@ class MatchController {
    * Knock to estate
    */
   async knockEstate({ request, auth, response }) {
-    const { estate_id, knock_anyway, share_profile } = request.all()
+    const { estate_id, knock_anyway, share_profile, buddy } = request.all()
     const estate = await this.getActiveEstate(estate_id, false)
     if (!estate.is_not_show && share_profile) {
       throw new HttpException(UNSECURE_PROFILE_SHARE, 400, WARNING_UNSECURE_PROFILE_SHARE)
@@ -106,6 +106,7 @@ class MatchController {
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
+        buddy,
       })
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
