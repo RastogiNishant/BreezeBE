@@ -2250,6 +2250,26 @@ class MatchService {
     return data
   }
 
+  static async getUserToChat({ user_id, estate_id, role }) {
+    let query = Match.query()
+      .select('_e.user_id as estate_user_id')
+      .select('matches.user_id as tenant_user_id')
+      .where('status', '>=', MATCH_STATUS_TOP)
+      .where('estate_id', estate_id)
+
+    if (role === ROLE_LANDLORD) {
+      query
+        .innerJoin({ _e: 'estates' })
+        .on('_e.id', 'matches.estate_id')
+        .on('_e.user_id', user_id)
+        .onNotIn('_e.status', [STATUS_DELETE])
+    } else {
+      query.where('user_id', user_id)
+    }
+
+    return await query.first()
+  }
+
   static async getTenantCommitsCount(userId, estateIds) {
     const data = await Database.table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_COMMIT, share: true })
