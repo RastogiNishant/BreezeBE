@@ -485,7 +485,9 @@ class EstateService {
    *
    */
   static async getActiveById(id, conditions = {}) {
-    const query = Estate.query().where({ id }).whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+    const query = Estate.query()
+      .where({ id })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
     if (!isEmpty(conditions)) {
       query.where(conditions)
     }

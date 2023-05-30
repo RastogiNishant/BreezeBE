@@ -462,7 +462,7 @@ class MatchService {
       return 0
     }
     log('\n\n')
-    return ((scoreTPer + scoreLPer) / 2) * 100
+    return parseFloat((((scoreTPer + scoreLPer) / 2) * 100).toFixed(2))
   }
 
   /**
