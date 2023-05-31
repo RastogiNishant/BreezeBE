@@ -912,7 +912,14 @@ class MatchService {
 
     const match = await Database.query()
       .table('matches')
-      .where({ estate_id: estateId, user_id: userId, status: MATCH_STATUS_KNOCK })
+      .where({ estate_id: estateId, user_id: userId })
+      .where(function () {
+        this.orWhere('status', MATCH_STATUS_KNOCK)
+        this.orWhere(function () {
+          this.where('status', MATCH_STATUS_NEW)
+          this.where('buddy', true)
+        })
+      })
       .first()
 
     if (!match) {

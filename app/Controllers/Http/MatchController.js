@@ -137,7 +137,6 @@ class MatchController {
     const { estate_id, user_id } = request.all()
     // Check is estate owner
     const estate = await this.getOwnEstate(estate_id, landlordId)
-
     try {
       await MatchService.inviteKnockedUser(estate, user_id)
       logEvent(
