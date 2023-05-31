@@ -85,6 +85,7 @@ const {
   MATCH_PERCENT_PASS,
   WEBSOCKET_EVENT_MATCH_CREATED,
   STATUS_OFFLINE_ACTIVE,
+  TASK_SYSTEM_TYPE,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -1961,7 +1962,15 @@ class MatchService {
     } else if (top) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
-        .select('_u.avatar', '_u.firstname', '_u.secondname')
+        .leftJoin({ _t: 'tasks' }, function () {
+          this.on('_t.tenant_id', '_m.user_id')
+            .on('_t.estate_id', '_m.estate_id')
+            .on('_t.type', TASK_SYSTEM_TYPE)
+            .on('unread_role', ROLE_USER)
+            .on('unread_count', '>', 0)
+        })
+        .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+        .select('_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .where({ '_m.status': MATCH_STATUS_TOP, share: true })
         .clearOrder()
         .orderBy([
@@ -1971,12 +1980,30 @@ class MatchService {
     } else if (commit) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
-        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
+        .leftJoin({ _t: 'tasks' }, function () {
+          this.on('_t.tenant_id', '_m.user_id')
+            .on('_t.estate_id', '_m.estate_id')
+            .on('_t.type', TASK_SYSTEM_TYPE)
+            .on('unread_role', ROLE_USER)
+            .on('unread_count', '>', 0)
+        })
+        .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+
+        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .whereIn('_m.status', [MATCH_STATUS_COMMIT])
         .where('_m.share', true)
     } else if (final) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
+        .leftJoin({ _t: 'tasks' }, function () {
+          this.on('_t.tenant_id', '_m.user_id')
+            .on('_t.estate_id', '_m.estate_id')
+            .on('_t.type', TASK_SYSTEM_TYPE)
+            .on('unread_role', ROLE_USER)
+            .on('unread_count', '>', 0)
+        })
+        .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .withCount('tenant_has_unread_task')
         .withCount('all_tasks')
