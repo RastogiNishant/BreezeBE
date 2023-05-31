@@ -25,6 +25,8 @@ class Task extends Model {
       'property_address',
       'address_detail',
       'landlord_identify_key',
+      'landlord_id',
+      'type',
       'due_date',
     ]
   }
