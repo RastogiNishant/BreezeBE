@@ -707,7 +707,7 @@ class MatchService {
       like: getLikes(),
     })
 
-    if (!match && !like && !knock_anyway) {
+    if (!match && !like && !knock_anyway && !share_profile) {
       throw new AppException('Not allowed', 400)
     }
 
