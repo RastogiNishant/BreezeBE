@@ -946,7 +946,7 @@ class MatchService {
       estate_id: estateId,
     })
     await NoticeService.userInvite(estateId, userId)
-    await this.sendFullInvitationNotification({ estate })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
@@ -961,10 +961,10 @@ class MatchService {
 
   static async sendFullInvitationNotification({ estate }) {
     const estateId = estate.id
-    const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
-    const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
+    // const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+    // const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
     const invitedCount = (await this.matchCount([MATCH_STATUS_INVITE], [estateId]))[0].count
-    if ((estate?.min_invite_count || 0) >= invitedCount && !timeSlotCount) {
+    if ((estate?.min_invite_count || 0) >= invitedCount) {
       await NoticeService.sendFullInvitation({
         user_id: estate.user_id,
         estateId: estate.id,
