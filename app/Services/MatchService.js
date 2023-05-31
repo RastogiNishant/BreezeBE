@@ -670,7 +670,7 @@ class MatchService {
    * Try to knock to estate
    */
   static async knockEstate(
-    { estate_id, user_id, share_profile, knock_anyway, buddy = false },
+    { estate_id, user_id, landlord_id, share_profile, knock_anyway, buddy = false },
     trx
   ) {
     const query = Tenant.query().where({ user_id })
@@ -758,6 +758,14 @@ class MatchService {
         }
         await Match.createItem(newMatch, trx)
       }
+
+      if (newMatch?.status === MATCH_STATUS_TOP) {
+        await require('./TaskService').createGlobalTask(
+          { tenantId: user_id, landlordId: landlord_id, estateId: estate_id },
+          trx
+        )
+      }
+
       await Dislike.query()
         .where('user_id', user_id)
         .where('estate_id', estate_id)

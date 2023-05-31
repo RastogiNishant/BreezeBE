@@ -100,6 +100,7 @@ class MatchController {
     try {
       const result = await MatchService.knockEstate({
         estate_id: estate_id,
+        landlord_id: estate.user_id,
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
