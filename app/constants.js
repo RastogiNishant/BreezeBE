@@ -662,6 +662,7 @@ const constants = {
     'knocked_at',
     'action_at',
     'is_not_show',
+    'unread_count',
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
