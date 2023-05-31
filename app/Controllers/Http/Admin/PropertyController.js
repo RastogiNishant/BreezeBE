@@ -40,7 +40,10 @@ const {
 
 class PropertyController {
   async getProperties({ request, response }) {
-    let { activation_status, user_status, estate_status, id } = request.all()
+    let { activation_status, user_status, estate_status, id, page, limit } = request.all()
+    console.log({ page, limit })
+    page = page || 1
+    limit = limit || 50
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -89,8 +92,10 @@ class PropertyController {
     if (id) {
       query.where('id', id)
     }
-    let estates = await query.fetch()
-    estates = estates.toJSON().map((estate) => {
+    let estates = await query.paginate(page, limit)
+    let pages = estates.pages
+    estates = estates.rows.map((estate) => {
+      estate = estate.toJSON()
       estate.invite_count =
         parseInt(estate['__meta__'].knocked_count) +
         parseInt(estate['__meta__'].inviteBuddies_count)
@@ -98,7 +103,7 @@ class PropertyController {
       estate.final_match_count = parseInt(estate['__meta__'].final_count)
       return estate
     })
-    return response.res(estates)
+    return response.res({ estates, pages })
   }
 
   async getSingle({ request, response }) {

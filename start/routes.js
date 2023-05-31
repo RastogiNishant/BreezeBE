@@ -152,6 +152,7 @@ Route.group(() => {
   //estates
   Route.get('/estates', 'Admin/PropertyController.getProperties').middleware([
     'auth:jwtAdministrator',
+    'pagination',
   ])
   Route.put('/estates/publish-status', 'Admin/PropertyController.updatePublishStatus').middleware([
     'auth:jwtAdministrator',
