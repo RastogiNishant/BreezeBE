@@ -36,7 +36,7 @@ const {
 const HttpException = require('../Exceptions/HttpException')
 
 const {
-  exceptions: { NO_TASK_FOUND },
+  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST },
 } = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
@@ -87,6 +87,14 @@ class TaskService extends BaseService {
   }
 
   static async createGlobalTask({ tenantId, landlordId, estateId }, trx) {
+    if (!landlordId) {
+      const estate = await require('./EstateService').getById(estateId)
+      if (!estate) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+      landlordId = estate.user_id
+    }
+
     const systemTask = await Task.query()
       .where('tenant_id', tenantId)
       .where('estate_id', estateId)
