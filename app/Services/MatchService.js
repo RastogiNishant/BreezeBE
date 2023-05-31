@@ -1960,6 +1960,8 @@ class MatchService {
         ])
     } else if (top) {
       query
+        .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
+        .select('_u.avatar', '_u.firstname', '_u.secondname')
         .where({ '_m.status': MATCH_STATUS_TOP, share: true })
         .clearOrder()
         .orderBy([
