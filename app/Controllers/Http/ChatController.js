@@ -17,7 +17,6 @@ class ChatController {
     const task = await TaskService.getTaskById({
       id: data.task_id,
       estate_id: data.estate_id,
-      prospec_id: data.prospec_id,
       user: auth.user,
     })
 
