@@ -2,6 +2,7 @@
 const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const HttpException = use('App/Exceptions/HttpException')
+const { ROLE_LANDLORD } = require('../../constants')
 const {
   exceptions: { NO_TASK_FOUND },
 } = require('../../exceptions')
@@ -17,6 +18,7 @@ class ChatController {
     const task = await TaskService.getTaskById({
       id: data.task_id,
       estate_id: data.estate_id,
+      prospect_id: auth.user.role === ROLE_LANDLORD ? data.prospect_id : auth.user.id,
       user: auth.user,
     })
 

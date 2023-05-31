@@ -23,6 +23,13 @@ class TaskId extends Base {
         then: id.required(),
         otherwise: yup.number().nullable(),
       }),
+      prospect_id: yup.number().when(['type'], {
+        is: (type) => {
+          return type === TASK_SYSTEM_TYPE
+        },
+        then: id.required(),
+        otherwise: yup.number().nullable(),
+      }),
     })
 }
 

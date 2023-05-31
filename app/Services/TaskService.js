@@ -366,7 +366,7 @@ class TaskService extends BaseService {
     }
   }
 
-  static async getTaskById({ id, estate_id, user }) {
+  static async getTaskById({ id, estate_id, prospect_id, user }) {
     let taskQuery = Task.query()
 
     if (id) {
@@ -375,7 +375,7 @@ class TaskService extends BaseService {
       if (user.role === ROLE_LANDLORD) {
         taskQuery.where('landlord_id', user.id)
       } else {
-        taskQuery.where('tenant_id', user.id)
+        taskQuery.where('tenant_id', prospect_id || user.id)
       }
     }
 
