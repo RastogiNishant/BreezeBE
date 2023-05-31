@@ -2455,6 +2455,17 @@ class MatchService {
       query.whereIn('_m.status', [MATCH_STATUS_FINISH])
     }
 
+    if (top || commit || final) {
+      query.leftJoin({ _t: 'tasks' }, function () {
+        this.on('_t.tenant_id', '_m.user_id')
+          .on('_t.estate_id', '_m.estate_id')
+          .on('_t.estate_id', estate.id)
+          .on('_t.type', TASK_SYSTEM_TYPE)
+          .on('unread_role', ROLE_LANDLORD)
+          .on('unread_count', '>', 0)
+      })
+    }
+
     if (params?.user_id) {
       query.where('_m.user_id', params.user_id)
     }
@@ -2730,7 +2741,9 @@ class MatchService {
         as submitted_proofs
         `)
       )
-
+    if (top || commit || final) {
+      query.select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+    }
     query.select(
       '_mb.firstname',
       '_mb.secondname',
