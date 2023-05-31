@@ -962,7 +962,6 @@ class MatchService {
 
   static async sendKnockedReachedNotification() {
     try {
-      console.log('======sendKnockedReachedNotification=============')
       const estates = (
         await Estate.query()
           .select(
