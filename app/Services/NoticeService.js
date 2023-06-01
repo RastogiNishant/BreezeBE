@@ -515,13 +515,16 @@ class NoticeService {
   /*
    * user_id is landlord id
    */
-  static async sendFullInvitation({ user_id, estateId, count }) {
-    const estate = await Database.table({ _e: 'estates' })
-      .select('address', 'id', 'cover', 'user_id')
-      .where('id', estateId)
-      .first()
+  static async sendFullInvitation({ user_id, estateId, estate, count }) {
+    if (!estate) {
+      estate = await Database.table({ _e: 'estates' })
+        .select('address', 'id', 'cover', 'user_id')
+        .where('id', estateId)
+        .first()
+    }
+
     const notice = {
-      user_id,
+      user_id: estate.user_id,
       type: NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
       data: {
         estate_id: estate.id,
