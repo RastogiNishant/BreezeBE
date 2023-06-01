@@ -36,7 +36,7 @@ const {
 const HttpException = require('../Exceptions/HttpException')
 
 const {
-  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST },
+  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST, WRONG_PARAMS },
 } = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
@@ -373,9 +373,13 @@ class TaskService extends BaseService {
       taskQuery.where('id', id)
     } else {
       if (user.role === ROLE_LANDLORD) {
+        if (!prospect_id) {
+          throw new HttpException(WRONG_PARAMS, 400)
+        }
         taskQuery.where('landlord_id', user.id)
+        taskQuery.where('tenant_id', prospect_id)
       } else {
-        taskQuery.where('tenant_id', prospect_id || user.id)
+        taskQuery.where('tenant_id', user.id)
       }
     }
 
