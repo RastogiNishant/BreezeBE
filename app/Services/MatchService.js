@@ -1012,14 +1012,17 @@ class MatchService {
       return
     }
     let isNotificationSent = false
+    let invitedCount = 0
     if (matches[0].notify_on_green_matches) {
       // if red match is accpeted
       const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
+      invitedCount = greenMatchCount
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= greenMatchCount) {
         isNotificationSent = true
       }
     } else {
       // if only green matches knocks accpeted
+      invitedCount = matches.length
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= matches.length) {
         isNotificationSent = true
       }
