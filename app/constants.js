@@ -432,7 +432,7 @@ const constants = {
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
-  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB: 'scheduledEvery10MinuteNightJob',
+  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB: 'scheduledEvery15MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
   SCHEDULED_9H_DAY_JOB: 'scheduledEveryDay9H',
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
@@ -981,7 +981,7 @@ const constants = {
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
   WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
-  MATCH_SCORE_GOOD_MATCH: 70,
+  MATCH_SCORE_GOOD_MATCH: 90,
 
   IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_TYPE_OPENIMMO: 'openimmo',

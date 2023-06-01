@@ -12,7 +12,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_MONTHLY_JOB,
-  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
 } = require('../constants')
 const COMMON_QUEUE = 'common'
 
@@ -114,10 +114,10 @@ class QueueEngine {
       .catch(Logger.error)
 
     this.commonQueue.add(
-      SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+      SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
       {},
       {
-        jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+        jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
         repeat: { cron: '*/15 * * * *' },
         removeOnComplete: true,
         removeOnFail: true,
