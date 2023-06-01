@@ -1629,12 +1629,7 @@ class EstateService {
     )
   }
   static async unpublishEstate(estate) {
-    if (
-      !(
-        estate.publish_status === PUBLISH_STATUS_BY_LANDLORD ||
-        estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN
-      )
-    ) {
+    if (estate.status !== STATUS_ACTIVE) {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
 
@@ -2928,6 +2923,14 @@ class EstateService {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
+  }
+
+  static async updateSentNotification(estate, notification_id) {
+    const notify_sent = (estate.notify_sent || []).concat([notification_id])
+    console.log('notify_sent estate=', estate)
+    console.log(`notify_sent ${notification_id}=`, notify_sent)
+    await Estate.query().where('id', estate.id).update({ notify_sent })
+    console.log('updateSentNotification= end')
   }
 }
 module.exports = EstateService

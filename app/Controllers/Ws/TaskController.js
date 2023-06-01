@@ -104,18 +104,23 @@ class TaskController extends BaseController {
   }
 
   async onMarkLastRead() {
-    const lastChat = await super._markLastRead(this.taskId)
-    if (lastChat) {
-      this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
-        topic: this.socket.topic,
-        chat: {
-          id: lastChat.id,
-          user: lastChat.sender_id,
-          created_at: lastChat.created_at,
-        },
-      })
-    } else {
-      this.emitError(MESSAGE_NOT_SAVED)
+    try {
+      const lastChat = await super._markLastRead(this.taskId)
+      if (lastChat) {
+        this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
+          topic: this.socket.topic,
+          chat: {
+            id: lastChat.id,
+            user: lastChat.sender_id,
+            created_at: lastChat.created_at,
+          },
+        })
+      } else {
+        this.emitError(MESSAGE_NOT_SAVED)
+      }
+    } catch (e) {
+      Logger.error(`onMarkLastRead error ${e.message || e}`)
+      this.emitError(e.message || e)
     }
   }
 
@@ -149,7 +154,7 @@ class TaskController extends BaseController {
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       super.onMessage(message)
     } catch (e) {
-      console.log('onMessage error=', e.message)
+      Logger.error('onMessage error=', e.message)
       this.emitError(e.message || MESSAGE_NOT_SAVED)
     }
   }

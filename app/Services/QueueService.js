@@ -28,7 +28,7 @@ const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotK
 const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
 const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const {
-  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
@@ -137,10 +137,11 @@ class QueueService {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
 
-  static async doEvery10MinAtNight() {
+  static async doEvery15MinsJob() {
     return Promise.all([
       wrapException(QueueJobService.updateThirdPartyOfferPoints),
       wrapException(QueueJobService.fillMissingEstateInfo),
+      wrapException(require('./MatchService').sendKnockedReachedNotification),
     ])
   }
 
@@ -149,20 +150,24 @@ class QueueService {
   }
 
   static createThirdPartyMatchesByEstate() {
-    Queue.addJob(
-      QUEUE_CREATE_THIRD_PARTY_MATCHES,
-      {},
-      {
-        removeOnComplete: true,
-        removeOnFail: true,
-        attempts: 3,
-        delay: 1,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
-        },
-      }
-    )
+    try {
+      Queue.addJob(
+        QUEUE_CREATE_THIRD_PARTY_MATCHES,
+        {},
+        {
+          removeOnComplete: true,
+          removeOnFail: true,
+          attempts: 3,
+          delay: 1,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        }
+      )
+    } catch (e) {
+      Logger.error(`createThirdPartyMatchesByEstate error ${e.message || e}`)
+    }
   }
 
   /**
@@ -234,23 +239,31 @@ class QueueService {
   }
 
   static async addJobFetchPOI() {
-    const job = await Queue.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
-    job?.remove()
-    await Queue.addJob(
-      SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-      {},
-      {
-        jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/15 * * * *' },
-        removeOnComplete: true,
-        removeOnFail: true,
-      }
-    )
+    try {
+      const job = await Queue.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+      job?.remove()
+      await Queue.addJob(
+        SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+        {},
+        {
+          jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+          repeat: { cron: '*/15 * * * *' },
+          removeOnComplete: true,
+          removeOnFail: true,
+        }
+      )
+    } catch (e) {
+      Logger.error(`addJobFetchPOI error ${e.message || e}`)
+    }
   }
 
   static async removeJobFetchPOI() {
-    const job = await Queue?.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
-    job?.remove()
+    try {
+      const job = await Queue?.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+      job?.remove()
+    } catch (e) {
+      Logger.error(`removeJobFetchPOI error ${e.message || e}`)
+    }
   }
   /**
    *
@@ -292,8 +305,8 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
-        case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
-          return QueueService.doEvery10MinAtNight()
+        case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
+          return QueueService.doEvery15MinsJob()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:

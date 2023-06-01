@@ -1,8 +1,8 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection, countBy } = require('lodash')
+const { get, isNumber, isEmpty, intersection, countBy, groupBy } = require('lodash')
 const { props } = require('bluebird')
-
+const Promise = require('bluebird')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
@@ -86,6 +86,7 @@ const {
   WEBSOCKET_EVENT_MATCH_CREATED,
   STATUS_OFFLINE_ACTIVE,
   TASK_SYSTEM_TYPE,
+  NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -946,7 +947,7 @@ class MatchService {
       estate_id: estateId,
     })
     await NoticeService.userInvite(estateId, userId)
-    await this.sendFullInvitationNotification({ estate })
+
     this.emitMatch({
       data: {
         estate_id: estateId,
@@ -959,15 +960,80 @@ class MatchService {
     MatchService.inviteEmailToProspect({ estateId, userId })
   }
 
-  static async sendFullInvitationNotification({ estate }) {
-    const estateId = estate.id
-    const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
-    const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
-    const invitedCount = (await this.matchCount([MATCH_STATUS_INVITE], [estateId]))[0].count
-    if ((estate?.min_invite_count || 0) >= invitedCount && !timeSlotCount) {
-      await NoticeService.sendFullInvitation({
-        user_id: estate.user_id,
-        estateId: estate.id,
+  static async sendKnockedReachedNotification() {
+    try {
+      const estates = (
+        await Estate.query()
+          .select(
+            'estates.id',
+            'estates.min_invite_count',
+            'estates.address',
+            'estates.cover',
+            'estates.user_id',
+            'estates.notify_on_green_matches',
+            'estates.notify_sent'
+          )
+          .select('_m.percent')
+          .where('estates.status', STATUS_ACTIVE)
+          .innerJoin({ _m: 'matches' }, function () {
+            this.on('_m.estate_id', 'estates.id')
+          })
+          .whereNotNull('estates.min_invite_count')
+          .where('estates.min_invite_count', '>', 0)
+          .where(function () {
+            this.orWhereNull('estates.notify_sent')
+            this.orWhereNot(
+              Database.raw(
+                `${NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID} = any(estates.notify_sent)`
+              )
+            )
+          })
+          .where(function () {
+            this.orWhere('_m.status', MATCH_STATUS_KNOCK)
+            this.orWhere(function () {
+              this.where('_m.status', MATCH_STATUS_NEW)
+              this.where('_m.buddy', true)
+            })
+          })
+          .fetch()
+      ).toJSON()
+
+      const groupedEstates = groupBy(estates, (estate) => estate.id)
+      await Promise.map(Object.keys(groupedEstates) || [], async (id) => {
+        await this.sendFullInvitationNotification(groupedEstates[id])
+      })
+    } catch (e) {
+      console.log('sendKnockedReachedNotification error', e.message)
+    }
+  }
+
+  static async sendFullInvitationNotification(matches) {
+    if (!matches?.length) {
+      return
+    }
+    let isNotificationSent = false
+    if (matches[0].notify_on_green_matches) {
+      // if red match is accpeted
+      const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
+      if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= greenMatchCount) {
+        isNotificationSent = true
+      }
+    } else {
+      // if only green matches knocks accpeted
+      if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= matches.length) {
+        isNotificationSent = true
+      }
+    }
+
+    if (isNotificationSent) {
+      await require('./EstateService').updateSentNotification(
+        matches[0],
+        NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID
+      )
+
+      NoticeService.sendFullInvitation({
+        user_id: matches[0].user_id,
+        estate: matches[0],
         count: invitedCount,
       })
     }
@@ -1385,6 +1451,14 @@ class MatchService {
   static async matchCount(status = [MATCH_STATUS_KNOCK], estatesId) {
     return await Database.table('matches')
       .whereIn('status', status)
+      .whereIn('estate_id', estatesId)
+      .count('*')
+  }
+
+  static async buddyInvitationCount(estateId) {
+    return await Database.table('matches')
+      .whereIn('status', MATCH_STATUS_NEW)
+      .where('buddy', true)
       .whereIn('estate_id', estatesId)
       .count('*')
   }

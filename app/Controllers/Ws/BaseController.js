@@ -7,6 +7,7 @@ const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
 const Database = use('Database')
+const Logger = use('Logger')
 const {
   exceptions: { MESSAGE_NOT_SAVED },
 } = require('../../exceptions')
@@ -117,9 +118,9 @@ class BaseController {
 
   emitError(message) {
     try {
-      this.topic.emitTo('error', { message }, [this.socket.id])
+      this.topic?.emitTo('error', { message }, [this.socket.id])
     } catch (e) {
-      console.log(e)
+      Logger.error(`BaseController emitError ${e.message || e}`)
     }
   }
 
@@ -147,7 +148,8 @@ class BaseController {
       return chat
     } catch (e) {
       await trx.rollback()
-      this.emitError(chat.message || MESSAGE_NOT_SAVED)
+      Logger.error(`SaveToChats error ${e.message || e}`)
+      this.emitError(MESSAGE_NOT_SAVED)
     }
     return null
   }
@@ -171,38 +173,42 @@ class BaseController {
   }
 
   async getAbsoluteUrl(attachments) {
-    if (!attachments || !attachments.length) {
-      return null
-    }
-    if (!Array.isArray(attachments)) attachments = JSON.parse(attachments)
-    attachments = await Promise.all(
-      attachments.map(async (attachment) => {
-        const thumb =
-          attachment.split('/').length === 2
-            ? await File.getProtectedUrl(
-                `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
-              )
-            : ''
-        if (attachment.search('http') !== 0) {
+    try {
+      if (!attachments || !attachments.length) {
+        return null
+      }
+      if (!Array.isArray(attachments)) attachments = JSON.parse(attachments)
+      attachments = await Promise.all(
+        attachments.map(async (attachment) => {
+          const thumb =
+            attachment.split('/').length === 2
+              ? await File.getProtectedUrl(
+                  `thumbnail/${attachment.split('/')[0]}/thumb_${attachment.split('/')[1]}`
+                )
+              : ''
+          if (attachment.search('http') !== 0) {
+            return {
+              url: await File.getProtectedUrl(attachment),
+              uri: attachment,
+              thumb: thumb,
+            }
+          }
+
           return {
-            url: await File.getProtectedUrl(attachment),
+            url: attachment,
             uri: attachment,
             thumb: thumb,
           }
-        }
-
-        return {
-          url: attachment,
-          uri: attachment,
-          thumb: thumb,
-        }
-      })
-    )
-
-    return attachments
+        })
+      )
+      return attachments
+    } catch (e) {
+      console.log(`getAbsoluteUrl ${e.message || e}`)
+    }
   }
+
   async getItemsWithAbsoluteUrl(items) {
-    if (!items || !items.length) {
+    if (!items?.length) {
       return null
     }
 
