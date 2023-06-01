@@ -1213,7 +1213,7 @@ class NoticeService {
     await NotificationsService.notifyDeactivatingLandlordsInTwoDays(notices)
   }
 
-  static async notifyTaskMessageSent(recipient_id, message, task, myRole) {
+  static async notifyTaskMessageSent(recipient_id, message, task_id, myRole) {
     let type = NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE_ID
     if (myRole == ROLE_USER) {
       type = NOTICE_TYPE_TENANT_SENT_TASK_MESSAGE_ID
