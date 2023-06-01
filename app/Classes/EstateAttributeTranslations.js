@@ -272,7 +272,6 @@ class EstateAttributeTranslations {
     rent_arrears: reverseBool,
     available_date: reverseExtractDate,
     from_date: reverseExtractDate,
-    furnished: reverseBool,
     vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
     contract_end: reverseExtractDate,
@@ -457,7 +456,6 @@ class EstateAttributeTranslations {
     rent_arrears: toBool,
     available_date: extractDate,
     from_date: extractDate,
-    furnished: toBool,
     vacant_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
@@ -1019,6 +1017,7 @@ class EstateAttributeTranslations {
   getMap() {
     const dataMap = this.dataMap
     let keyValue
+    console.log('getMap here=', dataMap)
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
