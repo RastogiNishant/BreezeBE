@@ -1629,12 +1629,7 @@ class EstateService {
     )
   }
   static async unpublishEstate(estate) {
-    if (
-      !(
-        estate.publish_status === PUBLISH_STATUS_BY_LANDLORD ||
-        estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN
-      )
-    ) {
+    if (estate.status !== STATUS_ACTIVE) {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
 
