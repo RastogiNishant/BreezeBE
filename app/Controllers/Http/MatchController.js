@@ -100,6 +100,7 @@ class MatchController {
     try {
       const result = await MatchService.knockEstate({
         estate_id: estate_id,
+        landlord_id: estate.user_id,
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
@@ -137,7 +138,6 @@ class MatchController {
     const { estate_id, user_id } = request.all()
     // Check is estate owner
     const estate = await this.getOwnEstate(estate_id, landlordId)
-
     try {
       await MatchService.inviteKnockedUser(estate, user_id)
       logEvent(
@@ -440,7 +440,11 @@ class MatchController {
     const { user_id, estate_id } = request.all()
     try {
       await this.getOwnEstate(estate_id, auth.user.id)
-      const success = await MatchService.toTop(estate_id, user_id)
+      const success = await MatchService.toTop({
+        estateId: estate_id,
+        tenantId: user_id,
+        landlordId: auth.user.id,
+      })
       if (!success) {
         throw new HttpException('Cant move to top', 400)
       }
@@ -910,6 +914,7 @@ class MatchController {
       'u_birthday',
       'u_avatar',
       'final_match_date',
+      'unread_count',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(

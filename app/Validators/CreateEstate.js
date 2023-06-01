@@ -678,6 +678,7 @@ class CreateEstate extends Base {
             ])
         ),
       is_not_show: yup.boolean().nullable(),
+      notify_on_green_matches: yup.boolean().nullable(),
     })
 }
 
