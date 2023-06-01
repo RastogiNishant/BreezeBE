@@ -85,6 +85,7 @@ const {
   MATCH_PERCENT_PASS,
   WEBSOCKET_EVENT_MATCH_CREATED,
   STATUS_OFFLINE_ACTIVE,
+  TASK_SYSTEM_TYPE,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -670,7 +671,7 @@ class MatchService {
    * Try to knock to estate
    */
   static async knockEstate(
-    { estate_id, user_id, share_profile, knock_anyway, buddy = false },
+    { estate_id, user_id, landlord_id, share_profile, knock_anyway, buddy = false },
     trx
   ) {
     const query = Tenant.query().where({ user_id })
@@ -707,7 +708,7 @@ class MatchService {
       like: getLikes(),
     })
 
-    if (!match && !like && !knock_anyway) {
+    if (!match && !like && !knock_anyway && !share_profile) {
       throw new AppException('Not allowed', 400)
     }
 
@@ -758,6 +759,14 @@ class MatchService {
         }
         await Match.createItem(newMatch, trx)
       }
+
+      if (newMatch?.status === MATCH_STATUS_TOP) {
+        await require('./TaskService').createGlobalTask(
+          { tenantId: user_id, landlordId: landlord_id, estateId: estate_id },
+          trx
+        )
+      }
+
       await Dislike.query()
         .where('user_id', user_id)
         .where('estate_id', estate_id)
@@ -912,7 +921,14 @@ class MatchService {
 
     const match = await Database.query()
       .table('matches')
-      .where({ estate_id: estateId, user_id: userId, status: MATCH_STATUS_KNOCK })
+      .where({ estate_id: estateId, user_id: userId })
+      .where(function () {
+        this.orWhere('status', MATCH_STATUS_KNOCK)
+        this.orWhere(function () {
+          this.where('status', MATCH_STATUS_NEW)
+          this.where('buddy', true)
+        })
+      })
       .first()
 
     if (!match) {
@@ -1376,27 +1392,39 @@ class MatchService {
   /**
    *
    */
-  static async toTop(estateId, tenantId) {
-    const result = await Database.table('matches')
-      .update({ status: MATCH_STATUS_TOP })
-      .where({
-        user_id: tenantId,
-        estate_id: estateId,
-        share: true,
-      })
-      .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+  static async toTop({ estateId, tenantId, landlordId }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const topMatch = await Match.query()
+        .update({ status: MATCH_STATUS_TOP })
+        .where('user_id', tenantId)
+        .where('estate_id', estateId)
+        .where('share', true)
+        .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+        .transacting(trx)
 
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: tenantId,
-        old_status: MATCH_STATUS_SHARE,
-        share: true,
-        status: MATCH_STATUS_TOP,
-      },
-      role: ROLE_USER,
-    })
-    return result
+      if (topMatch) {
+        await require('./TaskService').createGlobalTask({ tenantId, landlordId, estateId }, trx)
+      } else {
+        throw new HttpException('No record found', 400)
+      }
+
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: tenantId,
+          old_status: MATCH_STATUS_SHARE,
+          share: true,
+          status: MATCH_STATUS_TOP,
+        },
+        role: ROLE_USER,
+      })
+      await trx.commit()
+      return topMatch
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   static async cancelTopByTenant(estateId, tenantId) {
@@ -1933,6 +1961,16 @@ class MatchService {
         ])
     } else if (top) {
       query
+        .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
+        .leftJoin({ _t: 'tasks' }, function () {
+          this.on('_t.tenant_id', '_m.user_id')
+            .on('_t.estate_id', '_m.estate_id')
+            .on('_t.type', TASK_SYSTEM_TYPE)
+            .on('unread_role', ROLE_USER)
+            .on('unread_count', '>', 0)
+        })
+        .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+        .select('_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .where({ '_m.status': MATCH_STATUS_TOP, share: true })
         .clearOrder()
         .orderBy([
@@ -1942,12 +1980,30 @@ class MatchService {
     } else if (commit) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
-        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname')
+        .leftJoin({ _t: 'tasks' }, function () {
+          this.on('_t.tenant_id', '_m.user_id')
+            .on('_t.estate_id', '_m.estate_id')
+            .on('_t.type', TASK_SYSTEM_TYPE)
+            .on('unread_role', ROLE_USER)
+            .on('unread_count', '>', 0)
+        })
+        .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+
+        .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .whereIn('_m.status', [MATCH_STATUS_COMMIT])
         .where('_m.share', true)
     } else if (final) {
       query
         .innerJoin({ _u: 'users' }, '_u.id', 'estates.user_id')
+        .leftJoin({ _t: 'tasks' }, function () {
+          this.on('_t.tenant_id', '_m.user_id')
+            .on('_t.estate_id', '_m.estate_id')
+            .on('_t.type', TASK_SYSTEM_TYPE)
+            .on('unread_role', ROLE_USER)
+            .on('unread_count', '>', 0)
+        })
+        .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+
         .select('_u.email', '_u.phone', '_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .withCount('tenant_has_unread_task')
         .withCount('all_tasks')
@@ -2250,6 +2306,30 @@ class MatchService {
     return data
   }
 
+  static async getUserToChat({ user_id, estate_id, role }) {
+    let query = Match.query()
+      .select('_e.user_id as estate_user_id')
+      .select('matches.user_id as tenant_user_id')
+      .where('matches.status', '>=', MATCH_STATUS_TOP)
+      .where('estate_id', estate_id)
+
+    if (role === ROLE_LANDLORD) {
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id')
+          .on('_e.user_id', user_id)
+          .onNotIn('_e.status', [STATUS_DELETE])
+      })
+    } else {
+      query.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onNotIn('_e.status', [STATUS_DELETE])
+      })
+
+      query.where('matches.user_id', user_id)
+    }
+
+    return await query.first()
+  }
+
   static async getTenantCommitsCount(userId, estateIds) {
     const data = await Database.table('matches')
       .where({ user_id: userId, status: MATCH_STATUS_COMMIT, share: true })
@@ -2373,6 +2453,17 @@ class MatchService {
       query.whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_FINISH])
     } else if (final) {
       query.whereIn('_m.status', [MATCH_STATUS_FINISH])
+    }
+
+    if (top || commit || final) {
+      query.leftJoin({ _t: 'tasks' }, function () {
+        this.on('_t.tenant_id', '_m.user_id')
+          .on('_t.estate_id', '_m.estate_id')
+          .on('_t.estate_id', estate.id)
+          .on('_t.type', TASK_SYSTEM_TYPE)
+          .on('unread_role', ROLE_LANDLORD)
+          .on('unread_count', '>', 0)
+      })
     }
 
     if (params?.user_id) {
@@ -2650,7 +2741,9 @@ class MatchService {
         as submitted_proofs
         `)
       )
-
+    if (top || commit || final) {
+      query.select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
+    }
     query.select(
       '_mb.firstname',
       '_mb.secondname',

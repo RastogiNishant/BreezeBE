@@ -18,6 +18,7 @@ const {
   TASK_STATUS_ARCHIVED,
   PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
   WEBSOCKET_EVENT_TASK_CREATED,
+  TASK_SYSTEM_TYPE,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -35,7 +36,7 @@ const {
 const HttpException = require('../Exceptions/HttpException')
 
 const {
-  exceptions: { NO_TASK_FOUND },
+  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST, WRONG_PARAMS },
 } = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
@@ -83,6 +84,38 @@ class TaskService extends BaseService {
     }
 
     return await Task.createItem(task, trx)
+  }
+
+  static async createGlobalTask({ tenantId, landlordId, estateId }, trx) {
+    if (!landlordId) {
+      const estate = await require('./EstateService').getById(estateId)
+      if (!estate) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+      landlordId = estate.user_id
+    }
+
+    const systemTask = await Task.query()
+      .where('tenant_id', tenantId)
+      .where('estate_id', estateId)
+      .where('type', TASK_SYSTEM_TYPE)
+      .first()
+
+    if (systemTask) {
+      return systemTask
+    }
+
+    return await Task.createItem(
+      {
+        creator_role: ROLE_LANDLORD,
+        tenant_id: tenantId,
+        landlord_id: landlordId,
+        title: '',
+        type: TASK_SYSTEM_TYPE,
+        estate_id: estateId,
+      },
+      trx
+    )
   }
 
   static async init(user, data) {
@@ -333,9 +366,29 @@ class TaskService extends BaseService {
     }
   }
 
-  static async getTaskById({ id, user }) {
-    let task = await Task.query()
-      .where('id', id)
+  static async getTaskById({ id, estate_id, prospect_id, user }) {
+    let taskQuery = Task.query()
+
+    if (id) {
+      taskQuery.where('id', id)
+    } else {
+      if (user.role === ROLE_LANDLORD) {
+        if (!prospect_id) {
+          throw new HttpException(WRONG_PARAMS, 400)
+        }
+        taskQuery.where('landlord_id', user.id)
+        taskQuery.where('tenant_id', prospect_id)
+      } else {
+        taskQuery.where('tenant_id', user.id)
+      }
+    }
+
+    if (estate_id) {
+      taskQuery.where('estate_id', estate_id)
+      taskQuery.where('type', TASK_SYSTEM_TYPE)
+    }
+
+    let task = await taskQuery
       .whereNot('status', TASK_STATUS_DELETE)
       .with('user', function (u) {
         u.select('id', 'avatar')
