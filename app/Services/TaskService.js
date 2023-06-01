@@ -490,7 +490,16 @@ class TaskService extends BaseService {
     }
   }
 
-  static async getAllTasks({ user_id, role, estate_id, query, status, page = -1, limit = -1 }) {
+  static async getAllTasks({
+    user_id,
+    role,
+    estate_id,
+    type,
+    query,
+    status,
+    page = -1,
+    limit = -1,
+  }) {
     let taskQuery = Task.query()
       .select('tasks.*')
       .select(
@@ -530,6 +539,10 @@ class TaskService extends BaseService {
         TASK_STATUS_DELETE,
         TASK_STATUS_DRAFT,
       ])
+    }
+
+    if (type) {
+      taskQuery.where('tasks.type', type)
     }
 
     if (estate_id) {

@@ -8,6 +8,8 @@ const {
   TASK_STATUS_INPROGRESS,
   TASK_STATUS_UNRESOLVED,
   TASK_STATUS_RESOLVED,
+  TASK_SYSTEM_TYPE,
+  TASK_COMMON_TYPE,
 } = require('../constants')
 class TenantTaskFilter extends Base {
   static schema = () =>
@@ -25,6 +27,7 @@ class TenantTaskFilter extends Base {
               TASK_STATUS_RESOLVED,
             ])
         ),
+      type: yup.number().oneOf([TASK_SYSTEM_TYPE, TASK_COMMON_TYPE]).nullable(),
       query: yup.string().min(1).nullable(),
     })
 }
