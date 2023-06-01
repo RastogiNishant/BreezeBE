@@ -239,23 +239,31 @@ class QueueService {
   }
 
   static async addJobFetchPOI() {
-    const job = await Queue.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
-    job?.remove()
-    await Queue.addJob(
-      SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
-      {},
-      {
-        jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/15 * * * *' },
-        removeOnComplete: true,
-        removeOnFail: true,
-      }
-    )
+    try {
+      const job = await Queue.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+      job?.remove()
+      await Queue.addJob(
+        SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+        {},
+        {
+          jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+          repeat: { cron: '*/15 * * * *' },
+          removeOnComplete: true,
+          removeOnFail: true,
+        }
+      )
+    } catch (e) {
+      Logger.error(`addJobFetchPOI error ${e.message || e}`)
+    }
   }
 
   static async removeJobFetchPOI() {
-    const job = await Queue?.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
-    job?.remove()
+    try {
+      const job = await Queue?.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+      job?.remove()
+    } catch (e) {
+      Logger.error(`removeJobFetchPOI error ${e.message || e}`)
+    }
   }
   /**
    *
