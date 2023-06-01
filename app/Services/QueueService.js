@@ -150,20 +150,24 @@ class QueueService {
   }
 
   static createThirdPartyMatchesByEstate() {
-    Queue.addJob(
-      QUEUE_CREATE_THIRD_PARTY_MATCHES,
-      {},
-      {
-        removeOnComplete: true,
-        removeOnFail: true,
-        attempts: 3,
-        delay: 1,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
-        },
-      }
-    )
+    try {
+      Queue.addJob(
+        QUEUE_CREATE_THIRD_PARTY_MATCHES,
+        {},
+        {
+          removeOnComplete: true,
+          removeOnFail: true,
+          attempts: 3,
+          delay: 1,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        }
+      )
+    } catch (e) {
+      Logger.error(`createThirdPartyMatchesByEstate error ${e.message || e}`)
+    }
   }
 
   /**
