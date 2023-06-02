@@ -534,7 +534,6 @@ class NoticeService {
       image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
-    console.log('sendFullNotification notice=', notice)
     NotificationsService.sendFullInvitation([notice])
   }
 
