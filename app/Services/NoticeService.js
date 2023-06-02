@@ -515,7 +515,7 @@ class NoticeService {
   /*
    * user_id is landlord id
    */
-  static async sendFullInvitation({ user_id, estateId, estate, count }) {
+  static async sendFullInvitation({ estateId, estate, count }) {
     if (!estate) {
       estate = await Database.table({ _e: 'estates' })
         .select('address', 'id', 'cover', 'user_id')
@@ -534,6 +534,7 @@ class NoticeService {
       image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
+    console.log('sendFullNotification notice=', notice)
     NotificationsService.sendFullInvitation([notice])
   }
 
