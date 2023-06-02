@@ -32,6 +32,7 @@ const {
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_ZENDESK_NOTIFY,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -124,6 +125,7 @@ const {
 
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
 } = require('../constants')
 
 const mapping = [
@@ -185,6 +187,7 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
   [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
   [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
+  [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
 ]
 
 class NotificationsService {
@@ -967,6 +970,12 @@ class NotificationsService {
   static async notifyLikedButNotKnockedToProspect(notices) {
     const title = 'prospect.notification.event.knock_reminder'
     const body = 'prospect.notification.next.knock_reminder'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async adminApprovesPublish(notices) {
+    const title = 'landlord.notification.event.property_published'
+    const body = 'landlord.notification.next.property_published'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
