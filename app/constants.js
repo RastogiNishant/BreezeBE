@@ -1178,6 +1178,7 @@ Estates: [ESTATES]
   GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL: 'anfragen@gewobag.interessentenanfragen.de',
   GEWOBAG_EMAIL_CONTENT: 'I interessiere mich für das Objekt.',
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL: 30,
+  GEWOBAG_FTP_BUCKET: 'breeze-ftp-files',
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
   THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
