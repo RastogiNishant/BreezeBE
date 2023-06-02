@@ -18,6 +18,7 @@ const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
 const heicConvert = require('heic-convert')
 const axios = require('axios')
+const { GEWOBAG_FTP_BUCKET } = require('../constants')
 const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp/uploads'
 
 class File {
@@ -392,11 +393,11 @@ class File {
         secretAccessKey: Env.get('S3_SECRET'),
         region: Env.get('S3_REGION'),
       })
-      var s3 = new AWS.S3()
-
-      var params = {
-        Bucket: 'breeze-ftp-files',
+      const s3 = new AWS.S3()
+      const params = {
+        Bucket: GEWOBAG_FTP_BUCKET,
         Delimiter: '/',
+        Prefix: 'live/',
       }
       const objects = await s3.listObjects(params).promise()
       if (!objects?.Contents) {
