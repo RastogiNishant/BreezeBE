@@ -2926,10 +2926,7 @@ class EstateService {
 
   static async updateSentNotification(estate, notification_id) {
     const notify_sent = (estate.notify_sent || []).concat([notification_id])
-    console.log('notify_sent estate=', estate)
-    console.log(`notify_sent ${notification_id}=`, notify_sent)
     await Estate.query().where('id', estate.id).update({ notify_sent })
-    console.log('updateSentNotification= end')
   }
 }
 module.exports = EstateService
