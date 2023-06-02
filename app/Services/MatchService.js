@@ -1000,7 +1000,7 @@ class MatchService {
 
       const groupedEstates = groupBy(estates, (estate) => estate.id)
       await Promise.map(Object.keys(groupedEstates) || [], async (id) => {
-        await this.sendFullInvitationNotification(groupedEstates[id])
+        await MatchService.sendFullInvitationNotification(groupedEstates[id])
       })
     } catch (e) {
       console.log('sendKnockedReachedNotification error', e.message)
@@ -1013,6 +1013,7 @@ class MatchService {
     }
     let isNotificationSent = false
     let invitedCount = 0
+
     if (matches[0].notify_on_green_matches) {
       // if red match is accpeted
       const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
@@ -1035,7 +1036,6 @@ class MatchService {
       )
 
       NoticeService.sendFullInvitation({
-        user_id: matches[0].user_id,
         estate: matches[0],
         count: invitedCount,
       })

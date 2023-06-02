@@ -60,6 +60,7 @@ class NoticeController {
   async sendTestNotification({ request, auth, response }) {
     const userId = auth.user.id
     const { estate_id, data, type } = request.all()
+
     // const notification_types = [
     //   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
     //   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,

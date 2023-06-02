@@ -393,11 +393,11 @@ class File {
         secretAccessKey: Env.get('S3_SECRET'),
         region: Env.get('S3_REGION'),
       })
-      var s3 = new AWS.S3()
-
-      var params = {
+      const s3 = new AWS.S3()
+      const params = {
         Bucket: GEWOBAG_FTP_BUCKET,
         Delimiter: '/',
+        Prefix: 'live/',
       }
       const objects = await s3.listObjects(params).promise()
       if (!objects?.Contents) {

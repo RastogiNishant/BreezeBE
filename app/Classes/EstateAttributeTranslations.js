@@ -1017,7 +1017,6 @@ class EstateAttributeTranslations {
   getMap() {
     const dataMap = this.dataMap
     let keyValue
-    console.log('getMap here=', dataMap)
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
