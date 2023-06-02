@@ -629,7 +629,7 @@ class TaskService extends BaseService {
         taskCount: tasks?.length || 0,
         activeTaskCount: activeTasks.length,
         closed_tasks_count,
-        mostUrgency,
+        mostUrgency: mostUrgency?.urgency || null,
         mostUrgencyCount: mostUrgency
           ? countBy(activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
           : 0,
