@@ -1723,6 +1723,15 @@ class MatchService {
       )
     }
 
+    await require('./TaskService').createGlobalTask(
+      {
+        tenantId: user.id,
+        estateId: estate_id,
+        landlordId: estate.user_id,
+      },
+      trx
+    )
+
     await EstateService.rented(estate_id, trx)
     await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
 

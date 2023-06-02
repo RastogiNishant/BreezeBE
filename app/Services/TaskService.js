@@ -19,6 +19,9 @@ const {
   PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
   WEBSOCKET_EVENT_TASK_CREATED,
   TASK_SYSTEM_TYPE,
+  TASK_STATUS_UNRESOLVED,
+  SHOW_ACTIVE_TASKS_COUNT,
+  TASK_COMMON_TYPE,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -26,7 +29,7 @@ const { rc } = require('../Libs/utils')
 const moment = require('moment')
 const { generateAddress } = use('App/Libs/utils')
 
-const { isArray } = require('lodash')
+const { isArray, maxBy, countBy } = require('lodash')
 const {
   TASK_STATUS_NEW,
   TASK_STATUS_DRAFT,
@@ -112,6 +115,7 @@ class TaskService extends BaseService {
         landlord_id: landlordId,
         title: '',
         type: TASK_SYSTEM_TYPE,
+        status: TASK_STATUS_DRAFT,
         estate_id: estateId,
       },
       trx
@@ -352,18 +356,29 @@ class TaskService extends BaseService {
 
   static async delete({ id, user }, trx) {
     const task = await this.get(id)
+    if (task?.type === TASK_SYSTEM_TYPE) {
+      // system task can't be deleted. created by system automatically for top match
+      throw new HttpException(NO_TASK_FOUND, 400)
+    }
     if (
-      await this.hasPermission({
+      !(await this.hasPermission({
         estate_id: task.estate_id,
         user_id: user.id,
         role: user.role,
-      })
+      }))
     ) {
-      const query = Task.query().where('id', id)
-
-      if (trx) return await query.update({ status: TASK_STATUS_DELETE }).transacting(trx)
-      return await query.update({ status: TASK_STATUS_DELETE })
+      throw new HttpException(NO_TASK_FOUND, 400)
     }
+
+    const query = Task.query().where('id', id)
+
+    if (trx) {
+      await query.update({ status: TASK_STATUS_DELETE }).transacting(trx)
+    } else {
+      await query.update({ status: TASK_STATUS_DELETE })
+    }
+
+    return task
   }
 
   static async getTaskById({ id, estate_id, prospect_id, user }) {
@@ -583,6 +598,49 @@ class TaskService extends BaseService {
     return {
       tasks,
       count,
+    }
+  }
+
+  static async getTaskSummary(estate_id) {
+    const tasks = (
+      await Task.query()
+        .where('estate_id', estate_id)
+        .whereNotIn('status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+        .where('type', TASK_COMMON_TYPE)
+        .orderBy('created_at')
+        .orderBy('urgency')
+        .fetch()
+    ).toJSON()
+
+    const activeTasks = (tasks || []).filter(
+      (task) => task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_INPROGRESS
+    )
+
+    const closed_tasks_count =
+      (tasks || []).filter(
+        (task) => task.status === TASK_STATUS_RESOLVED || task.status === TASK_STATUS_UNRESOLVED
+      ).length || 0
+
+    const in_progress_task =
+      countBy(tasks || [], (task) => task.status === TASK_STATUS_INPROGRESS).true || 0
+
+    const mostUrgency = maxBy(activeTasks, (re) => {
+      return re.urgency
+    })
+
+    return {
+      activeTasks: (activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT),
+      in_progress_task,
+      mosturgency: mostUrgency?.urgency,
+      taskSummary: {
+        taskCount: tasks?.length || 0,
+        activeTaskCount: activeTasks.length,
+        closed_tasks_count,
+        mostUrgency: mostUrgency?.urgency || null,
+        mostUrgencyCount: mostUrgency
+          ? countBy(activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
+          : 0,
+      },
     }
   }
 

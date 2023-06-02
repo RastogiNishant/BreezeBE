@@ -57,7 +57,8 @@ class TaskController {
 
   async deleteTask({ request, auth, response }) {
     const { id, estate_id } = request.all()
-    response.res(await TaskService.delete({ id, estate_id, user: auth.user }))
+    const deletedTask = await TaskService.delete({ id, estate_id, user: auth.user })
+    response.res(await TaskService.getTaskSummary(deletedTask.estate_id))
   }
 
   async getUnassignedTasks({ request, auth, response }) {

@@ -106,6 +106,7 @@ const {
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_TYPE_OFFLINE_MARKET,
+  TASK_COMMON_TYPE,
 } = require('../constants')
 
 const {
@@ -2050,11 +2051,9 @@ class EstateService {
     })
 
     query.leftJoin('tasks', function () {
-      this.on('estates.id', 'tasks.estate_id').onNotIn('tasks.status', [
-        TASK_STATUS_ARCHIVED,
-        TASK_STATUS_DRAFT,
-        TASK_STATUS_DELETE,
-      ])
+      this.on('estates.id', 'tasks.estate_id')
+        .onNotIn('tasks.status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+        .on('tasks.type', TASK_COMMON_TYPE)
     })
 
     if (user_id) {
