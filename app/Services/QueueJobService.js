@@ -723,7 +723,6 @@ class QueueJobService {
       //validate estate is active
       //if still liked
       NoticeService.notifyProspectWhoLikedButNotKnocked(estate, userId)
-      console.log('notifyProspectWhoLikedBUtNotKnocked', estate.id, userId)
     }
   }
 }

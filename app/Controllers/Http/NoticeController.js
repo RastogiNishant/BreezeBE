@@ -95,8 +95,7 @@ class NoticeController {
     //   await NoticeService.sendTestNotification(userId, type, estate_id, data)
     // })
     const result = await NoticeService.sendTestNotification(userId, type, estate_id, data)
-    response.res(true)
-    //response.res(result)
+    response.res(result)
   }
   async acceptZendeskNotification({ request, response }) {
     // const express = require("express");
