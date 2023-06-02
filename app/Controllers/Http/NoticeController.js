@@ -60,8 +60,6 @@ class NoticeController {
   async sendTestNotification({ request, auth, response }) {
     const userId = auth.user.id
     const { estate_id, data, type } = request.all()
-    await NoticeService.sendTestNotification(userId, type, estate_id, data)
-    /*
     const notification_types = [
       NOTICE_TYPE_LANDLORD_FILL_PROFILE,
       NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -95,7 +93,7 @@ class NoticeController {
     ]
     await Promise.map(notification_types, async (type) => {
       await NoticeService.sendTestNotification(userId, type, estate_id, data)
-    })*/
+    })
     //const result = await NoticeService.sendTestNotification(userId, type, estate_id, data)
     response.res(true)
     //response.res(result)
