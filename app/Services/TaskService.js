@@ -21,6 +21,7 @@ const {
   TASK_SYSTEM_TYPE,
   TASK_STATUS_UNRESOLVED,
   SHOW_ACTIVE_TASKS_COUNT,
+  TASK_COMMON_TYPE,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -354,6 +355,10 @@ class TaskService extends BaseService {
 
   static async delete({ id, user }, trx) {
     const task = await this.get(id)
+    if (task?.type === TASK_SYSTEM_TYPE) {
+      // system task can't be deleted. created by system automatically for top match
+      throw new HttpException(NO_TASK_FOUND, 400)
+    }
     if (
       !(await this.hasPermission({
         estate_id: task.estate_id,
@@ -599,7 +604,8 @@ class TaskService extends BaseService {
     const tasks = (
       await Task.query()
         .where('estate_id', estate_id)
-        .whereNotIn('tasks.status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+        .whereNotIn('status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+        .where('type', TASK_COMMON_TYPE)
         .orderBy('created_at')
         .orderBy('urgency')
         .fetch()
