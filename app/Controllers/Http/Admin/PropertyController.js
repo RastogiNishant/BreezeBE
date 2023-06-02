@@ -41,7 +41,6 @@ const {
 class PropertyController {
   async getProperties({ request, response }) {
     let { activation_status, user_status, estate_status, id, page, limit } = request.all()
-    console.log({ page, limit })
     page = page || 1
     limit = limit || 50
     if (!activation_status) {
@@ -62,7 +61,8 @@ class PropertyController {
         'estates.publish_status',
         'estates.property_id',
         'estates.available_start_at',
-        'estates.available_end_at'
+        'estates.available_end_at',
+        'estates.updated_at'
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
