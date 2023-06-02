@@ -187,7 +187,7 @@ class EstateSync {
     parkingSpaceType: this.composeParkingSpaceType,
     pets_allowed: 'petsAllowed',
     //requiresWBS: false,
-    residentialEnergyCertificate: this.composeEnergyClass,
+    //residentialEnergyCertificate: this.composeEnergyClass,
     title: this.composeTitle,
     //'totalRent',
     area: 'usableArea',
@@ -343,6 +343,11 @@ class EstateSync {
         newEstate = { ...newEstate, [value]: estate[key] }
       }
     }
+    /* As per Andrey we're not going to send Energy Certificate
+    const energyClass = this.composeEnergyClass(estate)
+    if (!isEmpty(energyClass) && energyClass?.energyClass && energyClass?.energySource) {
+      newEstate.residentialEnergyCertificate = energyClass
+    }*/
 
     for (let i = 0; i < this.mustHaveValue.length; i++) {
       if (!newEstate[this.mustHaveValue[i]]) {
