@@ -37,6 +37,7 @@ const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
 } = require('../../../exceptions')
+const NoticeService = require('../../../Services/NoticeService')
 
 class PropertyController {
   async getProperties({ request, response }) {
@@ -219,6 +220,7 @@ class PropertyController {
         data,
       })
       await MailService.estatePublishRequestApproved(requestPublishEstate)
+      await NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
       QueueService.estateSyncPublishEstate({ estate_id: id })
       return true
     } catch (err) {
