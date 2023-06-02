@@ -722,11 +722,11 @@ class QueueJobService {
       .where('estate_id', estateId)
 
     const userStillLikes = stillLikes.length > 0
-    const isMatched = await Match.query()
+    let isMatched = await Match.query()
       .where('estate_id', estateId)
       .where('user_id', userId)
       .first()
-
+    isMatched = true
     let knocked = await Match.query()
       .whereBetween('knocked_at', [
         Database.raw(`NOW() - INTERVAL '24 HOURS'`),
@@ -737,7 +737,6 @@ class QueueJobService {
       .where('status', MATCH_STATUS_KNOCK)
       .first()
 
-    knocked = false
     if (estateIsStillPublished && userStillLikes && isMatched && !knocked) {
       await NoticeService.notifyProspectWhoLikedButNotKnocked(estateIsStillPublished, userId)
     }
