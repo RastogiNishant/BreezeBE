@@ -371,7 +371,7 @@ class EstateController {
 
       const imageMimes = [FileBucket.MIME_EXCEL, FileBucket.MIME_EXCELX]
       const files = await FileBucket.saveRequestFiles(request, [
-        { field: 'file', mime: imageMimes, isPublic: false },
+        { field: 'file', mime: imageMimes },
       ])
 
       if (files?.file) {

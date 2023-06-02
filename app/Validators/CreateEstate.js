@@ -589,7 +589,8 @@ class CreateEstate extends Base {
           FURNISHING_NOT_FURNISHED,
           FURNISHING_PARTIALLY_FURNISHED,
           FURNISHING_FULLY_FURNISHED,
-        ]),
+        ])
+        .nullable(),
       kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()
