@@ -55,6 +55,7 @@ const {
   PUBLISH_STATUS_BY_LANDLORD,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_TYPE_ONLINE_MARKET,
+  TASK_COMMON_TYPE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -407,16 +408,14 @@ class Estate extends Model {
   }
 
   tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
-      TASK_STATUS_DELETE,
-      TASK_STATUS_DRAFT,
-    ])
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .where('type', TASK_COMMON_TYPE)
   }
   all_tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
-      TASK_STATUS_DELETE,
-      TASK_STATUS_DRAFT,
-    ])
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .where('type', TASK_COMMON_TYPE)
   }
 
   /**
