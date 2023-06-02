@@ -115,6 +115,7 @@ class TaskService extends BaseService {
         landlord_id: landlordId,
         title: '',
         type: TASK_SYSTEM_TYPE,
+        status: TASK_STATUS_DRAFT,
         estate_id: estateId,
       },
       trx
