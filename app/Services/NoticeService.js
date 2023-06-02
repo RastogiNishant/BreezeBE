@@ -1270,7 +1270,7 @@ class NoticeService {
     await NotificationsService.notifyTaskMessageSent(notice)
   }
 
-  static async notifyProspectWhoLikedButNotKnocked(tenants = []) {
+  static async notifyTenantDisconnected(tenants = []) {
     const estateIds = tenants.map(({ estate_id }) => estate_id)
     const estates = (await Estate.query().whereIn('id', estateIds).fetch()).rows
 
