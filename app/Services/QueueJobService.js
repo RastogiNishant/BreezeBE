@@ -726,7 +726,7 @@ class QueueJobService {
       .where('estate_id', estateId)
       .where('user_id', userId)
       .first()
-    isMatched = true
+
     let knocked = await Match.query()
       .whereBetween('knocked_at', [
         Database.raw(`NOW() - INTERVAL '24 HOURS'`),
