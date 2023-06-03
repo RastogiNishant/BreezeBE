@@ -797,6 +797,9 @@ const constants = {
   TASK_SYSTEM_TYPE: 1,
   TASK_COMMON_TYPE: 2,
 
+  TASK_ORDER_BY_URGENCY: 'urgency',
+  TASK_ORDER_BY_UNREAD: 'unread',
+
   TASK_STATUS_NEW_LABEL: 'New',
   TASK_STATUS_INPROGRESS_LABEL: 'In Progress',
   TASK_STATUS_UNRESOLVED_LABEL: 'Unresolved',

@@ -22,6 +22,7 @@ const {
   TASK_STATUS_UNRESOLVED,
   SHOW_ACTIVE_TASKS_COUNT,
   TASK_COMMON_TYPE,
+  TASK_ORDER_BY_UNREAD,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -510,6 +511,7 @@ class TaskService extends BaseService {
     role,
     estate_id,
     type,
+    orderby,
     query,
     status,
     page = -1,
@@ -583,11 +585,19 @@ class TaskService extends BaseService {
       })
     }
 
-    taskQuery
-      .orderBy('is_unread_task', 'desc')
-      .orderBy('tasks.updated_at', 'desc')
-      .orderBy('tasks.status', 'asc')
-      .orderBy('tasks.urgency', 'desc')
+    if (orderby === TASK_ORDER_BY_UNREAD) {
+      taskQuery
+        .orderBy('is_unread_task', 'desc')
+        .orderBy('tasks.status', 'asc')
+        .orderBy('tasks.urgency', 'desc')
+    } else {
+      taskQuery
+        .orderBy('tasks.status', 'asc')
+        .orderBy('tasks.urgency', 'desc')
+        .orderBy('is_unread_task', 'desc')
+    }
+
+    taskQuery.orderBy('tasks.updated_at', 'desc')
 
     let tasks = null
     let count = 0
