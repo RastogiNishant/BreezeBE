@@ -538,8 +538,11 @@ class TaskService extends BaseService {
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
+      taskQuery.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'tasks.estate_id')
+      })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK).with('user')
+      taskQuery.select(ESTATE_FIELD_FOR_TASK)
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
@@ -556,6 +559,11 @@ class TaskService extends BaseService {
       ])
     }
 
+    taskQuery.select('_u.firstname', '_u.secondname', '_u.sex', '_u.avatar')
+    taskQuery.leftJoin({ _u: 'users' }, function () {
+      this.on('_u.id', 'tasks.tenant_id')
+    })
+
     if (type) {
       taskQuery.where('tasks.type', type)
     }
@@ -569,6 +577,9 @@ class TaskService extends BaseService {
         this.orWhere('property_id', 'ilike', `%${query}%`)
         this.orWhere('address', 'ilike', `%${query}%`)
         this.orWhere('tasks.title', 'ilike', `%${query}%`)
+        this.orWhere('tasks.description', 'ilike', `%${query}%`)
+        this.orWhere('_u.firstname', 'ilike', `%${query}%`)
+        this.orWhere('_u.secondname', 'ilike', `%${query}%`)
       })
     }
 
