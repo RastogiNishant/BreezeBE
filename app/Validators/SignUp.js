@@ -93,14 +93,23 @@ class SignUp extends Base {
         )
         .required(getExceptionMessage('sex', REQUIRED)),
       phone: phoneSchema,
-      firstname: yup
+      firstname: yup.string().when(['secondname'], (secondname, schema, { value }) => {
+        if (!secondname) {
+          return yup
+            .string()
+            .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
+            .max(254, getExceptionMessage('secondname', MAXLENGTH, 254))
+            .required()
+        }
+        return yup
+          .string()
+          .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
+          .max(254, getExceptionMessage('secondname', MAXLENGTH, 254))
+      }),
+      secondname: yup
         .string()
         .min(2, getExceptionMessage('firstname', MINLENGTH, 2))
         .max(254, getExceptionMessage('firstname', MAXLENGTH, 254)),
-      secondname: yup
-        .string()
-        .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
-        .max(254, getExceptionMessage('secondname', MAXLENGTH, 254)),
       birthday: yup
         .date()
         .typeError(getExceptionMessage('birthday', DATE))
