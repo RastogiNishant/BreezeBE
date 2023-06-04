@@ -68,6 +68,7 @@ const {
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -111,6 +112,7 @@ const {
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
 } = require('../constants')
 
 class NoticeService {
@@ -938,6 +940,8 @@ class NoticeService {
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
       case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
+      case NOTICE_TYPE_ADMIN_APPROVES_PUBLISH:
+        return NotificationsService.adminApprovesPublish([notice])
     }
   }
 
@@ -1339,6 +1343,17 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.prospectLikedButNotKnocked([notice])
+  }
+
+  static async notifyLandlordAdminApprovesPublish(estate) {
+    const notice = {
+      user_id: estate.user_id,
+      type: NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
+      data: { estate_id: estate.id, estate_address: estate.address },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.adminApprovesPublish([notice])
   }
 }
 
