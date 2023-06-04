@@ -722,22 +722,20 @@ class QueueJobService {
       .where('estate_id', estateId)
 
     const userStillLikes = stillLikes.length > 0
-    let isMatched = await Match.query()
-      .where('estate_id', estateId)
-      .where('user_id', userId)
-      .first()
 
     let knocked = await Match.query()
-      .whereBetween('knocked_at', [
-        Database.raw(`NOW() - INTERVAL '24 HOURS'`),
-        Database.raw(`NOW()`),
-      ])
       .where('estate_id', estateId)
       .where('user_id', userId)
-      .where('status', MATCH_STATUS_KNOCK)
+      .where(function () {
+        this.orWhere('status', MATCH_STATUS_KNOCK)
+        this.orWhere(function () {
+          this.where('buddy', true)
+          this.where('status', MATCH_STATUS_NEW)
+        })
+      })
       .first()
 
-    if (estateIsStillPublished && userStillLikes && isMatched && !knocked) {
+    if (estateIsStillPublished && userStillLikes && !knocked) {
       await NoticeService.notifyProspectWhoLikedButNotKnocked(estateIsStillPublished, userId)
     }
   }
