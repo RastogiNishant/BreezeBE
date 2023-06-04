@@ -727,7 +727,7 @@ class QueueJobService {
       .where('estate_id', estateId)
       .where('user_id', userId)
       .where(function () {
-        this.orWhere('status', MATCH_STATUS_KNOCK)
+        this.orWhere('status', '>=', MATCH_STATUS_KNOCK)
         this.orWhere(function () {
           this.where('buddy', true)
           this.where('status', MATCH_STATUS_NEW)
