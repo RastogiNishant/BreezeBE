@@ -150,7 +150,7 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       is_custom: false,
     },
     {
-      key: 'rooms_number',
+      key: 'area',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
     },
