@@ -711,17 +711,15 @@ class QueueJobService {
   }
 
   static async notifyProspectWhoLikedButNotKnocked(estateId, userId) {
-    const estateIsStillPublished = await Estate.query()
-      .where({ id: estateId })
-      .where('status', STATUS_ACTIVE)
-      .first()
-
     const stillLikes = await Database.select('*')
       .from('likes')
       .where('user_id', userId)
       .where('estate_id', estateId)
 
     const userStillLikes = stillLikes.length > 0
+    if (!userStillLikes) {
+      return
+    }
 
     let knocked = await Match.query()
       .where('estate_id', estateId)
@@ -734,8 +732,7 @@ class QueueJobService {
         })
       })
       .first()
-
-    if (estateIsStillPublished && userStillLikes && !knocked) {
+    if (!knocked) {
       await NoticeService.notifyProspectWhoLikedButNotKnocked(estateIsStillPublished, userId)
     }
   }
