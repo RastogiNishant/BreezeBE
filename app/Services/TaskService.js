@@ -22,6 +22,7 @@ const {
   TASK_STATUS_UNRESOLVED,
   SHOW_ACTIVE_TASKS_COUNT,
   TASK_COMMON_TYPE,
+  TASK_ORDER_BY_UNREAD,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -510,6 +511,7 @@ class TaskService extends BaseService {
     role,
     estate_id,
     type,
+    orderby,
     query,
     status,
     page = -1,
@@ -538,8 +540,11 @@ class TaskService extends BaseService {
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
         e.select(ESTATE_FIELD_FOR_TASK)
       })
+      taskQuery.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'tasks.estate_id')
+      })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK).with('user')
+      taskQuery.select(ESTATE_FIELD_FOR_TASK)
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
@@ -556,6 +561,11 @@ class TaskService extends BaseService {
       ])
     }
 
+    taskQuery.select('_u.firstname', '_u.secondname', '_u.sex', '_u.avatar')
+    taskQuery.leftJoin({ _u: 'users' }, function () {
+      this.on('_u.id', 'tasks.tenant_id')
+    })
+
     if (type) {
       taskQuery.where('tasks.type', type)
     }
@@ -569,14 +579,25 @@ class TaskService extends BaseService {
         this.orWhere('property_id', 'ilike', `%${query}%`)
         this.orWhere('address', 'ilike', `%${query}%`)
         this.orWhere('tasks.title', 'ilike', `%${query}%`)
+        this.orWhere('tasks.description', 'ilike', `%${query}%`)
+        this.orWhere('_u.firstname', 'ilike', `%${query}%`)
+        this.orWhere('_u.secondname', 'ilike', `%${query}%`)
       })
     }
 
-    taskQuery
-      .orderBy('is_unread_task', 'desc')
-      .orderBy('tasks.updated_at', 'desc')
-      .orderBy('tasks.status', 'asc')
-      .orderBy('tasks.urgency', 'desc')
+    if (orderby === TASK_ORDER_BY_UNREAD) {
+      taskQuery
+        .orderBy('is_unread_task', 'desc')
+        .orderBy('tasks.status', 'asc')
+        .orderBy('tasks.urgency', 'desc')
+    } else {
+      taskQuery
+        .orderBy('tasks.status', 'asc')
+        .orderBy('tasks.urgency', 'desc')
+        .orderBy('is_unread_task', 'desc')
+    }
+
+    taskQuery.orderBy('tasks.updated_at', 'desc')
 
     let tasks = null
     let count = 0
