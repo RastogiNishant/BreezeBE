@@ -428,7 +428,7 @@ class UserService {
         forgotLink: forgotLink,
       })
     } catch (e) {
-      throw new HttpException(e)
+      throw new HttpException(e.message, 400)
     }
   }
 
