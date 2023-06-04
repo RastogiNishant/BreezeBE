@@ -495,6 +495,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING: 'notification_prospect_like_expiring',
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK: 'notification_prospect_liked_but_not_knock',
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH: 'notification_landlord_admin_approves_publish',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -549,6 +550,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID: 57,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
   NOTICE_TYPE_PROSPECT_VISIT48H_ID: 59,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID: 60,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -820,7 +822,7 @@ const constants = {
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
-    '_e.coord',
+    'coord',
     'street',
     'area',
     'house_number',
