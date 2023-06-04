@@ -535,16 +535,17 @@ class TaskService extends BaseService {
           and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`)
       )
 
+    const estateFields = ESTATE_FIELD_FOR_TASK.map((field) => `_e.${field}`)
     if (role === ROLE_USER) {
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.where('tenant_id', user_id).with('estate', function (e) {
-        e.select(ESTATE_FIELD_FOR_TASK)
+        e.select(estateFields)
       })
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id')
       })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.select(estateFields)
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)

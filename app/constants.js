@@ -822,7 +822,7 @@ const constants = {
   ADULT_MIN_AGE: 18,
 
   ESTATE_FIELD_FOR_TASK: [
-    '_e.coord',
+    'coord',
     'street',
     'area',
     'house_number',
