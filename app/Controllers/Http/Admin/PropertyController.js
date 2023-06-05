@@ -254,7 +254,7 @@ class PropertyController {
       type: 'declined-publish',
       listings: listings?.rows || [],
     }
-    await EstateSyncService.emitWebsocketEventToLandlord({
+    EstateSyncService.emitWebsocketEventToLandlord({
       event: WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
       user_id: requestPublishEstate.user_id,
       data,
