@@ -987,7 +987,7 @@ const constants = {
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
   WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
-  MATCH_SCORE_GOOD_MATCH: 90,
+  MATCH_SCORE_GOOD_MATCH: 80,
 
   IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_TYPE_OPENIMMO: 'openimmo',
