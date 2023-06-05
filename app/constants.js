@@ -971,6 +971,7 @@ const constants = {
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
   WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED: 'landlord:estatePublishApproved',
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED: 'landlord:estatePublishDeclined',
   WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN: 'landlord:estateUnpublishedByAdmin',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED: 'landlord:estateUnpublished',

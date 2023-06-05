@@ -22,6 +22,8 @@ const {
   DEACTIVATE_PROPERTY,
   PUBLISH_PROPERTY,
   UNPUBLISH_PROPERTY,
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINE,
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -231,13 +233,32 @@ class PropertyController {
   }
 
   async declinePublish(id) {
-    if (!(await EstateService.publishRequestedProperty(id))) {
+    const requestPublishEstate = await EstateService.publishRequestedProperty(id)
+    if (!requestPublishEstate) {
       throw new HttpException('This estate is not marked for publish', 400, 114002)
     }
     await Estate.query()
       .where('id', id)
       .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN })
     await EstateSyncService.markListingsForDelete(id)
+    const listings = await EstateSyncListing.query()
+      .where('estate_id', id)
+      .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+      .fetch()
+    const data = {
+      success: true,
+      property_id: requestPublishEstate.property_id,
+      estate_id: requestPublishEstate.estate_id,
+      publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN,
+      status: STATUS_DRAFT,
+      type: 'declined-publish',
+      listings: listings?.rows || [],
+    }
+    await EstateSyncService.emitWebsocketEventToLandlord({
+      event: WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
+      user_id: requestPublishEstate.user_id,
+      data,
+    })
     QueueService.estateSyncUnpublishEstates([id], false)
     return true
   }
