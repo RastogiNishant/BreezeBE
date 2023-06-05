@@ -3,7 +3,7 @@
 const { trim, capitalize, startCase } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
-const { generateAddress } = use('App/Libs/utils')
+const { generateAddress, parseFloorDirection } = use('App/Libs/utils')
 const sgMail = require('@sendgrid/mail')
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
 
@@ -28,6 +28,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  ESTATE_NO_IMAGE_COVER_URL,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
@@ -389,37 +390,6 @@ class MailService {
   }
 
   async sendInviteToViewEstate(values) {
-    /*
-    const templateId = TO_OFF_MARKET_VIEW_ESTATE_EMAIL_TEMPLATE;
-    const msg = {
-      to: trim(email),
-      from: FromEmail,
-      templateId: templateId,
-      dynamic_template_data: {
-        subject: l.get('landlord.email_verification.subject.message', lang),
-        salutation: l.get('email_signature.salutation.message', lang),
-        intro: l.get('landlord.email_verification.intro.message', lang),
-        code:l.get('email_signature.code.message', lang),
-        code_val: code,        
-        final: l.get('landlord.email_verification.final.message', lang),
-        greeting: l.get('email_signature.greeting.message', lang),
-        company: l.get('email_signature.company.message', lang),
-        position: l.get('email_signature.position.message', lang),        
-        tel: l.get('email_signature.tel.message', lang),
-        email: l.get('email_signature.email.message', lang),
-        address: l.get('email_signature.address.message', lang),
-        website: l.get('email_signature.website.message', lang),
-        tel_val: l.get('tel.customer_service.de.message', lang),
-        email_val: l.get('email.customer_service.de.message', lang),
-        address_val: l.get('address.customer_service.de.message', lang),
-        website_val: l.get('website.customer_service.de.message', lang),
-        team: l.get('email_signature.team.message', lang),
-        download_app: l.get('email_signature.download.app.message', lang),
-        enviromental_responsibility: l.get('email_signature.enviromental.responsibility.message', lang),
-        display:'none',
-
-      },
-    }*/
     const msg = {
       to: values.email,
       from: {
@@ -715,22 +685,6 @@ class MailService {
 
   static async estatePublishRequestApproved(estate) {
     const lang = estate.lang || DEFAULT_LANG
-    const parseFloorDirection = (direction) => {
-      switch (direction) {
-        case ESTATE_FLOOR_DIRECTION_LEFT:
-          return 'property.attribute.floor_direction.left.message'
-        case ESTATE_FLOOR_DIRECTION_RIGHT:
-          return 'property.attribute.floor_direction.right.message'
-        case ESTATE_FLOOR_DIRECTION_STRAIGHT:
-          return 'property.attribute.floor_direction.straight.message'
-        case ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT:
-          return 'property.attribute.floor_direction.straight.left.message'
-        case ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT:
-          return 'property.attribute.floor_direction.straight.right.message'
-        default:
-          return null
-      }
-    }
     const templateId = LANDLORD_EMAIL_TEMPLATE
     const address = generateAddress({
       street: estate?.street,
@@ -898,26 +852,67 @@ class MailService {
     )
   }
 
-  static async sendPendingKnockEmail({
-    link,
-    landlord_name,
-    lastName = ``,
-    salutation = ``,
-    email,
-    lang = DEFAULT_LANG,
-  }) {
+  static async sendPendingKnockEmail({ link, landlord_name, email, estate, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    let floor = estate.floor
+      ? `${estate.floor}.`
+      : '' +
+        l.get(
+          estate.floor
+            ? 'landlord.portfolio.card.txt_floor.message'
+            : 'prospect.property.preferences.apartment.txt_ground.message',
+          lang
+        )
+    let address = `${parseInt(estate.rooms_number)}${l.get(
+      'pm.connect.task.txt_room_short.message',
+      lang
+    )}, ${parseInt(estate.area)}㎡, ${floor} <br/>€${parseInt(estate.prices)}`
+
+    address += `<br/>`
+
+    let street = startCase(estate?.street || '')
+    street = street?.length
+      ? `<b>${street.slice(0, 1)}</b>${street.length > 1 ? street.slice(1, street.length) : ''}`
+      : ''
+
+    let city = startCase(estate?.city || '')
+    city = city?.length
+      ? `<b>${city.slice(0, 1)}</b>${city.length > 1 ? city.slice(1, city.length) : ''}`
+      : ''
+
+    let country = startCase(estate?.country || '')
+    country = country?.length
+      ? `<b>${country.slice(0, 1)}</b>${country.length > 1 ? country.slice(1, country.length) : ''}`
+      : ''
+
+    address += `<br/> ${street} ${estate?.house_number || ''},<br/> ${
+      estate?.zip || ''
+    } ${city}, <br/> ${country}`
 
     const final = l
       .get('prospect.no_reply_email_from_listing.final.message', lang)
-      .replace('{Landlord_name}', `${landlord_name}`)
+      // .replace('{Landlord_name}', `${landlord_name}`)
       .replace(/\n/g, '<br />')
 
-    const intro = l
+    const coverImage = `<img height = '300px' src = '${
+      estate.cover ? estate.cover : ESTATE_NO_IMAGE_COVER_URL
+    }'/>`
+    const addressLayout = `<tr><td>
+      <table align="left" border="0" cellpadding="0" cellspacing="0" with = '100%'>
+        <tr valign="top">
+          <td align = "left" style="width:50%">${coverImage}</td>
+          <td style = "padding-left:10px;">${address}</td>
+      </tr>
+      </table></td><tr/>`
+    let intro = l
       .get('prospect.no_reply_email_from_listing.intro.message', lang)
-      .replace('{Salutation}', `${salutation}`)
-      .replace('{Surname}', `${lastName}`)
+      .replace('{Full_property_address}', addressLayout)
       .replace(/\n/g, '<br />')
+
+    const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0">
+      <tr>${intro}</tr>
+     </table>`
 
     const messages = {
       to: trim(email),
@@ -928,11 +923,12 @@ class MailService {
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
-        salutation: l.get('email_signature.salutation.message', lang),
-        intro,
+        salutation: l.get('email_signature.outside_salutation.message', lang),
+        intro: introLayout,
         CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
         link,
         final,
+        logo_shown: 'none',
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
         position: l.get('email_signature.position.message', lang),

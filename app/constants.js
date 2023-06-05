@@ -1278,6 +1278,8 @@ Estates: [ESTATES]
 
   PUBLISH_TYPE_ONLINE_MARKET: 1,
   PUBLISH_TYPE_OFFLINE_MARKET: 2,
+
+  ESTATE_NO_IMAGE_COVER_URL: 'https://app.breeze4me.de/images/estate.jpg',
 }
 
 module.exports = constants

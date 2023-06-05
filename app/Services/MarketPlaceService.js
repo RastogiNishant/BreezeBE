@@ -113,15 +113,17 @@ class MarketPlaceService {
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
     const landlord_name = `${user.firstname} ${user.secondname}`
-
-    MailService.sendPendingKnockEmail({
-      link: shortLink,
-      email: contact.email,
-      salutation: contact.contact_info?.salutation || ``,
-      lastName: contact.contact_info?.lastName || ``,
-      landlord_name,
-      lang,
-    })
+    //sending knock email 10 seconds later
+    require('./QueueService').sendKnockRequestEmail(
+      {
+        link: shortLink,
+        email: contact.email,
+        estate: estate.toJSON(),
+        landlord_name,
+        lang: 'en',
+      },
+      10000
+    )
   }
 
   static async getKnockRequest({ estate_id, email }) {

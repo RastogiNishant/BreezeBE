@@ -8,6 +8,8 @@ class MarketPlaceContact extends Base {
     yup.object().shape({
       estate_id: id.required(),
       email: yup.string().email().lowercase().max('255').required(),
+      propertyId: yup.mixed(),
+      prospect: yup.mixed(),
       contact_info: yup.mixed(),
       message: yup.string(),
     })
