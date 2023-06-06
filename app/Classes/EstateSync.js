@@ -292,6 +292,7 @@ class EstateSync {
 
   composeTitle({ rooms_number, area, apt_type, city, country }) {
     let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES['others']
+    const formatter = new Intl.NumberFormat('de-DE')
     if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
       estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]
     }
@@ -300,8 +301,9 @@ class EstateSync {
       estateSyncTitleTemplate.lang
     )
     var mapObj = {
-      rooms_number: rooms_number,
-      area: area,
+      rooms_number:
+        rooms_number % 1 === 0 ? Math.trunc(rooms_number) : formatter.format(rooms_number),
+      area: area % 1 === 0 ? Math.trunc(area) : formatter.format(area),
       apartmentType: apartmentType,
       city: city,
     }
