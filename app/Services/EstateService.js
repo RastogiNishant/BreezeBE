@@ -107,6 +107,7 @@ const {
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_TYPE_OFFLINE_MARKET,
   TASK_COMMON_TYPE,
+  TASK_SYSTEM_TYPE,
 } = require('../constants')
 
 const {
@@ -1540,7 +1541,7 @@ class EstateService {
         publishers?.map((publisher) => {
           textMessage += ` - ${publisher}\r\n`
         })
-        await require('./MailService').sendEmailToSupport({ subject, textMessage })
+
         // Run match estate
         Event.fire('match::estate', estate.id)
         await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
@@ -2108,7 +2109,7 @@ class EstateService {
             task.unread_role === ROLE_LANDLORD ? task.unread_count || 0 : 0
         })
 
-        const has_unread_message = Estate.landlord_has_unread_messages(
+        const has_unread_message = Estate.landlord_has_topic_unread_messages(
           r[0].activeTasks || [],
           ROLE_LANDLORD
         )
@@ -2163,6 +2164,7 @@ class EstateService {
           .leftJoin({ _t: 'tasks' }, function () {
             this.on('estates.id', '_t.estate_id')
               .on('_t.unread_role', ROLE_LANDLORD)
+              .onNotIn('_t.type', [TASK_SYSTEM_TYPE])
               .on(Database.raw(`_t.unread_count > 0`))
               .on(Database.raw(`_t.status not in (${[TASK_STATUS_DRAFT, TASK_STATUS_DELETE]})`))
               .onIn('_t.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])

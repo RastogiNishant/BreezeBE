@@ -403,8 +403,12 @@ class Estate extends Model {
       .where('unread_count', '>', 0)
   }
 
-  static landlord_has_unread_messages(active_tasks, role = ROLE_LANDLORD) {
-    return active_tasks.findIndex((task) => task.unread_role === role && task.unread_count) !== -1
+  static landlord_has_topic_unread_messages(active_tasks, role = ROLE_LANDLORD) {
+    return (
+      active_tasks.findIndex(
+        (task) => task.unread_role === role && task.type !== 1 && task.unread_count
+      ) !== -1
+    )
   }
 
   tasks() {
