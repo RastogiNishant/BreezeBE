@@ -855,15 +855,14 @@ class MailService {
   static async sendPendingKnockEmail({ link, landlord_name, email, estate, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
 
-    let floor = estate.floor
-      ? `${estate.floor}.`
-      : '' +
-        l.get(
-          estate.floor
-            ? 'landlord.portfolio.card.txt_floor.message'
-            : 'prospect.property.preferences.apartment.txt_ground.message',
-          lang
-        )
+    let floor =
+      (estate.floor ? `${estate.floor}.` : '') +
+      l.get(
+        estate.floor
+          ? 'landlord.portfolio.card.txt_floor.message'
+          : 'prospect.property.preferences.apartment.txt_ground.message',
+        lang
+      )
     let address = `${parseInt(estate.rooms_number)}${l.get(
       'pm.connect.task.txt_room_short.message',
       lang
@@ -871,22 +870,14 @@ class MailService {
 
     address += `<br/>`
 
-    let street = startCase(estate?.street || '')
-    street = street?.length
-      ? `<b>${street.slice(0, 1)}</b>${street.length > 1 ? street.slice(1, street.length) : ''}`
-      : ''
+    const street = startCase(estate?.street || '')
 
-    let city = startCase(estate?.city || '')
-    city = city?.length
-      ? `<b>${city.slice(0, 1)}</b>${city.length > 1 ? city.slice(1, city.length) : ''}`
-      : ''
+    const city = startCase(estate?.city || '')
 
-    let country = startCase(estate?.country || '')
-    country = country?.length
-      ? `<b>${country.slice(0, 1)}</b>${country.length > 1 ? country.slice(1, country.length) : ''}`
-      : ''
+    const country = startCase(estate?.country || '')
 
-    address += `<br/> ${street} ${estate?.house_number || ''},<br/> ${
+    address += `<br/>`
+    address += `${street} ${estate?.house_number || ''},<br/> ${
       estate?.zip || ''
     } ${city}, <br/> ${country}`
 
@@ -895,22 +886,22 @@ class MailService {
       // .replace('{Landlord_name}', `${landlord_name}`)
       .replace(/\n/g, '<br />')
 
-    const coverImage = `<img height = '300px' src = '${
+    const coverImage = `<table width='100%'><tr><td><img style = "width:100%; height:150px;object-fit:cover; border-radius: 5%" src = '${
       estate.cover ? estate.cover : ESTATE_NO_IMAGE_COVER_URL
-    }'/>`
+    }'/></td></tr></table>`
     const addressLayout = `<tr><td>
-      <table align="left" border="0" cellpadding="0" cellspacing="0" with = '100%'>
+      <table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
         <tr valign="top">
-          <td align = "left" style="width:50%">${coverImage}</td>
+          <td align = "left" width = '150px' >${coverImage}</td>
           <td style = "padding-left:10px;">${address}</td>
-      </tr>
-      </table></td><tr/>`
+        </tr>
+      </table></td></tr>`
     let intro = l
       .get('prospect.no_reply_email_from_listing.intro.message', lang)
       .replace('{Full_property_address}', addressLayout)
-      .replace(/\n/g, '<br />')
+      .replace(/\n\n/g, '<br />')
 
-    const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0">
+    const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
       <tr>${intro}</tr>
      </table>`
 

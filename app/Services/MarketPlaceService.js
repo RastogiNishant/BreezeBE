@@ -120,7 +120,7 @@ class MarketPlaceService {
         email: contact.email,
         estate: estate.toJSON(),
         landlord_name,
-        lang: 'en',
+        lang,
       },
       10000
     )
