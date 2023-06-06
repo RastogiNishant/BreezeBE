@@ -379,7 +379,7 @@ class Estate extends Model {
   }
 
   amenities() {
-    return this.hasMany('App/Models/Amenity', 'estate_id', 'id').whereNot('status', STATUS_DELETE)
+    return this.hasMany('App/Models/Amenity', 'id', 'estate_id').whereNot('status', STATUS_DELETE)
   }
 
   estateSyncListings() {

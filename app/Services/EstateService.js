@@ -359,7 +359,9 @@ class EstateService {
         r.with('images')
       })
       .with('files')
-      .with('amenities')
+      .with('amenities', function (q) {
+        q.with('option')
+      })
       .first()
   }
 
