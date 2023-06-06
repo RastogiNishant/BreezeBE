@@ -211,7 +211,8 @@ class MarketPlaceService {
       throw new HttpException(WRONG_PARAMS, 500)
     }
     const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({ data1, data2 })
-
+    console.log('createPendingKnock data1=', data1)
+    console.log('createPendingKnock data2=', data2)
     const knockRequest = await this.getKnockRequest({ estate_id, email })
     if (!knockRequest) {
       throw new HttpException(NO_PROSPECT_KNOCK, 400)
