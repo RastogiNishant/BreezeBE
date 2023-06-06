@@ -51,9 +51,16 @@ const {
   PARKING_SPACE_TYPE_DUPLEX,
   ESTATE_SYNC_TITLE_TEMPLATES,
   ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS,
-  ESTATE_SYNC_AMENITY_LOCATION_FOR_DESCRIPTION,
+  OPTIONS_TYPE_BUILD,
+  OPTIONS_TYPE_APT,
+  OPTIONS_TYPE_OUT,
   LANG_DE,
 } = require('../constants')
+const ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION = [
+  OPTIONS_TYPE_BUILD,
+  OPTIONS_TYPE_APT,
+  OPTIONS_TYPE_OUT,
+]
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
 const ContentType = use('App/Classes/ContentType')
@@ -201,11 +208,11 @@ class EstateSync {
   }
 
   composeDescription({ amenities }) {
-    if (amenities.length === 0) {
+    if (!amenities?.length) {
       return ''
     }
     const validAmenities = amenities.reduce((validAmenities, amenity) => {
-      if (ESTATE_SYNC_AMENITY_LOCATION_FOR_DESCRIPTION.includes(amenity.location)) {
+      if (ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location)) {
         return [...validAmenities, l.get(`${amenity?.option?.title}.message`, LANG_DE)]
       }
       return validAmenities
