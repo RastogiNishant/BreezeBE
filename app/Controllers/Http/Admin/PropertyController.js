@@ -220,8 +220,8 @@ class PropertyController {
         user_id: requestPublishEstate.user_id,
         data,
       })
-      await MailService.estatePublishRequestApproved(requestPublishEstate)
-      await NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
+      MailService.estatePublishRequestApproved(requestPublishEstate)
+      NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
       QueueService.estateSyncPublishEstate({ estate_id: id })
       await trx.commit()
       return true
