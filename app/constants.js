@@ -971,6 +971,7 @@ const constants = {
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
   WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED: 'landlord:estatePublishApproved',
+  WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED: 'landlord:estatePublishDeclined',
   WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED: 'landlord:subscriptionFailed',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN: 'landlord:estateUnpublishedByAdmin',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED: 'landlord:estateUnpublished',
@@ -986,7 +987,7 @@ const constants = {
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
   WEBSOCKET_EVENT_MEMBER_INVITATION: 'memberInvitation',
-  MATCH_SCORE_GOOD_MATCH: 90,
+  MATCH_SCORE_GOOD_MATCH: 80,
 
   IMPORT_TYPE_EXCEL: 'excel',
   IMPORT_TYPE_OPENIMMO: 'openimmo',
@@ -1278,6 +1279,8 @@ Estates: [ESTATES]
 
   PUBLISH_TYPE_ONLINE_MARKET: 1,
   PUBLISH_TYPE_OFFLINE_MARKET: 2,
+
+  ESTATE_NO_IMAGE_COVER_URL: 'https://breeze-files-dev.s3.eu-central-1.amazonaws.com/no-cover.png',
 }
 
 module.exports = constants

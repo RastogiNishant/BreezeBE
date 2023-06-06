@@ -27,6 +27,7 @@ const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
 const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
 const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
+const KNOCK_SEND_REQUEST_EMAIL = 'knockRequestToEstate'
 const {
   SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
@@ -131,6 +132,10 @@ class QueueService {
 
   static notifyProspectWhoLikedButNotKnocked(estateId, userId, delay) {
     Queue.addJob(NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED, { estateId, userId }, { delay })
+  }
+
+  static sendKnockRequestEmail({ link, email, estate, landlord_name, lang }, delay) {
+    Queue.addJob(KNOCK_SEND_REQUEST_EMAIL, { link, email, estate, landlord_name, lang }, { delay })
   }
 
   static getIpBasedInfo(userId, ip) {
@@ -350,6 +355,16 @@ class QueueService {
             job.data.estate_ids,
             job.data.markListingsForDelete
           )
+        case KNOCK_SEND_REQUEST_EMAIL:
+          require('./MailService').sendPendingKnockEmail({
+            link: job.data.link,
+            email: job.data.email,
+            estate: job.data.estate,
+            landlord_name: job.data.landlord_name,
+            lang: job.data.lang,
+          })
+
+          break
         default:
           console.log(`No job processor for: ${job.name}`)
       }
