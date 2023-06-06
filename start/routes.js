@@ -1301,3 +1301,12 @@ Route.group(() => {
 })
   .prefix('api/v1/test')
   .middleware(['auth:jwtLandlord'])
+
+Route.get('/test', async ({ response }) => {
+  const EstateService = use('App/Services/EstateService')
+  const EstateSync = require('../app/Classes/EstateSync')
+  const estateSync = new EstateSync('asdfasdf')
+  const estate = await EstateService.getByIdWithDetail(631)
+  const newEstate = estateSync.composeEstate(estate.toJSON())
+  return response.res({ newEstate, estate })
+})
