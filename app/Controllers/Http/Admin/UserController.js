@@ -30,7 +30,7 @@ const {
   WEBSOCKET_EVENT_USER_DEACTIVATE,
 } = require('../../../constants')
 const {
-  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST },
+  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
 } = require('../../../exceptions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
@@ -52,7 +52,7 @@ class UserController {
     const user = await User.findByOrFail({ email, role: ROLE_ADMIN })
     const roles = await user.getRoles()
     if (isEmpty(roles)) {
-      throw new HttpException('Forbidden', 403)
+      throw new HttpException(USER_WRONG_PASSWORD, 403)
     }
 
     return response.res({ token: token.token, user, roles })

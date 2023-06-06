@@ -19,7 +19,7 @@ const exceptions = {
   MATCH: 'format is wrong',
   USER_UNIQUE: 'User already exists, can be switched',
   USER_NOT_FOUND: 'User not found',
-  USER_WRONG_PASSWORD: 'E_PASSWORD_MISMATCH',
+  USER_WRONG_PASSWORD: 'start.login.txt_psw_wrong.message',
   CURRENT_PASSWORD_REQUIRED: 'Change on email requires current password.',
   USER_NOT_EXIST: 'No user exists',
   USER_CLOSED: 'User Account Closed',

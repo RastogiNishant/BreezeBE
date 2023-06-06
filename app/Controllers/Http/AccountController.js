@@ -12,7 +12,13 @@ const AppException = use('App/Exceptions/AppException')
 const { pick } = require('lodash')
 
 const {
-  exceptions: { USER_NOT_EXIST, USER_UNIQUE, USER_CLOSED, FAILED_UPLOAD_AVATAR },
+  exceptions: {
+    USER_NOT_EXIST,
+    USER_UNIQUE,
+    USER_CLOSED,
+    FAILED_UPLOAD_AVATAR,
+    USER_WRONG_PASSWORD,
+  },
 } = require('../../../app/exceptions')
 
 const { getAuthByRole } = require('../../Libs/utils')
@@ -157,7 +163,7 @@ class AccountController {
           return response.res(token)
         } catch (e) {
           const [message] = e.message.split(':')
-          throw new HttpException(message, 400, 0)
+          throw new HttpException(USER_WRONG_PASSWORD, 400, 0)
         }
       } else {
         user = loginResult
@@ -172,7 +178,7 @@ class AccountController {
         const [message] = e.message.split(':')
         //FIXME: message should be json here to be consistent with being a backend
         //that provides JSON RESTful API
-        throw new HttpException(message, 400, 0)
+        throw new HttpException(USER_WRONG_PASSWORD, 400, 0)
       }
       const ip = request.ip()
       await UserService.setIpBasedInfo(user, ip)
