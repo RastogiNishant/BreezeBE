@@ -202,19 +202,6 @@ class PropertyController {
       await Estate.query()
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
-      await trx.commit()
-    } catch (err) {
-      console.log(err)
-      await trx.rollback()
-      throw new HttpException(
-        err?.messsage ||
-          'Unknown error found while approving publish request. Approving Publish not done.',
-        400,
-        114002
-      )
-    }
-
-    try {
       const listings = await EstateSyncListing.query()
         .where('estate_id', id)
         .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
@@ -236,14 +223,15 @@ class PropertyController {
       await MailService.estatePublishRequestApproved(requestPublishEstate)
       await NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
       QueueService.estateSyncPublishEstate({ estate_id: id })
+      await trx.commit()
       return true
     } catch (err) {
       console.log(err)
       await trx.rollback()
       throw new HttpException(
-        err?.messsage || 'Publish request approved but subsequent error found.',
+        err?.messsage || 'Unknown error found while approving publish request',
         400,
-        114003
+        114002
       )
     }
   }
