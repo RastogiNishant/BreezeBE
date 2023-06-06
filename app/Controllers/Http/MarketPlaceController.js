@@ -8,7 +8,11 @@ const Database = use('Database')
 class MarketPlaceController {
   async createContact({ request, auth, response }) {
     const { ...contact } = request.all()
-    response.res(await MarketPlaceService.createContact(contact))
+    try {
+      response.res(await MarketPlaceService.createContact(contact))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   async createKnock({ request, auth, response }) {

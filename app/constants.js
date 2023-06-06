@@ -1279,6 +1279,8 @@ Estates: [ESTATES]
 
   PUBLISH_TYPE_ONLINE_MARKET: 1,
   PUBLISH_TYPE_OFFLINE_MARKET: 2,
+
+  ESTATE_NO_IMAGE_COVER_URL: 'https://breeze-files-dev.s3.eu-central-1.amazonaws.com/no-cover.png',
 }
 
 module.exports = constants
