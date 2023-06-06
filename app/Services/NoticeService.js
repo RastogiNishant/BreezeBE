@@ -1349,7 +1349,7 @@ class NoticeService {
     const notice = {
       user_id: estate.user_id,
       type: NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
-      data: { estate_id: estate.id, estate_address: estate.address },
+      data: { estate_id: estate.estate_id, estate_address: estate.address },
       image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
