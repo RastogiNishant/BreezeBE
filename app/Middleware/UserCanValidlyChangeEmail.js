@@ -6,7 +6,9 @@ const User = use('App/Models/User')
 const HttpException = use('App/Exceptions/HttpException')
 const { getAuthByRole } = require('../Libs/utils')
 const { ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH } = require('../constants')
-
+const {
+  exceptions: { USER_WRONG_PASSWORD },
+} = require('../exceptions')
 class UserCanValidlyChangeEmail {
   /**
    * @param {object} ctx
@@ -32,7 +34,7 @@ class UserCanValidlyChangeEmail {
       try {
         await authenticator.attempt(uid, request.body.password)
       } catch (e) {
-        throw new HttpException(e, 412, ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH)
+        throw new HttpException(USER_WRONG_PASSWORD, 412, ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH)
       }
       await next()
     }

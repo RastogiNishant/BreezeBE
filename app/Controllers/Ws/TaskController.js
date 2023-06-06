@@ -149,6 +149,8 @@ class TaskController extends BaseController {
       this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
         topic: this.socket.topic,
         urgency: task?.urgency,
+        estate_id: this.estateId,
+        user_id: this.user.id,
       })
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)

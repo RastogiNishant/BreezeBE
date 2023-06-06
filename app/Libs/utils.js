@@ -9,6 +9,11 @@ const {
   ROLE_PROPERTY_MANAGER,
   GERMAN_HOLIDAYS,
   ENERGY_CLASS_USING_EFFICIENCY,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
 } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
@@ -110,6 +115,22 @@ const generateAddress = ({ street, house_number, zip, city, country }) => {
     .replace(/\s,/g, ',')
     .toLowerCase()
 }
+const parseFloorDirection = (direction) => {
+  switch (direction) {
+    case ESTATE_FLOOR_DIRECTION_LEFT:
+      return 'property.attribute.floor_direction.left.message'
+    case ESTATE_FLOOR_DIRECTION_RIGHT:
+      return 'property.attribute.floor_direction.right.message'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT:
+      return 'property.attribute.floor_direction.straight.message'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT:
+      return 'property.attribute.floor_direction.straight.left.message'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT:
+      return 'property.attribute.floor_direction.straight.right.message'
+    default:
+      return null
+  }
+}
 
 const encodeURL = (link) => {
   return link.replace(/\+/g, '%20')
@@ -161,6 +182,7 @@ module.exports = {
   rc: localeTemplateToValue,
   isHoliday,
   generateAddress,
+  parseFloorDirection,
   createDynamicLink,
   encodeURL,
   calculateEnergyClassFromEfficiency,
