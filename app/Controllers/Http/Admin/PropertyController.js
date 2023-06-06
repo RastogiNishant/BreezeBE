@@ -220,7 +220,7 @@ class PropertyController {
         data,
       })
       await MailService.estatePublishRequestApproved(requestPublishEstate)
-      //await NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
+      await NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
       QueueService.estateSyncPublishEstate({ estate_id: id })
       return true
     } catch (err) {
