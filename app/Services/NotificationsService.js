@@ -923,9 +923,8 @@ class NotificationsService {
     }
     const title = `${recipient}.notification.event.message_got`
     const body = (data) => {
+      let text = `${capitalize(data.estate_address)} \n`
       if (recipient === 'landlord') {
-        let text = `${data.estate_address} \n`
-
         const urgency = URGENCIES.find(({ value }) => value == data.urgency)?.label
 
         let trans = rc(l.get('landlord.notification.next.message_got.message', data.lang), [
@@ -937,8 +936,10 @@ class NotificationsService {
         text += trans
 
         return text
+      } else if (recipient === 'tenant') {
+        text += data.message
       }
-      return data.message
+      return text
     }
     return NotificationsService.sendNotes([notice], title, body)
   }
