@@ -20,7 +20,7 @@ class MarketPlaceController {
     const trx = await Database.beginTransaction()
     try {
       await MarketPlaceService.createPendingKnock({ user: auth.user, data1, data2 }, trx)
-      await MarketPlaceService.createKnock({ user_id: auth.user.id }, trx)
+      await MarketPlaceService.createKnock({ user: auth.user }, trx)
       await trx.commit()
 
       await MarketPlaceService.sendBulkKnockWebsocket(auth.user.id)
