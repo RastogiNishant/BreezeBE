@@ -1176,6 +1176,15 @@ class MatchController {
       throw new HttpException(err.message, 400)
     }
   }
+
+  async getKnockPlacesNumber({ request, auth, response }) {
+    const { estate_id } = request.all()
+    try {
+      response.res(await MatchService.getKnockedPosition({ user_id: auth.user.id, estate_id }))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
 }
 
 module.exports = MatchController

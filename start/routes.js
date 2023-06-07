@@ -1021,6 +1021,11 @@ Route.group(() => {
 // MATCH FLOW
 Route.group(() => {
   Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])
+  Route.get('/knock', 'MatchController.getKnockPlacesNumber').middleware([
+    'auth:jwt',
+    'valid:EstateId',
+  ])
+
   Route.delete('/knock', 'MatchController.removeKnock').middleware(['auth:jwt'])
   // invite
   Route.post('/invite', 'MatchController.matchToInvite').middleware([

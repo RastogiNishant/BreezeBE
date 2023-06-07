@@ -854,7 +854,7 @@ class MailService {
 
   static async sendPendingKnockEmail({ link, landlord_name, email, estate, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
-
+    const formatter = new Intl.NumberFormat('de-DE')
     let floor =
       (estate.floor ? `${estate.floor}.` : '') +
       l.get(
@@ -863,10 +863,10 @@ class MailService {
           : 'prospect.property.preferences.apartment.txt_ground.message',
         lang
       )
-    let address = `${parseInt(estate.rooms_number)}${l.get(
+    let address = `${formatter.format(estate.rooms_number)}${l.get(
       'pm.connect.task.txt_room_short.message',
       lang
-    )}, ${parseInt(estate.area)}㎡, ${floor} <br/>€${parseInt(estate.prices)}`
+    )}, ${formatter.format(estate.area)}㎡, ${floor} <br/>€${formatter.format(estate.prices)}`
 
     address += `<br/>`
 
