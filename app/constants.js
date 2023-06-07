@@ -493,6 +493,8 @@ const constants = {
 
   NOTICE_TYPE_EXPIRED_SHOW_TIME: 'notification_landlord_expired_show_time',
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED: 'notification_landlord_min_prospects_reached',
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED:
+    'notification_landlord_green_min_prospects_reached',
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING: 'notification_prospect_like_expiring',
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK: 'notification_prospect_liked_but_not_knock',
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH: 'notification_landlord_admin_approves_publish',
@@ -551,6 +553,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID: 58,
   NOTICE_TYPE_PROSPECT_VISIT48H_ID: 59,
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID: 60,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID: 61,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',

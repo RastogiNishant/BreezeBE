@@ -67,6 +67,7 @@ const {
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
 
@@ -109,6 +110,7 @@ const {
   STATUS_DRAFT,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
@@ -517,7 +519,7 @@ class NoticeService {
   /*
    * user_id is landlord id
    */
-  static async sendFullInvitation({ estateId, estate, count }) {
+  static async sendMinKnockReached({ estateId, estate, count }) {
     if (!estate) {
       estate = await Database.table({ _e: 'estates' })
         .select('address', 'id', 'cover', 'user_id')
@@ -536,7 +538,29 @@ class NoticeService {
       image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
-    NotificationsService.sendFullInvitation([notice])
+    NotificationsService.sendMinKnockReached([notice])
+  }
+
+  static async sendGreenMinKnockReached({ estateId, estate, count }) {
+    if (!estate) {
+      estate = await Database.table({ _e: 'estates' })
+        .select('address', 'id', 'cover', 'user_id')
+        .where('id', estateId)
+        .first()
+    }
+
+    const notice = {
+      user_id: estate.user_id,
+      type: NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+      data: {
+        estate_id: estate.id,
+        count,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    NotificationsService.sendGreenMinKnockReached([notice])
   }
 
   /**
@@ -935,7 +959,10 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
-        return NotificationsService.sendFullInvitation([notice])
+        return NotificationsService.sendMinKnockReached([notice])
+      case NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED:
+        return NotificationsService.sendGreenMinKnockReached([notice])
+
       case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
       case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
