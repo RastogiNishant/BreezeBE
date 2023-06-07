@@ -103,7 +103,7 @@ class TaskController extends BaseController {
     }
   }
 
-  async onMarkLastRead({ type }) {
+  async onMarkLastRead({ type = null }) {
     try {
       const lastChat = await super._markLastRead(this.taskId)
       if (lastChat) {
