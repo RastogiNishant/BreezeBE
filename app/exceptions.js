@@ -101,6 +101,7 @@ const exceptions = {
   ERROR_PROPERTY_INVALID_STATUS: 'Invalid status to publish property',
   ERROR_PROPERTY_NOT_PUBLISHED: 'Estate has not published yet',
   ERROR_CONTACT_REQUEST_EXIST: 'Your contact request already exists',
+  NO_MATCH_EXIST: 'No match exists',
 }
 
 const exceptionCodes = {
