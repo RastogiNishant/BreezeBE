@@ -38,6 +38,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
 } = require('../constants')
+const HttpException = require('../Exceptions/HttpException')
 
 /**
  * Do not stop rest notifications on some error
@@ -370,7 +371,7 @@ class QueueService {
       }
     } catch (e) {
       Logger.error(e)
-      throw e
+      throw new HttpException(e.message, 400)
     }
   }
 }
