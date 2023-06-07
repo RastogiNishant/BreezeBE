@@ -31,6 +31,7 @@ const {
     NO_ESTATE_EXIST,
     MARKET_PLACE_CONTACT_EXIST,
     NO_ACTIVE_ESTATE_EXIST,
+    ERROR_CONTACT_REQUEST_EXIST,
   },
 } = require('../exceptions')
 class MarketPlaceService {
@@ -203,42 +204,63 @@ class MarketPlaceService {
   }
 
   static async createPendingKnock({ user, data1, data2 }, trx = null) {
-    if (!user || user.role !== ROLE_USER) {
-      throw new HttpException(NO_USER_PASSED, 500)
-    }
+    try {
+      if (!user || user.role !== ROLE_USER) {
+        throw new HttpException(NO_USER_PASSED, 500)
+      }
 
-    if (!data1 || !data2) {
-      throw new HttpException(WRONG_PARAMS, 500)
-    }
-    const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({ data1, data2 })
-    console.log('createPendingKnock data1=', data1)
-    console.log('createPendingKnock data2=', data2)
-    const knockRequest = await this.getKnockRequest({ estate_id, email })
-    if (!knockRequest) {
-      throw new HttpException(NO_PROSPECT_KNOCK, 400)
-    }
+      if (!data1 || !data2) {
+        throw new HttpException(WRONG_PARAMS, 500)
+      }
+      const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({
+        data1,
+        data2,
+      })
 
-    if (code != knockRequest.code) {
-      if (knockRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
-      } else {
+      const knockRequest = await this.getKnockRequest({ estate_id, email })
+      if (!knockRequest) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
-    }
-    if (knockRequest.email != email) {
-      throw new HttpException(NO_PROSPECT_KNOCK, 400)
-    }
 
+      if (code != knockRequest.code) {
+        if (knockRequest.status === STATUS_EXPIRE) {
+          throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
+        } else {
+          throw new HttpException(NO_PROSPECT_KNOCK, 400)
+        }
+      }
+      if (knockRequest.email != email) {
+        throw new HttpException(NO_PROSPECT_KNOCK, 400)
+      }
+
+      if (await this.isExistRequest({ email: user.email, estate_id })) {
+        throw new HttpException(ERROR_CONTACT_REQUEST_EXIST, 400)
+      }
+
+      let query = EstateSyncContactRequest.query()
+        .where('email', email)
+        .where('estate_id', estate_id)
+        .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
+
+      if (trx) {
+        await query.transacting(trx)
+      } else {
+        await query
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status, e.code || 0)
+    }
+  }
+
+  static async isExistRequest({ email, estate_id }) {
     let query = EstateSyncContactRequest.query()
-      .where('email', email)
-      .where('estate_id', estate_id)
-      .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
-
-    if (trx) {
-      await query.transacting(trx)
-    } else {
-      await query
+    if (email) {
+      query.where('email', email)
     }
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+    return !!(await query.first())
   }
 
   static async createKnock({ user_id }, trx) {

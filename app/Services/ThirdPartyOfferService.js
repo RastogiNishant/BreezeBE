@@ -30,7 +30,7 @@ const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const {
-  exceptions: { ALREADY_KNOCKED_ON_THIRD_PARTY, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
+  exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -459,7 +459,7 @@ class ThirdPartyOfferService {
         break
       case 'knock':
         if (found?.knocked) {
-          throw new HttpException(ALREADY_KNOCKED_ON_THIRD_PARTY, 400)
+          throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
         }
         if (found?.like === false) {
           throw new HttpException(CANNOT_KNOCK_ON_DISLIKED_ESTATE, 400)
