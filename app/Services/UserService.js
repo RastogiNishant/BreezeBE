@@ -493,7 +493,7 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
-          await MarketPlaceService.createKnock({ user_id: user.id }, trx)
+          await MarketPlaceService.createKnock({ user }, trx)
         }
       }
 
