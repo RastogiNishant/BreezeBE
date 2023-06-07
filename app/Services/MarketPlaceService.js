@@ -34,6 +34,7 @@ const {
     ERROR_CONTACT_REQUEST_EXIST,
   },
 } = require('../exceptions')
+const TenantService = require('./TenantService')
 class MarketPlaceService {
   static async createContact(payload) {
     if (!payload?.propertyId) {
@@ -233,7 +234,12 @@ class MarketPlaceService {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
-      if (await this.isExistRequest({ email: user.email, estate_id })) {
+      /*
+       * if a user is going to knock with different email from market places, but he has a knock using his email already for this knock
+       * because that is the same account using different emails
+       */
+
+      if (email !== user.email && (await this.isExistRequest({ email: user.email, estate_id }))) {
         throw new HttpException(ERROR_CONTACT_REQUEST_EXIST, 400)
       }
 
@@ -263,10 +269,10 @@ class MarketPlaceService {
     return !!(await query.first())
   }
 
-  static async createKnock({ user_id }, trx) {
+  static async createKnock({ user }, trx) {
     const pendingKnocks = (
       await EstateSyncContactRequest.query()
-        .where('user_id', user_id)
+        .where('user_id', user.id)
         .where('status', STATUS_EMAIL_VERIFY)
         .fetch()
     ).toJSON()
@@ -275,15 +281,24 @@ class MarketPlaceService {
       pendingKnocks || [],
       async (knock) => {
         await MatchService.knockEstate(
-          { estate_id: knock.estate_id, user_id, knock_anyway: true },
+          { estate_id: knock.estate_id, user_id: user.id, knock_anyway: true },
           trx
         )
       },
       { concurrency: 1 }
     )
 
+    //fill up tenant coord info if he doesn't add it yet.
+    if (pendingKnocks?.length) {
+      const tenant = await TenantService.getTenant(user.id)
+      if (!tenant.address || !tenant.coord) {
+        const estate = await EstateService.getById(pendingKnocks[0].estate_id)
+        await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+      }
+    }
+
     await EstateSyncContactRequest.query()
-      .where('user_id', user_id)
+      .where('user_id', user.id)
       .update({ code: null, status: STATUS_ACTIVE })
       .transacting(trx)
 
