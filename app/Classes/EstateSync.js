@@ -51,7 +51,16 @@ const {
   PARKING_SPACE_TYPE_DUPLEX,
   ESTATE_SYNC_TITLE_TEMPLATES,
   ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS,
+  OPTIONS_TYPE_BUILD,
+  OPTIONS_TYPE_APT,
+  OPTIONS_TYPE_OUT,
+  LANG_DE,
 } = require('../constants')
+const ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION = [
+  OPTIONS_TYPE_BUILD,
+  OPTIONS_TYPE_APT,
+  OPTIONS_TYPE_OUT,
+]
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
 const ContentType = use('App/Classes/ContentType')
@@ -159,7 +168,7 @@ class EstateSync {
     //commissionDescription: 'My first commission description for a property.',
     construction_year: 'constructionYear',
     deposit: this.composeDeposit,
-    //description: 'My first detailed description for a property.',
+    //description: this.composeDescription,
     //energyCertificateStatus: 'present',
     floor: 'floor',
     //furnishingDescription: 'My first furnishing description for a property.',
@@ -196,6 +205,19 @@ class EstateSync {
   constructor(apiKey = '') {
     this.apiKey = apiKey
     axios.defaults.headers.common['Authorization'] = `Bearer ${apiKey}`
+  }
+
+  composeDescription({ amenities }) {
+    if (!amenities?.length) {
+      return ''
+    }
+    const validAmenities = amenities.reduce((validAmenities, amenity) => {
+      if (ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location)) {
+        return [...validAmenities, l.get(`${amenity?.option?.title}.message`, LANG_DE)]
+      }
+      return validAmenities
+    }, [])
+    return validAmenities.join(', ')
   }
 
   composeApartmentType({ apt_type }) {
@@ -350,6 +372,10 @@ class EstateSync {
     if (!isEmpty(energyClass) && energyClass?.energyClass && energyClass?.energySource) {
       newEstate.residentialEnergyCertificate = energyClass
     }*/
+    const description = this.composeDescription(estate)
+    if (description) {
+      newEstate['description'] = description
+    }
 
     for (let i = 0; i < this.mustHaveValue.length; i++) {
       if (!newEstate[this.mustHaveValue[i]]) {
