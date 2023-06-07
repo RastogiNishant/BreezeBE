@@ -91,7 +91,13 @@ const {
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
+  exceptions: {
+    ESTATE_NOT_EXISTS,
+    WRONG_PROSPECT_CODE,
+    TIME_SLOT_NOT_FOUND,
+    NO_ESTATE_EXIST,
+    NO_MATCH_EXIST,
+  },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
 const QueueService = require('./QueueService')
@@ -3786,6 +3792,26 @@ class MatchService {
         })
       })
       .first()
+  }
+
+  static async getKnockedPosition({ user_id, estate_id }) {
+    const matches = (
+      await Match.query()
+        .where('estate_id', estate_id)
+        .orderBy('status', 'desc')
+        .orderBy('percent', 'desc')
+        .orderBy('id')
+        .fetch()
+    ).toJSON()
+
+    const placeNumber = (matches || []).findIndex((match) => match.user_id === user_id)
+    if (placeNumber == -1) {
+      throw new HttpException(NO_MATCH_EXIST, 400)
+    }
+    return {
+      match: matches?.[placeNumber],
+      place_num: placeNumber + 1,
+    }
   }
 }
 
