@@ -79,7 +79,6 @@ const exceptions = {
   FAILED_CREATE_TIME_SLOT: 'Failed to create time slot',
   ONLY_HOUSEHOLD_ADD_MEMBER: 'Please ask your household to add this roommate',
   FAILED_EXTEND_ESTATE: 'Failed to extend dates',
-  ALREADY_KNOCKED_ON_THIRD_PARTY: 'You already knocked on this estate',
   CANNOT_KNOCK_ON_DISLIKED_ESTATE: 'You cannot knock on an estate you disliked',
   THIRD_PARTY_OFFER_NOT_FOUND: 'Third party offer not found',
   MEMBER_INVITATION_CANCELED: 'your invitation has been cancelled',
@@ -101,6 +100,7 @@ const exceptions = {
   ERROR_PROPERTY_ALREADY_RENTED: "Estate already rented. You can't publish it",
   ERROR_PROPERTY_INVALID_STATUS: 'Invalid status to publish property',
   ERROR_PROPERTY_NOT_PUBLISHED: 'Estate has not published yet',
+  ERROR_CONTACT_REQUEST_EXIST: 'Your contact request already exists',
 }
 
 const exceptionCodes = {
