@@ -103,7 +103,7 @@ class TaskController extends BaseController {
     }
   }
 
-  async onMarkLastRead({ type = null }) {
+  async onMarkLastRead(data) {
     try {
       const lastChat = await super._markLastRead(this.taskId)
       if (lastChat) {
@@ -111,7 +111,7 @@ class TaskController extends BaseController {
           topic: this.socket.topic,
           chat: {
             id: lastChat.id,
-            type: type,
+            type: data?.type,
             user: lastChat.sender_id,
             created_at: lastChat.created_at,
           },
