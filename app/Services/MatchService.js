@@ -621,10 +621,7 @@ class MatchService {
    */
   static async matchByEstate(estateId) {
     // Get current estate
-    const estate = await MatchService.getEstateForScoringQuery()
-      .select('address')
-      .where({ id: estateId })
-      .first()
+    const estate = await MatchService.getEstateForScoringQuery().where({ id: estateId }).first()
     // Get tenant in zone and check crossing with every tenant search zone
     let tenants = await Database.from({ _e: 'estates' })
       .select('_t.*', Database.raw(`TRUE AS inside`))
@@ -3289,6 +3286,7 @@ class MatchService {
   static getEstateForScoringQuery() {
     return Estate.query()
       .select(
+        'estates.address',
         'estates.id',
         'budget',
         'credit_score',
