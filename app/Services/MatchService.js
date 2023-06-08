@@ -2858,6 +2858,7 @@ class MatchService {
         '_m.percent as percent',
         '_m.share',
         '_m.inviteIn',
+        '_m.status_at',
         '_m.final_match_date'
       )
       .select('_u.email', '_u.phone', '_u.status as u_status')
