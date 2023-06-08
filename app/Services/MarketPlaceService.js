@@ -31,8 +31,10 @@ const {
     NO_ESTATE_EXIST,
     MARKET_PLACE_CONTACT_EXIST,
     NO_ACTIVE_ESTATE_EXIST,
+    ERROR_CONTACT_REQUEST_EXIST,
   },
 } = require('../exceptions')
+const TenantService = require('./TenantService')
 class MarketPlaceService {
   static async createContact(payload) {
     if (!payload?.propertyId) {
@@ -203,48 +205,74 @@ class MarketPlaceService {
   }
 
   static async createPendingKnock({ user, data1, data2 }, trx = null) {
-    if (!user || user.role !== ROLE_USER) {
-      throw new HttpException(NO_USER_PASSED, 500)
-    }
+    try {
+      if (!user || user.role !== ROLE_USER) {
+        throw new HttpException(NO_USER_PASSED, 500)
+      }
 
-    if (!data1 || !data2) {
-      throw new HttpException(WRONG_PARAMS, 500)
-    }
-    const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({ data1, data2 })
-    console.log('createPendingKnock data1=', data1)
-    console.log('createPendingKnock data2=', data2)
-    const knockRequest = await this.getKnockRequest({ estate_id, email })
-    if (!knockRequest) {
-      throw new HttpException(NO_PROSPECT_KNOCK, 400)
-    }
+      if (!data1 || !data2) {
+        throw new HttpException(WRONG_PARAMS, 500)
+      }
+      const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({
+        data1,
+        data2,
+      })
 
-    if (code != knockRequest.code) {
-      if (knockRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
-      } else {
+      const knockRequest = await this.getKnockRequest({ estate_id, email })
+      if (!knockRequest) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
-    }
-    if (knockRequest.email != email) {
-      throw new HttpException(NO_PROSPECT_KNOCK, 400)
-    }
 
-    let query = EstateSyncContactRequest.query()
-      .where('email', email)
-      .where('estate_id', estate_id)
-      .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
+      if (code != knockRequest.code) {
+        if (knockRequest.status === STATUS_EXPIRE) {
+          throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
+        } else {
+          throw new HttpException(NO_PROSPECT_KNOCK, 400)
+        }
+      }
+      if (knockRequest.email != email) {
+        throw new HttpException(NO_PROSPECT_KNOCK, 400)
+      }
 
-    if (trx) {
-      await query.transacting(trx)
-    } else {
-      await query
+      /*
+       * if a user is going to knock with different email from market places, but he has a knock using his email already for this knock
+       * because that is the same account using different emails
+       */
+
+      if (email !== user.email && (await this.isExistRequest({ email: user.email, estate_id }))) {
+        throw new HttpException(ERROR_CONTACT_REQUEST_EXIST, 400)
+      }
+
+      let query = EstateSyncContactRequest.query()
+        .where('email', email)
+        .where('estate_id', estate_id)
+        .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
+
+      if (trx) {
+        await query.transacting(trx)
+      } else {
+        await query
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status, e.code || 0)
     }
   }
 
-  static async createKnock({ user_id }, trx) {
+  static async isExistRequest({ email, estate_id }) {
+    let query = EstateSyncContactRequest.query()
+    if (email) {
+      query.where('email', email)
+    }
+    if (estate_id) {
+      query.where('estate_id', estate_id)
+    }
+    return !!(await query.first())
+  }
+
+  static async createKnock({ user }, trx) {
     const pendingKnocks = (
       await EstateSyncContactRequest.query()
-        .where('user_id', user_id)
+        .where('user_id', user.id)
         .where('status', STATUS_EMAIL_VERIFY)
         .fetch()
     ).toJSON()
@@ -253,15 +281,24 @@ class MarketPlaceService {
       pendingKnocks || [],
       async (knock) => {
         await MatchService.knockEstate(
-          { estate_id: knock.estate_id, user_id, knock_anyway: true },
+          { estate_id: knock.estate_id, user_id: user.id, knock_anyway: true },
           trx
         )
       },
       { concurrency: 1 }
     )
 
+    //fill up tenant coord info if he doesn't add it yet.
+    if (pendingKnocks?.length) {
+      const tenant = await TenantService.getTenant(user.id)
+      if (!tenant.address || !tenant.coord) {
+        const estate = await EstateService.getById(pendingKnocks[0].estate_id)
+        await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+      }
+    }
+
     await EstateSyncContactRequest.query()
-      .where('user_id', user_id)
+      .where('user_id', user.id)
       .update({ code: null, status: STATUS_ACTIVE })
       .transacting(trx)
 

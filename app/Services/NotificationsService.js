@@ -122,6 +122,9 @@ const {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
 
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
 
@@ -187,6 +190,10 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED],
   [NOTICE_TYPE_EXPIRED_SHOW_TIME_ID, NOTICE_TYPE_EXPIRED_SHOW_TIME],
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
+  [
+    NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+    NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
+  ],
   [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
   [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
   [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
@@ -885,9 +892,19 @@ class NotificationsService {
     return NotificationsService.sendNotes([notice], title, body)
   }
 
-  static async sendFullInvitation(notices) {
+  static async sendMinKnockReached(notices) {
     const title = 'landlord.notification.event.min_reached'
-    const body = 'prospect.notification.next.new_match.message'
+    const body = 'landlord.notification.next.min_reached'
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ count: data?.count }])}`,
+      body
+    )
+  }
+
+  static async sendGreenMinKnockReached(notices) {
+    const title = 'landlord.notification.event.min_greens_reached'
+    const body = 'landlord.notification.next.min_reached'
     return NotificationsService.sendNotes(
       notices,
       (data, lang) => `${rc(l.get(title, lang), [{ count: data?.count }])}`,

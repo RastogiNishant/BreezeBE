@@ -87,11 +87,18 @@ const {
   STATUS_OFFLINE_ACTIVE,
   TASK_SYSTEM_TYPE,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
-  exceptions: { ESTATE_NOT_EXISTS, WRONG_PROSPECT_CODE, TIME_SLOT_NOT_FOUND, NO_ESTATE_EXIST },
+  exceptions: {
+    ESTATE_NOT_EXISTS,
+    WRONG_PROSPECT_CODE,
+    TIME_SLOT_NOT_FOUND,
+    NO_ESTATE_EXIST,
+    NO_MATCH_EXIST,
+  },
   exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
 } = require('../exceptions')
 const QueueService = require('./QueueService')
@@ -986,11 +993,22 @@ class MatchService {
           .where('estates.min_invite_count', '>', 0)
           .where(function () {
             this.orWhereNull('estates.notify_sent')
-            this.orWhereNot(
-              Database.raw(
-                `${NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID} = any(estates.notify_sent)`
+            this.orWhere(function () {
+              this.where('estates.notify_on_green_matches', true)
+              this.whereNot(
+                Database.raw(
+                  `${NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID} = any(estates.notify_sent)`
+                )
               )
-            )
+            })
+            this.orWhere(function () {
+              this.whereNot('estates.notify_on_green_matches', true)
+              this.whereNot(
+                Database.raw(
+                  `${NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID} = any(estates.notify_sent)`
+                )
+              )
+            })
           })
           .where(function () {
             this.orWhere('_m.status', MATCH_STATUS_KNOCK)
@@ -1015,34 +1033,37 @@ class MatchService {
     if (!matches?.length) {
       return
     }
-    let isNotificationSent = false
     let invitedCount = 0
-
     if (matches[0].notify_on_green_matches) {
       // if red match is accpeted
-      const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
+      const greenMatchCount = matches.filter(
+        (match) => match.percent >= MATCH_SCORE_GOOD_MATCH
+      )?.length
       invitedCount = greenMatchCount
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= greenMatchCount) {
-        isNotificationSent = true
+        await require('./EstateService').updateSentNotification(
+          matches[0],
+          NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID
+        )
+        NoticeService.sendGreenMinKnockReached({
+          estate: matches[0],
+          count: invitedCount,
+        })
       }
     } else {
       // if only green matches knocks accpeted
       invitedCount = matches.length
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= matches.length) {
-        isNotificationSent = true
+        await require('./EstateService').updateSentNotification(
+          matches[0],
+          NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID
+        )
+
+        NoticeService.sendMinKnockReached({
+          estate: matches[0],
+          count: invitedCount,
+        })
       }
-    }
-
-    if (isNotificationSent) {
-      await require('./EstateService').updateSentNotification(
-        matches[0],
-        NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID
-      )
-
-      NoticeService.sendFullInvitation({
-        estate: matches[0],
-        count: invitedCount,
-      })
     }
   }
 
@@ -3790,6 +3811,26 @@ class MatchService {
         })
       })
       .first()
+  }
+
+  static async getKnockedPosition({ user_id, estate_id }) {
+    const matches = (
+      await Match.query()
+        .where('estate_id', estate_id)
+        .orderBy('status', 'desc')
+        .orderBy('percent', 'desc')
+        .orderBy('id')
+        .fetch()
+    ).toJSON()
+
+    const placeNumber = (matches || []).findIndex((match) => match.user_id === user_id)
+    if (placeNumber == -1) {
+      throw new HttpException(NO_MATCH_EXIST, 400)
+    }
+    return {
+      match: matches?.[placeNumber],
+      place_num: placeNumber + 1,
+    }
   }
 }
 

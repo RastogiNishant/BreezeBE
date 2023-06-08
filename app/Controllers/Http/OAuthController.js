@@ -192,7 +192,7 @@ class OAuthController {
         trx
       )
       if (user.role === ROLE_USER) {
-        await MarketPlaceService.createKnock({ user_id: user.id }, trx)
+        await MarketPlaceService.createKnock({ user }, trx)
       }
       await trx.commit()
       await MarketPlaceService.sendBulkKnockWebsocket(user.id)
