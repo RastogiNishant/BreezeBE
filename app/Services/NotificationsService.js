@@ -33,6 +33,8 @@ const {
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_ZENDESK_NOTIFY,
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -188,6 +190,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
   [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
   [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
+  [NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID, NOTICE_TYPE_PROSPECT_GREEN_MATCH],
 ]
 
 class NotificationsService {
@@ -977,6 +980,17 @@ class NotificationsService {
   static async adminApprovesPublish(notices) {
     const title = 'landlord.notification.event.property_published'
     const body = 'landlord.notification.next.property_published'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendProspectGreenMatch(notices) {
+    const title = 'prospect.notification.event.best_match'
+    const body = (data, lang) => {
+      return (
+        `${capitalize(data.estate_address)} \n` +
+        l.get(`prospect.notification.next.best_match.message`, lang)
+      )
+    }
     return NotificationsService.sendNotes(notices, title, body)
   }
 }
