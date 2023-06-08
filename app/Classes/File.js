@@ -369,7 +369,7 @@ class File {
 
       const writeFile = async (url, outputFileName) => {
         try {
-          await fsPromise.writeFile(outputFileName, response.data, {}, resolve)
+          await fsPromise.writeFile(outputFileName, response.data)
           Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
         } catch (e) {
           Logger.info(`failed to write ${url} at ${new Date().toISOString()} ${e.message || e}`)
