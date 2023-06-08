@@ -500,7 +500,7 @@ class UserService {
       await user.save(trx)
       await trx.commit()
 
-      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
+      MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)
