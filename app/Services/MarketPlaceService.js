@@ -323,7 +323,7 @@ class MarketPlaceService {
     const pendingKnocks = (
       await EstateSyncContactRequest.query()
         .where('user_id', user_id)
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EMAIL_VERIFY])
+        .whereIn('status', [STATUS_ACTIVE])
         .fetch()
     ).toJSON()
 
