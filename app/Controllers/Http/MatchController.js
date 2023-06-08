@@ -910,6 +910,7 @@ class MatchController {
       'u_birthday',
       'u_avatar',
       'final_match_date',
+      'status_at',
       'unread_count',
     ]
 
