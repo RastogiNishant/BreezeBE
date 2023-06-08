@@ -317,6 +317,13 @@ class MarketPlaceService {
       .where('user_id', user_id)
       .update({ code: null, status: STATUS_EXPIRE })
 
+    if (pendingKnocks?.length) {
+      await require('./MatchService').matchByUser({
+        userId: user_id,
+        has_notification_sent: true,
+      })
+    }
+
     Promise.map(pendingKnocks, async (knock) => {
       MatchService.sendMatchKnockWebsocket({
         estate_id: knock.estate_id,
