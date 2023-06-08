@@ -368,15 +368,13 @@ class File {
       Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
 
       const writeFile = async (url, outputFileName) => {
-        return new Promise((resolve, reject) => {
-          try {
-            fs.writeFile(outputFileName, response.data, {}, resolve)
-            Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
-          } catch (e) {
-            Logger.info(`failed to write ${url} at ${new Date().toISOString()} ${e.message}`)
-            reject(err)
-          }
-        })
+        try {
+          await fsPromise.writeFile(outputFileName, response.data, {}, resolve)
+          Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
+        } catch (e) {
+          Logger.info(`failed to write ${url} at ${new Date().toISOString()} ${e.message || e}`)
+          throw new HttpException(e.message || e, 400)
+        }
       }
       await writeFile(url, outputFileName)
       return outputFileName
