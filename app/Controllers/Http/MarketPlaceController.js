@@ -23,7 +23,7 @@ class MarketPlaceController {
       await MarketPlaceService.createKnock({ user: auth.user }, trx)
       await trx.commit()
 
-      await MarketPlaceService.sendBulkKnockWebsocket(auth.user.id)
+      MarketPlaceService.sendBulkKnockWebsocket(auth.user.id)
       response.res(true)
     } catch (e) {
       await trx.rollback()
