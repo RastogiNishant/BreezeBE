@@ -148,8 +148,8 @@ class TenantService {
     )
     tenant.point_id = point.id
 
-    if (trx) return tenant.save(trx)
-    return tenant.save()
+    if (trx) return await tenant.save(trx)
+    return await tenant.save()
   }
 
   static async getTenant(userId) {
@@ -403,6 +403,12 @@ class TenantService {
       const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}
       if (lon && lat) {
         tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
+        const point = await GeoService.getOrCreateIsoline(
+          { lat, lon },
+          tenant.dist_type || TRANSPORT_TYPE_CAR,
+          tenant.dist_min || 60
+        )
+        tenant.point_id = point.id
       }
 
       await tenant.save(trx)
