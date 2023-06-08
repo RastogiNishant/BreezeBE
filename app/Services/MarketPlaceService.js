@@ -4,6 +4,8 @@ const uuid = require('uuid')
 const crypto = require('crypto')
 const HttpException = require('../Exceptions/HttpException')
 const Promise = require('bluebird')
+const Logger = use('Logger')
+const Database = use('Database')
 const { createDynamicLink } = require('../Libs/utils')
 const {
   DEFAULT_LANG,
@@ -72,23 +74,25 @@ class MarketPlaceService {
       })
       .first()
 
-    let newContactRequest
     if (contactRequest) {
-      if (contactRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
-      } else {
-        contactRequest.updateItem({ ...contactRequest.toJSON(), contact })
-        newContactRequest = { ...contactRequest.toJSON(), contact }
-      }
-    } else {
-      newContactRequest = (await EstateSyncContactRequest.createItem(contact)).toJSON()
+      return true
     }
 
-    await this.handlePendingKnock(contact)
-    return newContactRequest
+    let newContactRequest
+    const trx = await Database.beginTransaction()
+    try {
+      newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
+      await this.handlePendingKnock(contact, trx)
+
+      await trx.commit()
+      return newContactRequest
+    } catch (e) {
+      Logger.error(e.message || e, 400)
+      await trx.rollback()
+    }
   }
 
-  static async handlePendingKnock(contact) {
+  static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
       throw new HttpException('Params are wrong', 500)
     }
@@ -111,6 +115,7 @@ class MarketPlaceService {
         user_id: user_id || null,
         status: user_id ? STATUS_EMAIL_VERIFY : STATUS_DRAFT,
       })
+      .transacting(trx)
 
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
