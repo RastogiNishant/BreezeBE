@@ -735,6 +735,7 @@ class MatchService {
           share: share_profile ? true : false,
           buddy,
           knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
         }
         if (match.status === MATCH_STATUS_NEW) {
           // Update match to knock
@@ -764,6 +765,7 @@ class MatchService {
           estate_id,
           percent,
           buddy,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
           knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
         }
         await Match.createItem(newMatch, trx)
@@ -784,7 +786,11 @@ class MatchService {
 
       if (!isOutsideTrxExist) {
         await trx.commit()
-        this.sendMatchKnockWebsocket({ estate_id, user_id, share_profile })
+        this.sendMatchKnockWebsocket({
+          estate_id,
+          user_id,
+          share_profile,
+        })
       }
     } catch (e) {
       if (!isOutsideTrxExist) {
@@ -803,6 +809,7 @@ class MatchService {
         user_id: user_id,
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
@@ -815,6 +822,7 @@ class MatchService {
         user_id: user_id,
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
@@ -830,6 +838,7 @@ class MatchService {
       topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
     }
   }
+
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {
     if (!data.estate_id) {
       return
@@ -866,6 +875,7 @@ class MatchService {
     if (role === ROLE_LANDLORD) {
       data = {
         ...data,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
         estate: estate || null,
       }
     }
@@ -950,10 +960,15 @@ class MatchService {
       throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
     }
 
-    await Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+    await Database.table('matches')
+      .update({
+        status: MATCH_STATUS_INVITE,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
+      .where({
+        user_id: userId,
+        estate_id: estateId,
+      })
     await NoticeService.userInvite(estateId, userId)
 
     this.emitMatch({
@@ -1090,10 +1105,13 @@ class MatchService {
       throw new AppException('Invalid match stage')
     }
 
-    await Database.table('matches').update({ status: MATCH_STATUS_KNOCK }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+    await Database.table('matches')
+      .update({ status: MATCH_STATUS_KNOCK })
+      .where({
+        user_id: userId,
+        estate_id: estateId,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
 
     if (role === ROLE_USER) {
       this.emitMatch({
@@ -1190,10 +1208,13 @@ class MatchService {
       end_date: currentTimeslot.slot_length ? endDate.format(DATE_FORMAT) : currentTimeslot.end_at,
     })
     // Move match status to next
-    await Database.table('matches').update({ status: MATCH_STATUS_VISIT }).where({
-      user_id: userId,
-      estate_id: estateId,
-    })
+    await Database.table('matches')
+      .update({ status: MATCH_STATUS_VISIT })
+      .where({
+        user_id: userId,
+        estate_id: estateId,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
 
     // Calc booked timeslots and send notification if all booked
     const { total, booked } = await MatchService.getEstateSlotsStat(estateId)
@@ -1244,7 +1265,10 @@ class MatchService {
     if (!userIds) return
     userIds = !Array.isArray(userIds) ? [userIds] : userIds
     await Match.query()
-      .update({ status: MATCH_STATUS_INVITE })
+      .update({
+        status: MATCH_STATUS_INVITE,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
       .where('estate_id', estate_id)
       .whereIn('user_id', userIds)
       .transacting(trx)
@@ -1355,10 +1379,13 @@ class MatchService {
       .where({ user_id: tenantId })
       .delete()
 
-    const updateMatch = Database.table('matches').update({ status: MATCH_STATUS_INVITE }).where({
-      user_id: tenantId,
-      estate_id: estateId,
-    })
+    const updateMatch = Database.table('matches')
+      .update({ status: MATCH_STATUS_INVITE })
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
 
     await Promise.all([deleteVisit, updateMatch])
 
@@ -1408,6 +1435,7 @@ class MatchService {
     await Database.table('matches')
       .update({
         status: MATCH_STATUS_SHARE,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
         share: true,
       })
       .where({
@@ -1440,10 +1468,16 @@ class MatchService {
       throw new AppException('Invalid code or match status')
     }
 
-    await Database.table('matches').update({ status: MATCH_STATUS_VISIT, share: false }).where({
-      user_id,
-      estate_id: estateId,
-    })
+    await Database.table('matches')
+      .update({
+        status: MATCH_STATUS_VISIT,
+        share: false,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
+      .where({
+        user_id,
+        estate_id: estateId,
+      })
 
     /**Need to confirm status */
 
@@ -1495,7 +1529,7 @@ class MatchService {
     const trx = await Database.beginTransaction()
     try {
       const topMatch = await Match.query()
-        .update({ status: MATCH_STATUS_TOP })
+        .update({ status: MATCH_STATUS_TOP, status_at: moment.utc(new Date()).format(DATE_FORMAT) })
         .where('user_id', tenantId)
         .where('estate_id', estateId)
         .where('share', true)
@@ -1593,7 +1627,10 @@ class MatchService {
     }
 
     await Database.table('matches')
-      .update({ status: match.share ? MATCH_STATUS_SHARE : MATCH_STATUS_VISIT })
+      .update({
+        status: match.share ? MATCH_STATUS_SHARE : MATCH_STATUS_VISIT,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
       .where({
         user_id: tenantId,
         estate_id: estateId,
@@ -1639,7 +1676,10 @@ class MatchService {
           estate_id: estateId,
           status: MATCH_STATUS_TOP,
         })
-        .update({ status: MATCH_STATUS_COMMIT })
+        .update({
+          status: MATCH_STATUS_COMMIT,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        })
         .transacting(trx)
 
       await require('./MemberService').setFinalIncome({ user_id: tenantId, is_final: true }, trx)
@@ -1670,7 +1710,7 @@ class MatchService {
           estate_id: estateId,
           status: MATCH_STATUS_COMMIT,
         })
-        .update({ status: MATCH_STATUS_TOP })
+        .update({ status: MATCH_STATUS_TOP, status_at: moment.utc(new Date()).format(DATE_FORMAT) })
         .transacting(trx)
 
       await require('./MemberService').setFinalIncome({ user_id: userId, is_final: false }, trx)
@@ -1731,6 +1771,7 @@ class MatchService {
         .update({
           status: MATCH_STATUS_FINISH,
           final_match_date: moment.utc(new Date()).format(DATE_FORMAT),
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
         })
         .where({
           user_id: user.id,
@@ -1870,6 +1911,7 @@ class MatchService {
         percent: 0,
         buddy: true,
         status: MATCH_STATUS_NEW,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
       return result
     }
@@ -1879,10 +1921,12 @@ class MatchService {
     }
 
     // Match exists but without buddy
-    const buddyMatch = Database.table('matches').update({ buddy: true }).where({
-      user_id: tenantId,
-      estate_id: estateId,
-    })
+    const buddyMatch = Database.table('matches')
+      .update({ buddy: true, status_at: moment.utc(new Date()).format(DATE_FORMAT) })
+      .where({
+        user_id: tenantId,
+        estate_id: estateId,
+      })
 
     this.emitMatch({
       data: {
@@ -2814,6 +2858,7 @@ class MatchService {
         '_m.percent as percent',
         '_m.share',
         '_m.inviteIn',
+        '_m.status_at',
         '_m.final_match_date'
       )
       .select('_u.email', '_u.phone', '_u.status as u_status')
@@ -3749,6 +3794,7 @@ class MatchService {
     matchQuery = new EstateFilters(params, matchQuery).process()
     return matchQuery
   }
+
   static async getMatchList(user_id, params = {}) {
     let matchQuery = this.getMatchListQuery(user_id, params)
     matchQuery
