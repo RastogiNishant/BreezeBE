@@ -323,18 +323,13 @@ class MarketPlaceService {
     const pendingKnocks = (
       await EstateSyncContactRequest.query()
         .where('user_id', user_id)
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EMAIL_VERIFY])
+        .whereIn('status', [STATUS_ACTIVE])
         .fetch()
     ).toJSON()
 
     await EstateSyncContactRequest.query()
       .where('user_id', user_id)
       .update({ code: null, status: STATUS_EXPIRE })
-
-    await require('./MatchService').matchByUser({
-      userId: user_id,
-      has_notification_sent: true,
-    })
 
     Promise.map(pendingKnocks, async (knock) => {
       MatchService.sendMatchKnockWebsocket({
