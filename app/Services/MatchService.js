@@ -487,7 +487,8 @@ class MatchService {
         .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
         .where({ 'tenants.user_id': userId })
         .first()
-      const polygon = get(tenant, 'polygon.data.0.0')
+
+        const polygon = get(tenant, 'polygon.data.0.0')
       if (!tenant || !polygon) {
         if (ignoreNullFields) {
           return

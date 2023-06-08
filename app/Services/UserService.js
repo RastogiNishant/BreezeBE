@@ -175,7 +175,6 @@ class UserService {
     if (!invite_type || !data1 || !data2) {
       return
     }
-
     switch (invite_type) {
       case OUTSIDE_LANDLORD_INVITE_TYPE: //outside landlord invitation
         await require('./OutsideLandlordService').updateOutsideLandlordInfo(
@@ -500,7 +499,12 @@ class UserService {
       await user.save(trx)
       await trx.commit()
 
-      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
+      MarketPlaceService.sendBulkKnockWebsocket(user.id)
+      await require('./MatchService').matchByUser({
+        userId: user_id,
+        ignoreNullFields: true,
+        has_notification_sent: true,
+      })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 500)

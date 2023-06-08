@@ -228,14 +228,11 @@ class MarketPlaceService {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
-      if (code != knockRequest.code) {
-        if (knockRequest.status === STATUS_EXPIRE) {
-          throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
-        } else {
-          throw new HttpException(NO_PROSPECT_KNOCK, 400)
-        }
+      if (user_id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
+        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       }
-      if (knockRequest.email != email) {
+
+      if (knockRequest.code && code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
@@ -323,18 +320,13 @@ class MarketPlaceService {
     const pendingKnocks = (
       await EstateSyncContactRequest.query()
         .where('user_id', user_id)
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EMAIL_VERIFY])
+        .whereIn('status', [STATUS_ACTIVE])
         .fetch()
     ).toJSON()
 
     await EstateSyncContactRequest.query()
       .where('user_id', user_id)
       .update({ code: null, status: STATUS_EXPIRE })
-
-    await require('./MatchService').matchByUser({
-      userId: user_id,
-      has_notification_sent: true,
-    })
 
     Promise.map(pendingKnocks, async (knock) => {
       MatchService.sendMatchKnockWebsocket({

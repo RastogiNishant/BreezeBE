@@ -25,6 +25,7 @@ const {
   SIGN_IN_METHOD_APPLE,
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const {
@@ -87,6 +88,7 @@ class OAuthController {
     }
 
     let user = await this.authorizeUser([email, anotherSameEmail], role)
+    let isSignUp = false
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
         const { name } = ticket.getPayload()
@@ -96,13 +98,16 @@ class OAuthController {
           { ...ticket.getPayload(), email, google_id: googleId, firstname, secondname },
           SIGN_IN_METHOD_GOOGLE
         )
+        isSignUp = true
       } catch (e) {
         throw new HttpException(e.message, 400)
       }
     }
 
     if (user) {
-      return response.res(await this.handleLogin(request, auth, user, SIGN_IN_METHOD_GOOGLE))
+      return response.res(
+        await this.handleLogin(request, auth, user, SIGN_IN_METHOD_GOOGLE, isSignUp)
+      )
     }
 
     throw new HttpException('Invalid role', 400)
@@ -171,7 +176,7 @@ class OAuthController {
     return user
   }
 
-  async handleLogin(request, auth, user, method) {
+  async handleLogin(request, auth, user, method, isSignUp = false) {
     let { device_token, invite_type, data1, data2, ip, ip_based_info } = request.all()
 
     const authenticator = getAuthByRole(auth, user.role)
@@ -191,11 +196,21 @@ class OAuthController {
         },
         trx
       )
-      if (user.role === ROLE_USER) {
+      if (user.role === ROLE_USER && invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) {
         await MarketPlaceService.createKnock({ user }, trx)
       }
       await trx.commit()
-      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
+      if (user.role === ROLE_USER && invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) {
+        MarketPlaceService.sendBulkKnockWebsocket(user.id)
+
+        if (isSignUp) {
+          await require('./MatchService').matchByUser({
+            userId: user_id,
+            ignoreNullFields: true,
+            has_notification_sent: true,
+          })
+        }
+      }
     } catch (e) {
       console.log(`outside invitation error= ${invite_type}`, e.message)
       await trx.rollback()
@@ -232,6 +247,7 @@ class OAuthController {
       throw new HttpException(INVALID_TOKEN, 400)
     }
     let user = await this.authorizeUser(email, role)
+    let isSignUp = false
     if (!user && [ROLE_LANDLORD, ROLE_USER, ROLE_PROPERTY_MANAGER].includes(role)) {
       try {
         user = await this.handleSignUp(
@@ -239,13 +255,16 @@ class OAuthController {
           { email, name: 'Apple User', firstname: 'User', secondname: 'Apple' },
           SIGN_IN_METHOD_APPLE
         )
+        isSignUp = true
       } catch (e) {
         throw new HttpException(e.message, 400)
       }
     }
 
     if (user) {
-      return response.res(await this.handleLogin(request, auth, user, SIGN_IN_METHOD_GOOGLE))
+      return response.res(
+        await this.handleLogin(request, auth, user, SIGN_IN_METHOD_APPLE, isSignUp)
+      )
     }
 
     throw new HttpException(INVALID_USER_ROLE, 400)
