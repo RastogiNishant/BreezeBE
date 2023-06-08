@@ -646,7 +646,6 @@ class MatchService {
       passedEstates.push({ user_id: tenants[idx].user_id, percent })
       idx++
     }
-    passedEstates = [...passedEstates, { user_id: 315, percent: 86.5 }]
     const matches = passedEstates.map((i) => ({
       user_id: i.user_id,
       estate_id: estate.id,
