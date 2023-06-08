@@ -113,6 +113,8 @@ const {
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH,
 } = require('../constants')
 
 class NoticeService {
@@ -749,6 +751,27 @@ class NoticeService {
     }
   }
 
+  static async prospectNewGreenMatch(matches, estate) {
+    let notices = []
+    matches.map((match) => {
+      notices = [
+        ...notices,
+        {
+          user_id: match.user_id,
+          type: NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
+          data: {
+            estate_id: estate.id,
+            estate_address: estate.address,
+          },
+        },
+      ]
+    })
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendProspectGreenMatch(notices)
+    }
+  }
+
   /**
    *
    */
@@ -942,6 +965,8 @@ class NoticeService {
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
       case NOTICE_TYPE_ADMIN_APPROVES_PUBLISH:
         return NotificationsService.adminApprovesPublish([notice])
+      case NOTICE_TYPE_PROSPECT_GREEN_MATCH:
+        return NotificationsService.sendProspectGreenMatch([notice])
     }
   }
 

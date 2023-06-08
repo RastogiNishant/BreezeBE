@@ -30,6 +30,7 @@ const {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH,
 } = require('../constants')
 
 class DebugNotification extends Base {
@@ -71,6 +72,7 @@ class DebugNotification extends Base {
           NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
           NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
           NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
+          NOTICE_TYPE_PROSPECT_GREEN_MATCH,
         ]),
       estate_id: yup.number().integer().positive().required(),
       data: yup.object(),
