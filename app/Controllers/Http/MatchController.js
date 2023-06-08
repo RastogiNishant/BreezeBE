@@ -855,7 +855,7 @@ class MatchController {
       page,
       limit
     )
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'updated_at']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'updated_at', 'status_at']
     const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
     const data = tenants.toJSON({ isShort: true, extraFields })
