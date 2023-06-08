@@ -716,11 +716,11 @@ class MatchController {
       const allEstates = await Estate.query()
         .where('user_id', user.id)
         .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .select('id')
+        .select(['id', 'available_start_at', 'available_end_at', 'status'])
         .select('available_start_at', 'available_end_at')
         .fetch()
 
-      const allEstatesJson = allEstates.toJSON()
+      const allEstatesJson = allEstates.toJSON({ isOwner: true })
 
       const allEstatesCount = allEstatesJson.length
 
@@ -809,7 +809,7 @@ class MatchController {
         })
         .count()
 
-      counts.showed = showed[0].count
+      counts.showed = parseInt(showed[0].count || 0)
 
       const finalMatches = await Estate.query()
         .where({ user_id: user.id })
@@ -819,7 +819,7 @@ class MatchController {
         })
         .count()
 
-      counts.finalMatches = finalMatches[0].count
+      counts.finalMatches = parseInt(finalMatches[0].count || 0)
 
       return response.res(counts)
     } catch (e) {
