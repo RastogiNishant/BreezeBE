@@ -227,7 +227,7 @@ class MarketPlaceService {
       if (!knockRequest) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
-      console.log('createPendingKnock=', code)
+
       if (code != knockRequest.code) {
         if (knockRequest.status === STATUS_EXPIRE) {
           throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
