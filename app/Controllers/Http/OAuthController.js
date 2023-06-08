@@ -195,7 +195,7 @@ class OAuthController {
         await MarketPlaceService.createKnock({ user }, trx)
       }
       await trx.commit()
-      MarketPlaceService.sendBulkKnockWebsocket(user.id)
+      await MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
       console.log(`outside invitation error= ${invite_type}`, e.message)
       await trx.rollback()

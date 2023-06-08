@@ -4,6 +4,8 @@ const uuid = require('uuid')
 const crypto = require('crypto')
 const HttpException = require('../Exceptions/HttpException')
 const Promise = require('bluebird')
+const Logger = use('Logger')
+const Database = use('Database')
 const { createDynamicLink } = require('../Libs/utils')
 const {
   DEFAULT_LANG,
@@ -72,23 +74,25 @@ class MarketPlaceService {
       })
       .first()
 
-    let newContactRequest
     if (contactRequest) {
-      if (contactRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
-      } else {
-        contactRequest.updateItem({ ...contactRequest.toJSON(), contact })
-        newContactRequest = { ...contactRequest.toJSON(), contact }
-      }
-    } else {
-      newContactRequest = (await EstateSyncContactRequest.createItem(contact)).toJSON()
+      return true
     }
 
-    await this.handlePendingKnock(contact)
-    return newContactRequest
+    let newContactRequest
+    const trx = await Database.beginTransaction()
+    try {
+      newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
+      await this.handlePendingKnock(contact, trx)
+
+      await trx.commit()
+      return newContactRequest
+    } catch (e) {
+      Logger.error(e.message || e, 400)
+      await trx.rollback()
+    }
   }
 
-  static async handlePendingKnock(contact) {
+  static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
       throw new HttpException('Params are wrong', 500)
     }
@@ -111,6 +115,7 @@ class MarketPlaceService {
         user_id: user_id || null,
         status: user_id ? STATUS_EMAIL_VERIFY : STATUS_DRAFT,
       })
+      .transacting(trx)
 
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
@@ -270,46 +275,55 @@ class MarketPlaceService {
   }
 
   static async createKnock({ user }, trx) {
-    const pendingKnocks = (
+    try {
+      const pendingKnocks = (
+        await EstateSyncContactRequest.query()
+          .where('user_id', user.id)
+          .whereIn('status', [STATUS_EMAIL_VERIFY])
+          .fetch()
+      ).toJSON()
+
+      await Promise.map(
+        pendingKnocks || [],
+        async (knock) => {
+          const hasMatch = await MatchService.hasInteracted({
+            userId: user.id,
+            estateId: knock.estate_id,
+          })
+          if (!hasMatch) {
+            await MatchService.knockEstate(
+              { estate_id: knock.estate_id, user_id: user.id, knock_anyway: true },
+              trx
+            )
+          }
+        },
+        { concurrency: 1 }
+      )
+
+      //fill up tenant coord info if he doesn't add it yet.
+      if (pendingKnocks?.length) {
+        const tenant = await TenantService.getTenant(user.id)
+        if (!tenant.address || !tenant.coord) {
+          const estate = await EstateService.getById(pendingKnocks[0].estate_id)
+          await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
+        }
+      }
       await EstateSyncContactRequest.query()
         .where('user_id', user.id)
-        .where('status', STATUS_EMAIL_VERIFY)
-        .fetch()
-    ).toJSON()
+        .update({ code: null, status: STATUS_ACTIVE })
+        .transacting(trx)
 
-    await Promise.map(
-      pendingKnocks || [],
-      async (knock) => {
-        await MatchService.knockEstate(
-          { estate_id: knock.estate_id, user_id: user.id, knock_anyway: true },
-          trx
-        )
-      },
-      { concurrency: 1 }
-    )
-
-    //fill up tenant coord info if he doesn't add it yet.
-    if (pendingKnocks?.length) {
-      const tenant = await TenantService.getTenant(user.id)
-      if (!tenant.address || !tenant.coord) {
-        const estate = await EstateService.getById(pendingKnocks[0].estate_id)
-        await TenantService.updateTenantAddress({ user, address: estate.address }, trx)
-      }
+      return true
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
-
-    await EstateSyncContactRequest.query()
-      .where('user_id', user.id)
-      .update({ code: null, status: STATUS_ACTIVE })
-      .transacting(trx)
-
-    return true
   }
 
   static async sendBulkKnockWebsocket(user_id) {
     const pendingKnocks = (
       await EstateSyncContactRequest.query()
         .where('user_id', user_id)
-        .where('status', STATUS_ACTIVE)
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EMAIL_VERIFY])
         .fetch()
     ).toJSON()
 
@@ -317,12 +331,10 @@ class MarketPlaceService {
       .where('user_id', user_id)
       .update({ code: null, status: STATUS_EXPIRE })
 
-    if (pendingKnocks?.length) {
-      await require('./MatchService').matchByUser({
-        userId: user_id,
-        has_notification_sent: true,
-      })
-    }
+    await require('./MatchService').matchByUser({
+      userId: user_id,
+      has_notification_sent: true,
+    })
 
     Promise.map(pendingKnocks, async (knock) => {
       MatchService.sendMatchKnockWebsocket({
