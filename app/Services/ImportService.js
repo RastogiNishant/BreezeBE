@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { has, omit, isEmpty } = require('lodash')
+const { has, omit, isEmpty, trim } = require('lodash')
 const moment = require('moment')
 const EstateImportReader = use('App/Classes/EstateImportReader')
 const Database = use('Database')
@@ -52,6 +52,7 @@ class ImportService {
   static async createSingleEstate({ data, line, six_char_code }, userId) {
     let estate
     line += 1
+    const warnings = []
     const trx = await Database.beginTransaction()
     try {
       if (six_char_code) {
@@ -110,6 +111,21 @@ class ImportService {
             },
             trx
           )
+        } else {
+          if (
+            trim(data.email || ``) != '' ||
+            trim(data.phone_number || ``) != '' ||
+            trim(data.txt_salutation || ``) !== '' ||
+            trim(data.surname || ``) !== '' ||
+            trim(data.contract_end || ``) !== ''
+          ) {
+            warnings.push({
+              error: [`Tenant info igonored because this property has not rented yet`],
+              line,
+              address: data.address,
+              property_id: data.property_id,
+            })
+          }
         }
       }
       await trx.commit()
@@ -120,7 +136,7 @@ class ImportService {
       // Run task to separate get coords and point of estate
       require('./QueueService').getEstateCoords(estate.id)
 
-      return estate
+      return { estateResult: estate, singleWarnings: warnings }
     } catch (e) {
       console.log('createSingleEstate error', e.message)
       await trx.rollback()
@@ -189,16 +205,17 @@ class ImportService {
         data,
         async (i, index) => {
           if (i) {
-            const estateResult = await ImportService.createSingleEstate(i, user_id)
+            const { estateResult, singleWarnings } = await ImportService.createSingleEstate(
+              i,
+              user_id
+            )
             const singleCreateErrors = [estateResult].filter(
               (i) => has(i, 'error') && has(i, 'line')
             )
-            let singleWarnings = []
-            ;[estateResult].map((row) => {
-              if (has(row, 'warning')) {
-                singleWarnings.push(row.warning)
-              }
-            })
+            console.log('singleWarnings=', singleWarnings)
+            if (singleWarnings?.length) {
+              warnings = warnings.concat(singleWarnings)
+            }
 
             ImportService.emitImported({
               data: {
@@ -213,16 +230,11 @@ class ImportService {
             })
             return estateResult
           }
-          return null
+          return {}
         },
         { concurrency: 1 }
       )
       createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
-      result.map((row) => {
-        if (has(row, 'warning')) {
-          warnings.push(row.warning)
-        }
-      })
     } catch (err) {
       errors = [...errors, err.message]
       console.log(`${user_id} import excel error ${err}`)
