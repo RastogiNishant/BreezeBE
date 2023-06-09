@@ -212,7 +212,7 @@ class ImportService {
             const singleCreateErrors = [estateResult].filter(
               (i) => has(i, 'error') && has(i, 'line')
             )
-            console.log('singleWarnings=', singleWarnings)
+
             if (singleWarnings?.length) {
               warnings = warnings.concat(singleWarnings)
             }
