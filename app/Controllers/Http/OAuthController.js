@@ -205,7 +205,7 @@ class OAuthController {
 
         if (isSignUp) {
           await require('./MatchService').matchByUser({
-            userId: user_id,
+            userId: user.id,
             ignoreNullFields: true,
             has_notification_sent: true,
           })
