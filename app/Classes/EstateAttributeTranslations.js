@@ -654,7 +654,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
-          'property.attribute.BUILDING_STATUS.fully_refurbished',
+          'property.attribute.BUILDING_STATUS.fully_refurbished.message',
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
