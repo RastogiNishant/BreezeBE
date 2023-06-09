@@ -488,7 +488,7 @@ class MatchService {
         .where({ 'tenants.user_id': userId })
         .first()
 
-        const polygon = get(tenant, 'polygon.data.0.0')
+      const polygon = get(tenant, 'polygon.data.0.0')
       if (!tenant || !polygon) {
         if (ignoreNullFields) {
           return
@@ -1200,49 +1200,66 @@ class MatchService {
       throw new AppException("can't book this time slot, out of time range!")
     }
 
-    // Book new visit to calendar
-    await Database.into('visits').insert({
-      estate_id: estate.id,
-      user_id: userId,
-      date: slotDate.format(DATE_FORMAT),
-      start_date: slotDate.format(DATE_FORMAT),
-      end_date: currentTimeslot.slot_length ? endDate.format(DATE_FORMAT) : currentTimeslot.end_at,
-    })
-    // Move match status to next
-    await Database.table('matches')
-      .update({ status: MATCH_STATUS_VISIT })
-      .where({
-        user_id: userId,
-        estate_id: estateId,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+    const trx = await Database.beginTransaction()
+    try {
+      // Book new visit to calendar
+      await Database.into('visits')
+        .insert({
+          estate_id: estate.id,
+          user_id: userId,
+          date: slotDate.format(DATE_FORMAT),
+          start_date: slotDate.format(DATE_FORMAT),
+          end_date: currentTimeslot.slot_length
+            ? endDate.format(DATE_FORMAT)
+            : currentTimeslot.end_at,
+        })
+        .transacting(trx)
+
+      // Move match status to next
+      await Match.query()
+        .update({
+          status: MATCH_STATUS_VISIT,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        })
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+        .transacting(trx)
+
+      // Calc booked timeslots and send notification if all booked
+      const { total, booked } = await MatchService.getEstateSlotsStat(estateId)
+      if (booked === total) {
+        await NoticeService.landlordTimeslotsBooked(estateId, total, booked)
+      }
+
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_INVITE,
+          status: MATCH_STATUS_VISIT,
+        },
+        role: ROLE_LANDLORD,
+        event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
 
-    // Calc booked timeslots and send notification if all booked
-    const { total, booked } = await MatchService.getEstateSlotsStat(estateId)
-    if (booked === total) {
-      await NoticeService.landlordTimeslotsBooked(estateId, total, booked)
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_INVITE,
+          status: MATCH_STATUS_VISIT,
+        },
+        role: ROLE_LANDLORD,
+      })
+
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      Logger.error(`bookTimeSlot error ${userId} ${estateId} ${e.message || e}`)
+      throw new HttpException(e.message, 400)
     }
-
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: userId,
-        old_status: MATCH_STATUS_INVITE,
-        status: MATCH_STATUS_VISIT,
-      },
-      role: ROLE_LANDLORD,
-      event: WEBSOCKET_EVENT_MATCH_STAGE,
-    })
-
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: userId,
-        old_status: MATCH_STATUS_INVITE,
-        status: MATCH_STATUS_VISIT,
-      },
-      role: ROLE_LANDLORD,
-    })
   }
 
   static async updateVisitIn(estateId, userId, inviteIn = true) {
