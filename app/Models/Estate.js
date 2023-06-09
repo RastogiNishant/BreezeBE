@@ -375,7 +375,7 @@ class Estate extends Model {
    *
    */
   rooms() {
-    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
+    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE).orderBy('order', 'asc')
   }
 
   amenities() {

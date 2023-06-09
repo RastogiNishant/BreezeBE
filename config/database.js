@@ -82,7 +82,7 @@ module.exports = {
     debug: Env.get('DB_DEBUG', false),
     pool: {
       min: 10,
-      max: Env.get('DB_MAX_CONN', 80),
+      max: parseInt(Env.get('DB_MAX_CONN', 80)),
       idleTimeoutMillis: 3595,
       reapIntervalMillis: 300,
       destroyTimeoutMillis: 3595,
