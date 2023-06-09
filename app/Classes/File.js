@@ -364,19 +364,45 @@ class File {
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
       Logger.info(`bucket URL ${url}`)
       Logger.info(`Local path ${outputFileName}`)
-      const response = await axios.get(url, { responseType: 'arraybuffer' })
-      Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
 
-      const writeFile = async (url, outputFileName) => {
+      const writeFile = async (data, outputFileName) => {
         try {
-          await fsPromise.writeFile(outputFileName, response.data)
+          await fsPromise.writeFile(outputFileName, data, { flag: 'wx' })
           Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
         } catch (e) {
-          Logger.info(`failed to write ${url} at ${new Date().toISOString()} ${e.message || e}`)
+          if (!fs.existsSync(TEMP_PATH)) {
+            Logger.error(`Temp Directory Not Exists!`)
+          }
+          Logger.info(
+            `failed to write ${url} to ${outputFileName} at ${new Date().toISOString()} ${
+              e.message || e
+            }`
+          )
           throw new HttpException(e.message || e, 400)
         }
       }
-      await writeFile(url, outputFileName)
+
+      const download = async (url) => {
+        return new Promise((resolve, reject) => {
+          axios
+            .get(url, {
+              responseType: 'arraybuffer',
+            })
+            .then(async (response) => {
+              Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
+
+              // response.data is an empty object
+              resolve(response)
+            })
+            .catch((e) => {
+              Logger.error(`s3 bucket downloaded error ${e.message || e}`)
+              reject(e)
+            })
+        })
+      }
+
+      const response = await download(url)
+      await writeFile(response.data, outputFileName)
       return outputFileName
     } catch (e) {
       Logger.error(`File saved error ${e.message}`)
