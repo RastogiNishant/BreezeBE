@@ -136,6 +136,7 @@ class File {
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
     let contentType = file.headers['content-type']
+
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
@@ -382,27 +383,29 @@ class File {
         }
       }
 
-      const download = async (url) => {
-        return new Promise((resolve, reject) => {
-          axios
-            .get(url, {
-              responseType: 'arraybuffer',
-            })
-            .then(async (response) => {
-              Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
+      const download = async (url, isPublic = true) => {
+        const disk = isPublic ? 's3public' : 's3'
+        return await Drive.disk(disk).getStream(url)
+        // return new Promise((resolve, reject) => {
+        //   axios
+        //     .get(url, {
+        //       responseType: 'arraybuffer',
+        //     })
+        //     .then(async (response) => {
+        //       Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
 
-              // response.data is an empty object
-              resolve(response)
-            })
-            .catch((e) => {
-              Logger.error(`s3 bucket downloaded error ${e.message || e}`)
-              reject(e)
-            })
-        })
+        //       // response.data is an empty object
+        //       resolve(response)
+        //     })
+        //     .catch((e) => {
+        //       Logger.error(`s3 bucket downloaded error ${e.message || e}`)
+        //       reject(e)
+        //     })
+        // })
       }
 
       const response = await download(url)
-      await writeFile(response.data, outputFileName)
+      await writeFile(response, outputFileName)
       return outputFileName
     } catch (e) {
       Logger.error(`File saved error ${e.message}`)

@@ -715,7 +715,7 @@ class MatchController {
     try {
       const allEstates = await Estate.query()
         .where('user_id', user.id)
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         .select(['id', 'available_start_at', 'available_end_at', 'status'])
         .select('available_start_at', 'available_end_at')
         .fetch()
@@ -729,7 +729,7 @@ class MatchController {
         .select('estates.user_id')
         .select('estates.status')
         .where('estates.user_id', user.id)
-        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         .innerJoin('matches', 'matches.estate_id', 'estates.id')
         .select('matches.status as match_status')
         .fetch()
@@ -803,7 +803,7 @@ class MatchController {
 
       const showed = await Estate.query()
         .where({ user_id: user.id })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         .whereHas('slots', (estateQuery) => {
           estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
         })
@@ -813,7 +813,7 @@ class MatchController {
 
       const finalMatches = await Estate.query()
         .where({ user_id: user.id })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT, STATUS_OFFLINE_ACTIVE])
         .whereHas('matches', (query) => {
           query.where('status', MATCH_STATUS_FINISH)
         })

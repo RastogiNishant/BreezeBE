@@ -188,8 +188,8 @@ class ImportService {
 
       Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name}`)
       const url = await FileBucket.getPublicUrl(s3_bucket_file_name)
-      Logger.info('storing excel file to s3 bucket!!!')
-      const localPath = await FileBucket.saveFileTo({ url, ext: 'xlsx' })
+      Logger.info(`storing excel file to s3 bucket!!! ${url}`)
+      const localPath = await FileBucket.saveFileTo({ url: s3_bucket_file_name, ext: 'xlsx' })
       Logger.info(`saved file to path ${localPath}`)
       const reader = new EstateImportReader()
       reader.init(localPath)
