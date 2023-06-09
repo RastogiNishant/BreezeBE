@@ -228,7 +228,7 @@ class MarketPlaceService {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
-      if (user_id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
+      if (user?.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
         throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       }
 
