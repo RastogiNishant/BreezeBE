@@ -57,29 +57,33 @@ class ImportService {
     try {
       if (six_char_code) {
         //check if this is an edit...
-        console.log('Update estate', six_char_code)
         estate = await Estate.query()
           .where('six_char_code', six_char_code)
           .where('user_id', userId)
+          .whereNot('status', STATUS_DELETE)
           .first()
         if (!estate) {
           await trx.rollback()
           return {
-            error: [`${six_char_code} is an invalid Breeze ID`],
-            line,
-            property_id: data.property_id,
-            address: data.address,
+            singleErrors: {
+              error: [`${six_char_code} is an invalid Breeze ID`],
+              line,
+              property_id: data.property_id,
+              address: data.address,
+            },
           }
         }
-        await ImportService.updateImportBySixCharCode({ six_char_code, data }, trx)
+        await ImportService.updateImportBySixCharCode({ estate, data }, trx)
       } else {
         if (!data.address) {
           await trx.rollback()
           return {
-            error: [`address is empty`],
-            line,
-            address: data.address,
-            property_id: data.property_id,
+            singleErrors: {
+              error: [`address is empty`],
+              line,
+              address: data.address,
+              property_id: data.property_id,
+            },
           }
         }
 
@@ -140,7 +144,7 @@ class ImportService {
     } catch (e) {
       console.log('createSingleEstate error', e.message)
       await trx.rollback()
-      return { error: [e.message], line, address: data.address, estate: null }
+      return { singleErrors: { error: [e.message], line, address: data.address, estate: null } }
     }
   }
 
@@ -205,14 +209,12 @@ class ImportService {
         data,
         async (i, index) => {
           if (i) {
-            const { estateResult, singleWarnings } = await ImportService.createSingleEstate(
-              i,
-              user_id
-            )
-            const singleCreateErrors = [estateResult].filter(
-              (i) => has(i, 'error') && has(i, 'line')
-            )
+            const { estateResult, singleWarnings, singleErrors } =
+              await ImportService.createSingleEstate(i, user_id)
 
+            if (singleErrors) {
+              createErrors = createErrors.concat(singleErrors)
+            }
             if (singleWarnings?.length) {
               warnings = warnings.concat(singleWarnings)
             }
@@ -222,9 +224,9 @@ class ImportService {
                 message: PROPERTY_HANDLE_FINISHED,
                 count: errors?.length + index + 1,
                 total: data.length + errors?.length,
-                result: omit(estateResult, ['error', 'warning']),
-                errors: singleCreateErrors,
-                warnings: singleWarnings,
+                result: estateResult,
+                errors: singleErrors || [],
+                warnings: singleWarnings || [],
               },
               user_id,
             })
@@ -234,9 +236,8 @@ class ImportService {
         },
         { concurrency: 1 }
       )
-      createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
     } catch (err) {
-      errors = [...errors, err.message]
+      errors = [...errors, ...createErrors, err.message]
       console.log(`${user_id} import excel error ${err}`)
     } finally {
       //correct wrong data during importing excel files
@@ -328,7 +329,7 @@ class ImportService {
     }
   }
 
-  static async updateImportBySixCharCode({ six_char_code, data }, trx) {
+  static async updateImportBySixCharCode({ estate, data }, trx) {
     try {
       let estate_data = omit(data, [
         'room1_type',
@@ -344,12 +345,12 @@ class ImportService {
         'email',
         'salutation_int',
       ])
-      let estate = await Estate.query().where('six_char_code', six_char_code).first()
 
-      const user_id = estate.user_id
       if (!estate) {
         throw new HttpException('estate no exists')
       }
+
+      const user_id = estate.user_id
       if (!estate_data.letting_type) {
         estate_data.letting_type = LETTING_TYPE_NA
       }
