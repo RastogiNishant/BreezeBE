@@ -899,7 +899,6 @@ class MailService {
     let intro = l
       .get('prospect.no_reply_email_from_listing.intro.message', lang)
       .replace('{Full_property_address}', addressLayout)
-      .replace(/\n\n/g, '<br />')
 
     const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
       <tr>${intro}</tr>
