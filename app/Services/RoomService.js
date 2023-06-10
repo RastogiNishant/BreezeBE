@@ -383,7 +383,7 @@ class RoomService {
           newRoomsInfo.push({
             ...room,
             name: index ? `${room.name} ${index + 1}` : room.name,
-            order: !order ? index + 1 : order,
+            order: !room?.order ? index + 1 : room.order,
           })
         })
       })
