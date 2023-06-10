@@ -281,7 +281,7 @@ class ImportEstate extends Base {
         .max(255)
         .required(getExceptionMessage('House Number', REQUIRED)),
       country: yup.string().min(1).max(255).required(getExceptionMessage('Country', REQUIRED)),
-      floor: yup.number().integer().min(-10).max(200),
+      floor: yup.number().integer().min(-10).max(200).nullable(),
       floor_direction: yup
         .number()
         .integer()

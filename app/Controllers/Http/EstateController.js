@@ -401,30 +401,6 @@ class EstateController {
     }
   }
 
-  //import Estate by property manager
-  async importEstateByPM({ request, auth, response }) {
-    const importFilePathName = request.file('file')
-
-    if (importFilePathName && importFilePathName.tmpPath) {
-      if (
-        importFilePathName.headers['content-type'] !==
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ) {
-        throw new HttpException('No excel format', 400)
-      }
-      const result = await ImportService.processByPM(
-        importFilePathName.tmpPath,
-        auth.user.id,
-        'xls'
-      )
-      logEvent(request, LOG_TYPE_PROPERTIES_IMPORTED, auth.user.id, { imported: true }, false)
-      Event.fire('mautic:syncContact', auth.user.id, { propertiesimported_count: 1 })
-      return response.res(result)
-    } else {
-      throw new HttpException('There is no excel data to import', 400)
-    }
-  }
-
   /**
    *
    */

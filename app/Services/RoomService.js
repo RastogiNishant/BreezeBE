@@ -383,7 +383,7 @@ class RoomService {
           newRoomsInfo.push({
             ...room,
             name: index ? `${room.name} ${index + 1}` : room.name,
-            order: index + 1,
+            order: !room?.order ? index + 1 : room.order,
           })
         })
       })
@@ -518,7 +518,6 @@ class RoomService {
         }
 
         if (addRooms && addRooms.length) {
-          console.log('Add Rooms here=', addRooms)
           await Room.createMany(addRooms, trx)
         }
       }
