@@ -99,7 +99,7 @@ class ImportService {
         let found
         for (let key in data) {
           if ((found = key.match(/^room(\d)_type$/)) && !isEmpty(data[key])) {
-            rooms.push({ ...data[key], import_sequence: found[1] })
+            rooms.push({ ...data[key], order: found[1] })
           }
         }
         if (rooms.length) {
@@ -285,50 +285,6 @@ class ImportService {
     }
   }
 
-  static async processByPM(filePath, userId, type) {
-    const { errors, data } = await ImportService.readFileFromWeb(filePath)
-
-    const opt = { concurrency: 0 }
-
-    const result = await Promise.map(
-      data,
-      async (i) => {
-        if (!i || !i.data || !i.data.landlord_email) {
-          return {
-            error: `Landlord email is not defined`,
-            line: i.line,
-            address: i ? i.data.address : `no address here`,
-            postcode: i ? i.data.zip : `no zip code here`,
-          }
-        }
-
-        const estatePermission = await EstatePermissionService.getLandlordHasPermissionByEmail(
-          userId,
-          i.data.landlord_email
-        )
-
-        if (!estatePermission || !estatePermission.landlord_id) {
-          return {
-            error: `You don't have permission for that property`,
-            line: i.line,
-            address: i ? i.data.address : `no address here`,
-            postcode: i ? i.data.zip : `no zip code here`,
-          }
-        }
-
-        await ImportService.createSingleEstate(i, estatePermission.landlord_id)
-      },
-      opt
-    )
-
-    const createErrors = result.filter((i) => has(i, 'error') && has(i, 'line'))
-
-    return {
-      errors: [...errors, ...createErrors],
-      success: result.length - createErrors.length,
-    }
-  }
-
   static async updateImportBySixCharCode({ estate, data }, trx) {
     try {
       let estate_data = omit(data, [
@@ -404,7 +360,7 @@ class ImportService {
       let found
       for (let key in data) {
         if ((found = key.match(/^room(\d)_type$/)) && data[key]) {
-          rooms.push({ ...data[key], import_sequence: found[1] })
+          rooms.push({ ...data[key], order: found[1] })
         }
       }
       if (rooms.length) {
