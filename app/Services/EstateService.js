@@ -1713,7 +1713,6 @@ class EstateService {
       .whereNot('estates.status', STATUS_DELETE)
       .with('slots')
       .with('rooms', function (q) {
-        q.orderBy('rooms.import_sequence', 'asc')
         q.with('images')
       })
       .with('files')
