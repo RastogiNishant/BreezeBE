@@ -459,6 +459,7 @@ class EstateAttributeTranslations {
     vacant_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
+    minors: toBool,
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2,
@@ -952,10 +953,6 @@ class EstateAttributeTranslations {
       pets_allowed: {
         keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
         values: [PETS_SMALL, PETS_NO],
-      },
-      minors: {
-        keys: ['landlord.property.tenant_pref.habits.children.no.message', 'yes.message'],
-        values: [false, true],
       },
       let_type: {
         keys: [
