@@ -742,12 +742,17 @@ class EstateController {
     }
 
     estate.isoline = await EstateService.getIsolines(estate)
+    const match = await MatchService.getMatches(auth.user.id, id)
 
     estate = estate.toJSON({
       isShort: true,
       role: auth.user.role,
       extraFields: ['landlord_type', 'hash', 'property_type'],
     })
+    estate = {
+      ...estate,
+      match: match?.percent,
+    }
     estate = await EstateService.assignEstateAmenities(estate)
     response.res(estate)
   }
