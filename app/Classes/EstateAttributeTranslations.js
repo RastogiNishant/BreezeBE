@@ -221,6 +221,7 @@ toBool = (v) => {
   switch (escapeStr(v)) {
     case 'no':
     case 'nein':
+    case 'keine':
       return false
     case 'yes':
     case 'ja':
