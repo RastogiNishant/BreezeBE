@@ -1163,7 +1163,6 @@ class UserService {
     }
     role = user.role
 
-    await User.query().where({ email }).update({ device_token: null })
     if (device_token) {
       await User.query().where({ id: user.id }).update({ device_token })
     }
