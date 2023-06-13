@@ -1303,7 +1303,7 @@ class EstateService {
 
     const trashedEstates = await Estate.query()
       .select('estates.*')
-      .select('_m.updated_at')
+      .select('_m.updated_at', '_m.status_at')
       .select(Database.raw('COALESCE(_m.percent, 0) as match'))
       .select('_m.status as match_status')
       .select('_m.user_id as match_user_id')

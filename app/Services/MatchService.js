@@ -1049,9 +1049,8 @@ class MatchService {
     let invitedCount = 0
     if (matches[0].notify_on_green_matches) {
       // if red match is accpeted
-      const greenMatchCount = matches.filter(
-        (match) => match.percent >= MATCH_SCORE_GOOD_MATCH
-      )?.length
+      const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
+        ?.length
       invitedCount = greenMatchCount
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= greenMatchCount) {
         await require('./EstateService').updateSentNotification(
@@ -2025,7 +2024,7 @@ class MatchService {
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
-      .select('_m.updated_at')
+      .select('_m.updated_at', '_m.status_at')
       .withCount('notifications', function (n) {
         n.where('user_id', userId)
       })
@@ -2049,7 +2048,7 @@ class MatchService {
       query
         .clearSelect()
         .select('estates.*')
-        .select('_m.updated_at')
+        .select('_m.updated_at', '_m.status_at')
         .select(Database.raw('"_l"."updated_at" as "action_at"'))
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
@@ -2066,7 +2065,7 @@ class MatchService {
       query
         .clearSelect()
         .select('estates.*')
-        .select('_m.updated_at')
+        .select('_m.updated_at', '_m.status_at')
         .select(Database.raw('_d.created_at as action_at'))
         .select(Database.raw('COALESCE(_m.percent, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
@@ -2212,7 +2211,7 @@ class MatchService {
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
-      .select('_m.updated_at')
+      .select('_m.updated_at', '_m.status_at')
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
@@ -2531,7 +2530,7 @@ class MatchService {
     const query = Estate.query()
       .select('estates.*')
       .select('_m.percent as match')
-      .select('_m.updated_at')
+      .select('_m.updated_at', '_m.status_at')
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
 
