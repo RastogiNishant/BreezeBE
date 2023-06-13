@@ -528,7 +528,7 @@ class ThirdPartyOfferService {
   static async getTenantEstatesWithFilter(userId, filter) {
     const MatchService = require('./MatchService')
     const { like, dislike, knock } = filter
-    console.log('getTenantEstatesWithFilter=', knock)
+
     let query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select(
