@@ -23,6 +23,7 @@ const {
   SHOW_ACTIVE_TASKS_COUNT,
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_UNREAD,
+  TASK_ORDER_BY_URGENCY,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -585,16 +586,16 @@ class TaskService extends BaseService {
       })
     }
 
-    if (orderby === TASK_ORDER_BY_UNREAD) {
+    if (orderby === TASK_ORDER_BY_URGENCY) {
       taskQuery
-        .orderBy('is_unread_task', 'desc')
         .orderBy('tasks.status', 'asc')
         .orderBy('tasks.urgency', 'desc')
+        .orderBy('is_unread_task', 'desc')
     } else {
       taskQuery
+        .orderBy('is_unread_task', 'desc')
         .orderBy('tasks.status', 'asc')
         .orderBy('tasks.urgency', 'desc')
-        .orderBy('is_unread_task', 'desc')
     }
 
     taskQuery.orderBy('tasks.updated_at', 'desc')
