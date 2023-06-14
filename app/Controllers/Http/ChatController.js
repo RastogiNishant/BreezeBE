@@ -45,7 +45,7 @@ class ChatController {
     try {
       response.res(await ChatService.getUserUnreadMessages(auth.user.id, auth.user.role))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 }

@@ -393,7 +393,7 @@ class EstateController {
         response.res(importItem)
       } else {
         Logger.error(`${auth.user.id} Failed to upload to s3 bucket`)
-        throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 500)
+        throw new HttpException(FAILED_IMPORT_FILE_UPLOAD, 400)
       }
     } catch (e) {
       Logger.error(`${auth.user.id} Importing excel error ${e.message}`)
@@ -617,10 +617,10 @@ class EstateController {
       } catch (e) {
         await trx.rollback()
         console.log('Exception happened', e.message)
-        throw new HttpException(FAILED_TO_ADD_FILE, 500)
+        throw new HttpException(FAILED_TO_ADD_FILE, e.status || 500)
       }
     }
-    throw new HttpException(FAILED_TO_ADD_FILE, 500)
+    throw new HttpException(FAILED_TO_ADD_FILE, e.status || 500)
   }
 
   /**

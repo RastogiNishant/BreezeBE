@@ -10,7 +10,7 @@ class PredefinedAnswerController {
       const { ...data } = request.all()
       response.res(await PredefinedAnswerService.create(auth.user.id, data))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -19,7 +19,7 @@ class PredefinedAnswerController {
       const { ...data } = request.all()
       response.res(await PredefinedAnswerService.update(auth.user.id, data))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -28,7 +28,7 @@ class PredefinedAnswerController {
       const { id } = request.all()
       response.res(await PredefinedAnswerService.delete(id, auth.user.id))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 }

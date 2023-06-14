@@ -87,14 +87,15 @@ class MarketPlaceService {
       await trx.commit()
       return newContactRequest
     } catch (e) {
-      Logger.error(e.message || e, 400)
+      Logger.error(`createContact error ${e.message || e}`)
+
       await trx.rollback()
     }
   }
 
   static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
-      throw new HttpException('Params are wrong', 500)
+      throw new HttpException('Params are wrong', e.status || 500)
     }
 
     const estate = await EstateService.getEstateWithUser(contact.estate_id)
@@ -212,11 +213,11 @@ class MarketPlaceService {
   static async createPendingKnock({ user, data1, data2 }, trx = null) {
     try {
       if (!user || user.role !== ROLE_USER) {
-        throw new HttpException(NO_USER_PASSED, 500)
+        throw new HttpException(NO_USER_PASSED, e.status || 500)
       }
 
       if (!data1 || !data2) {
-        throw new HttpException(WRONG_PARAMS, 500)
+        throw new HttpException(WRONG_PARAMS, e.status || 500)
       }
       const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({
         data1,
