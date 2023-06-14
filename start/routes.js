@@ -1261,7 +1261,7 @@ Route.list().forEach((r) => {
     !r._route.match(/\/administration/)
   ) {
     if (r.middlewareList.length > 0) {
-      r.middlewareList = [...r.middlewareList, 'agreement']
+      r.middlewareList = [...r.middlewareList, 'agreement', 'plan']
     }
   }
 })

@@ -1,6 +1,17 @@
 'use strict'
 
-const { ROLE_USER, PREMIUM_LANDLORD_MEMBER } = require('../constants')
+const HttpException = require('../Exceptions/HttpException')
+const EstateCurrentTenantService = require('../Services/EstateCurrentTenantService')
+const {
+  ROLE_USER,
+  PREMIUM_LANDLORD_MEMBER,
+  BASIC_LANDLORD_MEMBER,
+  BASIC_PLAN_MIN_CONNECT_COUNT,
+  PREMIUM_PLAN_MIN_CONNECT_COUNT,
+} = require('../constants')
+const {
+  exceptions: { ERROR_PREMIUM_MEMBER_PLAN_SELECT, ERROR_PLAN_SELECT },
+} = require('../exceptions')
 
 class UserNeedPlan {
   async handle({ auth }, next) {
@@ -22,12 +33,18 @@ class UserNeedPlan {
       return next()
     }
 
-    if (activation_status === USER_ACTIVATION_STATUS_DEACTIVATED) {
-      throw new HttpException(
-        USER_DEACTIVATED,
-        400,
-        parseInt(`${ERROR_USER_DEACTIVATED_LOGIN}${auth.user.id}`)
-      )
+    const estateTenantCount = await EstateCurrentTenantService.getCount(auth.user.id)
+
+    if (plan_id && plan_id === BASIC_LANDLORD_MEMBER) {
+      if (estateTenantCount > PREMIUM_PLAN_MIN_CONNECT_COUNT) {
+        throw new HttpException(ERROR_PREMIUM_MEMBER_PLAN_SELECT, 400)
+      }
+    }
+
+    if (!plan_id) {
+      if (estateTenantCount > BASIC_PLAN_MIN_CONNECT_COUNT) {
+        throw new HttpException(ERROR_PLAN_SELECT, 400)
+      }
     }
 
     await next()
