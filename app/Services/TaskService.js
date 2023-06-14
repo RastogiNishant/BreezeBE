@@ -325,11 +325,6 @@ class TaskService extends BaseService {
       const estate = await EstateService.getById(task.estate_id)
       topicName = `landlord:${estate.user_id}`
     }
-    console.log({
-      ...task,
-      estate_id: task.estate_id,
-      task_id: task.id,
-    })
     await TaskService.emitToChannel(topicName, WEBSOCKET_EVENT_TASK_UPDATED, {
       ...taskRow.toJSON(),
       estate_id: task.estate_id,
