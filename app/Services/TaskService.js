@@ -23,6 +23,7 @@ const {
   SHOW_ACTIVE_TASKS_COUNT,
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_UNREAD,
+  WEBSOCKET_EVENT_TASK_STATUS_UPDATED,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -299,6 +300,7 @@ class TaskService extends BaseService {
   }
 
   static async update({ user, task }, trx) {
+    const taskStatus = task?.status || false
     if (user.role === ROLE_LANDLORD) {
       await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
@@ -310,13 +312,23 @@ class TaskService extends BaseService {
     }
 
     const taskRow = await query.firstOrFail()
-
     task.status_changed_by = user.role
     let taskResult = null
     if (trx) {
       taskResult = await taskRow.updateItemWithTrx({ ...task }, trx)
     } else {
       taskResult = await taskRow.updateItem({ ...task })
+    }
+    if (taskStatus) {
+      const topicName =
+        user.role === ROLE_LANDLORD
+          ? `tenant:${taskRow.tenant_id}`
+          : `landlord:${taskRow.landlord_id}`
+      await TaskService.emitToChannel(topicName, WEBSOCKET_EVENT_TASK_STATUS_UPDATED, {
+        estate_id: task.estate_id,
+        task_id: task.id,
+        status: taskStatus,
+      })
     }
 
     // send notification to tenant to inform task has been resolved
@@ -328,7 +340,6 @@ class TaskService extends BaseService {
         },
       ])
     }
-
     return taskResult
   }
 
@@ -905,6 +916,19 @@ class TaskService extends BaseService {
 
     if (topic) {
       topic.broadcast(WEBSOCKET_EVENT_TASK_CREATED, data)
+    }
+  }
+
+  static async emitToChannel(topicName, websocketEvent, data) {
+    const found = topicName.match(/([a-z]+\:)/)
+    if (!found) {
+      return false
+    }
+    const channel = `${found[0]}*`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(websocketEvent, data)
     }
   }
 }
