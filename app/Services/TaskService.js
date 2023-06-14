@@ -23,8 +23,8 @@ const {
   SHOW_ACTIVE_TASKS_COUNT,
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_UNREAD,
-  WEBSOCKET_EVENT_TASK_STATUS_UPDATED,
   TASK_ORDER_BY_URGENCY,
+  WEBSOCKET_EVENT_TASK_UPDATED,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -301,7 +301,6 @@ class TaskService extends BaseService {
   }
 
   static async update({ user, task }, trx) {
-    const taskStatus = task?.status || false
     if (user.role === ROLE_LANDLORD) {
       await EstateService.hasPermission({ id: task.estate_id, user_id: user.id })
     }
@@ -320,17 +319,22 @@ class TaskService extends BaseService {
     } else {
       taskResult = await taskRow.updateItem({ ...task })
     }
-    if (taskStatus) {
-      const topicName =
-        user.role === ROLE_LANDLORD
-          ? `tenant:${taskRow.tenant_id}`
-          : `landlord:${taskRow.landlord_id}`
-      await TaskService.emitToChannel(topicName, WEBSOCKET_EVENT_TASK_STATUS_UPDATED, {
-        estate_id: task.estate_id,
-        task_id: task.id,
-        status: taskStatus,
-      })
+    let topicName = `tenant:${taskRow.tenant_id}`
+    if (user.role === ROLE_USER) {
+      //tasks.landlord_id is not always populated
+      const estate = await EstateService.getById(task.estate_id)
+      topicName = `landlord:${estate.user_id}`
     }
+    console.log({
+      ...task,
+      estate_id: task.estate_id,
+      task_id: task.id,
+    })
+    await TaskService.emitToChannel(topicName, WEBSOCKET_EVENT_TASK_UPDATED, {
+      ...taskRow.toJSON(),
+      estate_id: task.estate_id,
+      task_id: task.id,
+    })
 
     // send notification to tenant to inform task has been resolved
     if (user.role === ROLE_LANDLORD && task.status === TASK_STATUS_RESOLVED) {
