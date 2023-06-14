@@ -293,7 +293,7 @@ class AccountController {
       const ret = await UserService.updateDeviceToken(user.id, device_token)
       response.res(ret)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -305,7 +305,7 @@ class AccountController {
       const user = await UserService.updateAvatar(request, auth.user)
       response.res(user)
     } catch (e) {
-      throw new HttpException(FAILED_UPLOAD_AVATAR, 500)
+      throw new HttpException(FAILED_UPLOAD_AVATAR, 400)
     }
   }
 

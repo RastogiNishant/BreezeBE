@@ -36,7 +36,7 @@ class LetterTemplateService {
       return createletterTemplateResult
     } catch (e) {
       await trx.rollback()
-      throw new HttpException('Failed to create template', 500)
+      throw new HttpException('Failed to create template', e.status || 500)
     }
   }
 
@@ -77,7 +77,7 @@ class LetterTemplateService {
       return updateLetterTemplateResult
     } catch (e) {
       await trx.rollback()
-      throw new HttpException('Failed to update template', 500)
+      throw new HttpException('Failed to update template', e.status || 500)
     }
   }
 

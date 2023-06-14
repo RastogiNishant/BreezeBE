@@ -747,7 +747,7 @@ class TaskService extends BaseService {
 
   static async hasPermission({ task, estate_id, user_id, role }) {
     if (role === ROLE_LANDLORD && !estate_id) {
-      throw new HttpException('No Estate provided', 500)
+      throw new HttpException('No Estate provided', 400)
     }
 
     //to check if the user has permission
@@ -809,7 +809,7 @@ class TaskService extends BaseService {
       )
       return files
     }
-    throw new HttpException('Image Not saved', 500)
+    throw new HttpException('Image Not saved', 400)
   }
 
   static async removeImages({ id, user, uri }) {
