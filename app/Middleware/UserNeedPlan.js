@@ -1,5 +1,6 @@
 'use strict'
 
+const moment = require('moment')
 const HttpException = require('../Exceptions/HttpException')
 const EstateCurrentTenantService = require('../Services/EstateCurrentTenantService')
 const {
@@ -8,6 +9,7 @@ const {
   BASIC_LANDLORD_MEMBER,
   BASIC_PLAN_MIN_CONNECT_COUNT,
   PREMIUM_PLAN_MIN_CONNECT_COUNT,
+  MEMBER_TRIAL_PERIOD,
 } = require('../constants')
 const {
   exceptions: { ERROR_PREMIUM_MEMBER_PLAN_SELECT, ERROR_PLAN_SELECT },
@@ -42,6 +44,14 @@ class UserNeedPlan {
     }
 
     if (!plan_id) {
+      // A new user within 7 days, he can use trial
+      if (
+        moment.utc(auth.user.created_at).add(MEMBER_TRIAL_PERIOD, 'days').format('x') >=
+        moment.utc(new Date()).format('x')
+      ) {
+        return next()
+      }
+
       if (estateTenantCount > BASIC_PLAN_MIN_CONNECT_COUNT) {
         throw new HttpException(ERROR_PLAN_SELECT, 400)
       }

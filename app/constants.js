@@ -1292,6 +1292,8 @@ Estates: [ESTATES]
   PUBLISH_TYPE_OFFLINE_MARKET: 2,
 
   ESTATE_NO_IMAGE_COVER_URL: 'https://breeze-files-dev.s3.eu-central-1.amazonaws.com/no-cover.png',
+
+  MEMBER_TRIAL_PERIOD: 7, // trial period 7 days
 }
 
 module.exports = constants
