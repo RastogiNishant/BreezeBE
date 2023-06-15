@@ -424,7 +424,7 @@ class File {
       const params = {
         Bucket: GEWOBAG_FTP_BUCKET,
         Delimiter: '/',
-        Prefix: 'live/',
+        // Prefix: 'live/',
       }
       const objects = await s3.listObjects(params).promise()
       if (!objects?.Contents) {
