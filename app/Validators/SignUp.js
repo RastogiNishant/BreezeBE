@@ -18,6 +18,9 @@ const {
   TRANSPORT_TYPE_SOCIAL,
   ROLE_PROPERTY_MANAGER,
   GENDER_NEUTRAL,
+  OUTSIDE_LANDLORD_INVITE_TYPE,
+  OUTSIDE_TENANT_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
 } = require('../constants')
 
 const {
@@ -90,14 +93,23 @@ class SignUp extends Base {
         )
         .required(getExceptionMessage('sex', REQUIRED)),
       phone: phoneSchema,
-      firstname: yup
+      firstname: yup.string().when(['secondname'], (secondname, schema, { value }) => {
+        if (!secondname) {
+          return yup
+            .string()
+            .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
+            .max(254, getExceptionMessage('secondname', MAXLENGTH, 254))
+            .required()
+        }
+        return yup
+          .string()
+          .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
+          .max(254, getExceptionMessage('secondname', MAXLENGTH, 254))
+      }),
+      secondname: yup
         .string()
         .min(2, getExceptionMessage('firstname', MINLENGTH, 2))
         .max(254, getExceptionMessage('firstname', MAXLENGTH, 254)),
-      secondname: yup
-        .string()
-        .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
-        .max(254, getExceptionMessage('secondname', MAXLENGTH, 254)),
       birthday: yup
         .date()
         .typeError(getExceptionMessage('birthday', DATE))
@@ -127,7 +139,14 @@ class SignUp extends Base {
       from_web: yup.boolean().typeError(getExceptionMessage('from_web', BOOLEAN)),
       data1: yup.string(),
       data2: yup.string(),
-      landlord_invite: yup.boolean().typeError(getExceptionMessage('landlord_invite', BOOLEAN)),
+      invite_type: yup
+        .string()
+        .oneOf([
+          OUTSIDE_LANDLORD_INVITE_TYPE,
+          OUTSIDE_TENANT_INVITE_TYPE,
+          OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+        ]),
+
       ip: yup
         .string()
         .min(7, MINLENGTH)

@@ -5,6 +5,8 @@ const uuid = require('uuid')
 const moment = require('moment')
 const Promise = require('bluebird')
 const { nth, isEmpty, isString, trim } = require('lodash')
+const AWS = require('aws-sdk')
+const Env = use('Env')
 
 const Logger = use('Logger')
 const Drive = use('Drive')
@@ -16,7 +18,8 @@ const exec = require('node-async-exec')
 const fsPromise = require('fs/promises')
 const heicConvert = require('heic-convert')
 const axios = require('axios')
-const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+const { GEWOBAG_FTP_BUCKET } = require('../constants')
+const PDF_TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp/uploads'
 
 class File {
   static IMAGE_JPG = 'image/jpg'
@@ -133,6 +136,7 @@ class File {
   static async saveToDisk(file, allowedTypes = [], isPublic = true) {
     let { ext, mime } = (await FileType.fromFile(file.tmpPath)) || {}
     let contentType = file.headers['content-type']
+
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
@@ -357,38 +361,100 @@ class File {
 
   static async saveFileTo({ url, ext = 'jpg' }) {
     try {
-      const TEMP_PATH = process.env.PDF_TEMP_DIR || '/tmp'
+      const TEMP_PATH = PDF_TEMP_PATH
       const outputFileName = `${TEMP_PATH}/output_${uuid.v4()}.${ext}`
+      Logger.info(`bucket URL ${url}`)
+      Logger.info(`Local path ${outputFileName}`)
 
-      const writeFile = async () => {
-        const writer = fs.createWriteStream(outputFileName)
-        const response = await axios.get(url, { responseType: 'arraybuffer' })
-        return new Promise((resolve, reject) => {
-          if (response.data instanceof Buffer) {
-            writer.write(response.data)
-            resolve(outputFileName)
-          } else {
-            response.data.pipe(writer)
-            let error = null
-            writer.on('error', (err) => {
-              error = err
-              writer.close()
-              reject(err)
-            })
-            writer.on('close', () => {
-              if (!error) {
-                resolve(outputFileName)
-              }
-            })
+      const writeFile = async (data, outputFileName) => {
+        try {
+          await fsPromise.writeFile(outputFileName, data, { flag: 'wx' })
+          Logger.info(`successfully wrote ${url} at ${new Date().toISOString()}`)
+        } catch (e) {
+          if (!fs.existsSync(TEMP_PATH)) {
+            Logger.error(`Temp Directory Not Exists!`)
           }
-        })
+          Logger.info(
+            `failed to write ${url} to ${outputFileName} at ${new Date().toISOString()} ${
+              e.message || e
+            }`
+          )
+          throw new HttpException(e.message || e, 400)
+        }
       }
 
-      await writeFile(outputFileName)
+      const download = async (url, isPublic = true) => {
+        const disk = isPublic ? 's3public' : 's3'
+        return await Drive.disk(disk).getStream(url)
+        // return new Promise((resolve, reject) => {
+        //   axios
+        //     .get(url, {
+        //       responseType: 'arraybuffer',
+        //     })
+        //     .then(async (response) => {
+        //       Logger.info(`downloaded from s3 bucket ${url} at ${new Date().toISOString()}`)
+
+        //       // response.data is an empty object
+        //       resolve(response)
+        //     })
+        //     .catch((e) => {
+        //       Logger.error(`s3 bucket downloaded error ${e.message || e}`)
+        //       reject(e)
+        //     })
+        // })
+      }
+
+      const response = await download(url)
+      await writeFile(response, outputFileName)
       return outputFileName
     } catch (e) {
-      console.log('saveFunctionalTestImage Error', e.message)
-      throw new HttpException('File upload failed. Please try again', 400)
+      Logger.error(`File saved error ${e.message}`)
+      throw new HttpException('File saved failed. Please try again', 400)
+    }
+  }
+
+  static async getGewobagUploadedContent(filesWorked) {
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION'),
+      })
+      const s3 = new AWS.S3()
+      const params = {
+        Bucket: GEWOBAG_FTP_BUCKET,
+        Delimiter: '/',
+        Prefix: 'live/',
+      }
+      const objects = await s3.listObjects(params).promise()
+      if (!objects?.Contents) {
+        return []
+      }
+
+      let xmls = []
+      let filesLastModified = []
+      for (let i = 0; i < objects.Contents.length; i++) {
+        const fileLastModifiedOnRecord = filesWorked[objects.Contents[i].Key] || null
+        if (
+          objects.Contents[i].Key.match(/\.xml$/) &&
+          moment(new Date(objects.Contents[i].LastModified)).utc().format() !==
+            fileLastModifiedOnRecord
+        ) {
+          const xml = await Drive.disk('breeze-ftp-files').get(objects.Contents[i].Key)
+          xmls = [...xmls, xml]
+          filesLastModified = {
+            ...filesLastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+          }
+        }
+      }
+      return {
+        xml: xmls,
+        filesLastModified,
+      }
+    } catch (err) {
+      console.log('getGewobagUploadedContent', err)
+      return []
     }
   }
 }

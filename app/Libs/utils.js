@@ -8,6 +8,12 @@ const {
   ROLE_ADMIN,
   ROLE_PROPERTY_MANAGER,
   GERMAN_HOLIDAYS,
+  ENERGY_CLASS_USING_EFFICIENCY,
+  ESTATE_FLOOR_DIRECTION_LEFT,
+  ESTATE_FLOOR_DIRECTION_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
 } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
@@ -109,27 +115,60 @@ const generateAddress = ({ street, house_number, zip, city, country }) => {
     .replace(/\s,/g, ',')
     .toLowerCase()
 }
+const parseFloorDirection = (direction) => {
+  switch (direction) {
+    case ESTATE_FLOOR_DIRECTION_LEFT:
+      return 'property.attribute.floor_direction.left.message'
+    case ESTATE_FLOOR_DIRECTION_RIGHT:
+      return 'property.attribute.floor_direction.right.message'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT:
+      return 'property.attribute.floor_direction.straight.message'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT:
+      return 'property.attribute.floor_direction.straight.left.message'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT:
+      return 'property.attribute.floor_direction.straight.right.message'
+    default:
+      return null
+  }
+}
 
+const encodeURL = (link) => {
+  return link.replace(/\+/g, '%20')
+}
 const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WEB_LINK) => {
   const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
+  try {
+    const { shortLink } = await firebaseDynamicLinks.createLink({
+      dynamicLinkInfo: {
+        domainUriPrefix: process.env.DOMAIN_PREFIX,
+        link,
+        androidInfo: {
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+        },
+        iosInfo: {
+          iosBundleId: process.env.IOS_BUNDLE_ID,
+          iosAppStoreId: process.env.IOS_APPSTORE_ID,
+        },
+        desktopInfo: {
+          desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
+        },
+      },
+    })
+    return shortLink
+  } catch (e) {
+    console.log('shortLink here error=', e.message || JSON.stringify(e))
+    return null
+  }
+}
 
-  const { shortLink } = await firebaseDynamicLinks.createLink({
-    dynamicLinkInfo: {
-      domainUriPrefix: process.env.DOMAIN_PREFIX,
-      link,
-      androidInfo: {
-        androidPackageName: process.env.ANDROID_PACKAGE_NAME,
-      },
-      iosInfo: {
-        iosBundleId: process.env.IOS_BUNDLE_ID,
-        iosAppStoreId: process.env.IOS_APPSTORE_ID,
-      },
-      desktopInfo: {
-        desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
-      },
-    },
-  })
-  return shortLink
+const calculateEnergyClassFromEfficiency = (efficiency) => {
+  let idx
+  if (efficiency >= ENERGY_CLASS_USING_EFFICIENCY.slice(-1)[0].value) {
+    idx = ENERGY_CLASS_USING_EFFICIENCY.length - 1
+  } else {
+    idx = ENERGY_CLASS_USING_EFFICIENCY.slice(0, -1).findIndex((level) => efficiency < level.value)
+  }
+  return ENERGY_CLASS_USING_EFFICIENCY[idx].level
 }
 
 module.exports = {
@@ -143,5 +182,8 @@ module.exports = {
   rc: localeTemplateToValue,
   isHoliday,
   generateAddress,
+  parseFloorDirection,
   createDynamicLink,
+  encodeURL,
+  calculateEnergyClassFromEfficiency,
 }

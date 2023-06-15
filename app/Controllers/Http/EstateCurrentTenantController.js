@@ -12,19 +12,24 @@ class EstateCurrentTenantController {
     const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
       data,
       estate_id,
+      user_id: auth.user.id,
     })
     response.res(estateCurrentTenant)
   }
 
   async update({ request, auth, response }) {
     const { id, estate_id, ...data } = request.all()
-    const estateCurrentTenant = await EstateCurrentTenantService.updateCurrentTenant({
-      data,
-      id,
-      estate_id,
-      user_id: auth.user.id,
-    })
-    response.res(estateCurrentTenant)
+    try {
+      const estateCurrentTenant = await EstateCurrentTenantService.updateCurrentTenant({
+        data,
+        id,
+        estate_id,
+        user_id: auth.user.id,
+      })
+      response.res(estateCurrentTenant)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   async getAll({ request, auth, response }) {

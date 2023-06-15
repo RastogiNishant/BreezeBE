@@ -31,6 +31,7 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT90M_ID,
   NOTICE_TYPE_LANDLORD_VISIT90M_ID,
   NOTICE_TYPE_PROSPECT_VISIT30M_ID,
+  NOTICE_TYPE_PROSPECT_VISIT48H_ID,
   NOTICE_TYPE_PROSPECT_COMMIT_ID,
   NOTICE_TYPE_PROSPECT_REJECT_ID,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID,
@@ -56,6 +57,7 @@ const {
   NOTICE_TYPE_PROSPECT_VISIT90M,
   NOTICE_TYPE_LANDLORD_VISIT90M,
   NOTICE_TYPE_PROSPECT_VISIT30M,
+  NOTICE_TYPE_PROSPECT_VISIT48H,
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_REJECT,
   NOTICE_TYPE_PROSPECT_NO_ACTIVITY,
@@ -65,7 +67,9 @@ const {
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
 
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_TOP,
@@ -106,9 +110,13 @@ const {
   STATUS_DRAFT,
   NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH,
 } = require('../constants')
 
 class NoticeService {
@@ -179,7 +187,7 @@ class NoticeService {
    * If prospect register 2 days ago and has no activity
    */
   static async sandProspectNoActivity() {
-    const dateTo = moment().startOf('day').add(-2, 'days')
+    const dateTo = moment.utc().startOf('day').add(-2, 'days')
     const dateFrom = dateTo.clone().add().add(-1, 'days')
     // WITH users register 2 days ago
     const queryWith = Database.table({ _u: 'users' })
@@ -308,7 +316,7 @@ class NoticeService {
       estate_address: estate.address,
       total,
       booked,
-      date: moment().format(GERMAN_DATE_TIME_FORMAT),
+      date: moment.utc().format(GERMAN_DATE_TIME_FORMAT),
     }
 
     const notice = {
@@ -402,7 +410,7 @@ class NoticeService {
     const result = await Database.table({ _m: 'matches' })
       .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
       .where('_m.status', MATCH_STATUS_NEW)
-      .where('_m.updated_at', '>', moment().add(-7, 'days').format(DATE_FORMAT))
+      .where('_m.updated_at', '>', moment.utc().add(-7, 'days').format(DATE_FORMAT))
       .groupBy('_m.user_id')
 
     if (isEmpty(result)) {
@@ -513,13 +521,16 @@ class NoticeService {
   /*
    * user_id is landlord id
    */
-  static async sendFullInvitation({ user_id, estateId, count }) {
-    const estate = await Database.table({ _e: 'estates' })
-      .select('address', 'id', 'cover', 'user_id')
-      .where('id', estateId)
-      .first()
+  static async sendMinKnockReached({ estateId, estate, count }) {
+    if (!estate) {
+      estate = await Database.table({ _e: 'estates' })
+        .select('address', 'id', 'cover', 'user_id')
+        .where('id', estateId)
+        .first()
+    }
+
     const notice = {
-      user_id,
+      user_id: estate.user_id,
       type: NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
       data: {
         estate_id: estate.id,
@@ -529,14 +540,36 @@ class NoticeService {
       image: File.getPublicUrl(estate.cover),
     }
     await NoticeService.insertNotices([notice])
-    NotificationsService.sendFullInvitation([notice])
+    NotificationsService.sendMinKnockReached([notice])
+  }
+
+  static async sendGreenMinKnockReached({ estateId, estate, count }) {
+    if (!estate) {
+      estate = await Database.table({ _e: 'estates' })
+        .select('address', 'id', 'cover', 'user_id')
+        .where('id', estateId)
+        .first()
+    }
+
+    const notice = {
+      user_id: estate.user_id,
+      type: NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+      data: {
+        estate_id: estate.id,
+        count,
+        estate_address: estate.address,
+      },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    NotificationsService.sendGreenMinKnockReached([notice])
   }
 
   /**
    * Get visits in {time}
    */
   static async getVisitsIn(hours) {
-    const start = moment().startOf('minute').add(hours, 'hours').add(2, hours) // 2 hours for the German timezone
+    const start = moment().utc().startOf('minute').add(hours, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     return Database.table({ _v: 'visits' })
@@ -625,7 +658,7 @@ class NoticeService {
     }
     await Match.query()
       .where('status', MATCH_STATUS_KNOCK)
-      .update({ notified_at: moment.utc().format(DATE_FORMAT) })
+      .update({ notified_at: moment().utc().format(DATE_FORMAT) })
   }
 
   /**
@@ -649,9 +682,9 @@ class NoticeService {
    *
    */
   static async getLandlordVisitsIn(hoursOffset) {
-    const minDate = moment().startOf('day')
+    const minDate = moment().utc().startOf('day')
     const maxDate = minDate.clone().add(1, 'day')
-    const start = moment().startOf('minute').add(hoursOffset, 'hours').add(2, hours) // 2 hours for the German timezone
+    const start = moment().utc().startOf('minute').add(hoursOffset, 'hours')
     const end = start.clone().add(MIN_TIME_SLOT, 'minutes')
 
     const withQuery = Database.table({ _v: 'visits' })
@@ -742,13 +775,34 @@ class NoticeService {
     }
   }
 
+  static async prospectNewGreenMatch(matches, estate) {
+    let notices = []
+    matches.map((match) => {
+      notices = [
+        ...notices,
+        {
+          user_id: match.user_id,
+          type: NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
+          data: {
+            estate_id: estate.id,
+            estate_address: estate.address,
+          },
+        },
+      ]
+    })
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendProspectGreenMatch(notices)
+    }
+  }
+
   /**
    *
    */
   static async prospectProfileExpiring(skip = 0) {
     // Check is it 2 days fro month ends
     const PAGE_SIZE = 500
-    if (moment().diff(moment().add(1, 'month').startOf('month'), 'days') !== -2) {
+    if (moment.utc().diff(moment.utc().add(1, 'month').startOf('month'), 'days') !== -2) {
       return false
     }
 
@@ -797,6 +851,28 @@ class NoticeService {
 
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendProspectFinalVisitConfirm(notices)
+  }
+
+  /**
+   *
+   */
+  static async getProspectVisitIn48H() {
+    const result = await NoticeService.getVisitsIn(48)
+
+    result.map((r) => {
+      const lang = r.lang ? r.lang : DEFAULT_LANG
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+    })
+
+    const notices = result.map(({ user_id, estate_id, address, cover }) => ({
+      user_id,
+      type: NOTICE_TYPE_PROSPECT_VISIT48H_ID,
+      data: { estate_id, estate_address: address },
+      image: File.getPublicUrl(cover),
+    }))
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.sendProspectFirstVisitConfirm(notices)
   }
 
   /**
@@ -881,6 +957,8 @@ class NoticeService {
         return NotificationsService.sendLandlordVisit90m([notice])
       case NOTICE_TYPE_PROSPECT_VISIT30M:
         return NotificationsService.sendProspectFinalVisitConfirm([notice])
+      case NOTICE_TYPE_PROSPECT_VISIT48H:
+        return NotificationsService.sendProspectFinalVisitConfirm([notice])
       case NOTICE_TYPE_PROSPECT_COMMIT:
         return NotificationsService.sendProspectLandlordConfirmed(notice)
       case NOTICE_TYPE_PROSPECT_REJECT:
@@ -904,11 +982,18 @@ class NoticeService {
       case NOTICE_TYPE_LANDLORD_UPDATE_SLOT:
         return NotificationsService.sendTenantUpdateTimeSlot([notice])
       case NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED:
-        return NotificationsService.sendFullInvitation([notice])
+        return NotificationsService.sendMinKnockReached([notice])
+      case NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED:
+        return NotificationsService.sendGreenMinKnockReached([notice])
+
       case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
       case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
+      case NOTICE_TYPE_ADMIN_APPROVES_PUBLISH:
+        return NotificationsService.adminApprovesPublish([notice])
+      case NOTICE_TYPE_PROSPECT_GREEN_MATCH:
+        return NotificationsService.sendProspectGreenMatch([notice])
     }
   }
 
@@ -1201,6 +1286,7 @@ class NoticeService {
         'tasks.description',
         'tasks.urgency',
         'tasks.estate_id',
+        'tasks.type',
         'users.firstname',
         'users.secondname',
         'users.sex',
@@ -1222,6 +1308,7 @@ class NoticeService {
         estate_id: task.estate_id,
         estate_address: task.address,
         task_id,
+        type: task.type,
         topic: `task:${task.estate_id}brz${task_id}`,
         title: task.title,
         description: task.description,
@@ -1308,6 +1395,17 @@ class NoticeService {
 
     await NoticeService.insertNotices([notice])
     await NotificationsService.prospectLikedButNotKnocked([notice])
+  }
+
+  static async notifyLandlordAdminApprovesPublish(estate) {
+    const notice = {
+      user_id: estate.user_id,
+      type: NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
+      data: { estate_id: estate.estate_id, estate_address: estate.address },
+      image: File.getPublicUrl(estate.cover),
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.adminApprovesPublish([notice])
   }
 }
 

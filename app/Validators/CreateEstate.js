@@ -23,10 +23,8 @@ const {
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
   APARTMENT_TYPE_TERRACES,
-  APARTMENT_TYPE_ETAGE,
   APARTMENT_TYPE_HOLIDAY,
   APARTMENT_TYPE_GALLERY,
-  APARTMENT_TYPE_RAW_ATTIC,
   APARTMENT_TYPE_ATTIC,
 
   // House type
@@ -213,6 +211,9 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   MAX_MINOR_COUNT,
+  FURNISHING_NOT_FURNISHED,
+  FURNISHING_PARTIALLY_FURNISHED,
+  FURNISHING_FULLY_FURNISHED,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -258,10 +259,8 @@ class CreateEstate extends Base {
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
           APARTMENT_TYPE_TERRACES,
-          APARTMENT_TYPE_ETAGE,
           APARTMENT_TYPE_HOLIDAY,
           APARTMENT_TYPE_GALLERY,
-          APARTMENT_TYPE_RAW_ATTIC,
           APARTMENT_TYPE_ATTIC,
         ]),
       house_type: yup
@@ -583,7 +582,15 @@ class CreateEstate extends Base {
       rent_arrears: yup.boolean(),
       full_address: yup.boolean(),
       photo_require: yup.boolean(),
-      furnished: yup.boolean().nullable(),
+      furnished: yup
+        .number()
+        .integer()
+        .oneOf([
+          FURNISHING_NOT_FURNISHED,
+          FURNISHING_PARTIALLY_FURNISHED,
+          FURNISHING_FULLY_FURNISHED,
+        ])
+        .nullable(),
       kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()
@@ -671,6 +678,8 @@ class CreateEstate extends Base {
               INCOME_TYPE_TRAINEE,
             ])
         ),
+      is_not_show: yup.boolean().nullable(),
+      notify_on_green_matches: yup.boolean().nullable(),
     })
 }
 

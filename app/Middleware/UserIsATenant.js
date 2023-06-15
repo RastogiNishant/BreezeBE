@@ -1,7 +1,7 @@
 'use strict'
 
 const { matches } = require('lodash')
-const { STATUS_ACTIVE } = require('../constants')
+const { STATUS_ACTIVE, ROLE_USER } = require('../constants')
 
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
@@ -33,13 +33,8 @@ class UserIsATenant {
       if (auth.user.id !== parseInt(matches[1])) {
         throw new HttpException('User can only connect to tenant topic containing his id.')
       }
-      let tenantEstates = await CurrentTenant.query()
-        .where('id', auth.user.id)
-        .where('status', STATUS_ACTIVE)
-        .fetch()
-
-      if (tenantEstates.toJSON().length < 1) {
-        throw new HttpException('Topic is only available to current tenants.')
+      if (auth.user.role !== ROLE_USER) {
+        throw new HttpException('Topic is only available to prospects.')
       }
     } else {
       throw new HttpException('Topic not valid.')

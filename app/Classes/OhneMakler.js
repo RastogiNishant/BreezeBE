@@ -47,6 +47,7 @@ const {
   FIRING_ELECTRIC,
   FIRING_GROUND_HEAT,
   FIRING_GAS,
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
 } = require('../constants')
 const { isEmpty } = require('lodash')
 const moment = require('moment')
@@ -327,6 +328,7 @@ class OhneMakler {
       }
       newEstate.source = THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
       newEstate.address = `${estate.address}, ${estate.postcode} ${estate.city}, ${estate.country}`
+
       if (estate?.pictures && !Array.isArray(estate?.pictures)) {
         estate.pictures = [estate?.pictures]
       }
@@ -365,14 +367,16 @@ class OhneMakler {
       newEstate.coord = `${estate.latitude},${estate.longitude}`
       newEstate.coord_raw = `${estate.latitude},${estate.longitude}`
       if (estate.uebernahme_ab && estate.uebernahme_ab.match(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/)) {
-        newEstate.vacant_date = moment(estate.uebernahme_ab, 'YYYY/MM/DD', true).format(DATE_FORMAT)
+        newEstate.vacant_date = moment(estate.uebernahme_ab, 'YYYY/MM/DD', true)
+          .utcOffset(2)
+          .format(DATE_FORMAT)
       } else {
         newEstate.vacant_date = moment.utc(new Date()).format(DATE_FORMAT)
         newEstate.vacant_from_string = estate.uebernahme_ab
       }
 
       newEstate.rent_end_at = estate?.vacant_till
-        ? moment(estate.vacant_till, 'YYYY/MM/DD', true).format(DATE_FORMAT)
+        ? moment(estate.vacant_till, 'YYYY/MM/DD', true).utcOffset(2).format(DATE_FORMAT)
         : null
       //as confirmed by andrey, K is Kellergeschoss (basement or underground)
       if (newEstate.floor === 'K') {
@@ -406,13 +410,13 @@ class OhneMakler {
 
       if (
         !newEstate?.available_end_at ||
-        newEstate.available_end_at > moment.utc(new Date()).format(DATE_FORMAT)
+        newEstate.available_end_at > moment(new Date()).utcOffset(2).format(DATE_FORMAT)
       ) {
         newEstate.status = STATUS_ACTIVE
       } else {
-        console.log('expire estate=', estate.id)
         newEstate.status = STATUS_EXPIRE
       }
+      newEstate.source_information = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler']
     } catch (e) {
       console.log('e.estate', estate)
     }

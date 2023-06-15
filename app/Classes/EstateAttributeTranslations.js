@@ -19,10 +19,8 @@ const {
   APARTMENT_TYPE_SOUTERRAIN,
   APARTMENT_TYPE_PENTHOUSE,
   APARTMENT_TYPE_TERRACES,
-  APARTMENT_TYPE_ETAGE,
   APARTMENT_TYPE_HOLIDAY,
   APARTMENT_TYPE_GALLERY,
-  APARTMENT_TYPE_RAW_ATTIC,
   APARTMENT_TYPE_ATTIC,
 
   HOUSE_TYPE_MULTIFAMILY_HOUSE,
@@ -84,6 +82,10 @@ const {
   FIRING_COAL,
   FIRING_WOOD,
   FIRING_LIQUID_GAS,
+
+  FURNISHING_NOT_FURNISHED,
+  FURNISHING_PARTIALLY_FURNISHED,
+  FURNISHING_FULLY_FURNISHED,
 
   USE_TYPE_RESIDENTIAL,
   USE_TYPE_COMMERCIAL,
@@ -219,6 +221,7 @@ toBool = (v) => {
   switch (escapeStr(v)) {
     case 'no':
     case 'nein':
+    case 'keine':
       return false
     case 'yes':
     case 'ja':
@@ -268,7 +271,8 @@ class EstateAttributeTranslations {
   reverseDataMapping = {
     non_smoker: reverseBool,
     rent_arrears: reverseBool,
-    furnished: reverseBool,
+    available_date: reverseExtractDate,
+    from_date: reverseExtractDate,
     vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
     contract_end: reverseExtractDate,
@@ -451,10 +455,12 @@ class EstateAttributeTranslations {
     kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
     rent_arrears: toBool,
-    furnished: toBool,
+    available_date: extractDate,
+    from_date: extractDate,
     vacant_date: extractDate,
     last_modernization: extractDate,
     contract_end: extractDate,
+    minors: toBool,
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2,
@@ -650,7 +656,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
-          'property.attribute.BUILDING_STATUS.fully_refurbished',
+          'property.attribute.BUILDING_STATUS.fully_refurbished.message',
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -768,6 +774,18 @@ class EstateAttributeTranslations {
           'property.attribute.EQUIPMENT_STANDARD.Enhanced.message',
         ],
         values: [EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED],
+      },
+      furnished: {
+        keys: [
+          'no.message',
+          'apartment.amenities.Apartment.partially_furnished.message',
+          'yes.message',
+        ],
+        values: [
+          FURNISHING_NOT_FURNISHED,
+          FURNISHING_PARTIALLY_FURNISHED,
+          FURNISHING_FULLY_FURNISHED,
+        ],
       },
       parking_space_type: {
         keys: [
@@ -937,10 +955,6 @@ class EstateAttributeTranslations {
         keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
         values: [PETS_SMALL, PETS_NO],
       },
-      minors: {
-        keys: ['landlord.property.tenant_pref.habits.children.no.message', 'yes.message'],
-        values: [false, true],
-      },
       let_type: {
         keys: [
           'property.attribute.LETTING_TYPE.Let.message',
@@ -1004,7 +1018,6 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        console.log('arttribute here', attribute)
         throw new HttpException(SETTINGS_ERROR, 500, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {

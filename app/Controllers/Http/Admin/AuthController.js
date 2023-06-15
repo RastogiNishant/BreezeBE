@@ -2,7 +2,9 @@
 const Admin = use('App/Models/Admin')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
-
+const {
+  exceptions: { USER_WRONG_PASSWORD },
+} = require('../../../exceptions')
 class AuthController {
   async login({ request, auth, response }) {
     let { email, password } = request.all()
@@ -20,7 +22,7 @@ class AuthController {
     } catch (e) {
       let [error, message] = e.message.split(':')
       if (!message) message = error
-      throw new HttpException(message, 401)
+      throw new HttpException(USER_WRONG_PASSWORD, 401)
     }
     return response.res(token)
   }

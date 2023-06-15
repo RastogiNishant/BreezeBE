@@ -8,7 +8,7 @@ class Amenity extends Model {
     return [
       'id',
       'room_id',
-      'options_id',
+      'option_id',
       'amenity',
       'status',
       'sequence_order',
@@ -29,6 +29,10 @@ class Amenity extends Model {
 
   estate() {
     return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
+  }
+
+  option() {
+    return this.hasOne('App/Models/Option', 'option_id', 'id')
   }
 }
 
