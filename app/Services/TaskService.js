@@ -759,17 +759,17 @@ class TaskService extends BaseService {
       throw new HttpException('No permission for task', 400)
     }
 
-    if (role === ROLE_USER) {
-      if (
-        task.type !== TASK_SYSTEM_TYPE &&
-        !(await require('./EstateCurrentTenantService').getInsideTenant({
-          estate_id,
-          user_id,
-        }))
-      ) {
-        throw new HttpException('You are not a breeze member yet', 400)
-      }
-    }
+    // if (role === ROLE_USER) {
+    //   if (
+    //     task.type !== TASK_SYSTEM_TYPE &&
+    //     !(await require('./EstateCurrentTenantService').getInsideTenant({
+    //       estate_id,
+    //       user_id,
+    //     }))
+    //   ) {
+    //     throw new HttpException('You are not a breeze member yet', 400)
+    //   }
+    // }
 
     if (estate_id) {
       const finalMatch = await MatchService.getFinalMatch(estate_id)
