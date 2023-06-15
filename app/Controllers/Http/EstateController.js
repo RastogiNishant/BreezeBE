@@ -1086,7 +1086,7 @@ class EstateController {
         rows.map(async (row, index) => {
           let rooms_parsed = {}
           await row.rooms.map((room, r_index) => {
-            rooms_parsed[`room_${r_index}`] = room.type
+            rooms_parsed[`room_${r_index + 1}`] = room.type
           })
           rows[index].rooms_parsed = rooms_parsed
           rows[index].deposit_multiplier = Math.round(Number(row.deposit) / Number(row.net_rent))
