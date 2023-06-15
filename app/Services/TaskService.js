@@ -18,6 +18,12 @@ const {
   TASK_STATUS_ARCHIVED,
   PREDEFINED_MSG_OPTION_SIGNLE_CHOICE,
   WEBSOCKET_EVENT_TASK_CREATED,
+  TASK_SYSTEM_TYPE,
+  TASK_STATUS_UNRESOLVED,
+  SHOW_ACTIVE_TASKS_COUNT,
+  TASK_COMMON_TYPE,
+  TASK_ORDER_BY_UNREAD,
+  TASK_ORDER_BY_URGENCY,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -25,7 +31,7 @@ const { rc } = require('../Libs/utils')
 const moment = require('moment')
 const { generateAddress } = use('App/Libs/utils')
 
-const { isArray } = require('lodash')
+const { isArray, maxBy, countBy } = require('lodash')
 const {
   TASK_STATUS_NEW,
   TASK_STATUS_DRAFT,
@@ -35,7 +41,7 @@ const {
 const HttpException = require('../Exceptions/HttpException')
 
 const {
-  exceptions: { NO_TASK_FOUND },
+  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST, WRONG_PARAMS },
 } = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
@@ -83,6 +89,39 @@ class TaskService extends BaseService {
     }
 
     return await Task.createItem(task, trx)
+  }
+
+  static async createGlobalTask({ tenantId, landlordId, estateId }, trx) {
+    if (!landlordId) {
+      const estate = await require('./EstateService').getById(estateId)
+      if (!estate) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+      landlordId = estate.user_id
+    }
+
+    const systemTask = await Task.query()
+      .where('tenant_id', tenantId)
+      .where('estate_id', estateId)
+      .where('type', TASK_SYSTEM_TYPE)
+      .first()
+
+    if (systemTask) {
+      return systemTask
+    }
+
+    return await Task.createItem(
+      {
+        creator_role: ROLE_LANDLORD,
+        tenant_id: tenantId,
+        landlord_id: landlordId,
+        title: '',
+        type: TASK_SYSTEM_TYPE,
+        status: TASK_STATUS_DRAFT,
+        estate_id: estateId,
+      },
+      trx
+    )
   }
 
   static async init(user, data) {
@@ -319,23 +358,54 @@ class TaskService extends BaseService {
 
   static async delete({ id, user }, trx) {
     const task = await this.get(id)
+    if (task?.type === TASK_SYSTEM_TYPE) {
+      // system task can't be deleted. created by system automatically for top match
+      throw new HttpException(NO_TASK_FOUND, 400)
+    }
     if (
-      await this.hasPermission({
+      !(await this.hasPermission({
         estate_id: task.estate_id,
         user_id: user.id,
         role: user.role,
-      })
+      }))
     ) {
-      const query = Task.query().where('id', id)
-
-      if (trx) return await query.update({ status: TASK_STATUS_DELETE }).transacting(trx)
-      return await query.update({ status: TASK_STATUS_DELETE })
+      throw new HttpException(NO_TASK_FOUND, 400)
     }
+
+    const query = Task.query().where('id', id)
+
+    if (trx) {
+      await query.update({ status: TASK_STATUS_DELETE }).transacting(trx)
+    } else {
+      await query.update({ status: TASK_STATUS_DELETE })
+    }
+
+    return task
   }
 
-  static async getTaskById({ id, user }) {
-    let task = await Task.query()
-      .where('id', id)
+  static async getTaskById({ id, estate_id, prospect_id, user }) {
+    let taskQuery = Task.query()
+
+    if (id) {
+      taskQuery.where('id', id)
+    } else {
+      if (user.role === ROLE_LANDLORD) {
+        if (!prospect_id) {
+          throw new HttpException(WRONG_PARAMS, 400)
+        }
+        taskQuery.where('landlord_id', user.id)
+        taskQuery.where('tenant_id', prospect_id)
+      } else {
+        taskQuery.where('tenant_id', user.id)
+      }
+    }
+
+    if (estate_id) {
+      taskQuery.where('estate_id', estate_id)
+      taskQuery.where('type', TASK_SYSTEM_TYPE)
+    }
+
+    let task = await taskQuery
       .whereNot('status', TASK_STATUS_DELETE)
       .with('user', function (u) {
         u.select('id', 'avatar')
@@ -437,9 +507,24 @@ class TaskService extends BaseService {
     }
   }
 
-  static async getAllTasks({ user_id, role, estate_id, status, page = -1, limit = -1 }) {
+  static async getAllTasks({
+    user_id,
+    role,
+    estate_id,
+    type,
+    orderby,
+    query,
+    status,
+    page = -1,
+    limit = -1,
+  }) {
     let taskQuery = Task.query()
       .select('tasks.*')
+      .select(
+        Database.raw(
+          `coalesce( tasks.unread_role = ${role} AND tasks.unread_count > 0 , false) as is_unread_task`
+        )
+      )
       .select(
         Database.raw(`coalesce(
         ("tasks"."status"<= ${TASK_STATUS_INPROGRESS}
@@ -451,13 +536,16 @@ class TaskService extends BaseService {
           and "tasks"."status_changed_by" = ${ROLE_LANDLORD})), false) as is_active_task`)
       )
 
+    const estateFields = ESTATE_FIELD_FOR_TASK.map((field) => `_e.${field}`)
+    taskQuery.select(estateFields)
+
     if (role === ROLE_USER) {
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
-      taskQuery.where('tenant_id', user_id).with('estate', function (e) {
-        e.select(ESTATE_FIELD_FOR_TASK)
+      taskQuery.where('tenant_id', user_id)
+      taskQuery.innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'tasks.estate_id')
       })
     } else {
-      taskQuery.select(ESTATE_FIELD_FOR_TASK)
       taskQuery.whereNotIn('tasks.status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       taskQuery.innerJoin({ _e: 'estates' }, function () {
         this.on('_e.id', 'tasks.estate_id').on('_e.user_id', user_id)
@@ -466,12 +554,51 @@ class TaskService extends BaseService {
 
     if (status) {
       taskQuery.whereIn('tasks.status', Array.isArray(status) ? status : [status])
+    } else {
+      taskQuery.whereNotIn('tasks.status', [
+        TASK_STATUS_ARCHIVED,
+        TASK_STATUS_DELETE,
+        TASK_STATUS_DRAFT,
+      ])
     }
-    taskQuery
-      .where('tasks.estate_id', estate_id)
-      .orderBy('tasks.updated_at', 'desc')
-      .orderBy('tasks.status', 'asc')
-      .orderBy('tasks.urgency', 'desc')
+
+    taskQuery.select('_u.firstname', '_u.secondname', '_u.sex', '_u.avatar')
+    taskQuery.leftJoin({ _u: 'users' }, function () {
+      this.on('_u.id', 'tasks.tenant_id')
+    })
+
+    if (type) {
+      taskQuery.where('tasks.type', type)
+    }
+
+    if (estate_id) {
+      taskQuery.where('tasks.estate_id', estate_id)
+    }
+
+    if (query) {
+      taskQuery.where(function () {
+        this.orWhere('property_id', 'ilike', `%${query}%`)
+        this.orWhere('address', 'ilike', `%${query}%`)
+        this.orWhere('tasks.title', 'ilike', `%${query}%`)
+        this.orWhere('tasks.description', 'ilike', `%${query}%`)
+        this.orWhere('_u.firstname', 'ilike', `%${query}%`)
+        this.orWhere('_u.secondname', 'ilike', `%${query}%`)
+      })
+    }
+
+    if (orderby === TASK_ORDER_BY_URGENCY) {
+      taskQuery
+        .orderBy('tasks.status', 'asc')
+        .orderBy('tasks.urgency', 'desc')
+        .orderBy('is_unread_task', 'desc')
+    } else {
+      taskQuery
+        .orderBy('is_unread_task', 'desc')
+        .orderBy('tasks.status', 'asc')
+        .orderBy('tasks.urgency', 'desc')
+    }
+
+    taskQuery.orderBy('tasks.updated_at', 'desc')
 
     let tasks = null
     let count = 0
@@ -493,6 +620,49 @@ class TaskService extends BaseService {
     return {
       tasks,
       count,
+    }
+  }
+
+  static async getTaskSummary(estate_id) {
+    const tasks = (
+      await Task.query()
+        .where('estate_id', estate_id)
+        .whereNotIn('status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+        .where('type', TASK_COMMON_TYPE)
+        .orderBy('created_at')
+        .orderBy('urgency')
+        .fetch()
+    ).toJSON()
+
+    const activeTasks = (tasks || []).filter(
+      (task) => task.status === TASK_STATUS_NEW || task.status === TASK_STATUS_INPROGRESS
+    )
+
+    const closed_tasks_count =
+      (tasks || []).filter(
+        (task) => task.status === TASK_STATUS_RESOLVED || task.status === TASK_STATUS_UNRESOLVED
+      ).length || 0
+
+    const in_progress_task =
+      countBy(tasks || [], (task) => task.status === TASK_STATUS_INPROGRESS).true || 0
+
+    const mostUrgency = maxBy(activeTasks, (re) => {
+      return re.urgency
+    })
+
+    return {
+      activeTasks: (activeTasks || []).slice(0, SHOW_ACTIVE_TASKS_COUNT),
+      in_progress_task,
+      mosturgency: mostUrgency?.urgency,
+      taskSummary: {
+        taskCount: tasks?.length || 0,
+        activeTaskCount: activeTasks.length,
+        closed_tasks_count,
+        mostUrgency: mostUrgency?.urgency || null,
+        mostUrgencyCount: mostUrgency
+          ? countBy(activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
+          : 0,
+      },
     }
   }
 
@@ -527,7 +697,7 @@ class TaskService extends BaseService {
     let query = Task.query()
       .select('tasks.*')
       .where('estate_id', id)
-      .whereNotIn('tasks.status', [TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
+      .whereNotIn('tasks.status', [TASK_STATUS_ARCHIVED, TASK_STATUS_DRAFT, TASK_STATUS_DELETE])
       .innerJoin({ _e: 'estates' }, function () {
         this.on('tasks.estate_id', '_e.id').on('_e.user_id', user_id)
       })
@@ -535,7 +705,7 @@ class TaskService extends BaseService {
     const filter = new TaskFilters(param, query)
     query = filter.process()
 
-    query.orderBy('tasks.updated_at')
+    query.orderBy('tasks.updated_at', 'desc')
 
     if (!page || page === -1 || !limit || limit === -1) {
       return await query.fetch()
@@ -579,23 +749,21 @@ class TaskService extends BaseService {
       throw new HttpException('No permission for task', 400)
     }
 
-    if (
-      role === ROLE_USER &&
-      estate_id &&
-      !(await require('./EstateCurrentTenantService').getInsideTenant({
-        estate_id,
-        user_id,
-      }))
-    ) {
-      throw new HttpException('You are not a breeze member yet', 400)
+    if (role === ROLE_USER) {
+      if (
+        task.type !== TASK_SYSTEM_TYPE &&
+        !(await require('./EstateCurrentTenantService').getInsideTenant({
+          estate_id,
+          user_id,
+        }))
+      ) {
+        throw new HttpException('You are not a breeze member yet', 400)
+      }
     }
 
     if (estate_id) {
       const finalMatch = await MatchService.getFinalMatch(estate_id)
-      if (!finalMatch) {
-        throw new HttpException('No final match yet for property', 400)
-      }
-      return finalMatch.user_id
+      return finalMatch?.user_id
     }
 
     if (role === ROLE_USER) {

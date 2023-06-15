@@ -9,6 +9,8 @@ class Knock extends Base {
     yup.object().shape({
       estate_id: id.required(),
       knock_anyway: yup.boolean().nullable(),
+      share_profile: yup.boolean().nullable(),
+      buddy: yup.boolean().nullable(),
     })
 }
 

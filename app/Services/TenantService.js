@@ -14,11 +14,6 @@ const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
 const MemberService = use('App/Services/MemberService')
-const HttpException = require('../Exceptions/HttpException')
-
-const {
-  exceptions: { USER_NOT_FOUND },
-} = require('../exceptions')
 
 const {
   MEMBER_FILE_TYPE_RENT,
@@ -63,7 +58,11 @@ const {
   VALID_INCOME_PROOFS_PERIOD,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
+const HttpException = require('../Exceptions/HttpException')
 
+const {
+  exceptions: { USER_NOT_FOUND },
+} = require('../exceptions')
 class TenantService {
   /**
    *
@@ -149,8 +148,8 @@ class TenantService {
     )
     tenant.point_id = point.id
 
-    if (trx) return tenant.save(trx)
-    return tenant.save()
+    if (trx) return await tenant.save(trx)
+    return await tenant.save()
   }
 
   static async getTenant(userId) {
@@ -404,6 +403,12 @@ class TenantService {
       const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}
       if (lon && lat) {
         tenant.coord = `${`${lat}`.slice(0, 12)},${`${lon}`.slice(0, 12)}`
+        const point = await GeoService.getOrCreateIsoline(
+          { lat, lon },
+          tenant.dist_type || TRANSPORT_TYPE_CAR,
+          tenant.dist_min || 60
+        )
+        tenant.point_id = point.id
       }
 
       await tenant.save(trx)

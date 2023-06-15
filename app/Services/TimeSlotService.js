@@ -219,7 +219,7 @@ class TimeSlotService {
   }
 
   static async getFreeTimeslots(estateId) {
-    const dateFrom = moment().format(DATE_FORMAT)
+    const dateFrom = moment().utc().format(DATE_FORMAT)
     // Get estate available slots
     const getSlots = async () => {
       return Database.table('time_slots')

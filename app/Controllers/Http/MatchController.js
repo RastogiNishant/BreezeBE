@@ -48,13 +48,17 @@ const {
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../../constants')
 const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
-
+const {
+  exceptions: { UNSECURE_PROFILE_SHARE },
+  exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE },
+} = require('../../exceptions')
 class MatchController {
   /**
    *
@@ -75,11 +79,7 @@ class MatchController {
    *
    */
   async getActiveEstate(estateId, withExpired = true) {
-    const estate = await EstateService.getActiveById(
-      estateId,
-      withExpired ? undefined : { status: STATUS_ACTIVE }
-    )
-
+    const estate = await EstateService.getActiveById(estateId)
     if (!estate) {
       throw new HttpException('Estate not found', 404)
     }
@@ -92,12 +92,20 @@ class MatchController {
    * Knock to estate
    */
   async knockEstate({ request, auth, response }) {
-    const { estate_id, knock_anyway } = request.all()
-
-    await this.getActiveEstate(estate_id, false)
-
+    const { estate_id, knock_anyway, share_profile, buddy } = request.all()
+    const estate = await this.getActiveEstate(estate_id, false)
+    if (!estate.is_not_show && estate.status !== STATUS_OFFLINE_ACTIVE && share_profile) {
+      throw new HttpException(UNSECURE_PROFILE_SHARE, 400, WARNING_UNSECURE_PROFILE_SHARE)
+    }
     try {
-      const result = await MatchService.knockEstate(estate_id, auth.user.id, knock_anyway)
+      const result = await MatchService.knockEstate({
+        estate_id: estate_id,
+        landlord_id: estate.user_id,
+        user_id: auth.user.id,
+        knock_anyway,
+        share_profile,
+        buddy,
+      })
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
       return response.res(result)
@@ -130,7 +138,6 @@ class MatchController {
     const { estate_id, user_id } = request.all()
     // Check is estate owner
     const estate = await this.getOwnEstate(estate_id, landlordId)
-
     try {
       await MatchService.inviteKnockedUser(estate, user_id)
       logEvent(
@@ -433,7 +440,11 @@ class MatchController {
     const { user_id, estate_id } = request.all()
     try {
       await this.getOwnEstate(estate_id, auth.user.id)
-      const success = await MatchService.toTop(estate_id, user_id)
+      const success = await MatchService.toTop({
+        estateId: estate_id,
+        tenantId: user_id,
+        landlordId: auth.user.id,
+      })
       if (!success) {
         throw new HttpException('Cant move to top', 400)
       }
@@ -704,12 +715,12 @@ class MatchController {
     try {
       const allEstates = await Estate.query()
         .where('user_id', user.id)
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-        .select('id')
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
+        .select(['id', 'available_start_at', 'available_end_at', 'status'])
         .select('available_start_at', 'available_end_at')
         .fetch()
 
-      const allEstatesJson = allEstates.toJSON()
+      const allEstatesJson = allEstates.toJSON({ isOwner: true })
 
       const allEstatesCount = allEstatesJson.length
 
@@ -718,7 +729,7 @@ class MatchController {
         .select('estates.user_id')
         .select('estates.status')
         .where('estates.user_id', user.id)
-        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         .innerJoin('matches', 'matches.estate_id', 'estates.id')
         .select('matches.status as match_status')
         .fetch()
@@ -776,41 +787,39 @@ class MatchController {
       groupedFilteredEstates = removeFiltereds(groupedFilteredEstates, buddies)
       counts.buddies = buddies.length
 
-      const newMatchedEstatesCount = groupedFilteredEstates.length
-      const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
+      // const newMatchedEstatesCount = groupedFilteredEstates.length
+      // const nonMatchedEstatesCount = allEstatesCount - groupedEstates.length
 
       counts.totalVisits = counts.visits + counts.invites + counts.sharedVisits
       counts.totalDecided = counts.top + counts.commits
-      counts.totalInvite =
-        counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
+      // counts.totalInvite =
+      //   counts.matches + counts.buddies + newMatchedEstatesCount + nonMatchedEstatesCount
 
-      const currentDay = moment().startOf('day')
+      counts.totalInvite = counts.matches + counts.buddies
 
-      counts.expired = allEstatesJson.filter(
-        (e) =>
-          moment(e.available_end_at).isBefore(currentDay) ||
-          moment(e.available_start_at).isAfter(currentDay)
-      ).length
+      const currentDay = moment().utc().startOf('day')
+
+      counts.expired = allEstatesJson.filter((e) => e.status === STATUS_EXPIRE).length
 
       const showed = await Estate.query()
         .where({ user_id: user.id })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         .whereHas('slots', (estateQuery) => {
           estateQuery.where('end_at', '<=', currentDay.format(DATE_FORMAT))
         })
         .count()
 
-      counts.showed = showed[0].count
+      counts.showed = parseInt(showed[0].count || 0)
 
       const finalMatches = await Estate.query()
         .where({ user_id: user.id })
-        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT, STATUS_OFFLINE_ACTIVE])
         .whereHas('matches', (query) => {
           query.where('status', MATCH_STATUS_FINISH)
         })
         .count()
 
-      counts.finalMatches = finalMatches[0].count
+      counts.finalMatches = parseInt(finalMatches[0].count || 0)
 
       return response.res(counts)
     } catch (e) {
@@ -846,7 +855,7 @@ class MatchController {
       page,
       limit
     )
-    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'updated_at']
+    const fields = ['buddy', 'date', 'user_id', 'visit_status', 'delay', 'updated_at', 'status_at']
     const extraFields = filters.commit ? ['email', 'phone', 'last_address', ...fields] : fields
 
     const data = tenants.toJSON({ isShort: true, extraFields })
@@ -901,6 +910,8 @@ class MatchController {
       'u_birthday',
       'u_avatar',
       'final_match_date',
+      'status_at',
+      'unread_count',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -1164,6 +1175,15 @@ class MatchController {
     } catch (err) {
       console.log(err)
       throw new HttpException(err.message, 400)
+    }
+  }
+
+  async getKnockPlacesNumber({ request, auth, response }) {
+    const { estate_id } = request.all()
+    try {
+      response.res(await MatchService.getKnockedPosition({ user_id: auth.user.id, estate_id }))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
 }

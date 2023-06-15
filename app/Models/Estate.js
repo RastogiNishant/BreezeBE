@@ -7,7 +7,8 @@ const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
 const Contact = use('App/Models/Contact')
 const HttpException = use('App/Exceptions/HttpException')
-
+const { createDynamicLink } = require('../Libs/utils')
+const Logger = use('Logger')
 const Model = require('./BaseModel')
 const {
   BATH_TUB,
@@ -50,6 +51,11 @@ const {
   ROLE_USER,
   MAXIMUM_EXPIRE_PERIOD,
   DATE_FORMAT,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_BY_LANDLORD,
+  STATUS_OFFLINE_ACTIVE,
+  PUBLISH_TYPE_ONLINE_MARKET,
+  TASK_COMMON_TYPE,
 } = require('../constants')
 
 class Estate extends Model {
@@ -163,7 +169,12 @@ class Estate extends Model {
       'rent_end_at',
       'income_sources',
       'percent',
-      'is_published',
+      'share_link',
+      'is_not_show',
+      'publish_status',
+      'publish_type',
+      'notify_on_green_matches',
+      'notify_sent',
     ]
   }
 
@@ -171,7 +182,7 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code']
+    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code', 'share_link']
   }
 
   static shortColumns() {
@@ -239,7 +250,7 @@ class Estate extends Model {
     this.addHook('beforeUpdate', async (instance) => {
       if (
         instance.letting_type === LETTING_TYPE_LET &&
-        ![STATUS_DRAFT, STATUS_DELETE].includes(instance.status)
+        ![STATUS_DRAFT, STATUS_DELETE, STATUS_OFFLINE_ACTIVE].includes(instance.status)
       ) {
         instance.status = STATUS_DRAFT
       }
@@ -324,9 +335,26 @@ class Estate extends Model {
         .select('id')
         .first()
     } while (exists)
-    await Database.table('estates')
-      .where('id', id)
-      .update({ six_char_code: randomString, hash: Estate.getHash(id) })
+
+    await Database.table('estates').where('id', id).update({ six_char_code: randomString })
+  }
+
+  static async updateHashInfo(id) {
+    try {
+      const hash = Estate.getHash(id)
+      const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
+      let estateInfo = {
+        hash,
+        share_link,
+      }
+      await Database.table('estates')
+        .where('id', id)
+        .update({ ...estateInfo })
+      return share_link
+    } catch (e) {
+      Logger.error(`estate ${id} updateHashInfo error ${e.message || e}`)
+      return null
+    }
   }
 
   /**
@@ -347,11 +375,18 @@ class Estate extends Model {
    *
    */
   rooms() {
-    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE)
+    return this.hasMany('App/Models/Room').whereNot('status', STATUS_DELETE).orderBy('order', 'asc')
   }
 
   amenities() {
-    return this.hasMany('App/Models/Amenity', 'estate_id', 'id').whereNot('status', STATUS_DELETE)
+    return this.hasMany('App/Models/Amenity', 'id', 'estate_id').whereNot('status', STATUS_DELETE)
+  }
+
+  estateSyncListings() {
+    return this.hasMany('App/Models/EstateSyncListing', 'id', 'estate_id').whereNot(
+      'status',
+      STATUS_DELETE
+    )
   }
 
   activeTasks() {
@@ -368,21 +403,23 @@ class Estate extends Model {
       .where('unread_count', '>', 0)
   }
 
-  static landlord_has_unread_messages(active_tasks, role = ROLE_LANDLORD) {
-    return active_tasks.findIndex((task) => task.unread_role === role && task.unread_count) !== -1
+  static landlord_has_topic_unread_messages(active_tasks, role = ROLE_LANDLORD) {
+    return (
+      active_tasks.findIndex(
+        (task) => task.unread_role === role && task.type !== 1 && task.unread_count
+      ) !== -1
+    )
   }
 
   tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
-      TASK_STATUS_DELETE,
-      TASK_STATUS_DRAFT,
-    ])
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .where('type', TASK_COMMON_TYPE)
   }
   all_tasks() {
-    return this.hasMany('App/Models/Task', 'id', 'estate_id').whereNotIn('status', [
-      TASK_STATUS_DELETE,
-      TASK_STATUS_DRAFT,
-    ])
+    return this.hasMany('App/Models/Task', 'id', 'estate_id')
+      .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
+      .where('type', TASK_COMMON_TYPE)
   }
 
   /**
@@ -474,10 +511,6 @@ class Estate extends Model {
     return this.hasMany('App/Models/File').orderBy('type').orderBy('order', 'asc')
   }
 
-  amenities() {
-    return this.hasMany('App/Models/Amenity')
-  }
-
   notifications() {
     return this.hasOne('App/Models/Notice')
   }
@@ -511,8 +544,10 @@ class Estate extends Model {
   async publishEstate(status, trx) {
     await this.updateItemWithTrx(
       {
-        status: status,
-        is_published: true,
+        status,
+        publish_type: PUBLISH_TYPE_ONLINE_MARKET,
+        publish_status:
+          status === STATUS_ACTIVE ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_BY_LANDLORD,
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),

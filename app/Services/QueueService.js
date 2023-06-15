@@ -9,11 +9,14 @@ const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const { isFunction } = require('lodash')
 
 const GET_POINTS = 'getEstatePoint'
+const GET_THIRD_PARTY_POINT = 'getThirdPartyPoint'
 const GET_ISOLINE = 'getTenantIsoline'
 const GET_COORDINATES = 'getEstateCoordinates'
+const GET_THIRD_PARTY_COORDINATES = 'getThirdPartyCoordinates'
 const SAVE_PROPERTY_IMAGES = 'savePropertyImages'
 const UPLOAD_OPENIMMO_IMAGES = 'uploadOpenImmoImages'
 const CONTACT_OHNE_MAKLER = 'contactOhneMakler'
+const CONTACT_GEWOBAG = 'contactGewobag'
 const CREATE_THUMBNAIL_IMAGES = 'createThumbnailImages'
 const DEACTIVATE_LANDLORD = 'deactivateLandlord'
 const GET_IP_BASED_INFO = 'getIpBasedInfo'
@@ -22,15 +25,20 @@ const GET_TENANT_MATCH_PROPERTIES = 'getTenantMatchProperties'
 const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlordUpdate'
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
+const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
+const KNOCK_SEND_REQUEST_EMAIL = 'knockRequestToEstate'
 const {
-  SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
+  SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
 } = require('../constants')
+const HttpException = require('../Exceptions/HttpException')
 
 /**
  * Do not stop rest notifications on some error
@@ -56,6 +64,10 @@ class QueueService {
     Queue.addJob(GET_POINTS, { estateId }, { delay: 1 })
   }
 
+  static getThirdPartyPoint(estateId) {
+    Queue.addJob(GET_THIRD_PARTY_POINT, { estateId }, { delay: 1 })
+  }
+
   static uploadOpenImmoImages(images, estateId) {
     Queue.addJob(UPLOAD_OPENIMMO_IMAGES, { images, estateId }, { delay: 1 })
   }
@@ -76,6 +88,10 @@ class QueueService {
     Queue.addJob(CONTACT_OHNE_MAKLER, { third_party_offer_id, userId, message }, { delay: 1 })
   }
 
+  static contactGewobag({ third_party_offer_id, userId }) {
+    Queue.addJob(CONTACT_GEWOBAG, { third_party_offer_id, userId }, { delay: 1 })
+  }
+
   static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
     Queue.addJob(
       IMPORT_ESTATES_VIA_EXCEL,
@@ -84,11 +100,23 @@ class QueueService {
     )
   }
 
+  static estateSyncPublishEstate({ estate_id }) {
+    Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
+  }
+
+  static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
+    Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids, markListingsForDelete })
+  }
+
   /**
    * Get estate coord by address then get nearest POI
    */
   static getEstateCoords(estateId) {
     Queue.addJob(GET_COORDINATES, { estateId }, { delay: 1 })
+  }
+
+  static getThirdPartyCoords(estateId) {
+    Queue.addJob(GET_THIRD_PARTY_COORDINATES, { estateId }, { delay: 1 })
   }
 
   static savePropertyBulkImages(properyImages) {
@@ -107,12 +135,20 @@ class QueueService {
     Queue.addJob(NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED, { estateId, userId }, { delay })
   }
 
+  static sendKnockRequestEmail({ link, email, estate, landlord_name, lang }, delay) {
+    Queue.addJob(KNOCK_SEND_REQUEST_EMAIL, { link, email, estate, landlord_name, lang }, { delay })
+  }
+
   static getIpBasedInfo(userId, ip) {
     Queue.addJob(GET_IP_BASED_INFO, { userId, ip }, { delay: 1 })
   }
 
-  static async doEvery10MinAtNight() {
-    return Promise.all([wrapException(QueueJobService.updateThirdPartyOfferPoints)])
+  static async doEvery15MinsJob() {
+    return Promise.all([
+      wrapException(QueueJobService.updateThirdPartyOfferPoints),
+      wrapException(QueueJobService.fillMissingEstateInfo),
+      wrapException(require('./MatchService').sendKnockedReachedNotification),
+    ])
   }
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
@@ -120,20 +156,24 @@ class QueueService {
   }
 
   static createThirdPartyMatchesByEstate() {
-    Queue.addJob(
-      QUEUE_CREATE_THIRD_PARTY_MATCHES,
-      {},
-      {
-        removeOnComplete: true,
-        removeOnFail: true,
-        attempts: 3,
-        delay: 1,
-        backoff: {
-          type: 'exponential',
-          delay: 5000,
-        },
-      }
-    )
+    try {
+      Queue.addJob(
+        QUEUE_CREATE_THIRD_PARTY_MATCHES,
+        {},
+        {
+          removeOnComplete: true,
+          removeOnFail: true,
+          attempts: 3,
+          delay: 1,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+        }
+      )
+    } catch (e) {
+      Logger.error(`createThirdPartyMatchesByEstate error ${e.message || e}`)
+    }
   }
 
   /**
@@ -143,7 +183,7 @@ class QueueService {
     const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(QueueJobService.handleToExpireEstates),
-      wrapException(QueueJobService.handleToActivateEstates),
+      // wrapException(QueueJobService.handleToActivateEstates),
       wrapException(QueueJobService.handleShowDateEndedEstates),
       wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
@@ -151,6 +191,7 @@ class QueueService {
       wrapException(NoticeService.landlordVisitIn30m),
       wrapException(NoticeService.prospectVisitIn30m),
       wrapException(NoticeService.getProspectVisitIn3H),
+      wrapException(NoticeService.getProspectVisitIn48H),
       wrapException(NoticeService.expiredShowTime),
       wrapException(QueueJobService.updatePOI),
     ])
@@ -162,6 +203,11 @@ class QueueService {
   static async performEvery3rdHour23rdMinuteJob() {
     const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
     return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
+  }
+
+  static async performEvery37thMinuteHourly() {
+    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag)])
   }
 
   static async sendEveryDayMidday() {
@@ -199,23 +245,31 @@ class QueueService {
   }
 
   static async addJobFetchPOI() {
-    const job = await Queue.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
-    job?.remove()
-    await Queue.addJob(
-      SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-      {},
-      {
-        jobId: SCHEDULED_EVERY_10MINUTE_NIGHT_JOB,
-        repeat: { cron: '*/2 * * * *' },
-        removeOnComplete: true,
-        removeOnFail: true,
-      }
-    )
+    try {
+      const job = await Queue.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+      job?.remove()
+      await Queue.addJob(
+        SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+        {},
+        {
+          jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+          repeat: { cron: '*/15 * * * *' },
+          removeOnComplete: true,
+          removeOnFail: true,
+        }
+      )
+    } catch (e) {
+      Logger.error(`addJobFetchPOI error ${e.message || e}`)
+    }
   }
 
   static async removeJobFetchPOI() {
-    const job = await Queue?.getJobById(SCHEDULED_EVERY_10MINUTE_NIGHT_JOB)
-    job?.remove()
+    try {
+      const job = await Queue?.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+      job?.remove()
+    } catch (e) {
+      Logger.error(`removeJobFetchPOI error ${e.message || e}`)
+    }
   }
   /**
    *
@@ -227,8 +281,12 @@ class QueueService {
           return ImageService.uploadOpenImmoImages(job.data.images, job.data.estateId)
         case GET_POINTS:
           return QueueJobService.updateEstatePoint(job.data.estateId)
+        case GET_THIRD_PARTY_POINT:
+          return QueueJobService.updateThirdPartyPoint(job.data.estateId)
         case GET_COORDINATES:
           return QueueJobService.updateEstateCoord(job.data.estateId)
+        case GET_THIRD_PARTY_COORDINATES:
+          return QueueJobService.updateThirdPartyCoord(job.data.estateId)
         case GET_ISOLINE:
           return TenantService.updateTenantIsoline(job.data.tenantId)
         case CONTACT_OHNE_MAKLER:
@@ -237,6 +295,8 @@ class QueueService {
             job.data.userId,
             job.data.message
           )
+        case CONTACT_GEWOBAG:
+          return QueueJobService.contactGewobag(job.data.third_party_offer_id, job.data.userId)
         case SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE:
           return QueueJobService.sendEmailToSupportForLandlordUpdate({
             type: job.data.type,
@@ -251,12 +311,14 @@ class QueueService {
             type: job.data.template,
             import_id: job.data.import_id,
           })
-        case SCHEDULED_EVERY_10MINUTE_NIGHT_JOB:
-          return QueueService.doEvery10MinAtNight()
+        case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
+          return QueueService.doEvery15MinsJob()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
           return QueueService.performEvery3rdHour23rdMinuteJob()
+        case SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB:
+          return QueueService.performEvery37thMinuteHourly()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:
@@ -285,12 +347,31 @@ class QueueService {
             job.data.estateId,
             job.data.userId
           )
+        case ESTATE_SYNC_PUBLISH_ESTATE:
+          return require('./EstateSyncService').postEstate({
+            estate_id: job.data.estate_id,
+          })
+        case ESTATE_SYNC_UNPUBLISH_ESTATES:
+          return require('./EstateSyncService').unpublishMultipleEstates(
+            job.data.estate_ids,
+            job.data.markListingsForDelete
+          )
+        case KNOCK_SEND_REQUEST_EMAIL:
+          require('./MailService').sendPendingKnockEmail({
+            link: job.data.link,
+            email: job.data.email,
+            estate: job.data.estate,
+            landlord_name: job.data.landlord_name,
+            lang: job.data.lang,
+          })
+
+          break
         default:
           console.log(`No job processor for: ${job.name}`)
       }
     } catch (e) {
       Logger.error(e)
-      throw e
+      throw new HttpException(e.message, 400)
     }
   }
 }

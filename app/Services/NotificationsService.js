@@ -24,12 +24,17 @@ const {
   NOTICE_TYPE_PROSPECT_INVITE,
   NOTICE_TYPE_PROSPECT_VISIT3H,
   NOTICE_TYPE_PROSPECT_VISIT30M,
+  NOTICE_TYPE_PROSPECT_VISIT48H,
+  NOTICE_TYPE_PROSPECT_VISIT48H_ID,
   NOTICE_TYPE_PROSPECT_COMMIT,
   NOTICE_TYPE_PROSPECT_COME,
   NOTICE_TYPE_CANCEL_VISIT,
   NOTICE_TYPE_VISIT_DELAY,
   NOTICE_TYPE_VISIT_DELAY_LANDLORD,
   NOTICE_TYPE_ZENDESK_NOTIFY,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH,
+  NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
@@ -117,11 +122,15 @@ const {
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
 
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
+  NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING,
   NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
 
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK,
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
+  NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
 } = require('../constants')
 
 const mapping = [
@@ -137,6 +146,7 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_INVITE_ID, NOTICE_TYPE_PROSPECT_INVITE],
   [NOTICE_TYPE_PROSPECT_VISIT3H_ID, NOTICE_TYPE_PROSPECT_VISIT3H],
   [NOTICE_TYPE_PROSPECT_VISIT30M_ID, NOTICE_TYPE_PROSPECT_VISIT30M],
+  [NOTICE_TYPE_PROSPECT_VISIT48H_ID, NOTICE_TYPE_PROSPECT_VISIT48H],
   [NOTICE_TYPE_PROSPECT_COMMIT_ID, NOTICE_TYPE_PROSPECT_COMMIT],
   [NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID, NOTICE_TYPE_PROSPECT_NO_ACTIVITY],
   [NOTICE_TYPE_PROSPECT_VISIT90M_ID, NOTICE_TYPE_PROSPECT_VISIT90M],
@@ -180,8 +190,14 @@ const mapping = [
   [NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID, NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED],
   [NOTICE_TYPE_EXPIRED_SHOW_TIME_ID, NOTICE_TYPE_EXPIRED_SHOW_TIME],
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
+  [
+    NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+    NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
+  ],
   [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
   [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
+  [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
+  [NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID, NOTICE_TYPE_PROSPECT_GREEN_MATCH],
 ]
 
 class NotificationsService {
@@ -876,9 +892,19 @@ class NotificationsService {
     return NotificationsService.sendNotes([notice], title, body)
   }
 
-  static async sendFullInvitation(notices) {
+  static async sendMinKnockReached(notices) {
     const title = 'landlord.notification.event.min_reached'
-    const body = 'prospect.notification.next.new_match.message'
+    const body = 'landlord.notification.next.min_reached'
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ count: data?.count }])}`,
+      body
+    )
+  }
+
+  static async sendGreenMinKnockReached(notices) {
+    const title = 'landlord.notification.event.min_greens_reached'
+    const body = 'landlord.notification.next.min_reached'
     return NotificationsService.sendNotes(
       notices,
       (data, lang) => `${rc(l.get(title, lang), [{ count: data?.count }])}`,
@@ -917,9 +943,8 @@ class NotificationsService {
     }
     const title = `${recipient}.notification.event.message_got`
     const body = (data) => {
+      let text = `${capitalize(data.estate_address)} \n`
       if (recipient === 'landlord') {
-        let text = `${data.estate_address} \n`
-
         const urgency = URGENCIES.find(({ value }) => value == data.urgency)?.label
 
         let trans = rc(l.get('landlord.notification.next.message_got.message', data.lang), [
@@ -931,8 +956,10 @@ class NotificationsService {
         text += trans
 
         return text
+      } else if (recipient === 'tenant') {
+        text += data.message
       }
-      return data.message
+      return text
     }
     return NotificationsService.sendNotes([notice], title, body)
   }
@@ -964,6 +991,23 @@ class NotificationsService {
   static async notifyLikedButNotKnockedToProspect(notices) {
     const title = 'prospect.notification.event.knock_reminder'
     const body = 'prospect.notification.next.knock_reminder'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async adminApprovesPublish(notices) {
+    const title = 'landlord.notification.event.property_published'
+    const body = 'landlord.notification.next.property_published'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async sendProspectGreenMatch(notices) {
+    const title = 'prospect.notification.event.best_match'
+    const body = (data, lang) => {
+      return (
+        `${capitalize(data.estate_address)} \n` +
+        l.get(`prospect.notification.next.best_match.message`, lang)
+      )
+    }
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

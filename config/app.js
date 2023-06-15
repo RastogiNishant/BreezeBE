@@ -147,7 +147,7 @@ module.exports = {
     file: {
       driver: 'file',
       name: 'adonis-app',
-      filename: 'adonis.log',
+      filename: '/tmp/adonis.log',
       level: 'info',
     },
 

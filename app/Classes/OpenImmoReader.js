@@ -5,7 +5,21 @@ const extract = require('extract-zip')
 const { has, includes, isArray, forOwn, get, unset } = require('lodash')
 const OPENIMMO_EXTRACT_FOLDER = process.env.PDF_TEMP_DIR || '/tmp'
 const moment = require('moment')
-const { FILE_TYPE_UNASSIGNED, PETS_SMALL, PETS_NO } = require('../constants')
+const Logger = use('Logger')
+const {
+  FILE_TYPE_UNASSIGNED,
+  PETS_SMALL,
+  PETS_NO,
+  DAY_FORMAT,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  DATE_FORMAT,
+  PROPERTY_TYPE_APARTMENT,
+  PROPERTY_TYPE_HOUSE,
+  PROPERTY_TYPE_ROOM,
+  PROPERTY_TYPE_SITE,
+  STATUS_DELETE,
+} = require('../constants')
 
 const energyPassVariables = {
   wertklasse: 'energy_efficiency_category',
@@ -49,7 +63,8 @@ class OpenImmoReader {
     const xmlParser = xml2js.Parser()
     xmlParser.parseString(xml, function (err, result) {
       if (err) {
-        throw new AppException(`Error parsing xml: ${err}`)
+        console.log(err)
+        that.json = false
       }
       that.json = result
     })
@@ -194,16 +209,24 @@ class OpenImmoReader {
   }
 
   processProperties(json) {
-    const estates = json['openimmo']['anbieter'][0]['immobilie']
-    const map = require('../../resources/openimmo/openimmo-map.json')
-    const properties = estates.map((property) => {
-      let obj = {}
-      forOwn(map, (value, key) => {
-        obj = { ...obj, [key]: get(property, value) }
+    try {
+      const transmittal = json['openimmo']['uebertragung'][0]['$']
+      const estates = json['openimmo']['anbieter'][0]['immobilie']
+      const map = require('../../resources/openimmo/openimmo-map.json')
+      const properties = estates.map((property) => {
+        let obj = {}
+        forOwn(map, (value, key) => {
+          obj = { ...obj, [key]: get(property, value) }
+        })
+        obj.status = transmittal.art
+        obj.action = transmittal.modus
+        return obj
       })
-      return obj
-    })
-    return properties
+      return properties
+    } catch (e) {
+      Logger.error('process properties error ', e.message)
+      return []
+    }
   }
 
   async processImages(properties) {
@@ -285,17 +308,9 @@ class OpenImmoReader {
     properties.map((property) => {
       fields.map((field) => {
         let propertyValue
-        if (field === 'furnished') {
-          let propertyField = property[field]
-          if (!property[field]) {
-            propertyField = ''
-          }
-          propertyValue = options[field][propertyField]
-        } else {
-          let dproperty = property[field]
-          if (dproperty) {
-            propertyValue = options[field][dproperty]
-          }
+        let dproperty = property[field]
+        if (dproperty) {
+          propertyValue = options[field][dproperty]
         }
         property[field] = propertyValue
       })
@@ -305,7 +320,16 @@ class OpenImmoReader {
       }
       //force dates to be of the format YYYY-MM-DD
       if (property.vacant_date) {
-        property.vacant_date = moment(new Date(property.vacant_date)).format('YYYY-MM-DD')
+        //vacant_date in openimmo (verfuegbar_ab) is string
+        let matches = property.vacant_date.match(/([0-9]{2})\.([0-9]{2})\.([0-9]{4})/)
+        if (matches) {
+          property.vacant_date = `${matches[3]}-${matches[2]}-${matches[1]}`
+          moment(new Date(property.vacant_date), 'YYYY/MM/DD', true)
+            .utcOffset(2)
+            .format(DATE_FORMAT)
+        } else {
+          unset(property, 'vacant_date')
+        }
       } else {
         unset(property, 'vacant_date')
       }
@@ -325,6 +349,39 @@ class OpenImmoReader {
         property.pets_allowed = PETS_SMALL
       } else if (property.pets_allowed === 'false') {
         property.pets_allowed = PETS_NO
+      }
+
+      property.barrier_free = property.barrier_free === 'true'
+      property.chimney = property.chimney === 'true'
+      property.elevator = property?.elevator?.length > 0
+      property.garden = property.garden === 'true'
+      property.sauna = property.sauna === 'true'
+      property.swimmingpool = property.swimmingpool === 'true'
+      property.wintergarten = property.wintergarten === 'true'
+      property.guest_toilet = property.guest_toilet === 'true'
+      property.wbs = property.wbs === 'true'
+      property.full_address = property.full_address === 'true'
+
+      if (property.action === 'DELETE') {
+        property.status = STATUS_DELETE
+      } else if (property.status === 'ONLINE') {
+        property.status = STATUS_ACTIVE
+      } else if (property.status === 'OFFLINE') {
+        property.status = STATUS_EXPIRE
+      }
+
+      if (property.basement === 'JA') {
+        property.basement = true
+      }
+
+      if (property?.apt_type) {
+        property.property_type = PROPERTY_TYPE_APARTMENT
+      } else if (property?.house_type) {
+        property.property_type = PROPERTY_TYPE_HOUSE
+      } else if (property?.room_type) {
+        property.property_type = PROPERTY_TYPE_ROOM
+      } else if (property?.site_type) {
+        property.property_type = PROPERTY_TYPE_SITE
       }
     })
     return properties
@@ -351,7 +408,7 @@ class OpenImmoReader {
       data = await fsPromises.readFile(dfile)
       let json = this.extractJson(data)
       let properties = []
-      if ((json = this.validate(json))) {
+      if (json && this.validate(json)) {
         properties = this.processProperties(json)
         properties = this.parseMultipleValuesWithOptions(properties)
         properties = this.parseSingleValues(properties)
@@ -359,6 +416,27 @@ class OpenImmoReader {
         properties = await this.processImages(properties)
       }
       await fsPromises.unlink(dfile)
+      return properties
+    } catch (err) {
+      throw new Error(err.message)
+    }
+  }
+
+  async processXml(xmls) {
+    try {
+      let properties = []
+      for (let i = 0; i < xmls.length; i++) {
+        let property
+        let json = this.extractJson(xmls[i])
+        if (json && this.validate(json)) {
+          property = this.processProperties(json)
+          property = this.parseMultipleValuesWithOptions(property)
+          property = this.parseSingleValues(property)
+          property = this.processEnergyPass(property)
+          property = await this.processImages(property)
+          properties = [...properties, property[0]]
+        }
+      }
       return properties
     } catch (err) {
       throw new Error(err.message)
