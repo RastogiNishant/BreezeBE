@@ -21,7 +21,7 @@ class TaskController {
     try {
       response.res(await TaskService.create(request, auth.user))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -33,7 +33,7 @@ class TaskController {
     try {
       response.res(await TaskService.init(auth.user, data))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -51,7 +51,7 @@ class TaskController {
     try {
       response.res(await TaskService.update({ user: auth.user, task: data }))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -74,7 +74,7 @@ class TaskController {
         })
       )
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -95,7 +95,7 @@ class TaskController {
         })
       )
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -216,7 +216,7 @@ class TaskController {
     try {
       return await TaskService.getAll(filter)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 

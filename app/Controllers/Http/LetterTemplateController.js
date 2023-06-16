@@ -9,7 +9,7 @@ class LetterTemplateController {
       const letterTemplates = await LetterTemplateService.getByUserId(auth.user.id)
       response.res(letterTemplates)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -17,7 +17,7 @@ class LetterTemplateController {
     try {
       response.res(await LetterTemplateService.update(request, auth.user))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -26,7 +26,7 @@ class LetterTemplateController {
     try {
       response.res(await LetterTemplateService.deleteLogo(id, auth.user.id))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -36,7 +36,7 @@ class LetterTemplateController {
       await LetterTemplateService.delete(id, auth.user.id)
       response.res(true)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 }

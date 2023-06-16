@@ -136,7 +136,7 @@ class Filter {
         (v) => Filter.MappingInfo[param][toLower(v.replace(/ /g, '_').replace(/-/, '_'))] || null
       )
       if (mappingVals.includes(null)) {
-        throw new HttpException(`No matching value for params ${param} value ${values}`, 500)
+        throw new HttpException(`No matching value for params ${param} value ${values}`, 400)
       }
       return mappingVals
     }

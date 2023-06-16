@@ -175,7 +175,7 @@ class EstateCurrentTenantController {
     try {
       response.res(await EstateCurrentTenantService.revokeInvitation(auth.user.id, ids))
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 

@@ -549,7 +549,7 @@ class MatchController {
       response.res({ estate, contact })
     } catch (e) {
       Logger.error(e)
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 

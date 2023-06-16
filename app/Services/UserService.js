@@ -387,7 +387,7 @@ class UserService {
       const owner = await User.query().select('owner_id').where('id', user_id).firstOrFail()
       return owner
     } catch (e) {
-      throw new HttpException(FAILED_GET_OWNER, 500)
+      throw new HttpException(FAILED_GET_OWNER, e.status || 500)
     }
   }
 
@@ -507,7 +507,7 @@ class UserService {
       })
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
 
     await DataStorage.remove(user.id, 'confirm_email')
@@ -1110,7 +1110,7 @@ class UserService {
 
   static async setOnboardingStep(user) {
     if (!user) {
-      throw new HttpException(NO_USER_PASSED, 500)
+      throw new HttpException(NO_USER_PASSED, 400)
     }
     user.onboarding_step = PASS_ONBOARDING_STEP_COMPANY
     if (user.company_id && (!user.preferred_services || trim(user.preferred_services) === '')) {
