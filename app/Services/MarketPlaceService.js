@@ -229,11 +229,11 @@ class MarketPlaceService {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
-      if (user?.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
+      if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
         throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       }
 
-      if (knockRequest.code && code != knockRequest.code) {
+      if (!knockRequest.code || code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
@@ -272,12 +272,25 @@ class MarketPlaceService {
     return !!(await query.first())
   }
 
-  static async createKnock({ user }, trx) {
+  static async createKnock({ user, data1, data2, email_verified = true }, trx) {
     try {
+      let contatRequestEmail = user.email
+
+      if (data1 && data2) {
+        const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({
+          data1,
+          data2,
+        })
+        contatRequestEmail = email
+      }
+
       const pendingKnocks = (
         await EstateSyncContactRequest.query()
-          .where('user_id', user.id)
-          .whereIn('status', [STATUS_EMAIL_VERIFY])
+          .where('email', contatRequestEmail)
+          .whereIn(
+            'status',
+            email_verified ? [STATUS_EMAIL_VERIFY] : [STATUS_DRAFT, STATUS_EMAIL_VERIFY]
+          )
           .fetch()
       ).toJSON()
 
