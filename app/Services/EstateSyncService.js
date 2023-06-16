@@ -341,11 +341,11 @@ class EstateSyncService {
           const credential = await EstateSyncService.getBreezeEstateSyncCredential()
           const estateSync = new EstateSync(credential.api_key)
           await estateSync.delete(payload.propertyId, 'properties')
+          //removed setting estate_sync_property_id so we can still get contact_requests
           await EstateSyncListing.query()
             .where('estate_sync_property_id', payload.propertyId)
             .update({
               status: ESTATE_SYNC_LISTING_STATUS_DELETED,
-              estate_sync_property_id: null,
             })
           //add websocket call for all unpublished...
         }
