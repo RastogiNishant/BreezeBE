@@ -55,7 +55,7 @@ class TimeSlotService {
       return slot
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(FAILED_CREATE_TIME_SLOT, 500)
+      throw new HttpException(FAILED_CREATE_TIME_SLOT, 400)
     }
   }
 
@@ -114,7 +114,7 @@ class TimeSlotService {
       return updatedSlot
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 

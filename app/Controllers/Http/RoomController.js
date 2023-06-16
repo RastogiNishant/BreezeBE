@@ -114,7 +114,7 @@ class RoomController {
       response.res(room)
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
   /**

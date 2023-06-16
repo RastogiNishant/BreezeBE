@@ -1018,7 +1018,7 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException(SETTINGS_ERROR, 500, 110198)
+        throw new HttpException(SETTINGS_ERROR, 400, 110198)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
         AVAILABLE_LANGUAGES.map((lang) => {
@@ -1041,7 +1041,7 @@ class EstateAttributeTranslations {
     for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
-        throw new HttpException(SETTINGS_ERROR, 500, 110176)
+        throw new HttpException(SETTINGS_ERROR, 400, 110176)
       }
       for (let k = 0; k < dataMap[attribute].keys.length; k++) {
         keyValue[dataMap[attribute].values[k]] = l.get(dataMap[attribute].keys[k], this.lang)

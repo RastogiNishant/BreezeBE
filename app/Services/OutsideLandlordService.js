@@ -30,7 +30,7 @@ const Ws = use('Ws')
 class OutsideLandlordService {
   static async handleTaskWithoutEstate(task, trx) {
     if (!task) {
-      throw new HttpException('No task exists', 500)
+      throw new HttpException('No task exists', 400)
     }
     if (!task.email || !task.property_address) {
       return

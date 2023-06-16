@@ -90,9 +90,9 @@ class ImageController {
       const data = await fs.readFile('/srv/temp/pdf/output.pdf', { encoding: 'utf8' })
       console.log(data)
       response.res(true)
-    } catch (err) {
-      console.log(err)
-      throw new HttpException(err.message, 500)
+    } catch (e) {
+      console.log(e)
+      throw new HttpException(err.message, e.status || 500)
     }
   }
   async checkFormat({ request, response }) {

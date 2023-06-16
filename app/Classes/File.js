@@ -73,7 +73,7 @@ class File {
       fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
-      throw new AppException(e.message, 500)
+      throw new AppException(e.message, e.status || 500)
     }
   }
 
@@ -126,7 +126,7 @@ class File {
       return data
     } catch (e) {
       console.log('convert tiff to jpg error=', e)
-      throw new AppException(e?.message || 'Error convert tiff to jpg', 500)
+      throw new AppException(e?.message || 'Error convert tiff to jpg', e.status || 500)
     }
   }
 
