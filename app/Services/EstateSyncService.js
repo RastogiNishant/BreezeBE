@@ -12,6 +12,7 @@ const {
   ESTATE_SYNC_LISTING_STATUS_DELETED,
   ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -313,6 +314,20 @@ class EstateSyncService {
         if (listing.status === ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND) {
           //this is a webhook call reporting of delete on a publishing declined
           //we don't have to do removing of SCHEDULED_FOR_DELETE
+          const estate = await Estate.query()
+            .select('user_id')
+            .select('property_id')
+            .where('id', listing.estate_id)
+            .first()
+          let data = listing
+          data.success = false
+          data.type = 'error-publishing'
+          data.property_id = estate.property_id
+          await EstateSyncService.emitWebsocketEventToLandlord({
+            event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
+            user_id: estate.user_id,
+            data,
+          })
           return
         }
 
