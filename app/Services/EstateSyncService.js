@@ -390,9 +390,6 @@ class EstateSyncService {
           publishing_error_message: payload.failureMessage,
           publishing_error_type: 'set',
         })
-        const credential = await EstateSyncService.getBreezeEstateSyncCredential()
-        const estateSync = new EstateSync(credential.api_key)
-        await estateSync.delete(payload.listingId, 'listings')
       }
 
       let data = listing
