@@ -130,7 +130,7 @@ class MarketPlaceService {
         landlord_name,
         lang,
       },
-      10000
+      30000
     )
   }
 
