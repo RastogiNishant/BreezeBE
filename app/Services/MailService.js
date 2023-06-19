@@ -866,7 +866,9 @@ class MailService {
     let address = `${formatter.format(estate.rooms_number)}${l.get(
       'pm.connect.task.txt_room_short.message',
       lang
-    )}, ${formatter.format(estate.area)}㎡, ${floor} <br/>€${formatter.format(estate.prices)}`
+    )}, ${formatter.format(estate.area)}㎡, ${floor} <br/>€${formatter.format(
+      estate.net_rent || 0
+    )}`
 
     address += `<br/>`
 

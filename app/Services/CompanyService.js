@@ -94,7 +94,7 @@ class CompanyService {
       return company
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -128,7 +128,7 @@ class CompanyService {
 
     const user = await require('./UserService').getById(user_id)
     if (!user) {
-      throw new HttpException('User not exists', 500)
+      throw new HttpException('User not exists', e.status || 500)
     }
 
     let contact

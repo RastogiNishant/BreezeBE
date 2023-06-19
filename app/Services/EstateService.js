@@ -619,7 +619,7 @@ class EstateService {
       }
     } catch (e) {
       console.log('Creating estate error =', e.message)
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -831,7 +831,7 @@ class EstateService {
       return estate
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -874,7 +874,7 @@ class EstateService {
       return file
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+      throw new HttpException(FAILED_TO_ADD_FILE, e.status || 500)
     }
   }
 
@@ -884,7 +884,7 @@ class EstateService {
       return files
     } catch (e) {
       console.log('AddManyFiles', e.message)
-      throw new HttpException(FAILED_TO_ADD_FILE, 500)
+      throw new HttpException(FAILED_TO_ADD_FILE, e.status || 500)
     }
   }
 
@@ -1055,7 +1055,7 @@ class EstateService {
         }
       }
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -1568,7 +1568,7 @@ class EstateService {
     } catch (e) {
       console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 

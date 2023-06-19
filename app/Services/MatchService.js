@@ -755,7 +755,7 @@ class MatchService {
           .where({ id: estate_id })
           .first()
         if (!estate) {
-          throw new HttpException(NO_ESTATE_EXIST, 500)
+          throw new HttpException(NO_ESTATE_EXIST, 400)
         }
 
         const percent = await MatchService.calculateMatchPercent(tenant, estate)
@@ -1374,7 +1374,7 @@ class MatchService {
         })
       })
     } catch (e) {
-      throw new HttpException('Failed to update time slot', 500)
+      throw new HttpException('Failed to update time slot', e.status || 500)
     }
   }
 
@@ -1868,7 +1868,7 @@ class MatchService {
       return { contact, estate }
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 

@@ -186,18 +186,21 @@ class OAuthController {
     const token = await authenticator.generate(user)
     const trx = await Database.beginTransaction()
     try {
-      await UserService.handleOutsideInvitation(
-        {
-          user,
-          email: user.email,
-          invite_type,
-          data1,
-          data2,
-        },
-        trx
-      )
+      if (!isSignUp) {
+        await UserService.handleOutsideInvitation(
+          {
+            user,
+            email: user.email,
+            invite_type,
+            data1,
+            data2,
+          },
+          trx
+        )
+      }
+
       if (user.role === ROLE_USER && invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) {
-        await MarketPlaceService.createKnock({ user }, trx)
+        await MarketPlaceService.createKnock({ user, data1, data2, email_verified: false }, trx)
       }
       await trx.commit()
       if (user.role === ROLE_USER && invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) {

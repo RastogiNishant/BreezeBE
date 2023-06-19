@@ -65,7 +65,11 @@ class UserController {
     const { filters, order, role } = request.only(['filters', 'order', 'role'])
 
     const query = User.query()
-      .select(Database.raw(`users.*, concat(users.firstname, ' ', users.secondname) as fullname`))
+      .select(
+        Database.raw(
+          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
+        )
+      )
       .where('role', role)
       .whereNot('status', STATUS_DELETE)
       .filter(filters)

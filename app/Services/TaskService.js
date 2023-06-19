@@ -24,6 +24,7 @@ const {
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_UNREAD,
   TASK_ORDER_BY_URGENCY,
+  WEBSOCKET_EVENT_TASK_UPDATED,
 } = require('../constants')
 const Ws = use('Ws')
 const l = use('Localize')
@@ -311,7 +312,6 @@ class TaskService extends BaseService {
     }
 
     const taskRow = await query.firstOrFail()
-
     task.status_changed_by = user.role
     let taskResult = null
     if (trx) {
@@ -319,6 +319,18 @@ class TaskService extends BaseService {
     } else {
       taskResult = await taskRow.updateItem({ ...task })
     }
+    let topicName = `tenant:${taskRow.tenant_id}`
+    //tasks.landlord_id is not always populated
+    const estate = await EstateService.getById(task.estate_id)
+    if (user.role === ROLE_USER) {
+      topicName = `landlord:${estate.user_id}`
+    }
+    await TaskService.emitToChannel(topicName, WEBSOCKET_EVENT_TASK_UPDATED, {
+      ...taskRow.toJSON(),
+      property_id: estate.property_id,
+      estate_id: task.estate_id,
+      task_id: task.id,
+    })
 
     // send notification to tenant to inform task has been resolved
     if (user.role === ROLE_LANDLORD && task.status === TASK_STATUS_RESOLVED) {
@@ -329,7 +341,6 @@ class TaskService extends BaseService {
         },
       ])
     }
-
     return taskResult
   }
 
@@ -736,7 +747,7 @@ class TaskService extends BaseService {
 
   static async hasPermission({ task, estate_id, user_id, role }) {
     if (role === ROLE_LANDLORD && !estate_id) {
-      throw new HttpException('No Estate provided', 500)
+      throw new HttpException('No Estate provided', 400)
     }
 
     //to check if the user has permission
@@ -749,17 +760,17 @@ class TaskService extends BaseService {
       throw new HttpException('No permission for task', 400)
     }
 
-    if (role === ROLE_USER) {
-      if (
-        task.type !== TASK_SYSTEM_TYPE &&
-        !(await require('./EstateCurrentTenantService').getInsideTenant({
-          estate_id,
-          user_id,
-        }))
-      ) {
-        throw new HttpException('You are not a breeze member yet', 400)
-      }
-    }
+    // if (role === ROLE_USER) {
+    //   if (
+    //     task.type !== TASK_SYSTEM_TYPE &&
+    //     !(await require('./EstateCurrentTenantService').getInsideTenant({
+    //       estate_id,
+    //       user_id,
+    //     }))
+    //   ) {
+    //     throw new HttpException('You are not a breeze member yet', 400)
+    //   }
+    // }
 
     if (estate_id) {
       const finalMatch = await MatchService.getFinalMatch(estate_id)
@@ -798,7 +809,7 @@ class TaskService extends BaseService {
       )
       return files
     }
-    throw new HttpException('Image Not saved', 500)
+    throw new HttpException('Image Not saved', 400)
   }
 
   static async removeImages({ id, user, uri }) {
@@ -906,6 +917,19 @@ class TaskService extends BaseService {
 
     if (topic) {
       topic.broadcast(WEBSOCKET_EVENT_TASK_CREATED, data)
+    }
+  }
+
+  static async emitToChannel(topicName, websocketEvent, data) {
+    const found = topicName.match(/([a-z]+\:)/)
+    if (!found) {
+      return false
+    }
+    const channel = `${found[0]}*`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(websocketEvent, data)
     }
   }
 }

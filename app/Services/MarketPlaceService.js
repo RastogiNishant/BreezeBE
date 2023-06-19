@@ -87,14 +87,15 @@ class MarketPlaceService {
       await trx.commit()
       return newContactRequest
     } catch (e) {
-      Logger.error(e.message || e, 400)
+      Logger.error(`createContact error ${e.message || e}`)
+
       await trx.rollback()
     }
   }
 
   static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
-      throw new HttpException('Params are wrong', 500)
+      throw new HttpException('Params are wrong', e.status || 500)
     }
 
     const estate = await EstateService.getEstateWithUser(contact.estate_id)
@@ -129,7 +130,7 @@ class MarketPlaceService {
         landlord_name,
         lang,
       },
-      10000
+      30000
     )
   }
 
@@ -212,11 +213,11 @@ class MarketPlaceService {
   static async createPendingKnock({ user, data1, data2 }, trx = null) {
     try {
       if (!user || user.role !== ROLE_USER) {
-        throw new HttpException(NO_USER_PASSED, 500)
+        throw new HttpException(NO_USER_PASSED, e.status || 500)
       }
 
       if (!data1 || !data2) {
-        throw new HttpException(WRONG_PARAMS, 500)
+        throw new HttpException(WRONG_PARAMS, e.status || 500)
       }
       const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({
         data1,
@@ -228,11 +229,11 @@ class MarketPlaceService {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
-      if (user?.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
+      if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
         throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       }
 
-      if (knockRequest.code && code != knockRequest.code) {
+      if (!knockRequest.code || code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
@@ -271,12 +272,25 @@ class MarketPlaceService {
     return !!(await query.first())
   }
 
-  static async createKnock({ user }, trx) {
+  static async createKnock({ user, data1, data2, email_verified = true }, trx) {
     try {
+      let contatRequestEmail = user.email
+
+      if (data1 && data2) {
+        const { estate_id, email, code, expired_time } = await this.decryptDynamicLink({
+          data1,
+          data2,
+        })
+        contatRequestEmail = email
+      }
+
       const pendingKnocks = (
         await EstateSyncContactRequest.query()
-          .where('user_id', user.id)
-          .whereIn('status', [STATUS_EMAIL_VERIFY])
+          .where('email', contatRequestEmail)
+          .whereIn(
+            'status',
+            email_verified ? [STATUS_EMAIL_VERIFY] : [STATUS_DRAFT, STATUS_EMAIL_VERIFY]
+          )
           .fetch()
       ).toJSON()
 

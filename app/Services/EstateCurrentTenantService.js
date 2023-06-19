@@ -139,7 +139,7 @@ class EstateCurrentTenantService extends BaseService {
       if (shouldCommitTrx) {
         await trx.rollback()
       }
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -656,11 +656,11 @@ class EstateCurrentTenantService extends BaseService {
       },
       trx
     )
-
     const validLinks = links.filter(
       (link) =>
         link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
     )
+
     failureCount += (links.length || 0) - (validLinks.length || 0)
 
     await Promise.all(
@@ -713,7 +713,6 @@ class EstateCurrentTenantService extends BaseService {
     let estateCurrentTenants = await this.getOutsideTenantByIds(ids)
     const EstateService = require('./EstateService')
     let failureCount = (ids.length || 0) - (estateCurrentTenants.length || 0)
-
     estateCurrentTenants = await Promise.all(
       (estateCurrentTenants || []).map(async (ect) => {
         const estate = await EstateService.getEstateHasTenant({
@@ -754,7 +753,7 @@ class EstateCurrentTenantService extends BaseService {
       if (!shouldTrxProceed) {
         await trx.rollback()
       }
-      throw new AppException('Error found while creating links.', 500)
+      throw new AppException('Error found while creating links.', e.status || 500)
     }
   }
 
@@ -863,7 +862,7 @@ class EstateCurrentTenantService extends BaseService {
       if (!isOutsideTrx) {
         await trx.rollback()
       }
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -1118,7 +1117,7 @@ class EstateCurrentTenantService extends BaseService {
       }
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -1266,7 +1265,7 @@ class EstateCurrentTenantService extends BaseService {
         })
       return true
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
