@@ -976,6 +976,7 @@ const constants = {
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_TASK_UPDATED: 'taskUpdated',
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING: 'landlord:publishedToMarketPlace',
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR: 'landlord:publishToMarketPlaceError',
   WEBSOCKET_EVENT_ESTATE_SYNC_POSTING: 'landlord:postingToEstateSync',
   WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED: 'landlord:estatePublishApproved',
   WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED: 'landlord:estatePublishDeclined',

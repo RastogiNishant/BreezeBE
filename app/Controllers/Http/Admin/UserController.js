@@ -67,7 +67,7 @@ class UserController {
     const query = User.query()
       .select(
         Database.raw(
-          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
+          `users.*, 'asdf' as asdf, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
         )
       )
       .where('role', role)
@@ -276,7 +276,12 @@ class UserController {
         'secondname',
         'email',
         'phone',
-        Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`),
+        Database.raw(
+          `to_char(created_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as created_at`
+        ),
+        Database.raw(
+          `to_char(created_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as created_at_utc`
+        ),
         'company_id',
         'status',
         'activation_status',
@@ -354,9 +359,10 @@ class UserController {
       landlordQuery.where(Database.raw(`created_at::date=CURRENT_DATE`))
     }
     const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
+    console.log({ landlords: landlords.toJSON({ isOwner: true }).data[10] })
     //let's return all info... this is admin
     const users = landlords.toJSON({ publicOnly: false })
-    return response.res(users)
+    return response.res(landlords)
   }
 }
 

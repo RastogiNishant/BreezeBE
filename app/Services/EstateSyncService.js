@@ -12,6 +12,7 @@ const {
   ESTATE_SYNC_LISTING_STATUS_DELETED,
   ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
+  WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -310,19 +311,41 @@ class EstateSyncService {
 
       if (payload.type === 'delete') {
         await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
+        if (listing.status === ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND) {
+          //this is a webhook call reporting of delete on a publishing declined
+          //we don't have to do removing of SCHEDULED_FOR_DELETE
+          const estate = await Estate.query()
+            .select('user_id')
+            .select('property_id')
+            .where('id', listing.estate_id)
+            .first()
+          let data = listing
+          data.success = false
+          data.type = 'error-publishing'
+          data.property_id = estate.property_id
+          await EstateSyncService.emitWebsocketEventToLandlord({
+            event: WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
+            user_id: estate.user_id,
+            data,
+          })
+          return
+        }
+
         const listings = await EstateSyncListing.query()
           .whereIn('status', [ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE])
           .whereNotNull('estate_sync_listing_id')
           .fetch()
+
         if (!listings?.rows?.length && payload.propertyId) {
+          //all the scheduled for delete are exhausted. So we now remove the posted property
           const credential = await EstateSyncService.getBreezeEstateSyncCredential()
           const estateSync = new EstateSync(credential.api_key)
           await estateSync.delete(payload.propertyId, 'properties')
+          //removed setting estate_sync_property_id so we can still get contact_requests
           await EstateSyncListing.query()
             .where('estate_sync_property_id', payload.propertyId)
             .update({
               status: ESTATE_SYNC_LISTING_STATUS_DELETED,
-              estate_sync_property_id: null,
             })
           //add websocket call for all unpublished...
         }
@@ -390,6 +413,8 @@ class EstateSyncService {
           publishing_error_message: payload.failureMessage,
           publishing_error_type: 'set',
         })
+        //we need to remove the record from estate sync but mark it as
+        //ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND on ours
         const credential = await EstateSyncService.getBreezeEstateSyncCredential()
         const estateSync = new EstateSync(credential.api_key)
         await estateSync.delete(payload.listingId, 'listings')
