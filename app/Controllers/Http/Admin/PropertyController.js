@@ -24,6 +24,7 @@ const {
   UNPUBLISH_PROPERTY,
   WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINE,
   WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
+  ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -151,6 +152,7 @@ class PropertyController {
         .whereIn('status', [
           ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
           ESTATE_SYNC_LISTING_STATUS_POSTED,
+          ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
         ])
         .where('estate_id', estate.id)
         .first()
