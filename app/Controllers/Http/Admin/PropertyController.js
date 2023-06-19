@@ -66,7 +66,7 @@ class PropertyController {
         'estates.property_id',
         'estates.available_start_at',
         'estates.available_end_at',
-        'estates.updated_at'
+        Database.raw(`estates.updated_at::timestamp at time zone 'UTC' as updated_at`)
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
