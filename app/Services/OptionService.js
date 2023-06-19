@@ -67,12 +67,6 @@ class OptionService {
         locale_key: 'landlord.property.inside_view.rooms.living_room',
       },
       {
-        key_index: ROOM_TYPE_GUEST_ROOM,
-        key_name: `ROOM_TYPE_GUEST_ROOM`,
-        name: 'Guest room',
-        locale_key: 'landlord.property.inside_view.rooms.guest_room',
-      },
-      {
         key_index: ROOM_TYPE_BATH,
         key_name: `ROOM_TYPE_BATH`,
         name: 'Bathroom',
@@ -119,6 +113,12 @@ class OptionService {
         key_name: `ROOM_TYPE_WC`,
         name: 'WC',
         locale_key: 'landlord.property.inside_view.rooms.wc',
+      },
+      {
+        key_index: ROOM_TYPE_GUEST_ROOM,
+        key_name: `ROOM_TYPE_GUEST_ROOM`,
+        name: 'Guest room',
+        locale_key: 'landlord.property.inside_view.rooms.guest_room',
       },
       {
         key_index: ROOM_TYPE_OTHER_SPACE,
