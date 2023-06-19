@@ -237,7 +237,7 @@ class RoomService {
         await trx.commit()
         return images
       } else {
-        throw new HttpException(FAILED_TO_ADD_FILE, 500)
+        throw new HttpException(FAILED_TO_ADD_FILE, 400)
       }
     } catch (e) {
       await trx.rollback()

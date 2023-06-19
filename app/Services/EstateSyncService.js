@@ -110,7 +110,7 @@ class EstateSyncService {
         })
         .transacting(trx)
     } catch (e) {
-      throw new HttpException(e.message, 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
