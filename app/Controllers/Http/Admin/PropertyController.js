@@ -25,6 +25,7 @@ const {
   WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINE,
   WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
+  ISO_DATE_FORMAT,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -66,7 +67,10 @@ class PropertyController {
         'estates.property_id',
         'estates.available_start_at',
         'estates.available_end_at',
-        Database.raw(`estates.updated_at::timestamp at time zone 'UTC' as updated_at`)
+        Database.raw(`estates.updated_at::timestamp at time zone 'UTC' as updated_at`),
+        Database.raw(
+          `to_char(estates.updated_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as updated_at_utc`
+        )
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
