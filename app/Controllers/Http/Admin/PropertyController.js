@@ -67,9 +67,8 @@ class PropertyController {
         'estates.property_id',
         'estates.available_start_at',
         'estates.available_end_at',
-        Database.raw(`estates.updated_at::timestamp at time zone 'UTC' as updated_at`),
         Database.raw(
-          `to_char(estates.updated_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as updated_at_utc`
+          `to_char(estates.updated_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as updated_at`
         )
       )
       .select(Database.raw('_u.user'))
