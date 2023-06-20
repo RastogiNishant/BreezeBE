@@ -276,12 +276,7 @@ class UserController {
         'secondname',
         'email',
         'phone',
-        Database.raw(
-          `to_char(created_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as created_at`
-        ),
-        Database.raw(
-          `to_char(created_at::timestamp at time zone 'UTC', '${ISO_DATE_FORMAT}') as created_at_utc`
-        ),
+        'created_at',
         'company_id',
         'status',
         'activation_status',
