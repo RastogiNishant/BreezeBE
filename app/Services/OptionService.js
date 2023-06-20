@@ -61,10 +61,10 @@ class OptionService {
   static getRoomTypes() {
     return [
       {
-        key_index: ROOM_TYPE_GUEST_ROOM,
-        key_name: `ROOM_TYPE_GUEST_ROOM`,
-        name: 'Guest room',
-        locale_key: 'landlord.property.inside_view.rooms.guest_room',
+        key_index: ROOM_TYPE_LIVING_ROOM,
+        key_name: `ROOM_TYPE_LIVING_ROOM`,
+        name: 'Living room',
+        locale_key: 'landlord.property.inside_view.rooms.living_room',
       },
       {
         key_index: ROOM_TYPE_BATH,
@@ -115,6 +115,12 @@ class OptionService {
         locale_key: 'landlord.property.inside_view.rooms.wc',
       },
       {
+        key_index: ROOM_TYPE_GUEST_ROOM,
+        key_name: `ROOM_TYPE_GUEST_ROOM`,
+        name: 'Guest room',
+        locale_key: 'landlord.property.inside_view.rooms.guest_room',
+      },
+      {
         key_index: ROOM_TYPE_OTHER_SPACE,
         key_name: `ROOM_TYPE_OTHER_SPACE`,
         name: 'Other space',
@@ -149,12 +155,6 @@ class OptionService {
         key_name: `ROOM_TYPE_IRONING_ROOM`,
         name: 'Ironing room',
         locale_key: 'landlord.property.inside_view.rooms.ironing_room',
-      },
-      {
-        key_index: ROOM_TYPE_LIVING_ROOM,
-        key_name: `ROOM_TYPE_LIVING_ROOM`,
-        name: 'Living room',
-        locale_key: 'landlord.property.inside_view.rooms.living_room',
       },
       {
         key_index: ROOM_TYPE_LOBBY,
