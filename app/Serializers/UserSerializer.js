@@ -1,5 +1,6 @@
 'use strict'
 const BaseSerializer = require('./BaseSerializer')
+const moment = require('moment')
 
 /**
  *
@@ -35,7 +36,15 @@ class UserSerializer extends BaseSerializer {
       item.created_at = undefined
     }
 
-    return this._getRowJSON(item)
+    item = this._getRowJSON(item)
+
+    if (item.created_at) {
+      item.created_at = moment.utc(item.created_at).format()
+    }
+    if (item.updated_at) {
+      item.updated_at = moment.utc(item.updated_at).format()
+    }
+    return item
   }
 }
 

@@ -4,6 +4,7 @@ const { isString, isEmpty, isDate } = require('lodash')
 const BaseSerializer = require('./BaseSerializer')
 const Drive = use('Drive')
 const File = require('../Classes/File')
+
 /**
  *
  */
@@ -65,7 +66,14 @@ class EstateSerializer extends BaseSerializer {
 
     isShort && this.filterFields(item, extraFields)
 
-    return this._getRowJSON(item)
+    item = this._getRowJSON(item)
+    if (item.created_at) {
+      item.created_at = moment.utc(item.created_at).format()
+    }
+    if (item.updated_at) {
+      item.updated_at = moment.utc(item.updated_at).format()
+    }
+    return item
   }
 }
 
