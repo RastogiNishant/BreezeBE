@@ -1246,6 +1246,7 @@ Estates: [ESTATES]
     localhost: 'http://localhost:3001',
     development: 'https://development.d2x826avxkg7om.amplifyapp.com',
     staging: 'https://staging.d2x826avxkg7om.amplifyapp.com',
+    preprod: 'https://preprod.d2x826avxkg7om.amplifyapp.com',
     production: 'https://master.d2x826avxkg7om.amplifyapp.com',
   },
 
