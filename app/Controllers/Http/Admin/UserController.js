@@ -354,10 +354,10 @@ class UserController {
       landlordQuery.where(Database.raw(`created_at::date=CURRENT_DATE`))
     }
     const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
-    console.log({ landlords: landlords.toJSON({ isOwner: true }).data[10] })
+    //console.log({ landlords: landlords.toJSON({ isOwner: true }).data[10] })
     //let's return all info... this is admin
     const users = landlords.toJSON({ publicOnly: false })
-    return response.res(landlords)
+    return response.res(users)
   }
 }
 
