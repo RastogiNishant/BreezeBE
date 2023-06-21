@@ -102,6 +102,8 @@ const exceptions = {
   ERROR_PROPERTY_NOT_PUBLISHED: 'Estate has not published yet',
   ERROR_CONTACT_REQUEST_EXIST: 'Your contact request already exists',
   NO_MATCH_EXIST: 'No match exists',
+  ERROR_PREMIUM_MEMBER_PLAN_SELECT: 'Please upgrade your plan',
+  ERROR_PLAN_SELECT: 'Your trial has been ended',
 }
 
 const exceptionCodes = {
