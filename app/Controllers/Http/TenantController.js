@@ -21,6 +21,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
 } = require('../../constants')
 const QueueService = require('../../Services/QueueService')
 const { logEvent } = require('../../Services/TrackingService')
@@ -115,6 +116,8 @@ class TenantController {
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
       if (shouldDeactivateTenant) {
+        updatedTenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
+        updatedTenant.status = STATUS_DRAFT
       } else {
       }
       await trx.commit()
@@ -127,7 +130,6 @@ class TenantController {
       }
 
       if (shouldDeactivateTenant) {
-        updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
       }
 
