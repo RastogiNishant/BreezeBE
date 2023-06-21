@@ -14,7 +14,7 @@ const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
 const MemberService = use('App/Services/MemberService')
-
+const Promise = require('bluebird')
 const {
   MEMBER_FILE_TYPE_RENT,
   MEMBER_FILE_TYPE_DEBT,
@@ -56,6 +56,10 @@ const {
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   TRANSPORT_TYPE_CAR,
   VALID_INCOME_PROOFS_PERIOD,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+  MATCH_STATUS_KNOCK,
+  DATE_FORMAT,
+  STATUS_EXPIRE,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
@@ -351,7 +355,9 @@ class TenantService {
   static async deactivateTenant(userId) {
     const trx = await Database.beginTransaction()
     try {
-      await Tenant.query().update({ status: STATUS_DRAFT }, trx).where({ user_id: userId })
+      await Tenant.query()
+        .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] }, trx)
+        .where({ user_id: userId })
       await MemberService.calcTenantMemberData(userId, trx)
       // Remove New matches
       await Database.table({ _m: 'matches' })
@@ -433,6 +439,69 @@ class TenantService {
     }
 
     return (await query.count('*'))[0].count || []
+  }
+
+  static async updateSentNotification(tenant, notification_id) {
+    const notify_sent = (tenant.notify_sent || []).concat([notification_id])
+    await Tenant.query().where('id', tenant.id).update({ notify_sent })
+  }
+
+  static async reminderProfileFillUp() {
+    try {
+      const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
+      const draftTenants = (
+        await Tenant.query()
+          .select('tenants.id', 'tenants.user_id', 'tenants.notify_sent')
+          .innerJoin({ _m: 'matches' }, function () {
+            this.on('_m.user_id', 'tenants.user_id')
+          })
+          .innerJoin({ _u: 'users' }, function () {
+            this.on('_u.id', 'tenants.user_id').on('_u.status', STATUS_ACTIVE)
+          })
+          .leftJoin({ _cr: 'estate_sync_contact_requests' }, function () {
+            this.on('_cr.user_id', 'tenants.user_id')
+          })
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_m.estate_id', '_e.id').onIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+          })
+          .where(function () {
+            this.orWhere('_m.status', MATCH_STATUS_KNOCK)
+            this.orWhere(function () {
+              this.where('_m.buddy', true)
+              this.where('_m.status', MATCH_STATUS_KNOCK)
+            })
+          })
+          .whereNotNull('_u.device_token')
+          .whereNull('_cr.id')
+          .where('_u.created_at', '<=', yesterday)
+          .where(function () {
+            this.orWhereNull('tenants.notify_sent')
+            this.orWhereNot(
+              Database.raw(
+                `${NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID} = any("tenants"."notify_sent")`
+              )
+            )
+          })
+          .fetch()
+      ).toJSON()
+
+      if (!draftTenants?.lenth) {
+        return
+      }
+
+      const user_ids = draftTenants.map((tenant) => tenant.user_id)
+      require('./NoticeService').reminderNotifyProspectFillUpProfile(user_ids)
+
+      await Promise.map(
+        draftTenants,
+        async (tenant) => {
+          await TenantService.updateSentNotification(tenant, NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID)
+        },
+        { concurrency: 1 }
+      )
+    } catch (e) {
+      Logger.error(`reminderProfileFillUp error ${e.message || e}`)
+    }
   }
 }
 
