@@ -5,7 +5,13 @@ const {
   getExceptionMessage,
   exceptionKeys: { REQUIRED, EMAIL, OPTION, MINLENGTH, MAXLENGTH },
 } = require('./../exceptions')
-const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
+const {
+  ROLE_LANDLORD,
+  ROLE_USER,
+  COMPANY_SIZE_SMALL,
+  COMPANY_SIZE_MID,
+  COMPANY_SIZE_LARGE,
+} = require('../constants')
 const Base = require('./Base')
 
 class AdminAddUser extends Base {
@@ -29,6 +35,17 @@ class AdminAddUser extends Base {
           getExceptionMessage('role', OPTION, `[${ROLE_USER},${ROLE_LANDLORD}]`)
         )
         .required(getExceptionMessage('role', REQUIRED)),
+      company_name: yup.string().when('role', {
+        is: (role) => role === ROLE_LANDLORD,
+        then: yup.string().required(),
+      }),
+      company_size: yup.string().when('role', {
+        is: (role) => role === ROLE_LANDLORD,
+        then: yup
+          .string()
+          .oneOf([COMPANY_SIZE_SMALL, COMPANY_SIZE_MID, COMPANY_SIZE_LARGE])
+          .required(),
+      }),
     })
 }
 
