@@ -108,6 +108,11 @@ Route.group(() => {
     'valid:Pagination,AdminGetsLandlords',
   ])
 
+  Route.post('/users', 'Admin/UserController.addUser').middleware([
+    'auth:jwtAdministrator',
+    'valid:AdminAddUser',
+  ])
+
   Route.get('/predefinedMessage/:id', 'Admin/PredefinedMessageController.get').middleware([
     'auth:jwtAdministrator',
     'valid:Id',
