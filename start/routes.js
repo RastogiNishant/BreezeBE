@@ -108,6 +108,11 @@ Route.group(() => {
     'valid:Pagination,AdminGetsLandlords',
   ])
 
+  Route.post('/users', 'Admin/UserController.addUser').middleware([
+    'auth:jwtAdministrator',
+    'valid:AdminAddUser',
+  ])
+
   Route.get('/predefinedMessage/:id', 'Admin/PredefinedMessageController.get').middleware([
     'auth:jwtAdministrator',
     'valid:Id',
@@ -1261,7 +1266,7 @@ Route.list().forEach((r) => {
     !r._route.match(/\/administration/)
   ) {
     if (r.middlewareList.length > 0) {
-      r.middlewareList = [...r.middlewareList, 'agreement']
+      r.middlewareList = [...r.middlewareList, 'agreement', 'plan']
     }
   }
 })

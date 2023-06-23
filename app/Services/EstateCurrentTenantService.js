@@ -1004,10 +1004,6 @@ class EstateCurrentTenantService extends BaseService {
     }
   }
 
-  static async getByUserId(user_id) {
-    await EstateCurrentTenant.query().where('user_id', user_id).whereNot('status', STATUS_DELETE)
-  }
-
   static async updateOutsideTenantInfo({ user, estate_id = null }, trx = null) {
     if (!user || !estate_id) {
       throw new HttpException('User or estate id is not provided', 400)
@@ -1052,6 +1048,18 @@ class EstateCurrentTenantService extends BaseService {
     }
 
     this.emitConnected({ estate_id, user_id: user.id })
+  }
+
+  static async getCount(landlord_id) {
+    const estateTenantCount = await EstateCurrentTenant.query()
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'estate_current_tenants.estate_id')
+        this.on('_e.user_id', landlord_id)
+      })
+      .whereNotIn('estate_current_tenants.status', [STATUS_DELETE])
+      .count()
+
+    return parseInt(estateTenantCount[0].count || 0)
   }
 
   static async getAllTenant(id) {

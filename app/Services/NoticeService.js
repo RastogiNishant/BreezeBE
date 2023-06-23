@@ -117,6 +117,8 @@ const {
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
   NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
   NOTICE_TYPE_PROSPECT_GREEN_MATCH,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP,
 } = require('../constants')
 
 class NoticeService {
@@ -994,6 +996,8 @@ class NoticeService {
         return NotificationsService.adminApprovesPublish([notice])
       case NOTICE_TYPE_PROSPECT_GREEN_MATCH:
         return NotificationsService.sendProspectGreenMatch([notice])
+      case NOTICE_TYPE_TENANT_PROFILE_FILL_UP:
+        return NotificationsService.prospectFillUpProfileReminder([notice])
     }
   }
 
@@ -1406,6 +1410,17 @@ class NoticeService {
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.adminApprovesPublish([notice])
+  }
+
+  static async reminderNotifyProspectFillUpProfile(user_ids) {
+    const notices = user_ids.map((user_id) => ({
+      user_id,
+      type: NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+      data: {},
+    }))
+
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.prospectFillUpProfileReminder(notices)
   }
 }
 

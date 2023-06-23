@@ -15,6 +15,7 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   STATUS_DRAFT,
+  DATE_FORMAT,
 } = require('../constants')
 
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
@@ -37,6 +38,7 @@ const {
   },
 } = require('../exceptions')
 const TenantService = require('./TenantService')
+const { uniq } = require('lodash')
 class MarketPlaceService {
   static async createContact(payload) {
     if (!payload?.propertyId) {
@@ -114,6 +116,7 @@ class MarketPlaceService {
       .update({
         code,
         user_id: user_id || null,
+        link: shortLink,
         status: user_id ? STATUS_EMAIL_VERIFY : STATUS_DRAFT,
       })
       .transacting(trx)
@@ -372,6 +375,53 @@ class MarketPlaceService {
     } catch (e) {
       console.log('outside knock dynamic link error', e.message)
       throw new HttpException('Params are wrong', 400, ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID)
+    }
+  }
+
+  static async sendReminderEmail() {
+    try {
+      const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
+      const contacts = (
+        await EstateSyncContactRequest.query()
+          .where('created_at', '<=', yesterday)
+          .whereNotNull('link')
+          .where('status', STATUS_DRAFT)
+          .where('email_sent', false)
+          .fetch()
+      ).rows
+
+      if (!contacts?.length) {
+        return
+      }
+
+      let estate_ids = contacts.map((contact) => contact.estate_id)
+      estate_ids = uniq(estate_ids)
+
+      const estates = await require('./EstateService').getAllPublishedEstatesByIds({
+        ids: estate_ids,
+      })
+
+      await Promise.map(
+        contacts,
+        async (contact) => {
+          const estate = estates.filter((estate) => estate.id === contact.estate_id)?.[0]
+          console.log('estate.user?.lang=', estate.user?.lang)
+          if (estate) {
+            await MailService.reminderKnockSignUpEmail({
+              link: contact.link,
+              email: contact.email,
+              estate,
+              lang: estate.user?.lang || DEFAULT_LANG,
+            })
+          }
+        },
+        { concurrency: 1 }
+      )
+
+      const contactIds = contacts.map((contact) => contact.id)
+      await EstateSyncContactRequest.query().update({ email_sent: true }).whereIn('id', contactIds)
+    } catch (e) {
+      Logger.error(`Contact Request sendReminderEmail error ${e.message || e}`)
     }
   }
 }
