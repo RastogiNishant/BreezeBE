@@ -67,7 +67,7 @@ class UserController {
     const query = User.query()
       .select(
         Database.raw(
-          `users.*, 'asdf' as asdf, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
+          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
         )
       )
       .where('role', role)
@@ -256,20 +256,8 @@ class UserController {
     response.res(false)
   }
 
-  async getLandlords({ request, response }) {
-    let { activation_status, status, estate_status, page, limit, query, today } = request.all()
-    let { light } = request.get()
-    if (!activation_status) {
-      activation_status = [
-        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
-        USER_ACTIVATION_STATUS_ACTIVATED,
-        USER_ACTIVATION_STATUS_DEACTIVATED,
-      ]
-    }
-    status = status || STATUS_ACTIVE
-    estate_status = estate_status || [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT]
-    limit = 99999
-    const landlordQuery = User.query()
+  landlordQuery({ status, activation_status, estate_status, light }) {
+    const query = User.query()
       .select(
         'id',
         'firstname',
@@ -343,6 +331,24 @@ class UserController {
         query.with('contacts')
       })
       .with('deactivationSchedule')
+
+    return query
+  }
+
+  async getLandlords({ request, response }) {
+    let { activation_status, status, estate_status, page, limit, query, today } = request.all()
+    let { light } = request.get()
+    if (!activation_status) {
+      activation_status = [
+        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+        USER_ACTIVATION_STATUS_ACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED,
+      ]
+    }
+    status = status || STATUS_ACTIVE
+    estate_status = estate_status || [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT]
+    limit = 99999
+    const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })
     if (query) {
       landlordQuery.andWhere(function (d) {
         d.orWhere('email', 'ilike', `${query}%`)
@@ -358,6 +364,22 @@ class UserController {
     //let's return all info... this is admin
     const users = landlords.toJSON({ publicOnly: false })
     return response.res(users)
+  }
+
+  async addUser({ request, response }) {
+    const { email, password, role } = request.all()
+    const trx = await Database.beginTransaction()
+
+    try {
+      const user = await UserService.signUp({ email, password, role }, trx)
+      await trx.commit()
+      return response.res(user)
+    } catch (err) {
+      await trx.rollback()
+      if (err.message) throw new HttpException(err.message)
+
+      throw new HttpException('Error found while adding user.')
+    }
   }
 }
 
