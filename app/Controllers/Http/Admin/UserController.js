@@ -36,6 +36,7 @@ const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
 const Promise = require('bluebird')
+const CompanyService = require('../../../Services/CompanyService')
 
 class UserController {
   /**
@@ -367,11 +368,24 @@ class UserController {
   }
 
   async addUser({ request, response }) {
-    const { email, password, role } = request.all()
+    const { email, password, role, company_name, company_size } = request.all()
     const trx = await Database.beginTransaction()
 
     try {
-      const user = await UserService.signUp({ email, password, role }, trx)
+      //don't send verification email
+      const user = await UserService.signUp({ email, password, role }, trx, false)
+      const company = await CompanyService.createCompany(
+        { type: 'private', name: company_name, size: company_size, status: STATUS_ACTIVE },
+        user.id,
+        trx
+      )
+      user.firstname = company_name
+      user.company_id = company.id
+      user.status = STATUS_ACTIVE
+      await user.save(trx)
+      /*await User.query()
+        .where('id', user.id)
+        .update({ status: STATUS_ACTIVE, firstname: company_name, company_id: company.id }, trx)*/
       await trx.commit()
       return response.res(user)
     } catch (err) {
