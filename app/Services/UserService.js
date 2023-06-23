@@ -1074,7 +1074,7 @@ class UserService {
         trx
       )
 
-      if (isEmpty(ip_based_info.country_code)) {
+      if (isEmpty(ip_based_info?.country_code)) {
         const QueueService = require('./QueueService.js')
         QueueService.getIpBasedInfo(user.id, ip)
       }
