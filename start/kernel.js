@@ -45,6 +45,7 @@ const namedMiddleware = {
   pagination: 'App/Middleware/Pagination',
   valid: 'App/Middleware/Validator',
   agreement: 'App/Middleware/Agreement',
+  plan: 'App/Middleware/UserNeedPlan',
   userCanValidlyChangeEmail: 'App/Middleware/UserCanValidlyChangeEmail',
   ViewEstateInvitationCodeExist: 'App/Middleware/ViewEstateInvitationCodeExist',
   ProspectHasNotRegisterYet: 'App/Middleware/ProspectHasNotRegisterYet',

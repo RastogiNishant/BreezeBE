@@ -44,6 +44,7 @@ class Tenant extends Model {
       'residency_duration_max',
       'selected_adults_count',
       'is_short_term_rent',
+      'notify_sent',
     ]
   }
 
@@ -106,6 +107,7 @@ class Tenant extends Model {
       'residency_duration_min',
       'residency_duration_max',
       'selected_adults_count',
+      'notify_sent',
     ]
   }
 

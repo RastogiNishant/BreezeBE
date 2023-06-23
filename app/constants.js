@@ -499,6 +499,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK: 'notification_prospect_liked_but_not_knock',
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH: 'notification_landlord_admin_approves_publish',
   NOTICE_TYPE_PROSPECT_GREEN_MATCH: 'notification_prospect_green_match',
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP: 'notification_prospect_fill_up_profile',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -556,6 +557,7 @@ const constants = {
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID: 60,
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID: 61,
   NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID: 62,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID: 63,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -587,9 +589,13 @@ const constants = {
   MONTHLY_PAYMENT: 1,
   YEARLY_PAYMENT: 2,
 
-  BASIC_MEMBER: 1,
-  PENDING_PREMIUM_MEMBER: 2,
-  PREMIUM_MEMBER: 3,
+  BASIC_TENANT_MEMBER: 1,
+  PREMIUM_TENANT_MEMBER: 2,
+  BASIC_LANDLORD_MEMBER: 3,
+  PREMIUM_LANDLORD_MEMBER: 4,
+
+  BASIC_PLAN_MIN_CONNECT_COUNT: 2,
+  PREMIUM_PLAN_MIN_CONNECT_COUNT: 14,
 
   FURNISHING_NOT_FURNISHED: 0,
   FURNISHING_PARTIALLY_FURNISHED: 1,
@@ -1246,6 +1252,7 @@ Estates: [ESTATES]
     localhost: 'http://localhost:3001',
     development: 'https://development.d2x826avxkg7om.amplifyapp.com',
     staging: 'https://staging.d2x826avxkg7om.amplifyapp.com',
+    preprod: 'https://preprod.d2x826avxkg7om.amplifyapp.com',
     production: 'https://master.d2x826avxkg7om.amplifyapp.com',
   },
 
@@ -1289,6 +1296,8 @@ Estates: [ESTATES]
   PUBLISH_TYPE_OFFLINE_MARKET: 2,
 
   ESTATE_NO_IMAGE_COVER_URL: 'https://breeze-files-dev.s3.eu-central-1.amazonaws.com/no-cover.png',
+
+  MEMBER_TRIAL_PERIOD: 7, // trial period 7 days
 }
 
 module.exports = constants
