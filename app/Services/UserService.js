@@ -1036,7 +1036,8 @@ class UserService {
       ip_based_info,
       ...userData
     },
-    trx = null
+    trx = null,
+    sendVerification = true
   ) {
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
@@ -1083,7 +1084,10 @@ class UserService {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
-      await UserService.sendConfirmEmail(user, from_web)
+
+      if (sendVerification) {
+        await UserService.sendConfirmEmail(user, from_web)
+      }
       return user
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
