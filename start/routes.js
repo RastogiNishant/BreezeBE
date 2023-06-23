@@ -281,6 +281,16 @@ Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').mi
   'valid:ConfirmSMS',
 ])
 
+//landlord estatesync
+Route.group(() => {
+  Route.get('/', 'EstateSyncController.getTargets')
+  Route.post('/:publisher', 'EstateSyncController.addPublisher').middleware([
+    'valid:AddEstateSyncPublisher',
+  ])
+})
+  .prefix('/api/v1/estate-sync')
+  .middleware(['auth:jwtLandlord'])
+
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
     'guest',
