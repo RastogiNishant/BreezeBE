@@ -142,7 +142,7 @@ class OptionService {
         key_index: ROOM_TYPE_ENTRANCE_HALL,
         key_name: `ROOM_TYPE_ENTRANCE_HALL`,
         name: 'Entrance hall',
-        locale_key: 'landlord.property.inside_view.rooms.property_entrance.message',
+        locale_key: 'landlord.property.inside_view.rooms.entrance_hall.message',
       },
       {
         key_index: ROOM_TYPE_GYM,
