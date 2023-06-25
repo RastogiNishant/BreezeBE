@@ -337,16 +337,19 @@ class TenantService {
       ]),
     })
 
+    const trx = await Database.beginTransaction()
     try {
       await yup.array().of(schema).validate(data)
+      tenant.status = STATUS_ACTIVE
+      await tenant.save(trx)
+      await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
+      await trx.commit()
+      MemberService.calcTenantMemberData(tenant.user_id)
     } catch (e) {
       console.log(e.message)
+      await trx.rollback()
       throw new AppException('Invalid tenant data')
     }
-
-    tenant.status = STATUS_ACTIVE
-    await tenant.save()
-    MemberService.calcTenantMemberData(tenant.user_id)
   }
 
   /**
