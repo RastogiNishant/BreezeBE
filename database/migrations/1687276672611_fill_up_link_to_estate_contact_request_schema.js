@@ -1,6 +1,6 @@
 'use strict'
 
-const { STATUS_DRAFT } = require('../../app/constants')
+const { STATUS_DRAFT, STATUS_EMAIL_VERIFY } = require('../../app/constants')
 
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
@@ -12,7 +12,10 @@ const Estate = use('App/Models/Estate')
 class FillUpLinkToEstateContactRequestSchema extends Schema {
   async up() {
     const contacts = (
-      await EstateSyncContactRequest.query().where('status', STATUS_DRAFT).whereNull('link').fetch()
+      await EstateSyncContactRequest.query()
+        .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+        .whereNull('link')
+        .fetch()
     ).rows
 
     await Promise.map(
@@ -24,6 +27,7 @@ class FillUpLinkToEstateContactRequestSchema extends Schema {
             estate: estate.toJSON(),
             email: contact.email,
           })
+
           await EstateSyncContactRequest.query().where('id', contact.id).update({ link: shortLink })
         }
       },
