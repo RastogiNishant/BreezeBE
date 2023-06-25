@@ -38,7 +38,7 @@ const {
   },
 } = require('../exceptions')
 const TenantService = require('./TenantService')
-const { uniq } = require('lodash')
+const { uniq, omit } = require('lodash')
 class MarketPlaceService {
   static async createContact(payload) {
     if (!payload?.propertyId) {
@@ -142,6 +142,21 @@ class MarketPlaceService {
       .where('estate_id', estate_id)
       .where('email', email)
       .first()
+  }
+
+  static async getPendingKnockRequest({ estate_id }) {
+    return (
+      await EstateSyncContactRequest.query()
+        .select(
+          EstateSyncContactRequest.columns.filter(
+            (column) => !['contact_info', 'message'].includes(column)
+          )
+        )
+        .select(Database.raw(` 1 as from_market_place`))
+        .where('estate_id', estate_id)
+        .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+        .fetch()
+    ).toJSON()
   }
 
   static async createDynamicLink({ estate, email }) {

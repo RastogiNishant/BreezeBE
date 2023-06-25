@@ -59,6 +59,7 @@ const {
   exceptions: { UNSECURE_PROFILE_SHARE },
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE },
 } = require('../../exceptions')
+const MarketPlaceService = require('../../Services/MarketPlaceService')
 class MatchController {
   /**
    *
@@ -938,6 +939,11 @@ class MatchController {
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+
+    data.data = (data.data || []).concat(
+      await MarketPlaceService.getPendingKnockRequest({ estate_id })
+    )
+
     data = {
       ...data,
       total: matchCount[0].count,
