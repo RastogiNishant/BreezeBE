@@ -101,6 +101,8 @@ const exceptions = {
   ERROR_PROPERTY_INVALID_STATUS: 'Invalid status to publish property',
   ERROR_PROPERTY_NOT_PUBLISHED: 'Estate has not published yet',
   ERROR_CONTACT_REQUEST_EXIST: 'Your contact request already exists',
+  ERROR_CONTACT_REQUEST_NO_EXIST: 'Contact request does not exist',
+  ERROR_ALREADY_KNOCKED: 'The prospect already knocked that property',
   NO_MATCH_EXIST: 'No match exists',
   ERROR_PREMIUM_MEMBER_PLAN_SELECT: 'Please upgrade your plan',
   ERROR_PLAN_SELECT: 'Your trial has been ended',

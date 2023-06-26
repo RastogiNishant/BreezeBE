@@ -310,10 +310,13 @@ class EstateSyncService {
       }
 
       if (payload.type === 'delete') {
-        await listing.updateItem({ estate_sync_listing_id: null, publish_url: null })
+        await listing.updateItem({
+          estate_sync_listing_id: null,
+          publish_url: null,
+        })
         if (listing.status === ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND) {
           //this is a webhook call reporting of delete on a publishing declined
-          //we don't have to do removing of SCHEDULED_FOR_DELETE
+          //we don't have to do removing of publishes that are SCHEDULED_FOR_DELETE
           const estate = await Estate.query()
             .select('user_id')
             .select('property_id')
@@ -333,6 +336,7 @@ class EstateSyncService {
 
         const listings = await EstateSyncListing.query()
           .whereIn('status', [ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE])
+          .where('estate_id', listing.estate_id)
           .whereNotNull('estate_sync_listing_id')
           .fetch()
 
