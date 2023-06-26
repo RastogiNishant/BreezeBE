@@ -300,7 +300,6 @@ class MarketPlaceService {
     uri += `&lang=${lang}`
 
     const shortLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`,
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
     )
     return {
