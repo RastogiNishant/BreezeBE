@@ -1291,7 +1291,7 @@ Route.group(() => {
   .middleware(['auth:jwt'])
 
 Route.group(() => {
-  Route.post('/invite', 'MarketPlaceController.inviteByLandlord').middleware(['valid:Id'])
+  Route.post('/invite/:id', 'MarketPlaceController.inviteByLandlord').middleware(['valid:Id'])
 })
   .prefix('api/v1/marketplace')
   .middleware(['auth:jwtLandlord'])
