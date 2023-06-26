@@ -37,7 +37,7 @@ class MarketPlaceController {
   async inviteByLandlord({ request, auth, response }) {
     const { id } = request.all()
     try {
-      await MarketPlaceService.inviteByLandlord({ id, user_id: auth.user.id })
+      response.res(await MarketPlaceService.inviteByLandlord({ id, user: auth.user }))
     } catch (e) {
       throw new HttpException(e.message, 400)
     }

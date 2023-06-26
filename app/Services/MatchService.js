@@ -864,20 +864,22 @@ class MatchService {
         .first()
       landlordSenderId = estateInfo?.user_id
 
-      const estates = await this.getLandlordMatchesWithFilterQuery(
-        estateInfo,
-        {},
-        { user_id: data.user_id, matchStatus: data.status }
-      ).paginate(1, 1)
+      if (!data?.from_market_place && data.user_id) {
+        const estates = await this.getLandlordMatchesWithFilterQuery(
+          estateInfo,
+          {},
+          { user_id: data.user_id, matchStatus: data.status }
+        ).paginate(1, 1)
 
-      estate = estates.rows?.[0]
+        estate = estates.rows?.[0]
+      }
     }
 
     if (role === ROLE_LANDLORD) {
       data = {
         ...data,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        estate: estate || null,
+        estate: data?.estate || estate,
       }
     }
 
@@ -936,7 +938,7 @@ class MatchService {
   /**
    * Invite knocked user
    */
-  static async inviteKnockedUser({ estate, userId, is_from_market_place = false }) {
+  static async inviteKnockedUser({ estate, userId, is_from_market_place = false }, trx = null) {
     const estateId = estate.id
 
     //invited from knock
@@ -964,15 +966,28 @@ class MatchService {
       throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
     }
 
-    await Database.table('matches')
-      .update({
-        status: MATCH_STATUS_INVITE,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT),
-      })
-      .where({
-        user_id: userId,
-        estate_id: estateId,
-      })
+    if (trx) {
+      await Database.table('matches')
+        .update({
+          status: MATCH_STATUS_INVITE,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        })
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+        .transacting(trx)
+    } else {
+      await Database.table('matches')
+        .update({
+          status: MATCH_STATUS_INVITE,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        })
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+    }
     await NoticeService.userInvite(estateId, userId)
 
     this.emitMatch({
