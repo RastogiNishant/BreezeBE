@@ -936,23 +936,26 @@ class MatchService {
   /**
    * Invite knocked user
    */
-  static async inviteKnockedUser(estate, userId) {
+  static async inviteKnockedUser({ estate, userId, is_from_market_place = false }) {
     const estateId = estate.id
 
-    const match = await Database.query()
-      .table('matches')
-      .where({ estate_id: estateId, user_id: userId })
-      .where(function () {
-        this.orWhere('status', MATCH_STATUS_KNOCK)
-        this.orWhere(function () {
-          this.where('status', MATCH_STATUS_NEW)
-          this.where('buddy', true)
+    //invited from knock
+    if (!is_from_market_place) {
+      const match = await Database.query()
+        .table('matches')
+        .where({ estate_id: estateId, user_id: userId })
+        .where(function () {
+          this.orWhere('status', MATCH_STATUS_KNOCK)
+          this.orWhere(function () {
+            this.where('status', MATCH_STATUS_NEW)
+            this.where('buddy', true)
+          })
         })
-      })
-      .first()
+        .first()
 
-    if (!match) {
-      throw new AppException('Invalid match stage')
+      if (!match) {
+        throw new AppException('Invalid match stage')
+      }
     }
 
     const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
@@ -1049,8 +1052,9 @@ class MatchService {
     let invitedCount = 0
     if (matches[0].notify_on_green_matches) {
       // if red match is accpeted
-      const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
-        ?.length
+      const greenMatchCount = matches.filter(
+        (match) => match.percent >= MATCH_SCORE_GOOD_MATCH
+      )?.length
       invitedCount = greenMatchCount
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= greenMatchCount) {
         await require('./EstateService').updateSentNotification(

@@ -59,6 +59,7 @@ const {
   exceptions: { UNSECURE_PROFILE_SHARE },
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE },
 } = require('../../exceptions')
+
 class MatchController {
   /**
    *
@@ -139,7 +140,7 @@ class MatchController {
     // Check is estate owner
     const estate = await this.getOwnEstate(estate_id, landlordId)
     try {
-      await MatchService.inviteKnockedUser(estate, user_id)
+      await MatchService.inviteKnockedUser({ estate, user_id })
       logEvent(
         request,
         LOG_TYPE_INVITED,
@@ -938,6 +939,13 @@ class MatchController {
     let extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+
+    const contact_requests = await require('../../Services/MarketPlaceService')
+      .getPendingKnockRequestQuery({
+        estate_id,
+      })
+      .paginate(page, limit || 10)
+
     data = {
       ...data,
       total: matchCount[0].count,
@@ -1071,12 +1079,13 @@ class MatchController {
     const finalMatches = data
     return response.res({
       estate: estate.toJSON(),
-      matches: matches,
-      buddies: buddies,
-      invites: invites,
-      visits: visits,
-      top: top,
-      finalMatches: finalMatches,
+      matches,
+      buddies,
+      invites,
+      visits,
+      top,
+      finalMatches,
+      contact_requests,
     })
   }
 

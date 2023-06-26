@@ -16,6 +16,10 @@ class EstateSyncContactRequest extends Model {
       'link',
     ]
   }
+
+  estate() {
+    return this.hasOne('App/Models/Estate', 'estate_id', 'id')
+  }
 }
 
 module.exports = EstateSyncContactRequest
