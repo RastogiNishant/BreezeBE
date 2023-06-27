@@ -528,7 +528,7 @@ class MarketPlaceService {
         contacts,
         async (contact) => {
           const estate = estates.filter((estate) => estate.id === contact.estate_id)?.[0]
-          console.log('estate.user?.lang=', estate.user?.lang)
+
           if (estate) {
             await MailService.reminderKnockSignUpEmail({
               link: contact.link,
