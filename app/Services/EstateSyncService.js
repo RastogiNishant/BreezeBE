@@ -13,6 +13,8 @@ const {
   ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
+  STATUS_ACTIVE,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -486,6 +488,129 @@ class EstateSyncService {
         .update({ status: ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE })
     } catch (e) {
       Logger.use(`markListingsForDeletion error ${e.message}`)
+    }
+  }
+
+  /* Landlord specific methods */
+  static async createApiKey(userId, apiKey) {
+    const trx = await Database.beginTransaction()
+    try {
+      const credential = await EstateSyncCredential.createItem({
+        user_id: userId,
+        type: 'user',
+        api_key: apiKey,
+      })
+      await trx.commit()
+      return credential
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException(`Error found while adding api key. We can add only one api key.`, 400)
+    }
+  }
+
+  static async updateApiKey(userId, apiKey) {
+    const trx = await Database.beginTransaction()
+    try {
+      const credential = await EstateSyncCredential.query().where('user_id', userId).first()
+      if (!credential) {
+        throw new HttpException(`Credential has not been created yet.`)
+      }
+      await credential.updateItem({
+        user_id: userId,
+        type: 'user',
+        api_key: apiKey,
+      })
+      await trx.commit()
+      return credential
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException(`Error found while adding api key. We can add only one api key.`, 400)
+    }
+  }
+
+  static async deleteApiKey(userId) {
+    const trx = await Database.beginTransaction()
+    try {
+      const credential = await EstateSyncCredential.query().where('user_id', userId).first()
+      if (!credential) {
+        throw new HttpException(`Credential has not been created yet.`)
+      }
+      await credential.updateItem({
+        api_key: null,
+      })
+      await trx.commit()
+      return credential
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException(`Error found while deleting api key.`, 400)
+    }
+  }
+
+  static async getTargets(userId) {
+    try {
+      const targets = await EstateSyncCredential.query()
+        .leftJoin('estate_sync_targets', function () {
+          this.on('estate_sync_targets.estate_sync_credential_id', 'estate_sync_credentials.id').on(
+            'estate_sync_targets.status',
+            STATUS_ACTIVE
+          )
+        })
+        .where('estate_sync_credentials.user_id', userId)
+        .fetch()
+      return targets.toJSON()
+    } catch (e) {}
+  }
+
+  static async createTarget(publisher, userId, credentials = {}) {
+    const trx = await Database.beginTransaction()
+
+    try {
+      const credentialInitiated = await EstateSyncCredential.query()
+        .where('user_id', userId)
+        .first()
+      let credential
+      if (credentialInitiated) {
+        credential = credentialInitiated
+      } else {
+        const credentialCreated = await EstateSyncCredential.createItem(
+          {
+            user_id: userId,
+            type: 'user',
+          },
+          trx
+        )
+        credential = credentialCreated
+      }
+      //if landlord has estate_sync api_key we're going to use it. Else we use ours
+      const estateSync = new EstateSync(credential.api_key || process.env.ESTATE_SYNC_API_KEY)
+      if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
+      } else {
+        const result = await estateSync.post('targets', { type: publisher, credentials })
+        if (result.success) {
+          const queryResult = await EstateSyncTarget.createItem(
+            {
+              estate_sync_credential_id: credential.id,
+              publishing_provider: publisher,
+              estate_sync_target_id: result.data.id,
+            },
+            trx
+          )
+          await trx.commit()
+          return queryResult
+        } else {
+          throw new Error(result?.data?.message || 'Unknown error found.')
+        }
+      }
+    } catch (err) {
+      await trx.rollback()
+      if (err.message) {
+        throw new HttpException(err.message)
+      } else {
+        throw new HttpException('Error found while adding Target')
+      }
     }
   }
 }

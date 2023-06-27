@@ -283,10 +283,18 @@ Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').mi
 
 //landlord estatesync
 Route.group(() => {
-  Route.get('/', 'EstateSyncController.getTargets')
-  Route.post('/:publisher', 'EstateSyncController.addPublisher').middleware([
-    'valid:AddEstateSyncPublisher',
+  Route.get('/', 'EstateSyncController.getPublishers')
+  Route.post('/api-key', 'EstateSyncController.createApiKey').middleware([
+    'valid:AddEstateSyncApiKey',
   ])
+  Route.put('/api-key', 'EstateSyncController.updateApiKey').middleware([
+    'valid:AddEstateSyncApiKey',
+  ])
+  Route.delete('/api-key', 'EstateSyncController.deleteApiKey')
+  Route.post('/:type', 'EstateSyncController.createPublisher').middleware([
+    'valid:AddEstateSyncTarget',
+  ])
+  Route.delete('/:publisher', 'EstateSyncController.removePublisher')
 })
   .prefix('/api/v1/estate-sync')
   .middleware(['auth:jwtLandlord'])
