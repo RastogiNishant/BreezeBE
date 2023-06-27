@@ -213,7 +213,10 @@ class MarketPlaceService {
       lang,
     })
 
-    return true
+    return {
+      ...contact,
+      is_invited_by_landlord: true,
+    }
   }
 
   static async getKnockById(id) {
