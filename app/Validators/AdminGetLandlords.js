@@ -8,6 +8,7 @@ const {
   STATUS_EMAIL_VERIFY,
   STATUS_DRAFT,
   STATUS_EXPIRE,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../constants')
 const { isArray } = require('lodash')
 const yup = require('yup')
@@ -18,9 +19,17 @@ class AdminGetsLandlords extends Base {
     yup.object().shape({
       estate_status: yup.lazy((value) => {
         if (isArray(value)) {
-          return yup.array().of(yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE]))
+          return yup
+            .array()
+            .of(
+              yup
+                .number()
+                .oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
+            )
         } else {
-          return yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE])
+          return yup
+            .number()
+            .oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         }
       }),
       status: yup.lazy((value) => {
