@@ -215,6 +215,7 @@ class MarketPlaceService {
 
     return {
       ...contact,
+      match_type: 'listing',
       is_invited_by_landlord: true,
     }
   }
@@ -240,6 +241,7 @@ class MarketPlaceService {
       .select(Database.raw(`contact_info->'firstName' as firstname`))
       .select(Database.raw(`contact_info->'lastName' as secondname`))
       .select(Database.raw(` 1 as from_market_place`))
+      .select(Database.raw(` 'listing' as match_type`))
       .where('estate_id', estate_id)
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
