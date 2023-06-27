@@ -28,6 +28,7 @@ const {
   DEFAULT_LANG,
   WEBSOCKET_EVENT_USER_ACTIVATE,
   WEBSOCKET_EVENT_USER_DEACTIVATE,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
@@ -297,7 +298,8 @@ class UserController {
       })
       .leftJoin(
         Database.raw(
-          `(select user_id, max("percent") as max_percent_complete from estates group by user_id) as _e`
+          `(select user_id, max("percent") as max_percent_complete
+          from estates where status not in(${STATUS_DELETE}) group by user_id) as _e`
         ),
         '_e.user_id',
         'users.id'
@@ -347,7 +349,12 @@ class UserController {
       ]
     }
     status = status || STATUS_ACTIVE
-    estate_status = estate_status || [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT]
+    estate_status = estate_status || [
+      STATUS_ACTIVE,
+      STATUS_EXPIRE,
+      STATUS_DRAFT,
+      STATUS_OFFLINE_ACTIVE,
+    ]
     limit = 99999
     const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })
     if (query) {
