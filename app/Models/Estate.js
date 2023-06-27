@@ -56,6 +56,7 @@ const {
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_TYPE_ONLINE_MARKET,
   TASK_COMMON_TYPE,
+  STATUS_EMAIL_VERIFY,
 } = require('../constants')
 
 class Estate extends Model {
@@ -502,6 +503,13 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_VISIT,
       MATCH_STATUS_SHARE,
+    ])
+  }
+
+  contact_requests() {
+    return this.hasMany('App/Models/EstateSyncContactRequest').whereIn('status', [
+      STATUS_EMAIL_VERIFY,
+      STATUS_DRAFT,
     ])
   }
   /**

@@ -14,7 +14,12 @@ class EstateSyncContactRequest extends Model {
       'code',
       'status',
       'link',
+      'is_invited_by_landlord',
     ]
+  }
+
+  estate() {
+    return this.hasOne('App/Models/Estate', 'estate_id', 'id')
   }
 }
 

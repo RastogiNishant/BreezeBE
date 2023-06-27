@@ -966,19 +966,9 @@ class MailService {
       // .replace('{Landlord_name}', `${landlord_name}`)
       .replace(/\n/g, '<br />')
 
-    const coverImage = `<table width='100%'><tr><td><img style = "width:100%; height:150px;object-fit:cover; border-radius: 5%" src = '${
-      estate.cover ? estate.cover : ESTATE_NO_IMAGE_COVER_URL
-    }'/></td></tr></table>`
-    const addressLayout = `<tr><td>
-      <table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
-        <tr valign="top">
-          <td align = "left" width = '150px' >${coverImage}</td>
-          <td style = "padding-left:10px;">${this.getEmailAddressFormatter(estate, lang)}</td>
-        </tr>
-      </table></td></tr>`
     let intro = l
       .get('prospect.no_reply_email_from_listing.intro.message', lang)
-      .replace('{Full_property_address}', addressLayout)
+      .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
 
     const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
       <tr>${intro}</tr>
@@ -1020,6 +1010,30 @@ class MailService {
     }
 
     return sgMail.send(messages).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
+  static async sendTextEmail(recipient, subject, text) {
+    const message = {
+      to: recipient,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      subject,
+      text,
+    }
+
+    return sgMail.send(message).then(
       () => {
         console.log('Email delivery successfully')
       },

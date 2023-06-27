@@ -33,6 +33,15 @@ class MarketPlaceController {
       throw new HttpException(e.message, 400)
     }
   }
+
+  async inviteByLandlord({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await MarketPlaceService.inviteByLandlord({ id, user: auth.user }))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
 }
 
 module.exports = MarketPlaceController
