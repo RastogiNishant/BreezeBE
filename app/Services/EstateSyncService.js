@@ -15,6 +15,7 @@ const {
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
   STATUS_ACTIVE,
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -586,23 +587,33 @@ class EstateSyncService {
       }
       //if landlord has estate_sync api_key we're going to use it. Else we use ours
       const estateSync = new EstateSync(credential.api_key || process.env.ESTATE_SYNC_API_KEY)
+      let data
       if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
-      } else {
-        const result = await estateSync.post('targets', { type: publisher, credentials })
-        if (result.success) {
-          const queryResult = await EstateSyncTarget.createItem(
-            {
-              estate_sync_credential_id: credential.id,
-              publishing_provider: publisher,
-              estate_sync_target_id: result.data.id,
-            },
-            trx
-          )
-          await trx.commit()
-          return queryResult
-        } else {
-          throw new Error(result?.data?.message || 'Unknown error found.')
+        data = {
+          type: 'immobilienscout-24',
+          redirectUrl: 'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
+          autoCollectRequests: true,
         }
+      } else {
+        data = { type: publisher, credentials }
+        if ((publisher = ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT)) {
+          data.autoCollectRequests = true
+        }
+      }
+      const result = await estateSync.post('targets', data)
+      if (result.success) {
+        const queryResult = await EstateSyncTarget.createItem(
+          {
+            estate_sync_credential_id: credential.id,
+            publishing_provider: publisher,
+            estate_sync_target_id: result.data.id,
+          },
+          trx
+        )
+        await trx.commit()
+        return result
+      } else {
+        throw new Error(result?.data?.message || 'Unknown error found.')
       }
     } catch (err) {
       await trx.rollback()
