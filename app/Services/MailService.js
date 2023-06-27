@@ -1022,6 +1022,30 @@ class MailService {
     )
   }
 
+  static async sendTextEmail(recipient, subject, text) {
+    const message = {
+      to: recipient,
+      from: {
+        email: FromEmail,
+        name: FromName,
+      },
+      subject,
+      text,
+    }
+
+    return sgMail.send(message).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  }
+
   static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
 
   static async sendToSupportLandlordConnectedOneEstate() {}
