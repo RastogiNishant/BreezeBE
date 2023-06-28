@@ -215,6 +215,9 @@ class MarketPlaceService {
 
     return {
       ...contact,
+      firstname: contact?.contact_info?.firstName,
+      secondname: contact?.contact_info?.lastName,
+      from_market_place: 1,
       match_type: 'listing',
       is_invited_by_landlord: true,
     }
