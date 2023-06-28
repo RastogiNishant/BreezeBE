@@ -1301,6 +1301,10 @@ Estates: [ESTATES]
 
   ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS: ['support@breeze4me.de', 'mehram@breeze4me.de'],
   LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT: 'New Landlord Account Created!',
+
+  MATCH_TYPE_MATCH: 'match',
+  MATCH_TYPE_BUDDY: 'buddy',
+  MATCH_TYPE_MARKET_PLACE: 'listing',
 }
 
 module.exports = constants
