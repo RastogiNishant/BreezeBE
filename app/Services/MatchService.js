@@ -832,6 +832,33 @@ class MatchService {
     })
   }
 
+  static async sendMatchInviteWebsocketFromKnock({ estate_id, user_id, share_profile = false }) {
+    this.emitMatch({
+      data: {
+        estate_id,
+        user_id,
+        old_status: MATCH_STATUS_NEW,
+        share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+      },
+      role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
+    })
+
+    this.emitMatch({
+      data: {
+        estate_id,
+        user_id,
+        old_status: MATCH_STATUS_NEW,
+        share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+      },
+      role: ROLE_LANDLORD,
+    })
+  }
+
   static async emitCreateMatchCompleted({ user_id, data }) {
     const channel = `tenant:*`
     const topicName = `tenant:${user_id}`
