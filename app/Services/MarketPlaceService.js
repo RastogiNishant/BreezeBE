@@ -470,10 +470,17 @@ class MarketPlaceService {
       .update({ code: null, status: STATUS_EXPIRE })
 
     Promise.map(pendingKnocks, async (knock) => {
-      MatchService.sendMatchKnockWebsocket({
-        estate_id: knock.estate_id,
-        user_id: knock.user_id,
-      })
+      if (knock.is_invited_by_landlord) {
+        MatchService.sendMatchInviteWebsocketFromKnock({
+          estate_id: knock.estate_id,
+          user_id: knock.user_id,
+        })
+      } else {
+        MatchService.sendMatchKnockWebsocket({
+          estate_id: knock.estate_id,
+          user_id: knock.user_id,
+        })
+      }
     })
   }
 
