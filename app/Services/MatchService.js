@@ -88,6 +88,8 @@ const {
   TASK_SYSTEM_TYPE,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+  MATCH_TYPE_BUDDY,
+  MATCH_TYPE_MATCH,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -2905,9 +2907,9 @@ class MatchService {
         Database.raw(`
         (case when _bd.user_id is null
           then
-            'match'
+            '${MATCH_TYPE_MATCH}'
           else
-            'buddy'
+            '${MATCH_TYPE_BUDDY}'
           end
         ) as match_type`)
       )
