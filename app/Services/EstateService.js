@@ -397,6 +397,7 @@ class EstateService {
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
+      .withCount('contact_requests')
       .withCount('inviteBuddies')
       .with('point')
       .with('files')
@@ -775,6 +776,7 @@ class EstateService {
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
+      .withCount('contact_requests')
       .withCount('inviteBuddies')
       .with('user', function (u) {
         u.select('id', 'company_id')
