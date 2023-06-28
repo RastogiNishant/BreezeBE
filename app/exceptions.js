@@ -103,6 +103,7 @@ const exceptions = {
   ERROR_CONTACT_REQUEST_EXIST: 'Your contact request already exists',
   ERROR_CONTACT_REQUEST_NO_EXIST: 'Contact request does not exist',
   ERROR_ALREADY_KNOCKED: 'The prospect already knocked that property',
+  ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD: 'Aready invite the prospect to that property',
   NO_MATCH_EXIST: 'No match exists',
   ERROR_PREMIUM_MEMBER_PLAN_SELECT: 'Please upgrade your plan',
   ERROR_PLAN_SELECT: 'Your trial has been ended',

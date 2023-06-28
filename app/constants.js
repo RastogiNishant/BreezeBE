@@ -1298,6 +1298,9 @@ Estates: [ESTATES]
   ESTATE_NO_IMAGE_COVER_URL: 'https://breeze-files-dev.s3.eu-central-1.amazonaws.com/no-cover.png',
 
   MEMBER_TRIAL_PERIOD: 7, // trial period 7 days
+
+  ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS: ['support@breeze4me.de', 'mehram@breeze4me.de'],
+  LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT: 'New Landlord Account Created!',
 }
 
 module.exports = constants
