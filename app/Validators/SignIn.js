@@ -35,6 +35,7 @@ class SignIn extends Base {
         .max(36, getExceptionMessage('password', MAXLENGTH, 36))
         .required(getExceptionMessage('password', REQUIRED)),
       device_token: yup.string().min(30, getExceptionMessage('password', MINLENGTH, 30)).nullable(),
+      from_web: yup.number().oneOf([1]).nullable(),
     })
 }
 
