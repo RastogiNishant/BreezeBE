@@ -19,6 +19,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_SITE,
   STATUS_DELETE,
+  STATUS_DRAFT,
 } = require('../constants')
 
 const energyPassVariables = {
@@ -365,7 +366,11 @@ class OpenImmoReader {
       if (property.action === 'DELETE') {
         property.status = STATUS_DELETE
       } else if (property.status === 'ONLINE') {
-        property.status = STATUS_ACTIVE
+        if (+property.net_rent) {
+          property.status = STATUS_ACTIVE
+        } else {
+          property.status = STATUS_DRAFT
+        }
       } else if (property.status === 'OFFLINE') {
         property.status = STATUS_EXPIRE
       }
