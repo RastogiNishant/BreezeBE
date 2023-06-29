@@ -1306,6 +1306,9 @@ Estates: [ESTATES]
   MATCH_TYPE_MATCH: 'match',
   MATCH_TYPE_BUDDY: 'buddy',
   MATCH_TYPE_MARKET_PLACE: 'listing',
+
+  FRONTEND_USED_WEB: 'web',
+  FRONTEND_USED_MOBILE: 'mobile',
 }
 
 module.exports = constants
