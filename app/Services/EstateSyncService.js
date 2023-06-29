@@ -257,7 +257,7 @@ class EstateSyncService {
       }
       let estate = await EstateService.getByIdWithDetail(listings.rows[0].estate_id)
       estate = estate.toJSON()
-      const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.id)
+      const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       const estateSync = new EstateSync(credential.api_key)
       await Promise.map(listings.rows, async (listing) => {
         const target = await EstateSyncTarget.query()
