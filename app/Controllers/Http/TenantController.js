@@ -109,7 +109,7 @@ class TenantController {
         data.residency_duration_min = null
         data.residency_duration_max = null
       }
-
+      const { lat, lon } = tenant.getLatLon()
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
 
@@ -137,7 +137,7 @@ class TenantController {
         has_notification_sent: false,
       })
 
-      response.res(updatedTenant)
+      response.res(await Tenant.find(tenant.id))
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
