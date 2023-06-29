@@ -37,6 +37,7 @@ const {
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
+  SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -205,7 +206,7 @@ class QueueService {
     return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
   }
 
-  static async performEvery37thMinuteHourly() {
+  static async pullGewobag() {
     const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
     return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag)])
   }
@@ -320,7 +321,9 @@ class QueueService {
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
           return QueueService.performEvery3rdHour23rdMinuteJob()
         case SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB:
-          return QueueService.performEvery37thMinuteHourly()
+          return
+        case SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB:
+          return QueueService.pullGewobag()
         case SCHEDULED_13H_DAY_JOB:
           return QueueService.sendEveryDayMidday()
         case SCHEDULED_FRIDAY_JOB:
