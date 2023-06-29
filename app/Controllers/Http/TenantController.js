@@ -109,18 +109,18 @@ class TenantController {
         data.residency_duration_min = null
         data.residency_duration_max = null
       }
-      await tenant.updateItemWithTrx(data, trx)
       const { lat, lon } = tenant.getLatLon()
-
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
-      const updatedTenant = await Tenant.find(tenant.id)
 
       if (shouldDeactivateTenant) {
-        updatedTenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
-        updatedTenant.status = STATUS_DRAFT
+        tenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
+        tenant.status = STATUS_DRAFT
       } else {
       }
+
+      await tenant.updateItemWithTrx(data, trx)
+
       await trx.commit()
 
       // Add tenant anchor zone processing
@@ -137,7 +137,7 @@ class TenantController {
         has_notification_sent: false,
       })
 
-      response.res(updatedTenant)
+      response.res(await Tenant.find(tenant.id))
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
