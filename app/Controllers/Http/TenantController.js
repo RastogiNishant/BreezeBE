@@ -109,7 +109,6 @@ class TenantController {
         data.residency_duration_min = null
         data.residency_duration_max = null
       }
-      const { lat, lon } = tenant.getLatLon()
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
 
@@ -124,6 +123,7 @@ class TenantController {
       await trx.commit()
 
       // Add tenant anchor zone processing
+      const { lat, lon } = tenant.getLatLon()
       if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
