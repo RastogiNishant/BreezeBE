@@ -21,6 +21,7 @@ const {
   MATCH_STATUS_NEW,
   NO_MATCH_STATUS,
   MATCH_STATUS_KNOCK,
+  MATCH_TYPE_MARKET_PLACE,
 } = require('../constants')
 
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
@@ -104,13 +105,13 @@ class MarketPlaceService {
     }
   }
 
-  static async sendContactRequestWebsocket(contactRequest) {
+  static async sendContactRequestWebsocket(contact) {
     MatchService.emitMatch({
       data: {
-        estate_id: contactRequest.estate_id,
+        estate_id: contact.estate_id,
         old_status: NO_MATCH_STATUS,
         from_market_place: 1,
-        match_type: 'listing',
+        match_type: MATCH_TYPE_MARKET_PLACE,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: MATCH_STATUS_NEW,
       },
@@ -119,19 +120,11 @@ class MarketPlaceService {
 
     MatchService.emitMatch({
       data: {
-        estate_id: contactRequest.estate_id,
-        old_status: NO_MATCH_STATUS,
+        ...contact,
+        firstname: contact?.contact_info?.firstName,
+        secondname: contact?.contact_info?.lastName,
         from_market_place: 1,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        status: MATCH_STATUS_NEW,
-        estate: {
-          firstname: contactRequest.contact_info?.firstName,
-          secondname: contactRequest.contact_info?.lastName,
-          email: contactRequest.contact_info?.email,
-          match_type: 'listing',
-          user_id: null,
-          status: -1,
-        },
+        match_type: MATCH_TYPE_MARKET_PLACE,
       },
       role: ROLE_LANDLORD,
       event: WEBSOCKET_EVENT_MATCH_STAGE,
@@ -215,7 +208,10 @@ class MarketPlaceService {
 
     return {
       ...contact,
-      match_type: 'listing',
+      firstname: contact?.contact_info?.firstName,
+      secondname: contact?.contact_info?.lastName,
+      from_market_place: 1,
+      match_type: MATCH_TYPE_MARKET_PLACE,
       is_invited_by_landlord: true,
     }
   }
@@ -241,7 +237,7 @@ class MarketPlaceService {
       .select(Database.raw(`contact_info->'firstName' as firstname`))
       .select(Database.raw(`contact_info->'lastName' as secondname`))
       .select(Database.raw(` 1 as from_market_place`))
-      .select(Database.raw(` 'listing' as match_type`))
+      .select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
       .where('estate_id', estate_id)
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
@@ -474,10 +470,17 @@ class MarketPlaceService {
       .update({ code: null, status: STATUS_EXPIRE })
 
     Promise.map(pendingKnocks, async (knock) => {
-      MatchService.sendMatchKnockWebsocket({
-        estate_id: knock.estate_id,
-        user_id: knock.user_id,
-      })
+      if (knock.is_invited_by_landlord) {
+        MatchService.sendMatchInviteWebsocketFromKnock({
+          estate_id: knock.estate_id,
+          user_id: knock.user_id,
+        })
+      } else {
+        MatchService.sendMatchKnockWebsocket({
+          estate_id: knock.estate_id,
+          user_id: knock.user_id,
+        })
+      }
     })
   }
 

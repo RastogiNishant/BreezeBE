@@ -88,6 +88,8 @@ const {
   TASK_SYSTEM_TYPE,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+  MATCH_TYPE_BUDDY,
+  MATCH_TYPE_MATCH,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -825,6 +827,33 @@ class MatchService {
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+      },
+      role: ROLE_LANDLORD,
+    })
+  }
+
+  static async sendMatchInviteWebsocketFromKnock({ estate_id, user_id, share_profile = false }) {
+    this.emitMatch({
+      data: {
+        estate_id,
+        user_id,
+        old_status: MATCH_STATUS_NEW,
+        share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+      },
+      role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
+    })
+
+    this.emitMatch({
+      data: {
+        estate_id,
+        user_id,
+        old_status: MATCH_STATUS_NEW,
+        share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
       },
       role: ROLE_LANDLORD,
     })
@@ -2905,9 +2934,9 @@ class MatchService {
         Database.raw(`
         (case when _bd.user_id is null
           then
-            'match'
+            '${MATCH_TYPE_MATCH}'
           else
-            'buddy'
+            '${MATCH_TYPE_BUDDY}'
           end
         ) as match_type`)
       )
