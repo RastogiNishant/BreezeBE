@@ -60,6 +60,7 @@ class User extends Model {
       'ip',
       'ip_based_info',
       'code',
+      'frontend_used',
     ]
   }
 

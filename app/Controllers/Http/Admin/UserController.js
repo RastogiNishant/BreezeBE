@@ -271,6 +271,7 @@ class UserController {
         'status',
         'activation_status',
         'ip_based_info',
+        'frontend_used',
         Database.raw(
           `case when _e.max_percent_complete is null then 0 else _e.max_percent_complete end`
         ),

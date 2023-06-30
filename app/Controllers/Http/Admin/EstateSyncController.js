@@ -69,7 +69,6 @@ class EstateSyncController {
           redirectUrl: process.env.ESTATE_SYNC_IS24_OAUTH_TOKEN_REDIRECT,
           autoCollectRequests: true,
         }
-        const result = await estateSync.post('targets', data)
         break
       default:
         break

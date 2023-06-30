@@ -13,6 +13,9 @@ const {
   ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
   WEBSOCKET_EVENT_ESTATE_SYNC_PUBLISHING_ERROR,
+  STATUS_ACTIVE,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -38,10 +41,15 @@ class EstateSyncService {
   }
 
   static async getLandlordEstateSyncCredential(user_id) {
-    const credential = await EstateSyncCredential.query()
+    let credential = await EstateSyncCredential.query()
       .where('user_id', user_id)
       .where('type', ESTATE_SYNC_CREDENTIAL_TYPE_USER)
       .first()
+    if (credential) {
+      credential['api_key'] = credential['api_key'] || process.env.ESTATE_SYNC_API_KEY
+    } else {
+      credential = EstateSyncService.getBreezeEstateSyncCredential()
+    }
     return credential
   }
 
@@ -143,12 +151,8 @@ class EstateSyncService {
       }
 
       let estate = await EstateService.getByIdWithDetail(estate_id)
-      let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
-      if (!credential) {
-        credential = await EstateSyncService.getBreezeEstateSyncCredential()
-      }
-
       estate = estate.toJSON()
+      let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       const estateSync = new EstateSync(credential.api_key)
       if (!Number(estate.usable_area)) {
         estate.usable_area = estate.area
@@ -206,7 +210,9 @@ class EstateSyncService {
         .where('publishing_error', false) //we're going to process only those that didn't have error yet
         .fetch()
 
-      const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+      let estate = await EstateService.getByIdWithDetail(estate_id)
+      estate = estate.toJSON()
+      const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       const estateSync = new EstateSync(credential.api_key)
       if (listings.rows.length) {
         await Promise.map(listings.rows, async (listing) => {
@@ -239,7 +245,6 @@ class EstateSyncService {
   static async propertyProcessingSucceeded(payload) {
     try {
       const propertyId = payload.id
-      const credential = await EstateSyncService.getBreezeEstateSyncCredential()
       let listings = await EstateSyncListing.query()
         .where('estate_sync_property_id', propertyId)
         .where('status', ESTATE_SYNC_LISTING_STATUS_POSTED)
@@ -250,6 +255,9 @@ class EstateSyncService {
       if (!listings?.rows?.length) {
         return
       }
+      let estate = await EstateService.getByIdWithDetail(listings.rows[0].estate_id)
+      estate = estate.toJSON()
+      const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       const estateSync = new EstateSync(credential.api_key)
       await Promise.map(listings.rows, async (listing) => {
         const target = await EstateSyncTarget.query()
@@ -314,14 +322,14 @@ class EstateSyncService {
           estate_sync_listing_id: null,
           publish_url: null,
         })
+        const estate = await Estate.query()
+          .select('user_id')
+          .select('property_id')
+          .where('id', listing.estate_id)
+          .first()
         if (listing.status === ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND) {
           //this is a webhook call reporting of delete on a publishing declined
           //we don't have to do removing of publishes that are SCHEDULED_FOR_DELETE
-          const estate = await Estate.query()
-            .select('user_id')
-            .select('property_id')
-            .where('id', listing.estate_id)
-            .first()
           let data = listing
           data.success = false
           data.type = 'error-publishing'
@@ -342,7 +350,7 @@ class EstateSyncService {
 
         if (!listings?.rows?.length && payload.propertyId) {
           //all the scheduled for delete are exhausted. So we now remove the posted property
-          const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+          const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
           const estateSync = new EstateSync(credential.api_key)
           await estateSync.delete(payload.propertyId, 'properties')
           //removed setting estate_sync_property_id so we can still get contact_requests
@@ -419,7 +427,7 @@ class EstateSyncService {
         })
         //we need to remove the record from estate sync but mark it as
         //ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND on ours
-        const credential = await EstateSyncService.getBreezeEstateSyncCredential()
+        const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
         const estateSync = new EstateSync(credential.api_key)
         await estateSync.delete(payload.listingId, 'listings')
       }
@@ -486,6 +494,139 @@ class EstateSyncService {
         .update({ status: ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE })
     } catch (e) {
       Logger.use(`markListingsForDeletion error ${e.message}`)
+    }
+  }
+
+  /* Landlord specific methods */
+  static async createApiKey(userId, apiKey) {
+    const trx = await Database.beginTransaction()
+    try {
+      const credential = await EstateSyncCredential.createItem({
+        user_id: userId,
+        type: 'user',
+        api_key: apiKey,
+      })
+      await trx.commit()
+      return credential
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException(`Error found while adding api key. We can add only one api key.`, 400)
+    }
+  }
+
+  static async updateApiKey(userId, apiKey) {
+    const trx = await Database.beginTransaction()
+    try {
+      const credential = await EstateSyncCredential.query().where('user_id', userId).first()
+      if (!credential) {
+        throw new HttpException(`Credential has not been created yet.`)
+      }
+      await credential.updateItem({
+        user_id: userId,
+        type: 'user',
+        api_key: apiKey,
+      })
+      await trx.commit()
+      return credential
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException(`Error found while adding api key. We can add only one api key.`, 400)
+    }
+  }
+
+  static async deleteApiKey(userId) {
+    const trx = await Database.beginTransaction()
+    try {
+      const credential = await EstateSyncCredential.query().where('user_id', userId).first()
+      if (!credential) {
+        throw new HttpException(`Credential has not been created yet.`)
+      }
+      await credential.updateItem({
+        api_key: null,
+      })
+      await trx.commit()
+      return credential
+    } catch (err) {
+      await trx.rollback()
+      console.log(err.message)
+      throw new HttpException(`Error found while deleting api key.`, 400)
+    }
+  }
+
+  static async getTargets(userId) {
+    try {
+      const targets = await EstateSyncCredential.query()
+        .leftJoin('estate_sync_targets', function () {
+          this.on('estate_sync_targets.estate_sync_credential_id', 'estate_sync_credentials.id').on(
+            'estate_sync_targets.status',
+            STATUS_ACTIVE
+          )
+        })
+        .where('estate_sync_credentials.user_id', userId)
+        .fetch()
+      return targets.toJSON()
+    } catch (e) {}
+  }
+
+  static async createTarget(publisher, userId, credentials = {}) {
+    const trx = await Database.beginTransaction()
+
+    try {
+      const credentialInitiated = await EstateSyncCredential.query()
+        .where('user_id', userId)
+        .first()
+      let credential
+      if (credentialInitiated) {
+        credential = credentialInitiated
+      } else {
+        const credentialCreated = await EstateSyncCredential.createItem(
+          {
+            user_id: userId,
+            type: 'user',
+          },
+          trx
+        )
+        credential = credentialCreated
+      }
+      //if landlord has estate_sync api_key we're going to use it. Else we use ours
+      const estateSync = new EstateSync(credential.api_key || process.env.ESTATE_SYNC_API_KEY)
+      let data
+      if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
+        data = {
+          type: 'immobilienscout-24',
+          redirectUrl: 'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
+          autoCollectRequests: true,
+        }
+      } else {
+        data = { type: publisher, credentials }
+        if ((publisher = ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT)) {
+          data.autoCollectRequests = true
+        }
+      }
+      const result = await estateSync.post('targets', data)
+      if (result.success) {
+        const queryResult = await EstateSyncTarget.createItem(
+          {
+            estate_sync_credential_id: credential.id,
+            publishing_provider: publisher,
+            estate_sync_target_id: result.data.id,
+          },
+          trx
+        )
+        await trx.commit()
+        return result
+      } else {
+        throw new Error(result?.data?.message || 'Unknown error found.')
+      }
+    } catch (err) {
+      await trx.rollback()
+      if (err.message) {
+        throw new HttpException(err.message)
+      } else {
+        throw new HttpException('Error found while adding Target')
+      }
     }
   }
 }
