@@ -109,7 +109,6 @@ class TenantController {
         data.residency_duration_min = null
         data.residency_duration_max = null
       }
-
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
 

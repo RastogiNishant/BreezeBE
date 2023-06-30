@@ -30,6 +30,8 @@ const {
   SIGN_IN_METHOD_EMAIL,
   LOG_TYPE_SIGN_UP,
   LOG_TYPE_OPEN_APP,
+  FRONTEND_USED_WEB,
+  FRONTEND_USED_MOBILE,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -150,7 +152,8 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     try {
-      let { email, role, password, device_token } = request.all()
+      let { email, role, password, device_token, from_web } = request.all()
+      console.log({ from_web })
       let user, authenticator, token
       const loginResult = await UserService.login({ email, role, device_token })
       //TODO: implement test cases for admin login
@@ -182,6 +185,12 @@ class AccountController {
       }
       const ip = request.ip()
       await UserService.setIpBasedInfo(user, ip)
+      if (from_web) {
+        user.frontend_used = FRONTEND_USED_WEB
+      } else {
+        user.frontend_used = FRONTEND_USED_MOBILE
+      }
+      await user.save()
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_EMAIL,
         role,

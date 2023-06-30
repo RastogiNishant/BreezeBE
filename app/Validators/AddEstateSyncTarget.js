@@ -22,9 +22,9 @@ class AddEstateSyncTarget extends Base {
         then: yup
           .object()
           .shape({
-            host: yup.string(),
-            username: yup.string(),
-            password: yup.string(),
+            host: yup.string().required('host is required.'),
+            username: yup.string().required('username is required.'),
+            password: yup.string().required('password is required.'),
           })
           .required('credentials is required'),
         otherwise: yup.object().nullable(),
