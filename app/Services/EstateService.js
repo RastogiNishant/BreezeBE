@@ -2827,7 +2827,6 @@ class EstateService {
   }
 
   static async countDuplicateProperty(property_id) {
-    console.log('countDuplicateProperty=', property_id)
     const estateCount = await Estate.query()
       .where('property_id', 'ilike', `${property_id}%`)
       .whereNot('status', STATUS_DELETE)
@@ -2861,7 +2860,6 @@ class EstateService {
       property_id_list.splice(property_id_list.length - 1, 1)
     }
 
-    console.log('property_id_list=', property_id_list)
     const property_id = property_id_list.join('')
 
     const duplicatedCount = await this.countDuplicateProperty(property_id)
