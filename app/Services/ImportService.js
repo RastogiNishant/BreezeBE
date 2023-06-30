@@ -121,7 +121,7 @@ class ImportService {
             trim(data.phone_number || ``) != '' ||
             trim(data.txt_salutation || ``) !== '' ||
             trim(data.surname || ``) !== '' ||
-            trim(data.contract_end || ``) !== ''
+            trim(data.rent_end_at || ``) !== ''
           ) {
             warnings.push({
               error: [`Tenant info igonored because this property has not rented yet`],
@@ -296,7 +296,6 @@ class ImportService {
         'room6_type',
         'txt_salutation',
         'surname',
-        'contract_end',
         'phone_number',
         'email',
         'salutation_int',
