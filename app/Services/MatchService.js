@@ -88,6 +88,8 @@ const {
   TASK_SYSTEM_TYPE,
   NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID,
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
+  MATCH_TYPE_BUDDY,
+  MATCH_TYPE_MATCH,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -830,6 +832,33 @@ class MatchService {
     })
   }
 
+  static async sendMatchInviteWebsocketFromKnock({ estate_id, user_id, share_profile = false }) {
+    this.emitMatch({
+      data: {
+        estate_id,
+        user_id,
+        old_status: MATCH_STATUS_NEW,
+        share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+      },
+      role: ROLE_LANDLORD,
+      event: WEBSOCKET_EVENT_MATCH_STAGE,
+    })
+
+    this.emitMatch({
+      data: {
+        estate_id,
+        user_id,
+        old_status: MATCH_STATUS_NEW,
+        share: share_profile,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+      },
+      role: ROLE_LANDLORD,
+    })
+  }
+
   static async emitCreateMatchCompleted({ user_id, data }) {
     const channel = `tenant:*`
     const topicName = `tenant:${user_id}`
@@ -864,20 +893,22 @@ class MatchService {
         .first()
       landlordSenderId = estateInfo?.user_id
 
-      const estates = await this.getLandlordMatchesWithFilterQuery(
-        estateInfo,
-        {},
-        { user_id: data.user_id, matchStatus: data.status }
-      ).paginate(1, 1)
+      if (!data?.from_market_place && data.user_id) {
+        const estates = await this.getLandlordMatchesWithFilterQuery(
+          estateInfo,
+          {},
+          { user_id: data.user_id, matchStatus: data.status }
+        ).paginate(1, 1)
 
-      estate = estates.rows?.[0]
+        estate = estates.rows?.[0]
+      }
     }
 
     if (role === ROLE_LANDLORD) {
       data = {
         ...data,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        estate: estate || null,
+        estate: data?.estate || estate,
       }
     }
 
@@ -936,23 +967,26 @@ class MatchService {
   /**
    * Invite knocked user
    */
-  static async inviteKnockedUser(estate, userId) {
+  static async inviteKnockedUser({ estate, userId, is_from_market_place = false }, trx = null) {
     const estateId = estate.id
 
-    const match = await Database.query()
-      .table('matches')
-      .where({ estate_id: estateId, user_id: userId })
-      .where(function () {
-        this.orWhere('status', MATCH_STATUS_KNOCK)
-        this.orWhere(function () {
-          this.where('status', MATCH_STATUS_NEW)
-          this.where('buddy', true)
+    //invited from knock
+    if (!is_from_market_place) {
+      const match = await Database.query()
+        .table('matches')
+        .where({ estate_id: estateId, user_id: userId })
+        .where(function () {
+          this.orWhere('status', MATCH_STATUS_KNOCK)
+          this.orWhere(function () {
+            this.where('status', MATCH_STATUS_NEW)
+            this.where('buddy', true)
+          })
         })
-      })
-      .first()
+        .first()
 
-    if (!match) {
-      throw new AppException('Invalid match stage')
+      if (!match) {
+        throw new AppException('Invalid match stage')
+      }
     }
 
     const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
@@ -961,15 +995,28 @@ class MatchService {
       throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
     }
 
-    await Database.table('matches')
-      .update({
-        status: MATCH_STATUS_INVITE,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT),
-      })
-      .where({
-        user_id: userId,
-        estate_id: estateId,
-      })
+    if (trx) {
+      await Database.table('matches')
+        .update({
+          status: MATCH_STATUS_INVITE,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        })
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+        .transacting(trx)
+    } else {
+      await Database.table('matches')
+        .update({
+          status: MATCH_STATUS_INVITE,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        })
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+    }
     await NoticeService.userInvite(estateId, userId)
 
     this.emitMatch({
@@ -1049,8 +1096,9 @@ class MatchService {
     let invitedCount = 0
     if (matches[0].notify_on_green_matches) {
       // if red match is accpeted
-      const greenMatchCount = matches.filter((match) => match.percent >= MATCH_SCORE_GOOD_MATCH)
-        ?.length
+      const greenMatchCount = matches.filter(
+        (match) => match.percent >= MATCH_SCORE_GOOD_MATCH
+      )?.length
       invitedCount = greenMatchCount
       if (matches[0].min_invite_count && parseInt(matches[0].min_invite_count) <= greenMatchCount) {
         await require('./EstateService').updateSentNotification(
@@ -2886,9 +2934,9 @@ class MatchService {
         Database.raw(`
         (case when _bd.user_id is null
           then
-            'match'
+            '${MATCH_TYPE_MATCH}'
           else
-            'buddy'
+            '${MATCH_TYPE_BUDDY}'
           end
         ) as match_type`)
       )

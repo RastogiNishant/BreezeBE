@@ -21,6 +21,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
 } = require('../../constants')
 const QueueService = require('../../Services/QueueService')
 const { logEvent } = require('../../Services/TrackingService')
@@ -108,26 +109,26 @@ class TenantController {
         data.residency_duration_min = null
         data.residency_duration_max = null
       }
-
-      await tenant.updateItemWithTrx(data, trx)
-      const { lat, lon } = tenant.getLatLon()
-
       // Deactivate tenant on personal data change
       const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
+
       if (shouldDeactivateTenant) {
+        tenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
+        tenant.status = STATUS_DRAFT
       } else {
       }
+
+      await tenant.updateItemWithTrx(data, trx)
+
       await trx.commit()
 
-      const updatedTenant = await Tenant.find(tenant.id)
-
       // Add tenant anchor zone processing
+      const { lat, lon } = tenant.getLatLon()
       if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
         await TenantService.updateTenantIsoline(tenant.id)
       }
 
       if (shouldDeactivateTenant) {
-        updatedTenant.status = STATUS_DRAFT
         Event.fire('tenant::update', auth.user.id)
       }
 
@@ -136,7 +137,7 @@ class TenantController {
         has_notification_sent: false,
       })
 
-      response.res(updatedTenant)
+      response.res(await Tenant.find(tenant.id))
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)

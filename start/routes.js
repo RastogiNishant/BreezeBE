@@ -108,6 +108,11 @@ Route.group(() => {
     'valid:Pagination,AdminGetsLandlords',
   ])
 
+  Route.post('/users', 'Admin/UserController.addUser').middleware([
+    'auth:jwtAdministrator',
+    'valid:AdminAddUser',
+  ])
+
   Route.get('/predefinedMessage/:id', 'Admin/PredefinedMessageController.get').middleware([
     'auth:jwtAdministrator',
     'valid:Id',
@@ -275,6 +280,24 @@ Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').mi
   'guest',
   'valid:ConfirmSMS',
 ])
+
+//landlord estatesync
+Route.group(() => {
+  Route.get('/', 'EstateSyncController.getPublishers')
+  Route.post('/api-key', 'EstateSyncController.createApiKey').middleware([
+    'valid:AddEstateSyncApiKey',
+  ])
+  Route.put('/api-key', 'EstateSyncController.updateApiKey').middleware([
+    'valid:AddEstateSyncApiKey',
+  ])
+  Route.delete('/api-key', 'EstateSyncController.deleteApiKey')
+  Route.post('/:type', 'EstateSyncController.createPublisher').middleware([
+    'valid:AddEstateSyncTarget',
+  ])
+  Route.delete('/:publisher', 'EstateSyncController.removePublisher')
+})
+  .prefix('/api/v1/estate-sync')
+  .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
@@ -1261,7 +1284,7 @@ Route.list().forEach((r) => {
     !r._route.match(/\/administration/)
   ) {
     if (r.middlewareList.length > 0) {
-      r.middlewareList = [...r.middlewareList, 'agreement']
+      r.middlewareList = [...r.middlewareList, 'agreement', 'plan']
     }
   }
 })
@@ -1284,6 +1307,12 @@ Route.group(() => {
 })
   .prefix('api/v1/marketplace')
   .middleware(['auth:jwt'])
+
+Route.group(() => {
+  Route.post('/invite/:id', 'MarketPlaceController.inviteByLandlord').middleware(['valid:Id'])
+})
+  .prefix('api/v1/marketplace')
+  .middleware(['auth:jwtLandlord'])
 
 Route.group(() => {
   Route.post('/subscription', 'StripeController.createSubscription').middleware([

@@ -397,6 +397,7 @@ class EstateService {
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
+      .withCount('contact_requests')
       .withCount('inviteBuddies')
       .with('point')
       .with('files')
@@ -626,6 +627,7 @@ class EstateService {
   static async updateShowRequired({ id, is_not_show = false }) {
     await Estate.query().where('id', id).update({ is_not_show })
   }
+
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
     let updateData = {
@@ -774,6 +776,7 @@ class EstateService {
       .withCount('decided')
       .withCount('invite')
       .withCount('final')
+      .withCount('contact_requests')
       .withCount('inviteBuddies')
       .with('user', function (u) {
         u.select('id', 'company_id')
@@ -1119,16 +1122,25 @@ class EstateService {
       .first()
   }
 
-  static getPublishedEstates(userID = null) {
-    if (isEmpty(userID)) {
-      return Estate.query()
+  static async getAllPublishedEstatesByIds({ ids, user_id }) {
+    let query = Estate.query()
+    if (ids) {
+      ids = Array.isArray(ids) ? ids : [ids]
+      query.whereIn('id', ids)
+    }
+    if (user_id) {
+      query.where('user_id', user_id)
     }
 
-    return Estate.query()
-      .where({ user_id: userID })
-      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+    return (
+      await query
+        .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+        .with('user', function (user) {
+          user.select('id', 'lang')
+        })
+        .fetch()
+    ).toJSON()
   }
-
   /**
    *
    */
@@ -1632,6 +1644,7 @@ class EstateService {
       { concurrency: 1 }
     )
   }
+
   static async unpublishEstate(estate) {
     if (estate.status !== STATUS_ACTIVE) {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
@@ -2574,6 +2587,7 @@ class EstateService {
 
     return Math.ceil(percent)
   }
+
   static async updatePercent(
     {
       estate,
@@ -2834,6 +2848,7 @@ class EstateService {
       .where('publish_status', PUBLISH_STATUS_BY_LANDLORD)
       .first()
   }
+
   static async duplicateEstate(user_id, estate_id) {
     const estate = await this.getByIdWithDetail(estate_id)
     if (estate?.user_id !== user_id) {

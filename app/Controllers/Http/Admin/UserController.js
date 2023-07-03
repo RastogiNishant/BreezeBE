@@ -28,6 +28,7 @@ const {
   DEFAULT_LANG,
   WEBSOCKET_EVENT_USER_ACTIVATE,
   WEBSOCKET_EVENT_USER_DEACTIVATE,
+  STATUS_OFFLINE_ACTIVE,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
@@ -36,6 +37,7 @@ const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
 const Promise = require('bluebird')
+const CompanyService = require('../../../Services/CompanyService')
 
 class UserController {
   /**
@@ -256,31 +258,20 @@ class UserController {
     response.res(false)
   }
 
-  async getLandlords({ request, response }) {
-    let { activation_status, status, estate_status, page, limit, query, today } = request.all()
-    let { light } = request.get()
-    if (!activation_status) {
-      activation_status = [
-        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
-        USER_ACTIVATION_STATUS_ACTIVATED,
-        USER_ACTIVATION_STATUS_DEACTIVATED,
-      ]
-    }
-    status = status || STATUS_ACTIVE
-    estate_status = estate_status || [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT]
-    limit = 99999
-    const landlordQuery = User.query()
+  landlordQuery({ status, activation_status, estate_status, light }) {
+    const query = User.query()
       .select(
         'id',
         'firstname',
         'secondname',
         'email',
         'phone',
-        Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`),
+        'created_at',
         'company_id',
         'status',
         'activation_status',
         'ip_based_info',
+        'frontend_used',
         Database.raw(
           `case when _e.max_percent_complete is null then 0 else _e.max_percent_complete end`
         ),
@@ -308,7 +299,8 @@ class UserController {
       })
       .leftJoin(
         Database.raw(
-          `(select user_id, max("percent") as max_percent_complete from estates group by user_id) as _e`
+          `(select user_id, max("percent") as max_percent_complete
+          from estates where status not in(${STATUS_DELETE}) group by user_id) as _e`
         ),
         '_e.user_id',
         'users.id'
@@ -343,6 +335,29 @@ class UserController {
         query.with('contacts')
       })
       .with('deactivationSchedule')
+
+    return query
+  }
+
+  async getLandlords({ request, response }) {
+    let { activation_status, status, estate_status, page, limit, query, today } = request.all()
+    let { light } = request.get()
+    if (!activation_status) {
+      activation_status = [
+        USER_ACTIVATION_STATUS_NOT_ACTIVATED,
+        USER_ACTIVATION_STATUS_ACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED,
+      ]
+    }
+    status = status || STATUS_ACTIVE
+    estate_status = estate_status || [
+      STATUS_ACTIVE,
+      STATUS_EXPIRE,
+      STATUS_DRAFT,
+      STATUS_OFFLINE_ACTIVE,
+    ]
+    limit = 99999
+    const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })
     if (query) {
       landlordQuery.andWhere(function (d) {
         d.orWhere('email', 'ilike', `${query}%`)
@@ -354,9 +369,39 @@ class UserController {
       landlordQuery.where(Database.raw(`created_at::date=CURRENT_DATE`))
     }
     const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
+    //console.log({ landlords: landlords.toJSON({ isOwner: true }).data[10] })
     //let's return all info... this is admin
     const users = landlords.toJSON({ publicOnly: false })
     return response.res(users)
+  }
+
+  async addUser({ request, response }) {
+    const { email, password, role, company_name, company_size } = request.all()
+    const trx = await Database.beginTransaction()
+
+    try {
+      //don't send verification email
+      const user = await UserService.signUp({ email, password, role }, trx, false)
+      const company = await CompanyService.createCompany(
+        { type: 'private', name: company_name, size: company_size, status: STATUS_ACTIVE },
+        user.id,
+        trx
+      )
+      user.firstname = company_name
+      user.company_id = company.id
+      user.status = STATUS_ACTIVE
+      await user.save(trx)
+      /*await User.query()
+        .where('id', user.id)
+        .update({ status: STATUS_ACTIVE, firstname: company_name, company_id: company.id }, trx)*/
+      await trx.commit()
+      return response.res(user)
+    } catch (err) {
+      await trx.rollback()
+      if (err.message) throw new HttpException(err.message)
+
+      throw new HttpException('Error found while adding user.')
+    }
   }
 }
 

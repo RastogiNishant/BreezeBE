@@ -60,6 +60,8 @@ const {
   OUTSIDE_LANDLORD_INVITE_TYPE,
   OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
   OUTSIDE_TENANT_INVITE_TYPE,
+  ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS,
+  LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT,
 } = require('../constants')
 
 const {
@@ -1036,7 +1038,8 @@ class UserService {
       ip_based_info,
       ...userData
     },
-    trx = null
+    trx = null,
+    sendVerification = true
   ) {
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER]
     const role = userData.role
@@ -1074,7 +1077,7 @@ class UserService {
         trx
       )
 
-      if (isEmpty(ip_based_info.country_code)) {
+      if (isEmpty(ip_based_info?.country_code)) {
         const QueueService = require('./QueueService.js')
         QueueService.getIpBasedInfo(user.id, ip)
       }
@@ -1083,7 +1086,26 @@ class UserService {
         // If there is trx, we should fire this event after the transaction is committed
         Event.fire('mautic:createContact', user.id)
       }
-      await UserService.sendConfirmEmail(user, from_web)
+
+      if (sendVerification) {
+        await UserService.sendConfirmEmail(user, from_web)
+        if (role === ROLE_LANDLORD) {
+          const text =
+            `New Landlord Account Created:\r\n` +
+            `==============================\r\n` +
+            `Email: ${email}\r\n` +
+            `Name: ${firstname}\r\n` +
+            `IP Address: ${ip}\r\n` +
+            `IP Based Info:\r\n` +
+            ` - City: ${ip_based_info.city || 'Not Specified'}\r\n` +
+            ` - Country: ${ip_based_info.country_name || 'Not Specified'}\r\n`
+          await MailService.sendTextEmail(
+            ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS,
+            LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT,
+            text
+          )
+        }
+      }
       return user
     } catch (e) {
       if (e.constraint === 'users_uid_unique') {
