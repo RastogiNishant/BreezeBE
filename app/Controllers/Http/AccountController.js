@@ -152,8 +152,7 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     try {
-      let { email, role, password, device_token, from_web } = request.all()
-      console.log({ from_web })
+      let { email, role, password, device_token, from_web, landlord_email } = request.all()
       let user, authenticator, token
       const loginResult = await UserService.login({ email, role, device_token })
       //TODO: implement test cases for admin login
@@ -162,11 +161,21 @@ class AccountController {
         const uid = Admin.getHash(email)
         try {
           const token = await authenticator.attempt(uid, password)
-          token.is_admin = true
-          return response.res(token)
+
+          if (landlord_email) {
+            try {
+              const landlord = await UserService.login({ email: landlord_email, role })
+              return response.res(await authenticator.generate(landlord))
+            } catch (e) {
+              throw new HttpException(e.message, e.status || 400)
+            }
+          } else {
+            token.is_admin = true
+            return response.res(token)
+          }
         } catch (e) {
           const [message] = e.message.split(':')
-          throw new HttpException(USER_WRONG_PASSWORD, 400, 0)
+          throw new HttpException(e.message || USER_WRONG_PASSWORD, e.status || 400, 0)
         }
       } else {
         user = loginResult
