@@ -284,18 +284,24 @@ class MarketPlaceService {
   }
 
   static getPendingKnockRequestQuery({ estate_id }) {
-    return EstateSyncContactRequest.query()
-      .select(
-        EstateSyncContactRequest.columns.filter(
-          (column) => !['contact_info', 'message'].includes(column)
+    return (
+      EstateSyncContactRequest.query()
+        .select(
+          EstateSyncContactRequest.columns.filter(
+            (column) => !['contact_info', 'message'].includes(column)
+          )
         )
-      )
-      .select(Database.raw(`contact_info->'firstName' as firstname`))
-      .select(Database.raw(`contact_info->'lastName' as secondname`))
-      .select(Database.raw(` 1 as from_market_place`))
-      .select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
-      .where('estate_id', estate_id)
-      .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+        .select(Database.raw(`contact_info->'firstName' as firstname`))
+        .select(Database.raw(`contact_info->'lastName' as secondname`))
+        .select(Database.raw(` 1 as from_market_place`))
+        //.select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
+        .select(Database.raw(`coalesce("publisher", '${MATCH_TYPE_MARKET_PLACE}') as match_type`))
+        .select(Database.raw(`other_info->'employment' as profession`))
+        .select(Database.raw(`other_info->'family_size' as members`))
+        .select(Database.raw(`other_info->'income' as income`))
+        .where('estate_id', estate_id)
+        .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+    )
   }
 
   static async createDynamicLink({ estate, email }) {
