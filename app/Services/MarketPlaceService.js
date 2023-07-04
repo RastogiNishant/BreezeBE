@@ -23,6 +23,8 @@ const {
   MATCH_STATUS_KNOCK,
   MATCH_TYPE_MARKET_PLACE,
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
+  ESTATE_SYNC_PUBLISH_PROVIDER_EBAY,
 } = require('../constants')
 
 const familySize = {
@@ -59,6 +61,17 @@ const IS24_VARIABLE_MAP = {
   'Wohngemeinschaft geplant': 'flat_community_planned',
   'Wohnberechtigungsschein vorhanden': 'house_certificate',
   'E-Mail-Alias': 'email_alias',
+}
+
+const IMMOWELT_VARIABLE_MAP = {
+  Profilfoto: 'profile_picture',
+  Geburtsdatum: 'birthday',
+  Beschäftigungsstatus: 'employment_orig',
+  'Beruf oder Branche': 'profession',
+  Haushaltsgröße: 'family_size_orig',
+  Nettohaushaltseinkommen: 'income_orig',
+  'Tierfreier Haushalt': 'pets', //reversed pets
+  Wohnberechtigungsschein: 'house_certificate',
 }
 
 const employmentMap = {
@@ -297,6 +310,7 @@ class MarketPlaceService {
         .select(Database.raw(`other_info->'employment' as profession`))
         .select(Database.raw(`other_info->'family_size' as members`))
         .select(Database.raw(`other_info->'income' as income`))
+        .select(Database.raw(`other_info->'birthday' as birthday`))
         .select('created_at', 'updated_at')
         .where('estate_id', estate_id)
         .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
@@ -685,9 +699,9 @@ class MarketPlaceService {
 
   static parseRangeIncome(value) {
     let matches
-    if ((matches = value.match(/([0-9\.]+)€ - ([0-9\.]+)€/))) {
+    if ((matches = value.match(/([0-9\.]+)€ - ([0-9\.]+)[ ]?€/))) {
       value = (+matches[1].replace(/\./, '') + +matches[2].replace(/\./, '')) / 2
-    } else if ((matches = value.trim().match(/^.*? ([0-9\.]+)€/))) {
+    } else if ((matches = value.trim().match(/^.*? ([0-9\.]+)[ ]?€/))) {
       value = +matches[1].replace(/\./, '')
     }
     return value
@@ -719,6 +733,39 @@ class MarketPlaceService {
     }
   }
 
+  static parseImmoweltOtherInfo(info) {
+    const booleanKeys = ['pets', 'house_certificate']
+    let matches
+    for (const [key, value] of Object.entries(info)) {
+      if (booleanKeys.indexOf(key) > -1) {
+        info[key] = MarketPlaceService.parseBoolean(value)
+      }
+      if (key === 'pets') {
+        info['pets'] = !info['pets'] //immowelt has key: pet-free household
+      }
+
+      if (key === 'birthday') {
+        if ((matches = value.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})$/))) {
+          info['birthday'] = `${matches[3]}-${matches[2]}-${matches[1]}`
+        }
+      }
+
+      if (key === 'income_orig') {
+        info['income'] = MarketPlaceService.parseRangeIncome(value)
+      }
+
+      if (key === 'family_size_orig') {
+        info['family_size'] = familySize[value]
+      }
+
+      if (key === 'employment_orig') {
+        info['employment'] = MarketPlaceService.parseEmployment(value)
+      }
+    }
+
+    return info
+  }
+
   static parseOtherInfoFromMessage(message, publisher) {
     if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
       let matches = message.match(/Weitere Daten zum Interessenten; (.*)+/)
@@ -731,6 +778,22 @@ class MarketPlaceService {
       })
       return MarketPlaceService.parseIs24OtherInfo(is24OtherInfo)
     }
+
+    if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT) {
+      let immoweltOtherInfo = {}
+      for (const [key, value] of Object.entries(IMMOWELT_VARIABLE_MAP)) {
+        const regex = new RegExp(`${key}: (.*)`)
+        const matches = message.match(regex)
+        if (matches) {
+          immoweltOtherInfo[value] = matches[1].trim()
+        }
+      }
+      return MarketPlaceService.parseImmoweltOtherInfo(immoweltOtherInfo)
+    }
+
+    if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_EBAY) {
+    }
+
     return {}
   }
 }
