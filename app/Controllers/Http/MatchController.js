@@ -822,6 +822,11 @@ class MatchController {
 
       counts.finalMatches = parseInt(finalMatches[0].count || 0)
 
+      counts.contact_requests =
+        await require('../../Services/MarketPlaceService').getPendingKnockRequestCountByLandlord(
+          user.id
+        )
+
       return response.res(counts)
     } catch (e) {
       Logger.error(e)
@@ -940,11 +945,27 @@ class MatchController {
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
 
-    const contact_requests = await require('../../Services/MarketPlaceService')
-      .getPendingKnockRequestQuery({
-        estate_id,
-      })
-      .paginate(page, limit || 10)
+    const contact_request_count = (
+      await require('../../Services/MarketPlaceService')
+        .getPendingKnockRequestCountQuery({
+          estate_id,
+        })
+        .count()
+    )?.[0]?.count
+
+    const contact_requests_data = (
+      await require('../../Services/MarketPlaceService')
+        .getPendingKnockRequestQuery({
+          estate_id,
+        })
+        .paginate(page, limit || 10)
+    ).toJSON()
+
+    const contact_requests = {
+      ...contact_requests_data,
+      total: contact_request_count,
+      lastPage: Math.ceil(contact_request_count / contact_requests_data.perPage),
+    }
 
     data = {
       ...data,

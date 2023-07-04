@@ -275,7 +275,7 @@ class EstateAttributeTranslations {
     from_date: reverseExtractDate,
     vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
-    contract_end: reverseExtractDate,
+    rent_end_at: reverseExtractDate,
   }
   dataMapping = {
     property_type: {
@@ -459,7 +459,7 @@ class EstateAttributeTranslations {
     from_date: extractDate,
     vacant_date: extractDate,
     last_modernization: extractDate,
-    contract_end: extractDate,
+    rent_end_at: extractDate,
     minors: toBool,
     pets_allowed: {
       PETS_NO: 1,
