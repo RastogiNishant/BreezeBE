@@ -227,8 +227,25 @@ class MarketPlaceService {
       .first()
   }
 
-  static getPendingKnockRequestQuery({ estate_id }) {
+  static async getPendingKnockRequestCountByLandlord(user_id) {
+    return (
+      await EstateSyncContactRequest.query()
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
+        })
+        .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+        .count()
+    )?.[0].count
+  }
+
+  static getPendingKnockRequestCountQuery({ estate_id }) {
     return EstateSyncContactRequest.query()
+      .where('estate_id', estate_id)
+      .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+  }
+
+  static getPendingKnockRequestQuery({ estate_id }) {
+    return this.getPendingKnockRequestCountQuery({ estate_id })
       .select(
         EstateSyncContactRequest.columns.filter(
           (column) => !['contact_info', 'message'].includes(column)
@@ -238,8 +255,7 @@ class MarketPlaceService {
       .select(Database.raw(`contact_info->'lastName' as secondname`))
       .select(Database.raw(` 1 as from_market_place`))
       .select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
-      .where('estate_id', estate_id)
-      .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+      .select('created_at', 'updated_at')
   }
 
   static async createDynamicLink({ estate, email }) {
