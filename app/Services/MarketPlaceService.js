@@ -287,9 +287,7 @@ class MarketPlaceService {
     return (
       EstateSyncContactRequest.query()
         .select(
-          EstateSyncContactRequest.columns.filter(
-            (column) => !['contact_info', 'message'].includes(column)
-          )
+          EstateSyncContactRequest.columns.filter((column) => !['contact_info'].includes(column))
         )
         .select(Database.raw(`contact_info->'firstName' as firstname`))
         .select(Database.raw(`contact_info->'lastName' as secondname`))
