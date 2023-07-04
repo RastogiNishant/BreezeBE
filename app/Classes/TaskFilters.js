@@ -82,6 +82,7 @@ class TaskFilters extends Filter {
         'phone_number',
         'status',
         'contract_end',
+        'rent_end_at',
         'tenant',
         'task_name',
         'attachments_count',
