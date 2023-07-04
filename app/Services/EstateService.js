@@ -562,7 +562,6 @@ class EstateService {
           'room6_type',
           'txt_salutation',
           'surname',
-          'contract_end',
           'phone_number',
           'email',
           'salutation_int',

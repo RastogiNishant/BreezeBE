@@ -36,6 +36,7 @@ class SignIn extends Base {
         .required(getExceptionMessage('password', REQUIRED)),
       device_token: yup.string().min(30, getExceptionMessage('password', MINLENGTH, 30)).nullable(),
       from_web: yup.number().oneOf([1]).nullable(),
+      landlord_email: yup.string().email(getExceptionMessage('email', EMAIL)).lowercase(),
     })
 }
 

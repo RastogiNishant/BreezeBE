@@ -299,9 +299,27 @@ class MarketPlaceService {
         .select(Database.raw(`other_info->'employment' as profession`))
         .select(Database.raw(`other_info->'family_size' as members`))
         .select(Database.raw(`other_info->'income' as income`))
+        .select('created_at', 'updated_at')
         .where('estate_id', estate_id)
         .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
     )
+  }
+
+  static async getPendingKnockRequestCountByLandlord(user_id) {
+    return (
+      await EstateSyncContactRequest.query()
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
+        })
+        .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+        .count()
+    )?.[0].count
+  }
+
+  static getPendingKnockRequestCountQuery({ estate_id }) {
+    return EstateSyncContactRequest.query()
+      .where('estate_id', estate_id)
+      .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
   static async createDynamicLink({ estate, email }) {
