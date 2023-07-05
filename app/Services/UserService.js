@@ -13,6 +13,7 @@ const User = use('App/Models/User')
 const Tenant = use('App/Models/Tenant')
 const Buddy = use('App/Models/Buddy')
 const Member = use('App/Models/Member')
+const Income = use('App/Models/Income')
 const Term = use('App/Models/Term')
 const Agreement = use('App/Models/Agreement')
 const MailService = use('App/Services/MailService')
@@ -62,6 +63,8 @@ const {
   OUTSIDE_TENANT_INVITE_TYPE,
   ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS,
   LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT,
+  PETS_NO,
+  PETS_SMALL,
 } = require('../constants')
 
 const {
@@ -87,6 +90,7 @@ const {
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
+const MarketPlaceService = require('./MarketPlaceService.js')
 
 class UserService {
   /**
@@ -130,6 +134,16 @@ class UserService {
       userData.source_estate_id = estate_id
     }
 
+    let otherInfo = null
+    if (userData.source_estate_id) {
+      otherInfo = await MarketPlaceService.getInfoFromContactRequests(
+        userData.email,
+        userData.source_estate_id
+      )
+    }
+    if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
+      userData.birthday = otherInfo.birthday
+    }
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
 
     if (user.role === ROLE_USER) {
@@ -137,22 +151,41 @@ class UserService {
         // Create empty tenant and link to user
 
         const tenant = userData?.signupData
-        await Tenant.create(
-          {
-            user_id: user.id,
-            coord: tenant?.address?.coord,
-            dist_type: tenant?.transport,
-            dist_min: tenant?.time,
-            address: tenant?.address?.title,
-          },
-          trx
-        )
+        const tenantData = {
+          user_id: user.id,
+          coord: tenant?.address?.coord,
+          dist_type: tenant?.transport,
+          dist_min: tenant?.time,
+          address: tenant?.address?.title,
+        }
+        if (otherInfo?.pets === true) {
+          tenantData.pets = PETS_SMALL
+        } else if (otherInfo?.pets === false) {
+          tenantData.pets = PETS_NO
+        }
 
-        await MemberService.createMember(
-          { firstname: user?.firstname, secondname: user?.secondname, is_verified: true },
-          user.id,
-          trx
-        )
+        tenantData.members_count = otherInfo?.members || null
+        tenantData.income = otherInfo?.income || null
+        await Tenant.create(tenantData, trx)
+
+        const memberInfo = {
+          firstname: user?.firstname,
+          secondname: user?.secondname,
+          is_verified: true,
+        }
+        memberInfo.birthday = otherInfo?.birthday || null
+        memberInfo.insolvency_proceed = otherInfo?.insolvency ? 1 : null
+        memberInfo.credit_score = otherInfo?.credit_score || null
+        const member = await MemberService.createMember(memberInfo, user.id, trx)
+
+        if (otherInfo?.profession) {
+          const incomeInfo = {
+            member_id: member.id,
+            income: otherInfo?.income || null,
+            income_type: otherInfo?.profession,
+          }
+          await Income.createItem(incomeInfo, trx)
+        }
       } catch (e) {
         console.log('createUser exception', e)
         throw new HttpException(e.message, e.status || 400)
