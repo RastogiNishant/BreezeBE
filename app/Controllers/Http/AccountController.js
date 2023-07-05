@@ -165,7 +165,7 @@ class AccountController {
           if (landlord_email) {
             try {
               const landlord = await UserService.login({ email: landlord_email, role })
-              return response.res(await authenticator.generate(landlord))
+              return response.res(await getAuthByRole(auth, ROLE_LANDLORD).generate(landlord))
             } catch (e) {
               throw new HttpException(e.message, e.status || 400)
             }
