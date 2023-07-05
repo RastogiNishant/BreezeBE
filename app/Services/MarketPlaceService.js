@@ -277,6 +277,7 @@ class MarketPlaceService {
 
     return {
       ...contact,
+      updated_at: moment.utc(new Date()).format(),
       firstname: contact?.contact_info?.firstName,
       secondname: contact?.contact_info?.lastName,
       from_market_place: 1,

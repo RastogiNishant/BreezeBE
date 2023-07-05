@@ -23,6 +23,10 @@ class EstateSyncContactRequest extends Model {
   estate() {
     return this.hasOne('App/Models/Estate', 'estate_id', 'id')
   }
+
+  static get Serializer() {
+    return 'App/Serializers/BaseSerializer'
+  }
 }
 
 module.exports = EstateSyncContactRequest
