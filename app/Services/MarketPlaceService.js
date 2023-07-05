@@ -256,9 +256,9 @@ class MarketPlaceService {
       throw new HttpException(ERROR_ALREADY_KNOCKED, 400)
     }
 
-    if (contact.is_invited_by_landlord) {
-      throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
-    }
+    // if (contact.is_invited_by_landlord) {
+    //   throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
+    // }
 
     const prospects = (await UserService.getByEmailWithRole([contact.email], ROLE_USER)).toJSON()
 
