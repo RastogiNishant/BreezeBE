@@ -25,6 +25,14 @@ const {
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
   ESTATE_SYNC_PUBLISH_PROVIDER_EBAY,
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_TRAINEE,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_PENSIONER,
 } = require('../constants')
 
 const familySize = {
@@ -75,16 +83,16 @@ const IMMOWELT_VARIABLE_MAP = {
 }
 
 const employmentMap = {
-  angestellter: 'employee',
-  arbeiterin: 'worker',
-  selbständiger: 'self-employed',
-  beamterbeamtin: 'official',
-  auszubildender: 'apprentice',
-  studentin: 'university student',
-  doktorandin: 'PhD student',
-  hausfrauhausmann: 'housewife',
-  arbeitssuchender: 'job seekers',
-  rentnerin: 'pensioner',
+  angestellter: INCOME_TYPE_EMPLOYEE,
+  arbeiterin: INCOME_TYPE_WORKER,
+  selbständiger: INCOME_TYPE_SELF_EMPLOYED,
+  beamterbeamtin: INCOME_TYPE_CIVIL_SERVANT,
+  auszubildender: INCOME_TYPE_TRAINEE,
+  studentin: INCOME_TYPE_TRAINEE,
+  doktorandin: INCOME_TYPE_TRAINEE,
+  hausfrauhausmann: INCOME_TYPE_HOUSE_WORK,
+  arbeitssuchender: INCOME_TYPE_UNEMPLOYED,
+  rentnerin: INCOME_TYPE_PENSIONER,
   sonstiges: 'others',
 }
 
@@ -795,6 +803,20 @@ class MarketPlaceService {
     }
 
     return {}
+  }
+
+  static async getInfoFromContactRequests(email, estate_id) {
+    return await EstateSyncContactRequest.query()
+      .select(Database.raw(`other_info->'employment' as profession`))
+      .select(Database.raw(`other_info->'family_size' as members`))
+      .select(Database.raw(`other_info->'income' as income`))
+      .select(Database.raw(`other_info->'birthday' as birthday`))
+      .select(Database.raw(`other_info->'pets' as pets`)) //pets here is boolean
+      .select(Database.raw(`other_info->'credit_score' as credit_score`))
+      .select(Database.raw(`other_info->'insolvency' as insolvency`))
+      .where('estate_id', estate_id)
+      .where('email', email)
+      .first()
   }
 }
 
