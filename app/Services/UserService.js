@@ -141,7 +141,6 @@ class UserService {
         userData.source_estate_id
       )
     }
-    console.log({ otherInfo })
     if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
       userData.birthday = otherInfo.birthday
     }
