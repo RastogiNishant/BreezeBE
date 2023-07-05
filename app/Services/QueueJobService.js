@@ -309,7 +309,6 @@ class QueueJobService {
       .where('status', STATUS_ACTIVE)
       .where(function () {
         this.orWhereNull('available_start_at')
-        this.orWhere('available_start_at', '>', moment.utc(new Date()).format(DATE_FORMAT))
         this.orWhere(function () {
           this.whereNotNull('available_end_at')
           this.where('available_end_at', '<=', moment.utc(new Date()).format(DATE_FORMAT))
