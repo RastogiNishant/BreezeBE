@@ -138,6 +138,7 @@ class MarketPlaceService {
       contact_info: payload?.prospect || ``,
       message: payload?.message || ``,
     }
+
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
       payload?.message,
@@ -319,14 +320,16 @@ class MarketPlaceService {
   }
 
   static async getPendingKnockRequestCountByLandlord(user_id) {
-    return (
-      await EstateSyncContactRequest.query()
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
-        })
-        .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
-        .count()
-    )?.[0].count
+    return +(
+      (
+        await EstateSyncContactRequest.query()
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
+          })
+          .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+          .count()
+      )?.[0].count || 0
+    )
   }
 
   static getPendingKnockRequestCountQuery({ estate_id }) {
