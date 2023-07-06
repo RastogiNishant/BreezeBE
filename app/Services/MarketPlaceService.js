@@ -164,7 +164,7 @@ class MarketPlaceService {
     const trx = await Database.beginTransaction()
     try {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
-      await this.handlePendingKnock(contact, contact_info, other_info, trx)
+      await this.handlePendingKnock(contact, trx)
 
       await trx.commit()
       await this.sendContactRequestWebsocket(newContactRequest)
@@ -202,7 +202,7 @@ class MarketPlaceService {
     })
   }
 
-  static async handlePendingKnock(contact, contact_info, other_info, trx) {
+  static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
       throw new HttpException('Params are wrong', e.status || 500)
     }
@@ -211,15 +211,13 @@ class MarketPlaceService {
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
-
     const { shortLink, code, lang, user_id } = await this.createDynamicLink({
       contact,
       estate: estate.toJSON(),
       email: contact.email,
-      other_info: other_info,
-      contact_info: contact_info,
+      other_info: contact?.other_info,
+      contact_info: contact?.contact_info,
     })
-
     await EstateSyncContactRequest.query()
       .where('email', contact.email)
       .where('estate_id', contact.estate_id)
@@ -271,6 +269,8 @@ class MarketPlaceService {
       contact,
       estate: contact.estate,
       email: contact.email,
+      other_info: contact?.other_info,
+      contact_info: contact?.contact_info,
     })
 
     await EstateSyncContactRequest.query().where('id', id).update({
@@ -348,7 +348,7 @@ class MarketPlaceService {
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async createDynamicLink({ estate, email, other_info, contact_info }) {
+  static async createDynamicLink({ contact, estate, email, other_info, contact_info }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
