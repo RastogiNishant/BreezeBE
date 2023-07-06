@@ -12,6 +12,7 @@ class MarketPlaceContact extends Base {
       prospect: yup.mixed(),
       contact_info: yup.mixed(),
       message: yup.string(),
+      targetId: yup.string().required(),
     })
 }
 
