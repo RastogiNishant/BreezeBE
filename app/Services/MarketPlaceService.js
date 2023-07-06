@@ -213,6 +213,7 @@ class MarketPlaceService {
     }
 
     const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+      contact,
       estate: estate.toJSON(),
       email: contact.email,
     })
@@ -263,11 +264,18 @@ class MarketPlaceService {
 
     const prospects = (await UserService.getByEmailWithRole([contact.email], ROLE_USER)).toJSON()
 
-    const lang = prospects?.[0]?.lang || DEFAULT_LANG
+    contact.is_invited_by_landlord = true
+    const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+      contact,
+      estate: contact.estate,
+      email: contact.email,
+    })
 
     await EstateSyncContactRequest.query().where('id', id).update({
       is_invited_by_landlord: true,
+      link: shortLink,
     })
+
     require('./MailService').sendPendingKnockEmail({
       link: contact.link,
       email: contact.email,
@@ -338,7 +346,7 @@ class MarketPlaceService {
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async createDynamicLink({ estate, email }) {
+  static async createDynamicLink({ contact, estate, email }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -346,7 +354,7 @@ class MarketPlaceService {
     }
     const key = Buffer.from(password)
     const cipher = crypto.createCipheriv('aes-256-ctr', key, iv)
-    const code = uuid.v4()
+    const code = contact.code ?? uuid.v4()
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
 
     const txtSrc = JSON.stringify({
@@ -394,7 +402,7 @@ class MarketPlaceService {
       uri += `&user_id=${prospects[0].id}`
     }
     const lang = prospects?.[0]?.lang || DEFAULT_LANG
-    uri += `&lang=${lang}`
+    uri += `&lang=${lang}&is_invited_by_landlord=${contact.is_invited_by_landlord}`
 
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
