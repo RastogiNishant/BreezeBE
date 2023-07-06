@@ -171,7 +171,7 @@ class MarketPlaceService {
     const trx = await Database.beginTransaction()
     try {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
-      await this.handlePendingKnock(contact, trx)
+      await this.handlePendingKnock(contact, contact_info, other_info, trx)
 
       await trx.commit()
       await this.sendContactRequestWebsocket(newContactRequest)
@@ -209,7 +209,7 @@ class MarketPlaceService {
     })
   }
 
-  static async handlePendingKnock(contact, trx) {
+  static async handlePendingKnock(contact, contact_info, other_info, trx) {
     if (!contact.estate_id || !contact.email) {
       throw new HttpException('Params are wrong', e.status || 500)
     }
@@ -222,6 +222,8 @@ class MarketPlaceService {
     const { shortLink, code, lang, user_id } = await this.createDynamicLink({
       estate: estate.toJSON(),
       email: contact.email,
+      other_info: other_info,
+      contact_info: contact_info,
     })
 
     await EstateSyncContactRequest.query()
@@ -342,7 +344,7 @@ class MarketPlaceService {
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async createDynamicLink({ estate, email }) {
+  static async createDynamicLink({ estate, email, other_info, contact_info }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -375,11 +377,19 @@ class MarketPlaceService {
     const number_floors = estate.number_floors || 0
     const cover = estate.cover_thumb || estate.cover
 
+    //prepopulated user info:
+    const prospect_firstname = contact_info.firstName || ``
+    const prospect_secondname = contact_info.lastName || ``
+    const prospect_birthday = other_info?.birthday || ``
+
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}` +
       `&email=${encodeURIComponent(email)}`
 
+    uri += `&prospect_firstname=${prospect_firstname}`
+    uri += `&prospect_secondname=${prospect_secondname}`
+    uri += `&prospect_birthday=${prospect_birthday}`
     uri += `&house_number=${house_number}`
     uri += `&street=${encodeURIComponent(street)}`
     uri += `&city=${encodeURIComponent(city)}`
