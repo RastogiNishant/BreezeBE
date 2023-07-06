@@ -122,7 +122,8 @@ class UserService {
     // Manages the outside tenant invitation flow
     if (
       !userData?.source_estate_id &&
-      userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE &&
+      (userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE ||
+        userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) &&
       userData?.data1 &&
       userData?.data2
     ) {
@@ -135,7 +136,10 @@ class UserService {
     }
 
     let otherInfo = null
-    if (userData.source_estate_id) {
+    if (
+      userData?.source_estate_id &&
+      userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
+    ) {
       otherInfo = await MarketPlaceService.getInfoFromContactRequests(
         userData.email,
         userData.source_estate_id
