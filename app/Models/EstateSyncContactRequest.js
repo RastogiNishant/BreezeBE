@@ -25,7 +25,7 @@ class EstateSyncContactRequest extends Model {
   }
 
   static get Serializer() {
-    return 'App/Serializers/BaseSerializer'
+    return 'App/Serializers/MarketPlaceSerializer'
   }
 }
 

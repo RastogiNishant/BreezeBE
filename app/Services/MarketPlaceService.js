@@ -138,6 +138,7 @@ class MarketPlaceService {
       contact_info: payload?.prospect || ``,
       message: payload?.message || ``,
     }
+
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
       payload?.message,
@@ -319,14 +320,16 @@ class MarketPlaceService {
   }
 
   static async getPendingKnockRequestCountByLandlord(user_id) {
-    return (
-      await EstateSyncContactRequest.query()
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
-        })
-        .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
-        .count()
-    )?.[0].count
+    return +(
+      (
+        await EstateSyncContactRequest.query()
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
+          })
+          .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+          .count()
+      )?.[0].count || 0
+    )
   }
 
   static getPendingKnockRequestCountQuery({ estate_id }) {
@@ -496,30 +499,27 @@ class MarketPlaceService {
             userId: user.id,
             estateId: knock.estate_id,
           })
+
           if (!hasMatch) {
             const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(
               knock.estate_id
             )
             const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
 
-            if (
-              !pendingKnocks[0].is_invited_by_landlord ||
-              pendingKnocks[0].estate?.is_not_show ||
-              !timeSlotCount
-            ) {
+            if (!knock.is_invited_by_landlord || knock.estate?.is_not_show || !timeSlotCount) {
               await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,
                   user_id: user.id,
                   knock_anyway: true,
-                  share_profile: pendingKnocks[0].estate?.is_not_show ? true : false,
+                  share_profile: knock.estate?.is_not_show ? true : false,
                 },
                 trx
               )
             } else {
               await MatchService.inviteKnockedUser(
                 {
-                  estate: pendingKnocks[0].estate,
+                  estate: knock.estate,
                   userId: user.id,
                   is_from_market_place: true,
                 },
