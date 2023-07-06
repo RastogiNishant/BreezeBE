@@ -995,27 +995,55 @@ class MatchService {
       throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
     }
 
+    const existingMatch = await Match.query()
+      .where('estate_id', estateId)
+      .where('user_id', userId)
+      .first()
+
     if (trx) {
-      await Database.table('matches')
-        .update({
-          status: MATCH_STATUS_INVITE,
-          status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        })
-        .where({
-          user_id: userId,
-          estate_id: estateId,
-        })
-        .transacting(trx)
+      if (existingMatch) {
+        await Database.table('matches')
+          .update({
+            status: MATCH_STATUS_INVITE,
+            status_at: moment.utc(new Date()).format(DATE_FORMAT),
+          })
+          .where({
+            user_id: userId,
+            estate_id: estateId,
+          })
+          .transacting(trx)
+      } else {
+        await Match.createItem(
+          {
+            user_id: userId,
+            estate_id: estateId,
+            status: MATCH_STATUS_INVITE,
+            percent: 0,
+            status_at: moment.utc(new Date()).format(DATE_FORMAT),
+          },
+          trx
+        )
+      }
     } else {
-      await Database.table('matches')
-        .update({
+      if (existingMatch) {
+        await Database.table('matches')
+          .update({
+            status: MATCH_STATUS_INVITE,
+            status_at: moment.utc(new Date()).format(DATE_FORMAT),
+          })
+          .where({
+            user_id: userId,
+            estate_id: estateId,
+          })
+      } else {
+        await Match.createItem({
+          user_id: userId,
+          estate_id: estateId,
+          percent: 0,
           status: MATCH_STATUS_INVITE,
           status_at: moment.utc(new Date()).format(DATE_FORMAT),
         })
-        .where({
-          user_id: userId,
-          estate_id: estateId,
-        })
+      }
     }
     await NoticeService.userInvite(estateId, userId)
 
