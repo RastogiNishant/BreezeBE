@@ -25,14 +25,6 @@ const {
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
   ESTATE_SYNC_PUBLISH_PROVIDER_EBAY,
-  INCOME_TYPE_EMPLOYEE,
-  INCOME_TYPE_WORKER,
-  INCOME_TYPE_SELF_EMPLOYED,
-  INCOME_TYPE_CIVIL_SERVANT,
-  INCOME_TYPE_TRAINEE,
-  INCOME_TYPE_HOUSE_WORK,
-  INCOME_TYPE_UNEMPLOYED,
-  INCOME_TYPE_PENSIONER,
 } = require('../constants')
 
 const familySize = {
@@ -83,16 +75,16 @@ const IMMOWELT_VARIABLE_MAP = {
 }
 
 const employmentMap = {
-  angestellter: INCOME_TYPE_EMPLOYEE,
-  arbeiterin: INCOME_TYPE_WORKER,
-  selbständiger: INCOME_TYPE_SELF_EMPLOYED,
-  beamterbeamtin: INCOME_TYPE_CIVIL_SERVANT,
-  auszubildender: INCOME_TYPE_TRAINEE,
-  studentin: INCOME_TYPE_TRAINEE,
-  doktorandin: INCOME_TYPE_TRAINEE,
-  hausfrauhausmann: INCOME_TYPE_HOUSE_WORK,
-  arbeitssuchender: INCOME_TYPE_UNEMPLOYED,
-  rentnerin: INCOME_TYPE_PENSIONER,
+  angestellter: 'employee',
+  arbeiterin: 'worker',
+  selbständiger: 'self-employed',
+  beamterbeamtin: 'official',
+  auszubildender: 'apprentice',
+  studentin: 'university student',
+  doktorandin: 'PhD student',
+  hausfrauhausmann: 'housewife',
+  arbeitssuchender: 'job seekers',
+  rentnerin: 'pensioner',
   sonstiges: 'others',
 }
 
@@ -146,6 +138,7 @@ class MarketPlaceService {
       contact_info: payload?.prospect || ``,
       message: payload?.message || ``,
     }
+
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
       payload?.message,
@@ -220,6 +213,7 @@ class MarketPlaceService {
     }
 
     const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+      contact,
       estate: estate.toJSON(),
       email: contact.email,
       other_info: other_info,
@@ -266,17 +260,24 @@ class MarketPlaceService {
       throw new HttpException(ERROR_ALREADY_KNOCKED, 400)
     }
 
-    if (contact.is_invited_by_landlord) {
-      throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
-    }
+    // if (contact.is_invited_by_landlord) {
+    //   throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
+    // }
 
     const prospects = (await UserService.getByEmailWithRole([contact.email], ROLE_USER)).toJSON()
 
-    const lang = prospects?.[0]?.lang || DEFAULT_LANG
+    contact.is_invited_by_landlord = true
+    const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+      contact,
+      estate: contact.estate,
+      email: contact.email,
+    })
 
     await EstateSyncContactRequest.query().where('id', id).update({
       is_invited_by_landlord: true,
+      link: shortLink,
     })
+
     require('./MailService').sendPendingKnockEmail({
       link: contact.link,
       email: contact.email,
@@ -287,6 +288,7 @@ class MarketPlaceService {
 
     return {
       ...contact,
+      updated_at: moment.utc(new Date()).format(),
       firstname: contact?.contact_info?.firstName,
       secondname: contact?.contact_info?.lastName,
       from_market_place: 1,
@@ -328,14 +330,16 @@ class MarketPlaceService {
   }
 
   static async getPendingKnockRequestCountByLandlord(user_id) {
-    return (
-      await EstateSyncContactRequest.query()
-        .innerJoin({ _e: 'estates' }, function () {
-          this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
-        })
-        .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
-        .count()
-    )?.[0].count
+    return +(
+      (
+        await EstateSyncContactRequest.query()
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
+          })
+          .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+          .count()
+      )?.[0].count || 0
+    )
   }
 
   static getPendingKnockRequestCountQuery({ estate_id }) {
@@ -352,7 +356,7 @@ class MarketPlaceService {
     }
     const key = Buffer.from(password)
     const cipher = crypto.createCipheriv('aes-256-ctr', key, iv)
-    const code = uuid.v4()
+    const code = contact.code ?? uuid.v4()
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
 
     const txtSrc = JSON.stringify({
@@ -408,7 +412,7 @@ class MarketPlaceService {
       uri += `&user_id=${prospects[0].id}`
     }
     const lang = prospects?.[0]?.lang || DEFAULT_LANG
-    uri += `&lang=${lang}`
+    uri += `&lang=${lang}&is_invited_by_landlord=${contact.is_invited_by_landlord}`
 
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
@@ -513,30 +517,27 @@ class MarketPlaceService {
             userId: user.id,
             estateId: knock.estate_id,
           })
+
           if (!hasMatch) {
             const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(
               knock.estate_id
             )
             const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
 
-            if (
-              !pendingKnocks[0].is_invited_by_landlord ||
-              pendingKnocks[0].estate?.is_not_show ||
-              !timeSlotCount
-            ) {
+            if (!knock.is_invited_by_landlord || knock.estate?.is_not_show || !timeSlotCount) {
               await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,
                   user_id: user.id,
                   knock_anyway: true,
-                  share_profile: pendingKnocks[0].estate?.is_not_show ? true : false,
+                  share_profile: knock.estate?.is_not_show ? true : false,
                 },
                 trx
               )
             } else {
               await MatchService.inviteKnockedUser(
                 {
-                  estate: pendingKnocks[0].estate,
+                  estate: knock.estate,
                   userId: user.id,
                   is_from_market_place: true,
                 },
@@ -813,20 +814,6 @@ class MarketPlaceService {
     }
 
     return {}
-  }
-
-  static async getInfoFromContactRequests(email, estate_id) {
-    return await EstateSyncContactRequest.query()
-      .select(Database.raw(`other_info->'employment' as profession`))
-      .select(Database.raw(`other_info->'family_size' as members`))
-      .select(Database.raw(`other_info->'income' as income`))
-      .select(Database.raw(`other_info->'birthday' as birthday`))
-      .select(Database.raw(`other_info->'pets' as pets`)) //pets here is boolean
-      .select(Database.raw(`other_info->'credit_score' as credit_score`))
-      .select(Database.raw(`other_info->'insolvency' as insolvency`))
-      .where('estate_id', estate_id)
-      .where('email', email)
-      .first()
   }
 }
 
