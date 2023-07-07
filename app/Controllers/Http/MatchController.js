@@ -823,9 +823,7 @@ class MatchController {
       counts.finalMatches = parseInt(finalMatches[0].count || 0)
 
       counts.contact_requests =
-        await require('../../Services/MarketPlaceService').getPendingKnockRequestCountByLandlord(
-          user.id
-        )
+        await require('../../Services/EstateService').getEstatePendingKnockRequestCount(user.id)
 
       return response.res(counts)
     } catch (e) {
