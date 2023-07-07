@@ -25,6 +25,14 @@ const {
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
   ESTATE_SYNC_PUBLISH_PROVIDER_EBAY,
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_CIVIL_SERVANT,
+  INCOME_TYPE_TRAINEE,
+  INCOME_TYPE_HOUSE_WORK,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_PENSIONER,
 } = require('../constants')
 
 const familySize = {
@@ -75,16 +83,16 @@ const IMMOWELT_VARIABLE_MAP = {
 }
 
 const employmentMap = {
-  angestellter: 'employee',
-  arbeiterin: 'worker',
-  selbständiger: 'self-employed',
-  beamterbeamtin: 'official',
-  auszubildender: 'apprentice',
-  studentin: 'university student',
-  doktorandin: 'PhD student',
-  hausfrauhausmann: 'housewife',
-  arbeitssuchender: 'job seekers',
-  rentnerin: 'pensioner',
+  angestellter: INCOME_TYPE_EMPLOYEE,
+  arbeiterin: INCOME_TYPE_WORKER,
+  selbständiger: INCOME_TYPE_SELF_EMPLOYED,
+  beamterbeamtin: INCOME_TYPE_CIVIL_SERVANT,
+  auszubildender: INCOME_TYPE_TRAINEE,
+  studentin: INCOME_TYPE_TRAINEE,
+  doktorandin: INCOME_TYPE_TRAINEE,
+  hausfrauhausmann: INCOME_TYPE_HOUSE_WORK,
+  arbeitssuchender: INCOME_TYPE_UNEMPLOYED,
+  rentnerin: INCOME_TYPE_PENSIONER,
   sonstiges: 'others',
 }
 
@@ -211,13 +219,13 @@ class MarketPlaceService {
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
-
     const { shortLink, code, lang, user_id } = await this.createDynamicLink({
       contact,
       estate: estate.toJSON(),
       email: contact.email,
+      other_info: contact?.other_info,
+      contact_info: contact?.contact_info,
     })
-
     await EstateSyncContactRequest.query()
       .where('email', contact.email)
       .where('estate_id', contact.estate_id)
@@ -269,6 +277,8 @@ class MarketPlaceService {
       contact,
       estate: contact.estate,
       email: contact.email,
+      other_info: contact?.other_info,
+      contact_info: contact?.contact_info,
     })
 
     await EstateSyncContactRequest.query().where('id', id).update({
@@ -346,7 +356,7 @@ class MarketPlaceService {
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async createDynamicLink({ contact, estate, email }) {
+  static async createDynamicLink({ contact, estate, email, other_info, contact_info }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -379,11 +389,19 @@ class MarketPlaceService {
     const number_floors = estate.number_floors || 0
     const cover = estate.cover_thumb || estate.cover
 
+    //prepopulated user info:
+    const prospect_firstname = contact_info.firstName || ``
+    const prospect_secondname = contact_info.lastName || ``
+    const prospect_birthday = other_info?.birthday || ``
+
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
       `&data2=${encodeURIComponent(iv.toString('base64'))}` +
       `&email=${encodeURIComponent(email)}`
 
+    uri += `&prospect_firstname=${prospect_firstname}`
+    uri += `&prospect_secondname=${prospect_secondname}`
+    uri += `&prospect_birthday=${prospect_birthday}`
     uri += `&house_number=${house_number}`
     uri += `&street=${encodeURIComponent(street)}`
     uri += `&city=${encodeURIComponent(city)}`
@@ -804,6 +822,20 @@ class MarketPlaceService {
     }
 
     return {}
+  }
+
+  static async getInfoFromContactRequests(email, estate_id) {
+    return await EstateSyncContactRequest.query()
+      .select(Database.raw(`other_info->'employment' as profession`))
+      .select(Database.raw(`other_info->'family_size' as members`))
+      .select(Database.raw(`other_info->'income' as income`))
+      .select(Database.raw(`other_info->'birthday' as birthday`))
+      .select(Database.raw(`other_info->'pets' as pets`)) //pets here is boolean
+      .select(Database.raw(`other_info->'credit_score' as credit_score`))
+      .select(Database.raw(`other_info->'insolvency' as insolvency`))
+      .where('estate_id', estate_id)
+      .where('email', email)
+      .first()
   }
 }
 
