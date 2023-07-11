@@ -16,6 +16,7 @@ const {
   STATUS_ACTIVE,
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
+  STATUS_DELETE,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -626,6 +627,38 @@ class EstateSyncService {
         throw new HttpException(err.message)
       } else {
         throw new HttpException('Error found while adding Target')
+      }
+    }
+  }
+
+  static async removePublisher(userId, publisher) {
+    const trx = await Database.beginTransaction()
+    try {
+      const targetFound = await EstateSyncCredential.query()
+        .leftJoin('estate_sync_targets', function () {
+          this.on('estate_sync_targets.estate_sync_credential_id', 'estate_sync_credentials.id').on(
+            'estate_sync_targets.status',
+            STATUS_ACTIVE
+          )
+        })
+        .where('estate_sync_credentials.user_id', userId)
+        .where('estate_sync_targets.publishing_provider', publisher)
+        .first()
+      if (!targetFound) {
+        throw new HttpException('Target to remove not found.')
+      }
+      const result = await EstateSyncTarget.query()
+        .where('estate_sync_credential_id', targetFound.estate_sync_credential_id)
+        .where('publishing_provider', publisher)
+        .update({ status: STATUS_DELETE }, trx)
+      await trx.commit()
+      return true
+    } catch (err) {
+      await trx.rollback()
+      if (err.message) {
+        throw new HttpException(err.message)
+      } else {
+        throw new HttpException('Error found while removing target.')
       }
     }
   }

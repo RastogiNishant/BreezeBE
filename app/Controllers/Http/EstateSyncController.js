@@ -32,8 +32,9 @@ class EstateSyncController {
 
   async removePublisher({ request, auth, response }) {
     const { publisher } = request.all()
+    console.log({ publisher })
     const result = await EstateSyncService.removePublisher(auth.user.id, publisher)
-    response.res(true)
+    response.res(result)
   }
 }
 
