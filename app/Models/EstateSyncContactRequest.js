@@ -15,11 +15,17 @@ class EstateSyncContactRequest extends Model {
       'status',
       'link',
       'is_invited_by_landlord',
+      'other_info',
+      'publisher',
     ]
   }
 
   estate() {
     return this.hasOne('App/Models/Estate', 'estate_id', 'id')
+  }
+
+  static get Serializer() {
+    return 'App/Serializers/MarketPlaceSerializer'
   }
 }
 

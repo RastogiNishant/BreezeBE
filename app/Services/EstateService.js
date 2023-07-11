@@ -108,6 +108,7 @@ const {
   PUBLISH_TYPE_OFFLINE_MARKET,
   TASK_COMMON_TYPE,
   TASK_SYSTEM_TYPE,
+  STATUS_EMAIL_VERIFY,
 } = require('../constants')
 
 const {
@@ -562,7 +563,6 @@ class EstateService {
           'room6_type',
           'txt_salutation',
           'surname',
-          'contract_end',
           'phone_number',
           'email',
           'salutation_int',
@@ -2946,6 +2946,22 @@ class EstateService {
   static async updateSentNotification(estate, notification_id) {
     const notify_sent = (estate.notify_sent || []).concat([notification_id])
     await Estate.query().where('id', estate.id).update({ notify_sent })
+  }
+
+  static async getEstatePendingKnockRequestCount({ user_id, excludeIds }) {
+    let query = Estate.query()
+      .innerJoin({ _ect: 'estate_sync_contact_requests' }, function () {
+        this.on('estates.id', '_ect.estate_id').onIn('_ect.status', [
+          STATUS_DRAFT,
+          STATUS_EMAIL_VERIFY,
+        ])
+      })
+      .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .where('estates.user_id', user_id)
+    if (excludeIds?.length) {
+      query.whereNotIn('estates.id', excludeIds)
+    }
+    return (await query.select('estates.id').groupBy('estates.id').fetch()).toJSON()?.length || 0
   }
 }
 module.exports = EstateService

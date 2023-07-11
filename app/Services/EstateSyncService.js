@@ -629,6 +629,11 @@ class EstateSyncService {
       }
     }
   }
+
+  static async getPublisherFromTargetId(targetId) {
+    const target = await EstateSyncTarget.query().where('estate_sync_target_id', targetId).first()
+    return target?.publishing_provider || null
+  }
 }
 
 module.exports = EstateSyncService

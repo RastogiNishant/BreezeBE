@@ -22,10 +22,75 @@ const {
   NO_MATCH_STATUS,
   MATCH_STATUS_KNOCK,
   MATCH_TYPE_MARKET_PLACE,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
+  ESTATE_SYNC_PUBLISH_PROVIDER_EBAY,
 } = require('../constants')
+
+const familySize = {
+  Einpersonenhaushalt: 1,
+  'Zwei Erwachsene': 2,
+  Familie: 2,
+  Wohngemeinschaft: 2,
+}
+
+const rentStartToday = ['ab sofort', 'sofort', 'flexibel']
+
+const IS24_VARIABLE_MAP = {
+  'Nutzung der Immobilie': 'use_of_property',
+  'Gewünschter Einzugstermin': 'rent_start_orig',
+  'Gewünschter Auszugstermin': 'desired_move_out_date',
+  Haushaltsgröße: 'family_size_orig',
+  'Tiere im Haushalt': 'pets',
+  Anstellungsverhältnis: 'employment_orig',
+  Haushaltsnettoeinkommen: 'income_orig',
+  Eigenkapital: 'equity',
+  'Finanzrahmen geprüft': 'financial_checked',
+  'SCHUFA-Bonitätscheck': 'credit_score',
+  Bewerbungsunterlagen: 'application_documents_available',
+  Grundstück: 'property',
+  'Erforderliche Arbeitsplätze': 'required_jobs',
+  Investitionsvolumen: 'investment_volume',
+  'Nutzungsart/Branche': 'use_type',
+  Anstellungsstatus: 'employment_status',
+  'Mietrückstände in den letzten 5 Jahren': 'rent_arrears',
+  'Insolvenzverfahren in den letzten 5 Jahren': 'insolvency',
+  'Vorhandene Unterlagen': 'existing_documents',
+  Raucher: 'smoker',
+  'Gewerbliche Nutzung': 'commercial_use',
+  'Wohngemeinschaft geplant': 'flat_community_planned',
+  'Wohnberechtigungsschein vorhanden': 'house_certificate',
+  'E-Mail-Alias': 'email_alias',
+}
+
+const IMMOWELT_VARIABLE_MAP = {
+  Profilfoto: 'profile_picture',
+  Geburtsdatum: 'birthday',
+  Beschäftigungsstatus: 'employment_orig',
+  'Beruf oder Branche': 'profession',
+  Haushaltsgröße: 'family_size_orig',
+  Nettohaushaltseinkommen: 'income_orig',
+  'Tierfreier Haushalt': 'pets', //reversed pets
+  Wohnberechtigungsschein: 'house_certificate',
+}
+
+const employmentMap = {
+  angestellter: 'employee',
+  arbeiterin: 'worker',
+  selbständiger: 'self-employed',
+  beamterbeamtin: 'official',
+  auszubildender: 'apprentice',
+  studentin: 'university student',
+  doktorandin: 'PhD student',
+  hausfrauhausmann: 'housewife',
+  arbeitssuchender: 'job seekers',
+  rentnerin: 'pensioner',
+  sonstiges: 'others',
+}
 
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const UserService = use('App/Services/UserService')
+const EstateSyncService = use('App/Services/EstateSyncService')
 const MailService = use('App/Services/MailService')
 const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
@@ -73,6 +138,12 @@ class MarketPlaceService {
       contact_info: payload?.prospect || ``,
       message: payload?.message || ``,
     }
+
+    contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
+    contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
+      payload?.message,
+      contact.publisher
+    )
 
     if (!(await EstateService.isPublished(contact.estate_id))) {
       throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
@@ -142,6 +213,7 @@ class MarketPlaceService {
     }
 
     const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+      contact,
       estate: estate.toJSON(),
       email: contact.email,
     })
@@ -186,16 +258,22 @@ class MarketPlaceService {
       throw new HttpException(ERROR_ALREADY_KNOCKED, 400)
     }
 
-    if (contact.is_invited_by_landlord) {
-      throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
-    }
+    // if (contact.is_invited_by_landlord) {
+    //   throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
+    // }
 
     const prospects = (await UserService.getByEmailWithRole([contact.email], ROLE_USER)).toJSON()
 
-    const lang = prospects?.[0]?.lang || DEFAULT_LANG
+    contact.is_invited_by_landlord = true
+    const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+      contact,
+      estate: contact.estate,
+      email: contact.email,
+    })
 
     await EstateSyncContactRequest.query().where('id', id).update({
       is_invited_by_landlord: true,
+      link: shortLink,
     })
 
     require('./MailService').sendPendingKnockEmail({
@@ -208,6 +286,7 @@ class MarketPlaceService {
 
     return {
       ...contact,
+      updated_at: moment.utc(new Date()).format(),
       firstname: contact?.contact_info?.firstName,
       secondname: contact?.contact_info?.lastName,
       from_market_place: 1,
@@ -228,21 +307,46 @@ class MarketPlaceService {
   }
 
   static getPendingKnockRequestQuery({ estate_id }) {
-    return EstateSyncContactRequest.query()
-      .select(
-        EstateSyncContactRequest.columns.filter(
-          (column) => !['contact_info', 'message'].includes(column)
+    return (
+      EstateSyncContactRequest.query()
+        .select(
+          EstateSyncContactRequest.columns.filter((column) => !['contact_info'].includes(column))
         )
-      )
-      .select(Database.raw(`contact_info->'firstName' as firstname`))
-      .select(Database.raw(`contact_info->'lastName' as secondname`))
-      .select(Database.raw(` 1 as from_market_place`))
-      .select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
+        .select(Database.raw(`contact_info->'firstName' as firstname`))
+        .select(Database.raw(`contact_info->'lastName' as secondname`))
+        .select(Database.raw(` 1 as from_market_place`))
+        //.select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
+        .select(Database.raw(`coalesce("publisher", '${MATCH_TYPE_MARKET_PLACE}') as match_type`))
+        .select(Database.raw(`other_info->'employment' as profession`))
+        .select(Database.raw(`other_info->'family_size' as members`))
+        .select(Database.raw(`other_info->'income' as income`))
+        .select(Database.raw(`other_info->'birthday' as birthday`))
+        .select('created_at', 'updated_at')
+        .where('estate_id', estate_id)
+        .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+    )
+  }
+
+  static async getPendingKnockRequestCountByLandlord(user_id) {
+    return +(
+      (
+        await EstateSyncContactRequest.query()
+          .innerJoin({ _e: 'estates' }, function () {
+            this.on('_e.id', 'estate_sync_contact_requests.estate_id').on('_e.user_id', user_id)
+          })
+          .whereIn('estate_sync_contact_requests.status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
+          .count()
+      )?.[0].count || 0
+    )
+  }
+
+  static getPendingKnockRequestCountQuery({ estate_id }) {
+    return EstateSyncContactRequest.query()
       .where('estate_id', estate_id)
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async createDynamicLink({ estate, email }) {
+  static async createDynamicLink({ contact, estate, email }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -250,7 +354,7 @@ class MarketPlaceService {
     }
     const key = Buffer.from(password)
     const cipher = crypto.createCipheriv('aes-256-ctr', key, iv)
-    const code = uuid.v4()
+    const code = contact.code ?? uuid.v4()
     const time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
 
     const txtSrc = JSON.stringify({
@@ -298,7 +402,7 @@ class MarketPlaceService {
       uri += `&user_id=${prospects[0].id}`
     }
     const lang = prospects?.[0]?.lang || DEFAULT_LANG
-    uri += `&lang=${lang}`
+    uri += `&lang=${lang}&is_invited_by_landlord=${contact.is_invited_by_landlord}`
 
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
@@ -403,30 +507,27 @@ class MarketPlaceService {
             userId: user.id,
             estateId: knock.estate_id,
           })
+
           if (!hasMatch) {
             const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(
               knock.estate_id
             )
             const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
 
-            if (
-              !pendingKnocks[0].is_invited_by_landlord ||
-              pendingKnocks[0].estate?.is_not_show ||
-              !timeSlotCount
-            ) {
+            if (!knock.is_invited_by_landlord || knock.estate?.is_not_show || !timeSlotCount) {
               await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,
                   user_id: user.id,
                   knock_anyway: true,
-                  share_profile: pendingKnocks[0].estate?.is_not_show ? true : false,
+                  share_profile: knock.estate?.is_not_show ? true : false,
                 },
                 trx
               )
             } else {
               await MatchService.inviteKnockedUser(
                 {
-                  estate: pendingKnocks[0].estate,
+                  estate: knock.estate,
                   userId: user.id,
                   is_from_market_place: true,
                 },
@@ -554,6 +655,155 @@ class MarketPlaceService {
     } catch (e) {
       Logger.error(`Contact Request sendReminderEmail error ${e.message || e}`)
     }
+  }
+
+  static parseIs24OtherInfo(info) {
+    const booleanKeys = [
+      'pets',
+      'rent_arrears',
+      'insolvency',
+      'financial_checked',
+      'existing_documents',
+      'commercial_use',
+      'flat_community_planned',
+      'house_certificate',
+      'smoker',
+      'credit_score', //available/not available
+      'application_documents_available',
+    ]
+    for (const [key, value] of Object.entries(info)) {
+      if (booleanKeys.indexOf(key) > -1) {
+        info[key] = MarketPlaceService.parseBoolean(value)
+      }
+
+      if (key === 'family_size_orig') {
+        info['family_size'] = familySize[value]
+      }
+
+      if (key === 'income_orig') {
+        info['income'] = MarketPlaceService.parseRangeIncome(value)
+      }
+
+      if (key === 'rent_start_orig') {
+        info['rent_start'] = MarketPlaceService.parseRentStart(value)
+      }
+
+      if (key === 'employment_orig') {
+        info['employment'] = MarketPlaceService.parseEmployment(value)
+      }
+    }
+    return info
+  }
+
+  static parseEmployment(value) {
+    value = value
+      .replace(/[\(\)]+/g, '')
+      .toLowerCase()
+      .trim()
+    if (employmentMap[value]) {
+      return employmentMap[value]
+    }
+    return null
+  }
+
+  static parseRangeIncome(value) {
+    let matches
+    if ((matches = value.match(/([0-9\.]+)€ - ([0-9\.]+)[ ]?€/))) {
+      value = (+matches[1].replace(/\./, '') + +matches[2].replace(/\./, '')) / 2
+    } else if ((matches = value.trim().match(/^.*? ([0-9\.]+)[ ]?€/))) {
+      value = +matches[1].replace(/\./, '')
+    }
+    return value
+  }
+
+  static parseRentStart(value) {
+    let matches
+    if (rentStartToday.indexOf(value) > -1) {
+      return 'today'
+    } else if ((matches = value.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})$/))) {
+      return `${matches[3]}-${matches[2]}-${matches[1]}`
+    }
+    return null
+  }
+
+  static parseBoolean(value) {
+    switch (value.toString().toLowerCase().trim()) {
+      case 'no':
+      case 'nein':
+      case 'keine':
+      case 'nicht vorhanden':
+        return false
+      case 'yes':
+      case 'ja':
+      case 'vorhanden':
+        return true
+      default:
+        return null
+    }
+  }
+
+  static parseImmoweltOtherInfo(info) {
+    const booleanKeys = ['pets', 'house_certificate']
+    let matches
+    for (const [key, value] of Object.entries(info)) {
+      if (booleanKeys.indexOf(key) > -1) {
+        info[key] = MarketPlaceService.parseBoolean(value)
+      }
+      if (key === 'pets') {
+        info['pets'] = !info['pets'] //immowelt has key: pet-free household
+      }
+
+      if (key === 'birthday') {
+        if ((matches = value.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})$/))) {
+          info['birthday'] = `${matches[3]}-${matches[2]}-${matches[1]}`
+        }
+      }
+
+      if (key === 'income_orig') {
+        info['income'] = MarketPlaceService.parseRangeIncome(value)
+      }
+
+      if (key === 'family_size_orig') {
+        info['family_size'] = familySize[value]
+      }
+
+      if (key === 'employment_orig') {
+        info['employment'] = MarketPlaceService.parseEmployment(value)
+      }
+    }
+
+    return info
+  }
+
+  static parseOtherInfoFromMessage(message, publisher) {
+    if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
+      let matches = message.match(/Weitere Daten zum Interessenten; (.*)+/)
+      let fieldValues = [...matches[1].matchAll(/((.*?): (.*?);)/g)]
+      let is24OtherInfo = {}
+      fieldValues.map((fieldValue) => {
+        if (IS24_VARIABLE_MAP[fieldValue[2].trim()]) {
+          is24OtherInfo[IS24_VARIABLE_MAP[fieldValue[2].trim()]] = fieldValue[3]
+        }
+      })
+      return MarketPlaceService.parseIs24OtherInfo(is24OtherInfo)
+    }
+
+    if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT) {
+      let immoweltOtherInfo = {}
+      for (const [key, value] of Object.entries(IMMOWELT_VARIABLE_MAP)) {
+        const regex = new RegExp(`${key}: (.*)`)
+        const matches = message.match(regex)
+        if (matches) {
+          immoweltOtherInfo[value] = matches[1].trim()
+        }
+      }
+      return MarketPlaceService.parseImmoweltOtherInfo(immoweltOtherInfo)
+    }
+
+    if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_EBAY) {
+    }
+
+    return {}
   }
 }
 

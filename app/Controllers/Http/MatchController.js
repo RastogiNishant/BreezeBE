@@ -10,7 +10,7 @@ const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { reduce, isEmpty, isNull, uniqBy } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy, uniq } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -733,6 +733,7 @@ class MatchController {
         .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_OFFLINE_ACTIVE])
         .innerJoin('matches', 'matches.estate_id', 'estates.id')
         .select('matches.status as match_status')
+        .select('matches.buddy')
         .fetch()
       const matchedEstatesJson = matchedEstates.toJSON()
 
@@ -755,7 +756,6 @@ class MatchController {
       })
 
       let groupedFilteredEstates = [...groupedEstates]
-
       const removeFiltereds = (allEstates, filteredEstates) => {
         filteredEstates.map((estate) => {
           const index = allEstates.findIndex((e) => e.id === estate.id)
@@ -821,6 +821,22 @@ class MatchController {
         .count()
 
       counts.finalMatches = parseInt(finalMatches[0].count || 0)
+
+      const excludeIds = uniq(
+        matchedEstatesJson
+          .filter(
+            (e) =>
+              e.match_status === MATCH_STATUS_KNOCK ||
+              (e.match_status === MATCH_STATUS_NEW && e.buddy)
+          )
+          .map((e) => e.id)
+      )
+
+      counts.contact_requests =
+        await require('../../Services/EstateService').getEstatePendingKnockRequestCount({
+          user_id: user.id,
+          excludeIds,
+        })
 
       return response.res(counts)
     } catch (e) {
@@ -940,11 +956,27 @@ class MatchController {
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
 
-    const contact_requests = await require('../../Services/MarketPlaceService')
-      .getPendingKnockRequestQuery({
-        estate_id,
-      })
-      .paginate(page, limit || 10)
+    const contact_request_count = (
+      await require('../../Services/MarketPlaceService')
+        .getPendingKnockRequestCountQuery({
+          estate_id,
+        })
+        .count()
+    )?.[0]?.count
+
+    const contact_requests_data = (
+      await require('../../Services/MarketPlaceService')
+        .getPendingKnockRequestQuery({
+          estate_id,
+        })
+        .paginate(page, limit || 10)
+    ).toJSON()
+
+    const contact_requests = {
+      ...contact_requests_data,
+      total: contact_request_count,
+      lastPage: Math.ceil(contact_request_count / contact_requests_data.perPage),
+    }
 
     data = {
       ...data,
