@@ -294,7 +294,9 @@ Route.group(() => {
   Route.post('/:type', 'EstateSyncController.createPublisher').middleware([
     'valid:AddEstateSyncTarget',
   ])
-  Route.delete('/:publisher', 'EstateSyncController.removePublisher')
+  Route.delete('/:publisher', 'EstateSyncController.removePublisher').middleware([
+    'valid:EstateSyncPublisher',
+  ])
 })
   .prefix('/api/v1/estate-sync')
   .middleware(['auth:jwtLandlord'])
