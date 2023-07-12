@@ -559,7 +559,7 @@ class EstateSyncService {
   static async getTargets(userId) {
     try {
       const targets = await EstateSyncCredential.query()
-        .leftJoin('estate_sync_targets', function () {
+        .rightJoin('estate_sync_targets', function () {
           this.on('estate_sync_targets.estate_sync_credential_id', 'estate_sync_credentials.id').on(
             'estate_sync_targets.status',
             STATUS_ACTIVE
@@ -602,20 +602,34 @@ class EstateSyncService {
         }
       } else {
         data = { type: publisher, credentials }
-        if ((publisher = ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT)) {
+        if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT) {
           data.autoCollectRequests = true
         }
       }
       const result = await estateSync.post('targets', data)
       if (result.success) {
-        const queryResult = await EstateSyncTarget.createItem(
-          {
-            estate_sync_credential_id: credential.id,
-            publishing_provider: publisher,
-            estate_sync_target_id: result.data.id,
-          },
-          trx
-        )
+        const existingTarget = await EstateSyncTarget.query()
+          .where('publishing_provider', publisher)
+          .where('estate_sync_credential_id', credential.id)
+          .first()
+        if (existingTarget) {
+          await existingTarget.updateItemWithTrx(
+            {
+              estate_sync_target_id: result.data.id,
+              status: STATUS_ACTIVE,
+            },
+            trx
+          )
+        } else {
+          const queryResult = await EstateSyncTarget.createItem(
+            {
+              estate_sync_credential_id: credential.id,
+              publishing_provider: publisher,
+              estate_sync_target_id: result.data.id,
+            },
+            trx
+          )
+        }
         await trx.commit()
         return result
       } else {
