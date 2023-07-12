@@ -1311,8 +1311,8 @@ Estates: [ESTATES]
   FRONTEND_USED_MOBILE: 'mobile',
 
   IS24_REDIRECT_URL: {
-    localhost: 'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
-    development: 'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
+    localhost: 'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
+    development: 'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
     staging: 'https://api-staging.breeze4me.de/api/v1/estate-sync-is24',
     preprod: 'https://api-preprod.breeze4me.de/api/v1/estate-sync-is24',
     production: 'https://api.breeze4me.de/api/v1/estate-sync-is24',
