@@ -85,7 +85,7 @@ const IMMOWELT_VARIABLE_MAP = {
 const employmentMap = {
   angestellter: INCOME_TYPE_EMPLOYEE,
   arbeiterin: INCOME_TYPE_WORKER,
-  selbständiger: INCOME_TYPE_SELF_EMPLOYED,
+  selbstständiger: INCOME_TYPE_SELF_EMPLOYED,
   beamterbeamtin: INCOME_TYPE_CIVIL_SERVANT,
   auszubildender: INCOME_TYPE_TRAINEE,
   studentin: INCOME_TYPE_TRAINEE,
