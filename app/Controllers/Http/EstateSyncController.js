@@ -1,4 +1,7 @@
 'use strict'
+
+const { WEB_APP_URL } = require('../../constants')
+
 const EstateSyncService = use('App/Services/EstateSyncService')
 
 class EstateSyncController {
@@ -32,9 +35,14 @@ class EstateSyncController {
 
   async removePublisher({ request, auth, response }) {
     const { publisher } = request.all()
-    console.log({ publisher })
     const result = await EstateSyncService.removePublisher(auth.user.id, publisher)
     response.res(result)
+  }
+
+  async redirectToWebApp({ response }) {
+    //we need to figure out what params are passed here on: error/success
+    const redirect = WEB_APP_URL[process.env.NODE_ENV] || 'http://localhost:3002'
+    response.send(`<script>window.location.href="${redirect}/integration"</script>`)
   }
 }
 
