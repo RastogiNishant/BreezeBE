@@ -661,10 +661,16 @@ class EstateSyncService {
       if (!targetFound) {
         throw new HttpException('Target to remove not found.')
       }
-      const result = await EstateSyncTarget.query()
-        .where('estate_sync_credential_id', targetFound.estate_sync_credential_id)
-        .where('publishing_provider', publisher)
-        .update({ status: STATUS_DELETE }, trx)
+      const estateSync = new EstateSync(targetFound.api_key || process.env.ESTATE_SYNC_API_KEY)
+      const result = await estateSync.delete(targetFound.estate_sync_target_id, 'targets')
+      if (result && result?.success) {
+        await EstateSyncTarget.query()
+          .where('estate_sync_credential_id', targetFound.estate_sync_credential_id)
+          .where('publishing_provider', publisher)
+          .update({ status: STATUS_DELETE }, trx)
+      } else {
+        throw new HttpException('Error found while removing target.')
+      }
       await trx.commit()
       return true
     } catch (err) {
