@@ -301,6 +301,8 @@ Route.group(() => {
   .prefix('/api/v1/estate-sync')
   .middleware(['auth:jwtLandlord'])
 
+Route.get('/api/v1/estate-sync-is24', 'EstateSyncController.redirectToWebApp')
+
 Route.group(() => {
   Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
     'guest',
