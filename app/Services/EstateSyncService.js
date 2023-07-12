@@ -17,6 +17,7 @@ const {
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
   STATUS_DELETE,
+  IS24_REDIRECT_URL,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -597,7 +598,9 @@ class EstateSyncService {
       if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
         data = {
           type: 'immobilienscout-24',
-          redirectUrl: 'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
+          redirectUrl:
+            IS24_REDIRECT_URL[process.env.NODE_ENV] ||
+            'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
           autoCollectRequests: true,
         }
       } else {
