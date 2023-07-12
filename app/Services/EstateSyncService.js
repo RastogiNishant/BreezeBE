@@ -600,7 +600,7 @@ class EstateSyncService {
           type: 'immobilienscout-24',
           redirectUrl:
             IS24_REDIRECT_URL[process.env.NODE_ENV] ||
-            'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
+            'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
           autoCollectRequests: true,
         }
       } else {
