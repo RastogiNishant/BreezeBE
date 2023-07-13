@@ -16,6 +16,8 @@ const {
   STATUS_ACTIVE,
   ESTATE_SYNC_PUBLISH_PROVIDER_IS24,
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
+  STATUS_DELETE,
+  IS24_REDIRECT_URL,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -558,7 +560,7 @@ class EstateSyncService {
   static async getTargets(userId) {
     try {
       const targets = await EstateSyncCredential.query()
-        .leftJoin('estate_sync_targets', function () {
+        .rightJoin('estate_sync_targets', function () {
           this.on('estate_sync_targets.estate_sync_credential_id', 'estate_sync_credentials.id').on(
             'estate_sync_targets.status',
             STATUS_ACTIVE
@@ -596,25 +598,41 @@ class EstateSyncService {
       if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
         data = {
           type: 'immobilienscout-24',
-          redirectUrl: 'https://api-dev.breeze4me.de/api/v1/estate-sync-is24',
+          redirectUrl:
+            IS24_REDIRECT_URL[process.env.NODE_ENV] ||
+            'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
           autoCollectRequests: true,
         }
       } else {
         data = { type: publisher, credentials }
-        if ((publisher = ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT)) {
+        if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT) {
           data.autoCollectRequests = true
         }
       }
       const result = await estateSync.post('targets', data)
       if (result.success) {
-        const queryResult = await EstateSyncTarget.createItem(
-          {
-            estate_sync_credential_id: credential.id,
-            publishing_provider: publisher,
-            estate_sync_target_id: result.data.id,
-          },
-          trx
-        )
+        const existingTarget = await EstateSyncTarget.query()
+          .where('publishing_provider', publisher)
+          .where('estate_sync_credential_id', credential.id)
+          .first()
+        if (existingTarget) {
+          await existingTarget.updateItemWithTrx(
+            {
+              estate_sync_target_id: result.data.id,
+              status: STATUS_ACTIVE,
+            },
+            trx
+          )
+        } else {
+          const queryResult = await EstateSyncTarget.createItem(
+            {
+              estate_sync_credential_id: credential.id,
+              publishing_provider: publisher,
+              estate_sync_target_id: result.data.id,
+            },
+            trx
+          )
+        }
         await trx.commit()
         return result
       } else {
@@ -626,6 +644,44 @@ class EstateSyncService {
         throw new HttpException(err.message)
       } else {
         throw new HttpException('Error found while adding Target')
+      }
+    }
+  }
+
+  static async removePublisher(userId, publisher) {
+    const trx = await Database.beginTransaction()
+    try {
+      const targetFound = await EstateSyncCredential.query()
+        .leftJoin('estate_sync_targets', function () {
+          this.on('estate_sync_targets.estate_sync_credential_id', 'estate_sync_credentials.id').on(
+            'estate_sync_targets.status',
+            STATUS_ACTIVE
+          )
+        })
+        .where('estate_sync_credentials.user_id', userId)
+        .where('estate_sync_targets.publishing_provider', publisher)
+        .first()
+      if (!targetFound) {
+        throw new HttpException('Target to remove not found.')
+      }
+      const estateSync = new EstateSync(targetFound.api_key || process.env.ESTATE_SYNC_API_KEY)
+      const result = await estateSync.delete(targetFound.estate_sync_target_id, 'targets')
+      if (result && result?.success) {
+        await EstateSyncTarget.query()
+          .where('estate_sync_credential_id', targetFound.estate_sync_credential_id)
+          .where('publishing_provider', publisher)
+          .update({ status: STATUS_DELETE }, trx)
+      } else {
+        throw new HttpException('Error found while removing target.')
+      }
+      await trx.commit()
+      return true
+    } catch (err) {
+      await trx.rollback()
+      if (err.message) {
+        throw new HttpException(err.message)
+      } else {
+        throw new HttpException('Error found while removing target.')
       }
     }
   }
