@@ -146,7 +146,6 @@ class SignUp extends Base {
           OUTSIDE_TENANT_INVITE_TYPE,
           OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
         ]),
-
       ip: yup
         .string()
         .min(7, MINLENGTH)

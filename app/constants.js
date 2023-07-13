@@ -1309,6 +1309,22 @@ Estates: [ESTATES]
 
   FRONTEND_USED_WEB: 'web',
   FRONTEND_USED_MOBILE: 'mobile',
+
+  IS24_REDIRECT_URL: {
+    localhost: 'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
+    development: 'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
+    staging: 'https://api-staging.breeze4me.de/api/v1/estate-sync-is24',
+    preprod: 'https://api-preprod.breeze4me.de/api/v1/estate-sync-is24',
+    production: 'https://api.breeze4me.de/api/v1/estate-sync-is24',
+  },
+
+  WEB_APP_URL: {
+    localhost: 'http://localhost:3002',
+    development: 'https://app-dev.breeze4me.de',
+    staging: 'https://app-staging.breeze4me.de',
+    preprod: 'https://app-preprod.breeze4me.de',
+    production: 'https://app.breeze4me.de',
+  },
 }
 
 module.exports = constants
