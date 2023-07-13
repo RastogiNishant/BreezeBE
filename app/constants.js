@@ -1320,10 +1320,10 @@ Estates: [ESTATES]
 
   WEB_APP_URL: {
     localhost: 'http://localhost:3002',
-    development: 'https://app-dev.breeze4me.de/api/v1/estate-sync-is24',
-    staging: 'https://app-staging.breeze4me.de/api/v1/estate-sync-is24',
-    preprod: 'https://app-preprod.breeze4me.de/api/v1/estate-sync-is24',
-    production: 'https://app.breeze4me.de/api/v1/estate-sync-is24',
+    development: 'https://app-dev.breeze4me.de',
+    staging: 'https://app-staging.breeze4me.de',
+    preprod: 'https://app-preprod.breeze4me.de',
+    production: 'https://app.breeze4me.de',
   },
 }
 
