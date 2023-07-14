@@ -4,7 +4,7 @@ const MAX_OPTIONS_COUNT = 12
 
 const VanillaSerializer = require('@adonisjs/lucid/src/Lucid/Serializers/Vanilla')
 const { merge, each, get } = require('lodash')
-
+const moment = require('moment')
 /**
  * Merge data
  */
@@ -22,7 +22,16 @@ class BaseSerializer extends VanillaSerializer {
   }
 
   mergeData(item) {
-    return this._getRowJSON(item)
+    const json = this._getRowJSON(item)
+    if (json.created_at) {
+      json.created_at = moment.utc(json.created_at).format()
+    }
+
+    if (json.updated_at) {
+      json.updated_at = moment.utc(json.updated_at).format()
+    }
+
+    return json
   }
 
   applyOptionsSerializer(item, options) {
