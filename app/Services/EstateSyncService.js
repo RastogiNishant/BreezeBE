@@ -262,19 +262,54 @@ class EstateSyncService {
       const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       const estateSync = new EstateSync(credential.api_key)
       await Promise.map(listings.rows, async (listing) => {
-        const target = await EstateSyncTarget.query()
+        let target = await EstateSyncTarget.query()
+          .select(Database.raw('estate_sync_targets.*'))
+          .select(Database.raw((credential.type === 'user' ? 'true' : 'false') + ` as from_user`))
           .where('publishing_provider', listing.provider)
           .where('estate_sync_credential_id', credential.id)
+          .where('status', STATUS_ACTIVE)
           .first()
-
+        if (!target) {
+          //theres no valid target...
+          if (credential.type === 'user') {
+            //user has no valid credential so we fetch Breeze's credential
+            const breezeCredential = await EstateSyncService.getBreezeEstateSyncCredential()
+            target = await EstateSyncTarget.query()
+              .select(Database.raw('estate_sync_targets.*'))
+              .select(Database.raw(`false as from_user`))
+              .where('publishing_provider', listing.provider)
+              .where('estate_sync_credential_id', breezeCredential.id)
+              .first()
+          }
+        }
+        if (!target) {
+          //still no target
+          await listing.updateItem({
+            status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
+            publishing_error: true,
+            publishing_error_message: 'No valid provider found.',
+          })
+          return
+        }
         const resp = await estateSync.post('listings', {
           targetId: target.estate_sync_target_id,
           propertyId,
         })
         if (resp.success) {
-          await listing.updateItem({ estate_sync_listing_id: resp.data.id })
+          await listing.updateItem({
+            estate_sync_listing_id: resp.data.id,
+            user_connected: target.from_user,
+          })
           //has listing_id but we need to wait for websocket call to make this
         } else {
+          if (resp?.data?.message) {
+            await listing.updateItem({
+              status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
+              publishing_error: true,
+              publishing_error_message: resp.data.message,
+              user_connected: target.from_user,
+            })
+          }
           //FIXME: replace this with logger...
           const MailService = use('App/Services/MailService')
           await MailService.sendEmailToOhneMakler(
