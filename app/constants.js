@@ -1325,6 +1325,12 @@ Estates: [ESTATES]
     preprod: 'https://app-preprod.breeze4me.de',
     production: 'https://app.breeze4me.de',
   },
+
+  COUNTRIES: [
+    { country: 'Germany', other_name: 'Deutschland', country_code: 'de' },
+    { country: 'Austria', other_name: 'Österreich', country_code: 'at' },
+    { country: 'Switzerland', other_name: 'Schweiz', country_code: 'ch' },
+  ],
 }
 
 module.exports = constants
