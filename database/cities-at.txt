@@ -1,0 +1,86 @@
+Eisenstadt
+Klagenfurt am Wörthersee
+Villach
+St. Veit an der Glan
+Spittal an der Drau
+Völkermarkt
+Wolfsberg
+Feldkirchen in Kärnten
+Krems an der Donau
+St. Pölten
+Waidhofen an der Ybbs
+Wiener Neustadt
+Amstetten
+Bad Vöslau
+Baden
+Ebreichsdorf
+Traiskirchen
+Schwechat
+Gänserndorf
+Groß-Enzersdorf
+Strasshof an der Nordbahn
+Hollabrunn
+Korneuburg
+Stockerau
+Gerasdorf bei Wien
+Mistelbach
+Brunn am Gebirge
+Mödling
+Perchtoldsdorf
+Neunkirchen
+Ternitz
+Tulln an der Donau
+Klosterneuburg
+Zwettl-Niederösterreich
+Linz
+Steyr
+Wels
+Braunau am Inn
+Bad Ischl
+Gmunden
+Ansfelden
+Enns
+Leonding
+Traun
+Ried im Innkreis
+Vöcklabruck
+Marchtrenk
+Salzburg
+Hallein
+Wals-Siezenheim
+Seekirchen am Wallersee
+Bischofshofen
+Sankt Johann im Pongau
+Saalfelden am Steinernen Meer
+Graz
+Deutschlandsberg
+Gratwein-Straßengel
+Seiersberg-Pirka
+Leibnitz
+Leoben
+Trofaiach
+Gleisdorf
+Weiz
+Knittelfeld
+Bruck an der Mur
+Kapfenberg
+Feldbach
+Innsbruck
+Imst
+Hall in Tirol
+Telfs
+Kufstein
+Wörgl
+Lienz
+Schwaz
+Bludenz
+Bregenz
+Hard
+Lauterach
+Dornbirn
+Hohenems
+Lustenau
+Feldkirch
+Götzis
+Rankweil
+Wien
