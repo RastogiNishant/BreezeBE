@@ -131,6 +131,12 @@ class CommonController {
   async getAvailableCountries({ response }) {
     return response.res(COUNTRIES)
   }
+
+  async getOffers({ request, response }) {
+    const { country_code, city, rent_max, duration } = request.all()
+    const result = await CommonService.getOffers({ rent_max, country_code, city, duration })
+    return response.res(result)
+  }
 }
 
 module.exports = CommonController
