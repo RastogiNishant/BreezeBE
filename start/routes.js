@@ -596,6 +596,10 @@ Route.get('/api/v1/estates/search/onboard', 'EstateController.searchPreOnboard')
   'valid:UpdateTenant',
 ])
 
+Route.get('/api/v1/onboard/tenant/estates/:id', 'EstateController.getTenantEstate').middleware([
+  'valid:Id',
+])
+
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
   'EstateCurrentTenantController.retrieveLinkByCode'

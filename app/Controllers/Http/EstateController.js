@@ -730,31 +730,12 @@ class EstateController {
    */
   async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
-
-    let estate = await EstateService.getEstateWithDetails({
+    const tenantEstate = await EstateService.getTenantEstate({
       id,
-      user_id: auth.user.id,
-      role: auth.user.role,
+      user_id: auth?.user?.id,
+      role: auth?.user?.role,
     })
-
-    if (!estate) {
-      throw new HttpException('Invalid estate', 404)
-    }
-
-    estate.isoline = await EstateService.getIsolines(estate)
-    const match = await MatchService.getMatches(auth.user.id, id)
-
-    estate = estate.toJSON({
-      isShort: true,
-      role: auth.user.role,
-      extraFields: ['landlord_type', 'hash', 'property_type'],
-    })
-    estate = {
-      ...estate,
-      match: match?.percent,
-    }
-    estate = await EstateService.assignEstateAmenities(estate)
-    response.res(estate)
+    response.res(tenantEstate)
   }
 
   async getThirdPartyOfferEstate({ request, auth, response }) {
@@ -1221,7 +1202,10 @@ class EstateController {
       }
       const insideEstates = await EstateService.searchEstateByPoint(point.id)
       const outsideEstates = await ThirdPartyOfferService.searchTenantEstatesByPoint(point.id)
-      response.res([...insideEstates, ...outsideEstates])
+      response.res({
+        isoline: point?.data?.data,
+        estates: [...insideEstates, ...outsideEstates],
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
