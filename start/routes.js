@@ -1339,3 +1339,6 @@ Route.group(() => {
 })
   .prefix('api/v1/test')
   .middleware(['auth:jwtLandlord'])
+
+Route.get('/api/v1/cities', 'CommonController.searchCities').middleware(['valid:SearchCity'])
+Route.get('/api/v1/countries', 'CommonController.getAvailableCountries')
