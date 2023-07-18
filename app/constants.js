@@ -1331,6 +1331,9 @@ Estates: [ESTATES]
     { country: 'Austria', other_name: 'Österreich', country_code: 'at' },
     { country: 'Switzerland', other_name: 'Schweiz', country_code: 'ch' },
   ],
+
+  RENT_DURATION_LONG: 'long',
+  RENT_DURATION_SHORT: 'short',
 }
 
 module.exports = constants
