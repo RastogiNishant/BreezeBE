@@ -360,7 +360,14 @@ class ThirdPartyOfferService {
         '_e.street',
         '_e.city',
         '_e.country',
-        '_e.address'
+        '_e.zip',
+        '_e.url as cover',
+        '_e.address',
+        '_e.floor',
+        '_e.rooms_number',
+        '_e.number_floors',
+        '_e.property_id',
+        '_e.area'
       )
       .from({ _e: 'third_party_offers' })
       .innerJoin({ _p: 'points' }, function () {
