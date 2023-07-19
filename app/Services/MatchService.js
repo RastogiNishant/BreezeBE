@@ -156,7 +156,8 @@ class MatchService {
         }
       }
     }
-    const incomes = await require('./MemberService').getIncomes(prospect.user_id)
+    const incomes =
+      prospect.incomes ?? (await require('./MemberService').getIncomes(prospect.user_id))
     if (!incomes?.length) {
       return 0
     }
@@ -484,12 +485,13 @@ class MatchService {
     let success = true
     let message = ''
     try {
+      Logger.info(`matchByUser start ${userId} ${new Date().toISOString()}`)
       const tenant = await MatchService.getProspectForScoringQuery()
         .select('_p.data as polygon')
         .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
         .where({ 'tenants.user_id': userId })
         .first()
-
+      Logger.info(`matchByUser get tenant ${userId} ${new Date().toISOString()}`)
       const polygon = get(tenant, 'polygon.data.0.0')
       if (!tenant || !polygon) {
         if (ignoreNullFields) {
@@ -513,13 +515,20 @@ class MatchService {
       // Max radius
       const trx = await Database.beginTransaction()
       try {
+        Logger.info(
+          `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
+        )
         await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
         await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
           },
           trx
+        )
+        Logger.info(
+          `matchByUser after getting outside matches ${userId} ${new Date().toISOString()}`
         )
         await trx.commit()
       } catch (e) {
@@ -539,8 +548,9 @@ class MatchService {
           page: 1,
           limit: 20,
         })
+        Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
         count = matches?.count || 0
-        await this.emitCreateMatchCompleted({
+        this.emitCreateMatchCompleted({
           user_id: userId,
           data: {
             count,
@@ -550,7 +560,7 @@ class MatchService {
           },
         })
       } catch (e) {
-        await this.emitCreateMatchCompleted({
+        this.emitCreateMatchCompleted({
           user_id: userId,
           data: {
             count: 0,
@@ -560,6 +570,7 @@ class MatchService {
           },
         })
       }
+      Logger.info(`matchByUser finish ${userId} ${new Date().toISOString()}`)
     }
   }
 
@@ -577,7 +588,7 @@ class MatchService {
 
     let passedEstates = []
     let idx = 0
-
+    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
     while (idx < estates.length) {
       const percent = await MatchService.calculateMatchPercent(tenant, estates[idx])
       passedEstates.push({ estate_id: estates[idx].id, percent })
@@ -608,29 +619,33 @@ class MatchService {
       await Match.query().whereIn('id', deleteMatchesIds).delete().transacting(trx)
     }
 
-    if (!isEmpty(matches)) {
-      let i = 0
-      while (i < matches.length) {
-        const match = matches[i]
-        if (
-          oldMatches.find((o) => o.user_id === match.user_id && o.estate_id === match.estate_id)
-        ) {
-          await Match.query()
-            .where('user_id', match.user_id)
-            .where('estate_id', match.estate_id)
-            .update({ percent: match.percent })
-            .transacting(trx)
-        } else {
-          await Match.createItem(match, trx)
-        }
-        i++
-      }
+    if (isEmpty(matches)) {
+      return matches
+    }
 
-      if (has_notification_sent) {
-        const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
-        if (superMatches?.length) {
-          await NoticeService.prospectSuperMatch(superMatches)
-        }
+    let i = 0
+
+    let queries = `INSERT INTO matches 
+                  ( user_id, estate_id, percent, status )    
+                  VALUES 
+                `
+
+    queries = (matches || []).reduce(
+      (q, current, index) =>
+        `${q}\n ${index ? ',' : ''} 
+        ( ${current.user_id}, ${current.estate_id}, ${current.percent}, ${current.status} ) `,
+      queries
+    )
+
+    queries += ` ON CONFLICT ( user_id, estate_id ) 
+                  DO UPDATE SET percent = EXCLUDED.percent`
+
+    await Database.raw(queries).transacting(trx)
+
+    if (has_notification_sent) {
+      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+      if (superMatches?.length) {
+        await NoticeService.prospectSuperMatch(superMatches)
       }
     }
 
@@ -877,7 +892,7 @@ class MatchService {
     })
   }
 
-  static async emitCreateMatchCompleted({ user_id, data }) {
+  static emitCreateMatchCompleted({ user_id, data }) {
     const channel = `tenant:*`
     const topicName = `tenant:${user_id}`
     const topic = Ws.getChannel(channel).topic(topicName)
@@ -3595,6 +3610,7 @@ class MatchService {
 
     let passedEstates = []
     let idx = 0
+    prospect.incomes = await require('./MemberService').getIncomes(prospect.user_id)
     while (idx < estates.length) {
       const percent = await MatchService.calculateMatchPercent(prospect, estates[idx])
       passedEstates.push({ estate_id: estates[idx].id, percent })

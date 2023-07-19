@@ -327,6 +327,8 @@ class ThirdPartyOfferService {
       .first()
     let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, exclude).fetch()
     estates = estates.toJSON()
+
+    tenant.incomes = await require('./MemberService').getIncomes(prospect.user_id)
     estates = await Promise.all(
       estates.map(async (estate) => {
         estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
@@ -572,6 +574,8 @@ class ThirdPartyOfferService {
       const tenant = await MatchService.getProspectForScoringQuery()
         .where({ 'tenants.user_id': userId })
         .first()
+
+      tenant.incomes = await require('./MemberService').getIncomes(prospect.user_id)
       let estates = ret.toJSON()
       estates = await Promise.all(
         estates.map(async (estate) => {
