@@ -372,12 +372,12 @@ class EstateService {
   }
 
   static async getEstateWithDetails({ id, user_id, role }) {
-    const estateQuery = Estate.query()
+    let estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
       .leftJoin(
         Database.raw(`
-          (select 
+          (select
             users.id as user_id,
             companies.type as landlord_type
           from users
@@ -388,33 +388,32 @@ class EstateService {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
         }
       )
-      .where('estates.id', id)
-      .whereNot('status', STATUS_DELETE)
-      .withCount('notifications', function (n) {
+    estateQuery.where('estates.id', id).whereNot('status', STATUS_DELETE)
+
+    if (user_id) {
+      estateQuery.withCount('notifications', function (n) {
         n.where('user_id', user_id)
       })
-      .withCount('visits')
-      .withCount('knocked')
-      .withCount('decided')
-      .withCount('invite')
-      .withCount('final')
-      .withCount('contact_requests')
-      .withCount('inviteBuddies')
+    }
+
+    if (user_id && role === ROLE_LANDLORD) {
+      estateQuery
+        .withCount('visits')
+        .withCount('knocked')
+        .withCount('decided')
+        .withCount('invite')
+        .withCount('final')
+        .withCount('contact_requests')
+        .withCount('inviteBuddies')
+        .with('current_tenant', function (q) {
+          q.with('user')
+        })
+      estateQuery.with('estateSyncListings')
+    }
+
+    estateQuery
       .with('point')
       .with('files')
-      .with('current_tenant', function (q) {
-        q.with('user')
-      })
-      .with('user', function (u) {
-        u.select('id', 'company_id')
-        u.with('company', function (c) {
-          c.select('id', 'avatar', 'name', 'visibility')
-          c.with('contacts', function (ct) {
-            ct.select('id', 'full_name', 'company_id')
-          })
-        })
-      })
-
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE)
           .with('images')
@@ -442,7 +441,18 @@ class EstateService {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
-      .with('estateSyncListings')
+
+    if (user_id && role === ROLE_USER) {
+      estateQuery.with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+    }
 
     if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
@@ -2964,6 +2974,39 @@ class EstateService {
       query.whereNotIn('estates.id', excludeIds)
     }
     return (await query.select('estates.id').groupBy('estates.id').fetch()).toJSON()?.length || 0
+  }
+
+  static async getTenantEstate({ id, user_id, role }) {
+    console.log(`getTenantEstate= ${user_id} ${role}`)
+    let estate = await this.getEstateWithDetails({
+      id,
+      user_id: user_id ?? null,
+      role: role ?? null,
+    })
+
+    if (!estate) {
+      throw new HttpException('Invalid estate', 404)
+    }
+
+    estate.isoline = await this.getIsolines(estate)
+    estate = estate.toJSON({
+      isShort: true,
+      role: role ?? null,
+      extraFields: ['landlord_type', 'hash', 'property_type'],
+    })
+
+    let match
+    if (user_id && role === ROLE_USER) {
+      match = await require('./MatchService').getMatches(user_id, id)
+    }
+
+    estate = {
+      ...estate,
+      match: match?.percent,
+    }
+
+    estate = await EstateService.assignEstateAmenities(estate)
+    return estate
   }
 }
 module.exports = EstateService
