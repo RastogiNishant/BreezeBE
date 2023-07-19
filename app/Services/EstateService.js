@@ -109,6 +109,7 @@ const {
   TASK_COMMON_TYPE,
   TASK_SYSTEM_TYPE,
   STATUS_EMAIL_VERIFY,
+  ESTATE_FIELD_FOR_TASK,
 } = require('../constants')
 
 const {
@@ -1238,16 +1239,10 @@ class EstateService {
   }
 
   static async searchEstateByPoint(point_id) {
+    const estateFields = ESTATE_FIELD_FOR_TASK.map((field) => `_e.${field}`)
     return await Database.select(Database.raw(`TRUE as inside`))
-      .select(
-        '_e.id',
-        '_e.coord_raw as coord',
-        '_e.street',
-        '_e.city',
-        '_e.address',
-        '_e.house_number',
-        '_e.country'
-      )
+      .select('_e.id')
+      .select(estateFields)
       .from({ _e: 'estates' })
       .innerJoin({ _p: 'points' }, function () {
         this.on('_p.id', point_id)
