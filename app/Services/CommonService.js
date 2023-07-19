@@ -49,6 +49,9 @@ class CommonService {
       .select('floor')
       .select('area')
       .select('number_floors')
+      .select(Database.raw('bathrooms_number'))
+      .select('bedrooms_number')
+      .select('wc_number')
       .select('cover')
       .select(
         Database.raw(
@@ -76,6 +79,7 @@ class CommonService {
       .select('floor')
       .select('area')
       .select('number_floors')
+      .select(Database.raw('bathrooms as bathrooms_number'))
       .select(Database.raw(`images->0->'picture'->'picture_url' as cover`))
       .select(
         Database.raw(
