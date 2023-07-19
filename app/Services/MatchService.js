@@ -525,23 +525,41 @@ class MatchService {
       } catch (e) {
         console.log('matchByUser error', e.message)
         await trx.rollback()
+        success = false
+        message = e.message
       }
     } catch (e) {
       console.log('matchByUser Exception=', e.message)
       success = false
       message = e.message
     } finally {
-      const matches = await EstateService.getTenantEstates({ user_id: userId, page: 1, limit: 20 })
-      count = matches?.count || 0
-      await this.emitCreateMatchCompleted({
-        user_id: userId,
-        data: {
-          count,
-          matches,
-          success,
-          message,
-        },
-      })
+      try {
+        const matches = await EstateService.getTenantEstates({
+          user_id: userId,
+          page: 1,
+          limit: 20,
+        })
+        count = matches?.count || 0
+        await this.emitCreateMatchCompleted({
+          user_id: userId,
+          data: {
+            count,
+            matches,
+            success,
+            message,
+          },
+        })
+      } catch (e) {
+        await this.emitCreateMatchCompleted({
+          user_id: userId,
+          data: {
+            count: 0,
+            matches: [],
+            success: false,
+            message: e?.message,
+          },
+        })
+      }
     }
   }
 
