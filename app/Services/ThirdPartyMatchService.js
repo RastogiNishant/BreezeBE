@@ -18,13 +18,18 @@ const ThirdPartyOfferService = use('App/Services/ThirdPartyOfferService')
 const NoticeService = use('App/Services/NoticeService')
 const Promise = require('bluebird')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
+const Logger = use('Logger')
 
 class ThirdPartyMatchService {
   static async createNewMatches({ tenant, has_notification_sent = true }, trx) {
+    Logger.info(`createNewMatches start ${new Date().toISOString()}`)
     const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant)
+    Logger.info(`ThirdPartyOfferService.searchTenantEstatesQuery after ${new Date().toISOString()}`)
     let passedEstates = []
     let idx = 0
     const MatchService = require('./MatchService')
+    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
+
     while (idx < estates.length) {
       let estate = estates[idx]
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
@@ -32,7 +37,9 @@ class ThirdPartyMatchService {
       passedEstates.push({ estate_id: estate.id, percent })
       idx++
     }
-
+    Logger.info(
+      `ThirdPartyOfferService createNewMatches after calculation ${new Date().toISOString()}`
+    )
     const matches =
       passedEstates.map((i) => ({
         user_id: tenant.user_id,
@@ -42,6 +49,9 @@ class ThirdPartyMatchService {
       })) || []
 
     const oldMatches = await this.getOldMatches(tenant.user_id)
+    Logger.info(
+      `ThirdPartyOfferService createNewMatches after getOldMatches ${new Date().toISOString()}`
+    )
     const deleteMatchesIds = oldMatches
       .filter((om) => !matches.find((m) => m.estate_id === om.estate_id))
       .map((m) => m.id)
@@ -49,8 +59,12 @@ class ThirdPartyMatchService {
     if (deleteMatchesIds?.length) {
       await ThirdPartyMatch.query().whereIn('id', deleteMatchesIds).delete().transacting(trx)
     }
+    Logger.info(`ThirdPartyOfferService createNewMatches after delete ${new Date().toISOString()}`)
 
     await this.updateMatches({ matches, has_notification_sent }, trx)
+    Logger.info(
+      `ThirdPartyOfferService createNewMatches after updateMatches ${new Date().toISOString()}`
+    )
 
     return matches
   }
@@ -106,11 +120,22 @@ class ThirdPartyMatchService {
       return
     }
 
-    let i = 0
-    while (i < matches.length) {
-      await this.upsertSingleMatch(matches[i], trx)
-      i++
-    }
+    let queries = `INSERT INTO third_party_matches 
+                  ( user_id, estate_id, percent, status )    
+                  VALUES 
+                `
+
+    queries = (matches || []).reduce(
+      (q, current, index) =>
+        `${q}\n ${index ? ',' : ''} 
+        ( ${current.user_id}, ${current.estate_id}, ${current.percent}, ${current.status} ) `,
+      queries
+    )
+
+    queries += ` ON CONFLICT ( user_id, estate_id ) 
+                  DO UPDATE SET percent = EXCLUDED.percent`
+
+    await Database.raw(queries).transacting(trx)
 
     if (has_notification_sent) {
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
