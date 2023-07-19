@@ -22,9 +22,13 @@ const Logger = use('Logger')
 
 class ThirdPartyMatchService {
   static async createNewMatches({ tenant, has_notification_sent = true }, trx) {
-    Logger.info(`createNewMatches start ${new Date().toISOString()}`)
+    Logger.info(`createNewMatches start ${tenant.user_id} ${new Date().toISOString()}`)
     const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant)
-    Logger.info(`ThirdPartyOfferService.searchTenantEstatesQuery after ${new Date().toISOString()}`)
+    Logger.info(
+      `ThirdPartyOfferService.searchTenantEstatesQuery after ${
+        tenant.user_id
+      } ${new Date().toISOString()}`
+    )
     let passedEstates = []
     let idx = 0
     const MatchService = require('./MatchService')
@@ -38,7 +42,9 @@ class ThirdPartyMatchService {
       idx++
     }
     Logger.info(
-      `ThirdPartyOfferService createNewMatches after calculation ${new Date().toISOString()}`
+      `ThirdPartyOfferService createNewMatches after calculation ${
+        tenant.user_id
+      } ${new Date().toISOString()}`
     )
     const matches =
       passedEstates.map((i) => ({
@@ -50,7 +56,9 @@ class ThirdPartyMatchService {
 
     const oldMatches = await this.getOldMatches(tenant.user_id)
     Logger.info(
-      `ThirdPartyOfferService createNewMatches after getOldMatches ${new Date().toISOString()}`
+      `ThirdPartyOfferService createNewMatches after getOldMatches ${
+        tenant.user_id
+      } ${new Date().toISOString()}`
     )
     const deleteMatchesIds = oldMatches
       .filter((om) => !matches.find((m) => m.estate_id === om.estate_id))
@@ -59,11 +67,17 @@ class ThirdPartyMatchService {
     if (deleteMatchesIds?.length) {
       await ThirdPartyMatch.query().whereIn('id', deleteMatchesIds).delete().transacting(trx)
     }
-    Logger.info(`ThirdPartyOfferService createNewMatches after delete ${new Date().toISOString()}`)
+    Logger.info(
+      `ThirdPartyOfferService createNewMatches after delete ${
+        tenant.user_id
+      } ${new Date().toISOString()}`
+    )
 
     await this.updateMatches({ matches, has_notification_sent }, trx)
     Logger.info(
-      `ThirdPartyOfferService createNewMatches after updateMatches ${new Date().toISOString()}`
+      `ThirdPartyOfferService createNewMatches after updateMatches ${
+        tenant.user_id
+      } ${new Date().toISOString()}`
     )
 
     return matches
