@@ -134,7 +134,15 @@ class CommonController {
 
   async getOffers({ request, response }) {
     const { country_code, city, rent_max, duration } = request.all()
-    const result = await CommonService.getOffers({ rent_max, country_code, city, duration })
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
+    const result = await CommonService.getOffers(
+      { rent_max, country_code, city, duration },
+      page,
+      limit
+    )
     return response.res(result)
   }
 }

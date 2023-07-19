@@ -36,7 +36,7 @@ class CommonService {
     return cities.toJSON().map((city) => city.city)
   }
 
-  static async getOffers({ rent_max, country_code, city, duration }) {
+  static async getOffers({ rent_max, country_code, city, duration }, page = 1, limit = 20) {
     const country = COUNTRIES.filter((country) => country.country_code === country_code)
     const breezeOffersQuery = Estate.query()
       .whereIn('country', [country[0].country, country[0].other_name])
@@ -61,7 +61,9 @@ class CommonService {
     } else {
       breezeOffersQuery.whereNull('rent_end_at').select(Database.raw(`'long' as duration`))
     }
-    const breezeOffers = await breezeOffersQuery.fetch()
+    let breezeOffers = await breezeOffersQuery.fetch()
+    breezeOffers = breezeOffers.toJSON()
+
     const thirdPartyOffersQuery = ThirdPartyOffer.query()
       .whereIn('country', [country[0].country, country[0].other_name])
       .where('city', 'ilike', city)
@@ -86,8 +88,16 @@ class CommonService {
     } else {
       thirdPartyOffersQuery.whereNull('rent_end_at').select(Database.raw(`'long' as duration`))
     }
-    const thirdPartyOffers = await thirdPartyOffersQuery.fetch()
-    return [...breezeOffers.toJSON(), ...thirdPartyOffers.toJSON()]
+    let thirdPartyOffers = await thirdPartyOffersQuery.fetch()
+    thirdPartyOffers = thirdPartyOffers.toJSON()
+    const allOffers = [...breezeOffers, ...thirdPartyOffers]
+    const total = allOffers.length
+    return {
+      page,
+      total_pages: Math.ceil(total / limit),
+      total,
+      offers: allOffers.slice((page - 1) * limit, page * limit),
+    }
   }
 }
 

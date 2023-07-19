@@ -21,6 +21,8 @@ class GetOffers extends Base {
         .string()
         .oneOf([RENT_DURATION_SHORT, RENT_DURATION_LONG])
         .required('duration is required'),
+      page: yup.number().integer().positive(),
+      limit: yup.number().integer(),
     })
 }
 
