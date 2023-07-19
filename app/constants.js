@@ -1326,6 +1326,8 @@ Estates: [ESTATES]
     preprod: 'https://app-preprod.breeze4me.de',
     production: 'https://app.breeze4me.de',
   },
+
+  QUEUE_JOB_URGENT: 100,
 }
 
 module.exports = constants
