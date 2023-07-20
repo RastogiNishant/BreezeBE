@@ -28,6 +28,8 @@ const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
 
+const TenantController = use('App/Controllers/Ws/TenantController')
+
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -893,13 +895,18 @@ class MatchService {
   }
 
   static emitCreateMatchCompleted({ user_id, data }) {
-    const channel = `tenant:*`
-    const topicName = `tenant:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
+    // const channel = `tenant:*`
+    // const topicName = `tenant:${user_id}`
+    // const topic = Ws.getChannel(channel).topic(topicName)
 
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
-    }
+    // if (topic) {
+    //   topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
+    // }
+    console.log('MatchService= emitCreateMatchCompleted')
+    require('../Controllers/Ws/TenantController').broadcast({
+      message: data,
+      event: WEBSOCKET_EVENT_MATCH_CREATED,
+    })
   }
 
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {

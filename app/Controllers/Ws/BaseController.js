@@ -16,10 +16,12 @@ class BaseController {
     this.socket = socket
     this.request = request
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
+    console.log('BaseController here=', JSON.stringify(this.topic))
     this.user = auth.user
   }
   //this will broadcast to all except sender
-  broadcast(message, event = 'message', sender = null) {
+  static broadcast({ message, event = 'message', sender = null }) {
+    console.log(`BaseController broadcast start!!! ${message} `, this.topic)
     //sender is null when user, 0 when bot
     try {
       if (this.topic && isNull(sender)) {
@@ -41,6 +43,7 @@ class BaseController {
         })
       }
     } catch (err) {
+      console.log('broadcast error here=', err.message)
       this.emitError(err.message)
     }
   }
