@@ -8,6 +8,7 @@ const Schema = use('Schema')
 class NewFtpLiveSyncSchema extends Schema {
   up() {
     this.create('ftp_live_syncs', (table) => {
+      table.increments()
       table.integer('user_id').unsigned().references('id').inTable('users').unique()
       table.string('company_name').comment('company that own this')
       table.string('email').comment('This is where we send contact requests.')
