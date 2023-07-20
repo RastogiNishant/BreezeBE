@@ -166,6 +166,10 @@ class User extends Model {
     return this.hasOne('App/Models/Agreement', 'id', 'agreement_id')
   }
 
+  ftpLiveSync() {
+    return this.hasOne('App/Models/FtpLiveSync', 'id', 'user_id')
+  }
+
   /**
    *
    */

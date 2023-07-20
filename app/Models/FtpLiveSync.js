@@ -4,7 +4,7 @@ const Model = require('./BaseModel')
 
 class FtpLiveSync extends Model {
   static get columns() {
-    return ['user_id', 'company', 'email', 'status']
+    return ['id', 'user_id', 'company', 'email', 'status']
   }
 
   static get traits() {
