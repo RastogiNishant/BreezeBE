@@ -2,12 +2,13 @@
 
 const Ws = use('Ws')
 const { isNull } = require('lodash')
-const { BREEZE_BOT_USER } = require('../../constants')
+const { BREEZE_BOT_USER, WEBSOCKET_REDIS_NAME } = require('../../constants')
 const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
 const Database = use('Database')
 const Logger = use('Logger')
+const Redis = use('Redis')
 const {
   exceptions: { MESSAGE_NOT_SAVED },
 } = require('../../exceptions')
@@ -17,9 +18,17 @@ class BaseController {
     this.request = request
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
+
+    Redis.subscribe(WEBSOCKET_REDIS_NAME, (message) => {
+      const object = JSON.parse(message)
+      if (!object?.event || !object?.data) {
+        return true
+      }
+      this.topic?.broadcast(object.event, object.data)
+    })
   }
   //this will broadcast to all except sender
-  broadcast(message, event = 'message', sender = null) {
+  static broadcast({ message, event = 'message', sender = null }) {
     //sender is null when user, 0 when bot
     try {
       if (this.topic && isNull(sender)) {
@@ -41,6 +50,7 @@ class BaseController {
         })
       }
     } catch (err) {
+      console.log('broadcast error here=', err.message)
       this.emitError(err.message)
     }
   }
