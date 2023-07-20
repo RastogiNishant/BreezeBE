@@ -175,11 +175,11 @@ class MatchService {
 
     const amenitiesCount = 7
     // Prospect Score Weights
-    const prospectBudgetWeight = 2
+    const prospectBudgetWeight = 1.1
     const rentStartWeight = 0.5
     const amenitiesWeight = 0.4 / amenitiesCount
-    const areaWeight = 0.4
-    const floorWeight = 0.3
+    const areaWeight = 0.8
+    const floorWeight = 0.8
     const roomsWeight = 0.2
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
