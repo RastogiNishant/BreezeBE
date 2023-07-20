@@ -3610,7 +3610,7 @@ class MatchService {
 
     let passedEstates = []
     let idx = 0
-    prospect.incomes = await require('./MemberService').getIncomes(prospect.user_id)
+    prospect.incomes = await require('./MemberService').getIncomes(userId)
     while (idx < estates.length) {
       const percent = await MatchService.calculateMatchPercent(prospect, estates[idx])
       passedEstates.push({ estate_id: estates[idx].id, percent })
