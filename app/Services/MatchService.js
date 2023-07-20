@@ -19,6 +19,7 @@ const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Buddy = use('App/Models/Buddy')
+const WebSocket = use('App/Classes/Websocket')
 const { max, min } = require('lodash')
 const Event = use('Event')
 const File = use('App/Classes/File')
@@ -27,8 +28,6 @@ const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService'
 const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
-
-const TenantController = use('App/Controllers/Ws/TenantController')
 
 const {
   MATCH_STATUS_NEW,
@@ -552,8 +551,9 @@ class MatchService {
         })
         Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
         count = matches?.count || 0
-        this.emitCreateMatchCompleted({
-          user_id: userId,
+
+        WebSocket.publish({
+          event: WEBSOCKET_EVENT_MATCH_CREATED,
           data: {
             count,
             matches,
@@ -562,8 +562,8 @@ class MatchService {
           },
         })
       } catch (e) {
-        this.emitCreateMatchCompleted({
-          user_id: userId,
+        WebSocket.publish({
+          event: WEBSOCKET_EVENT_MATCH_CREATED,
           data: {
             count: 0,
             matches: [],
@@ -891,21 +891,6 @@ class MatchService {
         status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
       },
       role: ROLE_LANDLORD,
-    })
-  }
-
-  static emitCreateMatchCompleted({ user_id, data }) {
-    // const channel = `tenant:*`
-    // const topicName = `tenant:${user_id}`
-    // const topic = Ws.getChannel(channel).topic(topicName)
-
-    // if (topic) {
-    //   topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
-    // }
-    console.log('MatchService= emitCreateMatchCompleted')
-    require('../Controllers/Ws/TenantController').broadcast({
-      message: data,
-      event: WEBSOCKET_EVENT_MATCH_CREATED,
     })
   }
 
