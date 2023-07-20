@@ -844,6 +844,7 @@ const constants = {
     'rooms_number',
     'number_floors',
     'city',
+    'zip',
     'cover',
     'coord_raw',
     'property_id',
@@ -1334,6 +1335,7 @@ Estates: [ESTATES]
 
   RENT_DURATION_LONG: 'long',
   RENT_DURATION_SHORT: 'short',
+  QUEUE_JOB_URGENT: 100,
 }
 
 module.exports = constants

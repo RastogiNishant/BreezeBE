@@ -327,6 +327,8 @@ class ThirdPartyOfferService {
       .first()
     let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, exclude).fetch()
     estates = estates.toJSON()
+
+    tenant.incomes = await require('./MemberService').getIncomes(userId)
     estates = await Promise.all(
       estates.map(async (estate) => {
         estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
@@ -358,7 +360,14 @@ class ThirdPartyOfferService {
         '_e.street',
         '_e.city',
         '_e.country',
-        '_e.address'
+        '_e.zip',
+        '_e.url as cover',
+        '_e.address',
+        '_e.floor',
+        '_e.rooms_number',
+        '_e.number_floors',
+        '_e.property_id',
+        '_e.area'
       )
       .from({ _e: 'third_party_offers' })
       .innerJoin({ _p: 'points' }, function () {
@@ -572,6 +581,8 @@ class ThirdPartyOfferService {
       const tenant = await MatchService.getProspectForScoringQuery()
         .where({ 'tenants.user_id': userId })
         .first()
+
+      tenant.incomes = await require('./MemberService').getIncomes(userId)
       let estates = ret.toJSON()
       estates = await Promise.all(
         estates.map(async (estate) => {

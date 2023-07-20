@@ -9,6 +9,7 @@ const MemberService = use('App/Services/MemberService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
 const { without } = require('lodash')
+const Logger = use('Logger')
 
 const {
   ROLE_USER,
@@ -131,7 +132,7 @@ class TenantController {
       if (shouldDeactivateTenant) {
         Event.fire('tenant::update', auth.user.id)
       }
-
+      Logger.info(`Before QueueService ${auth.user.id} ${new Date().toISOString()}`)
       QueueService.getTenantMatchProperties({
         userId: auth.user.id,
         has_notification_sent: false,

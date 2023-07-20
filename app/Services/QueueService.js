@@ -38,6 +38,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
+  QUEUE_JOB_URGENT,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -153,7 +154,11 @@ class QueueService {
   }
 
   static getTenantMatchProperties({ userId, has_notification_sent = false }) {
-    Queue.addJob(GET_TENANT_MATCH_PROPERTIES, { userId, has_notification_sent })
+    Queue.addJob(
+      GET_TENANT_MATCH_PROPERTIES,
+      { userId, has_notification_sent },
+      { priority: QUEUE_JOB_URGENT }
+    )
   }
 
   static createThirdPartyMatchesByEstate() {
