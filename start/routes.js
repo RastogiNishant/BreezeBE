@@ -1153,6 +1153,7 @@ Route.group(() => {
 Route.group(() => {
   Route.get('/', 'FtpLiveSyncController.get')
   Route.post('/', 'FtpLiveSyncController.add').middleware(['valid:CreateFtpLiveSync'])
+  Route.put('/', 'FtpLiveSyncController.update').middleware(['valid:CreateFtpLiveSync'])
   Route.delete('/', 'FtpLiveSyncController.delete')
 })
   .middleware(['auth:jwtLandlord'])
