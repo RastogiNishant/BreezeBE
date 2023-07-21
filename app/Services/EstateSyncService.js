@@ -246,6 +246,9 @@ class EstateSyncService {
 
   static async propertyProcessingFailed(payload) {
     try {
+      if (!payload?.id) {
+        return
+      }
       const propertyId = payload.id
       let listings = await EstateSyncListing.query()
         .where('estate_sync_property_id', propertyId)
@@ -266,6 +269,9 @@ class EstateSyncService {
 
   static async propertyProcessingSucceeded(payload) {
     try {
+      if (!payload.id) {
+        return
+      }
       const propertyId = payload.id
       let listings = await EstateSyncListing.query()
         .where('estate_sync_property_id', propertyId)
