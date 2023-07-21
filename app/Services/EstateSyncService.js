@@ -244,8 +244,34 @@ class EstateSyncService {
     }
   }
 
+  static async propertyProcessingFailed(payload) {
+    try {
+      if (!payload?.id) {
+        return
+      }
+      const propertyId = payload.id
+      let listings = await EstateSyncListing.query()
+        .where('estate_sync_property_id', propertyId)
+        .whereNull('estate_sync_listing_id')
+        .fetch()
+      if (!listings?.rows?.length) {
+        return
+      }
+      await EstateSyncListing.query().where('estate_sync_property_id', propertyId).update({
+        posting_error: true,
+        posting_error_message: payload.failureMessage,
+        status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
+      })
+    } catch (err) {
+      console.log('propertyProcessingFailed error', err.message)
+    }
+  }
+
   static async propertyProcessingSucceeded(payload) {
     try {
+      if (!payload?.id) {
+        return
+      }
       const propertyId = payload.id
       let listings = await EstateSyncListing.query()
         .where('estate_sync_property_id', propertyId)
