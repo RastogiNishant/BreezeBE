@@ -27,7 +27,7 @@ const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService'
 const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
-
+const WebSocket = use('App/Classes/Websocket')
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
