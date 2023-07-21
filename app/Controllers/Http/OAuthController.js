@@ -173,6 +173,13 @@ class OAuthController {
         owner_id: user.id,
       })
     }
+
+    if (user && user.role === ROLE_LANDLORD) {
+      QueueService.getTenantMatchProperties({
+        userId: user.id,
+        has_notification_sent: false,
+      })
+    }
     return user
   }
 
@@ -205,14 +212,6 @@ class OAuthController {
       await trx.commit()
       if (user.role === ROLE_USER && invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) {
         MarketPlaceService.sendBulkKnockWebsocket(user.id)
-
-        if (isSignUp) {
-          await require('./MatchService').matchByUser({
-            userId: user.id,
-            ignoreNullFields: true,
-            has_notification_sent: true,
-          })
-        }
       }
     } catch (e) {
       console.log(`outside invitation error= ${invite_type}`, e.message)
