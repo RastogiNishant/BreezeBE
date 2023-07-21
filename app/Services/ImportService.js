@@ -33,6 +33,8 @@ const {
   WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS,
   PREPARING_TO_UPLOAD,
   PROPERTY_HANDLE_FINISHED,
+  WEBSOCKET_TENANT_REDIS_KEY,
+  WEBSOCKET_LANDLORD_REDIS_KEY,
 } = require('../constants')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -276,7 +278,7 @@ class ImportService {
    */
 
   static async emitImported({ data, user_id, event = WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS }) {
-    WebSocket.publish({ event, data })
+    WebSocket.publishToLandlord({ event, userId: user_id, data })
   }
 
   static async updateImportBySixCharCode({ estate, data }, trx) {

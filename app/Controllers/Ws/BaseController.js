@@ -18,14 +18,6 @@ class BaseController {
     this.request = request
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
-
-    Redis.subscribe(WEBSOCKET_REDIS_NAME, (message) => {
-      const object = JSON.parse(message)
-      if (!object?.event || !object?.data) {
-        return true
-      }
-      this.topic?.broadcast(object.event, object.data)
-    })
   }
   //this will broadcast to all except sender
   static broadcast({ message, event = 'message', sender = null }) {
