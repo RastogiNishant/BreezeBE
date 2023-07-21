@@ -296,7 +296,7 @@ class QueueService {
         case GET_THIRD_PARTY_COORDINATES:
           return QueueJobService.updateThirdPartyCoord(job.data.estateId)
         case GET_ISOLINE:
-          return TenantService.updateTenantIsoline(job.data.tenantId)
+          return TenantService.updateTenantIsoline({ tenantId: job.data.tenantId })
         case CONTACT_OHNE_MAKLER:
           return QueueJobService.contactOhneMakler(
             job.data.third_party_offer_id,
