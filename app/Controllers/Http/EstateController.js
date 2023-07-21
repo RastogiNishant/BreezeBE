@@ -740,7 +740,7 @@ class EstateController {
 
   async getThirdPartyOfferEstate({ request, auth, response }) {
     const { id } = request.all()
-    let estate = await ThirdPartyOfferService.getEstate(auth.user.id, id)
+    let estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
     if (!estate) {
       throw new HttpException('Estate not found.', 404)
     }

@@ -154,6 +154,8 @@ class MarketPlaceService {
     )
 
     if (!(await EstateService.isPublished(contact.estate_id))) {
+      // FIXME: we don't throw errors back to the webhook caller. It will just reschedule
+      // another call with the same content
       throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
     }
 
