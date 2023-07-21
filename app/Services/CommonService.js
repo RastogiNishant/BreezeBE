@@ -3,6 +3,7 @@ const {
   RENT_DURATION_LONG,
   RENT_DURATION_SHORT,
   STATUS_ACTIVE,
+  CITIES_AUTOCOMPLETE_MAX_COUNT,
 } = require('../constants')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const Estate = use('App/Models/Estate')
@@ -30,10 +31,23 @@ class CommonService {
       .select('city')
       .where('alpha2', country_code)
       .where('city', 'ilike', `${city}%`)
-      .limit(10)
+      .limit(CITIES_AUTOCOMPLETE_MAX_COUNT)
       .orderBy('city', 'asc')
       .fetch()
-    return cities.toJSON().map((city) => city.city)
+    // city% should come first than %city%
+    let citiesToReturn = cities.toJSON().map((city) => city.city)
+    if (citiesToReturn.length < CITIES_AUTOCOMPLETE_MAX_COUNT) {
+      const additionalCities = await City.query()
+        .select('city')
+        .where('alpha2', country_code)
+        .where('city', 'ilike', `%${city}%`)
+        .whereNotIn('city', citiesToReturn)
+        .limit(CITIES_AUTOCOMPLETE_MAX_COUNT - citiesToReturn.length)
+        .orderBy('city', 'asc')
+        .fetch()
+      citiesToReturn = [...citiesToReturn, ...additionalCities.toJSON().map((city) => city.city)]
+    }
+    return citiesToReturn
   }
 
   static async getOffers({ rent_max, country_code, city, duration }, page = 1, limit = 20) {
