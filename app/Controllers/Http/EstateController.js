@@ -135,6 +135,8 @@ class EstateController {
 
         MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estate.id)
 
       response.res(estate)
     } catch (e) {
@@ -160,6 +162,8 @@ class EstateController {
         page: 1,
         params: { id },
       })
+
+      QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
