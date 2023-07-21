@@ -23,7 +23,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
-
+const WebSocket = use('App/Classes/Websocket')
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
@@ -623,7 +623,6 @@ class EstateService {
       }
 
       // Run processing estate geo nearest
-      QueueService.getEstateCoords(estate.id)
       const estateData = await estate.toJSON({ isOwner: true })
       return {
         hash: estateHash?.hash || null,
@@ -719,10 +718,7 @@ class EstateService {
       if (data.delete_energy_proof && energy_proof) {
         FileBucket.remove(energy_proof)
       }
-      // Run processing estate geo nearest
-      if (data.address) {
-        QueueService.getEstateCoords(estate.id)
-      }
+
       if (insideTrx) {
         await trx.commit()
       }
@@ -2447,16 +2443,15 @@ class EstateService {
   }
 
   static emitValidAddress({ id, user_id, coord, address }) {
-    const channel = `landlord:*`
-    const topicName = `landlord:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_VALID_ADDRESS, {
+    WebSocket.publishToLandlord({
+      event: WEBSOCKET_EVENT_VALID_ADDRESS,
+      userId: user_id,
+      data: {
         id,
         coord,
         address,
-      })
-    }
+      },
+    })
   }
 
   static async getFilesByEstateId(estateId) {

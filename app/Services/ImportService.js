@@ -365,7 +365,7 @@ class ImportService {
         //TODO: only has to remove rooms which don't have images & reindex room names according to room type
         //await require('./RoomService').removeAllRoom(estate.id, trx)
       }
-
+      require('./QueueService').getEstateCoords(estate.id)
       return estate
     } catch (e) {
       console.log('update estate error happened=', e.message)
