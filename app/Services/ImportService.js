@@ -9,10 +9,10 @@ const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
+const Ws = use('Ws')
 const FileBucket = use('App/Classes/File')
 const schema = require('../Validators/CreateBuddy').schema()
 const Logger = use('Logger')
-const WebSocket = use('App/Classes/Websocket')
 const fsPromise = require('fs/promises')
 const {
   STATUS_DRAFT,
@@ -276,7 +276,13 @@ class ImportService {
    */
 
   static async emitImported({ data, user_id, event = WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS }) {
-    WebSocket.publish({ event, data })
+    const channel = `landlord:*`
+    const topicName = `landlord:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(event, data)
+    }
   }
 
   static async updateImportBySixCharCode({ estate, data }, trx) {
