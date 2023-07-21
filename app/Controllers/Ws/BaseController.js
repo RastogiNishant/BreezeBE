@@ -8,6 +8,7 @@ const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
 const Database = use('Database')
 const Logger = use('Logger')
+const WebSocket = use('App/Classes/Websocket')
 const {
   exceptions: { MESSAGE_NOT_SAVED },
 } = require('../../exceptions')
@@ -18,6 +19,25 @@ class BaseController {
     this.topic = Ws.getChannel(this.socket.channel.name).topic(this.socket.topic)
     this.user = auth.user
   }
+
+  subscribe(topicKey) {
+    try {
+      WebSocket.subscribe(`${topicKey}:${this.user.id}`)
+    } catch (e) {
+      console.log('LandlordController subscribe error', e.message)
+    }
+  }
+
+  unsubscribe(topicKey) {
+    this.socket.on('close', async () => {
+      try {
+        WebSocket.unsubscribe(`${topicKey}:${this.user.id}`)
+      } catch (e) {
+        console.log('connection close error', e.message)
+      }
+    })
+  }
+
   //this will broadcast to all except sender
   broadcast(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
