@@ -269,7 +269,7 @@ class EstateSyncService {
 
   static async propertyProcessingSucceeded(payload) {
     try {
-      if (!payload.id) {
+      if (!payload?.id) {
         return
       }
       const propertyId = payload.id
