@@ -1328,6 +1328,8 @@ Estates: [ESTATES]
   },
 
   QUEUE_JOB_URGENT: 100,
+  WEBSOCKET_TENANT_REDIS_KEY: 'tenant',
+  WEBSOCKET_LANDLORD_REDIS_KEY: 'landlord',
 }
 
 module.exports = constants

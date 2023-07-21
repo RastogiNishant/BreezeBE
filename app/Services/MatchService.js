@@ -90,6 +90,7 @@ const {
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
   MATCH_TYPE_BUDDY,
   MATCH_TYPE_MATCH,
+  WEBSOCKET_TENANT_REDIS_KEY,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -550,8 +551,9 @@ class MatchService {
         })
         Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
         count = matches?.count || 0
-        this.emitCreateMatchCompleted({
-          user_id: userId,
+        WebSocket.publishToTenant({
+          event: WEBSOCKET_EVENT_MATCH_CREATED,
+          userId,
           data: {
             count,
             matches,
@@ -560,8 +562,10 @@ class MatchService {
           },
         })
       } catch (e) {
-        this.emitCreateMatchCompleted({
-          user_id: userId,
+        console.log('match by user error', e.message)
+        WebSocket.publishToTenant({
+          event: WEBSOCKET_EVENT_MATCH_CREATED,
+          userId,
           data: {
             count: 0,
             matches: [],
