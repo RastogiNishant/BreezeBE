@@ -126,7 +126,7 @@ class TenantController {
       // Add tenant anchor zone processing
       const { lat, lon } = tenant.getLatLon()
       if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
-        await TenantService.updateTenantIsoline(tenant.id)
+        await TenantService.updateTenantIsoline({ tenantid: tenant.id })
       }
 
       if (shouldDeactivateTenant) {

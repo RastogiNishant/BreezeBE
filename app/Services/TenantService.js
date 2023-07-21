@@ -130,8 +130,8 @@ class TenantService {
   /**
    *
    */
-  static async updateTenantIsoline(tenantId, trx = null) {
-    const tenant = await TenantService.getTenantQuery().where({ id: tenantId }).first()
+  static async updateTenantIsoline({ tenantId, tenant }, trx = null) {
+    tenant = tenant ?? (await TenantService.getTenantQuery().where({ id: tenantId }).first())
     if (!tenant) {
       throw new HttpException(USER_NOT_FOUND, 400)
     }
