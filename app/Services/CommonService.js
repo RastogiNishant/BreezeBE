@@ -50,10 +50,35 @@ class CommonService {
     return citiesToReturn
   }
 
-  static async getOffers({ rent_max, country_code, city, duration }, page = 1, limit = 20) {
-    const country = COUNTRIES.filter((country) => country.country_code === country_code)
+  static async getOfferCount({ rent_max, country_code, city, duration }, table) {
+    let query
+    if (table === 'estates') {
+      query = Estate.query()
+    } else if (table === 'third_party_offers') {
+      query = ThirdPartyOffer.query()
+    }
+    query
+      .whereIn('country', CommonService.getCountryAndOtherName(country_code))
+      .where('city', 'ilike', city)
+      .where('net_rent', '<=', rent_max)
+      .where('status', STATUS_ACTIVE)
+    if (duration === RENT_DURATION_SHORT) {
+      query.whereNotNull('rent_end_at')
+    } else if (duration === RENT_DURATION_LONG) {
+      query.whereNull('rent_end_at')
+    }
+    const result = await query.count('* as total')
+    return result?.[0]?.total || 0
+  }
+
+  static getCountryAndOtherName(country_code) {
+    const countries = COUNTRIES.filter((country) => country.country_code === country_code)
+    return [countries[0].country, countries[0].other_name]
+  }
+
+  static async getBreezeOffers({ rent_max, country_code, city, duration }, page = 1, limit = 20) {
     const breezeOffersQuery = Estate.query()
-      .whereIn('country', [country[0].country, country[0].other_name])
+      .whereIn('country', CommonService.getCountryAndOtherName(country_code))
       .where('city', 'ilike', city)
       .where('net_rent', '<=', rent_max)
       .where('status', STATUS_ACTIVE)
@@ -75,14 +100,20 @@ class CommonService {
       .select(Database.raw(`'breeze' as source`))
     if (duration === RENT_DURATION_SHORT) {
       breezeOffersQuery.whereNotNull('rent_end_at').select(Database.raw(`'short' as duration`))
-    } else {
+    } else if (duration === RENT_DURATION_LONG) {
       breezeOffersQuery.whereNull('rent_end_at').select(Database.raw(`'long' as duration`))
     }
-    let breezeOffers = await breezeOffersQuery.fetch()
-    breezeOffers = breezeOffers.toJSON()
+    let breezeOffers = await breezeOffersQuery.paginate(page, limit)
+    return breezeOffers.toJSON().data
+  }
 
+  static async getThirdPartyOffers(
+    { rent_max, country_code, city, duration },
+    from = 1,
+    limit = 20
+  ) {
     const thirdPartyOffersQuery = ThirdPartyOffer.query()
-      .whereIn('country', [country[0].country, country[0].other_name])
+      .whereIn('country', CommonService.getCountryAndOtherName(country_code))
       .where('city', 'ilike', city)
       .where('net_rent', '<=', rent_max)
       .where('status', STATUS_ACTIVE)
@@ -100,21 +131,59 @@ class CommonService {
           `case when full_address = true then initcap(address) else concat("zip", ' ', "city") end as address`
         )
       )
-      .limit(10)
+      .offset(from)
+      .limit(limit)
     if (duration === RENT_DURATION_SHORT) {
       thirdPartyOffersQuery.whereNotNull('rent_end_at').select(Database.raw(`'short' as duration`))
     } else {
       thirdPartyOffersQuery.whereNull('rent_end_at').select(Database.raw(`'long' as duration`))
     }
     let thirdPartyOffers = await thirdPartyOffersQuery.fetch()
-    thirdPartyOffers = thirdPartyOffers.toJSON()
-    const allOffers = [...breezeOffers, ...thirdPartyOffers]
-    const total = allOffers.length
+    return thirdPartyOffers.rows
+  }
+
+  static async getOffers({ rent_max, country_code, city, duration }, page = 1, limit = 20) {
+    let offers = []
+    let totalCount = 0
+    const fromBreezeCount = await CommonService.getOfferCount(
+      { rent_max, country_code, city, duration },
+      'estates'
+    )
+    const fromThirdPartyOfferCount = await CommonService.getOfferCount(
+      { rent_max, country_code, city, duration },
+      'third_party_offers'
+    )
+    totalCount = parseInt(fromBreezeCount) + parseInt(fromThirdPartyOfferCount)
+    let enoughOfInsideMatch = false
+    const offsetCount = fromBreezeCount % limit
+    const insidePage = Math.ceil(fromBreezeCount / limit) || 1
+    if ((page - 1) * limit < fromBreezeCount) {
+      offers = await CommonService.getBreezeOffers(
+        { rent_max, country_code, city, duration },
+        page,
+        limit
+      )
+      if (offers.length >= limit) {
+        enoughOfInsideMatch = true
+      }
+    }
+    if (!enoughOfInsideMatch) {
+      let from = (page - insidePage) * limit - offsetCount
+      if (from < 0) from = 0
+      const to = (page - insidePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
+      const thirdPartyOffers = await CommonService.getThirdPartyOffers(
+        { rent_max, country_code, city, duration },
+        from,
+        to
+      )
+      offers = [...offers, ...thirdPartyOffers]
+    }
+    const total = totalCount
     return {
       page,
       total_pages: Math.ceil(total / limit),
       total,
-      offers: allOffers.slice((page - 1) * limit, page * limit),
+      offers,
     }
   }
 }
