@@ -2,7 +2,7 @@
 
 const Ws = use('Ws')
 const { isNull } = require('lodash')
-const { BREEZE_BOT_USER, WEBSOCKET_REDIS_NAME } = require('../../constants')
+const { BREEZE_BOT_USER } = require('../../constants')
 const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
@@ -39,7 +39,7 @@ class BaseController {
   }
 
   //this will broadcast to all except sender
-  static broadcast({ message, event = 'message', sender = null }) {
+  broadcast(message, event = 'message', sender = null) {
     //sender is null when user, 0 when bot
     try {
       if (this.topic && isNull(sender)) {
@@ -61,7 +61,6 @@ class BaseController {
         })
       }
     } catch (err) {
-      console.log('broadcast error here=', err.message)
       this.emitError(err.message)
     }
   }

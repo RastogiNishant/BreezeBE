@@ -9,10 +9,10 @@ const Buddy = use('App/Models/Buddy')
 const Estate = use('App/Models/Estate')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
+const Ws = use('Ws')
 const FileBucket = use('App/Classes/File')
 const schema = require('../Validators/CreateBuddy').schema()
 const Logger = use('Logger')
-const WebSocket = use('App/Classes/Websocket')
 const fsPromise = require('fs/promises')
 const {
   STATUS_DRAFT,

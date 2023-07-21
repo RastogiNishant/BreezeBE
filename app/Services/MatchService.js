@@ -19,7 +19,6 @@ const GeoService = use('App/Services/GeoService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Buddy = use('App/Models/Buddy')
-const WebSocket = use('App/Classes/Websocket')
 const { max, min } = require('lodash')
 const Event = use('Event')
 const File = use('App/Classes/File')
@@ -552,7 +551,6 @@ class MatchService {
         })
         Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
         count = matches?.count || 0
-
         WebSocket.publishToTenant({
           event: WEBSOCKET_EVENT_MATCH_CREATED,
           userId,
@@ -606,6 +604,7 @@ class MatchService {
         user_id: tenant.user_id,
         estate_id: i.estate_id,
         percent: i.percent,
+        status: MATCH_STATUS_NEW,
       })) || []
 
     // Create new matches
@@ -896,6 +895,16 @@ class MatchService {
       },
       role: ROLE_LANDLORD,
     })
+  }
+
+  static emitCreateMatchCompleted({ user_id, data }) {
+    const channel = `tenant:*`
+    const topicName = `tenant:${user_id}`
+    const topic = Ws.getChannel(channel).topic(topicName)
+
+    if (topic) {
+      topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
+    }
   }
 
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {

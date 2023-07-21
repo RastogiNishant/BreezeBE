@@ -599,6 +599,10 @@ Route.get('/api/v1/estates/search/onboard', 'EstateController.searchPreOnboard')
 Route.get('/api/v1/onboard/tenant/estates/:id', 'EstateController.getTenantEstate').middleware([
   'valid:Id',
 ])
+Route.get(
+  '/api/v1/onboard/tenant/estates/third_party/:id',
+  'EstateController.getThirdPartyOfferEstate'
+).middleware(['valid:Id'])
 
 Route.get(
   '/api/v1/estates/tenant/invite/letter/retrieve-link/:code',
