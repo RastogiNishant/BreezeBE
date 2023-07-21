@@ -1336,6 +1336,8 @@ Estates: [ESTATES]
   RENT_DURATION_LONG: 'long',
   RENT_DURATION_SHORT: 'short',
   QUEUE_JOB_URGENT: 100,
+
+  CITIES_AUTOCOMPLETE_MAX_COUNT: 10,
 }
 
 module.exports = constants
