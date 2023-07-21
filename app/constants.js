@@ -1328,8 +1328,6 @@ Estates: [ESTATES]
   },
 
   QUEUE_JOB_URGENT: 100,
-
-  WEBSOCKET_REDIS_NAME: 'websocket',
 }
 
 module.exports = constants
