@@ -137,8 +137,12 @@ class QueueService {
     Queue.addJob(NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED, { estateId, userId }, { delay })
   }
 
-  static sendKnockRequestEmail({ link, email, estate, landlord_name, lang }, delay) {
-    Queue.addJob(KNOCK_SEND_REQUEST_EMAIL, { link, email, estate, landlord_name, lang }, { delay })
+  static sendKnockRequestEmail({ link, contact, estate, landlord_name, lang }, delay) {
+    Queue.addJob(
+      KNOCK_SEND_REQUEST_EMAIL,
+      { link, contact, estate, landlord_name, lang },
+      { delay }
+    )
   }
 
   static getIpBasedInfo(userId, ip) {
@@ -369,7 +373,7 @@ class QueueService {
         case KNOCK_SEND_REQUEST_EMAIL:
           require('./MailService').sendPendingKnockEmail({
             link: job.data.link,
-            email: job.data.email,
+            contact: job.data.contact,
             estate: job.data.estate,
             landlord_name: job.data.landlord_name,
             lang: job.data.lang,

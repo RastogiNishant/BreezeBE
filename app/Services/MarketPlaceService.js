@@ -5,8 +5,12 @@ const crypto = require('crypto')
 const HttpException = require('../Exceptions/HttpException')
 const Promise = require('bluebird')
 const Logger = use('Logger')
+const l = use('Localize')
 const Database = use('Database')
 const { createDynamicLink } = require('../Libs/utils')
+const SMSService = use('App/Services/SMSService')
+const yup = require('yup')
+const { phoneSchema } = require('../Libs/schemas')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -126,7 +130,6 @@ class MarketPlaceService {
     if (!payload?.propertyId) {
       return
     }
-
     const propertyId = payload.propertyId
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
@@ -149,7 +152,7 @@ class MarketPlaceService {
 
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
-      payload?.message,
+      payload?.message || '',
       contact.publisher
     )
 
@@ -174,15 +177,60 @@ class MarketPlaceService {
     const trx = await Database.beginTransaction()
     try {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
-      await this.handlePendingKnock(contact, trx)
+
+      const { link, estate, landlord_name, lang } = await this.handlePendingKnock(contact, trx)
 
       await trx.commit()
+
+      //sending knock email 10 seconds later
+      require('./QueueService').sendKnockRequestEmail(
+        {
+          link,
+          contact,
+          estate,
+          landlord_name,
+          lang,
+        },
+        30000
+      )
+
+      this.sendSMS({ contact, link, lang })
+
       await this.sendContactRequestWebsocket(newContactRequest)
       return newContactRequest
     } catch (e) {
       Logger.error(`createContact error ${e.message || e}`)
 
       await trx.rollback()
+    }
+  }
+
+  static async sendSMS({ contact, link, lang }) {
+    if (!contact?.contact_info?.phone) {
+      return
+    }
+
+    let phone_number = contact.contact_info.phone
+    if (contact.contact_info.phone[0] === '0') {
+      phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
+    }
+
+    try {
+      await yup
+        .object()
+        .shape({
+          phone_number: phoneSchema,
+        })
+        .validate({ phone_number })
+
+      const txt =
+        l
+          .get('sms.prospect.marketplace_request', lang)
+          .replace('{partner_name}', `${contact.publisher || ''} `) + link
+
+      await SMSService.send({ to: phone_number, txt })
+    } catch (e) {
+      console.log('sending sms error', e.message)
     }
   }
 
@@ -242,17 +290,13 @@ class MarketPlaceService {
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
     const landlord_name = `${user.firstname} ${user.secondname}`
-    //sending knock email 10 seconds later
-    require('./QueueService').sendKnockRequestEmail(
-      {
-        link: shortLink,
-        email: contact.email,
-        estate: estate.toJSON(),
-        landlord_name,
-        lang,
-      },
-      30000
-    )
+
+    return {
+      link: shortLink,
+      estate: estate.toJSON(),
+      landlord_name,
+      lang,
+    }
   }
 
   static async inviteByLandlord({ id, user }) {
