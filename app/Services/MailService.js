@@ -974,7 +974,7 @@ class MailService {
     }
     const salutation = l
       .get('email_signature.outside_salutation.message', lang)
-      .replace(
+      .replaceAll(
         '{{prospect_name}}',
         `${contact?.contact_info?.firstName} ${contact?.contact_info?.lastName}`
       )
@@ -987,7 +987,7 @@ class MailService {
       .get('prospect.no_reply_email_from_listing_updated.intro.message', lang)
       .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
 
-    intro = intro.replace('{{partner_name}}', publisher)
+    intro = intro.replaceAll('{{partner_name}}', publisher)
 
     const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
       <tr>${intro}</tr>

@@ -194,8 +194,6 @@ class MarketPlaceService {
         30000
       )
 
-      this.sendSMS({ contact, link, lang })
-
       await this.sendContactRequestWebsocket(newContactRequest)
       return newContactRequest
     } catch (e) {
@@ -205,16 +203,25 @@ class MarketPlaceService {
     }
   }
 
+  static async inviteProspect({ contact, link, estate, landlord_name, lang = DEFAULT_LANG }) {
+    await MarketPlaceService.sendSMS({ contact, link, lang })
+    require('./MailService').sendPendingKnockEmail({
+      link,
+      contact,
+      estate,
+      landlord_name,
+      lang,
+    })
+  }
+
   static async sendSMS({ contact, link, lang }) {
     if (!contact?.contact_info?.phone) {
       return
     }
-
-    let phone_number = contact.contact_info.phone
+    let phone_number = contact.contact_info.phone.replaceAll(' ', '')
     if (contact.contact_info.phone[0] === '0') {
       phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
     }
-
     try {
       await yup
         .object()
@@ -226,7 +233,7 @@ class MarketPlaceService {
       const txt =
         l
           .get('sms.prospect.marketplace_request', lang)
-          .replace('{partner_name}', `${contact.publisher || ''} `) + link
+          .replaceAll('{partner_name}', `${contact.publisher || ''} `) + link
 
       await SMSService.send({ to: phone_number, txt })
     } catch (e) {
