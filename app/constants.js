@@ -1332,9 +1332,9 @@ Estates: [ESTATES]
   WEBSOCKET_LANDLORD_REDIS_KEY: 'landlord',
 
   MARKETPLACE_LIST: {
-    immowelt: 'Immowelt',
-    'immobilienscout-24': 'Immoscount24',
-    'ebay-kleinanzeigen': 'Ebaykleinanzeigen',
+    immowelt: 'landlord.web.my-properties.txt_immowelt',
+    'immobilienscout-24': 'landlord.web.my-properties.txt_immobilienscout24',
+    'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
 }
 
