@@ -898,13 +898,7 @@ class MatchService {
   }
 
   static emitCreateMatchCompleted({ user_id, data }) {
-    const channel = `tenant:*`
-    const topicName = `tenant:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_MATCH_CREATED, data)
-    }
+    WebSocket.publishToTenant({ event: WEBSOCKET_EVENT_MATCH_CREATED, userId: user_id, data })
   }
 
   static async emitMatch({ data, role, event = WEBSOCKET_EVENT_MATCH }) {
@@ -950,12 +944,10 @@ class MatchService {
       }
     }
 
-    const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
-    const topicName =
-      role === ROLE_LANDLORD ? `landlord:${landlordSenderId}` : `tenant:${data.user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-    if (topic) {
-      topic.broadcast(event, data)
+    if (role === ROLE_LANDLORD) {
+      WebSocket.publishToLandlord({ event, userId: landlordSenderId, data })
+    } else {
+      WebSocket.publishToTenant({ event, userId: data.user_id, data })
     }
   }
 

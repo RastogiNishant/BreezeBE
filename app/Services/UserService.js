@@ -30,10 +30,9 @@ const Drive = use('Drive')
 const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
-const Ws = use('Ws')
 const { getIpBasedInfo } = use('App/Libs/getIpBasedInfo')
 const Admin = use('App/Models/Admin')
-
+const WebSocket = use('App/Classes/Websocket')
 const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
@@ -1506,10 +1505,11 @@ class UserService {
     ids = !Array.isArray(ids) ? [ids] : ids
 
     ids.map((id) => {
-      const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
-      if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { ...data })
-      }
+      WebSocket.publishToLandlord({
+        event: WEBSOCKET_EVENT_USER_ACTIVATE,
+        userId: id,
+        data,
+      })
     })
   }
 
