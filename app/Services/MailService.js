@@ -961,13 +961,13 @@ class MailService {
   }
 
   static async sendPendingKnockEmail({ link, contact, estate, lang = DEFAULT_LANG }) {
-    const email = contact.contact
+    const email = contact.email
     let publisher = MARKETPLACE_LIST?.[contact?.publisher]
     publisher = publisher ? l.get(publisher) : ''
     const templateId = PROSPECT_EMAIL_TEMPLATE
 
     let prospectName = l.get('prospect.settings.menu.txt_prospect.message', lang)
-    if (contact?.contact_info?.firstName && contact?.contact_info?.lastName) {
+    if (contact?.contact_info?.firstName || contact?.contact_info?.lastName) {
       prospectName = `${contact?.contact_info?.firstName || ''} ${
         contact?.contact_info?.lastName || ''
       }`
