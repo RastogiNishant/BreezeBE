@@ -261,7 +261,7 @@ class OutsideLandlordService {
   }
 
   static async emitLandlordInvitationFromTenant({ user_id, data }) {
-    WebSocket.publishToTenant({
+    WebSocket.publishToLandlord({
       event: WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT,
       userId: user_id,
       data,
