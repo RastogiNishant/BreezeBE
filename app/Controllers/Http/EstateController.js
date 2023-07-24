@@ -1202,10 +1202,12 @@ class EstateController {
       }
       const insideEstates = await EstateService.searchEstateByPoint(point.id)
       const outsideEstates = await ThirdPartyOfferService.searchTenantEstatesByPoint(point.id)
-      response.res({
-        isoline: point?.data?.data,
-        estates: [...insideEstates, ...outsideEstates],
-      })
+      // response.res({
+      //   isoline: point?.data?.data,
+      //   estates: [...insideEstates, ...outsideEstates],
+      // })
+      const estates = [...insideEstates, ...outsideEstates]
+      response.res(estates)
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
