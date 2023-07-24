@@ -1154,6 +1154,15 @@ Route.group(() => {
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/contacts')
 
+Route.group(() => {
+  Route.get('/', 'FtpLiveSyncController.get')
+  Route.post('/', 'FtpLiveSyncController.add').middleware(['valid:CreateFtpLiveSync'])
+  Route.put('/', 'FtpLiveSyncController.update').middleware(['valid:CreateFtpLiveSync'])
+  Route.delete('/', 'FtpLiveSyncController.delete')
+})
+  .middleware(['auth:jwtLandlord'])
+  .prefix('api/v1/ftp-live-sync')
+
 Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification').middleware([
   'auth:jwtLandlord,jwt',
   'valid:DebugNotification',

@@ -1282,6 +1282,9 @@ class UserService {
       .with('letter_template')
       .with('tenantPaymentPlan')
       .with('feedbacks')
+      .with('ftpLiveSync', function (query) {
+        query.where('status', STATUS_ACTIVE)
+      })
       .first()
 
     if (!user) {
