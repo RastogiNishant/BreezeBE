@@ -8,7 +8,6 @@ const Database = use('Database')
 class MarketPlaceController {
   async createContact({ request, auth, response }) {
     const { ...contact } = request.all()
-    console.log('createContact ', contact)
     try {
       response.res(await MarketPlaceService.createContact(contact))
     } catch (e) {
