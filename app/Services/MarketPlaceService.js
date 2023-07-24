@@ -123,29 +123,31 @@ const TenantService = require('./TenantService')
 const { uniq, omit } = require('lodash')
 class MarketPlaceService {
   static async createContact(payload) {
+    console.log('createContact here 0')
     if (!payload?.propertyId) {
       return
     }
-
+    console.log('createContact here 1')
     const propertyId = payload.propertyId
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
       .first()
-
+    console.log('createContact here 2')
     if (!listing) {
       return
     }
-
+    console.log('createContact here 3')
     if (!payload?.prospect?.email) {
       return
     }
-
+    console.log('createContact here 4')
     const contact = {
       estate_id: listing.estate_id,
       email: payload.prospect.email,
       contact_info: payload?.prospect || ``,
       message: payload?.message || ``,
     }
+    console.log('MarketPlace createContact', contact)
 
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
@@ -246,7 +248,7 @@ class MarketPlaceService {
     require('./QueueService').sendKnockRequestEmail(
       {
         link: shortLink,
-        email: contact.email,
+        conact,
         estate: estate.toJSON(),
         landlord_name,
         lang,

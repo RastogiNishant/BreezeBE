@@ -29,6 +29,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   ESTATE_NO_IMAGE_COVER_URL,
+  MARKETPLACE_LIST,
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
@@ -959,16 +960,34 @@ class MailService {
     )
   }
 
-  static async sendPendingKnockEmail({ link, email, estate, lang = DEFAULT_LANG }) {
+  static async sendPendingKnockEmail({ link, contact, estate, lang = DEFAULT_LANG }) {
+    const email = contact.contact
+    let publisher = MARKETPLACE_LIST?.[contact?.publisher]
+    publisher = publisher ? l.get(publisher) : ''
     const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    let prospectName = l.get('prospect.settings.menu.txt_prospect.message', lang)
+    if (contact?.contact_info?.firstName && contact?.contact_info?.lastName) {
+      prospectName = `${contact?.contact_info?.firstName || ''} ${
+        contact?.contact_info?.lastName || ''
+      }`
+    }
+    const salutation = l
+      .get('email_signature.outside_salutation.message', lang)
+      .replace(
+        '{{prospect_name}}',
+        `${contact?.contact_info?.firstName} ${contact?.contact_info?.lastName}`
+      )
     const final = l
       .get('prospect.no_reply_email_from_listing.final.message', lang)
       // .replace('{Landlord_name}', `${landlord_name}`)
       .replace(/\n/g, '<br />')
 
     let intro = l
-      .get('prospect.no_reply_email_from_listing.intro.message', lang)
+      .get('prospect.no_reply_email_from_listing_updated.intro.message', lang)
       .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
+
+    intro = intro.replace('{{partner_name}}', publisher)
 
     const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
       <tr>${intro}</tr>
@@ -983,7 +1002,7 @@ class MailService {
       templateId: templateId,
       dynamic_template_data: {
         subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
-        salutation: l.get('email_signature.outside_salutation.message', lang),
+        salutation: salutation,
         intro: introLayout,
         CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
         link,

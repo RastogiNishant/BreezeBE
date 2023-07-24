@@ -1330,6 +1330,12 @@ Estates: [ESTATES]
   QUEUE_JOB_URGENT: 100,
   WEBSOCKET_TENANT_REDIS_KEY: 'tenant',
   WEBSOCKET_LANDLORD_REDIS_KEY: 'landlord',
+
+  MARKETPLACE_LIST: {
+    immowelt: 'Immowelt',
+    'immobilienscout-24': 'Immoscount24',
+    'ebay-kleinanzeigen': 'Ebaykleinanzeigen',
+  },
 }
 
 module.exports = constants
