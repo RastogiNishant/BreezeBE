@@ -6,6 +6,7 @@ const {
   ROLE_LANDLORD,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   STATUS_DELETE,
+  USER_ACTIVATION_STATUS_ACTIVATED,
 } = require('../constants')
 
 const Model = require('./BaseModel')
@@ -93,7 +94,7 @@ class User extends Model {
 
     this.addHook('beforeCreate', async (userInstance) => {
       if (userInstance.role == ROLE_LANDLORD) {
-        userInstance.activation_status = USER_ACTIVATION_STATUS_NOT_ACTIVATED
+        userInstance.activation_status = USER_ACTIVATION_STATUS_ACTIVATED
       }
     })
 
