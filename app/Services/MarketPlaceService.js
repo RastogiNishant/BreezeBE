@@ -126,7 +126,6 @@ class MarketPlaceService {
     if (!payload?.propertyId) {
       return
     }
-
     const propertyId = payload.propertyId
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
@@ -149,7 +148,7 @@ class MarketPlaceService {
 
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
-      payload?.message,
+      payload?.message || '',
       contact.publisher
     )
 
@@ -174,6 +173,7 @@ class MarketPlaceService {
     const trx = await Database.beginTransaction()
     try {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
+
       await this.handlePendingKnock(contact, trx)
 
       await trx.commit()
@@ -246,7 +246,7 @@ class MarketPlaceService {
     require('./QueueService').sendKnockRequestEmail(
       {
         link: shortLink,
-        email: contact.email,
+        contact,
         estate: estate.toJSON(),
         landlord_name,
         lang,
