@@ -36,6 +36,7 @@ const {
   WEBSOCKET_TENANT_REDIS_KEY,
   WEBSOCKET_LANDLORD_REDIS_KEY,
 } = require('../constants')
+const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
