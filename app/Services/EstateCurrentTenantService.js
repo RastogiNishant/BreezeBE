@@ -1290,7 +1290,7 @@ class EstateCurrentTenantService extends BaseService {
     if (estate) {
       WebSocket.publishToLandlord({
         event: WEBSOCKET_EVENT_TENANT_CONNECTED,
-        userId: user_id,
+        userId: estate.user_id,
         data: {
           estate_id,
           user_id,
