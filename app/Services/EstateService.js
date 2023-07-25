@@ -629,8 +629,8 @@ class EstateService {
         ...estateData,
       }
     } catch (e) {
-      console.log('Creating estate error =', e.message)
-      throw new HttpException(e.message, e.status || 500)
+      Logger.error(`Creating estate error = ${userId} e.message`)
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
