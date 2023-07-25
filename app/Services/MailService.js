@@ -883,7 +883,7 @@ class MailService {
       estate?.zip || ''
     } ${city}, <br/> ${country}`
 
-    const coverImage = `<table width='100%'><tr><td><img style = "width:100%; height:150px;object-fit:cover; border-radius: 5%" src = '${
+    const coverImage = `<table width='100%'><tr><td><img style = "width:100%; height:150px; border-radius: 5%" src = '${
       estate.cover ? estate.cover : ESTATE_NO_IMAGE_COVER_URL
     }'/></td></tr></table>`
     const addressLayout = `<tr><td>
