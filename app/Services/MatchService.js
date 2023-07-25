@@ -1220,11 +1220,10 @@ class MatchService {
     }
 
     await Database.table('matches')
-      .update({ status: MATCH_STATUS_KNOCK })
+      .update({ status: MATCH_STATUS_KNOCK, status_at: moment.utc(new Date()).format(DATE_FORMAT) })
       .where({
         user_id: userId,
         estate_id: estateId,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
 
     if (role === ROLE_USER) {
@@ -1511,11 +1510,13 @@ class MatchService {
       .delete()
 
     const updateMatch = Database.table('matches')
-      .update({ status: MATCH_STATUS_INVITE })
+      .update({
+        status: MATCH_STATUS_INVITE,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      })
       .where({
         user_id: tenantId,
         estate_id: estateId,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT),
       })
 
     await Promise.all([deleteVisit, updateMatch])

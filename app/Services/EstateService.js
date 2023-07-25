@@ -629,8 +629,8 @@ class EstateService {
         ...estateData,
       }
     } catch (e) {
-      console.log('Creating estate error =', e.message)
-      throw new HttpException(e.message, e.status || 500)
+      Logger.error(`Creating estate error = ${userId} e.message`)
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -1237,7 +1237,7 @@ class EstateService {
   static async searchEstateByPoint(point_id) {
     const estateFields = ESTATE_FIELD_FOR_TASK.map((field) => `_e.${field}`)
     return await Database.select(Database.raw(`TRUE as inside`))
-      .select('_e.id', 'net_rent', 'extra_costs')
+      .select('_e.id', 'net_rent', 'extra_costs', 'available_end_at')
       .select(estateFields)
       .from({ _e: 'estates' })
       .innerJoin({ _p: 'points' }, function () {

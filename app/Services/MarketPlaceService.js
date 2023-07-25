@@ -218,7 +218,7 @@ class MarketPlaceService {
     if (!contact?.contact_info?.phone) {
       return
     }
-    let phone_number = contact.contact_info.phone.replaceAll(' ', '')
+    let phone_number = contact.contact_info.phone.replace(' ', '')
     if (contact.contact_info.phone[0] === '0') {
       phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
     }
@@ -233,7 +233,7 @@ class MarketPlaceService {
       const txt =
         l
           .get('sms.prospect.marketplace_request', lang)
-          .replaceAll('{partner_name}', `${contact.publisher || ''} `) + link
+          .replace('{partner_name}', `${contact.publisher || ''} `) + link
 
       await SMSService.send({ to: phone_number, txt })
     } catch (e) {
