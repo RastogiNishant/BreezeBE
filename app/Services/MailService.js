@@ -898,147 +898,155 @@ class MailService {
   }
 
   static async reminderKnockSignUpEmail({ link, email, estate, lang = DEFAULT_LANG }) {
-    const templateId = PROSPECT_EMAIL_TEMPLATE
-    const final = l
-      .get('prospect.no_reply_email_to_complete_profile.final.message', lang)
-      // .replace('{Landlord_name}', `${landlord_name}`)
-      .replace(/\n/g, '<br />')
+    try {
+      const templateId = PROSPECT_EMAIL_TEMPLATE
+      const final = l
+        .get('prospect.no_reply_email_to_complete_profile.final.message', lang)
+        // .replace('{Landlord_name}', `${landlord_name}`)
+        .replace(/\n/g, '<br />')
 
-    let intro = l
-      .get('prospect.no_reply_email_to_complete_profile.intro.message', lang)
-      .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
+      let intro = l
+        .get('prospect.no_reply_email_to_complete_profile.intro.message', lang)
+        .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
 
-    const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
-      <tr>${intro}</tr>
-     </table>`
+      const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
+        <tr>${intro}</tr>
+       </table>`
 
-    const messages = {
-      to: trim(email),
-      from: {
-        email: FromEmail,
-        name: FromName,
-      },
-      templateId: templateId,
-      dynamic_template_data: {
-        subject: l.get('prospect.no_reply_email_to_complete_profile.subject.message', lang),
-        salutation: l.get('email_signature.outside_salutation.message', lang),
-        intro: introLayout,
-        CTA: l.get('prospect.no_reply_email_to_complete_profile.CTA.message', lang),
-        link,
-        final,
-        logo_shown: 'none',
-        greeting: l.get('email_signature.greeting.message', lang),
-        company: l.get('email_signature.company.message', lang),
-        position: l.get('email_signature.position.message', lang),
-        tel: l.get('email_signature.tel.message', lang),
-        email: l.get('email_signature.email.message', lang),
-        address: l.get('email_signature.address.message', lang),
-        website: l.get('email_signature.website.message', lang),
-        tel_val: l.get('tel.customer_service.de.message', lang),
-        email_val: l.get('email.customer_service.de.message', lang),
-        address_val: l.get('address.customer_service.de.message', lang),
-        website_val: l.get('website.customer_service.de.message', lang),
-        team: l.get('email_signature.team.message', lang),
-        download_app: l.get('email_signature.download.app.message', lang),
-        enviromental_responsibility: l.get(
-          'email_signature.enviromental.responsibility.message',
-          lang
-        ),
-      },
-    }
-
-    return sgMail.send(messages).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
+      const messages = {
+        to: trim(email),
+        from: {
+          email: FromEmail,
+          name: FromName,
+        },
+        templateId: templateId,
+        dynamic_template_data: {
+          subject: l.get('prospect.no_reply_email_to_complete_profile.subject.message', lang),
+          salutation: l.get('email_signature.outside_salutation.message', lang),
+          intro: introLayout,
+          CTA: l.get('prospect.no_reply_email_to_complete_profile.CTA.message', lang),
+          link,
+          final,
+          logo_shown: 'none',
+          greeting: l.get('email_signature.greeting.message', lang),
+          company: l.get('email_signature.company.message', lang),
+          position: l.get('email_signature.position.message', lang),
+          tel: l.get('email_signature.tel.message', lang),
+          email: l.get('email_signature.email.message', lang),
+          address: l.get('email_signature.address.message', lang),
+          website: l.get('email_signature.website.message', lang),
+          tel_val: l.get('tel.customer_service.de.message', lang),
+          email_val: l.get('email.customer_service.de.message', lang),
+          address_val: l.get('address.customer_service.de.message', lang),
+          website_val: l.get('website.customer_service.de.message', lang),
+          team: l.get('email_signature.team.message', lang),
+          download_app: l.get('email_signature.download.app.message', lang),
+          enviromental_responsibility: l.get(
+            'email_signature.enviromental.responsibility.message',
+            lang
+          ),
+        },
       }
-    )
+
+      return sgMail.send(messages).then(
+        () => {
+          console.log('Email delivery successfully')
+        },
+        (error) => {
+          console.log('Email delivery failed', error)
+          if (error.response) {
+            console.error(error.response.body)
+          }
+        }
+      )
+    } catch (e) {
+      Logger.error(`reminderKnockSignUpEmail ${email} ${e?.message}`)
+    }
   }
 
   static async sendPendingKnockEmail({ link, contact, estate, lang = DEFAULT_LANG }) {
-    const email = contact.email
-    let publisher = MARKETPLACE_LIST?.[contact?.publisher]
-    publisher = publisher ? l.get(publisher) : ''
-    const templateId = PROSPECT_EMAIL_TEMPLATE
+    try {
+      const email = contact.email
+      let publisher = MARKETPLACE_LIST?.[contact?.publisher]
+      publisher = publisher ? l.get(publisher) : ''
+      const templateId = PROSPECT_EMAIL_TEMPLATE
 
-    let prospectName = l.get('prospect.settings.menu.txt_prospect.message', lang)
-    if (contact?.contact_info?.firstName || contact?.contact_info?.lastName) {
-      prospectName = `${contact?.contact_info?.firstName || ''} ${
-        contact?.contact_info?.lastName || ''
-      }`
-    }
-    const salutation = l
-      .get('email_signature.outside_salutation.message', lang)
-      .replaceAll(
-        '{{prospect_name}}',
-        `${contact?.contact_info?.firstName} ${contact?.contact_info?.lastName}`
-      )
-    const final = l
-      .get('prospect.no_reply_email_from_listing.final.message', lang)
-      // .replace('{Landlord_name}', `${landlord_name}`)
-      .replace(/\n/g, '<br />')
-
-    let intro = l
-      .get('prospect.no_reply_email_from_listing_updated.intro.message', lang)
-      .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
-
-    intro = intro.replaceAll('{{partner_name}}', publisher)
-
-    const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
-      <tr>${intro}</tr>
-     </table>`
-
-    const messages = {
-      to: trim(email),
-      from: {
-        email: FromEmail,
-        name: FromName,
-      },
-      templateId: templateId,
-      dynamic_template_data: {
-        subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
-        salutation: salutation,
-        intro: introLayout,
-        CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
-        link,
-        final,
-        logo_shown: 'none',
-        greeting: l.get('email_signature.greeting.message', lang),
-        company: l.get('email_signature.company.message', lang),
-        position: l.get('email_signature.position.message', lang),
-        tel: l.get('email_signature.tel.message', lang),
-        email: l.get('email_signature.email.message', lang),
-        address: l.get('email_signature.address.message', lang),
-        website: l.get('email_signature.website.message', lang),
-        tel_val: l.get('tel.customer_service.de.message', lang),
-        email_val: l.get('email.customer_service.de.message', lang),
-        address_val: l.get('address.customer_service.de.message', lang),
-        website_val: l.get('website.customer_service.de.message', lang),
-        team: l.get('email_signature.team.message', lang),
-        download_app: l.get('email_signature.download.app.message', lang),
-        enviromental_responsibility: l.get(
-          'email_signature.enviromental.responsibility.message',
-          lang
-        ),
-      },
-    }
-
-    return sgMail.send(messages).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
+      let prospectName = l.get('prospect.settings.menu.txt_prospect.message', lang)
+      if (contact?.contact_info?.firstName || contact?.contact_info?.lastName) {
+        prospectName = `${contact?.contact_info?.firstName || ''} ${
+          contact?.contact_info?.lastName || ''
+        }`
       }
-    )
+      const salutation = l
+        .get('email_signature.outside_salutation.message', lang)
+        .replace(
+          '{{prospect_name}}',
+          `${contact?.contact_info?.firstName} ${contact?.contact_info?.lastName}`
+        )
+      const final = l
+        .get('prospect.no_reply_email_from_listing.final.message', lang)
+        // .replace('{Landlord_name}', `${landlord_name}`)
+        .replace(/\n/g, '<br />')
+
+      let intro = l
+        .get('prospect.no_reply_email_from_listing_updated.intro.message', lang)
+        .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
+
+      intro = intro.replace('{{partner_name}}', publisher)
+
+      const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
+        <tr>${intro}</tr>
+       </table>`
+
+      const messages = {
+        to: trim(email),
+        from: {
+          email: FromEmail,
+          name: FromName,
+        },
+        templateId: templateId,
+        dynamic_template_data: {
+          subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
+          salutation: salutation,
+          intro: introLayout,
+          CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
+          link,
+          final,
+          logo_shown: 'none',
+          greeting: l.get('email_signature.greeting.message', lang),
+          company: l.get('email_signature.company.message', lang),
+          position: l.get('email_signature.position.message', lang),
+          tel: l.get('email_signature.tel.message', lang),
+          email: l.get('email_signature.email.message', lang),
+          address: l.get('email_signature.address.message', lang),
+          website: l.get('email_signature.website.message', lang),
+          tel_val: l.get('tel.customer_service.de.message', lang),
+          email_val: l.get('email.customer_service.de.message', lang),
+          address_val: l.get('address.customer_service.de.message', lang),
+          website_val: l.get('website.customer_service.de.message', lang),
+          team: l.get('email_signature.team.message', lang),
+          download_app: l.get('email_signature.download.app.message', lang),
+          enviromental_responsibility: l.get(
+            'email_signature.enviromental.responsibility.message',
+            lang
+          ),
+        },
+      }
+
+      return sgMail.send(messages).then(
+        () => {
+          console.log('Email delivery successfully')
+        },
+        (error) => {
+          console.log('Email delivery failed', error)
+          if (error.response) {
+            console.error(error.response.body)
+          }
+        }
+      )
+    } catch (e) {
+      Logger.error(`reminderKnockSignUpEmail ${contact?.email} ${e?.message}`)
+    }
   }
 
   static async sendTextEmail(recipient, subject, text) {
