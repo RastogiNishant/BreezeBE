@@ -369,6 +369,7 @@ class ThirdPartyOfferService {
         '_e.area',
         '_e.net_rent',
         '_e.extra_costs',
+        '_e.available_end_at',
         Database.raw(`images->0->'picture'->'picture_url' as cover`)
       )
       .from({ _e: 'third_party_offers' })
