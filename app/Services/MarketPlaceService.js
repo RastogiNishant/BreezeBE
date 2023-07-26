@@ -502,6 +502,7 @@ class MarketPlaceService {
           data2,
         })
       const knockRequest = await this.getKnockRequest({ estate_id, email })
+      console.log(`knockRequest ${estate_id} ${email}=`, knockRequest)
       if (!knockRequest) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
@@ -509,7 +510,7 @@ class MarketPlaceService {
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
         throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       }
-
+      console.log(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
@@ -877,7 +878,13 @@ class MarketPlaceService {
     return {}
   }
 
-  static async getInfoFromContactRequests(email, estate_id) {
+  static async getInfoFromContactRequests({ email, data1, data2 }) {
+    const { estate_id, ...data } = this.decryptDynamicLink({ data1, data2 })
+
+    if (!estate_id) {
+      return null
+    }
+
     return await EstateSyncContactRequest.query()
       .select(Database.raw(`other_info->'employment' as profession`))
       .select(Database.raw(`other_info->'family_size' as members`))

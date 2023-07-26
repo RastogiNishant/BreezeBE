@@ -13,7 +13,7 @@ const SMSService = use('App/Services/SMSService')
 const Promise = require('bluebird')
 const InvitationLinkCode = use('App/Models/InvitationLinkCode')
 const DataStorage = use('DataStorage')
-const Ws = use('Ws')
+const WebSocket = use('App/Classes/Websocket')
 const Estate = use('App/Models/Estate')
 const { omit } = require('lodash')
 
@@ -1288,14 +1288,15 @@ class EstateCurrentTenantService extends BaseService {
       .first()
 
     if (estate) {
-      const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${estate.user_id}`)
-      if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_TENANT_CONNECTED, {
+      WebSocket.publishToLandlord({
+        event: WEBSOCKET_EVENT_TENANT_CONNECTED,
+        userId: estate.user_id,
+        data: {
           estate_id,
           user_id,
           current_tenant: estate?.toJSON()?.current_tenant,
-        })
-      }
+        },
+      })
     }
   }
 
