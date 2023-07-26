@@ -158,16 +158,6 @@ class TaskController extends BaseController {
     //FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
-      // message.id = chat.id
-      // message.message = chat.text
-      // message.attachments = await this.getAbsoluteUrl(chat.attachments)
-      // message.sender = {
-      //   id: this.user.id,
-      //   firstname: this.user.firstname,
-      //   secondname: this.user.secondname,
-      //   avatar: this.user.avatar,
-      // }
-      // message.topic = this.socket.topic
 
       const data = {
         message: {
@@ -221,12 +211,7 @@ class TaskController extends BaseController {
           data: messageReceivedData,
         })
       }
-      // this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
-      //   topic: this.socket.topic,
-      //   urgency: task?.urgency,
-      //   estate_id: this.estateId,
-      //   user_id: this.user.id,
-      // })
+
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
 
@@ -241,7 +226,6 @@ class TaskController extends BaseController {
       })
 
       console.log('instance here=', this instanceof BaseController)
-      //super.onMessage(message)
     } catch (e) {
       Logger.error('onMessage error=', e.message)
       this.emitError(e.message || MESSAGE_NOT_SAVED)
