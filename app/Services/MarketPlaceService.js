@@ -233,7 +233,7 @@ class MarketPlaceService {
       const txt =
         l
           .get('sms.prospect.marketplace_request', lang)
-          .replace('{partner_name}', `${contact.publisher || ''} `) + link
+          .replace('{{partner_name}}', `${contact.publisher || ''} `) + link
 
       await SMSService.send({ to: phone_number, txt })
     } catch (e) {
