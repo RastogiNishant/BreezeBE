@@ -600,6 +600,7 @@ class MatchService {
         user_id: tenant.user_id,
         estate_id: i.estate_id,
         percent: i.percent,
+        status: MATCH_STATUS_NEW,
       })) || []
 
     // Create new matches
