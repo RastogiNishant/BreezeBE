@@ -6,8 +6,8 @@ const ChatService = use('App/Services/ChatService')
 class TenantController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
-    this.subscribe(WEBSOCKET_TENANT_REDIS_KEY)
-    this.unsubscribe(WEBSOCKET_TENANT_REDIS_KEY)
+    this.subscribe({ channel: WEBSOCKET_TENANT_REDIS_KEY })
+    this.unsubscribe({ channel: WEBSOCKET_TENANT_REDIS_KEY })
   }
 }
 

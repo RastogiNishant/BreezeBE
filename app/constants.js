@@ -1330,6 +1330,7 @@ Estates: [ESTATES]
   QUEUE_JOB_URGENT: 100,
   WEBSOCKET_TENANT_REDIS_KEY: 'tenant',
   WEBSOCKET_LANDLORD_REDIS_KEY: 'landlord',
+  WEBSOCKET_TASK_REDIS_KEY: 'task',
 
   MARKETPLACE_LIST: {
     immowelt: 'landlord.web.my-properties.txt_immowelt',
