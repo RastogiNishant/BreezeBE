@@ -8,8 +8,9 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
+  WEBSOCKET_TASK_REDIS_KEY,
 } = require('../../constants')
-
+const WebSocket = use('App/Classes/Websocket')
 const {
   exceptions: { MESSAGE_NOT_SAVED },
 } = require('../../exceptions')
@@ -29,6 +30,9 @@ class TaskController extends BaseController {
     this.estateId = request.estate_id
     this.tenant_user_id = request.tenant_user_id
     this.estate_user_id = request.estate_user_id
+
+    this.subscribe(WEBSOCKET_TASK_REDIS_KEY)
+    this.unsubscribe(WEBSOCKET_TASK_REDIS_KEY)
   }
 
   async onGetPreviousMessages(data) {
@@ -70,15 +74,19 @@ class TaskController extends BaseController {
       }
       await ChatService.updateChatMessage({ id, message, attachments })
       attachments = await this.getAbsoluteUrl(attachments)
-      if (this.topic) {
-        this.topic.broadcast('messageEdited', {
+
+      WebSocket.publichToTask({
+        event: 'messageEdited',
+        taskId: this.taskId,
+        estateId: this.estateId,
+        data: {
           id,
           message: message,
           attachments: attachments,
           edit_status: CHAT_EDIT_STATUS_EDITED,
           topic: this.socket.topic,
-        })
-      }
+        },
+      })
     } catch (err) {
       this.emitError(err.message)
     }
@@ -95,9 +103,16 @@ class TaskController extends BaseController {
         throw new AppException('Chat message not editable anymore.')
       }
       await ChatService.removeChatMessage(id)
-      if (this.topic) {
-        this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
-      }
+
+      WebSocket.publichToTask({
+        event: 'messageRemoved',
+        taskId: this.taskId,
+        estateId: this.estateId,
+        data: {
+          id,
+          socket: this.socket.topic,
+        },
+      })
     } catch (err) {
       this.emitError(err.message)
     }

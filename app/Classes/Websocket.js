@@ -1,6 +1,10 @@
 'use strict'
 
-const { WEBSOCKET_TENANT_REDIS_KEY, WEBSOCKET_LANDLORD_REDIS_KEY } = require('../constants')
+const {
+  WEBSOCKET_TENANT_REDIS_KEY,
+  WEBSOCKET_LANDLORD_REDIS_KEY,
+  WEBSOCKET_TASK_REDIS_KEY,
+} = require('../constants')
 
 const Redis = require('ioredis')
 const Ws = use('Ws')
@@ -56,6 +60,15 @@ class WebSocket {
     WebSocket.publish({
       topic: `${WEBSOCKET_LANDLORD_REDIS_KEY}:${userId}`,
       channel: 'landlord:*',
+      event,
+      data,
+    })
+  }
+
+  static publichToTask({ event, taskId, estateId, data }) {
+    WebSocket.publish({
+      topic: `${WEBSOCKET_TASK_REDIS_KEY}:${estateId}brz${taskId}`,
+      channel: 'task:*',
       event,
       data,
     })
