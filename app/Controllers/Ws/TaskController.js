@@ -168,6 +168,29 @@ class TaskController extends BaseController {
       //   avatar: this.user.avatar,
       // }
       // message.topic = this.socket.topic
+
+      const data = {
+        message: {
+          id: chat.id,
+          message: chat.text,
+          attachments: await this.getAbsoluteUrl(chat.attachments),
+          dateTime: message.dateTime ? message.dateTime : moment.utc(new Date()).format(),
+          sender: {
+            id: this.user.id,
+            firstname: this.user.firstname,
+            secondname: this.user.secondname,
+            avatar: this.user.avatar,
+          },
+        },
+        sender: {
+          userId: this.user.id,
+          firstname: this.user.firstname,
+          secondname: this.user.secondname,
+          avatar: this.user.avatar,
+        },
+        topic: this.socket.topic,
+      }
+
       const recipientTopic =
         this.user.role === ROLE_LANDLORD
           ? `tenant:${this.tenant_user_id}`
@@ -206,29 +229,13 @@ class TaskController extends BaseController {
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
 
-      message = {
-        ...message,
-        id: chat.id,
-        message: chat.text,
-        attachments: await this.getAbsoluteUrl(chat.attachments),
-        sender: {
-          id: this.user.id,
-          firstname: this.user.firstname,
-          secondname: this.user.secondname,
-          avatar: this.user.avatar,
-        },
-        topic: this.socket.topic,
-      }
-      console.log('estateId=', this.estateId)
-      console.log('taskId=', this.taskId)
       WebSocket.publichToTask({
         event: 'message',
         taskId: this.taskId,
         estateId: this.estateId,
         data: {
-          ...message,
+          ...data,
           broadcast_all: true,
-          dateTime: message.dateTime ? message.dateTime : moment.utc(new Date()).format(),
         },
       })
 
