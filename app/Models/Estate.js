@@ -559,6 +559,7 @@ class Estate extends Model {
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
+        notify_sent: null,
       },
       trx,
       true
