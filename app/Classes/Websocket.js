@@ -76,13 +76,21 @@ class WebSocket {
 }
 
 WebSocket.redisSubscriber.on('message', (channel, message) => {
-  const object = JSON.parse(message)
-  if (!object?.event || !object?.data) {
-    return true
-  }
+  try {
+    const object = JSON.parse(message)
+    if (!object?.event || !object?.data) {
+      return true
+    }
 
-  const topic = Ws?.getChannel(object?.channel || `landlord:*`)?.topic(channel)
-  topic?.broadcast(object.event, object.data)
+    const topic = Ws?.getChannel(object?.channel || `landlord:*`)?.topic(channel)
+    if (object.data?.broadcast_all) {
+      topic?.broadcastToAll(object.event, object.data)
+    } else {
+      topic?.broadcast(object.event, object.data)
+    }
+  } catch (e) {
+    console.log('websocket subscribe error', e.message)
+  }
 })
 
 module.exports = WebSocket
