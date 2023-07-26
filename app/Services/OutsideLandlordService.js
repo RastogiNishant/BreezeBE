@@ -25,7 +25,7 @@ const TaskService = require('./TaskService')
 const UserService = require('./UserService')
 const l = use('Localize')
 const Database = use('Database')
-const Ws = use('Ws')
+const WebSocket = use('App/Classes/Websocket')
 
 class OutsideLandlordService {
   static async handleTaskWithoutEstate(task, trx) {
@@ -261,13 +261,11 @@ class OutsideLandlordService {
   }
 
   static async emitLandlordInvitationFromTenant({ user_id, data }) {
-    const channel = `landlord:*`
-    const topicName = `landlord:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT, data)
-    }
+    WebSocket.publishToLandlord({
+      event: WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT,
+      userId: user_id,
+      data,
+    })
   }
 }
 

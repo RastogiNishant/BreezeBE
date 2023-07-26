@@ -16,7 +16,6 @@ class WebSocket {
   })
 
   static unsubscribe(topic) {
-    console.log('unsubscribe=', topic)
     this.redisSubscriber.unsubscribe(topic)
   }
 

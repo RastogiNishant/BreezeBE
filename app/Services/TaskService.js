@@ -22,11 +22,11 @@ const {
   TASK_STATUS_UNRESOLVED,
   SHOW_ACTIVE_TASKS_COUNT,
   TASK_COMMON_TYPE,
-  TASK_ORDER_BY_UNREAD,
   TASK_ORDER_BY_URGENCY,
   WEBSOCKET_EVENT_TASK_UPDATED,
 } = require('../constants')
-const Ws = use('Ws')
+
+const WebSocket = use('App/Classes/Websocket')
 const l = use('Localize')
 const { rc } = require('../Libs/utils')
 const moment = require('moment')
@@ -319,17 +319,24 @@ class TaskService extends BaseService {
     } else {
       taskResult = await taskRow.updateItem({ ...task })
     }
-    let topicName = `tenant:${taskRow.tenant_id}`
     //tasks.landlord_id is not always populated
     const estate = await EstateService.getById(task.estate_id)
+    let user_id = taskRow.tenant_id
+    let role = ROLE_USER
     if (user.role === ROLE_USER) {
-      topicName = `landlord:${estate.user_id}`
+      user_id = estate.user_id
+      role = ROLE_LANDLORD
     }
-    await TaskService.emitToChannel(topicName, WEBSOCKET_EVENT_TASK_UPDATED, {
-      ...taskRow.toJSON(),
-      property_id: estate.property_id,
-      estate_id: task.estate_id,
-      task_id: task.id,
+    await TaskService.emitToChannel({
+      user_id,
+      role,
+      event: WEBSOCKET_EVENT_TASK_UPDATED,
+      data: {
+        ...taskRow.toJSON(),
+        property_id: estate.property_id,
+        estate_id: task.estate_id,
+        task_id: task.id,
+      },
     })
 
     // send notification to tenant to inform task has been resolved
@@ -911,25 +918,26 @@ class TaskService extends BaseService {
   }
 
   static async emitTaskCreated({ user_id, role, data }) {
-    const channel = role === ROLE_LANDLORD ? `landlord:*` : `tenant:*`
-    const topicName = role === ROLE_LANDLORD ? `landlord:${user_id}` : `tenant:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_TASK_CREATED, data)
+    if (role === ROLE_LANDLORD) {
+      WebSocket.publishToLandlord({ event: WEBSOCKET_EVENT_TASK_CREATED, userId: user_id, data })
+    } else {
+      WebSocket.publishToTenant({ event: WEBSOCKET_EVENT_TASK_CREATED, userId: user_id, data })
     }
   }
 
-  static async emitToChannel(topicName, websocketEvent, data) {
-    const found = topicName.match(/([a-z]+\:)/)
-    if (!found) {
-      return false
-    }
-    const channel = `${found[0]}*`
-    const topic = Ws.getChannel(channel).topic(topicName)
-
-    if (topic) {
-      topic.broadcast(websocketEvent, data)
+  static async emitToChannel({ user_id, role, event, data }) {
+    if (role == ROLE_LANDLORD) {
+      WebSocket.publishToLandlord({
+        event,
+        userId: user_id,
+        data,
+      })
+    } else {
+      WebSocket.publishToTenant({
+        event,
+        userId: user_id,
+        data,
+      })
     }
   }
 }
