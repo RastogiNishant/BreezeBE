@@ -231,7 +231,7 @@ class QueueJobService {
     try {
       if (estateIdsToExpire && estateIdsToExpire.length) {
         await Estate.query()
-          .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
+          .update({ status: STATUS_EXPIRE })
           .whereIn('id', estateIdsToExpire)
           .transacting(trx)
       }
@@ -248,22 +248,25 @@ class QueueJobService {
         (estateIdsToDraft && estateIdsToDraft.length)
       ) {
         // Delete new matches
-        const estateIds = (estateIdsToExpire || []).concat(estateIdsToDraft || [])
+        let estateIds = (estateIdsToExpire || []).concat(estateIdsToDraft || [])
         await Match.query()
           .whereIn('estate_id', estateIds)
           .where('status', MATCH_STATUS_NEW)
           .delete()
           .transacting(trx)
 
-        const listings = await EstateSyncListing.query()
-          .select('estate_id')
-          .where('status', STATUS_ACTIVE)
-          .whereIn('estate_id', estateIds)
-          .groupBy('estate_id')
-          .fetch()
-        await Promise.map(listings.rows, async (estateId) => {
-          await require('./EstateSyncService').unpublishEstate(estateId)
-        })
+        estateIds = estateIdsToDraft || []
+        if (estateIds?.length) {
+          const listings = await EstateSyncListing.query()
+            .select('estate_id')
+            .where('status', STATUS_ACTIVE)
+            .whereIn('estate_id', estateIds)
+            .groupBy('estate_id')
+            .fetch()
+          await Promise.map(listings.rows, async (estateId) => {
+            await require('./EstateSyncService').unpublishEstate(estateId)
+          })
+        }
       }
 
       await trx.commit()
@@ -432,7 +435,7 @@ class QueueJobService {
         await Estate.query()
           .where('user_id', userId)
           .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-          .update({ status: STATUS_DRAFT }, trx)
+          .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT }, trx)
 
         await UserDeactivationSchedule.query()
           .where('id', deactivationId)

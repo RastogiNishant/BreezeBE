@@ -834,6 +834,7 @@ class EstateService {
 
       const taskService = require('./TaskService')
       await taskService.deleteByEstateById(id, trx)
+      await require('./EstateSyncService').unpublishEstate(id)
 
       await trx.commit()
       return estate
@@ -2860,7 +2861,6 @@ class EstateService {
       property_id_list.splice(property_id_list.length - 1, 1)
     }
 
-    console.log('property_id_list=', property_id_list)
     const property_id = property_id_list.join('')
 
     const duplicatedCount = await this.countDuplicateProperty(property_id)

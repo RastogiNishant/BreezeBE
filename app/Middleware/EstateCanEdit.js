@@ -25,7 +25,8 @@ class EstateCanEdit {
     }
 
     const { id, estate_id } = request.all()
-    if (!id || !estate_id) {
+
+    if (!id && !estate_id) {
       throw new HttpException(WRONG_PARAMS, 400)
     }
 

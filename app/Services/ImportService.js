@@ -52,6 +52,7 @@ class ImportService {
   /**
    *
    */
+
   static async createSingleEstate({ data, line, six_char_code }, userId) {
     let estate
     line += 1
@@ -282,6 +283,7 @@ class ImportService {
     WebSocket.publishToLandlord({ event, userId: user_id, data })
   }
 
+  //TODO: if a property is already published, no need to update property responding error message
   static async updateImportBySixCharCode({ estate, data }, trx) {
     try {
       let estate_data = omit(data, [
