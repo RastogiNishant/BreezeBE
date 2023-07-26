@@ -122,15 +122,30 @@ class TaskController extends BaseController {
     try {
       const lastChat = await super._markLastRead(this.taskId)
       if (lastChat) {
-        this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
-          topic: this.socket.topic,
-          chat: {
-            id: lastChat.id,
-            type: data?.type,
-            user: lastChat.sender_id,
-            created_at: lastChat.created_at,
+        WebSocket.publichToTask({
+          event: WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
+          taskId: this.taskId,
+          estateId: this.estateId,
+          data: {
+            topic: this.socket.topic,
+            chat: {
+              id: lastChat.id,
+              type: data?.type,
+              user: lastChat.sender_id,
+              created_at: lastChat.created_at,
+            },
           },
         })
+
+        // this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
+        //   topic: this.socket.topic,
+        //   chat: {
+        //     id: lastChat.id,
+        //     type: data?.type,
+        //     user: lastChat.sender_id,
+        //     created_at: lastChat.created_at,
+        //   },
+        // })
       } else {
         this.emitError(MESSAGE_NOT_SAVED)
       }
@@ -144,16 +159,29 @@ class TaskController extends BaseController {
     //FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
-      message.id = chat.id
-      message.message = chat.text
-      message.attachments = await this.getAbsoluteUrl(chat.attachments)
-      message.sender = {
-        id: this.user.id,
-        firstname: this.user.firstname,
-        secondname: this.user.secondname,
-        avatar: this.user.avatar,
+      message = {
+        ...message,
+        id: chat.id,
+        message: chat.text,
+        attachments: await this.getAbsoluteUrl(chat.attachments),
+        sender: {
+          id: this.user.id,
+          firstname: this.user.firstname,
+          secondname: this.user.secondname,
+          avatar: this.user.avatar,
+        },
+        topic: this.socket.topic,
       }
-      message.topic = this.socket.topic
+      // message.id = chat.id
+      // message.message = chat.text
+      // message.attachments = await this.getAbsoluteUrl(chat.attachments)
+      // message.sender = {
+      //   id: this.user.id,
+      //   firstname: this.user.firstname,
+      //   secondname: this.user.secondname,
+      //   avatar: this.user.avatar,
+      // }
+      // message.topic = this.socket.topic
       const recipientTopic =
         this.user.role === ROLE_LANDLORD
           ? `tenant:${this.tenant_user_id}`
@@ -162,12 +190,36 @@ class TaskController extends BaseController {
       const task = await TaskService.get(this.taskId)
       //broadcast taskMessageReceived event to either tenant or landlord
       //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
-      this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
-        topic: this.socket.topic,
-        urgency: task?.urgency,
-        estate_id: this.estateId,
-        user_id: this.user.id,
-      })
+
+      if (this.user.role === ROLE_LANDLORD) {
+        WebSocket.publishToTenant({
+          event: 'taskMessageReceived',
+          userId: this.tenant_user_id,
+          data: {
+            topic: this.socket.topic,
+            urgency: task?.urgency,
+            estate_id: this.estateId,
+            user_id: this.user.id,
+          },
+        })
+      } else {
+        WebSocket.publishToLandlord({
+          event: 'taskMessageReceived',
+          userId: this.estate_user_id,
+          data: {
+            topic: this.socket.topic,
+            urgency: task?.urgency,
+            estate_id: this.estateId,
+            user_id: this.user.id,
+          },
+        })
+      }
+      // this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
+      //   topic: this.socket.topic,
+      //   urgency: task?.urgency,
+      //   estate_id: this.estateId,
+      //   user_id: this.user.id,
+      // })
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       super.onMessage(message)
