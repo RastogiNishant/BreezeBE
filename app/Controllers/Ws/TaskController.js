@@ -174,6 +174,7 @@ class TaskController extends BaseController {
           id: chat.id,
           message: chat.text,
           attachments: await this.getAbsoluteUrl(chat.attachments),
+          topic: this.socket.topic,
           dateTime: message.dateTime ? message.dateTime : moment.utc(new Date()).format(),
           sender: {
             id: this.user.id,
