@@ -2,7 +2,11 @@
 
 const Ws = use('Ws')
 const { isNull } = require('lodash')
-const { BREEZE_BOT_USER } = require('../../constants')
+const {
+  BREEZE_BOT_USER,
+  WEBSOCKET_LANDLORD_REDIS_KEY,
+  WEBSOCKET_TENANT_REDIS_KEY,
+} = require('../../constants')
 const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
 const File = use('App/Classes/File')
@@ -20,18 +24,26 @@ class BaseController {
     this.user = auth.user
   }
 
-  subscribe(topicKey) {
+  subscribe({ channel, estateId, taskId }) {
     try {
-      WebSocket.subscribe(`${topicKey}:${this.user.id}`)
+      if ([WEBSOCKET_LANDLORD_REDIS_KEY, WEBSOCKET_TENANT_REDIS_KEY].includes(channel)) {
+        WebSocket.subscribe(`${channel}:${this.user.id}`)
+      } else {
+        WebSocket.subscribe(`${channel}:${estateId}brz${taskId}`)
+      }
     } catch (e) {
       console.log('LandlordController subscribe error', e.message)
     }
   }
 
-  unsubscribe(topicKey) {
+  unsubscribe({ channel, estateId, taskId }) {
     this.socket.on('close', async () => {
       try {
-        WebSocket.unsubscribe(`${topicKey}:${this.user.id}`)
+        if ([WEBSOCKET_LANDLORD_REDIS_KEY, WEBSOCKET_TENANT_REDIS_KEY].includes(channel)) {
+          WebSocket.unsubscribe(`${channel}:${this.user.id}`)
+        } else {
+          WebSocket.unsubscribe(`${channel}:${estateId}brz${taskId}`)
+        }
       } catch (e) {
         console.log('connection close error', e.message)
       }
@@ -64,32 +76,7 @@ class BaseController {
       this.emitError(err.message)
     }
   }
-  //this will broadcast to all including sender
-  broadcastToAll(message, event = 'message', sender = null) {
-    //sender is null when user, 0 when bot
-    try {
-      if (this.topic && isNull(sender)) {
-        this.topic.broadcastToAll(event, {
-          message,
-          sender: {
-            userId: this.user.id,
-            firstname: this.user.firstname,
-            secondname: this.user.secondname,
-            avatar: this.user.avatar,
-          },
-          topic: this.socket.topic,
-        })
-      } else if (this.topic && sender == 0) {
-        this.topic.broadcastToAll(event, {
-          message,
-          sender: BREEZE_BOT_USER,
-          topic: this.socket.topic,
-        })
-      }
-    } catch (err) {
-      this.emitError(err.message)
-    }
-  }
+
   //this will send message to sender given socket.id
   emitToSender(message, event = 'message', sender = null) {
     try {
@@ -118,18 +105,6 @@ class BaseController {
           },
           [this.socket.id]
         )
-      }
-    } catch (err) {
-      this.emitError(err.message)
-    }
-  }
-  //override this on the child controller
-  onMessage(message) {
-    try {
-      message.dateTime = message.dateTime ? message.dateTime : new Date()
-      if (this.topic) {
-        //FIXME: this will send sender twice on data...
-        this.broadcastToAll(message, 'message')
       }
     } catch (err) {
       this.emitError(err.message)

@@ -14,8 +14,8 @@ const Logger = use('Logger')
 class LandlordController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
-    this.subscribe(WEBSOCKET_LANDLORD_REDIS_KEY)
-    this.unsubscribe(WEBSOCKET_LANDLORD_REDIS_KEY)
+    this.subscribe({ channel: WEBSOCKET_LANDLORD_REDIS_KEY })
+    this.unsubscribe({ channel: WEBSOCKET_LANDLORD_REDIS_KEY })
   }
 
   async onGetTaskInProgressCount() {

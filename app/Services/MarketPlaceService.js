@@ -37,6 +37,7 @@ const {
   INCOME_TYPE_HOUSE_WORK,
   INCOME_TYPE_UNEMPLOYED,
   INCOME_TYPE_PENSIONER,
+  MARKETPLACE_LIST,
 } = require('../constants')
 
 const familySize = {
@@ -177,9 +178,7 @@ class MarketPlaceService {
     const trx = await Database.beginTransaction()
     try {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
-
       const { link, estate, landlord_name, lang } = await this.handlePendingKnock(contact, trx)
-
       await trx.commit()
 
       //sending knock email 10 seconds later
@@ -223,6 +222,9 @@ class MarketPlaceService {
       phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
     }
     try {
+      let publisher = contact?.publisher ? MARKETPLACE_LIST?.[contact.publisher] : ``
+      publisher = publisher ? l.get(publisher) : ''
+
       await yup
         .object()
         .shape({
@@ -233,7 +235,7 @@ class MarketPlaceService {
       const txt =
         l
           .get('sms.prospect.marketplace_request', lang)
-          .replace('{{partner_name}}', `${contact.publisher || ''} `) + link
+          .replace('{{partner_name}}', `${publisher ?? ''}`) + link
 
       await SMSService.send({ to: phone_number, txt })
     } catch (e) {
@@ -502,6 +504,7 @@ class MarketPlaceService {
           data2,
         })
       const knockRequest = await this.getKnockRequest({ estate_id, email })
+      console.log(`knockRequest ${estate_id} ${email}=`, knockRequest)
       if (!knockRequest) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
@@ -509,7 +512,7 @@ class MarketPlaceService {
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
         throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
       }
-
+      console.log(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
@@ -877,7 +880,13 @@ class MarketPlaceService {
     return {}
   }
 
-  static async getInfoFromContactRequests(email, estate_id) {
+  static async getInfoFromContactRequests({ email, data1, data2 }) {
+    const { estate_id, ...data } = this.decryptDynamicLink({ data1, data2 })
+
+    if (!estate_id) {
+      return null
+    }
+
     return await EstateSyncContactRequest.query()
       .select(Database.raw(`other_info->'employment' as profession`))
       .select(Database.raw(`other_info->'family_size' as members`))
