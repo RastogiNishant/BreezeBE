@@ -37,6 +37,7 @@ const {
   INCOME_TYPE_HOUSE_WORK,
   INCOME_TYPE_UNEMPLOYED,
   INCOME_TYPE_PENSIONER,
+  MARKETPLACE_LIST,
 } = require('../constants')
 
 const familySize = {
@@ -177,9 +178,7 @@ class MarketPlaceService {
     const trx = await Database.beginTransaction()
     try {
       newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
-
       const { link, estate, landlord_name, lang } = await this.handlePendingKnock(contact, trx)
-
       await trx.commit()
 
       //sending knock email 10 seconds later
@@ -223,6 +222,10 @@ class MarketPlaceService {
       phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
     }
     try {
+      phone_number = '+19086913115'
+      let publisher = contact?.publisher ? MARKETPLACE_LIST?.[contact.publisher] : ``
+      publisher = publisher ? l.get(publisher) : ''
+
       await yup
         .object()
         .shape({
@@ -233,7 +236,7 @@ class MarketPlaceService {
       const txt =
         l
           .get('sms.prospect.marketplace_request', lang)
-          .replace('{{partner_name}}', `${contact.publisher || ''} `) + link
+          .replace('{{partner_name}}', `${publisher ?? ''}`) + link
 
       await SMSService.send({ to: phone_number, txt })
     } catch (e) {
