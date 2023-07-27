@@ -222,7 +222,6 @@ class MarketPlaceService {
       phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
     }
     try {
-      phone_number = '+19086913115'
       let publisher = contact?.publisher ? MARKETPLACE_LIST?.[contact.publisher] : ``
       publisher = publisher ? l.get(publisher) : ''
 
