@@ -117,6 +117,7 @@ const {
     NO_PROSPECT_KNOCK,
     NO_ESTATE_EXIST,
     MARKET_PLACE_CONTACT_EXIST,
+    ERROR_MARKET_PLACE_CONTACT_EXIST_CODE,
     NO_ACTIVE_ESTATE_EXIST,
     ERROR_CONTACT_REQUEST_EXIST,
     ERROR_CONTACT_REQUEST_NO_EXIST,
@@ -510,7 +511,11 @@ class MarketPlaceService {
       }
 
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
+        throw new HttpException(
+          MARKET_PLACE_CONTACT_EXIST,
+          400,
+          ERROR_MARKET_PLACE_CONTACT_EXIST_CODE
+        )
       }
       console.log(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
