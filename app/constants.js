@@ -1327,7 +1327,17 @@ Estates: [ESTATES]
     production: 'https://app.breeze4me.de',
   },
 
+  COUNTRIES: [
+    { country: 'Germany', other_name: 'Deutschland', country_code: 'de' },
+    { country: 'Austria', other_name: 'Österreich', country_code: 'at' },
+    { country: 'Switzerland', other_name: 'Schweiz', country_code: 'ch' },
+  ],
+
+  RENT_DURATION_LONG: 'long',
+  RENT_DURATION_SHORT: 'short',
   QUEUE_JOB_URGENT: 100,
+
+  CITIES_AUTOCOMPLETE_MAX_COUNT: 10,
   WEBSOCKET_TENANT_REDIS_KEY: 'tenant',
   WEBSOCKET_LANDLORD_REDIS_KEY: 'landlord',
   WEBSOCKET_TASK_REDIS_KEY: 'task',
