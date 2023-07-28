@@ -226,6 +226,16 @@ class OhneMakler {
     },
   }
 
+  amenities = {
+    apt_balcony: 'Balkon',
+    apt_wainscoting: 'Terrasse',
+    fitted_kitchen: 'Einbauküche',
+    apt_low_barrier_cut: 'Barrierefrei',
+    cellar: 'Keller',
+    garden: 'Garten',
+    apt_fireplace: 'Kamin',
+  }
+
   map = {
     id: 'source_id',
     title: 'description',

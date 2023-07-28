@@ -381,8 +381,8 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static searchTenantEstatesQuery(tenant) {
-    return Database.select(Database.raw(`FALSE as inside`))
+  static async searchTenantEstatesQuery(tenant) {
+    let estates = await Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
       .select(Database.raw(`NULL as rooms`))
       .from({ _t: 'tenants' })
@@ -395,6 +395,8 @@ class ThirdPartyOfferService {
       .whereNull('tpoi.id')
       .where('_t.user_id', tenant.user_id)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+
+    return this.filterEstates(tenant, estates)
   }
 
   static getActiveMatchesQuery(userId) {

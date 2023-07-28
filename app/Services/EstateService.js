@@ -1244,6 +1244,102 @@ class EstateService {
 
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
+
+    return this.filterEstates(tenant, estates)
+  }
+
+  static filterEstates(tenant, estates) {
+    Logger.info(`before filterEstates count ${estates?.length}`)
+
+    if (tenant.income) {
+      const minTenantBudget = tenant?.budget_min || 0
+      const maxTenantBudget = tenant?.budget_max || tenant.income
+
+      estates = estates.filter((estate) => {
+        const budget = tenant.include_utility
+          ? estate.net_rent + estate.extra_costs
+          : estate.net_rent
+        return budget >= minTenantBudget && budget <= maxTenantBudget
+      })
+      Logger.info(`filterEstates after budget ${estates?.length}`)
+    }
+
+    //transfer budget
+    estates = estates.filter(
+      (estate) =>
+        !estate.transfer_budget ||
+        (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
+          estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
+    )
+    Logger.info(`filterEstates after transfer ${estates?.length}`)
+
+    if (tenant.rent_start) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.vacant_date ||
+          moment.utc(estate.vacant_date).format() <= moment.utc(tenant.rent_start).format()
+      )
+    }
+    Logger.info(`filterEstates after rent start ${estates?.length}`)
+
+    if (tenant.is_short_term_rent) {
+      estates = estates.filter((estate) => {
+        const vacant_date = estate.vacant_date
+        const rent_end_at = estate.rent_end_at
+
+        if (tenant.residency_duration_min && tenant.residency_duration_max) {
+          // if it's inside property
+          if (!estate.source_id) {
+            if (!vacant_date || !rent_end_at) {
+              return false
+            }
+
+            const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+            if (
+              rent_duration < tenant.residency_duration_min * 24 * 60 * 60 * 1000 ||
+              rent_duration > tenant.residency_duration_max * 24 * 60 * 60 * 1000
+            ) {
+              return false
+            }
+          } else {
+            if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
+              return false
+            }
+          }
+          return true
+        }
+        return true
+      })
+    }
+    Logger.info(`filterEstates after short term ${estates?.length}`)
+
+    estates = estates.filter(
+      (estate) =>
+        estate.rooms_number &&
+        estate.rooms_number >= (tenant.rooms_min || 1) &&
+        estate.rooms_number <= (tenant.rooms_max || 1)
+    )
+    Logger.info(`filterEstates after rooms ${estates?.length}`)
+
+    estates = estates.filter(
+      (estate) =>
+        estate.area &&
+        estate.area >= (tenant.space_min || 1) &&
+        estate.area <= (tenant.space_max || 1)
+    )
+    Logger.info(`filterEstates after area ${estates?.length}`)
+
+    if (tenant.apt_type?.length) {
+      estates = estates.filter((estate) => tenant.apt_type.includes(estate.apt_type))
+    }
+    Logger.info(`filterEstates apt type after ${estates?.length}`)
+
+    //tenant.house_type.every((el) => (estate?.house_type || []).includes(el))
+    if (tenant.house_type?.length) {
+      estates = estates.filter((estate) => tenant.house_type.includes(estate.house_type))
+    }
+    Logger.info(`filterEstates after house type ${estates?.length}`)
+
     return estates
   }
 
