@@ -110,6 +110,7 @@ const {
   TASK_SYSTEM_TYPE,
   STATUS_EMAIL_VERIFY,
   ESTATE_FIELD_FOR_TASK,
+  PROPERTY_TYPE_SHORT_TERM,
 } = require('../constants')
 
 const {
@@ -1245,24 +1246,20 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    return this.filterEstates(tenant, estates)
+    return await this.filterEstates(tenant, estates)
   }
 
-  static filterEstates(tenant, estates) {
+  static async filterEstates(tenant, estates) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
-    if (tenant.income) {
-      const minTenantBudget = tenant?.budget_min || 0
-      const maxTenantBudget = tenant?.budget_max || tenant.income
+    const minTenantBudget = tenant?.budget_min || 0
+    const maxTenantBudget = tenant?.budget_max || 0
 
-      estates = estates.filter((estate) => {
-        const budget = tenant.include_utility
-          ? estate.net_rent + estate.extra_costs
-          : estate.net_rent
-        return budget >= minTenantBudget && budget <= maxTenantBudget
-      })
-      Logger.info(`filterEstates after budget ${estates?.length}`)
-    }
+    estates = estates.filter((estate) => {
+      const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
+      return budget >= minTenantBudget && budget <= maxTenantBudget
+    })
+    Logger.info(`filterEstates after budget ${estates?.length}`)
 
     //transfer budget
     estates = estates.filter(
@@ -1277,7 +1274,8 @@ class EstateService {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
-          moment.utc(estate.vacant_date).format() <= moment.utc(tenant.rent_start).format()
+          moment.utc(estate.vacant_date).add(-1, 'day').format() <=
+            moment.utc(tenant.rent_start).format()
       )
     }
     Logger.info(`filterEstates after rent start ${estates?.length}`)
@@ -1315,30 +1313,49 @@ class EstateService {
 
     estates = estates.filter(
       (estate) =>
-        estate.rooms_number &&
-        estate.rooms_number >= (tenant.rooms_min || 1) &&
-        estate.rooms_number <= (tenant.rooms_max || 1)
+        !estate.rooms_number ||
+        (estate.rooms_number >= (tenant.rooms_min || 1) &&
+          estate.rooms_number <= (tenant.rooms_max || 1))
     )
     Logger.info(`filterEstates after rooms ${estates?.length}`)
 
     estates = estates.filter(
       (estate) =>
-        estate.area &&
-        estate.area >= (tenant.space_min || 1) &&
-        estate.area <= (tenant.space_max || 1)
+        !estate.area ||
+        (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
     )
     Logger.info(`filterEstates after area ${estates?.length}`)
 
     if (tenant.apt_type?.length) {
-      estates = estates.filter((estate) => tenant.apt_type.includes(estate.apt_type))
+      estates = estates.filter(
+        (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
+      )
     }
     Logger.info(`filterEstates apt type after ${estates?.length}`)
 
     //tenant.house_type.every((el) => (estate?.house_type || []).includes(el))
     if (tenant.house_type?.length) {
-      estates = estates.filter((estate) => tenant.house_type.includes(estate.house_type))
+      estates = estates.filter(
+        (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
+      )
     }
     Logger.info(`filterEstates after house type ${estates?.length}`)
+
+    if (tenant.options?.length) {
+      const options = await require('../Services/OptionService').getOptions()
+      const OhneMaker = require('../Classes/OhneMakler')
+      estates = estates.filter((estate) => {
+        let amenities = estate.amenities || []
+        if (estate.source_id) {
+          amenities = OhneMaker.getOptionIds(amenities, options)
+        } else {
+          amenities = amenities.map((amenity) => amenity.option_id)
+        }
+
+        return tenant.options.every((op) => amenities.includes(op))
+      })
+      Logger.info(`filterEstates after amenity ${estates.length}`)
+    }
 
     return estates
   }

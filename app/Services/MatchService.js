@@ -525,6 +525,7 @@ class MatchService {
           `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
         )
         await this.createNewMatches({ tenant, has_notification_sent, only_count }, trx)
+
         Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
         await ThirdPartyMatchService.createNewMatches(
           {

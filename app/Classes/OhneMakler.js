@@ -49,7 +49,7 @@ const {
   FIRING_GAS,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
 } = require('../constants')
-const { isEmpty } = require('lodash')
+const { isEmpty, groupBy } = require('lodash')
 const moment = require('moment')
 
 class OhneMakler {
@@ -226,7 +226,7 @@ class OhneMakler {
     },
   }
 
-  amenities = {
+  static amenities = {
     apt_balcony: 'Balkon',
     apt_wainscoting: 'Terrasse',
     fitted_kitchen: 'Einbauküche',
@@ -283,6 +283,20 @@ class OhneMakler {
       return null
     }
     return this[type][key]
+  }
+
+  static getOptionIds(amenities, options) {
+    if (!amenities?.length) {
+      return []
+    }
+
+    const hashOptions = groupBy(options, 'title')
+    const amenityKeys = amenities.map(
+      (amenity) =>
+        Object.keys(OhneMakler.amenities).find((key) => OhneMakler.amenities[key] === amenity) ?? ''
+    )
+
+    return amenityKeys.map((key) => hashOptions?.[key] ?? 0)
   }
 
   parseHouseAndApartmentTypes(estate, newEstate) {

@@ -120,7 +120,15 @@ class UpdateTenant extends Base {
       transfer_budget_min: yup.number().integer().positive().min(0).max(500000).nullable(),
       transfer_budget_max: yup.number().integer().positive().min(0).max(500000).nullable(),
       is_short_term_rent: yup.boolean(),
-      residency_duration_min: yup.number().integer().nullable().min(0).nullable(),
+      residency_duration_min: yup
+        .number()
+        .integer()
+        .when(['is_short_term_rent'], (is_short_term_rent) => {
+          if (is_short_term_rent) {
+            return yup.number().integer().min(1).required()
+          }
+          return yup.number().integer().min(1).nullable()
+        }),
       residency_duration_max: yup
         .number()
         .integer()
@@ -142,7 +150,6 @@ class UpdateTenant extends Base {
         })
         .nullable(),
       selected_adults_count: yup.number().integer(),
-      amenities: yup.array().of(yup.string()),
       only_count: yup.boolean(),
     })
 }
