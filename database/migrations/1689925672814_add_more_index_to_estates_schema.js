@@ -7,8 +7,8 @@ class AddMoreIndexToEstatesSchema extends Schema {
   up() {
     this.table('estates', (table) => {
       table.string('country', 255).index().alter()
-      table.string('city', 40).index().alter()
-      table.string('zip', 7).index().alter()
+      table.string('city', 255).index().alter()
+      table.string('zip', 25).index().alter()
     })
   }
 
