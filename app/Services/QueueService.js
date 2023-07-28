@@ -157,10 +157,10 @@ class QueueService {
     ])
   }
 
-  static getTenantMatchProperties({ userId, has_notification_sent = false }) {
+  static getTenantMatchProperties({ userId, only_count = false, has_notification_sent = false }) {
     Queue.addJob(
       GET_TENANT_MATCH_PROPERTIES,
-      { userId, has_notification_sent },
+      { userId, has_notification_sent, only_count },
       { priority: QUEUE_JOB_URGENT }
     )
   }
@@ -353,6 +353,7 @@ class QueueService {
           return require('./MatchService').matchByUser({
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
+            only_count: job.data.only_count,
           })
         case QUEUE_CREATE_THIRD_PARTY_MATCHES:
           return require('./ThirdPartyMatchService').matchByEstates()

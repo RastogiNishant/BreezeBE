@@ -1216,12 +1216,13 @@ class EstateService {
   /**
    *
    */
-  static searchEstatesQuery(tenant) {
-    return Database.select(Database.raw(`TRUE as inside`))
+  static async searchEstatesQuery(tenant) {
+    let estates = await Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'estates' })
+      // .innerJoin({ _a: 'amenities' }, '_e.id', '_a.estate_id')
       .leftJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
       })
@@ -1232,6 +1233,18 @@ class EstateService {
       })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+
+    const estateIds = estates.map((estate) => estate.id)
+    const amenities = (
+      await Amenity.query()
+        .select('estate_id', 'option_id', 'location')
+        .whereIn('estate_id', estateIds)
+        .fetch()
+    ).toJSON()
+
+    const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
+    estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
+    return estates
   }
 
   static async searchEstateByPoint(point_id) {

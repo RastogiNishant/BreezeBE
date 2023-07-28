@@ -142,6 +142,7 @@ class UpdateTenant extends Base {
         })
         .nullable(),
       selected_adults_count: yup.number().integer(),
+      only_count: yup.boolean(),
     })
 }
 
