@@ -1302,6 +1302,7 @@ Route.list().forEach((r) => {
 })
 
 Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
+Route.get('/:key', 'CommonController.getOriginalUrl').middleware(['valid:Key'])
 
 //Test to create contact from 3rd market places
 Route.group(() => {
